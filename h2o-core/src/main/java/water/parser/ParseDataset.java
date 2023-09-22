@@ -22,6 +22,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static water.parser.DefaultParserProviders.SVMLight_INFO;
+import static water.util.VecUtils.categoricalToDouble;
 
 public final class ParseDataset {
   public Job<Frame> _job;
@@ -464,6 +465,8 @@ public final class ParseDataset {
         case "real": 
           if (fr.vec(index).isInt())
             fr.replace((index), fr.vec(index).toDoubleVec()).remove(); 
+          else if (fr.vec(index).isCategorical())
+            fr.replace((index), categoricalToDouble(fr.vec(index))).remove();
           break;
         default: break; // no conversion for other data types.
       }

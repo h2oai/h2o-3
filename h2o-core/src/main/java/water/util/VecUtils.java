@@ -183,23 +183,8 @@ public class VecUtils {
     }
   }
 
-  public static Vec toDoubleVec(Vec src) {
-    switch (src.get_type()) {
-      case Vec.T_CAT:
-        return categoricalToDouble(src);
-      case Vec.T_STR:
-        return stringToDouble(src);
-      case Vec.T_NUM:
-      case Vec.T_TIME:
-      case Vec.T_UUID:
-        if (src.isInt())
+  public static Vec toDoubleVec(Vec src) {  // only calls when src is a integer vector
           return intToDouble(src);
-        else
-          return src.makeCopy(null, Vec.T_NUM);
-      default:
-        throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
-                + " given to toNumericVec()");
-    }
   }
 
   public static Vec toIntegerVec(Vec src) {
