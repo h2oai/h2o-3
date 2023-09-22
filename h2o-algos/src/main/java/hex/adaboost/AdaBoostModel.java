@@ -4,7 +4,6 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
-import hex.tree.drf.DRFModel;
 import org.apache.log4j.Logger;
 import water.*;
 
