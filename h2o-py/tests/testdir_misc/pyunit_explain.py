@@ -868,6 +868,32 @@ def test_pd_plot_row_value():
     assert_row_value(gbm.pd_plot(train, "sex", row_index=i).figure(), train[i, "sex"], "sex")
 
 
+def test_include_exclude_validation():
+    from h2o.exceptions import H2OValueError
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+    
+    gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model", ntrees=3)
+    gbm.train(y=y, training_frame=train)
+
+    try:
+        gbm.explain(train, include_explanations=["lorem"])
+        assert False, "Should fail as 'lorem' is not a valid explanation"
+    except H2OValueError:
+        pass
+
+    try:
+        gbm.explain(train, exclude_explanations=["lorem"])
+        assert False, "Should fail as 'lorem' is not a valid explanation"
+    except H2OValueError:
+        pass
+
+    assert isinstance(gbm.explain(train, include_explanations=["varimp"]), H2OExplanation)
+
+    assert isinstance(gbm.explain(train, exclude_explanations=["pdp", "shap_summary", "ice", "residual_analysis"]), H2OExplanation)
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -888,4 +914,5 @@ pyunit_utils.run_tests([
     test_pareto_front_corner_cases,
     test_pd_plot_row_value,
     test_fairness_plots,
+    test_include_exclude_validation,
     ])
