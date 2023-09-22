@@ -42,18 +42,20 @@ public class AdaBoostTest extends TestUtil {
             Scope.enter();
             Frame train = parseTestFile("smalldata/prostate/prostate.csv");
             String response = "CAPSULE";
+            int nlearners = 50;
             train.toCategoricalCol(response);
             Scope.track(train);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._nlearners = 50;
+            p._nlearners = nlearners;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
             AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
+            assertEquals("Model should contain all the weak learners", nlearners, adaBoostModel._output.models.length);
 
             for (int i = 0; i < adaBoostModel._output.models.length; i++) {
                 System.out.println("Tree = " + i);
