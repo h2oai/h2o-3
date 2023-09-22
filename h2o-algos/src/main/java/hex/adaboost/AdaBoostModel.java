@@ -56,7 +56,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
 
     public static class AdaBoostOutput extends Model.Output {
         public double[] alphas;
-        public Key<DRFModel>[] models;
+        public Key<Model>[] models;
 
         public AdaBoostOutput(AdaBoost adaBoostModel) {
             super(adaBoostModel);
@@ -65,7 +65,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
 
     @Override
     protected Futures remove_impl(Futures fs, boolean cascade) {
-        for (Key<DRFModel> iTreeKey : _output.models) {
+        for (Key<Model> iTreeKey : _output.models) {
             Keyed.remove(iTreeKey, fs, true);
         }
         return super.remove_impl(fs, cascade);
@@ -73,7 +73,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
 
     @Override
     protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-        for (Key<DRFModel> iTreeKey : _output.models) {
+        for (Key<Model> iTreeKey : _output.models) {
             ab.putKey(iTreeKey);
         }
         return super.writeAll_impl(ab);
@@ -81,7 +81,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
 
     @Override
     protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-        for (Key<DRFModel> iTreeKey : _output.models) {
+        for (Key<Model> iTreeKey : _output.models) {
             ab.getKey(iTreeKey, fs);
         }
         return super.readAll_impl(ab,fs);
