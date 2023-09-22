@@ -119,16 +119,16 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 DKV.put(model);
                 Scope.untrack(model._key);
                 _model._output.models[n] = model._key;
-                Frame score = model.score(_trainWithWeights);
-                Scope.track(score);
+                Frame predictions = model.score(_trainWithWeights);
+                Scope.track(predictions);
 
-                CountWeTask countWe = new CountWeTask().doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
-                double e_m = countWe.We / countWe.W;
-                double alpha_m = _parms._learn_rate * Math.log((1 - e_m) / e_m);
-                _model._output.alphas[n] = alpha_m;
+                CountWeTask countWe = new CountWeTask().doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), predictions.vec("predict"));
+                double eM = countWe.We / countWe.W;
+                double alphaM = _parms._learn_rate * Math.log((1 - eM) / eM);
+                _model._output.alphas[n] = alphaM;
 
-                UpdateWeightsTask updateWeightsTask = new UpdateWeightsTask(alpha_m);
-                updateWeightsTask.doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
+                UpdateWeightsTask updateWeightsTask = new UpdateWeightsTask(alphaM);
+                updateWeightsTask.doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), predictions.vec("predict"));
                 _job.update(1);
                 _model.update(_job);
                 LOG.info((n + 1) + ". estimator was built in " + timer.toString());

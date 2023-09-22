@@ -42,7 +42,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
                 linearCombination += _output.alphas[i]*-1;
                 alphas0 += _output.alphas[i];
             } else {
-                linearCombination += _output.alphas[i]*1;
+                linearCombination += _output.alphas[i];
                 alphas1 += _output.alphas[i];
             }
         }

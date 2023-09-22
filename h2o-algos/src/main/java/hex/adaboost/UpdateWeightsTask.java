@@ -7,12 +7,12 @@ import water.fvec.Chunk;
  * Update weights according to AdaBoost algorithm
  */
 class UpdateWeightsTask extends MRTask<UpdateWeightsTask> {
-    double exp_am;
-    double exp_am_inverse;
+    double expAm;
+    double expAmInverse;
 
-    public UpdateWeightsTask(double alpha_m) {
-        exp_am = Math.exp(alpha_m);
-        exp_am_inverse = Math.exp(-alpha_m);
+    public UpdateWeightsTask(double alphaM) {
+        expAm = Math.exp(alphaM);
+        expAmInverse = Math.exp(-alphaM);
     }
 
     @Override
@@ -20,9 +20,9 @@ class UpdateWeightsTask extends MRTask<UpdateWeightsTask> {
         for (int row = 0; row < weights._len; row++) {
             double weight = weights.atd(row);
             if (response.at8(row) != predict.at8(row)) {
-                weights.set(row, weight * exp_am);
+                weights.set(row, weight * expAm);
             } else {
-                weights.set(row, weight * exp_am_inverse);
+                weights.set(row, weight * expAmInverse);
             }
         }
     }
