@@ -272,7 +272,7 @@ def algo_to_modelname(algo):
     if algo == "gam": return "Generalized Additive Model"
     if algo == "modelselection": return "Model Selection"
     if algo == "infogram": return "Infogram"
-    if algo == "adaboost": return "AdaBoost Model in H2O"
+    if algo == "adaboost": return "AdaBoost Model"
     return algo
 
 
