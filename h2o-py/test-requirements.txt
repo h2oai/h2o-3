@@ -35,7 +35,7 @@ lifelines>=0.19.5
 xlsxwriter==1.3.7
 xgboost==1.7.6
 causalml==0.12.3; python_version <= '3.7'
-causalml==0.14.1; python_version > '3.7'
+causalml==0.14.1; python_version > '3.7' && python_version < '3.11'
 colorama
 # not directly required, pinned by Snyk to avoid a vulnerability
 pygments==2.7.4; python_version <= '3.7' 
