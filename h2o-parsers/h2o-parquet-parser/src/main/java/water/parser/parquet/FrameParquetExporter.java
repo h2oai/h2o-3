@@ -1,6 +1,8 @@
 package water.parser.parquet;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.parquet.column.ParquetProperties;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroupFactory;
 import org.apache.parquet.hadoop.ParquetFileWriter;
@@ -28,9 +30,19 @@ import java.io.IOException;
 
 public class FrameParquetExporter  {
 
-    public void export(H2O.H2OCountedCompleter<?> completer, String path, Frame frame, boolean force, String compression) {
+    public void export(H2O.H2OCountedCompleter<?> completer, String path, Frame frame, boolean force, String compression, boolean writeChecksum) {
         File f = new File(path);
-        new FrameParquetExporter.PartExportParquetTask(completer, f.getPath(), generateMessageTypeString(frame), frame.names(), frame.types(), frame.domains(), force, compression).dfork(frame);
+        new FrameParquetExporter.PartExportParquetTask(
+                completer, 
+                f.getPath(), 
+                generateMessageTypeString(frame), 
+                frame.names(), 
+                frame.types(), 
+                frame.domains(), 
+                force, 
+                compression,
+                writeChecksum
+        ).dfork(frame);
     }
 
     private static class PartExportParquetTask extends MRTask<PartExportParquetTask> {
@@ -41,9 +53,11 @@ public class FrameParquetExporter  {
         final byte[] _colTypes;
         final String[][] _domains;
         final boolean _force;
+        final boolean _writeChecksum;
 
         PartExportParquetTask(H2O.H2OCountedCompleter<?> completer, String path, String messageTypeString,
-                              String[] colNames, byte[] colTypes, String[][] domains, boolean force, String compression) {
+                              String[] colNames, byte[] colTypes, String[][] domains, 
+                              boolean force, String compression, boolean writeChecksum) {
             super(completer);
             _path = path;
             _compressionCodecName = getCompressionCodecName(compression);
@@ -52,6 +66,7 @@ public class FrameParquetExporter  {
             _colTypes = colTypes;
             _domains = domains;
             _force = force;
+            _writeChecksum = writeChecksum;
         }
 
         CompressionCodecName getCompressionCodecName(String compression) {
@@ -82,7 +97,7 @@ public class FrameParquetExporter  {
             String partPath = _path + "/part-m-" + String.valueOf(100000 + partIdx).substring(1);
 
             SimpleGroupFactory fact = new SimpleGroupFactory(parseMessageType(_messageTypeString));
-            try (ParquetWriter<Group> writer = buildWriter(new Path(partPath), _compressionCodecName, PersistHdfs.CONF, parseMessageType(_messageTypeString), getMode(_force))) {
+            try (ParquetWriter<Group> writer = buildWriter(new Path(partPath), _compressionCodecName, PersistHdfs.CONF, parseMessageType(_messageTypeString), getMode(_force), _writeChecksum)) {
                 String currColName;
                 byte currColType;
 
@@ -122,34 +137,40 @@ public class FrameParquetExporter  {
     }
 
     private static String generateMessageTypeString(Frame frame) {
-        String message_txt = "message test { ";
+        StringBuilder mb = new StringBuilder("message export_type { ");
         String currName;
         for (int i = 0; i < frame.numCols(); i++) {
             currName = frame._names[i];
             switch (frame.types()[i]) {
                 case (T_TIME):
-                    message_txt = message_txt.concat("optional int64 ").concat(currName).concat(" (TIMESTAMP_MILLIS);");
+                    mb.append("optional int64 ").append(currName).append(" (TIMESTAMP_MILLIS);");
                     break;
                 case (T_NUM):
                 case (T_BAD):
-                    message_txt = message_txt.concat("optional double ").concat(currName).concat("; ");
+                    mb.append("optional double ").append(currName).append("; ");
                     break;
                 case (T_STR):
                 case (T_CAT):
-                    message_txt = message_txt.concat("optional BINARY ").concat(currName).concat(" (UTF8); ");
+                    mb.append("optional BINARY ").append(currName).append(" (UTF8); ");
                     break;
                 case (T_UUID):
-                    message_txt = message_txt.concat("optional fixed_len_byte_array(16) ").concat(currName).concat(" (UUID); ");
+                    mb.append("optional fixed_len_byte_array(16) ").append(currName).append(" (UUID); ");
                     break;
             }
         }
-        message_txt = message_txt.concat("} ");
-        return message_txt;
+        mb.append("} ");
+        return mb.toString();
     }
 
-    private static ParquetWriter<Group> buildWriter(Path file, CompressionCodecName compressionCodecName, Configuration configuration, MessageType _schema, ParquetFileWriter.Mode mode) throws IOException {
-        GroupWriteSupport.setSchema(_schema, configuration);
-        return new ParquetWriter.Builder(file) {
+    private static ParquetWriter<Group> buildWriter(Path path, CompressionCodecName compressionCodecName, Configuration configuration, MessageType schema, ParquetFileWriter.Mode mode, boolean writeChecksum) throws IOException {
+        GroupWriteSupport.setSchema(schema, configuration);
+
+        // The filesystem is cached for a given path and configuration, 
+        // therefore the following modification on the fs is a bit hacky as another process could use the same instance.
+        // However, given the current use case and the fact that the changes impacts only the way files are written, it should be on the safe side.
+        FileSystem fs = path.getFileSystem(configuration);
+        fs.setWriteChecksum(writeChecksum);
+        return new ParquetWriter.Builder(path) {
             @Override
             protected ParquetWriter.Builder self() {
                 return this;
