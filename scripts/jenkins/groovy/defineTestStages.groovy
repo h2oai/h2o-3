@@ -42,10 +42,6 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.9 Smoke', target: 'test-py-smoke', pythonVersion: '3.9',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],      
-    [
       stageName: 'Py3.10 Smoke', target: 'test-py-smoke', pythonVersion: '3.10', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -531,26 +527,6 @@ def call(final pipelineContext) {
     [
       stageName: 'Py3.7 Explain', target: 'test-pyunit-explain', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.9 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.9',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.9 Small', target: 'test-pyunit-small', pythonVersion: '3.9',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.9 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.9',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.9 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.9',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.9 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.9',
-      timeoutValue: 300, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.10 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.10',
