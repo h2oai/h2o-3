@@ -10,4 +10,5 @@ dependencies {
     }
 
     testImplementation "junit:junit:${junitVersion}"
+    testImplementation "org.apache.hadoop:hadoop-common:$defaultHadoopVersion"
 }
