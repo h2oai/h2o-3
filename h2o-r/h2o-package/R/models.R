@@ -19,170 +19,170 @@ NULL
 #' @param y response
 #' @param autoencoder autoencoder flag
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
-    if (is(x, "H2OInfogram"))
-        x<-x@admissible_features
-    if(!is.null(x) && !is.character(x) && !is.numeric(x)) # only check if x is not null
-        stop('`x` must be column names or indices')
-    if( !autoencoder )
-        if(!is.character(y) && !is.numeric(y))
-            stop('`y` must be a column name or index')
+   if (is(x, "H2OInfogram"))
+     x<-x@admissible_features
+  if(!is.null(x) && !is.character(x) && !is.numeric(x)) # only check if x is not null
+    stop('`x` must be column names or indices')
+  if( !autoencoder )
+    if(!is.character(y) && !is.numeric(y))
+      stop('`y` must be a column name or index')
 
-    cc <- colnames(chk.H2OFrame(data))
-
-    if (!is.null(x)) {
-        if(is.character(x)) {
-            if(!all(x %in% cc))
-                stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse = ','))
-            x_i <- match(x, cc)
-        } else {
-            if(any( x < 1L | x > attr(x,'ncol')))
-                stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse = ','))
-            x_i <- x
-            x <- cc[x_i]
-        }
+  cc <- colnames(chk.H2OFrame(data))
+  
+  if (!is.null(x)) {
+    if(is.character(x)) {
+      if(!all(x %in% cc))
+        stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse = ','))
+      x_i <- match(x, cc)
     } else {
-        x_i <- NULL
+      if(any( x < 1L | x > attr(x,'ncol')))
+        stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse = ','))
+      x_i <- x
+      x <- cc[x_i]
+    }
+  } else {
+    x_i <- NULL
+  }
+
+  x_ignore <- c()
+  if( !autoencoder ) {
+    if(is.character(y)){
+      if(!(y %in% cc))
+        stop(y, ' is not a column name')
+      y_i <- which(y == cc)
+    } else {
+      if(y < 1L || y > length(cc))
+        stop('response variable index ', y, ' is out of range')
+      y_i <- y
+      y <- cc[y]
     }
 
-    x_ignore <- c()
-    if( !autoencoder ) {
-        if(is.character(y)){
-            if(!(y %in% cc))
-                stop(y, ' is not a column name')
-            y_i <- which(y == cc)
-        } else {
-            if(y < 1L || y > length(cc))
-                stop('response variable index ', y, ' is out of range')
-            y_i <- y
-            y <- cc[y]
-        }
-
-        if(!is.null(x) && !autoencoder && (y %in% x)) {
-            warning('removing response variable from the explanatory variables')
-            x <- setdiff(x,y)
-        }
-        x_ignore <- setdiff(setdiff(cc, x), y)
-        if( length(x_ignore) == 0L ) x_ignore <- ''
-        return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
-    } else {
-        x_ignore <- setdiff(cc, x)
-        if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
-        return(list(x=x,x_i=x_i,x_ignore=x_ignore))
+    if(!is.null(x) && !autoencoder && (y %in% x)) {
+      warning('removing response variable from the explanatory variables')
+      x <- setdiff(x,y)
     }
+    x_ignore <- setdiff(setdiff(cc, x), y)
+    if( length(x_ignore) == 0L ) x_ignore <- ''
+    return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
+  } else {
+    x_ignore <- setdiff(cc, x)
+    if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
+    return(list(x=x,x_i=x_i,x_ignore=x_ignore))
+  }
 }
 
 .verify_datacols <- function(data, cols) {
-    if(!is.character(cols) && !is.numeric(cols))
-        stop('`cols` must be column names or indices')
+  if(!is.character(cols) && !is.numeric(cols))
+    stop('`cols` must be column names or indices')
 
-    cc <- colnames(chk.H2OFrame(data))
-    if(length(cols) == 1L && cols == '')
-        cols <- cc
-    if(is.character(cols)) {
-        if(!all(cols %in% cc))
-            stop("Invalid column names: ", paste(cols[which(!cols %in% cc)], collapse=", "))
-        cols_ind <- match(cols, cc)
-    } else {
-        if(any(cols < 1L | cols > length(cc)))
-            stop('out of range explanatory variable ', paste(cols[cols < 1L | cols > length(cc)], collapse=','))
-        cols_ind <- cols
-        cols <- cc[cols_ind]
-    }
+  cc <- colnames(chk.H2OFrame(data))
+  if(length(cols) == 1L && cols == '')
+    cols <- cc
+  if(is.character(cols)) {
+    if(!all(cols %in% cc))
+      stop("Invalid column names: ", paste(cols[which(!cols %in% cc)], collapse=", "))
+    cols_ind <- match(cols, cc)
+  } else {
+    if(any(cols < 1L | cols > length(cc)))
+      stop('out of range explanatory variable ', paste(cols[cols < 1L | cols > length(cc)], collapse=','))
+    cols_ind <- cols
+    cols <- cc[cols_ind]
+  }
 
-    cols_ignore <- setdiff(cc, cols)
-    if( length(cols_ignore) == 0L )
-        cols_ignore <- ''
-    list(cols=cols, cols_ind=cols_ind, cols_ignore=cols_ignore)
+  cols_ignore <- setdiff(cc, cols)
+  if( length(cols_ignore) == 0L )
+    cols_ignore <- ''
+  list(cols=cols, cols_ind=cols_ind, cols_ignore=cols_ignore)
 }
 
 .build_cm <- function(cm, actual_names = NULL, predict_names = actual_names, transpose = TRUE) {
-    categories <- length(cm)
-    cf_matrix <- matrix(unlist(cm), nrow=categories)
-    if(transpose)
-        cf_matrix <- t(cf_matrix)
+  categories <- length(cm)
+  cf_matrix <- matrix(unlist(cm), nrow=categories)
+  if(transpose)
+    cf_matrix <- t(cf_matrix)
 
-    cf_total <- apply(cf_matrix, 2L, sum)
-    cf_error <- c(1 - diag(cf_matrix)/apply(cf_matrix,1L,sum), 1 - sum(diag(cf_matrix))/sum(cf_matrix))
-    cf_matrix <- rbind(cf_matrix, cf_total)
-    cf_matrix <- cbind(cf_matrix, round(cf_error, 3L))
+  cf_total <- apply(cf_matrix, 2L, sum)
+  cf_error <- c(1 - diag(cf_matrix)/apply(cf_matrix,1L,sum), 1 - sum(diag(cf_matrix))/sum(cf_matrix))
+  cf_matrix <- rbind(cf_matrix, cf_total)
+  cf_matrix <- cbind(cf_matrix, round(cf_error, 3L))
 
-    if(!is.null(actual_names))
-        dimnames(cf_matrix) = list(Actual = c(actual_names, "Totals"), Predicted = c(predict_names, "Error"))
-    cf_matrix
+  if(!is.null(actual_names))
+    dimnames(cf_matrix) = list(Actual = c(actual_names, "Totals"), Predicted = c(predict_names, "Error"))
+  cf_matrix
 }
 
 
 .h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION, verbose=FALSE) {
-    if( !is.null(params$validation_frame) )
-        .eval.frame(params$training_frame)
-    if( !is.null(params$validation_frame) )
-        .eval.frame(params$validation_frame)
-    if (length(grep("stopping_metric", attributes(params)))>0) {
-        if (params$stopping_metric=="r2")
-            stop("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://github.com/h2oai/h2o-3/issues/12248 for progress.")
-    }
-    if (algo=="pca" && is.null(params$k)) # make sure to set k=1 for default for pca
-        params$k=1
-    job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
-    .h2o.getFutureModel(job, verbose = verbose)
+  if( !is.null(params$validation_frame) )
+    .eval.frame(params$training_frame)
+  if( !is.null(params$validation_frame) )
+    .eval.frame(params$validation_frame)
+  if (length(grep("stopping_metric", attributes(params)))>0) {
+    if (params$stopping_metric=="r2")
+      stop("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://github.com/h2oai/h2o-3/issues/12248 for progress.")
+  }
+  if (algo=="pca" && is.null(params$k)) # make sure to set k=1 for default for pca
+    params$k=1
+  job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
+  .h2o.getFutureModel(job, verbose = verbose)
 }
 
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
-    .key.validate(params$key)
-    #---------- Params ----------#
-    param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
-    #---------- Build! ----------#
-    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
-    .h2o.processResponseWarnings(res)
-    #---------- Output ----------#
-    job_key  <- res$job$key$name
-    dest_key <- res$job$dest$name
-    new("H2OModelFuture",job_key=job_key, model_id=dest_key)
+  .key.validate(params$key)
+  #---------- Params ----------#
+  param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
+  #---------- Build! ----------#
+  res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  .h2o.processResponseWarnings(res)
+  #---------- Output ----------#
+  job_key  <- res$job$key$name
+  dest_key <- res$job$dest$name
+  new("H2OModelFuture",job_key=job_key, model_id=dest_key)
 }
 
 .h2o.makeModelParams <- function(algo, params, h2oRestApiVersion) {
-    #---------- Force evaluate temporary ASTs ----------#
-    ALL_PARAMS <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
-    #---------- Check user parameter types ----------#
-    param_values <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
-    #---------- Validate parameters ----------#
-    #.h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
-    return(param_values)
+  #---------- Force evaluate temporary ASTs ----------#
+  ALL_PARAMS <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+  #---------- Check user parameter types ----------#
+  param_values <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
+  #---------- Validate parameters ----------#
+  #.h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
+  return(param_values)
 }
 
 .h2o.processResponseWarnings <- function(res) {
-    if(length(res$messages) != 0L){
-        warn <- lapply(res$messages, function(y) {
-            if(is.list(y) && y$message_type == "WARN" )
-                paste0(y$message, ".\n")
-            else ""
-        })
-        if(any(nzchar(warn))) warning(warn)
-    }
+  if(length(res$messages) != 0L){
+    warn <- lapply(res$messages, function(y) {
+      if(is.list(y) && y$message_type == "WARN" )
+        paste0(y$message, ".\n")
+      else ""
+    })
+    if(any(nzchar(warn))) warning(warn)
+  }
 }
 
 .h2o.startSegmentModelsJob <- function(algo, segment_params, params, h2oRestApiVersion) {
-    #---------- Params ----------#
-    param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
-    param_values$segment_models_id <- segment_params$segment_models_id
-    param_values$segment_columns <- .collapse.char(segment_params$segment_columns)
-    param_values$parallelism <- segment_params$parallelism
-    #---------- Build! ----------#
-    job <- .h2o.__remoteSend(method = "POST", .h2o.__SEGMENT_MODELS_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
-    job_key  <- job$key$name
-    dest_key <- job$dest$name
-    new("H2OSegmentModelsFuture",job_key=job_key, segment_models_id=dest_key)
+  #---------- Params ----------#
+  param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
+  param_values$segment_models_id <- segment_params$segment_models_id
+  param_values$segment_columns <- .collapse.char(segment_params$segment_columns)
+  param_values$parallelism <- segment_params$parallelism 
+  #---------- Build! ----------#
+  job <- .h2o.__remoteSend(method = "POST", .h2o.__SEGMENT_MODELS_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  job_key  <- job$key$name
+  dest_key <- job$dest$name
+  new("H2OSegmentModelsFuture",job_key=job_key, segment_models_id=dest_key)
 }
 
 .h2o.segmentModelsJob <- function(algo, segment_params, params, h2oRestApiVersion) {
-    .key.validate(segment_params$segment_models_id)
-    sm <- .h2o.startSegmentModelsJob(algo, segment_params, params, h2oRestApiVersion)
-    .h2o.getFutureSegmentModels(sm)
+  .key.validate(segment_params$segment_models_id)
+  sm <- .h2o.startSegmentModelsJob(algo, segment_params, params, h2oRestApiVersion)
+  .h2o.getFutureSegmentModels(sm)
 }
 
 .h2o.getFutureSegmentModels <- function(object) {
-    .h2o.__waitOnJob(object@job_key)
-    h2o.get_segment_models(object@segment_models_id)
+  .h2o.__waitOnJob(object@job_key)
+  h2o.get_segment_models(object@segment_models_id)
 }
 
 #
@@ -190,124 +190,124 @@ NULL
 # REST end-point. Stop execution in case of validation error.
 #
 .h2o.validateModelParameters <- function(algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-    validation <- .h2o.__remoteSend(method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = params, h2oRestApiVersion = h2oRestApiVersion)
-    if(length(validation$messages) != 0L) {
-        error <- lapply(validation$messages, function(x) {
-            if( x$message_type == "ERRR" )
-                paste0(x$message, ".\n")
-            else ""
-        })
-        if(any(nzchar(error))) stop(error)
-        warn <- lapply(validation$messages, function(i) {
-            if( i$message_type == "WARN" )
-                paste0(i$message, ".\n")
-            else ""
-        })
-        if(any(nzchar(warn))) warning(warn)
-    }
+  validation <- .h2o.__remoteSend(method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = params, h2oRestApiVersion = h2oRestApiVersion)
+  if(length(validation$messages) != 0L) {
+    error <- lapply(validation$messages, function(x) {
+      if( x$message_type == "ERRR" )
+        paste0(x$message, ".\n")
+      else ""
+    })
+    if(any(nzchar(error))) stop(error)
+    warn <- lapply(validation$messages, function(i) {
+      if( i$message_type == "WARN" )
+        paste0(i$message, ".\n")
+      else ""
+    })
+    if(any(nzchar(warn))) warning(warn)
+  }
 }
 
 .h2o.createModel <- function(algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-    .h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
+  .h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
 .h2o.pollModelUpdates <- function(job) {
-    cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
-    print(paste0("Model Build is ", job$progress*100, "% done..."))
-    if(!is.null(job$progress_msg)){
-        #   print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
-    }else{
-        print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
-    }
+  cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
+  print(paste0("Model Build is ", job$progress*100, "% done..."))
+  if(!is.null(job$progress_msg)){
+  #   print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
+  }else{
+    print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
+  }
 }
 
 .h2o.getFutureModel <- function(object, verbose=FALSE) {
-    .h2o.__waitOnJob(object@job_key, pollUpdates=ifelse(verbose, .h2o.pollModelUpdates, as.null))
-    h2o.getModel(object@model_id)
+  .h2o.__waitOnJob(object@job_key, pollUpdates=ifelse(verbose, .h2o.pollModelUpdates, as.null))
+  h2o.getModel(object@model_id)
 }
 
 .h2o.prepareModelParameters <- function(algo, params, is_supervised) {
-    if (!is.null(params$training_frame))
-        params$training_frame <- chk.H2OFrame(params$training_frame)
-    if (!is.null(params$validation_frame))
-        params$validation_frame <- chk.H2OFrame(params$validation_frame)
+  if (!is.null(params$training_frame))
+    params$training_frame <- chk.H2OFrame(params$training_frame)
+  if (!is.null(params$validation_frame))
+    params$validation_frame <- chk.H2OFrame(params$validation_frame)
 
-    # Check if specified model request is for supervised algo
-    isSupervised <- if (!is.null(is_supervised)) is_supervised else .isSupervised(algo, params)
+  # Check if specified model request is for supervised algo
+  isSupervised <- if (!is.null(is_supervised)) is_supervised else .isSupervised(algo, params)
 
-    if (isSupervised) {
-        if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
-        if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
-        args <- .verify_dataxy(params$training_frame, x, y)
-        if( !is.null(params$offset_column) && !is.null(params$offset_column))  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
-        if( !is.null(params$weights_column) && !is.null(params$weights_column)) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
-        if( !is.null(params$fold_column) && !is.null(params$fold_column)) args$x_ignore <- args$x_ignore[!( params$fold_column == args$x_ignore )]
-        params$ignored_columns <- args$x_ignore
-        params$response_column <- args$y
-    } else {
-        if (!is.null(params$x)) {
-            x <- params$x
-            params$x <- NULL
-            args <- .verify_datacols(params$training_frame, x)
-            params$ignored_columns <- args$cols_ignore
-        }
+  if (isSupervised) {
+    if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
+    if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
+    args <- .verify_dataxy(params$training_frame, x, y)
+    if( !is.null(params$offset_column) && !is.null(params$offset_column))  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+    if( !is.null(params$weights_column) && !is.null(params$weights_column)) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+    if( !is.null(params$fold_column) && !is.null(params$fold_column)) args$x_ignore <- args$x_ignore[!( params$fold_column == args$x_ignore )]
+    params$ignored_columns <- args$x_ignore
+    params$response_column <- args$y
+  } else {
+    if (!is.null(params$x)) {
+      x <- params$x
+      params$x <- NULL
+      args <- .verify_datacols(params$training_frame, x)
+      params$ignored_columns <- args$cols_ignore
     }
-    # Note: Magic copied from start .h2o.startModelJob
-    params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
-    params
+  }
+  # Note: Magic copied from start .h2o.startModelJob
+  params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
+  params
 }
 
 .h2o.getModelParameters <- function(algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-    .h2o.__remoteSend(method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
+  .h2o.__remoteSend(method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
 }
 
 .h2o.checkAndUnifyModelParameters <- function(algo, allParams, params, hyper_params = list()) {
-    addGamCol <- FALSE
-    if (algo == "gam") {# gam_column is specified in subspace and need to fake something here
-        if (is.null(params$gam_columns) && !(is.null(hyper_params$subspaces)) && !(is.null(hyper_params$subspaces[[1]]$gam_columns))) {
-            addGamCol <- TRUE
-            params$gam_columns = list("C1")  # set default gam_columns
-        }
+  addGamCol <- FALSE
+  if (algo == "gam") {# gam_column is specified in subspace and need to fake something here
+    if (is.null(params$gam_columns) && !(is.null(hyper_params$subspaces)) && !(is.null(hyper_params$subspaces[[1]]$gam_columns))) {
+      addGamCol <- TRUE
+      params$gam_columns = list("C1")  # set default gam_columns
     }
-    # First verify all parameters
-    error <- lapply(allParams, function(i) {
-        e <- ""
-        name <- i$name
-        # R treats integer as not numeric
-        if(is.integer(params[[name]])){
-            params[[name]] <- as.numeric(params[[name]])
-        }
-        if (i$required && !((name %in% names(params)) || (name %in% names(hyper_params)))) {
-            e <- paste0("argument \"", name, "\" is missing, with no default\n")
-        } else if (name %in% names(params)) {
-            e <- .h2o.checkParam(i, params[[name]])
-            if (!nzchar(e)) {
-                params[[name]] <<- .h2o.transformParam(i, params[[name]])
-            }
-        }
-        e
-    })
+  }
+  # First verify all parameters
+  error <- lapply(allParams, function(i) {
+    e <- ""
+    name <- i$name
+    # R treats integer as not numeric
+    if(is.integer(params[[name]])){
+      params[[name]] <- as.numeric(params[[name]])
+    }
+    if (i$required && !((name %in% names(params)) || (name %in% names(hyper_params)))) {
+      e <- paste0("argument \"", name, "\" is missing, with no default\n")
+    } else if (name %in% names(params)) {
+      e <- .h2o.checkParam(i, params[[name]])
+      if (!nzchar(e)) {
+        params[[name]] <<- .h2o.transformParam(i, params[[name]])
+      }
+    }
+    e
+  })
 
-    if (addGamCol)
-        params$gam_columns <- NULL
+  if (addGamCol)
+    params$gam_columns <- NULL
+  
+  if(any(nzchar(error)))
+    stop(error)
 
-    if(any(nzchar(error)))
-        stop(error)
+  #---------- Create parameter list to pass ----------#
+  param_values <- lapply(params, function(i) {
+    if(is.H2OFrame(i))  h2o.getId(i)
+    else             i
+  })
 
-    #---------- Create parameter list to pass ----------#
-    param_values <- lapply(params, function(i) {
-        if(is.H2OFrame(i))  h2o.getId(i)
-        else             i
-    })
-
-    param_values
+  param_values
 }
 
 # Long precision
 .is.int64 <- function(v) {
-    number <- suppressWarnings(as.numeric(v))
-    if(is.na(number)) FALSE
-    else number > -2^63 & number < 2^63 & (floor(number)==ceiling(number))
+  number <- suppressWarnings(as.numeric(v))
+  if(is.na(number)) FALSE
+  else number > -2^63 & number < 2^63 & (floor(number)==ceiling(number))
 }
 
 # Precise int in double presision
@@ -321,124 +321,124 @@ NULL
 # Returns error message or empty string
 # Note: this function has no side-effects!
 .h2o.checkParam <- function(paramDef, paramValue) {
-    e <- ""
-    # Fetch mapping for given Java to R types
-    mapping <- .type.map[paramDef$type,]
-    type    <- mapping[1L, 1L]
-    scalar  <- mapping[1L, 2L]
-    name    <- paramDef$name
-    if (is.na(type))
-        stop("Cannot find type ", paramDef$type, " in .type.map")
-    if (scalar) { # scalar == TRUE
-        if (type == "H2OModel")
-            type <-  "character"
-        if (name == "seed") {
-            if(is.character(paramValue) && !.is.int64(paramValue))
-                e <- paste0("\"seed\" must be of type long or string long, but got a string which cannot be converted to long.\n")
-            else if(is.numeric(paramValue)){
-                if(!.is.int64(paramValue)){
-                    e <- paste0("\"seed\" must be of type long or string long, but got a number which cannot be converted to long.\n")
-                } else if(!.is.int53(paramValue)) {
-                    warning("R can handle only 53-bit integer without loss. 
+  e <- ""
+  # Fetch mapping for given Java to R types
+  mapping <- .type.map[paramDef$type,]
+  type    <- mapping[1L, 1L]
+  scalar  <- mapping[1L, 2L]
+  name    <- paramDef$name
+  if (is.na(type))
+    stop("Cannot find type ", paramDef$type, " in .type.map")
+  if (scalar) { # scalar == TRUE
+    if (type == "H2OModel")
+      type <-  "character"
+      if (name == "seed") {
+        if(is.character(paramValue) && !.is.int64(paramValue))
+          e <- paste0("\"seed\" must be of type long or string long, but got a string which cannot be converted to long.\n")
+        else if(is.numeric(paramValue)){
+          if(!.is.int64(paramValue)){
+            e <- paste0("\"seed\" must be of type long or string long, but got a number which cannot be converted to long.\n")
+          } else if(!.is.int53(paramValue)) {
+              warning("R can handle only 53-bit integer without loss. 
               If you need to use a less/larger number than the integer, pass seed parameter as the string number. Otherwise, the seed could be inconsistent.
               (For example, if you need to use autogenerated seed like -8664354335142703762 from H2O server.)")
-                }
-            }
-        } else {
-            if (!inherits(paramValue, type)) {
-                e <- paste0(e, "\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
-            } else if ((length(paramDef$values) > 1L) && (is.null(paramValue) || !(tolower(paramValue) %in% tolower(paramDef$values)))) {
-                e <- paste0(e, "\"", name,"\" must be in")
-                for (fact in paramDef$values)
-                    e <- paste0(e, " \"", fact, "\",")
-                e <- paste(e, "but got", paramValue)
-            }
+          }
         }
+      } else {
+        if (!inherits(paramValue, type)) {
+          e <- paste0(e, "\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
+        } else if ((length(paramDef$values) > 1L) && (is.null(paramValue) || !(tolower(paramValue) %in% tolower(paramDef$values)))) {
+          e <- paste0(e, "\"", name,"\" must be in")
+          for (fact in paramDef$values)
+            e <- paste0(e, " \"", fact, "\",")
+          e <- paste(e, "but got", paramValue)
+        }
+      }
     } else {      # scalar == FALSE
-        if (!inherits(paramValue, type))
-            e <- paste0("vector of ", name, " must be of type ", type, ", but got ", class(paramValue), ".\n")
+      if (!inherits(paramValue, type))
+        e <- paste0("vector of ", name, " must be of type ", type, ", but got ", class(paramValue), ".\n")
     }
-    e
+  e
 }
 
 .h2o.transformParam <- function(paramDef, paramValue, collapseArrays = TRUE) {
-    # Fetch mapping for given Java to R types
-    mapping <- .type.map[paramDef$type,]
-    type    <- mapping[1L, 1L]
-    scalar  <- mapping[1L, 2L]
-    name    <- paramDef$name
-    if (scalar) { # scalar == TRUE
-        if (inherits(paramValue, 'numeric') && paramValue ==  Inf) {
-            paramValue <- "Infinity"
-        } else if (inherits(paramValue, 'numeric') && paramValue == -Inf) {
-            paramValue <- "-Infinity"
-        }
-    } else {      # scalar == FALSE
-        if (inherits(paramValue, 'numeric')) {
-            k = which(paramValue == Inf | paramValue == -Inf)
-            if (length(k) > 0)
-                for (n in k)
-                    if (paramValue[n] == Inf)
-                        paramValue[n] <- "Infinity"
-                    else
-                        paramValue[n] <- "-Infinity"
-        }
-        if (collapseArrays) {
-            if(any(sapply(paramValue, function(x) !is.null(x) && is.H2OFrame(x))))
-                paramValue <- lapply( paramValue, function(x) {
-                    if (is.null(x)) NULL
-                    else if (all(is.na(x))) NA
-                    else paste0('"',h2o.getId(x),'"')
-                })
-            if (paramDef$type == "string[][]"){
-                paramValue <- .collapse.list.of.list.string(paramValue)
-            } else if (type == "character")
-                paramValue <- .collapse.char(paramValue)
-            else if (paramDef$type == "StringPair[]")
-                paramValue <- .collapse(sapply(paramValue, .collapse.tuple.string))
-            else if (paramDef$type == "KeyValue[]") {
-                f <- function(i) { .collapse.tuple.key_value(paramValue[i]) }
-                paramValue <- .collapse(sapply(seq(length(paramValue)), f))
-            } else
-                paramValue <- .collapse(paramValue)
-        }
+  # Fetch mapping for given Java to R types
+  mapping <- .type.map[paramDef$type,]
+  type    <- mapping[1L, 1L]
+  scalar  <- mapping[1L, 2L]
+  name    <- paramDef$name
+  if (scalar) { # scalar == TRUE
+    if (inherits(paramValue, 'numeric') && paramValue ==  Inf) {
+      paramValue <- "Infinity"
+    } else if (inherits(paramValue, 'numeric') && paramValue == -Inf) {
+      paramValue <- "-Infinity"
     }
-    if( is.H2OFrame(paramValue) )
-        paramValue <- h2o.getId(paramValue)
-    paramValue
+  } else {      # scalar == FALSE
+    if (inherits(paramValue, 'numeric')) {
+        k = which(paramValue == Inf | paramValue == -Inf)
+        if (length(k) > 0)
+          for (n in k)
+            if (paramValue[n] == Inf)
+              paramValue[n] <- "Infinity"
+            else
+              paramValue[n] <- "-Infinity"
+    }
+    if (collapseArrays) {
+      if(any(sapply(paramValue, function(x) !is.null(x) && is.H2OFrame(x))))
+         paramValue <- lapply( paramValue, function(x) {
+                            if (is.null(x)) NULL
+                            else if (all(is.na(x))) NA
+                            else paste0('"',h2o.getId(x),'"')
+                          })
+      if (paramDef$type == "string[][]"){
+        paramValue <- .collapse.list.of.list.string(paramValue)
+      } else if (type == "character")
+        paramValue <- .collapse.char(paramValue)
+      else if (paramDef$type == "StringPair[]")
+        paramValue <- .collapse(sapply(paramValue, .collapse.tuple.string))
+      else if (paramDef$type == "KeyValue[]") {
+        f <- function(i) { .collapse.tuple.key_value(paramValue[i]) }
+        paramValue <- .collapse(sapply(seq(length(paramValue)), f))
+      } else
+        paramValue <- .collapse(paramValue)
+    }
+  }
+  if( is.H2OFrame(paramValue) )
+    paramValue <- h2o.getId(paramValue)
+  paramValue
 }
 
 .escape.string <- function(xi) { paste0("\"", xi, "\"") }
 
 .collapse.tuple.string <- function(x) {
-    .collapse.tuple(x, .escape.string)
+  .collapse.tuple(x, .escape.string)
 }
 
 .collapse.list.of.list.string <- function(x){
-    parts <- c()
-    for (i in x) {
-        parts <- c(parts, paste0("[", paste0(i, collapse = ","), "]"))
-    }
-    paste0("[", paste0(parts, collapse = ","), "]")
+  parts <- c()
+  for (i in x) {
+    parts <- c(parts, paste0("[", paste0(i, collapse = ","), "]"))
+  }
+  paste0("[", paste0(parts, collapse = ","), "]")
 }
 
 .collapse.tuple.key_value <- function(x) {
-    .collapse.tuple(list(
-        key = .escape.string(names(x)),
-        value = x[[1]]
-    ), identity)
+  .collapse.tuple(list(
+    key = .escape.string(names(x)),
+    value = x[[1]]
+  ), identity)
 }
 
 .collapse.tuple <- function(x, escape) {
-    names <- names(x)
-    if (is.null(names))
-        names <- letters[1:length(x)]
-    r <- c()
-    for (i in 1:length(x)) {
-        s <- paste0(names[i], ": ", escape(x[i]))
-        r <- c(r, s)
-    }
-    paste0("{", paste0(r, collapse = ","), "}")
+  names <- names(x)
+  if (is.null(names))
+    names <- letters[1:length(x)]
+  r <- c()
+  for (i in 1:length(x)) {
+    s <- paste0(names[i], ": ", escape(x[i]))
+    r <- c(r, s)
+  }
+  paste0("{", paste0(r, collapse = ","), "}")
 }
 
 # Validate a given set of hyper parameters
@@ -447,57 +447,57 @@ NULL
 # would do.
 .h2o.checkAndUnifyHyperParameters <- function(algo, allParams, hyper_params, do_hyper_params_check) {
 
-    errors <- lapply(allParams, function(paramDef) {
-        e <- ""
-        name <- paramDef$name
-        hyper_names <- names(hyper_params)
-        # First reject all non-gridable hyper parameters
-        if (!paramDef$gridable && (name %in% hyper_names)) {
-            e <- paste0("argument \"", name, "\" is not gridable\n")
-        } else if (name %in% hyper_names) { # Check all specified hyper parameters
-            # Hyper values for `name` parameter
-            hyper_vals <- hyper_params[[name]]
-            # Collect all possible verification errors
-            if (do_hyper_params_check) {
-                he <- lapply(hyper_vals, function(hv) {
-                    # Transform all integer values to numeric
-                    hv <- if (is.integer(hv)) as.numeric(hv) else hv
-                    .h2o.checkParam(paramDef, hv)
+  errors <- lapply(allParams, function(paramDef) {
+      e <- ""
+      name <- paramDef$name
+      hyper_names <- names(hyper_params)
+      # First reject all non-gridable hyper parameters
+      if (!paramDef$gridable && (name %in% hyper_names)) {
+        e <- paste0("argument \"", name, "\" is not gridable\n")
+      } else if (name %in% hyper_names) { # Check all specified hyper parameters
+        # Hyper values for `name` parameter
+        hyper_vals <- hyper_params[[name]]
+        # Collect all possible verification errors
+        if (do_hyper_params_check) {
+          he <- lapply(hyper_vals, function(hv) {
+                  # Transform all integer values to numeric
+                  hv <- if (is.integer(hv)) as.numeric(hv) else hv
+                  .h2o.checkParam(paramDef, hv)
                 })
-                e <- paste(he, collapse='')
-            }
-            # If there is no error then transform hyper values
-            if (!nzchar(e)) {
-                is_scalar <- .type.map[paramDef$type,][1L, 2L]
-                transf_fce <- function(hv) {
-                    # R does not treat integers as numeric
-                    if (is.integer(hv)) {
-                        hv <- as.numeric(hv)
-                    }
-                    mapping <- .type.map[paramDef$type,]
-                    type <- mapping[1L, 1L]
-                    # Note: we apply this transformatio also for types
-                    # reported by the backend as scalar because of PUBDEV-1955
-                    if (is.list(hv)) {
-                        hv <- as.vector(hv, mode=type)
-                    }
-                    # Force evaluation of frames and fetch frame_id as
-                    # a side effect
-                    if (is.H2OFrame(hv) )
-                        hv <- h2o.getId(hv)
-                    .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
-                }
-                transf_hyper_vals <- if (is_scalar) sapply(hyper_vals,transf_fce) else lapply(hyper_vals, transf_fce)
-                hyper_params[[name]] <<- transf_hyper_vals
-            }
+          e <- paste(he, collapse='')
         }
-        e
-    })
+        # If there is no error then transform hyper values
+        if (!nzchar(e)) {
+          is_scalar <- .type.map[paramDef$type,][1L, 2L]
+          transf_fce <- function(hv) {
+                          # R does not treat integers as numeric
+                          if (is.integer(hv)) {
+                            hv <- as.numeric(hv)
+                          }
+                          mapping <- .type.map[paramDef$type,]
+                          type <- mapping[1L, 1L]
+                          # Note: we apply this transformatio also for types
+                          # reported by the backend as scalar because of PUBDEV-1955
+                          if (is.list(hv)) {
+                            hv <- as.vector(hv, mode=type)
+                          }
+                          # Force evaluation of frames and fetch frame_id as
+                          # a side effect
+                          if (is.H2OFrame(hv) )
+                            hv <- h2o.getId(hv)
+                          .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
+                        }
+          transf_hyper_vals <- if (is_scalar) sapply(hyper_vals,transf_fce) else lapply(hyper_vals, transf_fce)
+          hyper_params[[name]] <<- transf_hyper_vals
+        }
+      }
+      e
+  })
 
-    if(any(nzchar(errors)))
-        stop(errors)
+  if(any(nzchar(errors)))
+    stop(errors)
 
-    hyper_params
+  hyper_params
 }
 
 #' Predict on an H2O Model
@@ -543,7 +543,7 @@ NULL
 #' }
 #' @export
 predict.H2OModel <- function(object, newdata, ...) {
-    h2o.predict.H2OModel(object, newdata, ...)
+  h2o.predict.H2OModel(object, newdata, ...)
 }
 
 #' Predict on an H2O Model
@@ -556,7 +556,7 @@ predict.H2OModel <- function(object, newdata, ...) {
 #'         default predictions.
 #' @export
 h2o.predict <- function(object, newdata, ...){
-    UseMethod("h2o.predict", object)
+  UseMethod("h2o.predict", object)
 }
 
 #' Use H2O Transformation model and apply the underlying transformation
@@ -566,10 +566,10 @@ h2o.predict <- function(object, newdata, ...){
 #' @return Returns an H2OFrame object with data transformed.
 #' @export
 setGeneric("h2o.transform", function(model, ...) {
-    if(!is(model, "H2OModel")) {
-        stop(paste("Argument 'model' must be an H2O Model. Received:", class(model)))
-    }
-    standardGeneric("h2o.transform")
+  if(!is(model, "H2OModel")) {
+    stop(paste("Argument 'model' must be an H2O Model. Received:", class(model)))
+  }
+  standardGeneric("h2o.transform")
 })
 
 
@@ -602,7 +602,7 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
             argval <- varargs[[arg]]
             if (arg == 'data_leakage_handling' && argval != "None") {
                 warning(paste0("Deprecated `data_leakage_handling=",argval,"` is replaced by `as_training=True`. ",
-                               "Please update your code."))
+                        "Please update your code."))
                 as_training <- TRUE
             }
         } else if (arg == 'use_blending') {
@@ -629,13 +629,13 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
         params$noise <- noise
     }
     params$as_training <- as_training
-
+    
     res <- .h2o.__remoteSend(
         "TargetEncoderTransform",
         method = "GET",
         h2oRestApiVersion = 3,.params = params
     )
-
+  
     h2o.getFrame(res$name)
 })
 
@@ -666,20 +666,20 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
 #' }
 #' @export
 setMethod("h2o.transform", signature("H2OWordEmbeddingModel"), function(model, words, aggregate_method = c("NONE", "AVERAGE")) {
-
-    if (!is(model, "H2OModel")) stop(paste("The argument 'model' must be a word2vec model. Received:", class(model)))
-    if (missing(words)) stop("`words` must be specified")
-    if (!is.H2OFrame(words)) stop("`words` must be an H2OFrame")
-    if (ncol(words) != 1) stop("`words` frame must contain a single string column")
-
-    if (length(aggregate_method) > 1)
-        aggregate_method <- aggregate_method[1]
-
-    res <- .h2o.__remoteSend(method="GET", "Word2VecTransform", model = model@model_id,
-                             words_frame = h2o.getId(words), aggregate_method = aggregate_method)
-    key <- res$vectors_frame$name
-    h2o.getFrame(key)
-
+  
+  if (!is(model, "H2OModel")) stop(paste("The argument 'model' must be a word2vec model. Received:", class(model)))
+  if (missing(words)) stop("`words` must be specified")
+  if (!is.H2OFrame(words)) stop("`words` must be an H2OFrame")
+  if (ncol(words) != 1) stop("`words` frame must contain a single string column")
+  
+  if (length(aggregate_method) > 1)
+    aggregate_method <- aggregate_method[1]
+  
+  res <- .h2o.__remoteSend(method="GET", "Word2VecTransform", model = model@model_id,
+                           words_frame = h2o.getId(words), aggregate_method = aggregate_method)
+  key <- res$vectors_frame$name
+  h2o.getFrame(key)
+  
 })
 
 
@@ -688,17 +688,17 @@ setMethod("h2o.transform", signature("H2OWordEmbeddingModel"), function(model, w
 #' @rdname predict.H2OModel
 #' @export
 h2o.predict.H2OModel <- function(object, newdata, ...) {
-    if (missing(newdata)) {
-        stop("predictions with a missing `newdata` argument is not implemented yet")
-    }
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
 
-    # Send keys to create predictions
-    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-    res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
-    job_key <- res$key$name
-    dest_key <- res$dest$name
-    .h2o.__waitOnJob(job_key)
-    h2o.getFrame(dest_key)
+  # Send keys to create predictions
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 
 #' Predict the Leaf Node Assignment on an H2O Model
@@ -734,21 +734,21 @@ h2o.predict.H2OModel <- function(object, newdata, ...) {
 #' }
 #' @export
 predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Path", "Node_ID"), ...) {
-    if (missing(newdata)) {
-        stop("predictions with a missing `newdata` argument is not implemented yet")
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
+  params <- list(leaf_node_assignment = TRUE)
+  if (!missing(type)) {
+    if (!(type %in% c("Path", "Node_ID"))) {
+      stop("type must be one of: Path, Node_ID")
     }
-    params <- list(leaf_node_assignment = TRUE)
-    if (!missing(type)) {
-        if (!(type %in% c("Path", "Node_ID"))) {
-            stop("type must be one of: Path, Node_ID")
-        }
-        params$leaf_node_assignment_type <- type
-    }
+    params$leaf_node_assignment_type <- type
+  }
 
-    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-    res <- .h2o.__remoteSend(url, method = "POST", .params = params)
-    res <- res$predictions_frame
-    h2o.getFrame(res$name)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method = "POST", .params = params)
+  res <- res$predictions_frame
+  h2o.getFrame(res$name)
 }
 
 #' @rdname predict_leaf_node_assignment.H2OModel
@@ -756,53 +756,53 @@ predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Pat
 h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 
 h2o.transform_frame <- function(model, fr) {
-    if (!is(model, "H2OModel") || (is(model, "H2OModel") && model@algorithm != "glrm")) stop("h2o.transform_frame can only be applied to GLRM H2OModel instance.")
-    return(.newExpr("transform", model@model_id, h2o.getId(fr)))
+  if (!is(model, "H2OModel") || (is(model, "H2OModel") && model@algorithm != "glrm")) stop("h2o.transform_frame can only be applied to GLRM H2OModel instance.")
+  return(.newExpr("transform", model@model_id, h2o.getId(fr)))
 }
 
 h2o.result <- function(model) {
-    if (!is(model, "H2OModel")) stop("h2o.result can only be applied to H2OModel instances with constant results")
-    return(.newExpr("result", model@model_id))
+  if (!is(model, "H2OModel")) stop("h2o.result can only be applied to H2OModel instances with constant results")
+  return(.newExpr("result", model@model_id))
 }
 
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random")) {
-    output <- data.frame()
+  output <- data.frame()
 
-    if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
-    if( missing(model) & missing(model.type) ) stop("must declare `model` or `model.type`")
-    else if( missing(model) )
-    {
-        if(model.type == "gbm") model.type = "h2o.gbm"
-        else if(model.type == "glm") model.type = "h2o.glm"
-        else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
+  if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
+  if( missing(model) & missing(model.type) ) stop("must declare `model` or `model.type`")
+  else if( missing(model) )
+  {
+    if(model.type == "gbm") model.type = "h2o.gbm"
+    else if(model.type == "glm") model.type = "h2o.glm"
+    else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
 
-        model <- do.call(model.type, c(params))
-    }
-    output[1, "fold_num"] <- -1
-    output[1, "model_key"] <- model@model_id
-    # output[1, "model"] <- model@model$mse_valid
+    model <- do.call(model.type, c(params))
+  }
+  output[1, "fold_num"] <- -1
+  output[1, "model_key"] <- model@model_id
+  # output[1, "model"] <- model@model$mse_valid
 
-    data <- params$training_frame
-    data <- eval(data)
-    data.len <- nrow(data)
+  data <- params$training_frame
+  data <- eval(data)
+  data.len <- nrow(data)
 
-    # nfold_vec <- h2o.sample(fr, 1:nfolds)
-    nfold_vec <- sample(rep(1:nfolds, length.out = data.len), data.len)
+  # nfold_vec <- h2o.sample(fr, 1:nfolds)
+  nfold_vec <- sample(rep(1:nfolds, length.out = data.len), data.len)
 
-    fnum_id <- as.h2o(nfold_vec)
-    fnum_id <- h2o.cbind(fnum_id, data)
+  fnum_id <- as.h2o(nfold_vec)
+  fnum_id <- h2o.cbind(fnum_id, data)
 
-    xval <- lapply(1:nfolds, function(i) {
-        params$training_frame   <- data[fnum_id[,1] != i, ]
-        params$validation_frame <- data[fnum_id[,1] == i, ]
-        fold <- do.call(model.type, c(params))
-        output[(i+1), "fold_num"] <<- i - 1
-        output[(i+1), "model_key"] <<- fold@model_id
-        # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
-        fold
+  xval <- lapply(1:nfolds, function(i) {
+      params$training_frame   <- data[fnum_id[,1] != i, ]
+      params$validation_frame <- data[fnum_id[,1] == i, ]
+      fold <- do.call(model.type, c(params))
+      output[(i+1), "fold_num"] <<- i - 1
+      output[(i+1), "model_key"] <<- fold@model_id
+      # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
+      fold
     })
 
-    model
+  model
 }
 
 #' Predict class probabilities at each stage of an H2O Model
@@ -833,14 +833,14 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' }
 #' @export
 staged_predict_proba.H2OModel <- function(object, newdata, ...) {
-    if (missing(newdata)) {
-        stop("predictions with a missing `newdata` argument is not implemented yet")
-    }
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
 
-    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-    res <- .h2o.__remoteSend(url, method = "POST", predict_staged_proba=TRUE)
-    res <- res$predictions_frame
-    h2o.getFrame(res$name)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method = "POST", predict_staged_proba=TRUE)
+  res <- res$predictions_frame
+  h2o.getFrame(res$name)
 }
 
 #' @rdname staged_predict_proba.H2OModel
@@ -1021,7 +1021,6 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
 #' @param auc_type For multinomila model only. Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Default is "NONE"
-#' @param auuc_type For binomial model only. Set default AUUC type. Must be one of: "AUTO", "GINI", "GAIN", "LIFT". Default is NULL. 
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -1040,7 +1039,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
-h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type=NULL) {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type="NONE", auuc_nbins=-1) {
 
   # data is now deprecated and the new arg name is newdata
   if (!is.null(data)) {
@@ -1057,13 +1056,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE")
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
   if(!(auc_type %in% c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))) stop("`auc_type` must be \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", or \"WEIGHTED_OVO\".")
-  if(!is.null(auuc_type) && !(auuc_type %in% c("AUTO", "GINI", "LIFT", "GAIN"))) stop("`auuc_type` must be \"AUTO\", \"GINI\", \"LIFT\" or \"GAIN\"." )  
 
   missingNewdata <- missing(newdata) || is.null(newdata)
   if( missingNewdata && auc_type != "NONE") {
     print("WARNING: The `auc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
   }
-  if( missingNewdata && !is.null(auuc_type)) {
+  if( missingNewdata && auuc_type != "NONE") {
     print("WARNING: The `auuc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
   }  
   if( !missingNewdata ) {
@@ -1084,9 +1082,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
         parms[["custom_auuc_thresholds"]] <- paste("[", paste(custom_auuc_thresholds, collapse = ", "),"]")
     if(!is.null(auuc_type)){
         parms[["auuc_type"]] <- auuc_type
-    } else if(!is.null(model@parameters$auuc_type) && !is.null(model@parameters$auuc_type)){
+    } else if(!is.null(model@parameters$auuc_type) && model@parameters$auuc_type != "NONE"){
         parms[["auuc_type"]] <- model@parameters$auuc_type
-    }
+    }  
+    if(auuc_nbins > 0){
+        parms[["auuc_nbins"]] <- auuc_nbins
+    }  
     res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
 
     ####
@@ -1144,60 +1145,60 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
-h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, treatment=NULL,
-                             auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1, custom_auuc_thresholds=NULL) {
-    predicted <- .validate.H2OFrame(predicted, required=TRUE)
-    actuals <- .validate.H2OFrame(actuals, required=TRUE)
-    weights <- .validate.H2OFrame(weights, required=FALSE)
-    treatment <- .validate.H2OFrame(treatment, required=FALSE)
-    if (!is.character(auc_type)) stop("auc_type argument must be of type character")
-    if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
-        stop("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
-    }
-    params <- list()
-    params$predictions_frame <- h2o.getId(predicted)
-    params$actuals_frame <- h2o.getId(actuals)
-    if (!is.null(weights)) {
-        params$weights_frame <- h2o.getId(weights)
-    }
-    if (!is.null(treatment)) {
-        params$treatment_frame <- h2o.getId(treatment)
-        if (!(auuc_type %in% c("qini", "lift", "gain", "AUTO"))) {
-            stop("auuc_type argument must be gini, lift, gain or AUTO")
-        }
-        if (auuc_nbins < -1 || auuc_nbins == 0) {
-            stop("auuc_nbins must be -1 or higher than 0.")
-        }
-        params$auuc_type <- auuc_type
-        params$auuc_nbins <- auuc_nbins
-        params$custom_auuc_thresholds <- paste("[", paste(custom_auuc_thresholds, collapse = ", "),"]")
-    }
-    params$domain <- domain
-    params$distribution <- distribution
+h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, treatment=NULL, 
+                                auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1, custom_auuc_thresholds=NULL) {
+  predicted <- .validate.H2OFrame(predicted, required=TRUE)
+  actuals <- .validate.H2OFrame(actuals, required=TRUE)
+  weights <- .validate.H2OFrame(weights, required=FALSE)
+  treatment <- .validate.H2OFrame(treatment, required=FALSE)
+  if (!is.character(auc_type)) stop("auc_type argument must be of type character")
+  if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
+    stop("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
+  }
+  params <- list()
+  params$predictions_frame <- h2o.getId(predicted)
+  params$actuals_frame <- h2o.getId(actuals)
+  if (!is.null(weights)) {
+    params$weights_frame <- h2o.getId(weights)
+  }
+  if (!is.null(treatment)) {
+      params$treatment_frame <- h2o.getId(treatment)
+      if (!(auuc_type %in% c("qini", "lift", "gain", "AUTO"))) {
+        stop("auuc_type argument must be gini, lift, gain or AUTO")
+      }
+      if (auuc_nbins < -1 || auuc_nbins == 0) {
+        stop("auuc_nbins must be -1 or higher than 0.")
+      }
+      params$auuc_type <- auuc_type
+      params$auuc_nbins <- auuc_nbins
+      params$custom_auuc_thresholds <- paste("[", paste(custom_auuc_thresholds, collapse = ", "),"]")
+  }
+  params$domain <- domain
+  params$distribution <- distribution
 
-    if (is.null(domain) && !is.null(h2o.levels(actuals)))
-        domain <- h2o.levels(actuals)
+  if (is.null(domain) && !is.null(h2o.levels(actuals)))
+    domain <- h2o.levels(actuals)
 
-    ## pythonify the domain
-    if (!is.null(domain)) {
-        out <- paste0('["',domain[1],'"')
-        for (d in 2:length(domain)) {
-            out <- paste0(out,',"',domain[d],'"')
-        }
-        out <- paste0(out, "]")
-        params[["domain"]] <- out
+  ## pythonify the domain
+  if (!is.null(domain)) {
+    out <- paste0('["',domain[1],'"')
+    for (d in 2:length(domain)) {
+      out <- paste0(out,',"',domain[d],'"')
     }
-    params["auc_type"] <- auc_type
-    url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame,"/treatment_frame/",params$treatment_frame)
-    res <- .h2o.__remoteSend(method = "POST", url, .params = params)
-    model_metrics <- res$model_metrics
-    metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
-    name <- "H2ORegressionMetrics"
-    if (!is.null(metrics$auuc_table)) name <- "H2OBinomialUpliftMetrics"
-    else if (!is.null(metrics$AUC) && is.null(metrics$hit_ratio_table)) name <- "H2OBinomialMetrics"
-    else if (!is.null(distribution) && distribution == "ordinal") name <- "H2OOrdinalMetrics"
-    else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
-    new(Class = name, metrics = metrics)
+    out <- paste0(out, "]")
+    params[["domain"]] <- out
+  }
+  params["auc_type"] <- auc_type  
+  url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame,"/treatment_frame/",params$treatment_frame)
+  res <- .h2o.__remoteSend(method = "POST", url, .params = params)
+  model_metrics <- res$model_metrics
+  metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
+  name <- "H2ORegressionMetrics"
+  if (!is.null(metrics$auuc_table)) name <- "H2OBinomialUpliftMetrics"
+  else if (!is.null(metrics$AUC) && is.null(metrics$hit_ratio_table)) name <- "H2OBinomialMetrics"
+  else if (!is.null(distribution) && distribution == "ordinal") name <- "H2OOrdinalMetrics"
+  else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
+  new(Class = name, metrics = metrics)
 }
 
 #' Retrieve the AUC
@@ -1230,40 +1231,40 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
 #' }
 #' @export
 h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$AUC )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$AUC
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$AUC)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$AUC)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$AUC)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$AUC )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$AUC
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No AUC for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$AUC)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$AUC)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$AUC)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No AUC for ", class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve AUUC
@@ -1294,10 +1295,10 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.auuc <- function(object, train=FALSE, valid=FALSE, metric=NULL) {
-    if(!is.null(metric) && !metric %in% c("qini", "lift", "gain"))
+    if(!is.null(metric) && !metric %in% c("qini", "lift", "gain")) 
         stop("metric must be NULL, 'qini', 'lift' or 'gain'")
     if( is(object, "H2OModelMetrics") ) {
-        if(is.null(metric)) {
+        if(is.null(metric)) { 
             return( object@metrics$AUUC )
         } else {
             return( eval(parse(text=paste("object@metrics$auuc_table$", metric,"[1]", sep=""))))
@@ -1306,7 +1307,7 @@ h2o.auuc <- function(object, train=FALSE, valid=FALSE, metric=NULL) {
     if( is(object, "H2OModel") ) {
         model.parts <- .model.parts(object)
         if ( !train && !valid ) {
-            if (is.null(metric)) {
+            if (is.null(metric)) { 
                 mm <- model.parts$tm@metrics$AUUC
             } else {
                 mm <- eval(parse(text=paste("model.parts$tm@metrics$auuc_table$", metric,"[1]", sep="")))
@@ -1316,7 +1317,7 @@ h2o.auuc <- function(object, train=FALSE, valid=FALSE, metric=NULL) {
         v <- c()
         v_names <- c()
         if ( train ) {
-            if (is.null(metric)) {
+            if (is.null(metric)) { 
                 mm <- model.parts$tm@metrics$AUUC
             } else {
                 mm <- eval(parse(text=paste("model.parts$tm@metrics$auuc_table$", metric,"[1]", sep="")))
@@ -1327,7 +1328,7 @@ h2o.auuc <- function(object, train=FALSE, valid=FALSE, metric=NULL) {
         if ( valid ) {
             if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
             else {
-                if (is.null(metric)) {
+                if (is.null(metric)) { 
                     mm <- model.parts$vm@metrics$AUUC
                 } else {
                     mm <- eval(parse(text=paste("model.parts$vm@metrics$auuc_table$", metric,"[1]", sep="")))
@@ -1883,7 +1884,7 @@ h2o.aecu_table <- function(object, train=FALSE, valid=FALSE) {
 #' @param probs An \linkS4class{H2OFrame} holding vector of probabilities.
 #' @param acts An \linkS4class{H2OFrame} holding vector of actuals.
 .h2o.perfect_auc <- function(probs, acts) {
-    .newExpr("perfectAUC", probs, acts)[1, 1]
+  .newExpr("perfectAUC", probs, acts)[1, 1]
 }
 
 #' Retrieve the all AUC values in a table (One to Rest, One to One, macro and weighted average) 
@@ -1983,40 +1984,40 @@ h2o.multinomial_auc_table <- function(object, train=FALSE, valid=FALSE, xval=FAL
 #' }
 #' @export
 h2o.aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$pr_auc )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$pr_auc
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$pr_auc)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$pr_auc)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$pr_auc)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$pr_auc )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$pr_auc
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("Multinomial PR AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$pr_auc)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$pr_auc)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$pr_auc)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("Multinomial PR AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve the all PR AUC values in a table (One to Rest, One to One, macro and weighted average) 
@@ -2089,8 +2090,8 @@ h2o.multinomial_aucpr_table <- function(object, train=FALSE, valid=FALSE, xval=F
 #' @rdname h2o.aucpr
 #' @export
 h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    .Deprecated("h2o.aucpr")
-    h2o.aucpr(object, train, valid, xval)
+  .Deprecated("h2o.aucpr")
+  h2o.aucpr(object, train, valid, xval)
 }
 
 #' Retrieve the mean per class error
@@ -2123,40 +2124,40 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_per_class_error )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$mean_per_class_error
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$mean_per_class_error)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$mean_per_class_error)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$mean_per_class_error)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_per_class_error )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$mean_per_class_error
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No mean per class error for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$mean_per_class_error)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$mean_per_class_error)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$mean_per_class_error)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No mean per class error for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -2187,12 +2188,6 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
   if( is(object, "H2OModel") ) {
-      if (('calc_like' %in% names(object@allparameters)) && !object@allparameters$calc_like) {
-          warning_message <- paste0("This is the AIC function using the simplified negative log likelihood used during ",
-                                   "training for speedup. To see the correct value, set calc_like=True, ",
-                                   "retrain and call h2o.aic(model).")
-          warning(warning_message)
-      }
     model.parts <- .model.parts(object)
     if ( !train && !valid && !xval ) {
       metric <- model.parts$tm@metrics$AIC
@@ -2204,8 +2199,27 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       v <- c(v,model.parts$tm@metrics$AIC)
       v_names <- c(v_names,"train")
     }
-    warning(paste0("No AIC for ", class(object)))
-    invisible(NULL)
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$AIC)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$AIC)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No AIC for ", class(object)))
+  invisible(NULL)
 }
 
 
@@ -2297,40 +2311,40 @@ h2o.loglikelihood <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$r2 )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$r2
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$r2)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$r2)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$r2)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$r2 )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$r2
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No R2 for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$r2)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$r2)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$r2)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No R2 for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -2358,40 +2372,40 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_residual_deviance )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$mean_residual_deviance
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$mean_residual_deviance)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$mean_residual_deviance)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$mean_residual_deviance)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_residual_deviance )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$mean_residual_deviance
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No mean residual deviance for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$mean_residual_deviance)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$mean_residual_deviance)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$mean_residual_deviance)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No mean residual deviance for ", class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve HGLM ModelMetrics
@@ -2437,40 +2451,40 @@ h2o.HGLMMetrics <- function(object) {
 #' }
 #' @export
 h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if(is(object, "H2OModelMetrics")) return( object@metrics$Gini )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$Gini
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$Gini)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$Gini)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$Gini)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if(is(object, "H2OModelMetrics")) return( object@metrics$Gini )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$Gini
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No Gini for ",class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$Gini)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$Gini)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$Gini)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No Gini for ",class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -2500,15 +2514,15 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.coef_with_p_values <- function(object) {
-    if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
-        if (object@parameters$compute_p_values) {
-            object@model$coefficients_table
-        } else {
-            stop("p-values, z-values and std_error are not found in model.  Make sure to set compute_p_values=TRUE.")
-        }
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+    if (object@parameters$compute_p_values) {
+      object@model$coefficients_table
     } else {
-        stop("p-values, z-values and std_error are only found in GLM.")
+      stop("p-values, z-values and std_error are not found in model.  Make sure to set compute_p_values=TRUE.")
     }
+  } else {
+    stop("p-values, z-values and std_error are only found in GLM.")
+  }
 }
 
 #'
@@ -2539,15 +2553,15 @@ h2o.coef_with_p_values <- function(object) {
 #' }
 #' @export
 h2o.get_variable_inflation_factors <- function(object) {
-    if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
-        if (object@parameters$generate_variable_inflation_factors) {
-            structure(object@model$variable_inflation_factors, names = object@model$vif_predictor_names)
-        } else {
-            stop("variable inflation factors are not found in model.  Make sure to set enable_variable_inflation_factors=TRUE.")
-        }
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+    if (object@parameters$generate_variable_inflation_factors) {
+      structure(object@model$variable_inflation_factors, names = object@model$vif_predictor_names)
     } else {
-        stop("variable inflation factors are only found in GLM models with numerical predictors.")
+      stop("variable inflation factors are not found in model.  Make sure to set enable_variable_inflation_factors=TRUE.")
     }
+  } else {
+    stop("variable inflation factors are only found in GLM models with numerical predictors.")
+  }
 }
 
 #'
@@ -2581,80 +2595,80 @@ h2o.get_variable_inflation_factors <- function(object) {
 #' }
 #' @export
 h2o.coef <- function(object, predictorSize = -1) {
-    if (is(object, "H2OModel") &&
-        object@algorithm %in% c("glm", "gam", "coxph", "modelselection")) {
-        if ((object@algorithm == "glm" ||
-            object@algorithm == "gam") &&
-            (object@allparameters$family %in% c("multinomial", "ordinal"))) {
-            grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
-        } else {
-            if (object@algorithm == "modelselection") {
-                if (object@allparameters$mode == "maxrsweep" &&
-                    !object@allparameters$build_glm_model) {
-                    numModels <- length(object@model$best_r2_values)
-                    maxPredNumbers <- object@parameters$max_predictor_number
-                    stopifnot(
-                        "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
-                        "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
-                    )
-                    if (predictorSize < 0) {
-                        coeffs <- vector("list", numModels)
-                        for (index in seq(numModels)) {
-                            coeffs[[index]] <- structure(object@model$coefficient_values[[index]], names=object@model$coefficient_names[[index]])
-                        }
-                        return(coeffs)
-                    } else {
-                        return(structure(object@model$coefficient_values[[predictorSize]], names=object@model$coefficient_names[[predictorSize]]))
-                    }
-                } else {
-                    modelIDs <- object@model$best_model_ids
-                    numModels <- length(modelIDs)
-                    mode <- object@parameters$mode
-                    maxPredNumbers <- numModels
-                    if (mode == "backward")
-                        maxPredNumbers <- length(object@model$best_predictors_subset[[numModels]])
-                    stopifnot(
-                        "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
-                        "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
-                    )
-                    if (predictorSize > 0) {
-                        # subset size was specified
-                        if (mode == "backward") {
-                            return(grabOneModelCoef(
-                                modelIDs,
-                                numModels - (maxPredNumbers - predictorSize),
-                                FALSE
-                            ))
-                        } else {
-                            return(grabOneModelCoef(modelIDs, predictorSize, FALSE))
-                        }
-                    } else {
-                        coeffs <- vector("list", numModels)
-                        for (index in seq(numModels)) {
-                            coeffs[[index]] <- grabOneModelCoef(modelIDs, index, FALSE)
-                        }
-                        return(coeffs)
-                    }
-                }
-            } else {
-                structure(
-                    object@model$coefficients_table$coefficients,
-                    names = object@model$coefficients_table$names
-                )
-            }
-        }
+  if (is(object, "H2OModel") &&
+      object@algorithm %in% c("glm", "gam", "coxph", "modelselection")) {
+    if ((object@algorithm == "glm" ||
+         object@algorithm == "gam") &&
+        (object@allparameters$family %in% c("multinomial", "ordinal"))) {
+      grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
     } else {
-        stop("Can only extract coefficients from GAM, GLM and CoxPH models")
+      if (object@algorithm == "modelselection") {
+        if (object@allparameters$mode == "maxrsweep" &&
+            !object@allparameters$build_glm_model) {
+          numModels <- length(object@model$best_r2_values)
+          maxPredNumbers <- object@parameters$max_predictor_number
+          stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+          )
+          if (predictorSize < 0) {
+            coeffs <- vector("list", numModels)
+            for (index in seq(numModels)) {
+              coeffs[[index]] <- structure(object@model$coefficient_values[[index]], names=object@model$coefficient_names[[index]])
+            }
+            return(coeffs)
+          } else {
+            return(structure(object@model$coefficient_values[[predictorSize]], names=object@model$coefficient_names[[predictorSize]]))    
+          }
+        } else {
+          modelIDs <- object@model$best_model_ids
+          numModels <- length(modelIDs)
+          mode <- object@parameters$mode
+          maxPredNumbers <- numModels
+          if (mode == "backward")
+            maxPredNumbers <- length(object@model$best_predictors_subset[[numModels]])
+          stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+            )
+          if (predictorSize > 0) {
+            # subset size was specified
+            if (mode == "backward") {
+              return(grabOneModelCoef(
+                modelIDs,
+                numModels - (maxPredNumbers - predictorSize),
+                FALSE
+              ))
+            } else {
+              return(grabOneModelCoef(modelIDs, predictorSize, FALSE))
+            }
+          } else {
+            coeffs <- vector("list", numModels)
+            for (index in seq(numModels)) {
+              coeffs[[index]] <- grabOneModelCoef(modelIDs, index, FALSE)
+            }
+            return(coeffs)
+          }
+        }
+      } else {
+        structure(
+          object@model$coefficients_table$coefficients,
+          names = object@model$coefficients_table$names
+        )
+      }
     }
+  } else {
+    stop("Can only extract coefficients from GAM, GLM and CoxPH models")
+  }
 }
 
 grabOneModelCoef <- function(modelIDs, index, standardized) {
-    oneModel <- h2o.getModel(modelIDs[[index]]$name)
-    if (standardized) {
-        return(h2o.coef_norm(oneModel))
-    } else {
-        return(h2o.coef(oneModel))
-    }
+  oneModel <- h2o.getModel(modelIDs[[index]]$name)
+  if (standardized) {
+    return(h2o.coef_norm(oneModel))
+  } else {
+      return(h2o.coef(oneModel))
+  }
 }
 
 #'
@@ -2711,7 +2725,7 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
                     oneModel <- h2o.getModel(modelIDs[[index]]$name)
                     return(h2o.getFrame(oneModel@model$regression_influence_diagnostics$name))
                 }
-            } else {
+           } else {
                 stop("regression influence diagnostic is only available when infuence='dfbetas' for GLM binomial and
                  gaussian families.")
             }
@@ -2749,14 +2763,6 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' }
 #' @export 
 h2o.negative_log_likelihood <- function(model) {
-    if (model@allparameters$calc_like) {
-        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ",
-                                 "To see the correct value call h2o.loglikelihood(model).")
-    } else {
-        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ",
-                                 "To see the correct value, set calc_like=True, retrain and call h2o.loglikelihood(model).")
-    }
-    warning(warning_message)
     return(extract_scoring_history(model, "negative_log_likelihood"))
 }
 
@@ -2784,24 +2790,20 @@ h2o.negative_log_likelihood <- function(model) {
 #' }
 #' @export 
 h2o.average_objective <- function(model) {
-
-    warning_message <- paste0("This objective function is calculated based on the simplified negative log likelihood ",
-                             "function used during training for speedup.")
-    warning(warning_message)
     return(extract_scoring_history(model, "objective"))
 }
 
 extract_scoring_history <- function(model, value) {
-    if (is(model, "H2OModel") && (model@algorithm=='glm')) {
-        if (model@allparameters$generate_scoring_history==TRUE) {
-            scHist <- model@model$scoring_history
-            return(scHist[nrow(scHist), value])
-        } else {
-            stop("negative_log_likelihood and average_objection functions can only be extracted when generate_scoring_history=TRUE for now.")
-        }
-    } else {
-        stop("negative_log_likelihood and average_objection functions are only available for GLM models.")
-    }
+  if (is(model, "H2OModel") && (model@algorithm=='glm')) {
+      if (model@allparameters$generate_scoring_history==TRUE) {
+          scHist <- model@model$scoring_history
+          return(scHist[nrow(scHist), value])
+      } else {
+          stop("negative_log_likelihood and average_objection functions can only be extracted when generate_scoring_history=TRUE for now.")
+      }
+  } else {
+      stop("negative_log_likelihood and average_objection functions are only available for GLM models.")
+  }
 }
 
 #'
@@ -2832,79 +2834,79 @@ extract_scoring_history <- function(model, value) {
 #' }
 #' @export
 h2o.coef_norm <- function(object, predictorSize=-1) {
-    if (is(object, "H2OModel") &&
-        (object@algorithm %in% c("glm", "gam", "coxph", "modelselection"))) {
-        if (object@algorithm == "modelselection") {
-            if (object@allparameters$mode == "maxrsweep" &&
-                !object@allparameters$build_glm_model) {
-                numModels <- length(object@model$best_r2_values)
-                maxPredNumbers <- object@parameters$max_predictor_number
-                stopifnot(
-                    "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
-                    "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
-                )
-                if (predictorSize < 0) {
-                    coeffs <- vector("list", numModels)
-                    for (index in seq(numModels)) {
-                        coeffs[[index]] <-
-                            structure(
-                                object@model$coefficient_values_normalized[[index]],
-                                names = object@model$coefficient_names[[index]]
-                            )
-                    }
-                    return(coeffs)
-                } else {
-                    return(structure(object@model$coefficient_values_normalized[[predictorSize]],
-                                     names = object@model$coefficient_names[[predictorSize]]))
-                }
-
-                if (predictorSize < 0) {
-                    structure(names=object@model$coefficient_names, object@model$coefficient_values_normalized)
-                } else {
-                    structure(names=object@model$coefficient_names[[predictorSize]], object@model$coefficient_values_normalized[[predictorSize]])
-                }
-            } else {
-                modelIDs <- object@model$best_model_ids
-                numModels = length(modelIDs)
-                mode <- object@parameters$mode
-                maxPredNumbers <- numModels
-                stopifnot(
-                    "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
-                    "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
-                )
-                if (predictorSize > 0) {
-                    # subset size was specified
-                    if (mode == "backward") {
-                        return(grabOneModelCoef(
-                            modelIDs,
-                            numModels - (maxPredNumbers - predictorSize),
-                            TRUE
-                        ))
-                    } else {
-                        return(grabOneModelCoef(modelIDs, predictorSize, TRUE))
-                    }
-                } else {
-                    coeffs <- vector("list", numModels)
-                    for (index in seq(numModels)) {
-                        coeffs[[index]] <- grabOneModelCoef(modelIDs, index, TRUE)
-                    }
-                    return(coeffs)
-                }
-            }
-        }
-        if (object@allparameters$family %in% c("multinomial", "ordinal")) {
-            grabCoeff(object@model$coefficients_table,
-                      "std_coefs_class",
-                      TRUE)
+  if (is(object, "H2OModel") &&
+      (object@algorithm %in% c("glm", "gam", "coxph", "modelselection"))) {
+    if (object@algorithm == "modelselection") {
+      if (object@allparameters$mode == "maxrsweep" &&
+          !object@allparameters$build_glm_model) {
+        numModels <- length(object@model$best_r2_values)
+        maxPredNumbers <- object@parameters$max_predictor_number
+        stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+        )
+        if (predictorSize < 0) {
+          coeffs <- vector("list", numModels)
+          for (index in seq(numModels)) {
+            coeffs[[index]] <-
+              structure(
+                object@model$coefficient_values_normalized[[index]],
+                names = object@model$coefficient_names[[index]]
+              )
+          }
+          return(coeffs)
         } else {
-            structure(
-                object@model$coefficients_table$standardized_coefficients,
-                names = object@model$coefficients_table$names
-            )
+          return(structure(object@model$coefficient_values_normalized[[predictorSize]],
+                    names = object@model$coefficient_names[[predictorSize]]))
         }
-    } else {
-        stop("Can only extract coefficients from GAMs/GLMs")
+        
+        if (predictorSize < 0) {
+          structure(names=object@model$coefficient_names, object@model$coefficient_values_normalized)
+        } else {
+          structure(names=object@model$coefficient_names[[predictorSize]], object@model$coefficient_values_normalized[[predictorSize]])    
+        }        
+      } else {
+        modelIDs <- object@model$best_model_ids
+        numModels = length(modelIDs)
+        mode <- object@parameters$mode
+        maxPredNumbers <- numModels
+        stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+        )
+        if (predictorSize > 0) {
+          # subset size was specified
+          if (mode == "backward") {
+            return(grabOneModelCoef(
+              modelIDs,
+              numModels - (maxPredNumbers - predictorSize),
+              TRUE
+            ))
+          } else {
+            return(grabOneModelCoef(modelIDs, predictorSize, TRUE))
+          }
+        } else {
+          coeffs <- vector("list", numModels)
+          for (index in seq(numModels)) {
+            coeffs[[index]] <- grabOneModelCoef(modelIDs, index, TRUE)
+          }
+          return(coeffs)
+        }
+      }
     }
+    if (object@allparameters$family %in% c("multinomial", "ordinal")) {
+      grabCoeff(object@model$coefficients_table,
+                "std_coefs_class",
+                TRUE)
+    } else {
+      structure(
+        object@model$coefficients_table$standardized_coefficients,
+        names = object@model$coefficients_table$names
+      )
+    }
+  } else {
+    stop("Can only extract coefficients from GAMs/GLMs")
+  }
 }
 
 grabCoeff <- function(tempTable, nameStart, standardize=FALSE) {
@@ -2961,44 +2963,44 @@ grabCoeff <- function(tempTable, nameStart, standardize=FALSE) {
 #' }
 #' @export
 h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$MSE )
-    if( is(object, "H2OModel") ) {
-        metrics <- NULL # break out special for clustering vs the rest
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$MSE
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            if( is(object, "H2OClusteringModel") ) v <- model.parts$tm@metrics$centroid_stats$within_cluster_sum_of_squares
-            else v <- c(v,model.parts$tm@metrics$MSE)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
-                else v <- c(v,model.parts$vm@metrics$MSE)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
-                else v <- c(v,model.parts$xm@metrics$MSE)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$MSE )
+  if( is(object, "H2OModel") ) {
+    metrics <- NULL # break out special for clustering vs the rest
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$MSE
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No MSE for ",class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      if( is(object, "H2OClusteringModel") ) v <- model.parts$tm@metrics$centroid_stats$within_cluster_sum_of_squares
+      else v <- c(v,model.parts$tm@metrics$MSE)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$vm@metrics$MSE)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$xm@metrics$MSE)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No MSE for ",class(object)))
+  invisible(NULL)
 }
 
 #' Retrieves Root Mean Squared Error Value
@@ -3034,44 +3036,44 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$RMSE )
-    if( is(object, "H2OModel") ) {
-        metrics <- NULL # break out special for clustering vs the rest
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$RMSE
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            if( is(object, "H2OClusteringModel") ) v <- model.parts$tm@metrics$centroid_stats$within_cluster_sum_of_squares
-            else v <- c(v,model.parts$tm@metrics$RMSE)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
-                else v <- c(v,model.parts$vm@metrics$RMSE)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
-                else v <- c(v,model.parts$xm@metrics$RMSE)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$RMSE )
+  if( is(object, "H2OModel") ) {
+    metrics <- NULL # break out special for clustering vs the rest
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$RMSE
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No RMSE for ",class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      if( is(object, "H2OClusteringModel") ) v <- model.parts$tm@metrics$centroid_stats$within_cluster_sum_of_squares
+      else v <- c(v,model.parts$tm@metrics$RMSE)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$vm@metrics$RMSE)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$xm@metrics$RMSE)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No RMSE for ",class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -3099,40 +3101,40 @@ h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.mae <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$mae )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$mae
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$mae)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$mae)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$mae)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$mae )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$mae
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No MAE for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$mae)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$mae)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$mae)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No MAE for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -3160,40 +3162,40 @@ h2o.mae <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$rmsle )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$rmsle
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$rmsle)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$rmsle)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$rmsle)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$rmsle )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$rmsle
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No rmsle for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$rmsle)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$rmsle)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$rmsle)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No rmsle for ", class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve the Log Loss Value
@@ -3229,40 +3231,40 @@ h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$logloss )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$logloss
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$logloss)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$logloss)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$logloss)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$logloss )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$logloss
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste("No log loss for",class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$logloss)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$logloss)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$logloss)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste("No log loss for",class(object)))
+  invisible(NULL)
 }
 
 
@@ -3279,17 +3281,17 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param object An Isolation Forest model represented by \linkS4class{H2OModel} object.
 #' @export
 h2o.varsplits <- function(object) {
-    if( is(object, "H2OModel") ) {
-        vi <- object@model$variable_splits
-        if( is.null(vi) ) {
-            warning("This model doesn't have variable splits information, only Isolation Forest can be used with h2o.varsplits().", call. = FALSE)
-            return(invisible(NULL))
-        }
-        vi
-    } else {
-        warning( paste0("No variable importances for ", class(object)) )
-        return(NULL)
+  if( is(object, "H2OModel") ) {
+    vi <- object@model$variable_splits
+    if( is.null(vi) ) {
+      warning("This model doesn't have variable splits information, only Isolation Forest can be used with h2o.varsplits().", call. = FALSE)
+      return(invisible(NULL))
     }
+    vi
+  } else {
+    warning( paste0("No variable importances for ", class(object)) )
+    return(NULL)
+  }
 }
 
 #'
@@ -3317,15 +3319,15 @@ h2o.varsplits <- function(object) {
 #' }
 #' @export
 h2o.scoreHistory <- function(object) {
-    o <- object
-    if( is(o, "H2OModel") ) {
-        sh <- o@model$scoring_history
-        if( is.null(sh) ) return(NULL)
-        sh
-    } else {
-        warning( paste0("No score history for ", class(o)) )
-        return(NULL)
-    }
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$scoring_history
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No score history for ", class(o)) )
+    return(NULL)
+  }
 }
 
 #'
@@ -3399,7 +3401,7 @@ h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree
             parms$max_interaction_depth <- max_interaction_depth
             parms$max_tree_depth <- max_tree_depth
             parms$max_deepening <- max_deepening
-
+            
             json <- .h2o.doSafePOST(urlSuffix = "FeatureInteraction", parms=parms)
             source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
             if(is.null(source$feature_interaction)){
@@ -3489,16 +3491,16 @@ h2o.h <- function(model, frame, variables) {
 #' }
 #' @export
 h2o.weights <- function(object, matrix_id=1){
-    o <- object
-    if( is(o, "H2OModel") ) {
-        sh <- o@model$weights[[matrix_id]]
-        if( is.null(sh) ) return(NULL)
-        sh
-    } else {
-        warning( paste0("No weights for ", class(o)) )
-        return(NULL)
-    }
-    h2o.getFrame(sh$name)
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$weights[[matrix_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No weights for ", class(o)) )
+    return(NULL)
+  }
+  h2o.getFrame(sh$name)
 }
 
 #'
@@ -3524,16 +3526,16 @@ h2o.weights <- function(object, matrix_id=1){
 #' }
 #' @export
 h2o.biases <- function(object, vector_id=1){
-    o <- object
-    if( is(o, "H2OModel") ) {
-        sh <- o@model$biases[[vector_id]]
-        if( is.null(sh) ) return(NULL)
-        sh
-    } else {
-        warning( paste0("No biases for ", class(o)) )
-        return(NULL)
-    }
-    h2o.getFrame(sh$name)
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$biases[[vector_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No biases for ", class(o)) )
+    return(NULL)
+  }
+  h2o.getFrame(sh$name)
 }
 
 #'
@@ -3564,44 +3566,44 @@ h2o.biases <- function(object, vector_id=1){
 #' }
 #' @export
 h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$hit_ratio_table )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$hit_ratio_table
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- list()
-        v_names <- c()
-        if ( train ) {
-            v[[length(v)+1]] <- model.parts$tm@metrics$hit_ratio_table
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v[[length(v)+1]] <- model.parts$vm@metrics$hit_ratio_table
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v[[length(v)+1]] <- model.parts$xm@metrics$hit_ratio_table
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$hit_ratio_table )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$hit_ratio_table
+      if ( !is.null(metric) ) return(metric)
     }
-    # if o is a data.frame, then the hrt was passed in -- just for pretty printing
-    if( is(object, "data.frame") ) return(object)
+    v <- list()
+    v_names <- c()
+    if ( train ) {
+      v[[length(v)+1]] <- model.parts$tm@metrics$hit_ratio_table
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v[[length(v)+1]] <- model.parts$vm@metrics$hit_ratio_table
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v[[length(v)+1]] <- model.parts$xm@metrics$hit_ratio_table
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  # if o is a data.frame, then the hrt was passed in -- just for pretty printing
+  if( is(object, "data.frame") ) return(object)
 
-    # warn if we got something unexpected...
-    warning( paste0("No hit ratio table for ", class(object)) )
-    invisible(NULL)
+  # warn if we got something unexpected...
+  warning( paste0("No hit ratio table for ", class(object)) )
+  invisible(NULL)
 }
 
 #' H2O Model Metric Accessor Functions
@@ -3644,152 +3646,152 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.metric <- function(object, thresholds, metric, transform=NULL) {
-    if (!is(object, "H2OModelMetrics")) stop(paste0("No ", metric, " for ",class(object)," .Should be a H2OModelMetrics object!"))
-    if (is(object, "H2OBinomialMetrics")){
-        avail_metrics <- names(object@metrics$thresholds_and_metric_scores)
-        avail_metrics <- avail_metrics[!(avail_metrics %in% c('threshold', 'idx'))]
-        if (missing(thresholds)) {
-            if (missing(metric)) {
-                metrics <- object@metrics$thresholds_and_metric_scores
-            } else {
-                h2o_metric <- sapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m)))
-                metrics <- object@metrics$thresholds_and_metric_scores[, c("threshold", h2o_metric)]
-                if (!missing(transform)) {
-                    if ('op' %in% names(transform)) {
-                        metrics[h2o_metric] <- transform$op(metrics[h2o_metric])
-                    }
-                    if ('name' %in% names(transform)) {
-                        names(metrics) <- c("threshold", transform$name)
-                    }
-                }
-            }
-        } else if (all(thresholds == 'max') && missing(metric)) {
-            metrics <- object@metrics$max_criteria_and_metric_scores
-        } else {
-            if (missing(metric)) {
-                h2o_metric <- avail_metrics
-            } else {
-                h2o_metric <- unlist(lapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))))
-            }
-            if (all(thresholds == 'max')) thresholds <- h2o.find_threshold_by_max_metric(object, h2o_metric)
-            metrics <- lapply(thresholds, function(t,o,m) h2o.find_row_by_threshold(o, t)[, m], object, h2o_metric)
-            if (!missing(transform) && 'op' %in% names(transform)) {
-                metrics <- lapply(metrics, transform$op)
-            }
+  if (!is(object, "H2OModelMetrics")) stop(paste0("No ", metric, " for ",class(object)," .Should be a H2OModelMetrics object!"))
+  if (is(object, "H2OBinomialMetrics")){
+    avail_metrics <- names(object@metrics$thresholds_and_metric_scores)
+    avail_metrics <- avail_metrics[!(avail_metrics %in% c('threshold', 'idx'))]
+    if (missing(thresholds)) {
+      if (missing(metric)) {
+        metrics <- object@metrics$thresholds_and_metric_scores
+      } else {
+        h2o_metric <- sapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m)))
+        metrics <- object@metrics$thresholds_and_metric_scores[, c("threshold", h2o_metric)]
+        if (!missing(transform)) {
+          if ('op' %in% names(transform)) {
+            metrics[h2o_metric] <- transform$op(metrics[h2o_metric])
+          }
+          if ('name' %in% names(transform)) {
+            names(metrics) <- c("threshold", transform$name)
+          }
         }
-        return(metrics)
+      }
+    } else if (all(thresholds == 'max') && missing(metric)) {
+      metrics <- object@metrics$max_criteria_and_metric_scores
+    } else {
+      if (missing(metric)) {
+        h2o_metric <- avail_metrics
+      } else {
+        h2o_metric <- unlist(lapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))))
+      }
+      if (all(thresholds == 'max')) thresholds <- h2o.find_threshold_by_max_metric(object, h2o_metric)
+      metrics <- lapply(thresholds, function(t,o,m) h2o.find_row_by_threshold(o, t)[, m], object, h2o_metric)
+      if (!missing(transform) && 'op' %in% names(transform)) {
+        metrics <- lapply(metrics, transform$op)
+      }
     }
-    else {
-        stop(paste0("No ", metric, " for ",class(object)))
-    }
+    return(metrics)
+  }
+  else {
+    stop(paste0("No ", metric, " for ",class(object)))
+  }
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.F0point5 <- function(object, thresholds){
-    h2o.metric(object, thresholds, "f0point5")
+  h2o.metric(object, thresholds, "f0point5")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.F1 <- function(object, thresholds){
-    h2o.metric(object, thresholds, "f1")
+  h2o.metric(object, thresholds, "f1")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.F2 <- function(object, thresholds){
-    h2o.metric(object, thresholds, "f2")
+  h2o.metric(object, thresholds, "f2")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.accuracy <- function(object, thresholds){
-    h2o.metric(object, thresholds, "accuracy")
+  h2o.metric(object, thresholds, "accuracy")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.error <- function(object, thresholds){
-    h2o.metric(object, thresholds, "accuracy", transform=list(name="error", op=function(acc) 1 - acc))
+  h2o.metric(object, thresholds, "accuracy", transform=list(name="error", op=function(acc) 1 - acc))
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-    h2o.metric(object, thresholds, "min_per_class_accuracy", transform=list(name="max_per_class_error", op=function(mpc_acc) 1 - mpc_acc))
+  h2o.metric(object, thresholds, "min_per_class_accuracy", transform=list(name="max_per_class_error", op=function(mpc_acc) 1 - mpc_acc))
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.mean_per_class_accuracy <- function(object, thresholds){
-    h2o.metric(object, thresholds, "mean_per_class_accuracy")
+  h2o.metric(object, thresholds, "mean_per_class_accuracy")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.mcc <- function(object, thresholds){
-    h2o.metric(object, thresholds, "absolute_mcc")
+  h2o.metric(object, thresholds, "absolute_mcc")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.precision <- function(object, thresholds){
-    h2o.metric(object, thresholds, "precision")
+  h2o.metric(object, thresholds, "precision")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.tpr <- function(object, thresholds){
-    h2o.metric(object, thresholds, "tpr")
+  h2o.metric(object, thresholds, "tpr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.fpr <- function(object, thresholds){
-    h2o.metric(object, thresholds, "fpr")
+  h2o.metric(object, thresholds, "fpr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.fnr <- function(object, thresholds){
-    h2o.metric(object, thresholds, "fnr")
+  h2o.metric(object, thresholds, "fnr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.tnr <- function(object, thresholds){
-    h2o.metric(object, thresholds, "tnr")
+  h2o.metric(object, thresholds, "tnr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.recall <- function(object, thresholds){
-    h2o.metric(object, thresholds, "tpr")
+  h2o.metric(object, thresholds, "tpr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.sensitivity <- function(object, thresholds){
-    h2o.metric(object, thresholds, "tpr")
+  h2o.metric(object, thresholds, "tpr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.fallout <- function(object, thresholds){
-    h2o.metric(object, thresholds, "fpr")
+  h2o.metric(object, thresholds, "fpr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.missrate <- function(object, thresholds){
-    h2o.metric(object, thresholds, "fnr")
+  h2o.metric(object, thresholds, "fnr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.specificity <- function(object, thresholds){
-    h2o.metric(object, thresholds, "tnr")
+  h2o.metric(object, thresholds, "tnr")
 }
 
 #' Find the threshold, give the max metric
@@ -3818,10 +3820,10 @@ h2o.specificity <- function(object, thresholds){
 #' }
 #' @export
 h2o.find_threshold_by_max_metric <- function(object, metric) {
-    if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
-    max_metrics <- object@metrics$max_criteria_and_metric_scores
-    h2o_metric <- sapply(metric, function(m) ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))
-    max_metrics[match(paste0("max ", h2o_metric), max_metrics$metric), "threshold"]
+  if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
+  max_metrics <- object@metrics$max_criteria_and_metric_scores
+  h2o_metric <- sapply(metric, function(m) ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))
+  max_metrics[match(paste0("max ", h2o_metric), max_metrics$metric), "threshold"]
 }
 
 #' Find the threshold, give the max metric. No duplicate thresholds allowed
@@ -3850,19 +3852,19 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #' }
 #' @export
 h2o.find_row_by_threshold <- function(object, threshold) {
-    if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
-    tmp <- object@metrics$thresholds_and_metric_scores
-    if( is.null(tmp) ) return(NULL)
-    res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]  # relax the tolerance
-    if( nrow(res) == 0L ) {
-        # couldn't find any threshold within 1e-8 of the requested value, warn and return closest threshold
-        row_num <- which.min(abs(tmp$threshold - threshold))
-        closest_threshold <- tmp$threshold[row_num]
-        warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Run `h2o.predict` and apply your desired threshold on a probability column.") )
-        return( tmp[row_num,] )
-    }
-    else if( nrow(res) > 1L ) res <- res[1L,]
-    res
+  if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
+  tmp <- object@metrics$thresholds_and_metric_scores
+  if( is.null(tmp) ) return(NULL)
+  res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]  # relax the tolerance
+  if( nrow(res) == 0L ) {
+    # couldn't find any threshold within 1e-8 of the requested value, warn and return closest threshold
+    row_num <- which.min(abs(tmp$threshold - threshold))
+    closest_threshold <- tmp$threshold[row_num]
+    warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Run `h2o.predict` and apply your desired threshold on a probability column.") )
+    return( tmp[row_num,] )
+  }
+  else if( nrow(res) > 1L ) res <- res[1L,]
+  res
 }
 
 #'
@@ -3925,30 +3927,30 @@ h2o.withinss <- function(object) { h2o.mse(object) }
 #' }
 #' @export
 h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$tot_withinss )
-    v <- c()
-    v_names <- c()
-    if ( train ) {
-        v <- c(v,model.parts$tm@metrics$tot_withinss)
-        v_names <- c(v_names,"train")
+  model.parts <- .model.parts(object)
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$tot_withinss )
+  v <- c()
+  v_names <- c()
+  if ( train ) {
+    v <- c(v,model.parts$tm@metrics$tot_withinss)
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v <- c(v,model.parts$vm@metrics$tot_withinss)
+      v_names <- c(v_names,"valid")
     }
-    if ( valid ) {
-        if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
-        else {
-            v <- c(v,model.parts$vm@metrics$tot_withinss)
-            v_names <- c(v_names,"valid")
-        }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v <- c(v,model.parts$xm@metrics$tot_withinss)
+      v_names <- c(v_names,"xval")
     }
-    if ( xval ) {
-        if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
-        else {
-            v <- c(v,model.parts$xm@metrics$tot_withinss)
-            v_names <- c(v_names,"xval")
-        }
-    }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #' Get the between cluster sum of squares
@@ -3973,30 +3975,30 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$betweenss )
-    v <- c()
-    v_names <- c()
-    if ( train ) {
-        v <- c(v,model.parts$tm@metrics$betweenss)
-        v_names <- c(v_names,"train")
+  model.parts <- .model.parts(object)
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$betweenss )
+  v <- c()
+  v_names <- c()
+  if ( train ) {
+    v <- c(v,model.parts$tm@metrics$betweenss)
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v <- c(v,model.parts$vm@metrics$betweenss)
+      v_names <- c(v_names,"valid")
     }
-    if ( valid ) {
-        if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
-        else {
-            v <- c(v,model.parts$vm@metrics$betweenss)
-            v_names <- c(v_names,"valid")
-        }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v <- c(v,model.parts$xm@metrics$betweenss)
+      v_names <- c(v_names,"xval")
     }
-    if ( xval ) {
-        if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
-        else {
-            v <- c(v,model.parts$xm@metrics$betweenss)
-            v_names <- c(v_names,"xval")
-        }
-    }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #'
@@ -4022,30 +4024,30 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$totss )
-    v <- c()
-    v_names <- c()
-    if ( train ) {
-        v <- c(v,model.parts$tm@metrics$totss)
-        v_names <- c(v_names,"train")
+  model.parts <- .model.parts(object)
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$totss )
+  v <- c()
+  v_names <- c()
+  if ( train ) {
+    v <- c(v,model.parts$tm@metrics$totss)
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v <- c(v,model.parts$vm@metrics$totss)
+      v_names <- c(v_names,"valid")
     }
-    if ( valid ) {
-        if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
-        else {
-            v <- c(v,model.parts$vm@metrics$totss)
-            v_names <- c(v_names,"valid")
-        }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v <- c(v,model.parts$xm@metrics$totss)
+      v_names <- c(v_names,"xval")
     }
-    if ( xval ) {
-        if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
-        else {
-            v <- c(v,model.parts$xm@metrics$totss)
-            v_names <- c(v_names,"xval")
-        }
-    }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #'
@@ -4091,23 +4093,23 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' }
 #' @export
 h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE) {
-    model.parts <- .model.parts(object)
-    if ( !train && !valid) return( model.parts$tm@metrics$centroid_stats )
-    v <- list()
-    v_names <- c()
-    if ( train ) {
-        v[[length(v)+1]] <- model.parts$tm@metrics$centroid_stats
-        v_names <- c(v_names,"train")
+  model.parts <- .model.parts(object)
+  if ( !train && !valid) return( model.parts$tm@metrics$centroid_stats )
+  v <- list()
+  v_names <- c()
+  if ( train ) {
+    v[[length(v)+1]] <- model.parts$tm@metrics$centroid_stats
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v[[length(v)+1]] <- model.parts$vm@metrics$centroid_stats
+      v_names <- c(v_names,"valid")
     }
-    if ( valid ) {
-        if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
-        else {
-            v[[length(v)+1]] <- model.parts$vm@metrics$centroid_stats
-            v_names <- c(v_names,"valid")
-        }
-    }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #'
@@ -4133,30 +4135,30 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE) {
 #' }
 #' @export
 h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$centroid_stats$size )
-    v <- list()
-    v_names <- c()
-    if ( train ) {
-        v[[length(v)+1]] <- model.parts$tm@metrics$centroid_stats$size
-        v_names <- c(v_names,"train")
+  model.parts <- .model.parts(object)
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$centroid_stats$size )
+  v <- list()
+  v_names <- c()
+  if ( train ) {
+    v[[length(v)+1]] <- model.parts$tm@metrics$centroid_stats$size
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v[[length(v)+1]] <- model.parts$vm@metrics$centroid_stats$size
+      v_names <- c(v_names,"valid")
     }
-    if ( valid ) {
-        if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
-        else {
-            v[[length(v)+1]] <- model.parts$vm@metrics$centroid_stats$size
-            v_names <- c(v_names,"valid")
-        }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v[[length(v)+1]] <- model.parts$xm@metrics$centroid_stats$size
+      v_names <- c(v_names,"xval")
     }
-    if ( xval ) {
-        if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
-        else {
-            v[[length(v)+1]] <- model.parts$xm@metrics$centroid_stats$size
-            v_names <- c(v_names,"xval")
-        }
-    }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 
@@ -4186,40 +4188,40 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$null_deviance
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$null_deviance)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$null_deviance)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$null_deviance)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$null_deviance
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No null deviance for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$null_deviance)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$null_deviance)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$null_deviance)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No null deviance for ", class(object)))
+  invisible(NULL)
 }
 
 
@@ -4248,40 +4250,40 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$residual_deviance
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$residual_deviance)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$residual_deviance)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$residual_deviance)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$residual_deviance
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No residual deviance for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$residual_deviance)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$residual_deviance)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$residual_deviance)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No residual deviance for ", class(object)))
+  invisible(NULL)
 }
 
 
@@ -4310,40 +4312,40 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) 
 #' }
 #' @export
 h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$residual_degrees_of_freedom
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$residual_degrees_of_freedom)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$residual_degrees_of_freedom)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$residual_degrees_of_freedom)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$residual_degrees_of_freedom
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No residual dof for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$residual_degrees_of_freedom)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$residual_degrees_of_freedom)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$residual_degrees_of_freedom)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No residual dof for ", class(object)))
+  invisible(NULL)
 }
 
 
@@ -4372,40 +4374,40 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        if ( !train && !valid && !xval ) {
-            metric <- model.parts$tm@metrics$null_degrees_of_freedom
-            if ( !is.null(metric) ) return(metric)
-        }
-        v <- c()
-        v_names <- c()
-        if ( train ) {
-            v <- c(v,model.parts$tm@metrics$null_degrees_of_freedom)
-            v_names <- c(v_names,"train")
-        }
-        if ( valid ) {
-            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
-            else {
-                v <- c(v,model.parts$vm@metrics$null_degrees_of_freedom)
-                v_names <- c(v_names,"valid")
-            }
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
-            else {
-                v <- c(v,model.parts$xm@metrics$null_degrees_of_freedom)
-                v_names <- c(v_names,"xval")
-            }
-        }
-        if ( !is.null(v) ) {
-            names(v) <- v_names
-            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-        }
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$null_degrees_of_freedom
+      if ( !is.null(metric) ) return(metric)
     }
-    warning(paste0("No null dof for ", class(object)))
-    invisible(NULL)
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$null_degrees_of_freedom)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$null_degrees_of_freedom)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$null_degrees_of_freedom)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No null dof for ", class(object)))
+  invisible(NULL)
 }
 
 #' Access H2O Gains/Lift Tables
@@ -4455,41 +4457,41 @@ h2o.gains_lift <- function(object, ...) h2o.gainsLift(object, ...)
 #' @rdname h2o.gainsLift
 #' @export
 setMethod("h2o.gainsLift", "H2OModel", function(object, newdata, valid=FALSE, xval=FALSE,...) {
-    model.parts <- .model.parts(object)
-    if( missing(newdata) ) {
-        if( valid ) {
-            if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-            else                          return( h2o.gainsLift(model.parts$vm, ...) )
-        }
-        if ( xval ) {
-            if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()))
-            else                          return( h2o.gainsLift(model.parts$xm, ...) )
-        }
-        return( h2o.gainsLift(model.parts$tm, ...) )
-    } else {
-        if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
-        if( xval )  stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
+  model.parts <- .model.parts(object)
+  if( missing(newdata) ) {
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( h2o.gainsLift(model.parts$vm, ...) )
     }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()))
+      else                          return( h2o.gainsLift(model.parts$xm, ...) )
+    }
+    return( h2o.gainsLift(model.parts$tm, ...) )
+  } else {
+    if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
+    if( xval )  stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
+  }
 
 
-    # ok need to score on the newdata
-    url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))
-    res <- .h2o.__remoteSend(url, method="POST")
+  # ok need to score on the newdata
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method="POST")
 
-    # Make the correct class of metrics object
-    metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])
-    h2o.gainsLift(metrics, ...)
+  # Make the correct class of metrics object
+  metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])
+  h2o.gainsLift(metrics, ...)
 })
 
 #' @rdname h2o.gainsLift
 #' @export
 setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
-    if( is(object, "H2OBinomialMetrics") ) {
-        return(object@metrics$gains_lift_table)
-    } else {
-        warning(paste0("No Gains/Lift table for ",class(object)))
-        return(NULL)
-    }
+  if( is(object, "H2OBinomialMetrics") ) {
+    return(object@metrics$gains_lift_table)
+  } else {
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  }
 })
 
 #' Kolmogorov-Smirnov metric for binomial models
@@ -4522,27 +4524,27 @@ setGeneric("h2o.kolmogorov_smirnov", function(object) {})
 #' @rdname h2o.kolmogorov_smirnov
 #' @export
 setMethod("h2o.kolmogorov_smirnov", "H2OModelMetrics", function(object) {
-    gains_lift <- h2o.gainsLift(object = object)
-    if(is.null(gains_lift)){
-        warning(paste0("No Gains/Lift table for ",class(object)))
-        return(NULL)
-    } else {
-        return(max(gains_lift$kolmogorov_smirnov))
-    }
-
+  gains_lift <- h2o.gainsLift(object = object)
+  if(is.null(gains_lift)){
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  } else {
+    return(max(gains_lift$kolmogorov_smirnov))
+  }
+  
 })
 
 #' @rdname h2o.kolmogorov_smirnov
 #' @export
 setMethod("h2o.kolmogorov_smirnov", "H2OModel", function(object) {
-    gains_lift <- h2o.gainsLift(object = object)
-    if(is.null(gains_lift)){
-        warning(paste0("No Gains/Lift table for ",class(object)))
-        return(NULL)
-    } else {
-        return(max(gains_lift$kolmogorov_smirnov))
-    }
-
+  gains_lift <- h2o.gainsLift(object = object)
+  if(is.null(gains_lift)){
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  } else {
+    return(max(gains_lift$kolmogorov_smirnov))
+  }
+  
 })
 
 
@@ -4593,30 +4595,30 @@ setGeneric("h2o.confusionMatrix", function(object, ...) {})
 #' @rdname h2o.confusionMatrix
 #' @export
 setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FALSE, xval=FALSE,...) {
-    model.parts <- .model.parts(object)
-    if( missing(newdata) ) {
-        if( valid ) {
-            if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-            else                          return( h2o.confusionMatrix(model.parts$vm, ...) )
-        } else if( xval ) {
-            if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()) )
-            else                          return( h2o.confusionMatrix(model.parts$xm, ...) )
-        }
-        else {
-            return( h2o.confusionMatrix(model.parts$tm, ...) )
-        }
-    } else {
-        if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
-        if( xval ) stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
+  model.parts <- .model.parts(object)
+  if( missing(newdata) ) {
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( h2o.confusionMatrix(model.parts$vm, ...) )
+    } else if( xval ) {
+      if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()) )
+      else                          return( h2o.confusionMatrix(model.parts$xm, ...) )
     }
+    else {
+                                    return( h2o.confusionMatrix(model.parts$tm, ...) )
+    }   
+  } else {
+    if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
+    if( xval ) stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
+  }
 
-    # ok need to score on the newdata
-    url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))
-    res <- .h2o.__remoteSend(url, method="POST")
+  # ok need to score on the newdata
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method="POST")
 
-    # Make the correct class of metrics object
-    metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])   # FIXME: don't think model metrics come out of Predictions anymore!!!
-    h2o.confusionMatrix(metrics, ...)
+  # Make the correct class of metrics object
+  metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])   # FIXME: don't think model metrics come out of Predictions anymore!!!
+  h2o.confusionMatrix(metrics, ...)
 })
 
 .h2o.metrics_aliases <- list(
@@ -4634,73 +4636,73 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
 #' @rdname h2o.confusionMatrix
 #' @export
 setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=NULL, metrics=NULL) {
-    if( !is(object, "H2OBinomialMetrics") ) {
-        if( is(object, "H2OMultinomialMetrics") ||  is(object, "H2OOrdinalMetrics"))
-            return(object@metrics$cm$table)
-        warning(paste0("No Confusion Matrices for ",class(object)))
-        return(NULL)
-    }
-    # H2OBinomial case
-    if( is.null(metrics) && is.null(thresholds) ) {
-        metrics = c("f1")
-    }
-    if( is(metrics, "list") ) metrics_list = metrics
+  if( !is(object, "H2OBinomialMetrics") ) {
+    if( is(object, "H2OMultinomialMetrics") ||  is(object, "H2OOrdinalMetrics"))
+      return(object@metrics$cm$table)
+    warning(paste0("No Confusion Matrices for ",class(object)))
+    return(NULL)
+  }
+  # H2OBinomial case
+  if( is.null(metrics) && is.null(thresholds) ) {
+    metrics = c("f1")
+  }
+  if( is(metrics, "list") ) metrics_list = metrics
+  else {
+    if( is.null(metrics) ) metrics_list = list()
+    else metrics_list = list(metrics)
+  }
+  if( is(thresholds, "list") ) thresholds_list = thresholds
     else {
-        if( is.null(metrics) ) metrics_list = list()
-        else metrics_list = list(metrics)
-    }
-    if( is(thresholds, "list") ) thresholds_list = thresholds
+      if( is.null(thresholds) ) thresholds_list = list()
+      else thresholds_list = as.list(thresholds)
+  }
+
+  # error check the metrics_list and thresholds_list
+  if( !all(sapply(thresholds_list, f <- function(x) is.numeric(x) && x >= 0 && x <= 1)) )
+    stop("All thresholds must be numbers between 0 and 1 (inclusive).")
+  if( !all(sapply(metrics_list, f <- function(x) x %in% .h2o.maximizing_metrics)) )
+      stop(paste("The only allowable metrics are ", paste(.h2o.maximizing_metrics, collapse=', ')))
+
+  # make one big list that combines the thresholds and metric-thresholds
+  metrics_thresholds = lapply(metrics_list, f <- function(x) h2o.find_threshold_by_max_metric(object, x))
+  thresholds_list <- append(thresholds_list, metrics_thresholds)
+  first_metrics_thresholds_offset <- length(thresholds_list) - length(metrics_thresholds)
+
+  thresh2d <- object@metrics$thresholds_and_metric_scores
+  actual_thresholds <- thresh2d$threshold
+  d <- object@metrics$domain
+  m <- lapply(seq_along(thresholds_list), function(i) {
+    t <- thresholds_list[[i]]
+    row <- h2o.find_row_by_threshold(object,t)
+    if( is.null(row) ) NULL
     else {
-        if( is.null(thresholds) ) thresholds_list = list()
-        else thresholds_list = as.list(thresholds)
+      tns <- row$tns; fps <- row$fps; fns <- row$fns; tps <- row$tps;
+      rnames <- c(d, "Totals")
+      cnames <- c(d, "Error", "Rate")
+      col1 <- c(tns, fns, tns+fns)
+      col2 <- c(fps, tps, fps+tps)
+      col3 <- c(fps/(fps+tns), fns/(fns+tps), (fps+fns)/(fps+tns+fns+tps))
+      col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps), paste0(" =", fns+fps, "/", fps+tns+fns+tps) )
+      fmts <- c("%i", "%i", "%f", "%s")
+      tbl <- data.frame(col1,col2,col3,col4)
+      colnames(tbl) <- cnames
+      rownames(tbl) <- rnames
+      header <-  "Confusion Matrix (vertical: actual; across: predicted) "
+      if(t %in% metrics_thresholds) {
+        m <- metrics_list[i - first_metrics_thresholds_offset]
+        if( length(m) > 1) m <- m[[1]]
+        header <- paste(header, "for max", m, "@ threshold =", t)
+      } else {
+        header <- paste(header, "@ threshold =", row$threshold)
+      }
+      attr(tbl, "header") <- header
+      attr(tbl, "formats") <- fmts
+      oldClass(tbl) <- c("H2OTable", "data.frame")
+      tbl
     }
-
-    # error check the metrics_list and thresholds_list
-    if( !all(sapply(thresholds_list, f <- function(x) is.numeric(x) && x >= 0 && x <= 1)) )
-        stop("All thresholds must be numbers between 0 and 1 (inclusive).")
-    if( !all(sapply(metrics_list, f <- function(x) x %in% .h2o.maximizing_metrics)) )
-        stop(paste("The only allowable metrics are ", paste(.h2o.maximizing_metrics, collapse=', ')))
-
-    # make one big list that combines the thresholds and metric-thresholds
-    metrics_thresholds = lapply(metrics_list, f <- function(x) h2o.find_threshold_by_max_metric(object, x))
-    thresholds_list <- append(thresholds_list, metrics_thresholds)
-    first_metrics_thresholds_offset <- length(thresholds_list) - length(metrics_thresholds)
-
-    thresh2d <- object@metrics$thresholds_and_metric_scores
-    actual_thresholds <- thresh2d$threshold
-    d <- object@metrics$domain
-    m <- lapply(seq_along(thresholds_list), function(i) {
-        t <- thresholds_list[[i]]
-        row <- h2o.find_row_by_threshold(object,t)
-        if( is.null(row) ) NULL
-        else {
-            tns <- row$tns; fps <- row$fps; fns <- row$fns; tps <- row$tps;
-            rnames <- c(d, "Totals")
-            cnames <- c(d, "Error", "Rate")
-            col1 <- c(tns, fns, tns+fns)
-            col2 <- c(fps, tps, fps+tps)
-            col3 <- c(fps/(fps+tns), fns/(fns+tps), (fps+fns)/(fps+tns+fns+tps))
-            col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps), paste0(" =", fns+fps, "/", fps+tns+fns+tps) )
-            fmts <- c("%i", "%i", "%f", "%s")
-            tbl <- data.frame(col1,col2,col3,col4)
-            colnames(tbl) <- cnames
-            rownames(tbl) <- rnames
-            header <-  "Confusion Matrix (vertical: actual; across: predicted) "
-            if(t %in% metrics_thresholds) {
-                m <- metrics_list[i - first_metrics_thresholds_offset]
-                if( length(m) > 1) m <- m[[1]]
-                header <- paste(header, "for max", m, "@ threshold =", t)
-            } else {
-                header <- paste(header, "@ threshold =", row$threshold)
-            }
-            attr(tbl, "header") <- header
-            attr(tbl, "formats") <- fmts
-            oldClass(tbl) <- c("H2OTable", "data.frame")
-            tbl
-        }
-    })
-    if( length(m) == 1L ) return( m[[1L]] )
-    m
+  })
+  if( length(m) == 1L ) return( m[[1L]] )
+  m
 })
 
 #' Plot an H2O Model
@@ -4742,125 +4744,125 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #' @method plot H2OModel
 #' @export
 plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
-    df <- as.data.frame(x@model$scoring_history)
+  df <- as.data.frame(x@model$scoring_history)
 
-    #Ensure metric and timestep can be passed in as upper case (by converting to lower case) if not "AUTO"
-    if(metric != "AUTO"){
-        metric <- tolower(metric)
+  #Ensure metric and timestep can be passed in as upper case (by converting to lower case) if not "AUTO"
+  if(metric != "AUTO"){
+    metric <- tolower(metric)
+  }
+
+  if(timestep != "AUTO"){
+    timestep <- tolower(timestep)
+  }
+
+  # Separate functionality for GLM since output is different from other algos
+  if (x@algorithm %in% c("gam", "glm")) {
+    if ("gam" == x@algorithm)
+      df <- as.data.frame(x@model$glm_scoring_history)
+    if (x@allparameters$lambda_search) {
+      allowed_metrics <- c("deviance_train", "deviance_test", "deviance_xval")
+      allowed_timesteps <- c("iteration", "duration")
+      df <- df[df["alpha"] == x@model$alpha_best,]
+    } else if (!is.null(x@allparameters$HGLM) && x@allparameters$HGLM) {
+      allowed_metrics <- c("convergence", "sumetaieta02")
+      allowed_timesteps <- c("iterations", "duration")
+    } else {
+      allowed_metrics <- c("objective", "negative_log_likelihood")
+      allowed_timesteps <- c("iterations", "duration")
     }
 
-    if(timestep != "AUTO"){
-        timestep <- tolower(timestep)
+    if (timestep == "AUTO") {
+      timestep <- allowed_timesteps[[1]]
+    } else if (!(metric %in% allowed_timesteps)) {
+      stop("for ", toupper(x@algorithm), ", timestep must be one of: ", paste(allowed_timesteps, collapse = ", "))
     }
 
-    # Separate functionality for GLM since output is different from other algos
-    if (x@algorithm %in% c("gam", "glm")) {
-        if ("gam" == x@algorithm)
-            df <- as.data.frame(x@model$glm_scoring_history)
-        if (x@allparameters$lambda_search) {
-            allowed_metrics <- c("deviance_train", "deviance_test", "deviance_xval")
-            allowed_timesteps <- c("iteration", "duration")
-            df <- df[df["alpha"] == x@model$alpha_best,]
-        } else if (!is.null(x@allparameters$HGLM) && x@allparameters$HGLM) {
-            allowed_metrics <- c("convergence", "sumetaieta02")
-            allowed_timesteps <- c("iterations", "duration")
-        } else {
-            allowed_metrics <- c("objective", "negative_log_likelihood")
-            allowed_timesteps <- c("iterations", "duration")
-        }
-
-        if (timestep == "AUTO") {
-            timestep <- allowed_timesteps[[1]]
-        } else if (!(metric %in% allowed_timesteps)) {
-            stop("for ", toupper(x@algorithm), ", timestep must be one of: ", paste(allowed_timesteps, collapse = ", "))
-        }
-
-        if (metric == "AUTO") {
-            metric <- allowed_metrics[[1]]
-        } else if (!(metric %in% allowed_metrics)) {
-            stop("for ", toupper(x@algorithm),", metric must be one of: ", paste(allowed_metrics, collapse = ", "))
-        }
-
-        graphics::plot(df$iteration, df[, c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History", ...)
-    } else if (x@algorithm == "glrm") {
-        timestep <- "iteration"
-        if (metric == "AUTO") {
-            metric <- "objective"
-        } else if (!(metric %in% c("step_size", "objective"))) {
-            stop("for GLRM, metric must be one of: step_size, objective")
-        }
-        graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Objective Function Value per Iteration", ...)
-    } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
-        if (is(x, "H2OBinomialModel")) {
-            if (metric == "AUTO") {
-                metric <- "logloss"
-            } else if (!(metric %in% c("logloss","auc","classification_error","rmse"))) {
-                stop("metric for H2OBinomialModel must be one of: logloss, auc, classification_error, rmse")
-            }
-        } else if (is(x, "H2OMultinomialModel") || is(x, "H2OOrdinalModel")) {
-            if (metric == "AUTO") {
-                metric <- "classification_error"
-            } else if (!(metric %in% c("logloss","classification_error","rmse"))) {
-                stop("metric for H2OMultinomialModel/H2OOrdinalModel must be one of: logloss, classification_error, rmse")
-            }
-        } else if (is(x, "H2ORegressionModel")) {
-            if (metric == "AUTO") {
-                metric <- "rmse"
-            } else if (!(metric %in% c("rmse","deviance","mae"))) {
-                stop("metric for H2ORegressionModel must be one of: rmse, mae, or deviance")
-            }
-        } else {
-            stop("Must be one of: H2OBinomialModel, H2OMultinomialModel, H2OOrdinalModel or H2ORegressionModel")
-        }
-        # Set timestep
-        if (x@algorithm %in% c("gbm", "drf")) {
-            if (timestep == "AUTO") {
-                timestep <- "number_of_trees"
-            } else if (!(timestep %in% c("duration","number_of_trees"))) {
-                stop("timestep for gbm or drf must be one of: duration, number_of_trees")
-            }
-        } else { # x@algorithm == "deeplearning"
-            # Delete first row of DL scoring history since it contains NAs & NaNs
-            if (df$samples[1] == 0) {
-                df <- df[-1,]
-            }
-            if (timestep == "AUTO") {
-                timestep <- "epochs"
-            } else if (!(timestep %in% c("epochs","samples","duration"))) {
-                stop("timestep for deeplearning must be one of: epochs, samples, duration")
-            }
-        }
-        training_metric <- sprintf("training_%s", metric)
-        validation_metric <- sprintf("validation_%s", metric)
-        if (timestep == "duration") {
-            trim <- function (ss) gsub("^\\s+|\\s+$", "", ss)
-            tt <- trim(df[2, c("duration")])  #base::trimws not implemented for earlier versions of R, so we make our own trim function
-            dur_colname <- sprintf("duration_%s", strsplit(tt, " ")[[1]][2]) #parse units of measurement
-            df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trim(v), " ")[[1]][1]))
-            timestep <- dur_colname
-        }
-        if (validation_metric %in% names(df)) {  #Training and Validation scoring history
-            ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
-            if (sum(is.na(ylim))>1) {
-                ylim <- c(0.0, 1.0)
-            }
-            graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
-                           main = "Scoring History", col = "blue", ylim = ylim, ...)
-            graphics::par(new = TRUE)
-            graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim, ...)
-            graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
-        } else {  #Training scoring history only
-            ylim <- range(c(df[,c(training_metric)]))
-            if (sum(is.na(ylim))>1) {
-                ylim <- c(0.0, 1.0)
-            }
-            graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = timestep, ylab = training_metric,
-                           main = "Training Scoring History", col = "blue", ylim = ylim)
-
-        }
-    } else { # algo is not glm, deeplearning, drf, gbm
-        stop("Plotting not implemented for this type of model")
+    if (metric == "AUTO") {
+      metric <- allowed_metrics[[1]]
+    } else if (!(metric %in% allowed_metrics)) {
+      stop("for ", toupper(x@algorithm),", metric must be one of: ", paste(allowed_metrics, collapse = ", "))
     }
+
+    graphics::plot(df$iteration, df[, c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History", ...)
+  } else if (x@algorithm == "glrm") {
+    timestep <- "iteration"
+    if (metric == "AUTO") {
+      metric <- "objective"
+    } else if (!(metric %in% c("step_size", "objective"))) {
+      stop("for GLRM, metric must be one of: step_size, objective")
+    }
+    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Objective Function Value per Iteration", ...)
+  } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
+    if (is(x, "H2OBinomialModel")) {
+      if (metric == "AUTO") {
+        metric <- "logloss"
+      } else if (!(metric %in% c("logloss","auc","classification_error","rmse"))) {
+        stop("metric for H2OBinomialModel must be one of: logloss, auc, classification_error, rmse")
+      }
+    } else if (is(x, "H2OMultinomialModel") || is(x, "H2OOrdinalModel")) {
+      if (metric == "AUTO") {
+        metric <- "classification_error"
+      } else if (!(metric %in% c("logloss","classification_error","rmse"))) {
+        stop("metric for H2OMultinomialModel/H2OOrdinalModel must be one of: logloss, classification_error, rmse")
+      }
+    } else if (is(x, "H2ORegressionModel")) {
+      if (metric == "AUTO") {
+        metric <- "rmse"
+      } else if (!(metric %in% c("rmse","deviance","mae"))) {
+        stop("metric for H2ORegressionModel must be one of: rmse, mae, or deviance")
+      }
+    } else {
+      stop("Must be one of: H2OBinomialModel, H2OMultinomialModel, H2OOrdinalModel or H2ORegressionModel")
+    }
+    # Set timestep
+    if (x@algorithm %in% c("gbm", "drf")) {
+      if (timestep == "AUTO") {
+        timestep <- "number_of_trees"
+      } else if (!(timestep %in% c("duration","number_of_trees"))) {
+        stop("timestep for gbm or drf must be one of: duration, number_of_trees")
+      }
+    } else { # x@algorithm == "deeplearning"
+      # Delete first row of DL scoring history since it contains NAs & NaNs
+      if (df$samples[1] == 0) {
+        df <- df[-1,]
+      }
+      if (timestep == "AUTO") {
+        timestep <- "epochs"
+      } else if (!(timestep %in% c("epochs","samples","duration"))) {
+        stop("timestep for deeplearning must be one of: epochs, samples, duration")
+             }
+    }
+    training_metric <- sprintf("training_%s", metric)
+    validation_metric <- sprintf("validation_%s", metric)
+    if (timestep == "duration") {
+      trim <- function (ss) gsub("^\\s+|\\s+$", "", ss)
+      tt <- trim(df[2, c("duration")])  #base::trimws not implemented for earlier versions of R, so we make our own trim function
+      dur_colname <- sprintf("duration_%s", strsplit(tt, " ")[[1]][2]) #parse units of measurement
+      df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trim(v), " ")[[1]][1]))
+      timestep <- dur_colname
+    }
+    if (validation_metric %in% names(df)) {  #Training and Validation scoring history
+      ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
+      if (sum(is.na(ylim))>1) {
+        ylim <- c(0.0, 1.0)
+      }
+      graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
+                     main = "Scoring History", col = "blue", ylim = ylim, ...)
+      graphics::par(new = TRUE)
+      graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim, ...)
+      graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
+    } else {  #Training scoring history only
+      ylim <- range(c(df[,c(training_metric)]))
+      if (sum(is.na(ylim))>1) {
+        ylim <- c(0.0, 1.0)
+      }
+      graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = timestep, ylab = training_metric,
+                     main = "Training Scoring History", col = "blue", ylim = ylim)
+
+    }
+  } else { # algo is not glm, deeplearning, drf, gbm
+  	stop("Plotting not implemented for this type of model")
+  }
 }
 
 #' Plot Variable Importances
@@ -4890,50 +4892,50 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' }
 #' @export
 h2o.varimp_plot <- function(model, num_of_features = NULL){
-    # store the variable importance table as vi
-    vi <- h2o.varimp(model)
+  # store the variable importance table as vi
+  vi <- h2o.varimp(model)
 
-    # check if num_of_features was passed as an integer, otherwise use all features
-    # default to 10 or less features if num_of_features is not specified
-    #  if(is.null(num_of_features)) {num_of_features = length(vi$variable)}
-    #  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
-    if(is.null(num_of_features)) {
-        feature_count = length(vi$variable)
-        num_of_features = ifelse(feature_count <= 10, length(vi$variable), 10)
-    } else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+  # check if num_of_features was passed as an integer, otherwise use all features
+  # default to 10 or less features if num_of_features is not specified
+  #  if(is.null(num_of_features)) {num_of_features = length(vi$variable)}
+  #  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+  if(is.null(num_of_features)) {
+    feature_count = length(vi$variable)
+    num_of_features = ifelse(feature_count <= 10, length(vi$variable), 10)
+  } else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
 
-    # check the model type and then update the model title
-    if(model@algorithm[1] == "deeplearning") {title = "Variable Importance: Deep Learning"}
-    else {title = paste("Variable Importance: ", model_type = toupper(model@algorithm[1]), sep="")}
+  # check the model type and then update the model title
+  if(model@algorithm[1] == "deeplearning") {title = "Variable Importance: Deep Learning"}
+  else {title = paste("Variable Importance: ", model_type = toupper(model@algorithm[1]), sep="")}
 
-    # use the longest ylable to adjust margins so ylabels don't cut off long string labels
-    ylabels = vi$variable
-    ymargin <-  max(strwidth(ylabels, "inch")+0.4, na.rm = TRUE)
-    par(mai=c(1.02,ymargin,0.82,0.42))
+  # use the longest ylable to adjust margins so ylabels don't cut off long string labels
+  ylabels = vi$variable
+  ymargin <-  max(strwidth(ylabels, "inch")+0.4, na.rm = TRUE)
+  par(mai=c(1.02,ymargin,0.82,0.42))
 
-    # if num_of_features = 1, creat only one bar (adjust size to look nice)
-    if(num_of_features == 1) {
-        barplot(rev(head(vi$scaled_importance, n = num_of_features)),
-                names.arg = rev(head(vi$variable, n = num_of_features)),
-                width = 0.2,
-                space = 1,
-                horiz = TRUE, las = 2,
-                ylim=c(0 ,2),
-                xlim = c(0,1),
-                axes = TRUE,
-                col ='#1F77B4',
-                main = title)
-    }
+  # if num_of_features = 1, creat only one bar (adjust size to look nice)
+  if(num_of_features == 1) {
+    barplot(rev(head(vi$scaled_importance, n = num_of_features)),
+            names.arg = rev(head(vi$variable, n = num_of_features)),
+            width = 0.2,
+            space = 1,
+            horiz = TRUE, las = 2,
+            ylim=c(0 ,2),
+            xlim = c(0,1),
+            axes = TRUE,
+            col ='#1F77B4',
+            main = title)
+  }
 
-        # plot num_of_features > 1
-    else if (num_of_features > 1) {
-        barplot(rev(head(vi$scaled_importance, n = num_of_features)),
-                names.arg = rev(head(vi$variable, n = num_of_features)),
-                space = 1,las = 2,
-                horiz = TRUE,
-                col ='#1F77B4', # blue
-                main = title)
-    }
+  # plot num_of_features > 1
+  else if (num_of_features > 1) {
+    barplot(rev(head(vi$scaled_importance, n = num_of_features)),
+            names.arg = rev(head(vi$variable, n = num_of_features)),
+            space = 1,las = 2,
+            horiz = TRUE,
+            col ='#1F77B4', # blue
+            main = title)
+  }
 }
 
 #' Plot Standardized Coefficient Magnitudes
@@ -4959,80 +4961,80 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
 #' }
 #' @export
 h2o.std_coef_plot <- function(model, num_of_features = NULL){
-    # check that the model is a glm
-    if(model@algorithm[1] != "glm") stop("Warning: model must be a GLM")
-    maxcoeff = 1
-    if (model@model$model_summary["family"]=="multinomial") {
-        coeff_table <- model@model$standardized_coefficient_magnitudes
-        sorted_table <- coeff_table[order(abs(coeff_table$coefficients)),]
-        norm_coef <- sorted_table$coefficients
-        sort_norm <- norm_coef
-        maxcoeff = max(norm_coef)
-    } else {
-        # get the coefficients table
-        coeff_table_complete <- model@model$coefficients_table
+  # check that the model is a glm
+  if(model@algorithm[1] != "glm") stop("Warning: model must be a GLM")
+  maxcoeff = 1
+  if (model@model$model_summary["family"]=="multinomial") {
+    coeff_table <- model@model$standardized_coefficient_magnitudes
+    sorted_table <- coeff_table[order(abs(coeff_table$coefficients)),]
+    norm_coef <- sorted_table$coefficients
+    sort_norm <- norm_coef
+    maxcoeff = max(norm_coef)
+  } else {
+  # get the coefficients table
+  coeff_table_complete <- model@model$coefficients_table
 
-        # remove the intercept row from the complete coeff_table_complete
-        coeff_table <- coeff_table_complete[coeff_table_complete$names != "Intercept",]
-        # order the coeffcients table by the absolute value of the standardized_coefficients
-        sorted_table <- coeff_table[order(abs(coeff_table$standardized_coefficients)),]
+  # remove the intercept row from the complete coeff_table_complete
+  coeff_table <- coeff_table_complete[coeff_table_complete$names != "Intercept",]
+  # order the coeffcients table by the absolute value of the standardized_coefficients
+  sorted_table <- coeff_table[order(abs(coeff_table$standardized_coefficients)),]
 
-        # get a vector of normalized coefs. and abs norm coefs., and the corresponding labels
-        norm_coef <- sorted_table$standardized_coefficients
-        sort_norm <- abs(sorted_table$standardized_coefficients)
-    }
-    labels <- sorted_table$names
+  # get a vector of normalized coefs. and abs norm coefs., and the corresponding labels
+  norm_coef <- sorted_table$standardized_coefficients
+  sort_norm <- abs(sorted_table$standardized_coefficients)
+}
+  labels <- sorted_table$names
+  
 
+  # check if num_of_features was passed as an integer, otherwise use all features
+  if(is.null(num_of_features)) {num_of_features = length(norm_coef)}
+  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
 
-    # check if num_of_features was passed as an integer, otherwise use all features
-    if(is.null(num_of_features)) {num_of_features = length(norm_coef)}
-    else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+  # initialize a vector of color codes, based on norm_coef values
+  color_code <- c()
+  for(element in norm_coef)
+  {if(element >= 0) color_code <- append(color_code, "#1F77B4")  # blue
+  else color_code <- append(color_code, '#FF7F0E')} # orange
 
-    # initialize a vector of color codes, based on norm_coef values
-    color_code <- c()
-    for(element in norm_coef)
-    {if(element >= 0) color_code <- append(color_code, "#1F77B4")  # blue
-    else color_code <- append(color_code, '#FF7F0E')} # orange
+  # get the color sign, needed for the legend
+  color_sign <- c()
+  for(element in norm_coef)
+  {if(element >= 0) color_sign <- append(color_sign, "Positive")  # blue
+  else color_sign <- append(color_sign, 'Negative')} # orange
 
-    # get the color sign, needed for the legend
-    color_sign <- c()
-    for(element in norm_coef)
-    {if(element >= 0) color_sign <- append(color_sign, "Positive")  # blue
-    else color_sign <- append(color_sign, 'Negative')} # orange
+  # use the longest ylable to adjust margins so ylabels don't cut off long string labels
+  ylabels = labels
+  ymargin <-  max(strwidth(ylabels, "inch")+0.4, na.rm = TRUE)
+  par(mai=c(1.02,ymargin,0.82,0.42))
 
-    # use the longest ylable to adjust margins so ylabels don't cut off long string labels
-    ylabels = labels
-    ymargin <-  max(strwidth(ylabels, "inch")+0.4, na.rm = TRUE)
-    par(mai=c(1.02,ymargin,0.82,0.42))
+  # check if num_of_features = 1 and plot only one bar
+  if(num_of_features == 1) {
+    barplot(rev(sort_norm)[num_of_features],
+            names.arg = rev(labels)[num_of_features],
+            width = 0.2,
+            space = 1,
+            horiz = TRUE, las = 1,
+            ylim=c(0 ,2),
+            xlim = c(0,maxcoeff),
+            col = rev(color_code)[num_of_features],
+            main = "Standardized Coef. Magnitudes")
+  }
 
-    # check if num_of_features = 1 and plot only one bar
-    if(num_of_features == 1) {
-        barplot(rev(sort_norm)[num_of_features],
-                names.arg = rev(labels)[num_of_features],
-                width = 0.2,
-                space = 1,
-                horiz = TRUE, las = 1,
-                ylim=c(0 ,2),
-                xlim = c(0,maxcoeff),
-                col = rev(color_code)[num_of_features],
-                main = "Standardized Coef. Magnitudes")
-    }
+  # create horizontal barplot for one or more features
+  else {
+    barplot(tail(sort_norm, n = num_of_features),
+        names.arg = tail(labels, n = num_of_features),
+        legend.text = TRUE,
+        space = 1,
+        horiz = TRUE, las = 1,
+        col = tail(color_code, n = num_of_features),
+        xlim = c(0,maxcoeff),
+        main = "Standardized Coef. Magnitudes")
+  }
 
-        # create horizontal barplot for one or more features
-    else {
-        barplot(tail(sort_norm, n = num_of_features),
-                names.arg = tail(labels, n = num_of_features),
-                legend.text = TRUE,
-                space = 1,
-                horiz = TRUE, las = 1,
-                col = tail(color_code, n = num_of_features),
-                xlim = c(0,maxcoeff),
-                main = "Standardized Coef. Magnitudes")
-    }
-
-    # add legend, that adapts if one to all bars are plotted
-    legend('bottomright', legend = unique(tail(color_sign, n = num_of_features)),
-           col = unique(tail(color_code, n = num_of_features)), pch = 20)
+  # add legend, that adapts if one to all bars are plotted
+  legend('bottomright', legend = unique(tail(color_sign, n = num_of_features)),
+  col = unique(tail(color_code, n = num_of_features)), pch = 20)
 
 }
 
@@ -5054,51 +5056,51 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 setGeneric("h2o.gains_lift_plot", function(object, type = c("both", "gains", "lift"), ...) {})
 
 .gains_lift_plot <- function(gain_table, type) {
-    labels <- character()
-    colors <- character()
+  labels <- character()
+  colors <- character()
 
-    if (type == "both") {
-        ylim <- c(0, max(gain_table$cumulative_capture_rate, gain_table$cumulative_lift))
-        ylab <- "cumulative capture rate, cumulative lift"
-        title <- "Gains / Lift"
-    } else if (type == "gains") {
-        ylim <- c(0, max(gain_table$cumulative_capture_rate))
-        ylab <- "cumulative capture rate"
-        title <- "Gains"
-    } else if (type == "lift") {
-        ylim <- c(0, max(gain_table$cumulative_lift))
-        ylab <- "cumulative lift"
-        title <- "Lift"
-    }
-    if (type %in% c("both", "gains")) {
-        graphics::plot(gain_table$cumulative_data_fraction,
-                       gain_table$cumulative_capture_rate,
-                       type='l',
-                       ylim = ylim,
-                       col = "blue",
-                       xlab = "cumulative data fraction",
-                       ylab = ylab,
-                       main = title,
-                       panel.first = grid())
-        labels <- c("cummulative capture rate")
-        colors <- c("blue")
-    }
-    if (type %in% c("both", "lift")) {
-        opar <- par(new = type == "both")  # if new == T => don't clean the plot
-        on.exit(par(opar))
-        graphics::plot(gain_table$cumulative_data_fraction,
-                       gain_table$cumulative_lift,
-                       type = "l",
-                       ylim = ylim,
-                       col = "orange",
-                       xlab = "cumulative data fraction",
-                       ylab = ylab,
-                       main = title,
-                       panel.first = grid())
-        labels <- c(labels, "cummulative lift")
-        colors <- c(colors, "orange")
-    }
-    legend("topright", labels, lty = 1, col = colors)
+  if (type == "both") {
+    ylim <- c(0, max(gain_table$cumulative_capture_rate, gain_table$cumulative_lift))
+    ylab <- "cumulative capture rate, cumulative lift"
+    title <- "Gains / Lift"
+  } else if (type == "gains") {
+    ylim <- c(0, max(gain_table$cumulative_capture_rate))
+    ylab <- "cumulative capture rate"
+    title <- "Gains"
+  } else if (type == "lift") {
+    ylim <- c(0, max(gain_table$cumulative_lift))
+    ylab <- "cumulative lift"
+    title <- "Lift"
+  }
+  if (type %in% c("both", "gains")) {
+    graphics::plot(gain_table$cumulative_data_fraction,
+                   gain_table$cumulative_capture_rate,
+                   type='l',
+                   ylim = ylim,
+                   col = "blue",
+                   xlab = "cumulative data fraction",
+                   ylab = ylab,
+                   main = title,
+                   panel.first = grid())
+    labels <- c("cummulative capture rate")
+    colors <- c("blue")
+  }
+  if (type %in% c("both", "lift")) {
+    opar <- par(new = type == "both")  # if new == T => don't clean the plot
+    on.exit(par(opar))
+    graphics::plot(gain_table$cumulative_data_fraction,
+                   gain_table$cumulative_lift,
+                   type = "l",
+                   ylim = ylim,
+                   col = "orange",
+                   xlab = "cumulative data fraction",
+                   ylab = ylab,
+                   main = title,
+                   panel.first = grid())
+    labels <- c(labels, "cummulative lift")
+    colors <- c(colors, "orange")
+  }
+  legend("topright", labels, lty = 1, col = colors)
 }
 
 #' Plot Gains/Lift curves
@@ -5106,8 +5108,8 @@ setGeneric("h2o.gains_lift_plot", function(object, type = c("both", "gains", "li
 #' @param type What curve to plot. One of "both", "gains", "lift".
 #' @export
 setMethod("h2o.gains_lift_plot", "H2OModelMetrics", function(object, type = c("both", "gains", "lift")) {
-    gain_table <- h2o.gainsLift(object)
-    .gains_lift_plot(gain_table, type = match.arg(type))
+  gain_table <- h2o.gainsLift(object)
+  .gains_lift_plot(gain_table, type = match.arg(type))
 })
 
 #' Plot Gains/Lift curves
@@ -5116,45 +5118,45 @@ setMethod("h2o.gains_lift_plot", "H2OModelMetrics", function(object, type = c("b
 #' @param xval if TRUE, use cross-validation metrics
 #' @export
 setMethod("h2o.gains_lift_plot", "H2OModel", function(object, type = c("both", "gains", "lift"), xval = FALSE) {
-    gain_table <- h2o.gainsLift(object, xval = xval)
-    .gains_lift_plot(gain_table, type = match.arg(type))
+  gain_table <- h2o.gainsLift(object, xval = xval)
+  .gains_lift_plot(gain_table, type = match.arg(type))
 })
 
 #' @method plot H2OBinomialMetrics
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
-    # TODO: add more types (i.e. cutoffs)
-    if(!type %in% c("roc", "pr", "gains_lift")) stop("type must be 'roc', 'pr', or 'gains_lift'")
-    if(type == "roc") {
-        xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
-        if(missing(main)) {
-            main <- "Receiver Operating Characteristic curve"
-            if(x@on_train) {
-                main <- paste(main, "(on train)")
-            } else if (x@on_valid) {
-                main <- paste(main, "(on valid)")
-            }
-        }
-        xdata <- x@metrics$thresholds_and_metric_scores$fpr
-        ydata <- x@metrics$thresholds_and_metric_scores$tpr
-        graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
-        graphics::abline(0, 1, lty = 2)
-    } else if(type=="pr"){
-        xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision (TPR)"
-        if(missing(main)) {
-            main <- "Precision Recall curve"
-            if(x@on_train) {
-                main <- paste(main, "(on train)")
-            } else if (x@on_valid) {
-                main <- paste(main, "(on valid)")
-            }
-        }
-        xdata <- rev(x@metrics$thresholds_and_metric_scores$recall)
-        ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
-        graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
-    } else if (type == "gains_lift") {
-        h2o.gains_lift_plot(x, ...)
+  # TODO: add more types (i.e. cutoffs)
+  if(!type %in% c("roc", "pr", "gains_lift")) stop("type must be 'roc', 'pr', or 'gains_lift'")
+  if(type == "roc") {
+    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
+    if(missing(main)) {
+      main <- "Receiver Operating Characteristic curve"
+      if(x@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (x@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
     }
+    xdata <- x@metrics$thresholds_and_metric_scores$fpr
+    ydata <- x@metrics$thresholds_and_metric_scores$tpr
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
+    graphics::abline(0, 1, lty = 2)
+  } else if(type=="pr"){
+    xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision (TPR)"
+    if(missing(main)) {
+      main <- "Precision Recall curve"
+      if(x@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (x@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
+    }
+    xdata <- rev(x@metrics$thresholds_and_metric_scores$recall)
+    ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
+  } else if (type == "gains_lift") {
+    h2o.gains_lift_plot(x, ...)
+  }
 }
 
 #' @method plot H2OBinomialUpliftMetrics
@@ -5165,9 +5167,9 @@ plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", normalize=FALSE, mai
     xaxis <- "Number Targeted"; yaxis = paste("Cumulative", metric)
     if(missing(main)) {
         if(normalize){
-            main <- paste("Cumulative Uplift Curve normalized - ", metric)
+          main <- paste("Cumulative Uplift Curve normalized - ", metric)
         } else {
-            main <- paste("Cumulative Uplift Curve - ", metric)
+          main <- paste("Cumulative Uplift Curve - ", metric)
         }
         if(x@on_train) {
             main <- paste(main, "(on train)")
@@ -5176,23 +5178,23 @@ plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", normalize=FALSE, mai
         }
     }
     if(normalize){
-        metric.auuc <- h2o.auuc_normalized(x, metric)
-        ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, "_normalized", sep="")))
-        main <- paste(main, "\nAUUC normalized =", metric.auuc)
+      metric.auuc <- h2o.auuc_normalized(x, metric)
+      ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, "_normalized", sep="")))
+      main <- paste(main, "\nAUUC normalized =", metric.auuc)  
     } else {
-        metric.auuc <- h2o.auuc(x, metric)
-        ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
-        main <- paste(main, "\nAUUC=", metric.auuc)
+      metric.auuc <- h2o.auuc(x, metric)
+      ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
+      main <- paste(main, "\nAUUC=", metric.auuc)
     }
     xdata <- x@metrics$thresholds_and_metric_scores$n
     a <- ydata[length(ydata)-1] / xdata[length(xdata)-1]
     yrnd <- xdata * a
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(ydata, 0),max(ydata)), xlim=c(min(xdata),max(xdata)), type='l', lty=1, col='blue', lwd=2, panel.first = grid())
-    graphics::lines(xdata, yrnd, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(yrnd, 0),max(yrnd)), xlim=c(min(xdata),max(xdata)), type='l', lty=2, col='black', lwd=2, panel.first = grid())
+    graphics::lines(xdata, yrnd, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(yrnd, 0),max(yrnd)), xlim=c(min(xdata),max(xdata)), type='l', lty=2, col='black', lwd=2, panel.first = grid())        
     if(metric == 'lift') {
-        legend("topright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)
+        legend("topright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)  
     } else {
-        legend("bottomright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)
+        legend("bottomright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)  
     }
 }
 
@@ -5200,19 +5202,19 @@ plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", normalize=FALSE, mai
 screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...) {
     if(x@algorithm != "pca") stop("x must be an H2O PCA model")
     if(missing(npcs))
-        npcs = min(10, x@model$parameters$k)
+      npcs = min(10, x@model$parameters$k)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
-        stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
+      stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
 
     sdevH2O <- h2o.sdev(x)
     if(missing(main))
-        main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
+      main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
     if(type == "barplot")
-        barplot(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
+      barplot(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else if(type == "lines")
-        lines(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
+      lines(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else
-        stop("type must be either 'barplot' or 'lines'")
+      stop("type must be either 'barplot' or 'lines'")
 }
 
 #'
@@ -5233,61 +5235,61 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 #' }
 #' @export
 h2o.sdev <- function(object) {
-    if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")
-        stop("object must be an H2O PCA model")
-    as.numeric(object@model$importance[1,])
+  if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")
+    stop("object must be an H2O PCA model")
+  as.numeric(object@model$importance[1,])
 }
 
 # extract "bite size" pieces from a model
 .model.parts <- function(object) {
-    o  <- object
-    m  <- object@model
-    tm <- object@model$training_metrics
-    vm <- object@model$validation_metrics
-    xm <- object@model$cross_validation_metrics
-    xms <- object@model$cross_validation_metrics_summary
-    if( !is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=  xm,xms=xms) )
-    if(  is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=  xm,xms=xms) )
-    if( !is.null(vm@metrics) &&  is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=NULL,xms=NULL) )
-    return( list(o=o,m=m,tm=tm,vm=NULL,xm=NULL,xms=NULL) )
+  o  <- object
+  m  <- object@model
+  tm <- object@model$training_metrics
+  vm <- object@model$validation_metrics
+  xm <- object@model$cross_validation_metrics
+  xms <- object@model$cross_validation_metrics_summary
+  if( !is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=  xm,xms=xms) )
+  if(  is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=  xm,xms=xms) )
+  if( !is.null(vm@metrics) &&  is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=NULL,xms=NULL) )
+  return( list(o=o,m=m,tm=tm,vm=NULL,xm=NULL,xms=NULL) )
 }
 
 .warn.no.validation <- function() {
-    warning("No validation metrics available.", call.=FALSE)
-    NULL
+  warning("No validation metrics available.", call.=FALSE)
+  NULL
 }
 
 .warn.no.cross.validation <- function() {
-    warning("No cross-validation metrics available.", call.=FALSE)
-    NULL
+  warning("No cross-validation metrics available.", call.=FALSE)
+  NULL
 }
 
 .isSupervised <- function(algo, params) {
-    if (algo == "kmeans" ||
-        algo == "glrm" ||
-        algo == "pca" ||
-        algo == "extendedisolationforest" ||
-        (algo == "deeplearning" && !is.null(params$autoencoder) && params$autoencoder)) {
-        FALSE
-    } else {
-        TRUE
-    }
+  if (algo == "kmeans" ||
+      algo == "glrm" ||
+      algo == "pca" ||
+      algo == "extendedisolationforest" ||
+      (algo == "deeplearning" && !is.null(params$autoencoder) && params$autoencoder)) {
+    FALSE
+  } else {
+    TRUE
+  }
 }
 
 # Transform given name to
 # expected values ("gbm", "drf")
 # It allows for having algorithm name aliases
 .h2o.unifyAlgoName <- function(algo) {
-    result <- if (algo == "randomForest") "drf" else algo
-    result
+  result <- if (algo == "randomForest") "drf" else algo
+  result
 }
 
 #
 # Returns REST API version for given algo.
 #
 .h2o.getAlgoVersion <- function(algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-    result <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]][["__meta"]]$schema_version
-    result
+  result <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]][["__meta"]]$schema_version
+  result
 }
 
 #' Tabulation between Two Columns of an H2OFrame
@@ -5319,25 +5321,25 @@ h2o.tabulate <- function(data, x, y,
                          weights_column = NULL,
                          nbins_x = 50,
                          nbins_y = 50
-) {
-    args <- .verify_datacols(data, c(x,y))
-    if(!is.numeric(nbins_x)) stop("`nbins_x` must be a positive number")
-    if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
+                         ) {
+  args <- .verify_datacols(data, c(x,y))
+  if(!is.numeric(nbins_x)) stop("`nbins_x` must be a positive number")
+  if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
 
-    parms = list()
-    parms$dataset <- attr(data, "id")
-    parms$predictor <- args$cols[1]
-    parms$response <- args$cols[2]
-    if( !missing(weights_column) )            parms$weight <- weights_column
-    parms$nbins_predictor <- nbins_x
-    parms$nbins_response <- nbins_y
+  parms = list()
+  parms$dataset <- attr(data, "id")
+  parms$predictor <- args$cols[1]
+  parms$response <- args$cols[2]
+  if( !missing(weights_column) )            parms$weight <- weights_column
+  parms$nbins_predictor <- nbins_x
+  parms$nbins_response <- nbins_y
 
-    res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 99, page = "Tabulate", .params = parms)
-    count_table <- res$count_table
-    response_table <- res$response_table
-    out <- list(count_table = count_table, response_table = response_table, cols = args$cols)
-    oldClass(out) <- c("H2OTabulate", "list")
-    out
+  res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 99, page = "Tabulate", .params = parms)
+  count_table <- res$count_table
+  response_table <- res$response_table
+  out <- list(count_table = count_table, response_table = response_table, cols = args$cols)
+  oldClass(out) <- c("H2OTabulate", "list")
+  out
 }
 
 #' Plot an H2O Tabulate Heatmap
@@ -5364,44 +5366,44 @@ h2o.tabulate <- function(data, x, y,
 #' @export
 plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 12, ...) {
 
-    if (!inherits(x, "H2OTabulate")) {
-        stop("Must be an H2OTabulate object")
-    }
+  if (!inherits(x, "H2OTabulate")) {
+    stop("Must be an H2OTabulate object")
+  }
 
-    if (!requireNamespace("ggplot2", quietly = TRUE)) {
-        stop("In order to plot.H2OTabulate you must have ggplot2 package installed")
-    }
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("In order to plot.H2OTabulate you must have ggplot2 package installed")
+  }
 
-    # Pull small counts table into R memory to plot
-    df <- as.data.frame(x$count_table)
-    names(df) <- c("c1", "c2", "counts")
+  # Pull small counts table into R memory to plot
+  df <- as.data.frame(x$count_table)
+  names(df) <- c("c1", "c2", "counts")
 
-    # Reorder the levels for better plotting
-    if (suppressWarnings(is.na(sum(as.numeric(df$c1))))) {
-        c1_order <- order(unique(df$c1))
-    } else {
-        c1_order <- order(unique(as.numeric(df$c1)))
-    }
-    if (suppressWarnings(is.na(sum(as.numeric(df$c2))))) {
-        c2_order <- order(unique(df$c2))
-    } else {
-        c2_order <- order(unique(as.numeric(df$c2)))
-    }
-    c1_labels <- unique(df$c1)
-    c2_labels <- unique(df$c2)
-    df$c1 <- factor(df$c1, levels = c1_labels[c1_order])
-    df$c2 <- factor(df$c2, levels = c2_labels[c2_order])
+  # Reorder the levels for better plotting
+  if (suppressWarnings(is.na(sum(as.numeric(df$c1))))) {
+    c1_order <- order(unique(df$c1))
+  } else {
+    c1_order <- order(unique(as.numeric(df$c1)))
+  }
+  if (suppressWarnings(is.na(sum(as.numeric(df$c2))))) {
+    c2_order <- order(unique(df$c2))
+  } else {
+    c2_order <- order(unique(as.numeric(df$c2)))
+  }
+  c1_labels <- unique(df$c1)
+  c2_labels <- unique(df$c2)
+  df$c1 <- factor(df$c1, levels = c1_labels[c1_order])
+  df$c2 <- factor(df$c2, levels = c2_labels[c2_order])
 
-    # Plot heatmap
-    c1 <- c2 <- counts <- NULL #set these to pass CRAN checks w/o warnings
-    (p <- ggplot2::ggplot(df, ggplot2::aes(c1, c2))
-        + ggplot2::geom_tile(ggplot2::aes(fill = counts), colour = "white") + ggplot2::scale_fill_gradient(low = "white", high = "steelblue"))
+  # Plot heatmap
+  c1 <- c2 <- counts <- NULL #set these to pass CRAN checks w/o warnings
+  (p <- ggplot2::ggplot(df, ggplot2::aes(c1, c2))
+  + ggplot2::geom_tile(ggplot2::aes(fill = counts), colour = "white") + ggplot2::scale_fill_gradient(low = "white", high = "steelblue"))
 
-    # Adjust the plot
-    p <- p + ggplot2::theme_grey(base_size = base_size) + ggplot2::labs(x = xlab, y = ylab) + ggplot2::scale_x_discrete(expand = c(0, 0)) + ggplot2::scale_y_discrete(expand = c(0, 0)) + ggplot2::theme(legend.position = "none", axis.ticks = ggplot2::element_blank(), axis.text.x = ggplot2::element_text(size = base_size * 0.8, angle = 330, hjust = 0, colour = "grey50"))
+  # Adjust the plot
+  p <- p + ggplot2::theme_grey(base_size = base_size) + ggplot2::labs(x = xlab, y = ylab) + ggplot2::scale_x_discrete(expand = c(0, 0)) + ggplot2::scale_y_discrete(expand = c(0, 0)) + ggplot2::theme(legend.position = "none", axis.ticks = ggplot2::element_blank(), axis.text.x = ggplot2::element_text(size = base_size * 0.8, angle = 330, hjust = 0, colour = "grey50"))
 
-    # Return a ggplot object
-    return(p)
+  # Return a ggplot object
+  return(p)
 }
 
 #'
@@ -5428,10 +5430,10 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
 #' }
 #' @export
 h2o.cross_validation_models <- function(object) {
-    if(!is(object, "H2OModel"))
-        stop("object must be an H2O model")
-    if (is.null(object@model$cross_validation_models)) return(NULL)
-    lapply(object@model$cross_validation_models, function(x) h2o.getModel(x$name))
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_models)) return(NULL)
+  lapply(object@model$cross_validation_models, function(x) h2o.getModel(x$name))
 }
 
 #'
@@ -5458,10 +5460,10 @@ h2o.cross_validation_models <- function(object) {
 #' }
 #' @export
 h2o.cross_validation_fold_assignment <- function(object) {
-    if(!is(object, "H2OModel"))
-        stop("object must be an H2O model")
-    if (is.null(object@model$cross_validation_fold_assignment)) return(NULL)
-    h2o.getFrame(object@model$cross_validation_fold_assignment$name)
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_fold_assignment)) return(NULL)
+  h2o.getFrame(object@model$cross_validation_fold_assignment$name)
 }
 
 #'
@@ -5488,10 +5490,10 @@ h2o.cross_validation_fold_assignment <- function(object) {
 #' }
 #' @export
 h2o.cross_validation_holdout_predictions <- function(object) {
-    if(!is(object, "H2OModel"))
-        stop("object must be an H2O model")
-    if (is.null(object@model$cross_validation_holdout_predictions)) return(NULL)
-    h2o.getFrame(object@model$cross_validation_holdout_predictions$name)
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_holdout_predictions)) return(NULL)
+  h2o.getFrame(object@model$cross_validation_holdout_predictions$name)
 }
 
 #'
@@ -5518,10 +5520,10 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #' }
 #' @export
 h2o.cross_validation_predictions <- function(object) {
-    if(!is(object, "H2OModel"))
-        stop("object must be an H2O model")
-    if (is.null(object@model$cross_validation_predictions)) return(NULL)
-    lapply(object@model$cross_validation_predictions, function(x) h2o.getFrame(x$name))
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_predictions)) return(NULL)
+  lapply(object@model$cross_validation_predictions, function(x) h2o.getFrame(x$name))
 }
 
 #' Partial Dependence Plots
@@ -5580,502 +5582,502 @@ h2o.cross_validation_predictions <- function(object) {
 #' @export
 
 h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
-                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL,
+                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL, 
                             row_index=-1, targets=NULL) {
-    if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
-    if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
-    if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
-    if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
-    if(!is.logical(plot)) stop("plot must be a logical value")
-    if(!is.logical(plot_stddev)) stop("plot must be a logical value")
-    if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
-    if((is(object, "H2OMultinomialModel"))){
-        if(is.null(targets)) stop("targets parameter has to be set for multinomial classification")
-        for(i in 1:length(targets)){
-            if(!is.character(targets[i])) stop("targets parameter must be a list of string values")
+  if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
+  if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
+  if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
+  if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
+  if(!is.logical(plot)) stop("plot must be a logical value")
+  if(!is.logical(plot_stddev)) stop("plot must be a logical value")
+  if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
+  if((is(object, "H2OMultinomialModel"))){
+    if(is.null(targets)) stop("targets parameter has to be set for multinomial classification")
+    for(i in 1:length(targets)){
+        if(!is.character(targets[i])) stop("targets parameter must be a list of string values")
+    }
+  }
+  
+  noPairs = missing(col_pairs_2dpdp)
+  noCols = missing(cols)
+  if(noCols && noPairs) cols =  object@parameters$x # set to default only if both are missing
+
+  y = object@parameters$y
+  numCols = 0
+  numColPairs = 0    
+  if (!missing(cols)) { # check valid cols in cols for 1d pdp
+    x <- cols
+    args <- .verify_dataxy(data, x, y)
+  }
+  cpairs <- NULL
+  if (!missing(col_pairs_2dpdp))   { # verify valid cols for 2d pdp
+    for (onePair in col_pairs_2dpdp) {
+      pargs <- .verify_dataxy(data, onePair, y)
+      cpairs <-
+        c(cpairs, paste0("[", paste (pargs$x, collapse = ','), "]"))
+    }
+    numColPairs = length(cpairs)
+  }
+
+  if (is.numeric(weight_column) && (weight_column != -1)) {
+      stop("weight_column should be a column name of your data frame.")
+  } else if (is.character(weight_column)) { # weight_column_index is column name
+    if (!weight_column %in% h2o.names(data))
+      stop("weight_column_index should be one of your columns in your data frame.")
+    else
+      weight_column <- match(weight_column, h2o.names(data))-1
+  }
+  
+  if (!is.numeric(row_index)) {
+    stop("row_index should be numeric.")
+  }
+  
+  parms = list()
+  if (!missing(col_pairs_2dpdp)) {
+    parms$col_pairs_2dpdp <- paste0("[", paste (cpairs, collapse = ','), "]")
+  }
+  if (!missing(cols)) {
+    parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
+    numCols = length(cols)
+  }
+  if(is.null(targets)){
+    num_1d_pp_data <- numCols
+  } else {
+    num_1d_pp_data <- numCols * length(targets)
+  }
+  noCols = missing(cols)
+  parms$model_id  <- attr(object, "model_id")
+  parms$frame_id <- attr(data, "id")
+  parms$nbins <- nbins
+  parms$weight_column_index <- weight_column
+  parms$add_missing_na <- include_na
+  parms$row_index = row_index
+
+  if (is.null(user_splits) || length(user_splits) == 0) {
+    parms$user_cols <- NULL
+    parms$user_splits <- NULL
+    parms$num_user_splits <- NULL
+  } else {
+    user_cols <- c()
+    user_values <- c()
+    user_num_splits <- c()
+    column_names <- h2o.names(data)
+    for (ind in c(1:length(user_splits))) {
+      aList <- user_splits[[ind]]
+      csname = aList[1]
+      if (csname %in% column_names) {
+        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname]) || h2o.getTypes(data)[[which(names(data) == csname)]] == "time") {
+          nVal <- length(aList)-1
+          if (h2o.isfactor(data[csname])) {
+            domains <- h2o.levels(data[csname]) # enum values
+            tempVal <- aList[2:length(aList)]
+            intVals <- c(1:length(tempVal))
+            for (eleind in c(1:nVal)) {
+              eleIndex <- which(domains == tempVal[eleind])
+              if (eleIndex>0) {
+                intVals[eleind] <- which(domains == tempVal[eleind]) - 1
+              } else {
+                stop("Illegal enum value encountered.  To include missing values in your feature values, set include_na to TRUE")
+              }
+            }
+            user_values <- c(user_values, intVals)
+          } else {
+            vals <- as.numeric(unlist(strsplit(aList[2:length(aList)], ",")))
+            user_values <- c(user_values, vals)
+          }
+
+          user_num_splits <- c(user_num_splits, nVal)
+          user_cols <- c(user_cols, csname)
+        } else {
+          stop ("Partial dependency plots are generated for numerical and categorical columns only.")
         }
+      } else {
+        stop(
+          "column names used in user_splits are not valid.  They should be chosen from the columns of your data set"
+        )
+      }
     }
+    parms$user_cols <- paste0("[", paste(user_cols, collapse=','), "]")
+    parms$user_splits <- paste0("[", paste(user_values, collapse=','), "]")
+    parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
+  }
+  
+  if(!is.null(targets)) {
+    parms$targets <- paste0("[", paste (targets, collapse = ','), "]")
+  }
 
-    noPairs = missing(col_pairs_2dpdp)
-    noCols = missing(cols)
-    if(noCols && noPairs) cols =  object@parameters$x # set to default only if both are missing
+  if(!missing(destination_key)) parms$destination_key = destination_key
 
-    y = object@parameters$y
-    numCols = 0
-    numColPairs = 0
-    if (!missing(cols)) { # check valid cols in cols for 1d pdp
-        x <- cols
-        args <- .verify_dataxy(data, x, y)
-    }
-    cpairs <- NULL
-    if (!missing(col_pairs_2dpdp))   { # verify valid cols for 2d pdp
-        for (onePair in col_pairs_2dpdp) {
-            pargs <- .verify_dataxy(data, onePair, y)
-            cpairs <-
-                c(cpairs, paste0("[", paste (pargs$x, collapse = ','), "]"))
+  res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "PartialDependence/", .params = parms)
+  .h2o.__waitOnJob(res$key$name)
+  url <- gsub("/3/", "", res$dest$URL)
+  res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3)
+
+  ## Change feature names to the original supplied, the following is okay because order is preserved
+      
+  pps <- res$partial_dependence_data
+  min_y <- min(pps[[1]][,2])
+  max_y <- max(pps[[1]][,2])
+  min_lower <- min_y
+  max_upper <- max_y
+  col_name_index <- 1
+  for (i in 1:length(pps)) {
+    pp <- pps[[i]]
+    if (!all(is.na(pp))) {
+      min_y <- min(min_y, min(pp[,2])) 
+      max_y <- max(max_y, max(pp[,2]))
+      min_lower <- min(min_lower, pp[,2] - pp[,3])
+      max_upper <- max(max_upper, pp[,2] + pp[,3])
+      if (i <= num_1d_pp_data) {
+        if(is.null(targets)){
+          col_name_index = i
+          title <- paste("Partial dependency plot for", cols[col_name_index]) 
+        } else if(!is.null(targets)){
+          if(length(cols) > 1 && i %% length(cols) == 0) {
+            col_name_index = col_name_index + 1
+          }
+          if(length(targets) > 1) {
+            title <- paste("Partial dependency plot for", cols[col_name_index], "and classes\n", paste(targets, collapse=", "))
+          } else {
+            title <- paste("Partial dependency plot for", cols[col_name_index], "and class", targets)
+          }
         }
-        numColPairs = length(cpairs)
+        names(pps[[i]]) <-
+          c(cols[col_name_index],
+            "mean_response",
+            "stddev_response",
+            "std_error_mean_response")
+        attr(pps[[i]],"description") <- title
+      } else {
+        names(pps[[i]]) <-
+          c(col_pairs_2dpdp[[i-num_1d_pp_data]][1],
+            col_pairs_2dpdp[[i-num_1d_pp_data]][2],
+            "mean_response",
+            "stddev_response",
+            "std_error_mean_response")
+        attr(pps[[i]],"description") <- paste('2D partial dependence plot for', col_pairs_2dpdp[[i-num_1d_pp_data]][1], "and", col_pairs_2dpdp[[i-num_1d_pp_data]][1])    
+      }
     }
-
-    if (is.numeric(weight_column) && (weight_column != -1)) {
-        stop("weight_column should be a column name of your data frame.")
-    } else if (is.character(weight_column)) { # weight_column_index is column name
-        if (!weight_column %in% h2o.names(data))
-            stop("weight_column_index should be one of your columns in your data frame.")
-        else
-            weight_column <- match(weight_column, h2o.names(data))-1
-    }
-
-    if (!is.numeric(row_index)) {
-        stop("row_index should be numeric.")
-    }
-
-    parms = list()
-    if (!missing(col_pairs_2dpdp)) {
-        parms$col_pairs_2dpdp <- paste0("[", paste (cpairs, collapse = ','), "]")
-    }
-    if (!missing(cols)) {
-        parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
-        numCols = length(cols)
-    }
-    if(is.null(targets)){
-        num_1d_pp_data <- numCols
+  }
+  col_types = unlist(h2o.getTypes(data))
+  col_names = names(data)
+    
+  pp.plot.1d <- function(pp) {
+    if(!all(is.na(pp))) {
+      x <- pp[,1]
+      y <- pp[,2]
+      stddev <- pp[,3] 
+      type <- col_types[which(col_names == names(pp)[1])]
+      if(type == "enum") {
+        line_type <- "p"
+        lty <- NULL
+        pch <- 19
+        pp[, 1] <- factor(pp[,1], levels=pp[,1])
+      } else {
+        line_type <- "l"
+        lty <- 1
+        pch <- NULL
+      }
+      ## Plot one standard deviation above and below the mean
+      if(plot_stddev) {
+        ## Added upper and lower std dev confidence bound
+        upper = y + stddev
+        lower = y - stddev
+        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
+        pp.plot.1d.plotNA(pp, type, "red")
+        polygon(pp.plot.1d.proccessDataForPolygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper))) , col = adjustcolor("red", alpha.f = 0.1), border = F)
+        if(type == "enum"){
+          x <- c(1:length(x))
+          arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col="red")
+        }
+      } else {
+        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"))
+        pp.plot.1d.plotNA(pp, type, "red")
+      }
     } else {
-        num_1d_pp_data <- numCols * length(targets)
+      print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
-    noCols = missing(cols)
-    parms$model_id  <- attr(object, "model_id")
-    parms$frame_id <- attr(data, "id")
-    parms$nbins <- nbins
-    parms$weight_column_index <- weight_column
-    parms$add_missing_na <- include_na
-    parms$row_index = row_index
-
-    if (is.null(user_splits) || length(user_splits) == 0) {
-        parms$user_cols <- NULL
-        parms$user_splits <- NULL
-        parms$num_user_splits <- NULL
+  }
+        
+  pp.plot.1d.plotNA <- function(pp, type, color) {
+    ## Plot NA value if numerical
+    NAsIds = which(is.na(pp[,1:1]))
+    if (type != "enum" && include_na && length(NAsIds) != 0) {
+        points(pp[,1:1],array(pp[NAsIds, 2:2], dim = c(length(pp[,1:1]), 1)), col=color, type="l", lty=5)
+        if (is.null(targets)) {
+          legend("topright", legend="NAN", col=color, lty=5, bty="n", ncol=length(pps))
+        }
+        return(TRUE)
     } else {
-        user_cols <- c()
-        user_values <- c()
-        user_num_splits <- c()
-        column_names <- h2o.names(data)
-        for (ind in c(1:length(user_splits))) {
-            aList <- user_splits[[ind]]
-            csname = aList[1]
-            if (csname %in% column_names) {
-                if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname]) || h2o.getTypes(data)[[which(names(data) == csname)]] == "time") {
-                    nVal <- length(aList)-1
-                    if (h2o.isfactor(data[csname])) {
-                        domains <- h2o.levels(data[csname]) # enum values
-                        tempVal <- aList[2:length(aList)]
-                        intVals <- c(1:length(tempVal))
-                        for (eleind in c(1:nVal)) {
-                            eleIndex <- which(domains == tempVal[eleind])
-                            if (eleIndex>0) {
-                                intVals[eleind] <- which(domains == tempVal[eleind]) - 1
-                            } else {
-                                stop("Illegal enum value encountered.  To include missing values in your feature values, set include_na to TRUE")
-                            }
-                        }
-                        user_values <- c(user_values, intVals)
-                    } else {
-                        vals <- as.numeric(unlist(strsplit(aList[2:length(aList)], ",")))
-                        user_values <- c(user_values, vals)
-                    }
-
-                    user_num_splits <- c(user_num_splits, nVal)
-                    user_cols <- c(user_cols, csname)
-                } else {
-                    stop ("Partial dependency plots are generated for numerical and categorical columns only.")
-                }
-            } else {
-                stop(
-                    "column names used in user_splits are not valid.  They should be chosen from the columns of your data set"
-                )
-            }
-        }
-        parms$user_cols <- paste0("[", paste(user_cols, collapse=','), "]")
-        parms$user_splits <- paste0("[", paste(user_values, collapse=','), "]")
-        parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
+        return(FALSE)
     }
-
-    if(!is.null(targets)) {
-        parms$targets <- paste0("[", paste (targets, collapse = ','), "]")
+  }     
+         
+  pp.plot.1d.plotLegend.multinomial <- function(pp, targets, colors, lty, pch, has_NA) {
+    if (include_na && length(which(is.na(pp[,1:1]))) != 0) {
+      legendTargets <- c()
+      legendColors <- c()
+      legendLtys <- c()
+      legendPchs <- c()
+      for ( i in 1: length(targets)) {
+        # target label
+        legendTargets <- append(legendTargets, targets[i])
+        legendColors <- append(legendColors, colors[i])
+        legendLtys <- append(legendLtys, lty)
+        legendPchs <- append(legendPchs, pch)
+        # target NAN line label
+        if (has_NA[i]) {
+          legendTargets <- append(legendTargets, paste(targets[i], " NAN"))
+          legendColors <- append(legendColors, colors[i])
+          legendLtys <- append(legendLtys, 5)
+        } 
+        legendPchs <- append(legendPchs, NULL)
+      }
+      legend("topright", legend=legendTargets, col=legendColors, lty=legendLtys, pch=legendPchs, bty="n", ncol=length(pps))
+    }  else {
+      legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))
     }
-
-    if(!missing(destination_key)) parms$destination_key = destination_key
-
-    res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "PartialDependence/", .params = parms)
-    .h2o.__waitOnJob(res$key$name)
-    url <- gsub("/3/", "", res$dest$URL)
-    res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3)
-
-    ## Change feature names to the original supplied, the following is okay because order is preserved
-
-    pps <- res$partial_dependence_data
-    min_y <- min(pps[[1]][,2])
-    max_y <- max(pps[[1]][,2])
-    min_lower <- min_y
-    max_upper <- max_y
-    col_name_index <- 1
-    for (i in 1:length(pps)) {
-        pp <- pps[[i]]
-        if (!all(is.na(pp))) {
-            min_y <- min(min_y, min(pp[,2]))
-            max_y <- max(max_y, max(pp[,2]))
-            min_lower <- min(min_lower, pp[,2] - pp[,3])
-            max_upper <- max(max_upper, pp[,2] + pp[,3])
-            if (i <= num_1d_pp_data) {
-                if(is.null(targets)){
-                    col_name_index = i
-                    title <- paste("Partial dependency plot for", cols[col_name_index])
-                } else if(!is.null(targets)){
-                    if(length(cols) > 1 && i %% length(cols) == 0) {
-                        col_name_index = col_name_index + 1
-                    }
-                    if(length(targets) > 1) {
-                        title <- paste("Partial dependency plot for", cols[col_name_index], "and classes\n", paste(targets, collapse=", "))
-                    } else {
-                        title <- paste("Partial dependency plot for", cols[col_name_index], "and class", targets)
-                    }
-                }
-                names(pps[[i]]) <-
-                    c(cols[col_name_index],
-                      "mean_response",
-                      "stddev_response",
-                      "std_error_mean_response")
-                attr(pps[[i]],"description") <- title
-            } else {
-                names(pps[[i]]) <-
-                    c(col_pairs_2dpdp[[i-num_1d_pp_data]][1],
-                      col_pairs_2dpdp[[i-num_1d_pp_data]][2],
-                      "mean_response",
-                      "stddev_response",
-                      "std_error_mean_response")
-                attr(pps[[i]],"description") <- paste('2D partial dependence plot for', col_pairs_2dpdp[[i-num_1d_pp_data]][1], "and", col_pairs_2dpdp[[i-num_1d_pp_data]][1])
-            }
-        }
+  }
+    
+  pp.plot.1d.proccessDataForPolygon <- function(X, Y) {
+    ## polygon can't handle NAs
+    NAsIds = which(is.na(X))
+    if (length(NAsIds) != 0) {
+      X = X[-NAsIds]
+      Y = Y[-NAsIds]
     }
-    col_types = unlist(h2o.getTypes(data))
-    col_names = names(data)
+    return(cbind(X, Y))
+  }        
 
-    pp.plot.1d <- function(pp) {
-        if(!all(is.na(pp))) {
-            x <- pp[,1]
-            y <- pp[,2]
-            stddev <- pp[,3]
-            type <- col_types[which(col_names == names(pp)[1])]
-            if(type == "enum") {
-                line_type <- "p"
-                lty <- NULL
-                pch <- 19
-                pp[, 1] <- factor(pp[,1], levels=pp[,1])
-            } else {
-                line_type <- "l"
-                lty <- 1
-                pch <- NULL
-            }
-            ## Plot one standard deviation above and below the mean
-            if(plot_stddev) {
-                ## Added upper and lower std dev confidence bound
-                upper = y + stddev
-                lower = y - stddev
-                plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
-                pp.plot.1d.plotNA(pp, type, "red")
-                polygon(pp.plot.1d.proccessDataForPolygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper))) , col = adjustcolor("red", alpha.f = 0.1), border = F)
-                if(type == "enum"){
-                    x <- c(1:length(x))
-                    arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col="red")
-                }
-            } else {
-                plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"))
-                pp.plot.1d.plotNA(pp, type, "red")
-            }
+  pp.plot.1d.multinomial <- function(pps) {
+    colors <- rainbow(length(pps))
+    has_NA <- c()
+    for(i in 1:length(pps)) {
+      pp <- pps[[i]]
+      if(!all(is.na(pp))) {
+        x <- pp[,1]
+        y <- pp[,2]
+        stddev <- pp[,3]
+        color <- colors[i]
+        title <- attr(pp,"description")
+        type <- col_types[which(col_names == names(pp)[1])]
+        if(type == "enum"){
+           line_type <- "p"
+           lty <- NULL
+           pch <- 19
+           pp[, 1] <- factor(x, labels=x)
         } else {
-            print("Partial Dependence not calculated--make sure nbins is as high as the level count")
+          line_type <- "l"
+          lty <- 1
+          pch <- NULL
         }
-    }
-
-    pp.plot.1d.plotNA <- function(pp, type, color) {
-        ## Plot NA value if numerical
-        NAsIds = which(is.na(pp[,1:1]))
-        if (type != "enum" && include_na && length(NAsIds) != 0) {
-            points(pp[,1:1],array(pp[NAsIds, 2:2], dim = c(length(pp[,1:1]), 1)), col=color, type="l", lty=5)
-            if (is.null(targets)) {
-                legend("topright", legend="NAN", col=color, lty=5, bty="n", ncol=length(pps))
-            }
-            return(TRUE)
+        if(plot_stddev) {
+          upper <- y + stddev
+          lower <- y - stddev
+          if(i == 1){
+            plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_lower, max_upper + 0.1 * abs(max_upper)))
+          } else {
+            points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color)
+          }
+          has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
+          polygon(pp.plot.1d.proccessDataForPolygon(c(x, rev(x)), c(lower, rev(upper))), col = adjustcolor(color, alpha.f = 0.1), border = F)   
+          if(type == "enum"){
+            x <- c(1:length(x))
+            arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col=color)
+          }
         } else {
-            return(FALSE)
+          if(i == 1) {
+            plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_y, max_y + 0.05 * abs(max_y)))
+          } else {
+            points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color) 
+          }
+          has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
         }
+      } else {
+        print("Partial Dependence not calculated--make sure nbins is as high as the level count")
+      }
     }
-
-    pp.plot.1d.plotLegend.multinomial <- function(pp, targets, colors, lty, pch, has_NA) {
-        if (include_na && length(which(is.na(pp[,1:1]))) != 0) {
-            legendTargets <- c()
-            legendColors <- c()
-            legendLtys <- c()
-            legendPchs <- c()
-            for ( i in 1: length(targets)) {
-                # target label
-                legendTargets <- append(legendTargets, targets[i])
-                legendColors <- append(legendColors, colors[i])
-                legendLtys <- append(legendLtys, lty)
-                legendPchs <- append(legendPchs, pch)
-                # target NAN line label
-                if (has_NA[i]) {
-                    legendTargets <- append(legendTargets, paste(targets[i], " NAN"))
-                    legendColors <- append(legendColors, colors[i])
-                    legendLtys <- append(legendLtys, 5)
-                }
-                legendPchs <- append(legendPchs, NULL)
-            }
-            legend("topright", legend=legendTargets, col=legendColors, lty=legendLtys, pch=legendPchs, bty="n", ncol=length(pps))
-        }  else {
-            legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))
-        }
-    }
-
-    pp.plot.1d.proccessDataForPolygon <- function(X, Y) {
-        ## polygon can't handle NAs
-        NAsIds = which(is.na(X))
-        if (length(NAsIds) != 0) {
-            X = X[-NAsIds]
-            Y = Y[-NAsIds]
-        }
-        return(cbind(X, Y))
-    }
-
-    pp.plot.1d.multinomial <- function(pps) {
-        colors <- rainbow(length(pps))
-        has_NA <- c()
-        for(i in 1:length(pps)) {
-            pp <- pps[[i]]
-            if(!all(is.na(pp))) {
-                x <- pp[,1]
-                y <- pp[,2]
-                stddev <- pp[,3]
-                color <- colors[i]
-                title <- attr(pp,"description")
-                type <- col_types[which(col_names == names(pp)[1])]
-                if(type == "enum"){
-                    line_type <- "p"
-                    lty <- NULL
-                    pch <- 19
-                    pp[, 1] <- factor(x, labels=x)
-                } else {
-                    line_type <- "l"
-                    lty <- 1
-                    pch <- NULL
-                }
-                if(plot_stddev) {
-                    upper <- y + stddev
-                    lower <- y - stddev
-                    if(i == 1){
-                        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_lower, max_upper + 0.1 * abs(max_upper)))
-                    } else {
-                        points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color)
-                    }
-                    has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
-                    polygon(pp.plot.1d.proccessDataForPolygon(c(x, rev(x)), c(lower, rev(upper))), col = adjustcolor(color, alpha.f = 0.1), border = F)
-                    if(type == "enum"){
-                        x <- c(1:length(x))
-                        arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col=color)
-                    }
-                } else {
-                    if(i == 1) {
-                        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_y, max_y + 0.05 * abs(max_y)))
-                    } else {
-                        points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color)
-                    }
-                    has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
-                }
-            } else {
-                print("Partial Dependence not calculated--make sure nbins is as high as the level count")
-            }
-        }
-        pp.plot.1d.plotLegend.multinomial(pp, targets, colors, lty, pch, has_NA)
-    }
-
-    pp.plot.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
-        xtickMarks <- NULL
-        ytickMarks <- NULL
-        if (!all(is.na(pp))) {
-            if (col_types[which(col_names == names(pp)[1])] == "enum") {
-                x <- replaceEnumLevel(pp[,1], unique(pp[,1]))
-                xtickMarks <- unique(pp[,1])
-            } else {
-                x <- pp[,1]
-            }
-            if (col_types[which(col_names == names(pp)[2])] == "enum") {
-                y <- replaceEnumLevel(pp[,2], unique(pp[,2]))
-                ytickMarks <- unique(pp[,2])
-            } else {
-                y <- pp[,2]
-            }
-            allMetric <- reShape(x, y, pp[, 3], names(pp)[1], names(pp)[2], nBins, user_cols, user_num_splits)
-            XX <- allMetric[[1]]
-            YY <- allMetric[[2]]
-            ZZ <- allMetric[[3]]
-            tTitle <- ""
-            if (!is.null(xtickMarks)) {
-                xc <- c(1:length(xtickMarks))
-                tTitle <- paste0("X axis tick marks: ", paste(xc, xtickMarks, sep=":", collapse=", "))
-            }
-            if (!is.null(ytickMarks)) {
-                yc <- c(1:length(ytickMarks))
-                temp <- paste0("Y axis tick marks: ", paste(yc, ytickMarks, sep=":", collapse=", "))
-                tTitle <- paste0(tTitle, temp)
-            }
-            ## Plot one standard deviation above and below the mean
-            if (plot_stddev) {
-                ## Added upper and lower std dev confidence bound
-                upper = pp[, 3] + pp[, 4]
-                lower = pp[, 3] - pp[, 4]
-                Zupper = matrix(upper, ncol=dim(XX)[2], byrow=F)
-                Zlower = matrix(lower, ncol=dim(XX)[2], byrow=F)
-                rgl::open3d()
-                plot3Drgl::persp3Drgl(XX, YY, ZZ, theta=30, phi=15, axes=TRUE,scale=2, box=TRUE, nticks=5,
-                                      ticktype="detailed", xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots",
-                                      main=tTitle, border='black', alpha=0.5)
-                plot3Drgl::persp3Drgl(XX, YY, Zupper, alpha=0.2, lwd=2, add=TRUE, border='yellow')
-                plot3Drgl::persp3Drgl(XX, YY, Zlower, alpha=0.2, lwd=2, add=TRUE, border='green')
-                rgl::grid3d(c("x", "y", "z"))
-            } else {
-                rgl::persp3d(XX, YY, ZZ, theta=30, phi=50, axes=TRUE,scale=2, box=TRUE, nticks=5,
-                             ticktype="detailed", xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots",
-                             main=tTitle, border='black', alpha=0.5)
-                rgl::grid3d(c("x", "y", "z"))
-            }
-        } else {
-            print("2D Partial Dependence not calculated--make sure nbins is as high as the level count")
-        }
-    }
-
-    pp.plot.save.1d <- function(pp) {
-        # If user accidentally provides one of the most common suffixes in R, it is removed.
-        save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
-        destination_file <- paste0(save_to,"_",names(pp)[1],'.png')
-        png(destination_file)
-        pp.plot.1d(pp)
-        dev.off()
-    }
-
-    pp.plot.save.1d.multinomial <- function(pps) {
-        # If user accidentally provides one of the most common suffixes in R, it is removed.
-        save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
-        destination_file <- paste0(save_to,"_",names(pps[[1]])[1],'.png')
-        png(destination_file)
-        pp.plot.1d.multinomial(pps)
-        dev.off()
-    }
-
-    pp.plot.save.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
-        # If user accidentally provides one of the most common suffixes in R, it is removed.
-        save_to <- gsub(replacement = "", pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
-        colnames = paste0(names(pp)[1], "_", names(pp)[2])
-        destination_file <- paste0(save_to,"_",colnames,'.png')
-        pp.plot.2d(pp, nbins, user_cols, user_num_splits)
-        rgl::snapshot3d(destination_file)
-        dev.off()
-    }
-
-    # 1D PDP plot and save    
-    if(plot && !noCols) {
-        if(is.null(targets)){ # multonomial PDP
-            lapply(pps[1:num_1d_pp_data], pp.plot.1d)
-            if(!is.null(save_to)){
-                lapply(pps[1:num_1d_pp_data], pp.plot.save.1d)
-            }
-        } else {
-            from <- 1
-            to <- length(targets)
-            for(i in 1:numCols) {
-                pp = pps[from:to]
-                pp.plot.1d.multinomial(pp)
-                if(!is.null(save_to)){
-                    pp.plot.save.1d.multinomial(pp)
-                }
-                from <- from + to
-                to <- to + length(targets)
-            }
-        }
-    }
-
-    # 2D PDP plot and save
-    if (!noPairs && requireNamespace("plot3Drgl", quietly = TRUE) && requireNamespace("rgl", quietly = TRUE)) {
-        if (plot && !is.null(save_to)) {
-            # plot and save to file
-            if (is.null(user_splits)) {
-                sapply(
-                    pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
-                    pp.plot.save.2d,
-                    nBins = nbins,
-                    user_cols = NULL,
-                    user_num_splits = NULL
-                )
-            } else {
-                sapply(
-                    pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
-                    pp.plot.save.2d,
-                    nBins = nbins,
-                    user_cols = user_cols,
-                    user_num_splits = user_num_splits
-                )
-            }
-        } else {
-            # only plot
-            if (is.null(user_splits)) {
-                sapply(
-                    pps[(numCols + 1):(numCols + numColPairs)],
-                    pp.plot.2d,
-                    nBins = nbins,
-                    user_cols = NULL,
-                    user_num_splits = NULL
-                )
-            } else {
-                sapply(
-                    pps[(numCols + 1):(numCols + numColPairs)],
-                    pp.plot.2d,
-                    nBins = nbins,
-                    user_cols = user_cols,
-                    user_num_splits = user_num_splits
-                )
-            }
-        }
-    } else if (plot && !noPairs) {
-        warning("Install packages plot3Drgl and rgl in order to generate 2D partial plots.")
-    }
-
-    if(length(pps) == 1) {
-        return(pps[[1]])
+    pp.plot.1d.plotLegend.multinomial(pp, targets, colors, lty, pch, has_NA)
+  }      
+        
+  pp.plot.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
+    xtickMarks <- NULL
+    ytickMarks <- NULL
+    if (!all(is.na(pp))) {
+      if (col_types[which(col_names == names(pp)[1])] == "enum") {
+        x <- replaceEnumLevel(pp[,1], unique(pp[,1]))
+        xtickMarks <- unique(pp[,1])
+      } else {
+        x <- pp[,1]
+      }
+      if (col_types[which(col_names == names(pp)[2])] == "enum") {
+        y <- replaceEnumLevel(pp[,2], unique(pp[,2]))
+        ytickMarks <- unique(pp[,2])
+      } else {
+        y <- pp[,2]
+      }
+      allMetric <- reShape(x, y, pp[, 3], names(pp)[1], names(pp)[2], nBins, user_cols, user_num_splits)
+      XX <- allMetric[[1]]
+      YY <- allMetric[[2]]
+      ZZ <- allMetric[[3]]
+      tTitle <- ""
+      if (!is.null(xtickMarks)) {
+        xc <- c(1:length(xtickMarks))
+        tTitle <- paste0("X axis tick marks: ", paste(xc, xtickMarks, sep=":", collapse=", "))
+      }
+      if (!is.null(ytickMarks)) {
+        yc <- c(1:length(ytickMarks))
+        temp <- paste0("Y axis tick marks: ", paste(yc, ytickMarks, sep=":", collapse=", "))
+        tTitle <- paste0(tTitle, temp)
+      }
+      ## Plot one standard deviation above and below the mean
+      if (plot_stddev) {
+        ## Added upper and lower std dev confidence bound
+        upper = pp[, 3] + pp[, 4]
+        lower = pp[, 3] - pp[, 4]
+        Zupper = matrix(upper, ncol=dim(XX)[2], byrow=F)
+        Zlower = matrix(lower, ncol=dim(XX)[2], byrow=F)
+        rgl::open3d()
+        plot3Drgl::persp3Drgl(XX, YY, ZZ, theta=30, phi=15, axes=TRUE,scale=2, box=TRUE, nticks=5,
+                ticktype="detailed", xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots",
+                main=tTitle, border='black', alpha=0.5)
+        plot3Drgl::persp3Drgl(XX, YY, Zupper, alpha=0.2, lwd=2, add=TRUE, border='yellow')
+        plot3Drgl::persp3Drgl(XX, YY, Zlower, alpha=0.2, lwd=2, add=TRUE, border='green')
+        rgl::grid3d(c("x", "y", "z"))
+      } else {
+        rgl::persp3d(XX, YY, ZZ, theta=30, phi=50, axes=TRUE,scale=2, box=TRUE, nticks=5,
+                ticktype="detailed", xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots",
+                main=tTitle, border='black', alpha=0.5)
+        rgl::grid3d(c("x", "y", "z"))
+      }
     } else {
-        return(pps)
+      print("2D Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
+  }
+  
+  pp.plot.save.1d <- function(pp) {
+    # If user accidentally provides one of the most common suffixes in R, it is removed.
+    save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
+    destination_file <- paste0(save_to,"_",names(pp)[1],'.png')
+    png(destination_file)
+    pp.plot.1d(pp)
+    dev.off()
+  }
+      
+  pp.plot.save.1d.multinomial <- function(pps) {
+    # If user accidentally provides one of the most common suffixes in R, it is removed.
+    save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
+    destination_file <- paste0(save_to,"_",names(pps[[1]])[1],'.png')
+    png(destination_file)
+    pp.plot.1d.multinomial(pps)
+    dev.off()
+}
+
+  pp.plot.save.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
+    # If user accidentally provides one of the most common suffixes in R, it is removed.
+    save_to <- gsub(replacement = "", pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
+    colnames = paste0(names(pp)[1], "_", names(pp)[2])
+    destination_file <- paste0(save_to,"_",colnames,'.png')
+    pp.plot.2d(pp, nbins, user_cols, user_num_splits)
+    rgl::snapshot3d(destination_file)
+    dev.off()
+  }
+
+  # 1D PDP plot and save    
+  if(plot && !noCols) {
+    if(is.null(targets)){ # multonomial PDP
+      lapply(pps[1:num_1d_pp_data], pp.plot.1d)
+      if(!is.null(save_to)){
+        lapply(pps[1:num_1d_pp_data], pp.plot.save.1d)
+      }
+    } else {
+      from <- 1
+      to <- length(targets)
+      for(i in 1:numCols) {
+        pp = pps[from:to]
+        pp.plot.1d.multinomial(pp)
+        if(!is.null(save_to)){
+          pp.plot.save.1d.multinomial(pp)
+        }
+        from <- from + to
+        to <- to + length(targets)
+      }
+    }
+  }
+          
+  # 2D PDP plot and save
+  if (!noPairs && requireNamespace("plot3Drgl", quietly = TRUE) && requireNamespace("rgl", quietly = TRUE)) {
+    if (plot && !is.null(save_to)) {
+      # plot and save to file
+      if (is.null(user_splits)) {
+        sapply(
+          pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
+          pp.plot.save.2d,
+          nBins = nbins,
+          user_cols = NULL,
+          user_num_splits = NULL
+        )
+      } else {
+        sapply(
+          pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
+          pp.plot.save.2d,
+          nBins = nbins,
+          user_cols = user_cols,
+          user_num_splits = user_num_splits
+        )
+      }
+    } else {
+      # only plot
+      if (is.null(user_splits)) {
+        sapply(
+          pps[(numCols + 1):(numCols + numColPairs)],
+          pp.plot.2d,
+          nBins = nbins,
+          user_cols = NULL,
+          user_num_splits = NULL
+        )
+      } else {
+        sapply(
+          pps[(numCols + 1):(numCols + numColPairs)],
+          pp.plot.2d,
+          nBins = nbins,
+          user_cols = user_cols,
+          user_num_splits = user_num_splits
+        )
+      }
+    }
+  } else if (plot && !noPairs) {
+    warning("Install packages plot3Drgl and rgl in order to generate 2D partial plots.")     
+  }
+
+  if(length(pps) == 1) {
+    return(pps[[1]])
+  } else {
+    return(pps)
+  }
 }
 
 replaceEnumLevel <- function(originalV, vlevels) {
-    x <- rep(1, length(originalV))
-    for (ind in c(1:length(originalV))) {
-        x[ind] <- which(originalV[ind] == vlevels)
-    }
-    x
+  x <- rep(1, length(originalV))
+  for (ind in c(1:length(originalV))) {
+    x[ind] <- which(originalV[ind] == vlevels)
+  }
+  x
 }
 
 reShape<- function(x, y, z, xname, yname, nbin, user_cols, user_num_splits) {
-    ybin <- nbin
-    if(!is.null(user_cols)) {
-        if (yname %in% user_cols) {
-            ybin <- user_num_splits[which(yname==user_cols)]
-        }
+  ybin <- nbin
+  if(!is.null(user_cols)) {
+    if (yname %in% user_cols) {
+      ybin <- user_num_splits[which(yname==user_cols)]
     }
+  }
 
-    xbin <- floor(length(x)/ybin)
-    X<-matrix(x, nrow=ybin, ncol=xbin,byrow=F)
-    Y <- matrix(y, nrow=ybin, ncol=xbin, byrow=F)
-    Z <- matrix(z, nrow=ybin, ncol=xbin, byrow=F)
-    list(X,Y,Z)
+  xbin <- floor(length(x)/ybin)
+  X<-matrix(x, nrow=ybin, ncol=xbin,byrow=F)
+  Y <- matrix(y, nrow=ybin, ncol=xbin, byrow=F)
+  Z <- matrix(z, nrow=ybin, ncol=xbin, byrow=F)
+  list(X,Y,Z)
 }
 
 #' Feature Generation via H2O Deep Learning
@@ -6105,18 +6107,18 @@ reShape<- function(x, y, z, xname, yname, nbin, user_cols, user_num_splits) {
 #' }
 #' @export
 h2o.deepfeatures <- function(object, data, layer) {
-    url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
-    if (is.null(layer)) layer <- 1
-    if (is.numeric(layer)) {
-        index = layer - 1
-        res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
-    } else {
-        res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer_name=layer, h2oRestApiVersion = 4)
-    }
-    job_key <- res$key$name
-    dest_key <- res$dest$name
-    .h2o.__waitOnJob(job_key)
-    h2o.getFrame(dest_key)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
+  if (is.null(layer)) layer <- 1
+  if (is.numeric(layer)) {
+    index = layer - 1
+    res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
+  } else {
+    res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer_name=layer, h2oRestApiVersion = 4)
+  }
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 
 #'
@@ -6128,7 +6130,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' #' @aliases H2ONode
 #'
 setClass("H2ONode", slots = c(
-    id = "integer"
+  id = "integer"
 ))
 
 #'
@@ -6139,9 +6141,9 @@ setClass("H2ONode", slots = c(
 #' #' @aliases H2OLeafNode
 #'
 setClass("H2OLeafNode", slots = c(
-    prediction = "numeric"
+  prediction = "numeric"
 ),
-         contains = "H2ONode")
+contains = "H2ONode")
 
 #'
 #' The H2OSplitNode class.
@@ -6157,17 +6159,17 @@ setClass("H2OLeafNode", slots = c(
 #' @aliases H2OSplitNode
 #' @export
 setClass(
-    "H2OSplitNode",
-    slots = c(
-        threshold = "numeric",
-        left_child = "H2ONode",
-        right_child = "H2ONode",
-        split_feature = "character",
-        left_levels = "character",
-        right_levels = "character",
-        na_direction = "character"
-    ),
-    contains = "H2ONode"
+  "H2OSplitNode",
+  slots = c(
+    threshold = "numeric",
+    left_child = "H2ONode",
+    right_child = "H2ONode",
+    split_feature = "character",
+    left_levels = "character",
+    right_levels = "character",
+    na_direction = "character"
+  ),
+  contains = "H2ONode"
 )
 
 #' @rdname H2ONode-class
@@ -6175,32 +6177,32 @@ setClass(
 #' @export
 setMethod('show', 'H2ONode',
           function(object){
-              print.H2ONode(object)
+            print.H2ONode(object)
           })
 
 #' @method print H2ONode
 #' @export
 print.H2ONode <- function(x, ...){
-    cat("Node ID", x@id, "\n\n")
-    if (inherits(x, "H2OLeafNode")){
-        cat("Terminal node. Prediction is", x@prediction)
-        return()
-    }
+  cat("Node ID", x@id, "\n\n")
+  if (inherits(x, "H2OLeafNode")){
+    cat("Terminal node. Prediction is", x@prediction)
+    return()
+  }
 
 
-    if(!is.null(x@left_child)) cat("Left child node ID =", x@left_child@id, "\n") else cat("There is no left child \n")
-    if(!is.null(x@right_child)) cat("Right child node ID =", x@right_child@id,"\n") else cat("There is no right child \n")
-    cat("\n")
-    cat("Splits on column", x@split_feature, "\n")
+  if(!is.null(x@left_child)) cat("Left child node ID =", x@left_child@id, "\n") else cat("There is no left child \n")
+  if(!is.null(x@right_child)) cat("Right child node ID =", x@right_child@id,"\n") else cat("There is no right child \n")
+  cat("\n")
+  cat("Splits on column", x@split_feature, "\n")
 
-    if(is.na(x@threshold)){
-        if(!is.null(x@left_child)) cat("  - Categorical levels going to the left node:", x@left_levels, "\n")
-        if(!is.null(x@right_child)) cat("  - Categorical levels to the right node:", x@right_levels, "\n")
-    } else {
-        cat("Split threshold <", x@threshold,"to the left node, >=",x@threshold ,"to the right node\n")
-    }
-    cat("\n")
-    if(!is.na(x@na_direction)) cat("NA values go to the", x@na_direction,"node")
+  if(is.na(x@threshold)){
+    if(!is.null(x@left_child)) cat("  - Categorical levels going to the left node:", x@left_levels, "\n")
+    if(!is.null(x@right_child)) cat("  - Categorical levels to the right node:", x@right_levels, "\n")
+  } else {
+    cat("Split threshold <", x@threshold,"to the left node, >=",x@threshold ,"to the right node\n")
+  }
+  cat("\n")
+  if(!is.na(x@na_direction)) cat("NA values go to the", x@na_direction,"node")
 }
 
 #'
@@ -6230,26 +6232,26 @@ print.H2ONode <- function(x, ...){
 #' @aliases H2OTree
 #' @export
 setClass(
-    "H2OTree",
-    slots = c(
-        root_node = "H2ONode",
-        left_children = "integer",
-        right_children = "integer",
-        node_ids = "integer",
-        descriptions = "character",
-        model_id = "character",
-        tree_number = "integer",
-        tree_class = "character",
-        thresholds = "numeric",
-        features = "character",
-        levels = "list",
-        nas = "character",
-        predictions = "numeric",
-        tree_decision_path = "character",
-        decision_paths = "character",
-        left_cat_split = "list",
-        right_cat_split = "list"
-    )
+  "H2OTree",
+  slots = c(
+    root_node = "H2ONode",
+    left_children = "integer",
+    right_children = "integer",
+    node_ids = "integer",
+    descriptions = "character",
+    model_id = "character",
+    tree_number = "integer",
+    tree_class = "character",
+    thresholds = "numeric",
+    features = "character",
+    levels = "list",
+    nas = "character",
+    predictions = "numeric",
+    tree_decision_path = "character",
+    decision_paths = "character",
+    left_cat_split = "list",
+    right_cat_split = "list"
+  )
 )
 
 #' @rdname H2OTree-class
@@ -6257,14 +6259,14 @@ setClass(
 #' @export
 setMethod('show', 'H2OTree',
           function(object){
-              print.H2OTree(object)
+            print.H2OTree(object)
           })
 
 #' @method print H2OTree
 #' @export
 print.H2OTree <- function(x, ...){
-    cat(paste0("Tree related to model '", x@model_id,"'. Tree number is"), paste0(x@tree_number,", tree class is '",x@tree_class, "'\n"))
-    cat("The tree has", length(x), "nodes")
+  cat(paste0("Tree related to model '", x@model_id,"'. Tree number is"), paste0(x@tree_number,", tree class is '",x@tree_class, "'\n"))
+  cat("The tree has", length(x), "nodes")
 }
 
 #'
@@ -6272,42 +6274,42 @@ print.H2OTree <- function(x, ...){
 #' @param x An \code{H2OTree} to count nodes for.
 #'
 setMethod("length", signature(x = "H2OTree"), function(x) {
-    length(x@left_children)
+  length(x@left_children)
 })
 
 
 .h2o.walk_tree <- function(node, tree){
-    if(node == -1) {return(NULL)}
-    child_node_index <- node + 1
-    left <- tree@left_children[child_node_index]
-    right <- tree@right_children[child_node_index]
+  if(node == -1) {return(NULL)}
+  child_node_index <- node + 1
+  left <- tree@left_children[child_node_index]
+  right <- tree@right_children[child_node_index]
 
-    node_levels <- if(is.null(tree@levels[[node + 1]])) NA_character_ else tree@levels[[node + 1]]
+  node_levels <- if(is.null(tree@levels[[node + 1]])) NA_character_ else tree@levels[[node + 1]]
 
-    left_child = .h2o.walk_tree(left, tree)
-    right_child = .h2o.walk_tree(right, tree)
+  left_child = .h2o.walk_tree(left, tree)
+  right_child = .h2o.walk_tree(right, tree)
 
-    node <- NULL
-    if(is.null(left_child) && is.null(right_child)){
-        node <- new("H2OLeafNode",
-                    id = tree@node_ids[child_node_index],
-                    prediction = tree@predictions[child_node_index]
+  node <- NULL
+  if(is.null(left_child) && is.null(right_child)){
+    node <- new("H2OLeafNode",
+        id = tree@node_ids[child_node_index],
+        prediction = tree@predictions[child_node_index]
         )
-    } else {
-        left_node_levels <- if(is.null(tree@levels[[left + 1]])) NA_character_ else tree@levels[[left + 1]]
-        right_node_levels <- if(is.null(tree@levels[[right + 1]])) NA_character_ else tree@levels[[right + 1]]
-        node <- new ("H2OSplitNode",
-                     id = tree@node_ids[child_node_index],
-                     left_child = left_child,
-                     right_child = right_child,
-                     threshold = tree@thresholds[child_node_index],
-                     split_feature = tree@features[child_node_index],
-                     na_direction = tree@nas[child_node_index],
-                     left_levels = left_node_levels,
-                     right_levels = right_node_levels)
-    }
+  } else {
+      left_node_levels <- if(is.null(tree@levels[[left + 1]])) NA_character_ else tree@levels[[left + 1]]
+      right_node_levels <- if(is.null(tree@levels[[right + 1]])) NA_character_ else tree@levels[[right + 1]]
+      node <- new ("H2OSplitNode",
+       id = tree@node_ids[child_node_index],
+       left_child = left_child,
+       right_child = right_child,
+       threshold = tree@thresholds[child_node_index],
+       split_feature = tree@features[child_node_index],
+       na_direction = tree@nas[child_node_index],
+       left_levels = left_node_levels,
+       right_levels = right_node_levels)
+  }
 
-    node
+  node
 }
 
 #' Fetchces a single tree of a H2O model. This function is intended to be used on Gradient Boosting Machine models or Distributed Random Forest models.
@@ -6331,171 +6333,171 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 #' }
 #' @export
 h2o.getModelTree <- function(model, tree_number, tree_class = NA, plain_language_rules="AUTO") {
-    url <- "Tree"
-    tree_class_request = tree_class;
-    if(is.na(tree_class)){
-        tree_class_request <- "";
-    }
-    res <- .h2o.__remoteSend(
-        url,
-        method = "GET",
-        h2oRestApiVersion = 3,
-        model = model@model_id,
-        tree_number = tree_number - 1,
-        tree_class = tree_class_request,
-        plain_language_rules = plain_language_rules
+  url <- "Tree"
+  tree_class_request = tree_class;
+  if(is.na(tree_class)){
+    tree_class_request <- "";
+  }
+  res <- .h2o.__remoteSend(
+      url,
+      method = "GET",
+      h2oRestApiVersion = 3,
+      model = model@model_id,
+      tree_number = tree_number - 1,
+      tree_class = tree_class_request,
+      plain_language_rules = plain_language_rules
     )
 
-    res$thresholds[is.nan(res$thresholds)] <- NA
+  res$thresholds[is.nan(res$thresholds)] <- NA
+  
+  if(length(res$left_children) < 1) stop("Tree does not contain any nodes.")
 
-    if(length(res$left_children) < 1) stop("Tree does not contain any nodes.")
+  if(res$left_children[1] == -1){ # If the root node has no children
+    res$nas <- c("NA")
+    res$levels <- list(NULL)
+    res$thresholds <- c(as.double(NA))
+  }
+  
+  # Protection against NA only arrays being evaluated as logical
+  if(is.logical(res$features)){
+    res$features <- as.character(res$features)
+  }
+  
+  if(is.logical(res$nas)){
+    res$nas <- as.character(res$nas)
+  }
+  
+  if(is.logical(res$thresholds)){
+    res$thresholds <- as.numeric(res$thresholds)
+  }
+  
+  if(is.logical(res$predictions)){
+    res$predictions <- as.numeric(res$predictions)
+  }
+  
+  if(is.logical(res$predictions)){
+    res$predictions <- as.numeric(res$predictions)
+  }
+  
+  # Start of the tree-building process
+  tree <- new(
+    "H2OTree",
+    left_children = res$left_children,
+    right_children = res$right_children,
+    descriptions = res$descriptions,
+    model_id = model@model_id,
+    tree_number = as.integer(res$tree_number + 1),
+    thresholds = res$thresholds,
+    features = res$features,
+    nas = res$nas,
+    predictions = res$predictions,
+    tree_decision_path = ifelse(is.null(res$tree_decision_path), "Plain language rules generation is turned off.", res$tree_decision_path),
+    decision_paths = ifelse(is.na(res$decision_paths[1]), "Plain language rules generation is turned off.", res$decision_paths)
+  )
 
-    if(res$left_children[1] == -1){ # If the root node has no children
-        res$nas <- c("NA")
-        res$levels <- list(NULL)
-        res$thresholds <- c(as.double(NA))
-    }
+  node_index <- 0
+  left_ordered <- c()
+  right_ordered <- c()
+  node_ids <- c(res$root_node_id)
 
-    # Protection against NA only arrays being evaluated as logical
-    if(is.logical(res$features)){
-        res$features <- as.character(res$features)
-    }
-
-    if(is.logical(res$nas)){
-        res$nas <- as.character(res$nas)
-    }
-
-    if(is.logical(res$thresholds)){
-        res$thresholds <- as.numeric(res$thresholds)
-    }
-
-    if(is.logical(res$predictions)){
-        res$predictions <- as.numeric(res$predictions)
-    }
-
-    if(is.logical(res$predictions)){
-        res$predictions <- as.numeric(res$predictions)
-    }
-
-    # Start of the tree-building process
-    tree <- new(
-        "H2OTree",
-        left_children = res$left_children,
-        right_children = res$right_children,
-        descriptions = res$descriptions,
-        model_id = model@model_id,
-        tree_number = as.integer(res$tree_number + 1),
-        thresholds = res$thresholds,
-        features = res$features,
-        nas = res$nas,
-        predictions = res$predictions,
-        tree_decision_path = ifelse(is.null(res$tree_decision_path), "Plain language rules generation is turned off.", res$tree_decision_path),
-        decision_paths = ifelse(is.na(res$decision_paths[1]), "Plain language rules generation is turned off.", res$decision_paths)
-    )
-
-    node_index <- 0
-    left_ordered <- c()
-    right_ordered <- c()
-    node_ids <- c(res$root_node_id)
-
-    for(i in 1:length(tree@left_children)){
-        if(tree@left_children[i] != -1){
-            node_index <- node_index + 1
-            left_ordered[i] <- node_index
-            node_ids[node_index + 1] <- tree@left_children[i]
-        } else {
-            left_ordered[i] <- -1
-        }
-
-        if(tree@right_children[i] != -1){
-            node_index <- node_index + 1
-            right_ordered[i] <- node_index
-            node_ids[node_index + 1] <- tree@right_children[i]
-        } else {
-            right_ordered[i] <- -1
-        }
-    }
-
-    tree@node_ids <- node_ids
-    tree@left_children <- as.integer(left_ordered)
-    tree@right_children <- as.integer(right_ordered)
-
-    if(!is.null(res$tree_class)){
-        tree@tree_class <- res$tree_class
-    }
-
-    if(is.logical(res$levels)){ # Vector of NAs is recognized as logical type in R
-        tree@levels <- rep(list(NULL), length(res$levels))
+  for(i in 1:length(tree@left_children)){
+    if(tree@left_children[i] != -1){
+      node_index <- node_index + 1
+      left_ordered[i] <- node_index
+      node_ids[node_index + 1] <- tree@left_children[i]
     } else {
-        tree@levels <- res$levels
+      left_ordered[i] <- -1
     }
 
-    for (i in 1:length(tree@levels)){
-        if(!is.null(tree@levels[[i]])){
-            tree@levels[[i]] <- tree@levels[[i]] + 1
+    if(tree@right_children[i] != -1){
+      node_index <- node_index + 1
+      right_ordered[i] <- node_index
+      node_ids[node_index + 1] <- tree@right_children[i]
+    } else {
+      right_ordered[i] <- -1
+    }
+  }
+
+  tree@node_ids <- node_ids
+  tree@left_children <- as.integer(left_ordered)
+  tree@right_children <- as.integer(right_ordered)
+
+  if(!is.null(res$tree_class)){
+    tree@tree_class <- res$tree_class
+  }
+
+  if(is.logical(res$levels)){ # Vector of NAs is recognized as logical type in R
+    tree@levels <- rep(list(NULL), length(res$levels))
+  } else {
+    tree@levels <- res$levels
+  }
+
+  for (i in 1:length(tree@levels)){
+    if(!is.null(tree@levels[[i]])){
+    tree@levels[[i]] <- tree@levels[[i]] + 1
+    }
+  }
+
+  # Convert numerical categorical levels to characters
+  pointer <-as.integer(1);
+  for(i in 1:length(tree@left_children)){
+
+    right <- tree@right_children[i];
+    left <- tree@left_children[i]
+    split_column_cat_index <- match(tree@features[i], model@model$names) # Indexof split column on children's parent node
+    if(is.na(split_column_cat_index)){ # If the split is not categorical, just increment & continue
+      if(right != -1) pointer <- pointer + 1;
+      if(left != -1) pointer <- pointer + 1;
+      next
+    }
+    split_column_domain <- model@model$domains[[split_column_cat_index]]
+
+    # Left child node's levels converted to characters
+    left_char_categoricals <- c()
+    if(left != -1)  {
+      pointer <- pointer + 1;
+
+      if(!is.null(tree@levels[[pointer]])){
+        for(level_index in 1:length(tree@levels[[pointer]])){
+          left_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
         }
+        tree@levels[[pointer]] <- left_char_categoricals;
+      }
     }
 
-    # Convert numerical categorical levels to characters
-    pointer <-as.integer(1);
-    for(i in 1:length(tree@left_children)){
 
-        right <- tree@right_children[i];
-        left <- tree@left_children[i]
-        split_column_cat_index <- match(tree@features[i], model@model$names) # Indexof split column on children's parent node
-        if(is.na(split_column_cat_index)){ # If the split is not categorical, just increment & continue
-            if(right != -1) pointer <- pointer + 1;
-            if(left != -1) pointer <- pointer + 1;
-            next
+    # Right child node's levels converted to characters, if there is any
+    right_char_categoricals <- c()
+    if(right != -1)  {
+      pointer <- pointer + 1;
+      if(!is.null(tree@levels[[pointer]])){
+        for(level_index in 1:length(tree@levels[[pointer]])){
+          right_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
         }
-        split_column_domain <- model@model$domains[[split_column_cat_index]]
-
-        # Left child node's levels converted to characters
-        left_char_categoricals <- c()
-        if(left != -1)  {
-            pointer <- pointer + 1;
-
-            if(!is.null(tree@levels[[pointer]])){
-                for(level_index in 1:length(tree@levels[[pointer]])){
-                    left_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
-                }
-                tree@levels[[pointer]] <- left_char_categoricals;
-            }
-        }
-
-
-        # Right child node's levels converted to characters, if there is any
-        right_char_categoricals <- c()
-        if(right != -1)  {
-            pointer <- pointer + 1;
-            if(!is.null(tree@levels[[pointer]])){
-                for(level_index in 1:length(tree@levels[[pointer]])){
-                    right_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
-                }
-                tree@levels[[pointer]] <- right_char_categoricals
-            }
-        }
+        tree@levels[[pointer]] <- right_char_categoricals
+      }
     }
-
-    for (i in 1: length(tree@left_children)){
-        left_idx = tree@left_children[i]
-        right_idx = tree@right_children[i]
-
-        if(left_idx != -1){
-            tree@left_cat_split[i] <- tree@levels[left_idx + 1]
-        } else {
-            tree@left_cat_split[i] <- NULL
-        }
-
-        if(right_idx != -1){
-            tree@right_cat_split[i] <- tree@levels[right_idx + 1]
-        } else {
-            tree@right_cat_split[i] <- NULL
-        }
+  }
+  
+  for (i in 1: length(tree@left_children)){
+    left_idx = tree@left_children[i]
+    right_idx = tree@right_children[i]
+    
+    if(left_idx != -1){
+      tree@left_cat_split[i] <- tree@levels[left_idx + 1]
+    } else {
+      tree@left_cat_split[i] <- NULL
     }
-
-    tree@root_node <- .h2o.walk_tree(0, tree)
-    tree
+    
+    if(right_idx != -1){
+      tree@right_cat_split[i] <- tree@levels[right_idx + 1]
+    } else {
+      tree@right_cat_split[i] <- NULL
+    }
+  }
+  
+  tree@root_node <- .h2o.walk_tree(0, tree)
+  tree
 }
 
 #' @export
@@ -6560,7 +6562,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' }
 #' @export
 h2o.genericModel <- function(mojo_file_path, model_id=NULL){
-    h2o.generic(path = mojo_file_path)
+  h2o.generic(path = mojo_file_path)
 }
 
 #' Imports a MOJO under given path, creating a Generic model with it.
@@ -6594,8 +6596,8 @@ h2o.genericModel <- function(mojo_file_path, model_id=NULL){
 #' }
 #' @export
 h2o.import_mojo <- function(mojo_file_path, model_id=NULL){
-    model <- h2o.generic(path = mojo_file_path, model_id)
-    return(model)
+  model <- h2o.generic(path = mojo_file_path, model_id)
+  return(model)
 }
 
 
@@ -6631,9 +6633,9 @@ h2o.import_mojo <- function(mojo_file_path, model_id=NULL){
 #' }
 #' @export
 h2o.upload_mojo <- function(mojo_local_file_path, model_id=NULL){
-    model_file_key <- h2o.uploadFile(mojo_local_file_path, parse = FALSE)
-    model <- h2o.generic(model_key = model_file_key, model_id = model_id)
-    return(model)
+  model_file_key <- h2o.uploadFile(mojo_local_file_path, parse = FALSE)
+  model <- h2o.generic(model_key = model_file_key, model_id = model_id)
+  return(model)
 }
 
 #'
@@ -6658,13 +6660,13 @@ h2o.upload_mojo <- function(mojo_local_file_path, model_id=NULL){
 #' }
 #' @export
 h2o.reset_threshold <- function(object, threshold) {
-    o <- object
-    if( is(o, "H2OModel") ) {
-        .newExpr("model.reset.threshold", list(o@model_id, threshold))[1,1]
-    } else {
-        warning( paste0("Threshold cannot be reset for class ", class(o)) )
-        return(NULL)
-    }
+  o <- object
+  if( is(o, "H2OModel") ) {
+    .newExpr("model.reset.threshold", list(o@model_id, threshold))[1,1]
+  } else {
+    warning( paste0("Threshold cannot be reset for class ", class(o)) )
+    return(NULL)
+  }
 }
 
 #' Calculates per-level mean of predicted value vs actual value for a given variable.
@@ -6684,21 +6686,21 @@ h2o.predicted_vs_actual_by_variable <- function(object,
                                                 predicted,
                                                 variable
 ) {
-    if (missing(object)) stop("Parameter 'object' needs to be specified.")
-    if (!is(object, "H2OModel")) stop("Parameter 'object' has to be an H2O model.")
-    .validate.H2OFrame(newdata, required = TRUE)
+  if (missing(object)) stop("Parameter 'object' needs to be specified.")
+  if (!is(object, "H2OModel")) stop("Parameter 'object' has to be an H2O model.")
+  .validate.H2OFrame(newdata, required = TRUE)
 
-    vi <- as.data.frame(.newExpr("predicted.vs.actual.by.var",
-                                 object@model_id,
-                                 newdata,
-                                 paste0("'", variable, "'"),
-                                 predicted
-    ), check.names = FALSE)
-    oldClass(vi) <- c("H2OTable", "data.frame")
-    attr(vi, "header") <- "Predicted vs Actual by Variable"
-    attr(vi, "description") <- ""
-    attr(vi, "formats") <- c("%s", rep_len("%5f", ncol(vi) - 1))
-    vi
+  vi <- as.data.frame(.newExpr("predicted.vs.actual.by.var",
+                               object@model_id,
+                               newdata,
+                               paste0("'", variable, "'"),
+                               predicted
+  ), check.names = FALSE)
+  oldClass(vi) <- c("H2OTable", "data.frame")
+  attr(vi, "header") <- "Predicted vs Actual by Variable"
+  attr(vi, "description") <- ""
+  attr(vi, "formats") <- c("%s", rep_len("%5f", ncol(vi) - 1))
+  vi
 }
 
 #' Create a leaderboard from a list of models, grids and/or automls.
@@ -6726,37 +6728,37 @@ h2o.make_leaderboard <- function(object,
                                  extra_columns = c(),
                                  scoring_data = c("AUTO", "train", "valid", "xval")
 ) {
-    .get_models <- function(obj){
-        if (is.list(obj)) {
-            return(lapply(obj, .get_models))
-        } else if (.is.H2OAutoML(obj)) {
-            return(unlist(as.list(obj@leaderboard$model_id)))
-        } else if (inherits(obj, "H2OGrid")) {
-            return(unlist(obj@model_ids))
-        } else if (is.character(obj)) {
-            return(obj)
-        } else if (inherits(obj, "H2OModel")) {
-            return(h2o.keyof(obj))
-        } else {
-            stop("Unsupported object!")
-        }
-    }
-    model_ids <- unlist(.get_models(object))
-    extra_cols <- paste0(extra_columns, collapse = "\", \"")
-    scoring_data <- match.arg(scoring_data)
-    if (missing(leaderboard_frame) || is.null(leaderboard_frame)) {
-        leaderboard_frame_key <- NULL
+  .get_models <- function(obj){
+    if (is.list(obj)) {
+      return(lapply(obj, .get_models))
+    } else if (.is.H2OAutoML(obj)) {
+      return(unlist(as.list(obj@leaderboard$model_id)))
+    } else if (inherits(obj, "H2OGrid")) {
+      return(unlist(obj@model_ids))
+    } else if (is.character(obj)) {
+      return(obj)
+    } else if (inherits(obj, "H2OModel")) {
+      return(h2o.keyof(obj))
     } else {
-        # make sure the frame has assigned a key in R, this is necessary when subsetting h2o frame but not evaluating the subset
-        if (is.null(h2o.keyof(leaderboard_frame))) head(leaderboard_frame, n = 1)
-        leaderboard_frame_key <- h2o.keyof(leaderboard_frame)
+      stop("Unsupported object!")
     }
+  }
+  model_ids <- unlist(.get_models(object))
+  extra_cols <- paste0(extra_columns, collapse = "\", \"")
+  scoring_data <- match.arg(scoring_data)
+  if (missing(leaderboard_frame) || is.null(leaderboard_frame)) {
+    leaderboard_frame_key <- NULL
+  } else {
+    # make sure the frame has assigned a key in R, this is necessary when subsetting h2o frame but not evaluating the subset
+    if (is.null(h2o.keyof(leaderboard_frame))) head(leaderboard_frame, n = 1)
+    leaderboard_frame_key <- h2o.keyof(leaderboard_frame)
+  }
 
-    as.data.frame(.newExpr("makeLeaderboard",
-                           model_ids,
-                           paste0("\"", leaderboard_frame_key, "\""),
-                           paste0("\"", sort_metric, "\""),
-                           paste0("[\"", extra_cols, "\"]"),
-                           paste0("\"", scoring_data, "\"")
-    ), check.names = FALSE)
+  as.data.frame(.newExpr("makeLeaderboard",
+                         model_ids,
+                         paste0("\"", leaderboard_frame_key, "\""),
+                         paste0("\"", sort_metric, "\""),
+                         paste0("[\"", extra_cols, "\"]"),
+                         paste0("\"", scoring_data, "\"")
+  ), check.names = FALSE)
 }

@@ -135,7 +135,7 @@ def connection():
 
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
-         max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None,
+         max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, 
          ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
@@ -538,7 +538,7 @@ def load_grid(grid_file_path, load_params_references=False):
 
     assert_is_type(grid_file_path, str)
     response = api(
-        "POST /3/Grid.bin/import",
+        "POST /3/Grid.bin/import", 
         {"grid_path": grid_file_path, "load_params_references": load_params_references}
     )
     return get_grid(response["name"])
@@ -630,7 +630,7 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     return get_frame(j.dest_key)
 
 
-def import_sql_table(connection_url, table, username, password, columns=None, optimize=True,
+def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, 
                      fetch_mode=None, num_chunks_hint=None):
     """
     Import SQL table to H2OFrame in memory.
@@ -834,7 +834,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
               "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
-
+      
     if escapechar:
         kwargs["escapechar"] = ord(escapechar)
 
@@ -1533,7 +1533,7 @@ def download_model(model, path="", export_cross_validation_predictions=False, fi
         assert_is_type(filename, str)
     path = os.path.join(os.getcwd() if path == "" else path, filename)
     return api("GET /3/Models.fetch.bin/%s" % model.model_id,
-               data={"export_cross_validation_predictions": export_cross_validation_predictions},
+               data={"export_cross_validation_predictions": export_cross_validation_predictions}, 
                save_to=path)
 
 
@@ -1580,7 +1580,7 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True,
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, 
                 parallel=False, format="csv", write_checksum=True):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
@@ -1632,10 +1632,10 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     assert_is_type(parallel, bool)
     assert_is_type(format, str)
     assert_is_type(write_checksum, bool)
-    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id),
-               data={"path": path, "num_parts": parts, "force": force,
+    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
+               data={"path": path, "num_parts": parts, "force": force, 
                      "compression": compression, "separator": ord(sep),
-                     "header": header, "quote_header": quote_header, "parallel": parallel,
+                     "header": header, "quote_header": quote_header, "parallel": parallel, 
                      "format": format, "write_checksum": write_checksum}
                ),  "Export File").poll()
 
@@ -2057,12 +2057,12 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
         allowed_auuc_types = ["qini", "lift", "gain", "AUTO"]
         assert auuc_type in allowed_auuc_types, "auuc_type should be "+(" ".join([str(type) for type in allowed_auuc_types]))
         params["auuc_type"] = auuc_type
-        assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."
+        assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."  
         params["auuc_nbins"] = auuc_nbins
         if custom_auuc_thresholds is not None:
             assert len(custom_auuc_thresholds) > 0, "custom_auuc_thresholds size should be higher than 0."
             params["custom_auuc_thresholds"] = custom_auuc_thresholds
-    params["auc_type"] = auc_type
+    params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)
     return res["model_metrics"]
@@ -2136,7 +2136,7 @@ def _default_custom_distribution_source_provider(obj):
         return _inspect_methods_separately(obj)
     else:
         return _default_source_provider(obj)
-
+    
 
 def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_name=None, source_provider=None):
     """
@@ -2382,7 +2382,7 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     >>> mojo_path = gbm_h2o.download_mojo()
     >>> mojo_str = h2o.print_mojo(mojo_path)
     >>> mojo_dict = json.loads(mojo_str)
-    """
+    """    
     assert_is_type(mojo_path, str)
     assert_is_type(format, str, None)
     assert_satisfies(format, format in [None, "json", "dot", "png"])
@@ -2395,7 +2395,7 @@ def print_mojo(mojo_path, format="json", tree_index=None):
         format = "json"
     is_image = format == "png"
     output_file = tempfile.mkstemp(prefix="mojo_output")[1]
-    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format,
+    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format, 
            "--output", output_file]
     if tree_index is not None:
         cmd += ["--tree", str(tree_index)]
@@ -2503,8 +2503,8 @@ def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, ti
 def _check_connection():
     if not cluster():
         raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.init()` or `h2o.connect()`?")
-
-
+    
+    
 def _strict_version_check(force_version_check=None, config=None):
     if force_version_check is None:
         if config is not None and "init.check_version" in config:
