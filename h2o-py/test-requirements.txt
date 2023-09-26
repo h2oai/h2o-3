@@ -10,7 +10,7 @@ twine==1.10.0
 urllib3==1.26.5
 grip==4.4.0
 wheel==0.38.0
-numpy==1.22.2
+numpy==1.23.4
 scipy==1.2.3; python_version == '3.6'
 scipy==1.6.3; python_version == '3.7'
 scipy==1.10.1; python_version > '3.7'
