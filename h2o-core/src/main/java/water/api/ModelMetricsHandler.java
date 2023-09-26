@@ -172,11 +172,12 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Set default AUUC type for uplift binomial classification. Must be one of: \"AUTO\", \"qini\", \"lift\", \"gain\". Default is \"AUTO\" (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
     public String auuc_type;
 
+    @API(help = "Custom AUUC thresholds (for uplift binomial classification).",
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public double[] custom_auuc_thresholds;
+
     @API(help = "Set number of bins to calculate AUUC. Must be -1 or higher than 0. Default is -1 which means 1000 (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
     public int auuc_nbins;
-    
-    @API(help = "Set custom thresholds to calculate AUUC (optional, only for uplift binomial classification). ", json=false, direction = API.Direction.INPUT)
-    public double[] custom_auuc_thresholds;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -204,6 +205,7 @@ class ModelMetricsHandler extends Handler {
       mml._auuc_type = this.auuc_type;
       mml._auuc_nbins = this.auuc_nbins;
       mml._custom_metric_func = this.custom_metric_func;
+      mml._custom_auuc_thresholds = this.custom_auuc_thresholds;
 
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -311,7 +313,6 @@ class ModelMetricsHandler extends Handler {
       parms._model._parms._auc_type = MultinomialAucType.valueOf(s.auc_type.toUpperCase());
     }
     AUUC.AUUCType auucType = parms._model._parms._auuc_type;
-    int auucNbins = parms._model._parms._auuc_nbins;
     if(s.auuc_type != null){
       parms._model._parms._auuc_type = AUUC.AUUCType.valueOf(s.auuc_type);
     }
@@ -329,7 +330,6 @@ class ModelMetricsHandler extends Handler {
     // set original auc type back
     parms._model._parms._auc_type = at;
     parms._model._parms._auuc_type = auucType;
-    parms._model._parms._auuc_nbins = auucNbins;
     return mm;
   }
 

@@ -217,15 +217,14 @@ def pyunit_make_metrics_uplift():
     predicted = h2o.assign(model.predict(test)[0], "pred")
     actual = test[response_column]
     treatment = test[treatment_column]
-    m1 = model.model_performance(test_data=test, auuc_type="AUTO", auuc_nbins=nbins)
+    m1 = model.model_performance(test_data=test, auuc_type="AUTO")
     m2 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins)
-    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins,
+    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO",
                           custom_auuc_thresholds=m1.thresholds())
-    m4 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins,
+    m4 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO",
                           custom_auuc_thresholds=model.default_auuc_thresholds())
     new_nbins = nbins - 10
     m5 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=new_nbins)
-    m6 = model.model_performance(test_data=test, auuc_type="AUTO", auuc_nbins=new_nbins)
 
     print("Model AUUC: {}".format(model.auuc()))
     print("thresholds: {}".format(model.default_auuc_thresholds()))
@@ -241,8 +240,6 @@ def pyunit_make_metrics_uplift():
     print("thresholds: {}".format(m4.thresholds()))
     print("Make AUUC with no custom thresholds but change nbins parameter: {}".format(m5.auuc()))
     print("thresholds: {}".format(m5.thresholds()))
-    print("Performance AUUC with no custom thresholds but change nbins parameter: {}".format(m6.auuc()))
-    print("thresholds: {}".format(m6.thresholds()))
 
     tol = 1e-5
 
@@ -256,10 +253,6 @@ def pyunit_make_metrics_uplift():
     assert abs(m1.auuc() - m3.auuc()) < tol
     # make methods with different nbins parameter changes thresholds and AUUC
     assert abs(m3.auuc() - m5.auuc()) > tol
-    # performance methods with different nbins parameter changes thresholds and AUUC
-    assert abs(m3.auuc() - m6.auuc()) > tol
-    # make and performance method with the same nbins parameter and the same data calculates the same thresholds
-    assert abs(m5.auuc() - m6.auuc()) < tol
 
     print("===========================")
 

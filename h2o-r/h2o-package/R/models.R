@@ -1021,6 +1021,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
 #' @param auc_type For multinomila model only. Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Default is "NONE"
+#' @param auuc_type For binomial model only. Set default AUUC type. Must be one of: "AUTO", "GINI", "GAIN", "LIFT". Default is NULL.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -1039,7 +1040,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
-h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type="NONE", auuc_nbins=-1) {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type=NULL) {
 
   # data is now deprecated and the new arg name is newdata
   if (!is.null(data)) {
@@ -1056,12 +1057,13 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE")
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
   if(!(auc_type %in% c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))) stop("`auc_type` must be \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", or \"WEIGHTED_OVO\".")
-
+  if(!is.null(auuc_type) && !(auuc_type %in% c("AUTO", "GINI", "LIFT", "GAIN"))) stop("`auuc_type` must be \"AUTO\", \"GINI\", \"LIFT\" or \"GAIN\"." )
+    
   missingNewdata <- missing(newdata) || is.null(newdata)
   if( missingNewdata && auc_type != "NONE") {
     print("WARNING: The `auc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
   }
-  if( missingNewdata && auuc_type != "NONE") {
+  if( missingNewdata && !is.null(auuc_type)) {
     print("WARNING: The `auuc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
   }  
   if( !missingNewdata ) {
@@ -1078,16 +1080,11 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
     } else if(!is.null(model@parameters$auc_type) && model@parameters$auc_type != "NONE"){
         parms[["auc_type"]] <- model@parameters$auc_type
     }
-    if(!is.null(custom_auuc_thresholds)){
-        parms[["custom_auuc_thresholds"]] <- paste("[", paste(custom_auuc_thresholds, collapse = ", "),"]")
     if(!is.null(auuc_type)){
         parms[["auuc_type"]] <- auuc_type
-    } else if(!is.null(model@parameters$auuc_type) && model@parameters$auuc_type != "NONE"){
+    } else if(!is.null(model@parameters$auuc_type)){
         parms[["auuc_type"]] <- model@parameters$auuc_type
-    }  
-    if(auuc_nbins > 0){
-        parms[["auuc_nbins"]] <- auuc_nbins
-    }  
+    }
     res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
 
     ####

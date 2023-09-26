@@ -13,19 +13,17 @@ test.make_metrics_uplift_binomial <- function() {
 
     predictors <- sprintf("feature_%s",seq(0:11))
 
-
+    nbins <- 20
     model <- h2o.upliftRandomForest(training_frame=train,
                                     validation_frame=valid,
                                     x=predictors,
                                     y=response,
                                     treatment_column=treatment,
                                     seed=42,
-                                    auuc_nbins=20,
+                                    auuc_nbins=nbins,
                                     score_each_iteration=TRUE,
                                     ntrees=3)
     print(model)
-
-    h2oPred <- as.data.frame(h2o.predict(model,valid)[,1])
 
     pred <- h2o.assign(h2o.predict(model,valid)[,1], "pred")
     actual <- h2o.assign(valid[,response], "act")
@@ -39,7 +37,7 @@ test.make_metrics_uplift_binomial <- function() {
     m1 <- h2o.make_metrics(pred, actual, treatment=treat, custom_auuc_thresholds=thresholds)
     thresholds1 <- m1@metrics$thresholds$thresholds
 
-    m2 <- h2o.performance(model, valid, auuc_nbins=20)
+    m2 <- h2o.performance(model, valid)
     thresholds2 <- m2@metrics$thresholds$thresholds
 
     tol <- 1e-10
