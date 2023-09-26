@@ -41,7 +41,7 @@ def pyunit_make_metrics(weights_col=None):
             continue
         print("distribution: %s" % distr)
         model = H2OGradientBoostingEstimator(distribution=distr, ntrees=2, max_depth=3,
-                                             min_rows=1, learn_rate=0.1, nbins=20, weights_column=weights_col)
+                    min_rows=1, learn_rate=0.1, nbins=20, weights_column=weights_col)
         model.train(x=predictors, y=response, training_frame=fr)
         predicted = h2o.assign(model.predict(fr), "pred")
         actual = fr[response]
@@ -153,7 +153,7 @@ def pyunit_make_metrics(weights_col=None):
         "got duplicate CM headers, although all metrics are different"
     cm0t = m0.confusion_matrix(metrics=max_metrics, thresholds=[.3, .6])
     assert len(cm0t) == 2 + len(max_metrics)
-    assert 2 == sum([not any(m in header for m in max_metrics) for header in map(lambda cm: cm.table._table_header, cm0t)]), \
+    assert 2 == sum([not any(m in header for m in max_metrics) for header in map(lambda cm: cm.table._table_header, cm0t)]),  \
         "missing or duplicate headers without metric (thresholds only CMs)"
     assert all([any(m in header for header in map(lambda cm: cm.table._table_header, cm0t) for m in max_metrics)]), \
         "got duplicate CM headers, although all metrics are different"
@@ -167,7 +167,7 @@ def pyunit_make_metrics(weights_col=None):
     model.train(x=predictors, y=response, training_frame=fr)
     predicted = h2o.assign(model.predict(fr)[1:], "pred")
     actual = h2o.assign(fr[response].asfactor(), "act")
-    domain = fr[response].levels()[0]
+    domain = fr[response].levels()[0]               
 
     m0 = model.model_performance(train=True)
     m1 = h2o.make_metrics(predicted, actual, domain=domain, weights=weights, auc_type="MACRO_OVR")

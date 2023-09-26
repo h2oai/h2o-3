@@ -1058,8 +1058,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         if 'calc_like' in self.parms and not self.parms['calc_like']['actual_value']:
             warning_message = "This is the AIC function using the simplified negative log likelihood used during " \
-                      "training for speedup. To see the correct value, set calc_like=True, " \
-                      "retrain the model and call model.model_performance().aic() again."
+                              "training for speedup. To see the correct value, set calc_like=True, " \
+                              "retrain the model and call model.model_performance().aic() again."
             warnings.warn(warning_message, UserWarning, stacklevel=2)
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
