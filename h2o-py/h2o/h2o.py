@@ -2048,6 +2048,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     params = {"domain": domain, "distribution": distribution}
     if weights is not None:
         params["weights_frame"] = weights.frame_id
+    params["auc_type"] = auc_type
     if treatment is not None:
         assert treatment.ncol == 1, "`treatment` frame should have exactly 1 column"
         params["treatment_frame"] = treatment.frame_id
@@ -2056,7 +2057,6 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
         params["auuc_type"] = auuc_type
         assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."  
         params["auuc_nbins"] = auuc_nbins
-    params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)
     return res["model_metrics"]
