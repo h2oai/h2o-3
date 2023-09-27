@@ -1127,8 +1127,11 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #         Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR (OVO = One vs. One, OVR = One vs. Rest)
 #' @param auuc_type (optional) For uplift binomial classification you have to specify which type of AUUC will be used to 
 #'        calculate this metric. Possibilities are gini, lift, gain, AUTO. Default is AUTO which means qini.
-#' @param auuc_nbins (optional) For uplift binomial classification you have to specify number of bins to be used 
+#' @param auuc_nbins (optional) For uplift binomial classification you can specify number of bins to be used 
 #'        for calculation the AUUC. Default is -1, which means 1000.
+#' @param custom_auuc_thresholds (optional) For uplift binomial classification you can specify exact thresholds to 
+#'        calculate AUUC. Default is NULL. If the thresholds are not defined, auuc_nbins will be used to calculate 
+#'        new thresholds from the predicted data. 
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{

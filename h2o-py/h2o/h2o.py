@@ -2005,9 +2005,10 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
                - AUTO (default, uses qini)
                
     :param auuc_nbins: For uplift binomial classification you have to specify number of bins to be used 
-           for calculation the AUUC. Default is -1, which means 1000.
-    :param custom_auuc_thresholds Array of custom thresholds to calculate AUUC, if the thresholds are specified, 
-            the number of AUUC bins is equal to thresholds size    
+            for calculation the AUUC. Default is -1, which means 1000.
+    :param custom_auuc_thresholds For uplift binomial classification you can specify exact thresholds to 
+            calculate AUUC. Default is NONE. If the thresholds are not defined, auuc_nbins will be used to calculate,
+            the new thresholds from the predicted data.   
     :examples:
 
     >>> fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
