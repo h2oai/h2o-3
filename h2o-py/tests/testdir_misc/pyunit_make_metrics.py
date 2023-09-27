@@ -193,14 +193,14 @@ def pyunit_make_metrics_uplift():
     treatment_column = "treatment"
     response_column = "outcome"
     feature_cols = ["feature_"+str(x) for x in range(1,13)]
-    
+
     train = h2o.import_file(pyunit_utils.locate("smalldata/uplift/upliftml_train.csv"))
     train[treatment_column] = train[treatment_column].asfactor()
     train[response_column] = train[response_column].asfactor()
 
-    valid = h2o.import_file(pyunit_utils.locate("smalldata/uplift/upliftml_test.csv"))
-    valid[treatment_column] = valid[treatment_column].asfactor()
-    valid[response_column] = valid[response_column].asfactor()
+    test = h2o.import_file(pyunit_utils.locate("smalldata/uplift/upliftml_test.csv"))
+    test[treatment_column] = test[treatment_column].asfactor()
+    test[response_column] = test[response_column].asfactor()
 
     nbins = 20
     model = H2OUpliftRandomForestEstimator(
@@ -210,43 +210,52 @@ def pyunit_make_metrics_uplift():
         score_each_iteration=True,
         ntrees=3
     )
-    
-    model.train(y=response_column, x=feature_cols, training_frame=train, validation_frame=valid)
+
+    model.train(y=response_column, x=feature_cols, training_frame=train, validation_frame=test)
     # test on validation data, train metrics are affected by sample rate
     m0 = model.model_performance(valid=True)
-    predicted = h2o.assign(model.predict(valid)[0], "pred")
-    actual = valid[response_column]
-    treatment = valid[treatment_column]
-    m1 = model.model_performance(test_data=valid, auuc_type="AUTO") 
+    predicted = h2o.assign(model.predict(test)[0], "pred")
+    actual = test[response_column]
+    treatment = test[treatment_column]
+    m1 = model.model_performance(test_data=test, auuc_type="AUTO")
     m2 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins)
-    
+    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO",
+                          custom_auuc_thresholds=m1.thresholds())
+    m4 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO",
+                          custom_auuc_thresholds=model.default_auuc_thresholds())
     new_nbins = nbins - 10
-    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=new_nbins)
-    
+    m5 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=new_nbins)
+
     print("Model AUUC: {}".format(model.auuc()))
     print("thresholds: {}".format(model.default_auuc_thresholds()))
     print("Model performance AUUC: {}".format(m0.auuc()))
     print("thresholds: {}".format(m0.thresholds()))
-    print("Model performance AUUC recalculate with data: {}".format(m1.auuc()))
+    print("Model performance AUUC: {}".format(m1.auuc()))
     print("thresholds: {}".format(m1.thresholds()))
-    print("Make AUUC: {}".format(m2.auuc()))
+    print("Make AUUC with no custom thresholds: {}".format(m2.auuc()))
     print("thresholds: {}".format(m2.thresholds()))
-    print("Make AUUC with new number of bins: {}".format(m3.auuc()))
+    print("Make AUUC with custom thresholds from m1: {}".format(m3.auuc()))
     print("thresholds: {}".format(m3.thresholds()))
+    print("Make AUUC with custom thresholds from model defaults: {}".format(m4.auuc()))
+    print("thresholds: {}".format(m4.thresholds()))
+    print("Make AUUC with no custom thresholds but change nbins parameter: {}".format(m5.auuc()))
+    print("thresholds: {}".format(m5.thresholds()))
 
     tol = 1e-5
 
     # default model auuc is calculated from train data, default thresholds are from validation data
-    assert abs(model.auuc() - m0.auuc()) > tol 
-    # model performance uses default thresholds, so AUUCs are same
+    assert abs(model.auuc() - m0.auuc()) > tol
+    # model performance calculates new thresholds but from the same data with the same number of bins, so AUUCs are same
     assert abs(m0.auuc() - m1.auuc()) < tol
-    # make method calculates new thresholds but from the same data with same nbins so AUUCs are same
+    # make method calculates new thresholds but from the same data with the same number of bins, so AUUCs are same
     assert abs(m1.auuc() - m2.auuc()) < tol
-    # make method with the new auuc_nbins parameter calculates the new thresholds
-    assert abs(m2.auuc() - m3.auuc()) > tol
-    
+    # if we use thresholds from performance metric and use it as custom, it makes the same metrics
+    assert abs(m1.auuc() - m3.auuc()) < tol
+    # make methods with different nbins parameter changes thresholds and AUUC
+    assert abs(m3.auuc() - m5.auuc()) > tol
+
     print("===========================")
-    
+
 
 def suite_model_metrics():
 
@@ -258,7 +267,7 @@ def suite_model_metrics():
 
     def test_model_metrics_uplift():
         pyunit_make_metrics_uplift()
-        
+
     return [
         test_model_metrics_basic,
         test_model_metrics_weights,

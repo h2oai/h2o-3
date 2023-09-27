@@ -1021,7 +1021,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
 #' @param auc_type For multinomila model only. Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Default is "NONE"
-#' @param auuc_type For binomial model only. Set default AUUC type. Must be one of: "AUTO", "GINI", "GAIN", "LIFT". Default is NULL. 
+#' @param auuc_type For binomial model only. Set default AUUC type. Must be one of: "AUTO", "GINI", "GAIN", "LIFT". Default is NULL.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -1057,8 +1057,8 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE")
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
   if(!(auc_type %in% c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))) stop("`auc_type` must be \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", or \"WEIGHTED_OVO\".")
-  if(!is.null(auuc_type) && !(auuc_type %in% c("AUTO", "GINI", "LIFT", "GAIN"))) stop("`auuc_type` must be \"AUTO\", \"GINI\", \"LIFT\" or \"GAIN\"." )  
-
+  if(!is.null(auuc_type) && !(auuc_type %in% c("AUTO", "GINI", "LIFT", "GAIN"))) stop("`auuc_type` must be \"AUTO\", \"GINI\", \"LIFT\" or \"GAIN\"." )
+    
   missingNewdata <- missing(newdata) || is.null(newdata)
   if( missingNewdata && auc_type != "NONE") {
     print("WARNING: The `auc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
@@ -1082,7 +1082,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
     }
     if(!is.null(auuc_type)){
         parms[["auuc_type"]] <- auuc_type
-    } else if(!is.null(model@parameters$auuc_type) && !is.null(model@parameters$auuc_type)){
+    } else if(!is.null(model@parameters$auuc_type)){
         parms[["auuc_type"]] <- model@parameters$auuc_type
     }
     res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
@@ -1127,8 +1127,11 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #         Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR (OVO = One vs. One, OVR = One vs. Rest)
 #' @param auuc_type (optional) For uplift binomial classification you have to specify which type of AUUC will be used to 
 #'        calculate this metric. Possibilities are gini, lift, gain, AUTO. Default is AUTO which means qini.
-#' @param auuc_nbins (optional) For uplift binomial classification you have to specify number of bins to be used 
+#' @param auuc_nbins (optional) For uplift binomial classification you can specify number of bins to be used 
 #'        for calculation the AUUC. Default is -1, which means 1000.
+#' @param custom_auuc_thresholds (optional) For uplift binomial classification you can specify exact thresholds to 
+#'        calculate AUUC. Default is NULL. If the thresholds are not defined, auuc_nbins will be used to calculate 
+#'        new thresholds from the predicted data. 
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -1143,7 +1146,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' }
 #' @export
 h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, treatment=NULL, 
-                                auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1) {
+                                auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1, custom_auuc_thresholds=NULL) {
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
@@ -1168,6 +1171,9 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
       }
       params$auuc_type <- auuc_type
       params$auuc_nbins <- auuc_nbins
+      if(!is.null(custom_auuc_thresholds)){ 
+         params$custom_auuc_thresholds <- paste("[", paste(custom_auuc_thresholds, collapse = ", "),"]")
+      }
   }
   params$domain <- domain
   params$distribution <- distribution
@@ -2185,10 +2191,10 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
   if( is(object, "H2OModel") ) {
       if (('calc_like' %in% names(object@allparameters)) && !object@allparameters$calc_like) {
-          warning_message <- paste0("This is the AIC function using the simplified negative log likelihood used during ",
-                                   "training for speedup. To see the correct value, set calc_like=True, ",
-                                   "retrain and call h2o.aic(model).")
-          warning(warning_message)
+        warning_message <- paste0("This is the AIC function using the simplified negative log likelihood used during ",
+                                  "training for speedup. To see the correct value, set calc_like=True, ",
+                                  "retrain and call h2o.aic(model).")
+        warning(warning_message)
       }
     model.parts <- .model.parts(object)
     if ( !train && !valid && !xval ) {
@@ -2766,10 +2772,10 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' @export 
 h2o.negative_log_likelihood <- function(model) {
     if (model@allparameters$calc_like) {
-        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ",
+        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ", 
                                  "To see the correct value call h2o.loglikelihood(model).")
     } else {
-        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ",
+        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ", 
                                  "To see the correct value, set calc_like=True, retrain and call h2o.loglikelihood(model).")
     }
     warning(warning_message)
