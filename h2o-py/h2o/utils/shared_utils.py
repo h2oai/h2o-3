@@ -130,6 +130,9 @@ def is_module_available(mod):
 def can_use_pandas():
     return is_module_available('pandas')
 
+def can_install_datatable():
+    return sys.version_info.major == 3 and sys.version_info.minor <= 9
+
 def can_use_datatable():
     return is_module_available('datatable')
 
