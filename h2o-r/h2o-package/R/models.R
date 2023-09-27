@@ -1021,6 +1021,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
 #' @param auc_type For multinomila model only. Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Default is "NONE"
+#' @param auuc_type For binomial model only. Set default AUUC type. Must be one of: "AUTO", "GINI", "GAIN", "LIFT". Default is NULL. 
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -1039,7 +1040,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
-h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE") {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type=NULL) {
 
   # data is now deprecated and the new arg name is newdata
   if (!is.null(data)) {
@@ -1056,11 +1057,15 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE")
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
   if(!(auc_type %in% c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))) stop("`auc_type` must be \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", or \"WEIGHTED_OVO\".")
+  if(!is.null(auuc_type) && !(auuc_type %in% c("AUTO", "GINI", "LIFT", "GAIN"))) stop("`auuc_type` must be \"AUTO\", \"GINI\", \"LIFT\" or \"GAIN\"." )  
 
   missingNewdata <- missing(newdata) || is.null(newdata)
   if( missingNewdata && auc_type != "NONE") {
     print("WARNING: The `auc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
   }
+  if( missingNewdata && !is.null(auuc_type)) {
+    print("WARNING: The `auuc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
+  }  
   if( !missingNewdata ) {
     if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
       print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
@@ -1074,6 +1079,11 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
         parms[["auc_type"]] <- auc_type 
     } else if(!is.null(model@parameters$auc_type) && model@parameters$auc_type != "NONE"){
         parms[["auc_type"]] <- model@parameters$auc_type
+    }
+    if(!is.null(auuc_type)){
+        parms[["auuc_type"]] <- auuc_type
+    } else if(!is.null(model@parameters$auuc_type) && !is.null(model@parameters$auuc_type)){
+        parms[["auuc_type"]] <- model@parameters$auuc_type
     }
     res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
 
@@ -2174,6 +2184,12 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
   if( is(object, "H2OModel") ) {
+      if (('calc_like' %in% names(object@allparameters)) && !object@allparameters$calc_like) {
+          warning_message <- paste0("This is the AIC function using the simplified negative log likelihood used during ",
+                                   "training for speedup. To see the correct value, set calc_like=True, ",
+                                   "retrain and call h2o.aic(model).")
+          warning(warning_message)
+      }
     model.parts <- .model.parts(object)
     if ( !train && !valid && !xval ) {
       metric <- model.parts$tm@metrics$AIC
@@ -2749,6 +2765,14 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' }
 #' @export 
 h2o.negative_log_likelihood <- function(model) {
+    if (model@allparameters$calc_like) {
+        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ",
+                                 "To see the correct value call h2o.loglikelihood(model).")
+    } else {
+        warning_message <- paste0("This is the simplified negative log likelihood function used during training for speedup. ",
+                                 "To see the correct value, set calc_like=True, retrain and call h2o.loglikelihood(model).")
+    }
+    warning(warning_message)
     return(extract_scoring_history(model, "negative_log_likelihood"))
 }
 
@@ -2776,6 +2800,10 @@ h2o.negative_log_likelihood <- function(model) {
 #' }
 #' @export 
 h2o.average_objective <- function(model) {
+
+    warning_message <- paste0("This objective function is calculated based on the simplified negative log likelihood ",
+                             "function used during training for speedup.")
+    warning(warning_message)
     return(extract_scoring_history(model, "objective"))
 }
 

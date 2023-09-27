@@ -173,6 +173,7 @@ class ModelMetricsHandler extends Handler {
 
     @API(help = "Set number of bins to calculate AUUC. Must be -1 or higher than 0. Default is -1 which means 1000 (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
     public int auuc_nbins;
+    
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -199,6 +200,7 @@ class ModelMetricsHandler extends Handler {
       mml._compare_abs = this.compare_abs;
       mml._auuc_type = this.auuc_type;
       mml._auuc_nbins = this.auuc_nbins;
+      mml._custom_metric_func = this.custom_metric_func;
 
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -308,7 +310,6 @@ class ModelMetricsHandler extends Handler {
     int auucNbins = parms._model._parms._auuc_nbins;
     if(s.auuc_type != null){
       parms._model._parms._auuc_type = AUUC.AUUCType.valueOf(s.auuc_type);
-      parms._model._parms._auuc_nbins = s.auuc_nbins;
     }
     parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);

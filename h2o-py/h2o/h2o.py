@@ -1580,7 +1580,8 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, parallel=False, format="csv"):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, 
+                parallel=False, format="csv", write_checksum=True):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
@@ -1602,6 +1603,8 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     :param format: one of 'csv' or 'parquet'. Defaults to 'csv'. Export
         to parquet is multipart and H2O itself determines the optimal number
         of files (1 file per chunk).
+    :param write_checksum: if supported by the format (e.g. 'parquet'), 
+        export will include a checksum file for each exported data file.
 
     :examples:
 
@@ -1628,10 +1631,13 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     assert_is_type(quote_header, bool)
     assert_is_type(parallel, bool)
     assert_is_type(format, str)
+    assert_is_type(write_checksum, bool)
     H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
                data={"path": path, "num_parts": parts, "force": force, 
                      "compression": compression, "separator": ord(sep),
-                     "header": header, "quote_header": quote_header, "parallel": parallel, "format": format}), "Export File").poll()
+                     "header": header, "quote_header": quote_header, "parallel": parallel, 
+                     "format": format, "write_checksum": write_checksum}
+               ),  "Export File").poll()
 
 
 def load_frame(frame_id, path, force=True):
@@ -2042,6 +2048,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     params = {"domain": domain, "distribution": distribution}
     if weights is not None:
         params["weights_frame"] = weights.frame_id
+    params["auc_type"] = auc_type
     if treatment is not None:
         assert treatment.ncol == 1, "`treatment` frame should have exactly 1 column"
         params["treatment_frame"] = treatment.frame_id
@@ -2050,7 +2057,6 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
         params["auuc_type"] = auuc_type
         assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."  
         params["auuc_nbins"] = auuc_nbins
-    params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)
     return res["model_metrics"]

@@ -26,7 +26,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 -  **Languages**: R and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
    -  R version 3 or later
-   -  Python 3.6.x, 3.7.x, 3.8.x 
+   -  Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 

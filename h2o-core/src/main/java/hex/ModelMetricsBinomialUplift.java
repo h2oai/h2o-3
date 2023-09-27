@@ -4,7 +4,7 @@ import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
-import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -70,35 +70,26 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {
         return sb;
     }
-
-    /**
-     * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
-     * @param targetClassProbs A Vec containing target class probabilities
-     * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
-     * @return ModelMetrics object
-     */
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec treatment, AUUC.AUUCType auucType, int nbins) {
-        return make(targetClassProbs, actualLabels, treatment, actualLabels.domain(), auucType, nbins);
-    }
     
     /**
-     * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
-     * @param targetClassProbs A Vec containing target class probabilities
+     * Build a Binomial ModelMetrics object from predicted probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
+     * @param predictedProbs A Vec containing predicted probabilities
      * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
      * @param treatment A Vec containing the treatment values               
      * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
      * @param auucType Type of default AUUC
-     * @param auucNbins Number of bins to calculate AUUC (-1 means default value 1000, the number has to be higher than zero)                
+     * @param auucNbins Number of bins to calculate AUUC (-1 means default value 1000, the number has to be higher than zero)
+     * @param customAuucThresholds custom threshold to calculate AUUC, if is not specified, the thresholds will be calculated from prediction vector       
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins) {
+    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins) {
         Scope.enter();
         try {
             Vec labels = actualLabels.toCategoricalVec();
             if (domain == null) domain = labels.domain();
-            if (labels == null || targetClassProbs == null || treatment ==  null)
-                throw new IllegalArgumentException("Missing actualLabels or predictedProbs or treatment values for uplift binomial metrics!");
-            if (!targetClassProbs.isNumeric())
+            if (labels == null || predictedProbs == null || treatment ==  null)
+                throw new IllegalArgumentException("Missing actualLabels or predicted probabilities or treatment values for uplift binomial metrics!");
+            if (!predictedProbs.isNumeric())
                 throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities for uplift binomial metrics.");
             if (domain.length != 2)
                 throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain) + " for uplift binomial metrics.");
@@ -112,14 +103,13 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                 throw new IllegalArgumentException("The number of bins to calculate AUUC need to be -1 (default value) or higher than zero, but less than data size.");
             if(auucNbins == -1)
                 auucNbins = AUUC.NBINS > dataSize ? (int) dataSize : AUUC.NBINS;
-            Frame fr = new Frame(targetClassProbs);
+            Frame fr = new Frame(predictedProbs);
             fr.add("labels", labels);
             fr.add("treatment", treatment);
-            MetricBuilderBinomialUplift mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, targetClassProbs)).doAll(fr)._mb;
+            MetricBuilderBinomialUplift mb;
+            mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, predictedProbs)).doAll(fr)._mb;
             labels.remove();
-            Frame preds = new Frame(targetClassProbs);
-            ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, preds,
-                    fr.vec("labels"), fr.vec("treatment"), auucType, auucNbins); // use the Vecs from the frame (to make sure the ESPC is identical)
+            ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, auucType);
             mm._description = "Computed on user-given predictions and labels.";
             return mm;
         } finally {
@@ -127,7 +117,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         }
     }
 
-    // helper to build a ModelMetricsBinomial for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
+    // helper to build a ModelMetricsBinomialUplift from a Frame that contains prediction probability column and the actual label
     private static class UpliftBinomialMetrics extends MRTask<UpliftBinomialMetrics> {
         String[] domain;
         double[] thresholds;
@@ -168,18 +158,14 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                 _auuc = new AUUC.AUUCBuilder(thresholds);
             }
         }
-
-        public MetricBuilderBinomialUplift( String[] domain) {
-            super(2,domain);
-        }
-
+        
         @Override public double[] perRow(double[] ds, float[] yact, Model m) {
             return perRow(ds, yact,1, 0, m);
         }
 
         @Override
         public double[] perRow(double[] ds, float[] yact, double weight, double offset, Model m) {
-            assert _auuc == null || yact.length == 2 : "Treatment must be included in `yact` when calculating AUUC";
+            assert yact.length == 2 : "Treatment must be included in `yact` when calculating AUUC";
             if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
             if(weight == 0 || Double.isNaN(weight)) return ds;
             int y = (int)yact[0];
@@ -233,7 +219,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                     treatment = frameWithExtraColumns.vec(m._parms._treatment_column);
                 }
             }
-            int auucNbins = m==null || m._parms._auuc_nbins == -1? 
+            int auucNbins = m==null || m._parms._auuc_nbins == -1?
                     AUUC.NBINS : m._parms._auuc_nbins;
             return makeModelMetrics(m, f, preds, resp, treatment, auucType, auucNbins);
         }
@@ -243,17 +229,17 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             AUUC auuc = null;
             if (preds != null) {
                 if (resp != null) {
-                    if (_auuc == null) {
                         auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins);
-                    } else {
-                        auuc = new AUUC(_auuc, auucType);
-                    }
                 }
             }
             return makeModelMetrics(m, f, auuc);
         }
 
-        private ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc) {
+        private ModelMetrics makeModelMetrics(final Model m, final Frame f, AUUC.AUUCType auucType) {
+            return makeModelMetrics(m, f, new AUUC(_auuc, auucType));
+        }
+
+        public ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc) {
             double sigma = Double.NaN;
             double ate = Double.NaN;
             double atc = Double.NaN;
