@@ -9,8 +9,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.parser.ParseDataset;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -34,8 +32,7 @@ public class GLMSHAPTest extends TestUtil {
 
   @Test
   public void testClassificationCompactSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     GLMModel model = null;
@@ -81,8 +78,7 @@ public class GLMSHAPTest extends TestUtil {
 
   @Test
   public void testClassificationOriginalSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     GLMModel model = null;
@@ -128,8 +124,7 @@ public class GLMSHAPTest extends TestUtil {
 
   @Test
   public void testClassificationCompactOutputSpaceSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     GLMModel model = null;
@@ -171,8 +166,7 @@ public class GLMSHAPTest extends TestUtil {
 
   @Test
   public void testClassificationOriginalOutputSpaceSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     GLMModel model = null;
@@ -214,8 +208,7 @@ public class GLMSHAPTest extends TestUtil {
 
   @Test
   public void testRegressionCompactSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     GLMModel model = null;
@@ -255,8 +248,7 @@ public class GLMSHAPTest extends TestUtil {
 
   @Test
   public void testRegressionOriginalSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     GLMModel model = null;

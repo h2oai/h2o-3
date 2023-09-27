@@ -23,7 +23,7 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
 
   public PredictTreeSHAPWithBackgroundTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output,
                                            Model.Contributions.ContributionsOptions options, Frame frame, Frame backgroundFrame, boolean perReference, boolean outputSpace) {
-    super(frame, backgroundFrame, perReference);
+    super(frame._key, backgroundFrame._key, perReference);
     _di = di;
     _modelInfo = modelInfo;
     _output = output;

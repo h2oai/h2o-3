@@ -186,8 +186,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     boolean _compact;
     boolean _outputSpace;
 
-    GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame, boolean perReference, boolean compact, boolean outputSpace) {
-      super(frame, backgroundFrame, perReference);
+    GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Key<Frame> frameKey, Key<Frame> backgroundFrameKey, boolean perReference, boolean compact, boolean outputSpace) {
+      super(frameKey, backgroundFrameKey, perReference);
       _dinfo = dinfo;
       _betas = betas;
       _compact = compact;
@@ -248,15 +248,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     Frame adaptedBgFrame = null;
     if (backgroundFrame == null)
       throw H2O.unimpl("GLM supports contribution calculation only with background frame.");
-
     Log.info("Starting contributions calculation for " + this._key + "...");
     try {
       adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
       adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      DKV.put(adaptedBgFrame);
+      DKV.put(adaptedFrame);
       DataInfo dinfo = _output._dinfo.clone();
       dinfo._adaptedFrame = adaptedFrame;
       GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(dinfo,
-              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame, adaptedBgFrame,
+              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame._key, adaptedBgFrame._key,
               options._outputPerReference, ContributionsOutputFormat.Compact.equals(options._outputFormat), options._outputSpace);
       String[] colNames = new String[ContributionsOutputFormat.Compact.equals(options._outputFormat)
               ? dinfo.coefOriginalNames().length + 1 // +1 for bias term

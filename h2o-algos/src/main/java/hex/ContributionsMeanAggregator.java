@@ -1,8 +1,8 @@
 package hex;
 
+import water.Job;
 import water.MRTask;
 import water.MemoryManager;
-import water.fvec.AppendableVec;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 
@@ -14,22 +14,32 @@ public class ContributionsMeanAggregator extends MRTask<ContributionsMeanAggrega
   final int _rowIdxIdx;
   final int _nRows;
   final int _nCols;
-  
-  public ContributionsMeanAggregator(int nRows, int nCols, int nBgRows) {
+  int _startIndex;
+  final Job _j;
+
+  public ContributionsMeanAggregator(Job j, int nRows, int nCols, int nBgRows) {
+    _j = j;
     _nRows = nRows;
     _nCols = nCols;
     _rowIdxIdx = nCols;
     _nBgRows = nBgRows;
+    _startIndex = 0;
+  }
+
+  public ContributionsMeanAggregator setStartIndex(int startIndex) {
+    _startIndex = startIndex;
+    return this;
   }
 
   @Override
   public void map(Chunk[] cs, NewChunk[] ncs) {
-    _partialSums = MemoryManager.malloc8d(_nRows, _nCols);
+    if (isCancelled() || null != _j && _j.stop_requested()) return;
+      _partialSums = MemoryManager.malloc8d(_nRows, _nCols);
     for (int i = 0; i < cs[0]._len; i++) {
       final int rowIdx = (int) cs[_rowIdxIdx].at8(i);
-      
+
       for (int j = 0; j < _nCols; j++) {
-        _partialSums[rowIdx][j] += cs[j].atd(i);
+        _partialSums[rowIdx - _startIndex][j] += cs[j].atd(i);
       }
     }
   }
@@ -41,7 +51,7 @@ public class ContributionsMeanAggregator extends MRTask<ContributionsMeanAggrega
         _partialSums[i][j] += mrt._partialSums[i][j];
       }
     }
-    mrt._partialSums=null;
+    mrt._partialSums = null;
   }
 
   @Override
@@ -53,7 +63,7 @@ public class ContributionsMeanAggregator extends MRTask<ContributionsMeanAggrega
       }
     }
     _partialSums = null;
-    for (NewChunk nc: ncs)
+    for (NewChunk nc : ncs)
       nc.close(0, _fs);
   }
 }

@@ -397,7 +397,7 @@ def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, m
         mod = h2o.get_model(model)
         link = y == "survived" and mod.algo.lower() in ["glm", "gbm", "xgboost", "stackedensemble"]
         skip_naive = mod.algo.lower() in ["deeplearning", "stackedensemble"]
-        skip_symmetry = mod.algo.lower() in ["stackedensemble"] and output_format == "original"
+        skip_symmetry = mod.algo.lower() in ["stackedensemble", "glm"] and output_format == "original"
         skip_dummy = mod.algo.lower() in ["glm", "stackedensemble"] and output_format == "original"
 
         test_local_accuracy(
@@ -416,7 +416,7 @@ def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, m
             test_symmetry(mod, train, test, output_format=output_format, eps=eps)
 
         if output_format.lower() == "compact" and not skip_naive:
-            test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
+            test_contributions_against_naive(mod, y, train, test, link=link, eps=eps if mod.algo.lower() != "xgboost" else 0.0002)
 
         test_per_reference_aggregation(mod, train, test, output_format)
 

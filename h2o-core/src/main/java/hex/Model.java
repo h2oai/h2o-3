@@ -228,6 +228,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       types[outputSize] = Vec.T_NUM;
       domains[outputSize] = null;
     }
+    
+    default long scoreContributionsWorkEstimate(Frame frame, Frame backgroundFrame, boolean outputPerReference) {
+      long frameNRows = frame.numRows();
+      long bgFrameNRows = backgroundFrame.numRows();
+      long workAmount = Math.max(frameNRows, bgFrameNRows); // Maps over the bigger frame while the smaller is sent across the cluster
+      if (!outputPerReference) 
+        workAmount +=  frameNRows * bgFrameNRows; // Aggregating over the baselines
+      return workAmount;
+    }
   }
 
   public interface RowToTreeAssignment {

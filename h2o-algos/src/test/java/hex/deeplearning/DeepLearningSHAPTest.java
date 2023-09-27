@@ -8,8 +8,6 @@ import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.parser.ParseDataset;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -24,7 +22,7 @@ public class DeepLearningSHAPTest extends TestUtil {
    To be more sure after doing some changes to the SHAP, please run the python test:
    h2o-py/tests/testdir_misc/pyunit_SHAP.py 
   */
-  
+
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
@@ -33,8 +31,7 @@ public class DeepLearningSHAPTest extends TestUtil {
 
   @Test
   public void testClassificationCompactSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     DeepLearningModel model = null;
@@ -76,8 +73,7 @@ public class DeepLearningSHAPTest extends TestUtil {
 
   @Test
   public void testClassificationOriginalSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     DeepLearningModel model = null;
@@ -119,8 +115,7 @@ public class DeepLearningSHAPTest extends TestUtil {
 
   @Test
   public void testRegressionCompactSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     DeepLearningModel model = null;
@@ -162,8 +157,7 @@ public class DeepLearningSHAPTest extends TestUtil {
 
   @Test
   public void testRegressionOriginalSHAP() {
-    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/titanic/titanic_expanded.csv");
-    Frame fr = ParseDataset.parse(Key.make(), nfs._key);
+    Frame fr = parseTestFile("smalldata/titanic/titanic_expanded.csv");
     Frame bgFr = fr.deepSlice(new LongRange(0, 50).toArray(), null);
     Frame test = fr.deepSlice(new LongRange(51, 101).toArray(), null);
     DeepLearningModel model = null;

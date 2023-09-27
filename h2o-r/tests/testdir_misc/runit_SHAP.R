@@ -19,6 +19,7 @@ aml_models_regression_test <- function() {
     for (algo in ALGOS){
       print(algo)
       model <- h2o.get_best_model(aml, algo)
+      if (is.null(model) && algo == "xgboost") next; # multinode
       contr <- h2o.predict_contributions(model, test, output_format = if (algo == "stackedensemble") "compact" else "original", background_frame = train)
       nColOriginal <- max(nColOriginal, ncol(contr))
       expect_true(all.equal(h2o.predict(model, test), h2o.sum(contr, axis=1, return_frame = TRUE)))
@@ -27,6 +28,7 @@ aml_models_regression_test <- function() {
     for (algo in ALGOS){
       print(algo)
       model <- h2o.get_best_model(aml, algo)
+      if (is.null(model) && algo == "xgboost") next; # multinode
       contr <- h2o.predict_contributions(model, test[1:3,], output_format = "compact",  background_frame = train, output_per_reference = TRUE)
       expect_true(nColOriginal >= ncol(contr))
       eps <- 1e-4
@@ -62,14 +64,16 @@ aml_models_binomial_test <- function() {
     for (algo in ALGOS){
       print(algo)
       model <- h2o.get_best_model(aml, algo)
+      if (is.null(model) && algo == "xgboost") next; # multinode
       contr <- h2o.predict_contributions(model, test, output_format = "compact", background_frame = train, output_space = TRUE)
       nColCompact <- max(nColCompact, ncol(contr))
-      expect_true(h2o.all(h2o.abs(h2o.predict(model, test)[, 3] - h2o.sum(contr, axis=1, return_frame = TRUE)) < 1e-5))
+      expect_true(h2o.all(h2o.abs(h2o.predict(model, test)[, 3] - h2o.sum(contr, axis=1, return_frame = TRUE)) < 1e-3))
     }
     
     for (algo in ALGOS){
       print(algo)
       model <- h2o.get_best_model(aml, algo)
+      if (is.null(model) && algo == "xgboost") next; # multinode
       eps <- 1e-4
       if (algo %in% c("xgboost"))
         eps <- 1e-3

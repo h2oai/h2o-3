@@ -109,7 +109,6 @@ public abstract class SharedTreeModelWithContributions<
       throw new UnsupportedOperationException(
               "Calculating contributions is currently not supported for multinomial models.");
     }
-
     Log.info("Starting contributions calculation for " + this._key + "...");
     Frame adaptedFrame = null;
     Frame adaptedBgFrame = null;
@@ -118,12 +117,17 @@ public abstract class SharedTreeModelWithContributions<
         adaptedFrame = removeSpecialColumns(frame);
         adaptedBgFrame = removeSpecialColumns(backgroundFrame);
 
+        DKV.put(adaptedFrame);
+        DKV.put(adaptedBgFrame);
+        
         final String[] outputNames = ArrayUtils.append(adaptedFrame.names(), "BiasTerm");
         return getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, false, null, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       } else {
         adaptedFrame = removeSpecialColumns(frame);
         adaptedBgFrame = removeSpecialColumns(backgroundFrame);
+        DKV.put(adaptedFrame);
+        DKV.put(adaptedBgFrame);
         assert Parameters.CategoricalEncodingScheme.Enum.equals(_parms._categorical_encoding) : "Unsupported categorical encoding. Only enum is supported.";
         int[] catOffsets = new int[_output._domains.length + 1];
 
@@ -309,8 +313,8 @@ public abstract class SharedTreeModelWithContributions<
     protected boolean _outputSpace;
     protected int[] _catOffsets;
 
-    public ScoreContributionsWithBackgroundTask(Frame fr, Frame backgroundFrame, boolean perReference, SharedTreeModel model, boolean expand, int[] catOffsets, boolean outputSpace) {
-      super(fr, backgroundFrame, perReference);
+    public ScoreContributionsWithBackgroundTask(Key<Frame> frKey, Key<Frame> backgroundFrameKey, boolean perReference, SharedTreeModel model, boolean expand, int[] catOffsets, boolean outputSpace) {
+      super(frKey, backgroundFrameKey, perReference);
       _modelKey = model._key;
       _expand = expand;
       _catOffsets = catOffsets;

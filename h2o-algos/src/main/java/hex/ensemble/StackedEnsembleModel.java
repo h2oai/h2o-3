@@ -14,6 +14,7 @@ import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.TwoDimTable;
+import water.util.fp.Function;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -163,9 +164,16 @@ public class StackedEnsembleModel
     }
   }
 
-  @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
-    Log.info("Starting contributions calculation for " + this._key + "...");
+  int numOfUsefulBaseModels(){
+    int result = 0;
+    for (Key<Model> bm : _parms._base_models)
+      if (isUsefulBaseModel(bm))
+        result++;
+    return result;
+  }
+  
+  
+  private Frame baseLineContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     List<String> baseModels = new ArrayList<>();
     List<Integer> baseModelsIdx = new ArrayList<>();
     String[] columns = null;
@@ -233,11 +241,11 @@ public class StackedEnsembleModel
 
       List<Frame> tmpFrames = new ArrayList<>();
       adaptFr = adaptFrameForScore(frame, false, tmpFrames);
-      levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, null);
+      levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, j);
 
       tmpFrames = new ArrayList<>();
       adaptFrBg = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, null);
+      levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, j);
 
       Frame metalearnerContrib = ((Model.Contributions) _output._metalearner).scoreContributions(levelOneFrame,
               Key.make(destination_key + "_" + _output._metalearner._key), j,
@@ -246,7 +254,7 @@ public class StackedEnsembleModel
                       .setOutputSpace(options._outputSpace)
                       .setOutputPerReference(true),
               levelOneFrameBg);
-    
+
       metalearnerContrib.setNames(Arrays.stream(metalearnerContrib._names)
               .map(name -> "metalearner_" + name)
               .toArray(String[]::new));
@@ -255,30 +263,58 @@ public class StackedEnsembleModel
       Frame.deleteTempFrameAndItsNonSharedVecs(metalearnerContrib, fr);
 
 
-      Frame indivContribs = new GDeepSHAP(columns, baseModels.toArray(new String[0]),
+      return new GDeepSHAP(columns, baseModels.toArray(new String[0]),
               fr._names, baseModelsIdx.toArray(new Integer[0]), _parms._metalearner_transform)
               .withPostMapAction(JobUpdatePostMap.forJob(j))
               .doAll(colsWithRows.length, Vec.T_NUM, fr)
-              .outputFrame(options._outputPerReference ? destination_key : Key.make(destination_key + "_individual_contribs"), colsWithRows, null);
-      
-      if (options._outputPerReference)
-        return indivContribs;
-      
-      try {
-        return new ContributionsMeanAggregator((int) frame.numRows(), columns.length + 1 /* (bias term) */, (int)backgroundFrame.numRows())
-                .withPostMapAction(JobUpdatePostMap.forJob(j))
-                .doAll(columns.length + 1, Vec.T_NUM, indivContribs)
-                .outputFrame(destination_key, Arrays.copyOfRange(colsWithRows, 0, columns.length + 1), null);
-      } finally {
-        indivContribs.delete(true);
-      }
+              .outputFrame(destination_key, colsWithRows, null);
+
     } finally {
-      Log.info("Finished contributions calculation for " + this._key + "...");
       if (null != levelOneFrame) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, frame);
       if (null != levelOneFrameBg) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrameBg, backgroundFrame);
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
       if (null != adaptFr) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, frame);
       if (null != adaptFrBg) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFrBg, backgroundFrame);
+    }
+  }
+
+  @Override
+  public long scoreContributionsWorkEstimate(Frame frame, Frame backgroundFrame, boolean outputPerReference) {
+    long workAmount = Math.max(frame.numRows(), backgroundFrame.numRows()); // Maps over the bigger frame while the smaller is sent across the cluster
+    workAmount *= numOfUsefulBaseModels() + 1; // by each BaseModel and the metalearner
+    workAmount += frame.numRows() * backgroundFrame.numRows(); // G-DeepSHAP work
+    if (!outputPerReference)
+      workAmount += frame.numRows() * backgroundFrame.numRows(); // Aggregating over the baselines
+    return workAmount;
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    Log.info("Starting contributions calculation for " + this._key + "...");
+    try {
+      if (options._outputPerReference)
+        return baseLineContributions(frame, destination_key, j , options, backgroundFrame);
+      
+      Function<Frame, Frame> fun = subFrame -> {
+        String[] columns = null;
+        String[] colsWithBiasTerm = null;
+        Frame indivContribs = baseLineContributions(subFrame,  Key.make(destination_key + "_individual_contribs_for_subframe_"+subFrame._key), j, options, backgroundFrame);
+        columns = Arrays.copyOf(indivContribs.names(), indivContribs.names().length-3);
+        colsWithBiasTerm = Arrays.copyOf(indivContribs.names(), indivContribs.names().length -2 );
+        assert colsWithBiasTerm[colsWithBiasTerm.length - 1].equals("BiasTerm");
+        
+        try {
+          return new ContributionsMeanAggregator(j,(int) subFrame.numRows(), columns.length + 1 /* (bias term) */, (int)backgroundFrame.numRows())
+                  .withPostMapAction(JobUpdatePostMap.forJob(j))
+                  .doAll(columns.length + 1, Vec.T_NUM, indivContribs)
+                  .outputFrame(Key.make(destination_key + "_for_subframe_"+subFrame._key), colsWithBiasTerm, null);
+        } finally {
+          indivContribs.delete(true);
+        }
+      };
+      return SplitToChunksApplyCombine.splitApplyCombine(frame, fun, destination_key);
+    } finally {
+      Log.info("Finished contributions calculation for " + this._key + "...");
     }
   }
 

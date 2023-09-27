@@ -3,7 +3,6 @@ package hex.deeplearning;
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.SharedTreeModelWithContributions;
 import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -45,15 +44,22 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
 
   class DeepSHAPContributionsWithBackground extends ContributionsWithBackgroundFrameTask<DeepSHAPContributionsWithBackground> {
 
-    final Function<Double, Double> _activation;
-    final Function<Double, Double> _activationDiff;
+    transient Function<Double, Double> _activation;
+    transient Function<Double, Double> _activationDiff;
     final int[] _origIndices;
-    final int _hiddenLayerMultiplier;
+    int _hiddenLayerMultiplier;
     final boolean _outputSpace;
 
-    public DeepSHAPContributionsWithBackground(Frame fr, Frame backgroundFrame, boolean perReference, int[] origIndices, boolean outputSpace) {
-      super(fr, backgroundFrame, perReference);
+    public DeepSHAPContributionsWithBackground(Key<Frame> frKey, Key<Frame> backgroundFrameKey, boolean perReference, int[] origIndices, boolean outputSpace) {
+      super(frKey, backgroundFrameKey, perReference);
+      
+      _origIndices = origIndices;
+      _outputSpace = outputSpace;
+    }
 
+    @Override
+    protected void setupLocal() {
+      super.setupLocal();
       switch (_parms._activation) {
         case Tanh:
         case TanhWithDropout:
@@ -76,14 +82,16 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
         case Maxout:
         case MaxoutWithDropout:
         default: // will use different logic 
-          _activation = v -> v;
-          _activationDiff = v -> v;
+          _activation = this::unsupportedActivation;
+          _activationDiff = this::unsupportedActivation;
           _hiddenLayerMultiplier = 2;
       }
-      _origIndices = origIndices;
-      _outputSpace = outputSpace;
     }
 
+    protected double unsupportedActivation(double v) {
+      throw H2O.unimpl("Activation function '"+_parms._activation+"' is not supported.");
+    }
+    
     protected double tanhActivation(double v) {
       return 1 - 2.0 / (1 + Math.exp(2. * v));
     }
@@ -258,7 +266,7 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
 //        MaxOut is different from the rest of the activation functions as it takes multiple inputs - H2O suports just 2
 //        inputs. MaxOut can be calculated exactly faster than with a naive approach by sorting and then creating a decision
 //        tree (exploiting the fact that we know where the maximum is on the sorted input). But since we support just 2 inputs
-//        the naive approach requires just 4 calls to Math.max and simple arithmetic so it's probably faster (but I didn't 
+//        the naive approach requires just 4 calls to Math.max and simple arithmetic, so it's probably faster (but I didn't 
 //        benchmark it).
 //        
 //        Then we use the chain rule:
@@ -408,7 +416,6 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     if (null == backgroundFrame)
       throw new UnsupportedOperationException("Only baseline SHAP is supported for this model. Please provide background frame.");
-    
     Log.info("Starting contributions calculation for "+this._key+"...");
     List<Frame> tmpFrames = new LinkedList<>();
     Frame adaptedFrame = null;
@@ -417,9 +424,10 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
       adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
       DKV.put(adaptedBgFrame);
       adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      DKV.put(adaptedFrame);
       DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(
-              adaptedFrame,
-              adaptedBgFrame,
+              adaptedFrame._key,
+              adaptedBgFrame._key,
               options._outputPerReference,
               ContributionsOutputFormat.Compact.equals(options._outputFormat)
                       ? model_info.data_info().coefOriginalColumnIndices(adaptedFrame)

@@ -1,40 +1,74 @@
 package hex;
 
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
+import water.util.Log;
+import water.util.fp.Function;
 
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.IntStream;
+
+import static water.SplitToChunksApplyCombine.concatFrames;
 
 /***
  * Calls map(Chunk[] frame, Chunk[] background, NewChunk[] ncs) by copying the smaller frame across the nodes.
  * @param <T>
  */
 public abstract class ContributionsWithBackgroundFrameTask<T extends ContributionsWithBackgroundFrameTask<T>> extends MRTask<T> {
-  final Frame _frame;
-  final Frame _backgroundFrame;
+  transient Frame _frame;
+  transient Frame _backgroundFrame;
+  Key<Frame> _frameKey;
+  Key<Frame> _backgroundFrameKey;
+
   final boolean _aggregate;
 
-  final boolean _isFrameBigger;
+  boolean _isFrameBigger;
 
-  public ContributionsWithBackgroundFrameTask(Frame fr, Frame backgroundFrame, boolean perReference) {
-    _frame = fr;
-    _backgroundFrame = backgroundFrame;
+  long _startRow;
+  long _endRow;
+  Job _job;
+  
+  public ContributionsWithBackgroundFrameTask(Key<Frame> frKey, Key<Frame> backgroundFrameKey, boolean perReference) {
+    assert null != frKey.get();
+    assert null != backgroundFrameKey.get();
+
+    _frameKey = frKey;
+    _backgroundFrameKey = backgroundFrameKey;
+
+    _frame = frKey.get();
+    _backgroundFrame = backgroundFrameKey.get();
     assert _frame.numRows() > 0 : "Frame has to contain at least one row.";
     assert _backgroundFrame.numRows() > 0 : "Background frame has to contain at least one row.";
-    _isFrameBigger = fr.numRows() > backgroundFrame.numRows();
+
+    _isFrameBigger = _frame.numRows() > _backgroundFrame.numRows();
     _aggregate = !perReference;
+    _startRow = -1;
+    _endRow = -1;
   }
 
+  protected void loadFrames() {
+    if (null == _frame)
+      _frame = _frameKey.get();
+    if (null == _backgroundFrame)
+      _backgroundFrame = _backgroundFrameKey.get();
+    assert _frame != null && _backgroundFrame != null;
+  }
 
   @Override
   public void map(Chunk[] cs, NewChunk[] ncs) {
+    loadFrames();
     Frame smallerFrame = _isFrameBigger ? _backgroundFrame : _frame;
-    for (int sfIdx = 0; sfIdx < smallerFrame.numRows(); ) {
-      int finalSfIdx = sfIdx;
+    long sfIdx = 0;
+    long maxSfIdx = smallerFrame.numRows();
+    if (!_isFrameBigger && _startRow != -1 && _endRow != -1) {
+      sfIdx = _startRow;
+      maxSfIdx = _endRow;
+    }
+
+    while (sfIdx < maxSfIdx) {
+      if (isCancelled() || null != _job && _job.stop_requested()) return;
+
+      long finalSfIdx = sfIdx;
       Chunk[] sfCs = IntStream
               .range(0, smallerFrame.numCols())
               .mapToObj(col -> smallerFrame.vec(col).chunkForRow(finalSfIdx))
@@ -99,35 +133,105 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
   }
 
   abstract protected void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs);
+  
+
+  void setChunkRange(int startCIdx, int endCIdx) {
+    assert !_isFrameBigger;
+    _startRow = _frame.anyVec().chunkForChunkIdx(startCIdx).start();
+    _endRow = _frame.anyVec().chunkForChunkIdx(endCIdx).start() + _frame.anyVec().chunkForChunkIdx(endCIdx)._len;
+  }
+
 
   // takes care of mapping over the bigger frame 
   public Frame runAndGetOutput(Job j, Key<Frame> destinationKey, String[] names) {
+    _job = j;
+    loadFrames();
     double reqMem = estimateRequiredMemory(names.length + 2);
     double reqPerNodeMem = estimatePerNodeMinimalMemory(names.length + 2);
-    if (!enoughMinMemory(reqPerNodeMem)) {
-      throw new RuntimeException("Not enough memory. Estimated minimal total memory is " + reqMem + "B. " +
-              "Estimated minimal per node memory (assuming perfectly balanced datasets) is " + reqPerNodeMem + "B. " +
-              "Node with minimum memory has " + minMemoryPerNode() + "B. Total available memory is " + totalFreeMemory() + "B."
-      );
-    }
-  
+
     String[] namesWithRowIdx = new String[names.length + 2];
     System.arraycopy(names, 0, namesWithRowIdx, 0, names.length);
     namesWithRowIdx[names.length] = "RowIdx";
     namesWithRowIdx[names.length + 1] = "BackgroundRowIdx";
     Key<Frame> individualContributionsKey = _aggregate ? Key.make(destinationKey + "_individual_contribs") : destinationKey;
-    Frame indivContribs = withPostMapAction(JobUpdatePostMap.forJob(j))
-            .doAll(namesWithRowIdx.length, Vec.T_NUM, _isFrameBigger ? _frame : _backgroundFrame)
-            .outputFrame(individualContributionsKey, namesWithRowIdx, null);
-    if (!_aggregate)
+
+    if (!_aggregate) {
+      if (!enoughMinMemory(reqPerNodeMem)) {
+        throw new RuntimeException("Not enough memory. Estimated minimal total memory is " + reqMem + "B. " +
+                "Estimated minimal per node memory (assuming perfectly balanced datasets) is " + reqPerNodeMem + "B. " +
+                "Node with minimum memory has " + minMemoryPerNode() + "B. Total available memory is " + totalFreeMemory() + "B."
+        );
+      }
+      Frame indivContribs = withPostMapAction(JobUpdatePostMap.forJob(j))
+              .doAll(namesWithRowIdx.length, Vec.T_NUM, _isFrameBigger ? _frame : _backgroundFrame)
+              .outputFrame(individualContributionsKey, namesWithRowIdx, null);
+
       return indivContribs;
-    try {
-      return new ContributionsMeanAggregator((int) _frame.numRows(), names.length, (int)_backgroundFrame.numRows())
-              .withPostMapAction(JobUpdatePostMap.forJob(j))
-              .doAll(names.length, Vec.T_NUM, indivContribs)
-              .outputFrame(destinationKey, names, null);
-    } finally {
-      indivContribs.delete(true);
+    } else {
+      if (!enoughMinMemory(reqPerNodeMem)) {
+        if (minMemoryPerNode() < 5 * (names.length + 2) * _frame.numRows() * 8) {
+          throw new RuntimeException("Not enough memory. Estimated minimal total memory is " + reqMem + "B. " +
+                  "Estimated minimal per node memory (assuming perfectly balanced datasets) is " + reqPerNodeMem + "B. " +
+                  "Node with minimum memory has " + minMemoryPerNode() + "B. Total available memory is " + totalFreeMemory() + "B."
+          );
+        }
+        // Split the _frame in subsections and calculate baselines (expand the frame) and then the average (reduce the frame sieze)
+        int nChunks = _frame.anyVec().nChunks();
+        // last iteration we need memory for ~whole aggregated frame + expanded subframe
+        int nSubFrames = (int) Math.ceil(2*reqMem / (minMemoryPerNode() - 8 * _frame.numRows() * (names.length)));
+        nSubFrames = nChunks;
+        int chunksPerIter = (int) Math.max(1, Math.floor(nChunks / nSubFrames));
+
+        Log.warn("Not enough memory to calculate SHAP at once. Calculating in " + (nSubFrames) + " iterations.");
+        _isFrameBigger = false; // ensure we map over the BG frame so we can average over the results properly;
+        Frame result = null;
+        List<Frame> subFrames = new LinkedList<Frame>();
+        try {
+          for (int i = 0; i < nSubFrames; i++) {
+            setChunkRange(i * chunksPerIter, Math.min(nChunks - 1, (i + 1) * chunksPerIter - 1));
+            Frame indivContribs = clone().withPostMapAction(JobUpdatePostMap.forJob(j))
+                    .doAll(namesWithRowIdx.length, Vec.T_NUM, _backgroundFrame)
+                    .outputFrame(Key.make(destinationKey + "_individual_contribs_" + i), namesWithRowIdx, null);
+
+            subFrames.add(new ContributionsMeanAggregator(_job,(int) (_endRow - _startRow), names.length, (int) _backgroundFrame.numRows())
+                    .setStartIndex((int) _startRow)
+                    .withPostMapAction(JobUpdatePostMap.forJob(j))
+                    .doAll(names.length, Vec.T_NUM, indivContribs)
+                    .outputFrame(Key.make(destinationKey + "_part_" + i), names, null));
+            indivContribs.delete();
+          }
+          
+          result = concatFrames(subFrames, destinationKey);
+          Set<String> homes = new HashSet<>();
+          for (int i = 0; i < result.anyVec().nChunks(); i++) {
+            for (int k = 0; k < result.numCols(); k++) {
+              homes.add(result.vec(k).chunkKey(i).home_node().getIpPortString());
+            }
+          }
+          return result;
+        } finally {
+          if (null != result) {
+            for (Frame fr : subFrames) {
+              Frame.deleteTempFrameAndItsNonSharedVecs(fr, result);
+            }
+          } else {
+            for (Frame fr : subFrames)
+              fr.delete();
+          }
+        }
+      } else {
+        Frame indivContribs = withPostMapAction(JobUpdatePostMap.forJob(j))
+                .doAll(namesWithRowIdx.length, Vec.T_NUM, _isFrameBigger ? _frame : _backgroundFrame)
+                .outputFrame(individualContributionsKey, namesWithRowIdx, null);
+        try {
+          return new ContributionsMeanAggregator(_job, (int) _frame.numRows(), names.length, (int) _backgroundFrame.numRows())
+                  .withPostMapAction(JobUpdatePostMap.forJob(j))
+                  .doAll(names.length, Vec.T_NUM, indivContribs)
+                  .outputFrame(destinationKey, names, null);
+        } finally {
+          indivContribs.delete(true);
+        }
+      }
     }
   }
 }

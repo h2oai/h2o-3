@@ -147,7 +147,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   public class ScoreContributionsWithBackgroundTaskDRF extends ScoreContributionsWithBackgroundTask {
 
     public ScoreContributionsWithBackgroundTaskDRF(Frame fr, Frame backgroundFrame, boolean perReference, SharedTreeModel model, boolean expand, int[] catOffsets) {
-      super(fr, backgroundFrame, perReference, model, expand, catOffsets, false);
+      super(fr._key, backgroundFrame._key, perReference, model, expand, catOffsets, false);
     }
 
     @Override

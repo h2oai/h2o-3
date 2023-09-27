@@ -723,9 +723,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         return scoreContributions(frame, destination_key, j, options);
       adaptedFrame = new Frame(frame);
       adaptTestForTrain(adaptedFrame, true, false);
+      DKV.put(adaptedFrame);
       adaptedBgFrame = new Frame(backgroundFrame);
       adaptTestForTrain(adaptedBgFrame, true, false);
-
+      DKV.put(adaptedBgFrame);
+      
       DataInfo di = model_info().dataInfo();
       assert di != null;
       final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
