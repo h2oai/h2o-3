@@ -378,4 +378,11 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
      }.withPostMapAction(JobUpdatePostMap.forJob(j)).doAll(types, vs).outputFrame(destination_key, names, domains);
   }
 
+  @Override
+  public double score(double[] data) {
+    double[] pred = score0(data, new double[_output.nclasses() + 1], 0, _output._ntrees);
+    score0PostProcessSupervised(pred, data);
+    return pred[0];
+  }
+
 }
