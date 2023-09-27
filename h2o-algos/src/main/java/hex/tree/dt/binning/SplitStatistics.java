@@ -1,6 +1,7 @@
 package hex.tree.dt.binning;
 
 import hex.tree.dt.AbstractSplittingRule;
+import org.apache.commons.math3.util.Precision;
 
 /**
  * Potential split including splitting rule and statistics on count of samples and distribution of target variable.
@@ -50,5 +51,18 @@ public class SplitStatistics {
     public SplitStatistics setFeatureIndex(int featureIndex) {
         _splittingRule.setFeatureIndex(featureIndex);
         return this;
+    }
+
+    public static double entropyBinarySplit(final double oneClassFrequency) {
+        return -1 * ((oneClassFrequency < Precision.EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
+                + ((1 - oneClassFrequency) < Precision.EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
+    }
+    
+    public Double binaryEntropy() {
+        double a1 = (entropyBinarySplit(_leftCount0 * 1.0 / _leftCount)
+                * _leftCount / (_leftCount + _rightCount));
+        double a2 = (entropyBinarySplit(_rightCount0 * 1.0 / _rightCount)
+                * _rightCount / (_leftCount + _rightCount));
+        return a1 + a2;
     }
 }

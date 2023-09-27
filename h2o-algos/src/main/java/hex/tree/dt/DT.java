@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplit;
+
 /**
  * Decision Tree
  */
@@ -102,15 +104,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
         return currentMinCriterionSplittingRule;
     }
-    
-    private static Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
-        double a1 = (entropyBinarySplit(leftCount0 * 1.0 / leftCount)
-                * leftCount / (leftCount + rightCount));
-        double a2 = (entropyBinarySplit(rightCount0 * 1.0 / rightCount)
-                * rightCount / (leftCount + rightCount));
-        double value = a1 + a2;
-        return value;
-    }
 
 
     private AbstractSplittingRule findBestSplitForFeature(Histogram histogram, int featureIndex) {
@@ -133,14 +126,9 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     }
     
 
-    private static double entropyBinarySplit(final double oneClassFrequency) {
-        return -1 * ((oneClassFrequency < Precision.EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
-                + ((1 - oneClassFrequency) < Precision.EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
-    }
 
     private static double calculateCriterionOfSplit(SplitStatistics binStatistics) {
-        return binaryEntropy(binStatistics._leftCount, binStatistics._leftCount0,
-                binStatistics._rightCount, binStatistics._rightCount0);
+        return binStatistics.binaryEntropy();
     }
 
     /**
