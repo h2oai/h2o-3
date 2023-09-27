@@ -27,6 +27,8 @@ public enum BinningStrategy {
         public final int NUM_BINS = 10;
 
         public final int DECIMALS_TO_CONSIDER = 2;
+        
+        public final double MIN_REL_COEFF = 0.0001;
 
         double roundToNDecimalPoints(double number, int decimals) {
             BigDecimal bigDecimal = new BigDecimal(number);
@@ -46,9 +48,9 @@ public enum BinningStrategy {
                                 roundToNDecimalPoints(binningValues.get(i + 1))));
             }
             // set the firs min to some lower value (relative to step) so the actual value equal to min is not lost
-            ((NumericBin) emptyBins.get(0))._min = realMin - 0.0001 * (binningValues.get(1) - binningValues.get(0));
+            ((NumericBin) emptyBins.get(0)).setMin(realMin - MIN_REL_COEFF * (binningValues.get(1) - binningValues.get(0)));
             // set the last max to the real max value to avoid precision troubles
-            ((NumericBin) emptyBins.get(emptyBins.size() - 1))._max = realMax;
+            ((NumericBin) emptyBins.get(emptyBins.size() - 1)).setMax(realMax);
             return emptyBins;
         }
         

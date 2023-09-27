@@ -42,4 +42,12 @@ public class NumericBin extends AbstractBin {
         // Place numeric flag -1.0 on the index 0 to mark that the feature is numeric
         return new double[]{-1.0, _count, _count0, _min, _max};
     }
+
+    public void setMin(double min) {
+        _min = min;
+    }
+
+    public void setMax(double max) {
+        _max = max;
+    }
 }
