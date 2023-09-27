@@ -99,7 +99,7 @@ public class FeatureBins {
         return statistics;
     }
 
-    private Set<boolean[]> findAllCategoricalSplits(String categories) { // todo - test it
+    private Set<boolean[]> findAllCategoricalSplits(String categories) {
         int recMaxDepth = categories.length() / 2; // floor. Generate only one half of the subsets as the rest is the complement
         Set<boolean[]> masks = new HashSet<>();
         // for 1 to recMaxDepth - 1 depth generate all options
@@ -118,7 +118,6 @@ public class FeatureBins {
             // use substring method to clone (deep copy) the string
             rec(masks, s, categories.substring(0).replaceAll(s, ""), recMaxDepth - 1);
         }
-//        List<String> res = masks.stream().sorted().collect(Collectors.toList());
         return masks;
     }
 

@@ -7,7 +7,6 @@ public class CategoricalSplittingRule extends AbstractSplittingRule {
 
   public CategoricalSplittingRule(int featureIndex, boolean[] mask, double criterionValue) {
     _featureIndex = featureIndex;
-    // categories for the left split - bitmask
     _mask = mask;
     _criterionValue = criterionValue;
   }
@@ -18,6 +17,7 @@ public class CategoricalSplittingRule extends AbstractSplittingRule {
     _criterionValue = -1; // tmp value, non initialized yet
   }
   
+  // categories for the left split - bitmask
   private final boolean[] _mask;
 
   public boolean[] getMask() {
