@@ -5,8 +5,8 @@ import water.Iced;
 
 public abstract class AbstractSplittingRule extends Iced<AbstractSplittingRule> {
 
-  protected int _featureIndex;
-  protected double _criterionValue;
+  protected int _featureIndex = -1; // valid default value before the actual one is defined
+  protected double _criterionValue = -1; // valid default value before the actual one is defined
 
   protected AbstractSplittingRule() {
   }

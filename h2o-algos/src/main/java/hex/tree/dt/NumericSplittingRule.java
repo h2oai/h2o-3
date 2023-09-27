@@ -11,9 +11,7 @@ public class NumericSplittingRule extends AbstractSplittingRule {
   }
 
   public NumericSplittingRule(double threshold) {
-    _featureIndex = -1; // tmp value, non initialized yet
     _threshold = threshold;
-    _criterionValue = -1; // tmp value, non initialized yet
   }
 
   private final double _threshold;

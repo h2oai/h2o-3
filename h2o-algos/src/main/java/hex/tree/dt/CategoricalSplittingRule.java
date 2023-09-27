@@ -12,9 +12,7 @@ public class CategoricalSplittingRule extends AbstractSplittingRule {
   }
 
   public CategoricalSplittingRule(boolean[] mask) {
-    _featureIndex = -1; // tmp value, non initialized yet
     _mask = mask;
-    _criterionValue = -1; // tmp value, non initialized yet
   }
   
   // categories for the left split - bitmask
