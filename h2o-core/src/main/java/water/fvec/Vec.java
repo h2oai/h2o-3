@@ -1337,7 +1337,10 @@ public class Vec extends Keyed<Vec> {
   
   public Vec toIntegerVec() {return VecUtils.toIntegerVec(this);}
   
-  public Vec toDoubleVec() { return VecUtils.toDoubleVec(this); }
+  public void asDouble() {
+    assert _type==T_NUM;
+    rollupStats()._isInt=false;
+  }
   /**
    * Convenience method for converting to a string vector.
    * @return A string vector based on the contents of the original vector.

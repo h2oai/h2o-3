@@ -179,10 +179,6 @@ public class VecUtils {
     }
   }
 
-  public static Vec toDoubleVec(Vec src) { // only called when src is integer column
-    return intToDouble(src);
-  }
-
   public static Vec toIntegerVec(Vec src) {
     switch (src.get_type()) {
       case Vec.T_CAT:
@@ -325,33 +321,6 @@ public class VecUtils {
       }.doAll(newVec);
     }
     return newVec;
-  }
-  
-  final static double EPS=1e-3;
-  final static double EPS2 = 2e-3;
-
-  
-  public static Vec intToDouble(final Vec src) {
-    Vec res = new MRTask() {
-      @Override public void map(Chunk srcV, NewChunk destV) {
-        int cLen = srcV._len;
-        boolean encounterNonZero = false;
-        double temp;
-        for (int index=0; index<cLen; index++) {
-          temp = 1.0*srcV.at8(index);
-          if (!encounterNonZero && !srcV.isNA(index) && !(temp == 0)) {
-            temp = (temp+EPS)*2.0-temp-EPS2;
-            encounterNonZero = true;
-          }
-          if (!srcV.isNA(index)) {
-            destV.addNum(temp);
-          } else {
-            destV.addNA();
-          }
-        }
-      }
-    }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
-    return res;
   }
   
 

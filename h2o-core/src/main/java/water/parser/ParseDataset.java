@@ -446,7 +446,8 @@ public final class ParseDataset {
         case "FLOAT":
         case "DOUBLE":
           if (fr.vec(index).isInt() && !fr.vec(index).isBad())
-            fr.replace((index), fr.vec(index).toDoubleVec());
+            fr.vec(index).asDouble();
+            //fr.replace((index), fr.vec(index).toDoubleVec());
           break;
         default: break; // no change for other types
       }
@@ -466,7 +467,8 @@ public final class ParseDataset {
         case "double":
         case "real": 
           if (fr.vec(index).isInt() && !fr.vec(index).isBad())
-            fr.replace((index), fr.vec(index).toDoubleVec()).remove();
+            fr.vec(index).asDouble();
+            //fr.replace((index), fr.vec(index).toDoubleVec()).remove();
           break;
         default: break; // no conversion for other data types.
       }
