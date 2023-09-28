@@ -329,7 +329,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             DKV.put(compressedDT);
             _job.update(1);
             _model.update(_job);
-            System.out.println("Rules: " + String.join("\n", compressedDT.getListOfRules()));
         }
 
         /**

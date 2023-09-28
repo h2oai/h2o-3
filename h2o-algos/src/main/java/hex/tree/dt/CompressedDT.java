@@ -66,7 +66,6 @@ public class CompressedDT extends Keyed<CompressedDT> {
             // if node is a leaf, add the rule to the list of rules at index given by the nextFreeSpot parameter
             _listOfRules[nextFreeSpot] = actualRule + " -> (" + ((CompressedLeaf) _nodes[nodeIndex]).getDecisionValue()
                     + ", " + ((CompressedLeaf) _nodes[nodeIndex]).getProbabilities() + ")";
-            System.out.println(nextFreeSpot);
             // move nextFreeSpot to the next index and return it to be used for other branches
             nextFreeSpot++;
             return nextFreeSpot;
