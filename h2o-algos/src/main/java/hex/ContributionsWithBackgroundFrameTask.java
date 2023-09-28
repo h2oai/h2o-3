@@ -101,8 +101,20 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
 
   double estimatePerNodeMinimalMemory(int nCols) {
     double reqMem = estimateRequiredMemory(nCols);
-    double maxMinChunkSizeInVectorGroup = Math.min(reqMem, 10000 * 8 * nCols);
-
+    Frame biggerFrame = _isFrameBigger ? _frame : _backgroundFrame;
+    long[] frESPC = biggerFrame.anyVec().espc();
+    
+    // Guess the max size of the chunk from the bigger frame as 2 * average chunk
+    double maxMinChunkSizeInVectorGroup = 2 * 8 * nCols *  biggerFrame.numRows() / (double) biggerFrame.anyVec().nChunks();
+    
+    // Try to compute it exactly
+    if (null != frESPC) {
+      long maxFr = 0;
+      for (int i = 0; i < frESPC.length-1; i++) {
+        maxFr = Math.max(maxFr, frESPC[i+1]-frESPC[i]);
+      }
+      maxMinChunkSizeInVectorGroup = Math.max(maxMinChunkSizeInVectorGroup, 8*nCols*maxFr);
+    }
     long nRowsOfSmallerFrame = _isFrameBigger ? _backgroundFrame.numRows() : _frame.numRows();
 
     // We need the whole smaller frame on each node and one chunk per col of the bigger frame (at minimum)
