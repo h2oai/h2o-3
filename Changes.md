@@ -2,6 +2,20 @@
 
 ## H2O
 
+### 3.42.0.4 - 10/3/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html</a>
+
+#### Bug
+- [[#15729]](https://github.com/h2oai/h2o-3/issues/15729) - Implemented multi-thread `as_data_frame` by using Datatable to speedup the conversion process.
+
+#### Improvement 
+- [[#15766]](https://github.com/h2oai/h2o-3/issues/15766) - Upgraded Jetty server to 9.4.52v20230823 in Steam Jar.
+- [[#13859]](https://github.com/h2oai/h2o-3/issues/13859) - Improved K-Means testing.
+
+#### New Feature
+- [[#15727]](https://github.com/h2oai/h2o-3/issues/15727) - Implemented new `write_checksum` parameter that allows you to disable default Hadoop Parquet writer systematically writing a `.crc` checksum file for each written data file.
+
 ### 3.42.0.3 - 8/22/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html</a>
