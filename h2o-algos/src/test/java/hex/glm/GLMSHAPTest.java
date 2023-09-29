@@ -21,7 +21,7 @@ public class GLMSHAPTest extends TestUtil {
   /*
    NOTE: These test do not test all required properties for SHAP. 
    To be more sure after doing some changes to the SHAP, please run the python test:
-   h2o-py/tests/testdir_misc/pyunit_SHAP.py 
+   h2o-py/tests/testdir_misc/pyunit_SHAP_NOPASS.py 
   */
 
   @BeforeClass
