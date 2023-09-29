@@ -211,7 +211,6 @@ public class ParquetParser extends Parser {
 
   public static class ParquetParseSetup extends ParseSetup {
     transient byte[] parquetMetadata;
-    
     public ParquetParseSetup() { super(); }
     public ParquetParseSetup(String[] columnNames, byte[] ctypes, String[][] data, byte[] parquetMetadata) {
       super(ParquetParserProvider.PARQUET_INFO, (byte) '|', true, ParseSetup.HAS_HEADER,

@@ -447,7 +447,6 @@ public final class ParseDataset {
         case "DOUBLE":
           if (fr.vec(index).isInt() && !fr.vec(index).isBad())
             fr.vec(index).asDouble();
-            //fr.replace((index), fr.vec(index).toDoubleVec());
           break;
         default: break; // no change for other types
       }
@@ -468,7 +467,6 @@ public final class ParseDataset {
         case "real": 
           if (fr.vec(index).isInt() && !fr.vec(index).isBad())
             fr.vec(index).asDouble();
-            //fr.replace((index), fr.vec(index).toDoubleVec()).remove();
           break;
         default: break; // no conversion for other data types.
       }
