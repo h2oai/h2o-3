@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 import os
+import warnings
 
 import h2o
 from h2o.base import Keyed
@@ -459,19 +460,17 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         return self._model_json["output"]["training_metrics"]._metric_json
     
-    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None, 
-                          auuc_type=None, auuc_nbins=-1):
+    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type="none", 
+                          auuc_type=None, custom_auuc_thresholds=None):
         """
         Generate model metrics for this model on ``test_data``.
 
         :param H2OFrame test_data: Data set for which model metrics shall be computed against. All three of train,
             valid and xval arguments are ignored if ``test_data`` is not ``None``.
-        :param bool train: Report the training metrics for the model.
-        :param bool valid: Report the validation metrics for the model.
-        :param bool xval: Report the cross-validation metrics for the model. If train and valid are ``True``, then it
-            defaults to True.
+        :param bool train: Report the training metrics for the model. Defaults false.
+        :param bool valid: Report the validation metrics for the model. Defaults false.
+        :param bool xval: Report the cross-validation metrics for the model. Defaults false.
         :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when ``test_data`` is not ``None``. One of:
-
             - ``"auto"``
             - ``"none"`` (default)
             - ``"macro_ovr"``
@@ -482,14 +481,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             If type is ``"auto"`` or ``"none"``, AUC and AUCPR are not calculated.
         :param String auuc_type: Change default AUUC type for uplift binomial classification AUUC calculation 
             when ``test_data`` is not None. One of:
-
                 - ``"AUTO"`` (default)
                 - ``"qini"``
                 - ``"lift"``
                 - ``"gain"``
                 
             If type is ``"auto"`` ("qini"), AUUC is calculated. 
-        :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to ``-1``, which means 1000.
+        :param list float: List of custom thresholds to calculate AUUC when ``test_data`` is not None. Defaults None.
         :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
         
@@ -517,11 +515,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                               data={"auc_type": auc_type})
             elif auuc_type is not None:
                 assert_is_type(auuc_type, Enum("AUTO", "qini", "gain", "lift"))
+                assert_is_type(custom_auuc_thresholds, [float], None)
+                if custom_auuc_thresholds is not None and len(custom_auuc_thresholds) == 0:
+                    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the custom_auuc_tresholds are empty.")
+                    return
                 if (self._model_json["treatment_column_name"] is not None) and not(self._model_json["treatment_column_name"] in test_data.names):
                     print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the treatment column in your dataset.")
                     return
+                
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                              data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins})
+                              data={"auuc_type": auuc_type, "custom_auuc_thresholds": custom_auuc_thresholds})
             else:
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
             # FIXME need to do the client-side filtering...  (https://github.com/h2oai/h2o-3/issues/13862)
@@ -549,6 +552,14 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :return: the negative likelihood function value
         """
+        if self.parms['calc_like']['actual_value']:
+            warning_message = "This is the simplified negative log likelihood function used during training for " \
+                              "speedup. To see the correct value call model.model_performance().loglikelihood()."
+        else:
+            warning_message = "This is the simplified negative log likelihood function used during training for " \
+                              "speedup. To see the correct value, set calc_like=True, retrain the model and call " \
+                              "model.model_performance().loglikelihood()."
+        warnings.warn(warning_message, UserWarning, stacklevel=2)
         return self._extract_scoring_history("negative_log_likelihood")
 
     def average_objective(self):
@@ -558,6 +569,9 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :return: the average objective function value
         """
+        warning_message = "This objective function is calculated based on the simplified negative log likelihood " \
+                          "function used during training for speedup."
+        warnings.warn(warning_message, UserWarning, stacklevel=2)
         return self._extract_scoring_history("objective")
 
         
@@ -1042,6 +1056,11 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: The AIC.
         """
+        if 'calc_like' in self.parms and not self.parms['calc_like']['actual_value']:
+            warning_message = "This is the AIC function using the simplified negative log likelihood used during " \
+                              "training for speedup. To see the correct value, set calc_like=True, " \
+                              "retrain the model and call model.model_performance().aic() again."
+            warnings.warn(warning_message, UserWarning, stacklevel=2)
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in tm.items(): m[k] = None if v is None else v.aic()

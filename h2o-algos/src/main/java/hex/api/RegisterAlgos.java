@@ -38,7 +38,8 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.uplift.UpliftDRF    (true),
             new hex.modelselection.ModelSelection (true),
             new hex.isotonic    .IsotonicRegression(true),
-            new hex.tree.dt      .DT         (true)
+            new hex.tree.dt      .DT         (true),
+            new hex.adaboost.     AdaBoost   (true)
     };
 
     // "Word2Vec", "Example", "Grep"
