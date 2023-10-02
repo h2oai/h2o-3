@@ -38,7 +38,7 @@ public class TreeSHAPEnsemble<R> implements TreeSHAPPredictor<R> {
     for (TreeSHAPPredictor<R> predictor : _predictors) {
       predictor.calculateInterventionalContributions(feat, background, out_contribs, catOffsets, expand);
     }
-    return out_contribs; 
+    return out_contribs;
   }
 
   @Override

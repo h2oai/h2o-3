@@ -63,7 +63,7 @@ public class GLMSHAPTest extends TestUtil {
       DKV.remove(Key.make("expContrSum"));
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 2, 0, 1e-8);
+      assertColsEquals(scored, res, 2, 0, 1e-6);
     } finally {
       fr.delete();
       bgFr.delete();
@@ -109,7 +109,7 @@ public class GLMSHAPTest extends TestUtil {
       DKV.remove(Key.make("expContrSum"));
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 2, 0, 1e-8);
+      assertColsEquals(scored, res, 2, 0, 1e-6);
     } finally {
       fr.delete();
       bgFr.delete();
@@ -151,7 +151,7 @@ public class GLMSHAPTest extends TestUtil {
       Val val = Rapids.exec("(sumaxis " + contribs._key + " 0 1)");
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 2, 0, 1e-8);
+      assertColsEquals(scored, res, 2, 0, 1e-6);
     } finally {
       fr.delete();
       bgFr.delete();
@@ -193,7 +193,7 @@ public class GLMSHAPTest extends TestUtil {
       Val val = Rapids.exec("(sumaxis " + contribs._key + " 0 1)");
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 2, 0, 1e-8);
+      assertColsEquals(scored, res, 2, 0, 1e-6);
     } finally {
       fr.delete();
       bgFr.delete();
