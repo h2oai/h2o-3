@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-from h2o.utils.shared_utils import (can_use_pandas, can_use_datatable)
+from h2o.utils.shared_utils import (can_use_pandas, can_use_datatable, can_install_datatable)
 import time
 
 # if datatable is installed, this test will show that using datatable to convert h2o frame to pandas frame is
@@ -34,6 +34,9 @@ def test_frame_conversion(dataset, compareTime):
     
 
 def test_polars_pandas():
+    if not can_install_datatable():
+        print("Datatable doesn't run on Python 3.{0} for now.".format(sys.version_info.minor))
+        return
     if not(can_use_pandas()):
         pyunit_utils.install("pandas")
     import pandas
