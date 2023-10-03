@@ -7,6 +7,7 @@ import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
+import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
@@ -98,6 +99,13 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
       }
     }
     return preds;
+  }
+
+  @Override 
+  public double score(double[] data) {
+    double[] pred = score0(data, new double[_output.nclasses() + 1], 0, _output._ntrees);
+    score0PostProcessSupervised(pred, data);
+    return pred[0];
   }
 
   @Override

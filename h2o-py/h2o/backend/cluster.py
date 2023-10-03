@@ -218,16 +218,19 @@ class H2OCluster(H2OSchema):
             if build_number_h2o is None or build_number_h2o == "unknown":
                 message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
                            "Upgrade H2O and h2o-Python to latest stable version - "
-                           "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
+                           "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html.  To avoid this error "
+                           "message (not recommended), you can set strict_version_check=False."
                            ).format(ver_h2o, ver_pkg)
             elif build_number_h2o == "99999":
                 message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                           "This is a developer build, please contact your developer."
+                           "This is a developer build, please contact your developer.  To avoid this error "
+                           "message (not recommended), you can set strict_version_check=False."
                            ).format(ver_h2o, ver_pkg)
             else:
                 message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
                            "Install the matching h2o-Python version from - "
-                           "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
+                           "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html.  To avoid this error "
+                           "message (not recommended), you can set strict_version_check=False."
                            ).format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o)
             if strict:
                 raise H2OConnectionError(message)

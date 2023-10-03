@@ -26,7 +26,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 -  **Languages**: R and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
    -  R version 3 or later
-   -  Python 3.6.x, 3.7.x, 3.8.x 
+   -  Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 
@@ -100,6 +100,10 @@ learn more:
 
 -  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git.
 
+.. note::
+   
+   By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
+
 Use Cases
 ~~~~~~~~~
 
@@ -165,6 +169,10 @@ At this point, determine whether you want to complete this quick start in either
         Type 'q()' to quit R.
         >
 
+        # By default, this setup is open. 
+        # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+        # if you want to secure your installation.
+
         # Copy and paste the following commands in R to download dependency packages.
         > pkgs <- c("methods", "statmod", "stats", "graphics", "RCurl", "jsonlite", "tools", "utils")
         > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
@@ -199,6 +207,10 @@ At this point, determine whether you want to complete this quick start in either
 
    .. code-tab:: python
 
+      # By default, this setup is open. 
+      # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+      # if you want to secure your installation.
+      
       # Before starting Python, run the following commands to install dependencies.
       # Prepend these commands with `sudo` only if necessary:
       # h2o-3 user$ [sudo] pip install -U requests

@@ -1,10 +1,11 @@
 package hex.tree.uplift;
 
 import hex.*;
+import hex.tree.CompressedForest;
 import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModelWithContributions;
+import hex.tree.SharedTreePojoWriter;
 import hex.util.EffectiveParametersUtils;
-import water.H2O;
 import water.Key;
 
 public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
@@ -13,7 +14,6 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
         public String algoName() { return "UpliftDRF"; }
         public String fullName() { return "Uplift Distributed Random Forest"; }
         public String javaName() { return UpliftDRFModel.class.getName(); }
-        public boolean _binomial_double_trees = false;
         
 
         public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
@@ -36,6 +36,9 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     }
 
     public static class UpliftDRFOutput extends SharedTreeModelWithContributions.SharedTreeOutput {
+        
+        public double[] _defaultAuucThresholds; // thresholds for AUUC to calculate metrics
+        
         public UpliftDRFOutput( UpliftDRF b) { super(b); }
 
         @Override
@@ -45,7 +48,11 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
 
         @Override
         public boolean isBinomialClassifier() {
-            return false;
+            return true;
+        }
+
+        public void setDefaultAuucThresholds(double[] defaultAuucThresholds) {
+            this._defaultAuucThresholds = defaultAuucThresholds;
         }
     }
 
@@ -77,10 +84,18 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     }
 
     @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        if (_output.getModelCategory() == ModelCategory.BinomialUplift) {
-            return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain);
-        }
-        throw H2O.unimpl();
+        return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output._defaultAuucThresholds);
     }
 
+    @Override
+    public UpliftDrfMojoWriter getMojo() {
+        return new UpliftDrfMojoWriter(this);
+    }
+
+    @Override
+    protected SharedTreePojoWriter makeTreePojoWriter() {
+        CompressedForest compressedForest = new CompressedForest(_output._treeKeys, _output._domains);
+        CompressedForest.LocalCompressedForest localCompressedForest = compressedForest.fetch();
+        return new UpliftDrfPojoWriter(this, localCompressedForest._trees);
+    }
 }

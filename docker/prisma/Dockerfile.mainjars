@@ -1,0 +1,2 @@
+FROM alpine:latest
+COPY ./h2o-assemblies/main/build/libs/*.jar /tmp/

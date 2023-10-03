@@ -72,9 +72,9 @@ The final prediction is calculated in the same way as the DRF algorithm. Predict
 
 When the ``predict`` method is called on the test data, the result frame has these columns:
 
-- ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
-- ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
-- ``p_y1_ct0``: probability the response is 1 if the row is from the control group
+- ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_with_treatment - p_y1_without_treatment``
+- ``p_y1_with_treatment``: probability the response is 1 if the row is from the treatment group
+- ``p_y1_without_treatment``: probability the response is 1 if the row is from the control group
 
 Extremely Randomized Trees
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,6 +126,8 @@ Shared-tree algorithm parameters
 
 -  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree.  This method samples without replacement. This can be a value from 0.0 to 1.0 and defaults to ``1``.
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
+
 -  `histogram_type <algo-params/histogram_type.html>`__: By default (``AUTO``) Uplift DRF bins from min...max in steps of :math:`\frac{(max-min)}{N}`. ``Random`` split points or quantile-based split points can be selected as well. ``RoundRobin`` can be specified to cycle through all histogram types (one per tree). Use one of these options to specify the type of histogram to use for finding optimal split points:
 
     - ``AUTO`` (default)
@@ -156,6 +158,8 @@ Shared-tree algorithm parameters
 -  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate on the x-axis. This method samples without replacement. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__). The range is 0.0 to 1.0, and this value defaults to ``0.6320000291``. 
 
 -  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with ``sample_rate``). This method samples without replacement. The range for this option is 0.0 to 1.0.
+
+-  `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
 Common parameters
 '''''''''''''''''
@@ -227,10 +231,10 @@ By default, the following output displays:
 -  **Scoring history** in tabular format
 -  **Training metrics** (model name, checksum name, frame name, frame
    checksum name, description, model category, duration in ms, scoring
-   time, predictions, AUUC, all AUUC types table, Thresholds and metric scores, table)
+   time, predictions, ATE, ATT, ATC, AUUC, all AUUC types table, Thresholds and metric scores table)
 -  **Validation metrics** (model name, checksum name, frame name, frame
    checksum name, description, model category, duration in ms, scoring
-   time, predictions, AUUC, all AUUC types table, Thresholds and metric scores table)
+   time, predictions, ATE, ATT, ATC, AUUC, all AUUC types table, Thresholds and metric scores table)
 -  **Default AUUC metric** calculated based on ``auuc_type`` parameter
 -  **Default normalized AUUC metric** calculated based on ``auuc_type`` parameter
 -  **AUUC table** which contains all computed AUUC types and normalized AUUC (qini, lift, gain)
@@ -238,6 +242,92 @@ By default, the following output displays:
 -  **AECU table** which contains all computed AECU values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
 -  **Uplift Curve plot** for given metric type (qini, lift, gain)
+
+
+Treatment effect metrics (ATE, ATT, ATC)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Overall treatment effect metrics show how the uplift predictions look across the whole dataset (population). Scored data are used to calculate these metrics (``uplift_predict`` column = individual treatment effect).
+
+- **Average Treatment Effect (ATE)** Average expected uplift prediction (treatment effect) overall records in the dataset.
+- **Average Treatment Effect on the Treated (ATT)** Average expected uplift prediction (treatment effect) of all records in the dataset belonging to the treatment group.
+- **Average Treatment Effect on the Control (ATC)** Average expected uplift prediction (treatment effect) of all records in the dataset belonging to the control group.
+
+The interpretation depends on concrete data meanings. We currently support only Bernoulli data distribution, so whether the treatment impacts the target value y=1 or not. 
+
+For example, we want to analyze data to determine if some medical will help to recover from a disease or not. We have patients in the treatment group and the control group. The target variable is if the medicine (treatment) helped recovery (y=1) or not (y=0). In this case:
+- positive ATE means the medicine helps with recovery in general
+- negative ATE means the medicine does not help with recovery in general
+- ATE equal to or close to zero means the medicine does not affect recovery in general
+- similar interpretation applies to ATT and ATC, the positive ATT is usually what scientists look for, but ATC is also an interesting metric (in an ideal case, positive both ATT and ATC say the treatment has an exact effect).
+
+Custom metric example for Uplift DRF
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2OUpliftRandomForestEstimator
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+
+    # Set the predictors, response, and treatment column:
+    predictors = ["f1", "f2", "f3", "f4", "f5", "f6","f7", "f8"]
+    # set the response as a factor
+    response = "conversion"
+    data[response] = data[response].asfactor()
+    # set the treatment as a factor
+    treatment_column = "treatment"
+    data[treatment_column] = data[treatment_column].asfactor()
+
+    # Split the dataset into a train and valid set:
+    train, valid = data.split_frame(ratios=[.8], seed=1234)
+
+    # Define custom metric function
+    # ``pred`` is prediction array of length 3, where:
+    #   - pred[0]  = ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
+    #   - pred[1] = ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
+    #   - pred[2] = ``p_y1_ct0``: probability the response is 1 if the row is from the control group
+    # ``act`` is array with original data where
+    #   - act[0] = target variable
+    #   - act[1] = if the record belongs to the treatment or control group
+    # ``w`` (weight) and ``o`` (offset) are nor supported in Uplift DRF yet
+    
+    class CustomAteFunc:
+        def map(self, pred, act, w, o, model):
+            return [pred[0], 1]
+
+        def reduce(self, l, r):
+            return [l[0] + r[0], l[1] + r[1]]
+
+        def metric(self, l):
+            return l[0] / l[1]
+
+    custom_metric = h2o.upload_custom_metric(CustomAteFunc, func_name="ate", func_file="mm_ate.py")
+
+    # Build and train the model:
+    uplift_model = H2OUpliftRandomForestEstimator(ntrees=10,
+                                                  max_depth=5,
+                                                  treatment_column=treatment_column,
+                                                  uplift_metric="KL",
+                                                  min_rows=10,
+                                                  seed=1234,
+                                                  auuc_type="qini"
+                                                  custom_metric_func=custom_metric)
+    uplift_model.train(x=predictors, 
+                       y=response, 
+                       training_frame=train, 
+                       validation_frame=valid)
+
+    # Eval performance:
+    perf = uplift_model.model_performance()
+    custom_att = perf._metric_json["training_custom"]
+    print(custom_att)
+    att = perf.att(train=True)
+    print(att)
 
 
 Uplift Curve and Area Under Uplift Curve (AUUC) calculation

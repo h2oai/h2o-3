@@ -13,6 +13,15 @@ import java.util.Arrays;
 public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, S extends water.api.schemas3.ModelMetricsBinomialUpliftV3<I, S>>
             extends ModelMetricsBaseV3<I,S> {
 
+    @API(help="Average Treatment Effect.", direction=API.Direction.OUTPUT)
+    public double ate;
+
+    @API(help="Average Treatment Effect on the Treated.", direction=API.Direction.OUTPUT)
+    public double att;
+
+    @API(help="Average Treatment Effect on the Control.", direction=API.Direction.OUTPUT)
+    public double atc;
+
     @API(help="The default AUUC for this scoring run.", direction=API.Direction.OUTPUT)
     public double AUUC;
 
@@ -40,6 +49,9 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
 
         AUUC auuc = modelMetrics._auuc;
         if (null != auuc) {
+            ate = modelMetrics.ate();
+            att = modelMetrics.att();
+            atc = modelMetrics.atc();
             AUUC  = auuc.auuc();
             auuc_normalized = auuc.auucNormalized();
             qini = auuc.qini();

@@ -46,7 +46,7 @@ def _dont_display(object):
     """
     import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if isinstance(object, matplotlib.figure.Figure):
+    if isinstance(object, matplotlib.figure.Figure) or is_decorated_plot_result(object) and (object.figure() is not None):
         plt.close()
     return object
 
@@ -179,7 +179,10 @@ class H2OExplanation(OrderedDict):
     def _ipython_display_(self):
         from IPython.display import display
         for v in self.values():
-            display(v)
+            if is_decorated_plot_result(v):
+                display(v.figure())
+            else:
+                display(v)
 
 
 @contextmanager
@@ -2967,17 +2970,17 @@ def _process_explanation_lists(
         exclude_explanations = [exclude_explanations]
     include_explanations = [exp.lower() for exp in include_explanations]
     exclude_explanations = [exp.lower() for exp in exclude_explanations]
+    for exp in exclude_explanations + include_explanations:
+        if exp not in possible_explanations and exp != "all":
+            raise H2OValueError("Unknown explanation \"{}\". Please use one of: {}".format(
+                exp, possible_explanations))
     if len(exclude_explanations) == 0:
         explanations = possible_explanations if "all" in include_explanations \
             else include_explanations
     else:
         if "all" not in include_explanations:
-            raise RuntimeError(
+            raise H2OValueError(
                 "Only one of include_explanations or exclude_explanation should be specified!")
-        for exp in exclude_explanations:
-            if exp not in possible_explanations:
-                raise RuntimeError("Unknown explanation \"{}\". Please use one of: {}".format(
-                    exp, possible_explanations))
         explanations = [exp for exp in possible_explanations if exp not in exclude_explanations]
     return explanations
 

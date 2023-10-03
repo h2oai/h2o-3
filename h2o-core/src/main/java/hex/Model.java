@@ -270,7 +270,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               return false;
             });
   }
-
+  
   /**
    * Identifies the default ordering method for models returned from Grid Search
    * @return default sort-by
@@ -579,6 +579,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double missingColumnsType() { return Double.NaN; }
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
+    
+    public boolean hasCustomMetricFunc() { return _custom_metric_func != null; }
 
     public long checksum() {
       return checksum(null);
@@ -1899,6 +1901,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
 
+  public Frame score(Frame fr, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    return score(fr, null, null, true, customMetricFunc);
+  }
+
   /**
    * Adds a scoring-related warning. 
    * 
@@ -1925,6 +1931,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
+  
   protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
     Frame adaptFr = new Frame(fr);
     applyPreprocessors(adaptFr, tmpFrames);
@@ -2054,8 +2061,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String [] names = new String[ncols];
     if(output.hasTreatment()){
       names[0] = "uplift_predict";
-      names[1] = "p_y1_ct1";
-      names[2] = "p_y1_ct0";
+      names[1] = "p_y1_with_treatment";
+      names[2] = "p_y1_without_treatment";
     } else {
       names[0] = "predict";
       for (int i = 1; i < names.length; ++i) {
@@ -2214,11 +2221,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (isCancelled() || _j != null && _j.stop_requested()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
+      Chunk treatmentChunk = _output.hasTreatment() ? chks[_output.treatmentIdx()] : null;
       Chunk responseChunk = null;
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
-        if (_output.hasResponse()) {
+        if (_output.hasTreatment()){
+          actual = new float[2];
+          responseChunk = chks[_output.responseIdx()];
+          treatmentChunk = chks[_output.treatmentIdx()];
+        } else if (_output.hasResponse()) {
           actual = new float[1];
           responseChunk = chks[_output.responseIdx()];
         } else
@@ -2244,6 +2256,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             } else {
               for (int i = 0; i < actual.length; ++i)
                 actual[i] = (float) data(chks, row, i);
+            }
+            if (treatmentChunk != null) {
+              actual[1] = (float) treatmentChunk.atd(row);
             }
             _mb.perRow(preds, actual, weight, offset, Model.this);
             // Handle custom metric
@@ -2281,6 +2296,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       super.postGlobal();
       if(_mb != null) {
         _mb.postGlobal(getComputedCustomMetric());
+        if (null != cFuncRef)
+          _mb._CMetricScoringTask = (CMetricScoringTask) this;
       }
     }
   }

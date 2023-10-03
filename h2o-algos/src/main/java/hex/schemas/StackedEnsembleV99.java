@@ -51,6 +51,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "max_runtime_secs",
       "weights_column",
       "offset_column",
+      "custom_metric_func",
       "seed",
       "score_training_samples",
       "keep_levelone_frame",

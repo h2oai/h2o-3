@@ -35,7 +35,7 @@ def test_reset_threshold():
 
     # train the model
     model.train(x=predictors, y=response, training_frame=train)
-    old_threshold = model._model_json['output']['default_threshold']
+    old_threshold = model.default_threshold()
     
     # predict
     preds = model.predict(airlines)
@@ -44,7 +44,7 @@ def test_reset_threshold():
     new_threshold = 0.6917189903082518
     old_returned = reset_model_threshold(model, new_threshold)
     reset_model = h2o.get_model(model.model_id)
-    reset_threshold = reset_model._model_json['output']['default_threshold']
+    reset_threshold = reset_model.default_threshold()
 
     # predict with reset model
     preds_reset = reset_model.predict(airlines)

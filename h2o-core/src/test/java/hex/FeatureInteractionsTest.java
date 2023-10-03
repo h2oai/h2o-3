@@ -224,5 +224,12 @@ public class FeatureInteractionsTest {
         expected.add("AA|CC");
         assertTrue(vars.containsAll(expected));
     }
+
+    @Test
+    public void testNoInteractions() {
+        FeatureInteractions featureInteractions = new FeatureInteractions();
+        TwoDimTable[] table = featureInteractions.getAsTable();
+        assert table == null;
+    }
     
 }

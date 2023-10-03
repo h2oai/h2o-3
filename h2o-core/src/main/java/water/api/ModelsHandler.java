@@ -179,7 +179,9 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     Model model = getFromDKV("key", s.model_id.key());
     if (model instanceof FeatureInteractionsCollector) {
       TwoDimTable[][] featureInteractions = ((FeatureInteractionsCollector) model).getFeatureInteractionsTable(s.max_interaction_depth, s.max_tree_depth, s.max_deepening);
-  
+      if(featureInteractions == null){
+        return s;
+      }
       s.feature_interaction = new TwoDimTableV3[featureInteractions[0].length + featureInteractions[2].length + 1];
       
       for (int i = 0; i < featureInteractions[0].length; i++) {
@@ -189,7 +191,6 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       for (int i = 0; i < featureInteractions[2].length; i++) {
         s.feature_interaction[i + featureInteractions[0].length + 1] = new TwoDimTableV3().fillFromImpl(featureInteractions[2][i]);
       }
-      
       return s;
     } else {
       throw H2O.unimpl(String.format("%s does not support feature interactions calculation", model._parms.fullName()));
