@@ -475,13 +475,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
     }
 
     @Override
-    public PojoWriter makePojoWriter(Model<?, ?, ?> genericModel, MojoModel mojoModel) {
-        UpliftDrfMojoModel upliftDrfMojoModel = (UpliftDrfMojoModel) mojoModel;
-        CompressedTree[][] trees = MojoUtils.extractCompressedTrees(upliftDrfMojoModel);
-        return new UpliftDrfPojoWriter(genericModel, upliftDrfMojoModel.getCategoricalEncoding(), false, trees, upliftDrfMojoModel._balanceClasses);
-    }
-
-    @Override
     protected void addCustomInfo(UpliftDRFModel.UpliftDRFOutput out) {
         if(out._validation_metrics != null){
             out._defaultAuucThresholds = ((ModelMetricsBinomialUplift)out._validation_metrics)._auuc._ths;
