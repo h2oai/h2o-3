@@ -34,7 +34,7 @@ def h2oshow_progress():
         sys.stdout=sys.__stdout__       # restore old stdout
         assert_is_type(e, AttributeError)   # error for using python 2
         assert "encoding" in e.args[0], "h2o.show_progress() command is not working."
-        allargs = inspect.getargspec(h2o.show_progress)
+        allargs = inspect.getfullargspec(h2o.show_progress)
         assert len(allargs.args)==0, "h2o.show_progress() should have no arguments!"
 
 if __name__ == "__main__":
