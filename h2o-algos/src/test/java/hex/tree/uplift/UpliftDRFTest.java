@@ -1,16 +1,14 @@
 package hex.tree.uplift;
 
+import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.UpliftBinomialModelPrediction;
-import hex.genmodel.utils.ArrayUtils;
 import hex.genmodel.utils.DistributionFamily;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.H2O;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -19,15 +17,6 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static org.junit.Assert.*;
 
@@ -396,7 +385,9 @@ public class UpliftDRFTest extends TestUtil {
             Frame preds = model.score(train);
             Scope.track_generic(preds);
 
-            assertTrue(model.testJavaScoring(train, preds,1e-15));
+            Model.JavaScoringOptions options = new Model.JavaScoringOptions();
+            options._disable_pojo = true;
+            assertTrue(model.testJavaScoring(train, preds,1e-15, options));
         } finally {
             Scope.exit();
         }

@@ -3036,6 +3036,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 decisionPath = adp.leafNodeAssignments;
                 nodeIds = adp.leafNodeAssignmentIds;
                 break;
+              case BinomialUplift:
+                UpliftBinomialModelPrediction bup = (UpliftBinomialModelPrediction) p;
+                d2 = bup.predictions[col];
+                break;
               case DimReduction:
                 d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:
                         ((DimReductionModelPrediction) p).dimensions[col];    // look at the reconstructed matrix
@@ -3048,7 +3052,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             actual_preds[col] = d2;
           }
 
-          if (trees != null) {
+          if (trees != null && (genmodel.getModelCategory() != ModelCategory.BinomialUplift) /* UpliftModel doesn't support decisionPath yet */) {
             for (int t = 0; t < trees.length; t++) {
               SharedTreeGraph tree = trees[t];
               SharedTreeNode node = tree.walkNodes(0, decisionPath[t]);
