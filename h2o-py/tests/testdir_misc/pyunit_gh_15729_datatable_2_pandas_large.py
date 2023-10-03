@@ -43,7 +43,7 @@ def test_polars_pandas():
     if not(can_use_datatable()):
         pyunit_utils.install("datatable")
     import datatable
-    test_frame_conversion("bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv", True)
+    test_frame_conversion("bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv", False)
 
 
 if __name__ == "__main__":
