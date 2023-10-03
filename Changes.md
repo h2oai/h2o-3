@@ -2,6 +2,24 @@
 
 ## H2O
 
+### 3.42.0.4 - 10/3/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html</a>
+
+#### Bug
+- [[#15729]](https://github.com/h2oai/h2o-3/issues/15729) - Implemented multi-thread `as_data_frame` by using Datatable to speedup the conversion process.
+- [[#15643]](https://github.com/h2oai/h2o-3/issues/15643) - Fixed validation of `include_explanation` and `exclude_explanation` parameters
+
+#### Improvement
+- [[#15719]](https://github.com/h2oai/h2o-3/issues/15719) - Implemented warnings in python and R for accessing `model.negative_log_likelihood()`
+- [[#13859]](https://github.com/h2oai/h2o-3/issues/13859) - Improved K-Means testing.
+
+#### New Feature
+- [[#15727]](https://github.com/h2oai/h2o-3/issues/15727) - Implemented new `write_checksum` parameter that allows you to disable default Hadoop Parquet writer systematically writing a `.crc` checksum file for each written data file.
+
+#### Security
+- [[#15766]](https://github.com/h2oai/h2o-3/issues/15766) - Addressed CVE-2023-40167 and CVE-2023-36479 in Steam Jar
+
 ### 3.42.0.3 - 8/22/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html</a>
