@@ -908,7 +908,8 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' # Compute SHAP and pick the top two highest and top two lowest
 #' h2o.predict_contributions(prostate_gbm, prostate, top_n=2, bottom_n=2)
 #' 
-#' # Compute Marginal SHAP, this enables looking at the contributions against different baselines, e.g., older people in the following example
+#' # Compute Marginal SHAP, this enables looking at the contributions against different
+#' # baselines, e.g., older people in the following example
 #' h2o.predict_contributions(prostate_gbm, prostate, background_frame=prostate[prostate$AGE > 75, ])
 #' }
 #' @export

@@ -1242,6 +1242,7 @@ pd_ice_common <- function(model,
 
 handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value = NULL, nbins, show_rug) {
   .data <- NULL
+  count <- NULL
   col_name <- make.names(column)
   margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
   is_factor <- is.factor(newdata[[column]])
@@ -1251,7 +1252,8 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       warning("Centering is not supported for factor columns!")
   }
 
-  quantiles <- order(as.data.frame(newdata[[models_info$y]])[[models_info$y]])
+  # check names == FALSE prevents R from replacing spaces in names with dots
+  quantiles <- order(as.data.frame(newdata[[models_info$y]], check.names = FALSE)[[models_info$y]])
   quantiles <- quantiles[c(1, round((seq_len(11) - 1) * length(quantiles) / 10))]
 
   results <- data.frame()
@@ -1517,6 +1519,7 @@ get_y_values <- function(mean, stddev) {
 
 handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_info, nbins, show_rug) {
   .data <- NULL
+  count <- NULL
   col_name <- make.names(column)
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
   if (h2o.isfactor(newdata[[column]]))
@@ -2635,6 +2638,7 @@ h2o.pd_multi_plot <- function(object,
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
+  count <- NULL
   if (missing(column))
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
