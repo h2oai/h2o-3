@@ -132,7 +132,7 @@ Supported MOJOs
 +---------------+------------+------------+
 | DRF           | |yes|      | |yes|      |
 +---------------+------------+------------+
-| Uplift DRF    | |no|       | |no|       |
+| Uplift DRF    | |yes|      | |yes|      |
 +---------------+------------+------------+
 | Deep Learning | |yes|      | |yes|      |
 +---------------+------------+------------+
@@ -162,6 +162,8 @@ Supported MOJOs
 | GLRM          | |yes|      | |no|       |
 +---------------+------------+------------+
 | PCA           | |yes|      | |no|       |
++---------------+------------+------------+
+| Decision Tree | |no|       | |no|       |
 +---------------+------------+------------+
 
 **Note**: AutoML will always produce a model which has a MOJO. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
