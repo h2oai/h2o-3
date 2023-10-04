@@ -2753,12 +2753,16 @@ Retrieving graphs via R is not yet supported. An `.ipynb demo showing this examp
 Interventional / Marginal SHAP
 ''''''''''''''''''''''''''''''
 
-**Supported Algos:** DeepLearning, DRF, GBM, GLM, StackedEnsemble, XGBoost
+**Supported Algos:** DeepLearning[1,2], DRF[3], GBM[3], GLM, StackedEnsemble[2], XGBoost[3]
 
-**NOTE:** DeepLearning and StackedEnsemble support only approximate SHAP values using DeepSHAP with multiple baselines, and G-DeepSHAP respectively. 
+**NOTE:** DeepLearning and StackedEnsemble support only approximate SHAP values using DeepSHAP[1,2] with multiple baselines, and G-DeepSHAP[2] respectively. 
 
-This method of SHAP calculation requires a background dataset and is now often called marginal SHAP to avoid confusion with causal approaches to calculate Shapley values (this method assumes flat causal graph). 
+This method of SHAP calculation requires a background dataset and is now often called marginal SHAP to avoid
+confusion with causal approaches to calculate Shapley values (this method assumes flat causal graph)[4].
 Marginal SHAP is calculated as average baseline SHAP using each row from the background dataset as a baseline.
+
+Ideally, this should be the preferred SHAP to use as the Path Dependent TreeSHAP has some issues, most importantly it can provide
+non-zero attribution for an unused feature (the Dummy/Missingness property)[5]. This should not happen in the baseline and marginal SHAP.
 
 **Baseline SHAP**
 
@@ -2785,6 +2789,7 @@ The sum of contributions equals to the difference between a reference point and 
 In the path dependent TreeSHAP, there is another column called `BiasTerm` that is added to the sum of the contributions to get the 
 prediction :math:`h(x) = \text{BiasTerm} + \sum_{i=1}^d \phi_i`, in the baseline SHAP this `BiasTerm` is equal to :math:`h(x^{(b)})`.
 
+As the baseline SHAP can be memory intensive, the computation is optimized in order to parallelize over the bigger frame in order to decrease the communication cost.
 
 To get baseline SHAP, specify ``output_per_reference=True`` in the ``predict_contributions`` method.
 The result from ``predict_contributions`` method is enriched with ``RowIdx`` and ``BackgroundRowIdx`` columns so the contributions can be easily mapped to
@@ -2833,7 +2838,11 @@ the explained frame and the background frame.
 
 In the marginal SHAP, the contribution is calculated as :math:`\phi_i(h, x^{(e)}) = \frac{1}{|D|} \sum_{x^{(b)} \in D} \phi(h, x^{(e)}, x^{(b)})`, where :math:`D` is the background dataset.
 
-Using marginal SHAP enables to look for contributions against different baselines, e.g., different subpopulations. 
+Using the marginal SHAP enables to look for contributions against different baselines, e.g., different subpopulations.
+
+As the marginal SHAP can be memory intensive, the computation is optimized in order to parallelize over the background set
+since it needs to compute an average over baseline SHAPs where every single point from background set is used as a reference.
+There is one exception - when where there is plenty of free memory, it will parallelize over the bigger frame.
 
 .. tabs::
    .. code-tab:: r R
@@ -2885,6 +2894,12 @@ Using marginal SHAP enables to look for contributions against different baseline
           # Plot SHAP contributions for one instance (e.g., row 5):
           model.shap_explain_row_plot(prostate_test, row_index=5, background_frame=prostate_train[prostate_train["AGE"] > 70, :])
 
+
+[1] S. Lundberg and S.-I. Lee, “A Unified Approach to Interpreting Model Predictions.” arXiv, Nov. 24, 2017. doi: 10.48550/arXiv.1705.07874.
+[2] H. Chen, S. M. Lundberg, and S.-I. Lee, “Explaining a series of models by propagating Shapley values,” Nat Commun, vol. 13, no. 1, Art. no. 1, Aug. 2022, doi: 10.1038/s41467-022-31384-3.
+[3] G. Laberge and Y. Pequignot, “Understanding Interventional TreeSHAP: How and Why it Works.” arXiv, Dec. 05, 2022. doi: 10.48550/arXiv.2209.15123.
+[4] H. Chen, I. C. Covert, S. M. Lundberg, and S.-I. Lee, “Algorithms to estimate Shapley value feature attributions.” arXiv, Jul. 15, 2022. Accessed: Jul. 18, 2022. [Online]. Available: http://arxiv.org/abs/2207.07605
+[5] M. Sundararajan and A. Najmi, “The many Shapley values for model explanation.” arXiv, Feb. 07, 2020. doi: 10.48550/arXiv.1908.08474.
 
 
 Predict Stage Probabilities

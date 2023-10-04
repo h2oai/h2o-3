@@ -312,7 +312,12 @@ public class StackedEnsembleModel
           indivContribs.delete(true);
         }
       };
-      return SplitToChunksApplyCombine.splitApplyCombine(frame, fun, destination_key);
+      if (backgroundFrame.anyVec().nChunks() > H2O.CLOUD._memary.length || // could be map-reduced over the bg frame 
+              !ContributionsWithBackgroundFrameTask.enoughMinMemory(numOfUsefulBaseModels() *
+                      ContributionsWithBackgroundFrameTask.estimatePerNodeMinimalMemory(frame.numCols(), frame, backgroundFrame))) // or we have no other choice due to memory
+        return SplitToChunksApplyCombine.splitApplyCombine(frame, fun, destination_key);
+      else
+        return fun.apply(frame);
     } finally {
       Log.info("Finished contributions calculation for " + this._key + "...");
     }

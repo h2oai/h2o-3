@@ -95,18 +95,18 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
     }
   }
 
-  double estimateRequiredMemory(int nCols) {
-    return 8 * nCols * _frame.numRows() * _backgroundFrame.numRows();
+  public static double estimateRequiredMemory(int nCols, Frame frame, Frame backgroundFrame) {
+    return 8 * nCols * frame.numRows() * backgroundFrame.numRows();
   }
 
-  double estimatePerNodeMinimalMemory(int nCols) {
-    double reqMem = estimateRequiredMemory(nCols);
-    Frame biggerFrame = _isFrameBigger ? _frame : _backgroundFrame;
+  public static double estimatePerNodeMinimalMemory(int nCols, Frame frame, Frame backgroundFrame){
+    boolean isFrameBigger = frame.numRows() > backgroundFrame.numRows();
+    double reqMem = estimateRequiredMemory(nCols, frame, backgroundFrame);
+    Frame biggerFrame = isFrameBigger ? frame : backgroundFrame;
     long[] frESPC = biggerFrame.anyVec().espc();
-    
     // Guess the max size of the chunk from the bigger frame as 2 * average chunk
     double maxMinChunkSizeInVectorGroup = 2 * 8 * nCols *  biggerFrame.numRows() / (double) biggerFrame.anyVec().nChunks();
-    
+
     // Try to compute it exactly
     if (null != frESPC) {
       long maxFr = 0;
@@ -115,14 +115,18 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
       }
       maxMinChunkSizeInVectorGroup = Math.max(maxMinChunkSizeInVectorGroup, 8*nCols*maxFr);
     }
-    long nRowsOfSmallerFrame = _isFrameBigger ? _backgroundFrame.numRows() : _frame.numRows();
+    long nRowsOfSmallerFrame = isFrameBigger ? backgroundFrame.numRows() : frame.numRows();
 
     // We need the whole smaller frame on each node and one chunk per col of the bigger frame (at minimum)
     return Math.max(reqMem / H2O.CLOUD._memary.length, maxMinChunkSizeInVectorGroup + nRowsOfSmallerFrame * nCols * 8);
   }
+  
+  double estimatePerNodeMinimalMemory(int nCols) {
+    return estimatePerNodeMinimalMemory(nCols, _frame, _backgroundFrame);
+  }
 
 
-  long minMemoryPerNode() {
+  public static long minMemoryPerNode() {
     long minMem = Long.MAX_VALUE;
     for (H2ONode h2o : H2O.CLOUD._memary) {
       long mem = h2o._heartbeat.get_free_mem(); // in bytes
@@ -132,7 +136,7 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
     return minMem;
   }
 
-  long totalFreeMemory() {
+  public static long totalFreeMemory() {
     long mem = 0;
     for (H2ONode h2o : H2O.CLOUD._memary) {
       mem += h2o._heartbeat.get_free_mem(); // in bytes
@@ -140,7 +144,7 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
     return mem;
   }
 
-  boolean enoughMinMemory(double estimatedMemory) {
+  public static boolean enoughMinMemory(double estimatedMemory) {
     return minMemoryPerNode() > estimatedMemory;
   }
 
@@ -158,7 +162,7 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
   public Frame runAndGetOutput(Job j, Key<Frame> destinationKey, String[] names) {
     _job = j;
     loadFrames();
-    double reqMem = estimateRequiredMemory(names.length + 2);
+    double reqMem = estimateRequiredMemory(names.length + 2, _frame, _backgroundFrame);
     double reqPerNodeMem = estimatePerNodeMinimalMemory(names.length + 2);
 
     String[] namesWithRowIdx = new String[names.length + 2];
