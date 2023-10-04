@@ -180,19 +180,25 @@ h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=
 #' @return Returns a data.frame containing computed predictions
 #' @export
 h2o.mojo_predict_df <- function(frame, mojo_zip_path, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F, setInvNumNA=F) {
-	input_csv_path <- file.path(tempdir(), paste0('h2o_input_', runif(1,0,99999999999), '.csv'))
-	prediction_csv_path <- file.path(tempdir(), paste0('h2o_prediction_', runif(1,0,99999999999), '.csv'))
-	tryCatch(
-		{
-			write.csv(frame, file=input_csv_path, row.names=F)
-			return(h2o.mojo_predict_csv(input_csv_path = input_csv_path, mojo_zip_path=mojo_zip_path, output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path, classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA))
-		},
-		finally = {
-		  unlink(input_csv_path)
-		  unlink(prediction_csv_path)
-		}
-	)
+  if (!is.data.frame(frame)) {
+    stop("Input 'frame' must be a valid R dataframe.")
+  }
+
+  input_csv_path <- file.path(tempdir(), paste0('h2o_input_', runif(1,0,99999999999), '.csv'))
+  prediction_csv_path <- file.path(tempdir(), paste0('h2o_prediction_', runif(1,0,99999999999), '.csv'))
+  
+  tryCatch(
+    {
+      write.csv(frame, file=input_csv_path, row.names=F)
+      return(h2o.mojo_predict_csv(input_csv_path = input_csv_path, mojo_zip_path=mojo_zip_path, output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path, classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA))
+    },
+    finally = {
+      unlink(input_csv_path)
+      unlink(prediction_csv_path)
+    }
+  )
 }
+
 
 # These are defined so that you can use the same names in Python and allows us to change the backing method
 
