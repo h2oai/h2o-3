@@ -77,10 +77,11 @@ dependencies {
         api('com.squareup.okio:okio:3.5.0') {
             because 'Fixes CVE-2023-3635'
         }
-        api('org.xerial.snappy:snappy-java:1.1.10.3') {
+        api('org.xerial.snappy:snappy-java:1.1.10.5') {
             because 'Fixes CVE-2023-34455'
             because 'Fixes CVE-2023-34454'
             because 'Fixes CVE-2023-34453'
+            because 'Fixes CVE-2023-43642'
         }
     }
 }
