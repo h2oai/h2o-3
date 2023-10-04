@@ -91,11 +91,4 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     public UpliftDrfMojoWriter getMojo() {
         return new UpliftDrfMojoWriter(this);
     }
-
-    @Override
-    protected SharedTreePojoWriter makeTreePojoWriter() {
-        CompressedForest compressedForest = new CompressedForest(_output._treeKeys, _output._domains);
-        CompressedForest.LocalCompressedForest localCompressedForest = compressedForest.fetch();
-        return new UpliftDrfPojoWriter(this, localCompressedForest._trees);
-    }
 }
