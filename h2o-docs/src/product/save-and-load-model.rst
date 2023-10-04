@@ -165,6 +165,8 @@ Supported MOJOs
 +---------------+------------+------------+
 | Decision Tree | |no|       | |no|       |
 +---------------+------------+------------+
+| AdaBoost      | |no|       | |no|       |
++---------------+------------+------------+
 
 **Note**: AutoML will always produce a model which has a MOJO. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
 
