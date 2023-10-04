@@ -2,14 +2,14 @@
 
 AdaBoost
 --------
-**Note**: This is an beta version of the algorithm.
+**Note**: This is a beta version of the algorithm.
 
 Introduction
 ~~~~~~~~~~~~
 
-AdaBoost, short for Adaptive Boosting, is a powerful and versatile machine learning ensemble technique. It operates by combining the strengths of multiple weak or base learners, typically decision trees with limited depth, to create a strong and accurate predictive model. AdaBoost assigns higher weights to misclassified data points in each iteration, allowing subsequent weak learners to focus on those instances, progressively refining the model's performance. The final model is a weighted sum of the weak learners' predictions, resulting in a robust and flexible classifier capable of effectively handling complex datasets and improving generalization. AdaBoost's emphasis on misclassified instances and iterative learning process makes it a popular choice for classification tasks in various domains, showcasing its ability to adapt and improve predictive performance.
+AdaBoost, short for Adaptive Boosting, is a powerful and versatile machine learning ensemble technique. It operates by combining the strengths of multiple weak or base learners, typically decision trees with limited depth, to create a strong and accurate predictive model. AdaBoost assigns higher weights to misclassified data points in each iteration, allowing subsequent weak learners to focus on those instances, progressively refining the model's performance. The final model is a weighted sum of the weak learners' predictions, resulting in a robust and flexible classifier capable of effectively handling complex datasets and improving generalization. AdaBoost's emphasis on misclassified instances and its iterative learning process make it a popular choice for classification tasks in various domains, showcasing its ability to adapt and improve predictive performance.
 
-H2O’s implementation of AdaBoost follows the `Rojas, R. (2009), 'AdaBoost and the Super Bowl of Classifiers A Tutorial Introduction to Adaptive Boosting' <https://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=BD98C2F2A8C7EEE8314FA129FBE61984?doi=10.1.1.382.9086&rep=rep1&type=pdf>`__ specification and can be used to solve binary classification problems only.
+H2O’s implementation of AdaBoost follows the `Rojas, R. (2009), 'AdaBoost and the Super Bowl of Classifiers A Tutorial Introduction to Adaptive Boosting' <https://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=BD98C2F2A8C7EEE8314FA129FBE61984?doi=10.1.1.382.9086&rep=rep1&type=pdf>`__ specification. It can be used to solve binary classification problems only.
 
 MOJO Support
 ''''''''''''
@@ -22,20 +22,20 @@ Defining an AdaBoost Model
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
 
+-  `learn_rate <algo-params/learn_rate.html>`__: Specify the learning rate. The range is 0.0 to 1.0, and the default value is ``0.5``.
+
 -  **nlearners**: Number of AdaBoost weak learners.
 
--  **weak_learner**: Choose a weak learner type. Must be one of: ``"AUTO"``, ``"DRF"``, ``"GBM"``, or ``"GLM"``. Defaults to AUTO, which means DRF.
-
--  `learn_rate <algo-params/learn_rate.html>`__: Specify the learning rate. The range is 0.0 to 1.0, and the default value is ``0.5``.
+-  **weak_learner**: Choose a weak learner type. Must be one of: ``"AUTO"``, ``"DRF"``, ``"GBM"``, or ``"GLM"``. Defaults to ``"AUTO"`` (which means ``"DRF"``).
 
 Common parameters
 '''''''''''''''''
 
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
-
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to ``True`` (enabled).
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to ``-1`` (time-based random number).
 
