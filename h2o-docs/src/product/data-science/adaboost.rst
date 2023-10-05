@@ -28,6 +28,10 @@ Algorithm-specific parameters
 
 -  **weak_learner**: Choose a weak learner type. Must be one of: ``"AUTO"``, ``"DRF"``, ``"GBM"``, or ``"GLM"``. Defaults to ``"AUTO"`` (which means ``"DRF"``).
 
+      - ``DRF``: Trains only one tree in each iteration with the following parameters ``mtries=1, min_rows=1, sample_rate=1, max_depth=1``.
+      - ``GBM``: Trains only one tree in each iteration with the following parameters ``mtries=1, min_rows=1, sample_rate=1, max_depth=1, learn_rate=0.1``.
+      - ``GLM``: Trains binary classifier with ``max_iterations=50``.
+
 Common parameters
 '''''''''''''''''
 

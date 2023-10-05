@@ -2,6 +2,7 @@ package hex.adaboost;
 
 import hex.Model;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import org.junit.Before;
 import org.junit.Rule;
