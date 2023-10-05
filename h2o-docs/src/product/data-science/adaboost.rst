@@ -31,6 +31,17 @@ Algorithm-specific parameters
 Common parameters
 '''''''''''''''''
 
+- `categorical_encoding <algo-params/categorical_encoding.html>`__: In case of AdaBoost, only the ordinal nature of encoding is used for splitting. Specify one of the following encoding schemes for handling categorical features:
+
+      - ``auto`` or ``AUTO`` (default): Allow the algorithm to decide. In AdaBoost, the algorithm will automatically perform ``enum`` encoding.
+      - ``enum`` or ``Enum``: 1 column per categorical feature.
+      - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
+      - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels.
+      - ``binary`` or ``Binary``: No more than 32 columns per categorical feature.
+      - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only.
+      - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.).
+      - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.).
+
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to ``True`` (enabled).
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
@@ -47,7 +58,7 @@ Common parameters
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use in building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
--  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be only categorical binary.
 
 Examples
 ~~~~~~~~
