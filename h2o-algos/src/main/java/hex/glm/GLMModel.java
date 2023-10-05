@@ -246,8 +246,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     List<Frame> tmpFrames = new ArrayList<>();
     Frame adaptedFrame = null;
     Frame adaptedBgFrame = null;
-    if (backgroundFrame == null)
-      throw H2O.unimpl("GLM supports contribution calculation only with background frame.");
+    if (null == backgroundFrame)
+      throw H2O.unimpl("GLM supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for " + this._key + "...");
     try {
       adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);

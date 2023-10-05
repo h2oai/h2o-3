@@ -290,6 +290,8 @@ public class StackedEnsembleModel
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    if (null == backgroundFrame)
+      throw H2O.unimpl("StackedEnsemble supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for " + this._key + "...");
     try {
       if (options._outputPerReference)
