@@ -28,16 +28,33 @@ Algorithm-specific parameters
 
 -  **weak_learner**: Choose a weak learner type. Must be one of: ``"AUTO"``, ``"DRF"``, ``"GBM"``, or ``"GLM"``. Defaults to ``"AUTO"`` (which means ``"DRF"``).
 
-      - ``DRF``: Trains only one tree in each iteration with the following parameters ``mtries=1, min_rows=1, sample_rate=1, max_depth=1``.
-      - ``GBM``: Trains only one tree in each iteration with the following parameters ``mtries=1, min_rows=1, sample_rate=1, max_depth=1, learn_rate=0.1``.
-      - ``GLM``: Trains binary classifier with ``max_iterations=50``.
+      - ``DRF``: Trains only one tree in each iteration with the following parameters: 
+
+        .. code-block:: bash
+
+            (mtries=1, 
+             min_rows=1, 
+             sample_rate=1, 
+             max_depth=1)
+
+      - ``GBM``: Trains only one tree in each iteration with the following parameters: 
+
+        .. code-block:: bash
+
+            (mtries=1, 
+             min_rows=1, 
+             sample_rate=1, 
+             max_depth=1, 
+             learn_rate=0.1)
+
+      - ``GLM``: Trains a binary classifier with ``max_iterations=50``.
 
 Common parameters
 '''''''''''''''''
 
-- `categorical_encoding <algo-params/categorical_encoding.html>`__: In case of AdaBoost, only the ordinal nature of encoding is used for splitting. Specify one of the following encoding schemes for handling categorical features:
+- `categorical_encoding <algo-params/categorical_encoding.html>`__: Only the ordinal nature of encoding is used for splitting in the case of AdaBoost. Specify one of the following encoding schemes for handling categorical features:
 
-      - ``auto`` or ``AUTO`` (default): Allow the algorithm to decide. In AdaBoost, the algorithm will automatically perform ``enum`` encoding.
+      - ``auto`` or ``AUTO`` (default): Allow the algorithm to decide. For AdaBoost, the algorithm will automatically perform ``enum`` encoding.
       - ``enum`` or ``Enum``: 1 column per categorical feature.
       - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
       - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels.
