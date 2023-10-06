@@ -57,7 +57,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
     @Override
     public boolean havePojo() {
-        return true;
+        return false;
     }
 
     @Override
@@ -472,13 +472,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             row++;
         }
         return table;
-    }
-
-    @Override
-    public PojoWriter makePojoWriter(Model<?, ?, ?> genericModel, MojoModel mojoModel) {
-        UpliftDrfMojoModel upliftDrfMojoModel = (UpliftDrfMojoModel) mojoModel;
-        CompressedTree[][] trees = MojoUtils.extractCompressedTrees(upliftDrfMojoModel);
-        return new UpliftDrfPojoWriter(genericModel, upliftDrfMojoModel.getCategoricalEncoding(), false, trees, upliftDrfMojoModel._balanceClasses);
     }
 
     @Override

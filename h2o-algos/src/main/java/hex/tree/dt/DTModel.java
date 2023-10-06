@@ -36,7 +36,6 @@ public class DTModel extends Model<DTModel, DTModel.DTParameters, DTModel.DTOutp
         // compute score for given point
         CompressedDT tree = DKV.getGet(_output._treeKey);
         DTPrediction prediction = tree.predictRowStartingFromNode(data, 0, "");
-//        System.out.println(prediction.ruleExplanation);
         // for now, only pred. for class 0 is stored, will be improved later
         preds[0] = prediction.classPrediction;
         preds[1] = prediction.probability;

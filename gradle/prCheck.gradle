@@ -68,7 +68,7 @@ def checkPull(changeId) {
     def issueId = issueMatcher[0][1]
     
     def errorMessages = []
-    if (!pullDetails.body.contains("#${issueId}") && !pullDetails.body.contains('https://github.com/h2oai/h2o-3/issues/' + issueId)) {
+    if (!pullDetails.body.contains("#${issueId}") && !pullDetails.body.contains('https://github.com/h2oai/h2o-3/issues/' + issueId) && !pullDetails.body.contains("GH-${issueId}")) {
         errorMessages.add("The associated GitHub issue #${issueId} must be mentioned in the description of the PR.")
     } 
         
