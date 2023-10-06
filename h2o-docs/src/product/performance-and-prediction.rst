@@ -2764,6 +2764,13 @@ Marginal SHAP is calculated as average baseline SHAP using each row from the bac
 Ideally, this should be the preferred SHAP to use as the Path Dependent TreeSHAP has some issues, most importantly it can provide
 non-zero attribution for an unused feature (the Dummy/Missingness property)[5]. This should not happen in the baseline and marginal SHAP.
 
+**Caveat:** When using `predict_contributions` with a dataset with categorical columns, you can specify a parameter
+`output_format="original"`. This will return contributions for one-hot encoded columns but those contributions are not
+necessarily SHAP values because categorical variables can have just one level in one row, in other words, the columns
+created by one-hot encoding a categorical variable are not independent, e.g., a column `C` has levels `a`,`b`, `other`,
+to get the SHAP it would have to be possible to get a row that would have `C` equal to `a` and `b` at the same time.
+The sum of all one-hot encoded columns for a given feature results in SHAP value for that feature.
+
 **Baseline SHAP**
 
 In the baseline SHAP, the contribution for feature i (:math:`\phi_i`) can be imagined to be calculated by taking the powerset :math:`Q` of all features that differ
