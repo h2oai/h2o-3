@@ -2753,38 +2753,42 @@ Retrieving graphs via R is not yet supported. An `.ipynb demo showing this examp
 Interventional / Marginal SHAP
 ''''''''''''''''''''''''''''''
 
-**Supported Algos:** DeepLearning[1,2], DRF[3], GBM[3], GLM, StackedEnsemble[2], XGBoost[3]
+**Supported Algos:** DeepLearning [:ref:`1<ref9>`, :ref:`2<ref10>`], DRF [:ref:`3<ref11>`], GBM [:ref:`3<ref11>`], GLM, StackedEnsemble [:ref:`2<ref10>`], XGBoost [:ref:`3<ref11>`]
 
-**NOTE:** DeepLearning and StackedEnsemble support only approximate SHAP values using DeepSHAP[1,2] with multiple baselines, and G-DeepSHAP[2] respectively. 
+**NOTE:** DeepLearning and StackedEnsemble support only approximate SHAP values using DeepSHAP [:ref:`1<ref9>`, :ref:`2<ref10>`] with multiple baselines, and G-DeepSHAP [:ref:`2<ref10>`] respectively. 
 
-This method of SHAP calculation requires a background dataset and is now often called marginal SHAP to avoid
-confusion with causal approaches to calculate Shapley values (this method assumes flat causal graph)[4].
-Marginal SHAP is calculated as average baseline SHAP using each row from the background dataset as a baseline.
+This method of SHAP calculation requires a background dataset and is now often called marginal SHAP to avoid confusion with causal approaches to calculate Shapley values (this method assumes a flat causal graph) [:ref:`4<ref12>`]. Marginal SHAP is calculated as an average baseline SHAP using each row from the background dataset as a baseline.
 
-Ideally, this should be the preferred SHAP to use as the Path Dependent TreeSHAP has some issues, most importantly it can provide
-non-zero attribution for an unused feature (the Dummy/Missingness property)[5]. This should not happen in the baseline and marginal SHAP.
+Ideally, this should be the preferred SHAP to use because the Path Dependent TreeSHAP has some issues. Most importantly, it can provide non-zero attribution for an unused feature (the Dummy/Missingness property) [:ref:`5<ref13>`]. This should not happen in the baseline and marginal SHAP.
 
-**Caveat:** When using ``predict_contributions`` with a dataset with categorical columns, you can specify a parameter
-``output_format="original"``. This will return contributions for one-hot encoded columns but those contributions are not
-necessarily SHAP values because categorical variables can have just one level in one row, in other words, the columns
-created by one-hot encoding a categorical variable are not independent, e.g., a column ``Col`` has levels ``a``, ``b``, ``c``,
-to get the SHAP, it would have to be possible to get a row that would have ``Col`` equal to {``a``}, {``b``}, {``c``}, 
-{``a``, ``b``}, {``a``, ``c``}, {``b``, ``c``}, and {``a``, ``b``, ``c``}.
-The sum of all one-hot encoded columns for a given feature results in SHAP value for that feature.
+.. note::
+
+    **Caveat:** When using ``predict_contributions`` with a dataset with categorical columns, you can specify the parameter ``output_format="original"``. This will return contributions for one-hot encoded columns, but those contributions are not necessarily SHAP values because categorical variables can have just one level in one row. In other words, the columns created by one-hot encoding a categorical variable are not independent. 
+
+    For example, a column, ``Col``, has levels ``a``, ``b``, and ``c``. To get the SHAP, it would have to be possible to get a row that would have ``Col`` equal to:  
+
+    - {``a``},
+    - {``b``},
+    - {``c``},
+    - {``a``, ``b``},
+    - {``a``, ``c``},
+    - {``b``, ``c``}, and
+    - {``a``, ``b``, ``c``}.
+
+    The sum of all one-hot encoded columns for a given feature results in the SHAP value for that feature.
 
 **Baseline SHAP**
 
-In the baseline SHAP, the contribution for feature i (:math:`\phi_i`) can be imagined to be calculated by taking the powerset :math:`Q` of all features that differ
-between the explained point and the baseline except the feature i and for each subset from that powerset creating an artificial data points where
-features from the subset take the value from the reference point and the rest of the features take the value from
-the baseline point and then taking a difference of model evaluation on this point with feature i value from :math:`x^{(e)}` and :math:`x^{(b)}`.
+In the baseline SHAP, the contribution for feature :math:`i (\phi_i`) can be imagined to be calculated by taking the powerset :math:`Q` of all features that differ between the explained point and the baseline except the feature :math:`i` and for each subset from that powerset. This creates artificial data points where features from the subset take the value from the reference point and the rest of the features take the value from the baseline point. They then take a difference of the model evaluation on this point with feature :math:`i` value from :math:`x^{(e)}` and :math:`x^{(b)}`.
 
-Let :math:`x^{(e)}` be the point for which we are calculating the contributions, 
-:math:`x^{(b)}` be the baseline point,
-:math:`h(x)` be the predictive function (the model),
-:math:`Q` be the powerset of indexes of features that differ between :math:`x^{(e)}` and :math:`x^{(b)}`,
-:math:`d` be the number of features that differ between :math:`x^{(e)}` and :math:`x^{(b)}`,
-and :math:`r_i(x^{(e)}, x^{(b)}, S) = \begin{cases} x^{(e)}_i \quad \text{if}\ i \in S\\ x^{(b)}_i \quad \text{otherwise}\end{cases}`.
+Let: 
+
+- :math:`x^{(e)}` be the point for which we are calculating the contributions, 
+- :math:`x^{(b)}` be the baseline point,
+- :math:`h(x)` be the predictive function (the model),
+- :math:`Q` be the powerset of indices of features that differ between :math:`x^{(e)}` and :math:`x^{(b)}`,
+- :math:`d` be the number of features that differ between :math:`x^{(e)}` and :math:`x^{(b)}`, and 
+- :math:`r_i(x^{(e)}, x^{(b)}, S) = \begin{cases} x^{(e)}_i \quad \text{if}\ i \in S\\ x^{(b)}_i \quad \text{otherwise}\end{cases}`.
 
 .. math::
     \phi_i(h, x^{(e)}, x^{(b)}) = \sum_{S \in Q} \frac{|S|! (d-|S| - 1)!}{d!} (h(r(x^{(e)}, x^{(b)}, S \cup \{i\}))-h(r(x^{(e)}, x^{(b)}, S)))
@@ -2795,21 +2799,27 @@ The sum of contributions equals to the difference between a reference point and 
      h(x^{(e)}) - h(x^{(b)}) = \sum_{i \in \text{feature}} \phi_i(h, x^{(e)}, x^{(b)}))
 
 In the path dependent TreeSHAP, there is another column called `BiasTerm` that is added to the sum of the contributions to get the 
-prediction :math:`h(x) = \text{BiasTerm} + \sum_{i=1}^d \phi_i`, in the baseline SHAP this `BiasTerm` is equal to :math:`h(x^{(b)})`.
+prediction :math:`h(x) = \text{BiasTerm} + \sum_{i=1}^d \phi_i`, in the baseline SHAP. This `BiasTerm` is equal to :math:`h(x^{(b)})`.
 
 As the baseline SHAP can be memory intensive, the computation is optimized in order to parallelize over the bigger frame in order to decrease the communication cost.
 
-To get baseline SHAP, specify ``output_per_reference=True`` in the ``predict_contributions`` method.
-The result from ``predict_contributions`` method is enriched with ``RowIdx`` and ``BackgroundRowIdx`` columns so the contributions can be easily mapped to
+To get the baseline SHAP, specify ``output_per_reference=True`` in the ``predict_contributions`` method.
+The result from the ``predict_contributions`` method is enriched with ``RowIdx`` and ``BackgroundRowIdx`` columns so the contributions can be easily mapped to
 the explained frame and the background frame.
 
-**NOTE:** Using baseline SHAP produces a frame with the number of rows equal to number of rows of the explained frame times number of rows of the background frame.
+.. note::
+    
+    Using baseline SHAP produces a frame with the number of rows equal to the number of rows of the explained frame times the number of rows of the background frame.
 
 .. tabs::
    .. code-tab:: r R
   
-          # Compute Baseline SHAP, this enables looking at the contributions against different baselines, e.g., older males in this case
-          h2o.predict_contributions(model, prostate_test, background_frame=prostate_train[prostate_train$AGE > 70, ], output_per_reference = TRUE)
+          # Compute Baseline SHAP; this enables looking at the contributions against 
+          # different baselines (e.g., older males in this case)
+          h2o.predict_contributions(model, 
+                                    prostate_test, 
+                                    background_frame=prostate_train[prostate_train$AGE > 70, ], 
+                                    output_per_reference = TRUE)
 
                  RACE      DPROS      DCAPS        PSA        VOL      GLEASON BiasTerm RowIdx BackgroundRowIdx
           1 0.0000000  0.6040196  0.1489700 0.08277533  0.0000000 -0.007383927 67.90027      0                0
@@ -2824,8 +2834,11 @@ the explained frame and the background frame.
 
    .. code-tab:: python
 
-          # Compute Baseline SHAP, this enables looking at the contributions against different baselines, e.g., older males in this case
-          model.predict_contributions(prostate_test, background_frame=prostate_train[prostate_train["AGE"] > 70, :], output_per_reference = True)
+          # Compute Baseline SHAP; this enables looking at the contributions against 
+          # different baselines (e.g., older males in this case)
+          model.predict_contributions(prostate_test, 
+                                      background_frame=prostate_train[prostate_train["AGE"] > 70, :], 
+                                      output_per_reference = True)
 
                  AGE       RACE        DPROS      DCAPS         PSA         VOL     GLEASON    BiasTerm    RowIdx    BackgroundRowIdx
           ----------  ---------  -----------  ---------  ----------  ----------  ----------  ----------  --------  ------------------
@@ -2844,19 +2857,25 @@ the explained frame and the background frame.
 
 **Marginal SHAP**
 
-In the marginal SHAP, the contribution is calculated as :math:`\phi_i(h, x^{(e)}) = \frac{1}{|D|} \sum_{x^{(b)} \in D} \phi(h, x^{(e)}, x^{(b)})`, where :math:`D` is the background dataset.
+In the marginal SHAP, the contribution is calculated as 
 
-Using the marginal SHAP enables to look for contributions against different baselines, e.g., different subpopulations.
+.. math::
+    \phi_i(h, x^{(e)}) = \frac{1}{|D|} \sum_{x^{(b)} \in D} \phi(h, x^{(e)}, x^{(b)}) 
 
-As the marginal SHAP can be memory intensive, the computation is optimized in order to parallelize over the background set
-since it needs to compute an average over baseline SHAPs where every single point from background set is used as a reference.
-There is one exception - when where there is plenty of free memory, it will parallelize over the bigger frame.
+where :math:`D` is the background dataset.
+
+Using the marginal SHAP enables you to look for contributions against different baselines (for example, different subpopulations).
+
+As the marginal SHAP can be memory intensive, the computation is optimized in order to parallelize over the background set since it needs to compute an average over baseline SHAPs where every single point from the background set is used as a reference. There is one exception: when there is plenty of free memory, it will parallelize over the bigger frame.
 
 .. tabs::
    .. code-tab:: r R
   
-          # Compute Marginal SHAP, this enables looking at the contributions against different baselines, e.g., older males in this case
-          h2o.predict_contributions(model, prostate_test, background_frame=prostate_train[prostate_train$AGE > 70, ])
+          # Compute Marginal SHAP, this enables looking at the contributions against
+          # different baselines (e.g., older males in this case)
+          h2o.predict_contributions(model, 
+                                    prostate_test, 
+                                    background_frame=prostate_train[prostate_train$AGE > 70, ])
 
                    RACE      DPROS       DCAPS         PSA         VOL      GLEASON BiasTerm
           1  0.01221071  0.1442253 -0.02368839  0.28334598 -0.27244853 -0.050375786 68.63538
@@ -2870,16 +2889,23 @@ There is one exception - when where there is plenty of free memory, it will para
 
 
           # Plot SHAP summary plot:
-          h2o.shap_summary_plot(model, prostate_test, background_frame=prostate_train[prostate_train$AGE > 70, ])
+          h2o.shap_summary_plot(model, 
+                                prostate_test, 
+                                background_frame=prostate_train[prostate_train$AGE > 70, ])
 
           # Plot SHAP contributions for one instance (e.g., row 5):
-          h2o.shap_explain_row_plot(model, prostate_test, row_index = 5, background_frame=prostate_train[prostate_train$AGE > 70, ])
+          h2o.shap_explain_row_plot(model, 
+                                    prostate_test, 
+                                    row_index = 5, 
+                                    background_frame=prostate_train[prostate_train$AGE > 70, ])
 
 
    .. code-tab:: python
 
-          # Compute Marginal SHAP, this enables looking at the contributions against different baselines, e.g., older males in this case
-          model.predict_contributions(prostate_test, background_frame=prostate_train[prostate_train["AGE"] > 70, :])
+          # Compute Marginal SHAP, this enables looking at the contributions against
+          # different baselines (e.g., older males in this case)
+          model.predict_contributions(prostate_test, 
+                                      background_frame=prostate_train[prostate_train["AGE"] > 70, :])
 
                    AGE         RACE       DPROS        DCAPS          PSA          VOL     GLEASON    BiasTerm
           ------------  -----------  ----------  -----------  -----------  -----------  ----------  ----------
@@ -2897,17 +2923,36 @@ There is one exception - when where there is plenty of free memory, it will para
           [380 rows x 7 columns]
 
           # Plot SHAP summary plot:
-          model.shap_summary_plot(prostate_test, background_frame=prostate_train[prostate_train["AGE"] > 70, :])
+          model.shap_summary_plot(prostate_test, 
+                                  background_frame=prostate_train[prostate_train["AGE"] > 70, :])
 
           # Plot SHAP contributions for one instance (e.g., row 5):
-          model.shap_explain_row_plot(prostate_test, row_index=5, background_frame=prostate_train[prostate_train["AGE"] > 70, :])
+          model.shap_explain_row_plot(prostate_test, 
+                                      row_index=5, 
+                                      background_frame=prostate_train[prostate_train["AGE"] > 70, :])
 
 
-[1] S. Lundberg and S.-I. Lee, “A Unified Approach to Interpreting Model Predictions.” arXiv, Nov. 24, 2017. doi: 10.48550/arXiv.1705.07874.
-[2] H. Chen, S. M. Lundberg, and S.-I. Lee, “Explaining a series of models by propagating Shapley values,” Nat Commun, vol. 13, no. 1, Art. no. 1, Aug. 2022, doi: 10.1038/s41467-022-31384-3.
-[3] G. Laberge and Y. Pequignot, “Understanding Interventional TreeSHAP: How and Why it Works.” arXiv, Dec. 05, 2022. doi: 10.48550/arXiv.2209.15123.
-[4] H. Chen, I. C. Covert, S. M. Lundberg, and S.-I. Lee, “Algorithms to estimate Shapley value feature attributions.” arXiv, Jul. 15, 2022. Accessed: Jul. 18, 2022. [Online]. Available: http://arxiv.org/abs/2207.07605
-[5] M. Sundararajan and A. Najmi, “The many Shapley values for model explanation.” arXiv, Feb. 07, 2020. doi: 10.48550/arXiv.1908.08474.
+*References*
+
+.. _ref9:
+
+1. S. Lundberg and S.-I. Lee, “A Unified Approach to Interpreting Model Predictions.” arXiv, Nov. 24, 2017. doi: 10.48550/arXiv.1705.07874.
+
+.. _ref10:
+
+2. H. Chen, S. M. Lundberg, and S.-I. Lee, “Explaining a series of models by propagating Shapley values,” Nat Commun, vol. 13, no. 1, Art. no. 1, Aug. 2022, doi: 10.1038/s41467-022-31384-3.
+
+.. _ref11:
+
+3. G. Laberge and Y. Pequignot, “Understanding Interventional TreeSHAP: How and Why it Works.” arXiv, Dec. 05, 2022. doi: 10.48550/arXiv.2209.15123.
+
+.. _ref12:
+
+4. H. Chen, I. C. Covert, S. M. Lundberg, and S.-I. Lee, “Algorithms to estimate Shapley value feature attributions.” arXiv, Jul. 15, 2022. Accessed: Jul. 18, 2022. [Online]. Available: http://arxiv.org/abs/2207.07605
+
+.. _ref13:
+
+5. M. Sundararajan and A. Najmi, “The many Shapley values for model explanation.” arXiv, Feb. 07, 2020. doi: 10.48550/arXiv.1908.08474.
 
 
 Predict Stage Probabilities
