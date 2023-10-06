@@ -2783,7 +2783,7 @@ Let :math:`x^{(e)}` be the point for which we are calculating the contributions,
 :math:`x^{(b)}` be the baseline point,
 :math:`h(x)` be the predictive function (the model),
 :math:`Q` be the powerset of indexes of features that differ between :math:`x^{(e)}` and :math:`x^{(b)}`,
-:math:`d` be the number of features that differ between between :math:`x^{(e)}` and :math:`x^{(b)}`,
+:math:`d` be the number of features that differ between :math:`x^{(e)}` and :math:`x^{(b)}`,
 and :math:`r_i(x^{(e)}, x^{(b)}, S) = \begin{cases} x^{(e)}_i \quad \text{if}\ i \in S\\ x^{(b)}_i \quad \text{otherwise}\end{cases}`.
 
 .. math::
