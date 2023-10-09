@@ -43,7 +43,7 @@ aml_models_regression_test <- function() {
     
       expect_true(all.equal(contr0$BiasTerm, contr1$BiasTerm))
 
-      expect_true(mean(abs(as.vector(h2o.predict(model, train)) - as.vector(contr0$BiasTerm))) < ifelse(algo == "xgboost", eps, 1e-6))    
+      expect_true(mean(abs(as.vector(h2o.predict(model, train)) - as.vector(contr0$BiasTerm))) < eps)
       expect_true(max(abs(as.vector(h2o.predict(model, train)) - as.vector(contr0$BiasTerm))) < eps)
     }
 }
@@ -91,7 +91,7 @@ aml_models_binomial_test <- function() {
     
       link <- if (algo %in% c("gbm", "xgboost", "glm", "stackedensemble")) binomial()$linkinv else function(x) x
       
-      expect_true(mean(abs(as.vector(h2o.predict(model, train)[,3]) - link(as.vector(contr0$BiasTerm)))) < ifelse(algo == "xgboost", eps, 1e-6))
+      expect_true(mean(abs(as.vector(h2o.predict(model, train)[,3]) - link(as.vector(contr0$BiasTerm)))) < eps)
       expect_true(max(abs(as.vector(h2o.predict(model, train)[,3]) - link(as.vector(contr0$BiasTerm)))) < eps)
     }
 }
