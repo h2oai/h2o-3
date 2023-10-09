@@ -50,6 +50,11 @@ public class ContributionsPredictorTest {
         }
 
         @Override
+        public double[] calculateInterventionalContributions(double[] feat, double[] background, double[] out_contribs, int[] catOffsets, boolean expand) {
+            throw new RuntimeException("Not implemented here");
+        }
+
+        @Override
         public Workspace makeWorkspace() {
             return new Workspace() {
                 @Override
