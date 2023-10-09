@@ -7,7 +7,9 @@ import water.fvec.Frame;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
+
+import static hex.tree.dt.DT.getInitialFeaturesLimits;
+
 
 public class Histogram {
     private final List<FeatureBins> _featuresBins;
@@ -15,22 +17,25 @@ public class Histogram {
 
     public Histogram(Frame originData, DataFeaturesLimits conditionLimits, BinningStrategy binningStrategy) {
         _binningStrategy = binningStrategy;
+        // get real features limits where the conditions are fulfilled
+        DataFeaturesLimits featuresLimitsForConditions = getFeaturesLimitsForConditions(originData, conditionLimits);
         // call strategy to create bins for each feature separately
-        _featuresBins = IntStream.range(0, originData.numCols() - 1/*exclude the last prediction column*/)
+        _featuresBins = IntStream
+                .range(0, originData.numCols() - 1/*exclude the last prediction column*/)
                 .mapToObj(i -> new FeatureBins(
-                        _binningStrategy.createFeatureBins(originData,
-                                // get real features limits where the conditions are fulfilled
-                                getFeaturesLimitsForConditions(originData, conditionLimits), i)))
+                        _binningStrategy.createFeatureBins(originData, featuresLimitsForConditions, i),
+                        originData.vec(i).cardinality()))
                 .collect(Collectors.toList());
     }
 
 
     /**
      * Get list of feature bins (copy) - for testing.
+     *
      * @param featureIndex feature index
      * @return list of feature bins
      */
-    public List<Bin> getFeatureBins(int featureIndex) {
+    public List<AbstractBin> getFeatureBins(int featureIndex) {
         return _featuresBins.get(featureIndex).getFeatureBins();
     }
 
@@ -46,15 +51,18 @@ public class Histogram {
      */
     public static DataFeaturesLimits getFeaturesLimitsForConditions(Frame originData, DataFeaturesLimits conditionLimits) {
         FeaturesLimitsMRTask task = new FeaturesLimitsMRTask(conditionLimits == null
-                ? Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
-                .limit(originData.numCols() - 1/*exclude the last prediction column*/).toArray(double[][]::new)
+                ? getInitialFeaturesLimits(originData).toDoubles()
                 : conditionLimits.toDoubles());
         task.doAll(originData);
         return new DataFeaturesLimits(task._realFeatureLimits);
     }
 
-    public List<BinAccumulatedStatistics> calculateBinsStatisticsForFeature(int feature) {
-        return _featuresBins.get(feature).calculateBinsStatisticsForFeature();
+    public List<SplitStatistics> calculateSplitStatisticsForNumericFeature(int feature) {
+        return _featuresBins.get(feature).calculateSplitStatisticsForNumericFeature();
+    }
+
+    public List<SplitStatistics> calculateSplitStatisticsForCategoricalFeature(int feature) {
+        return _featuresBins.get(feature).calculateSplitStatisticsForCategoricalFeature();
     }
 
     public boolean isConstant(int featureIndex) {

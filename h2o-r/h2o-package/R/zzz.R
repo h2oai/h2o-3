@@ -36,8 +36,7 @@
   if (!rcurl_package_is_installed) {
     if (.Platform$OS.type == "unix") {
       # packageStartupMessage("Checking libcurl version...")
-      curl_path <- Sys.which("curl-config")
-      if (!nzchar(curl_path[[1L]]) || system2(curl_path, args = "--version") != 0L)
+      if (!nzchar(libcurlVersion()))
         stop("libcurl not found. Please install libcurl\n",
              "(version 7.14.0 or higher) from http://curl.haxx.se.\n",
              "On Linux systems you will often have to explicitly install\n",
