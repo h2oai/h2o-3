@@ -317,7 +317,11 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       Vec col = adaptFrm.vec(colId);
       if (col.isBad()) {
         throw new UnsupportedOperationException(
-                "Calculating of H statistics error: row " + adaptFrm.name(colId) + " is missing.");
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is missing.");
+      }
+      if(!col.isNumeric()) {
+        throw new UnsupportedOperationException(
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is not numeric.");
       }
     }
 
