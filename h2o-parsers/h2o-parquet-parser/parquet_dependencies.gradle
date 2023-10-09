@@ -1,14 +1,7 @@
 def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
         binding.variables.get("hadoopVersion") : defaultHadoopVersion
 
-configurations{
-    // Configuration used to get all transitive dependencies for org.apache.hadoop:hadoop-common
-    hadoopCommonExclude
-}
-
 dependencies {
-    hadoopCommonExclude("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}")
-
     api project(":h2o-core")
     api(project(":h2o-persist-hdfs")) {
         exclude group: 'ai.h2o', module: 'h2o-core'
@@ -21,15 +14,6 @@ dependencies {
     api("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}")
 
 
-    api("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {
-        // we can't use transitive=false so we need to exclude the dependencies manually
-        configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().each {
-            if (it.moduleVersion.id.group != "org.apache.hadoop" && it.moduleVersion.id.module.name != "hadoop-common") {
-                exclude group: it.moduleVersion.id.group, module: it.moduleVersion.id.module.name
-            }
-        }
-    }
-    implementation("org.apache.hadoop:hadoop-mapreduce-client-core:${parquetHadoopVersion}") {
-        transitive = false
-    }
+    compileOnly("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}")
+    testImplementation("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}")
 }

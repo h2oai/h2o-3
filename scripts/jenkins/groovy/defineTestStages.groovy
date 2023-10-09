@@ -42,9 +42,9 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.9 Smoke', target: 'test-py-smoke', pythonVersion: '3.9',timeoutValue: 8,
+      stageName: 'Py3.11 Smoke', target: 'test-py-smoke', pythonVersion: '3.11', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],      
+    ],
     [
       stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
@@ -117,7 +117,15 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.11 Small', target: 'test-pyunit-small', pythonVersion: '3.11',
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -440,7 +448,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
-      timeoutValue: 160, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 300, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
@@ -509,10 +517,6 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py3.6 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.6',
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -529,24 +533,20 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.9 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.9',
+      stageName: 'Py3.11 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.11',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.9 Small', target: 'test-pyunit-small', pythonVersion: '3.9',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.9 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.9',
+      stageName: 'Py3.11 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.11',
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.9 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.9',
+      stageName: 'Py3.11 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.11',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.9 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.9',
-      timeoutValue: 170, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      stageName: 'Py3.11 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.11',
+      timeoutValue: 300, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
@@ -589,7 +589,8 @@ def call(final pipelineContext) {
         version: distribution.version,
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
-        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt'
+        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt',
+        bundledS3FileSystems: 's3a,s3n'
       ], 
       pythonVersion: '3.6',
       customDockerArgs: [ '--privileged' ],
@@ -599,6 +600,7 @@ def call(final pipelineContext) {
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
+    standaloneStage.customData.bundledS3FileSystems = 's3a'
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
@@ -672,10 +674,12 @@ def call(final pipelineContext) {
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
+    standaloneStage.customData.bundledS3FileSystems = 's3a'
 
     def standaloneKeytabStage = evaluate(stageTemplate.inspect())
     standaloneKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE KEYTAB"
     standaloneKeytabStage.customData.mode = 'STANDALONE_KEYTAB'
+    standaloneKeytabStage.customData.bundledS3FileSystems = 's3a'
 
     def standaloneDriverKeytabStage = evaluate(stageTemplate.inspect())
     standaloneDriverKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - DRIVER KEYTAB"

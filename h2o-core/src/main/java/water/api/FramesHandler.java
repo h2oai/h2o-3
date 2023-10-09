@@ -252,7 +252,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
       if (s.parallel) {
         Log.warn("Parallel export to a single file is not supported for parquet format! Export will continue with a parquet-specific setup.");
       }
-      s.job = new JobV3(Frame.exportParquet(fr, s.path, s.force, s.compression));
+      s.job = new JobV3(Frame.exportParquet(fr, s.path, s.force, s.compression, s.write_checksum));
     } else {
       Frame.CSVStreamParams csvParms = new Frame.CSVStreamParams()
               .setSeparator(s.separator)

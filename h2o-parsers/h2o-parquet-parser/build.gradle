@@ -6,6 +6,9 @@ description = "H2O Parquet Parser"
 dependencies {
   testImplementation project(":h2o-test-support")
   testImplementation project(":h2o-parquet-parser-tests")
+  testImplementation("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
+    transitive = false
+  }
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

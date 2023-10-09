@@ -25,7 +25,7 @@ test.export.file <- function(parts) {
   dname <- file.path(sandbox(), fname)
 
   Log.info("Exporting File...")
-  h2o.exportFile(mypred, dname, parts = parts)
+  h2o.exportFile(mypred, dname, parts = parts, force = TRUE)
 
   Log.info("Comparing file with R...")
   rfiles <- ifelse(parts > 1, list.files(dname, full.names = TRUE), dname)
@@ -42,10 +42,14 @@ test.export.file <- function(parts) {
   print(head(H.pred))
 
   expect_equal(R.pred, H.pred)
+  return(dname)
 }
 
-test.export.file.single <- function() test.export.file(1)
-test.export.file.multipart <- function() test.export.file(2)
+test.export.file.csv.single <- function() test.export.file(1)
+test.export.file.csv.multipart <- function() test.export.file(2)
 
-doTest("Testing Exporting Files (single file)", test.export.file.single)
-doTest("Testing Exporting Files (part files)", test.export.file.multipart)
+doSuite("Testing Exporting Files CSV", makeSuite(
+  test.export.file.csv.single,
+  test.export.file.csv.multipart,
+))
+
