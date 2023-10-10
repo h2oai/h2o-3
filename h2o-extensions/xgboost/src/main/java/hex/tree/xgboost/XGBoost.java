@@ -128,6 +128,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
     }
+    if (H2O.ARGS.off_heap_memory_ratio > 0) {
+      MemoryCheck.Report report = MemoryCheck.runCheck(H2O.ARGS.off_heap_memory_ratio);
+      if (!report.isOffHeapRequirementMet()) {
+        warn("XGBoost", "There doesn't seem to be enough memory available for XGBoost model "+
+                "training (off_heap_memory_ratio=" + H2O.ARGS.off_heap_memory_ratio + "), " +
+                "training XGBoost models is not advised. " +
+                "You can set `max_mem_size` parameter in the h2o.init call to force H2O to use less memory. " +
+                "General recommendation is to keep 1/3 of available memory for XGBoost. " +
+                "Details: " + report);
+      }
+    }
 
     if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
       Value cv = DKV.get(_parms._checkpoint);
