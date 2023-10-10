@@ -19,6 +19,8 @@ import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
@@ -32,9 +34,48 @@ import static water.H2O.technote;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
-  @Override public ToEigenVec getToEigenVec() {
+public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningModelOutput>
+        implements Model.DeepFeatures, Model.Contributions {
+  @Override
+  public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    if (null == backgroundFrame)
+      throw H2O.unimpl("DeepLearning supports contribution calculation only with a background frame.");
+    Log.info("Starting contributions calculation for "+this._key+"...");
+    List<Frame> tmpFrames = new LinkedList<>();
+    Frame adaptedFrame = null;
+    Frame adaptedBgFrame = null;
+    try {
+      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+      DKV.put(adaptedBgFrame);
+      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      DKV.put(adaptedFrame);
+      DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(this,
+              adaptedFrame._key,
+              adaptedBgFrame._key,
+              options._outputPerReference,
+              ContributionsOutputFormat.Compact.equals(options._outputFormat)
+                      ? model_info.data_info().coefOriginalColumnIndices(adaptedFrame)
+                      : null,
+              options._outputSpace);
+
+      String[] cols = ContributionsOutputFormat.Compact.equals(options._outputFormat)
+              ? model_info.data_info.coefOriginalNames(adaptedFrame)
+              : model_info.data_info.coefNames();
+      String[] colNames = new String[cols.length + 1]; // +1 for bias term
+
+      System.arraycopy(cols, 0, colNames, 0, colNames.length - 1);
+      colNames[colNames.length - 1] = "BiasTerm";
+      return contributions.runAndGetOutput(j, destination_key, colNames);
+    } finally {
+      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
+      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
+      Log.info("Finished contributions calculation for "+this._key+"...");
+    }
   }
 
   /**
