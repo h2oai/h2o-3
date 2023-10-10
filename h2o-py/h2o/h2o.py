@@ -338,7 +338,7 @@ def _import_multi(paths, pattern):
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, skipped_columns=None, quotechar=None, escapechar=None):
+                na_strings=None, skipped_columns=None, force_col_types=False, quotechar=None, escapechar=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -379,6 +379,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param force_col_types: If True, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Defaults to False.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
     :param escapechar: (Optional) One ASCII character used to escape other characters.
 
@@ -407,11 +408,11 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     if path.startswith("~"):
         path = os.path.expanduser(path)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
-                                    quotechar, escapechar)
+                                    force_col_types, quotechar, escapechar)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
+                na_strings=None, pattern=None, skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None,
                 partition_by=None, quotechar=None, escapechar=None):
     """
     Import files into an H2O cluster. The default behavior is to pass-through to the parse phase automatically.
@@ -461,6 +462,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
         directory.  
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
+    :param force_col_types:  If true, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Defaults to false."
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
     :param escapechar: (Optional) One ASCII character used to escape other characters.
@@ -497,7 +499,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                                        skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
 
 
 def load_grid(grid_file_path, load_params_references=False):
@@ -739,8 +741,8 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
-                column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None, quotechar=None, escapechar=None):
+                column_types=None, na_strings=None, skipped_columns=None, force_col_types=False, 
+                custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -787,6 +789,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param force_col_types:  If True, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Defaults to False.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param partition_by: A list of columns the dataset has been partitioned by. None by default.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
@@ -947,6 +950,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
     j["column_types"] = list(map(quoted, j["column_types"]))
+    j["force_col_types"] = force_col_types
     return j
 
 

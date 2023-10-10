@@ -1,5 +1,6 @@
 package water.parser.parquet;
 
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -7,6 +8,8 @@ import water.fvec.ByteVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.*;
+
+import static water.parser.parquet.ParquetParser.extractColumnTypes;
 
 /**
  * Parquet parser provider.
@@ -53,6 +56,8 @@ public class ParquetParserProvider extends BinaryParserProvider {
     // override incorrect type mappings (using the MessageFormat of the first file)
     Object frameOrVec = DKV.getGet(inputs[0]);
     ByteVec vec = (ByteVec) (frameOrVec instanceof Frame ? ((Frame) frameOrVec).vec(0) : frameOrVec);
+    if (setup.getForceColTypes() && vec != null)
+      setup.setParquetColumnTypes(extractColumnTypes(VecParquetReader.readFooter(VecParquetReader.readFooterAsBytes(vec), ParquetMetadataConverter.NO_FILTER)));
     byte[] requestedTypes = setup.getColumnTypes();
     byte[] types = ParquetParser.correctTypeConversions(vec, requestedTypes);
     setup.setColumnTypes(types);

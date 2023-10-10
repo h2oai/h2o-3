@@ -111,6 +111,7 @@ public class Example {
                                                                   null,
                                                                   null,
                                                                   (byte)'\\',
+                                                                false,
                                                                 null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
@@ -129,6 +130,7 @@ public class Example {
                                                    parseSetupBody.columnNames,
                                                    parseSetupBody.columnTypes,
                                                    parseSetupBody.skippedColumns,
+                                                   parseSetupBody.forceColTypes,
                                                    null, // domains
                                                    parseSetupBody.naStrings,
                                                    parseSetupBody.chunkSize,

@@ -90,7 +90,7 @@ class H2OFrame(Keyed, H2ODisplay):
     # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
-                 column_names=None, column_types=None, na_strings=None, skipped_columns=None):
+                 column_names=None, column_types=None, na_strings=None, skipped_columns=None, force_col_types=False):
     
         coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                     "categorical", "factor", "enum", "time")
@@ -108,7 +108,7 @@ class H2OFrame(Keyed, H2ODisplay):
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if python_obj is not None:
             self._upload_python_object(python_obj, destination_frame, header, separator,
-                                       column_names, column_types, na_strings, skipped_columns)
+                                       column_names, column_types, na_strings, skipped_columns, force_col_types)
 
     @staticmethod
     def _expr(expr, cache=None):
@@ -120,7 +120,7 @@ class H2OFrame(Keyed, H2ODisplay):
         return fr
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
-                              column_names=None, column_types=None, na_strings=None, skipped_columns=None):
+                              column_names=None, column_types=None, na_strings=None, skipped_columns=None, force_col_types=False):
         assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         if is_type(python_obj, scipy_sparse):
             self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
@@ -148,7 +148,8 @@ class H2OFrame(Keyed, H2ODisplay):
         else:
             csv_writer.writerows(data_to_write)
         tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings, skipped_columns)
+        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings,
+                           skipped_columns, force_col_types)
         os.remove(tmp_path)  # delete the tmp file
 
     def _upload_sparse_matrix(self, matrix, destination_frame=None):
@@ -440,27 +441,28 @@ class H2OFrame(Keyed, H2ODisplay):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
+                      skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None,
+                      quotechar=None, escapechar=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. https://github.com/h2oai/h2o-3/issues/12573
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                    skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None,
-                      quotechar=None, escapechar=None):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, 
+                      skipped_columns=None, force_col_types=False, quotechar=None, escapechar=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
         self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns,
-                    quotechar=quotechar, escapechar=escapechar)
+                    force_col_types, quotechar=quotechar, escapechar=escapechar)
         return self
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
+               na_strings=None, skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
                escapechar=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                                skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self._parse_raw(setup)
 
     def _parse_raw(self, setup):
@@ -475,6 +477,7 @@ class H2OFrame(Keyed, H2ODisplay):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
+             "force_col_types": False,
              "custom_non_data_line_markers": None,
              "partition_by": None,
              "single_quotes": None,

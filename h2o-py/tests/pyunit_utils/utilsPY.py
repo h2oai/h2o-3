@@ -1883,7 +1883,15 @@ def equal_two_dicts(dict1, dict2, tolerance=1e-6, throwError=True):
                     assert False, "Dict 1 value {0} and Dict 2 value {1} do not agree.".format(dict1[key1], dict2[key1])
                 else:
                     return False
-                
+
+def equal_two_dicts_string(dict1, dict2, throwError=True):
+    size1 = len(dict1)
+    assert size1 == len(dict2), "Dicts are different sizes: dict1 size: {0}, dict2 size:{1}".format(size1, len(dict2))
+    for key1 in dict1.keys():
+        if throwError:
+            assert dict1[key1] == dict2[key1], "Key: {0}, dict 1 value: {1}, dict 2 value: {2}".format(key1, dict1[key1], dict2[key1])
+        else:
+            return False
                 
 def equal_two_arrays(array1, array2, eps=1e-6, tolerance=1e-6, throw_error=True):
     """
