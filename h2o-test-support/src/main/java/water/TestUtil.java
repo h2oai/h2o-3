@@ -910,6 +910,48 @@ public class TestUtil extends Iced {
 
   }
 
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, 
+                                    ParseSetupTransformer transformer, int[] skippedColumns, boolean force_col_types) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
+
+    Key[] res = {nfs._key};
+
+    // create new parseSetup in order to store our na_string
+    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO, (byte) ',', false,
+            check_header, 0, null, null, null, null, null, null, null));
+    if (skippedColumns != null) {
+      p.setSkippedColumns(skippedColumns);
+      p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
+    }
+    
+    if (force_col_types)  // only useful for parquet parsers here
+      p.setForceColTypes(true);
+
+    // add the na_strings into p.
+    if (na_string != null) {
+      int column_number = p.getColumnTypes().length;
+      int na_length = na_string.length() - 1;
+
+      String[][] na_strings = new String[column_number][na_length + 1];
+
+      for (int index = 0; index < column_number; index++) {
+        na_strings[index][na_length] = na_string;
+      }
+
+      p.setNAStrings(na_strings);
+    }
+
+    if (column_types != null)
+      p.setColumnTypes(column_types);
+
+    if (transformer != null)
+      p = transformer.transformSetup(p);
+
+    return ParseDataset.parse(Key.make(), res, true, p);
+
+  }
+
+
   /**
    * @deprecated use {@link #parseTestFolder(String)} instead
    * <p>

@@ -1,6 +1,7 @@
 package water.parser.parquet;
 
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.H2O;
@@ -8,13 +9,15 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.FileVec;
+import water.fvec.Frame;
 import water.persist.VecDataInputStream;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
@@ -41,6 +44,18 @@ public class VecParquetReaderTest extends TestUtil {
                     assertNull("Chunk #" + cidx + " should not be cached on " + H2O.SELF, H2O.STORE.get(ck));
                 }
             }
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test public void testParquetForceColTypes() {
+        Scope.enter();
+        try {
+            final Frame data1 = parseTestFile("smalldata/parser/parquet/df.parquet", null, 1,
+                    null, null, null, true);
+            Scope.track(data1);
+            Assert.assertFalse(data1.vec(1).isInt());
         } finally {
             Scope.exit();
         }
