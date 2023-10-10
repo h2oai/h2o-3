@@ -173,7 +173,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False,
+                              background_frame=None, output_space=False, output_per_reference=False):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
         imported MOJOs).
@@ -202,6 +203,15 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             - If ``top_n<0 && bottom_n<0`` then sort all SHAP values in descending order
             
         :param compare_abs: True to compare absolute values of contributions
+        :param background_frame: Optional frame, that is used as the source of baselines for
+                                 the baseline SHAP (when output_per_reference == True) or for
+                                 the marginal SHAP (when output_per_reference == False).
+        :param output_space: If True, linearly scale the contributions so that they sum up to the prediction.
+                             NOTE: This will result only in approximate SHAP values even if the model supports exact SHAP calculation.
+                             NOTE: This will not have any effect if the estimator doesn't use a link function.
+        :param output_per_reference: If True, return baseline SHAP, i.e., contribution for each data point for each reference from the background_frame.
+                                     If False, return TreeSHAP if no background_frame is provided, or marginal SHAP if background frame is provided.
+                                     Can be used only with background_frame.
         :returns: A new H2OFrame made of feature contributions.
 
         :examples:
@@ -225,9 +235,12 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         >>> m.predict_contributions(fr, top_n=-1)
         >>> # Compute SHAP and pick the top two highest and top two lowest
         >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
+        >>> # Compute Marginal SHAP, this enables looking at the contributions against different baselines, e.g., older people in the following example
+        >>> m.predict_contributions(fr, background_frame=fr[fr["AGE"] > 75, :])
         """
         if has_extension(self, 'Contributions'):
-            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
+            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs,
+                                               background_frame, output_space, output_per_reference)
         err_msg = "This model doesn't support calculation of feature contributions."
         if has_extension(self, 'StandardCoef'):
             err_msg += " When features are independent, you can use the coef() method to get coefficients"

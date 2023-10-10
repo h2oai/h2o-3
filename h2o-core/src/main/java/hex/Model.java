@@ -137,7 +137,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public int _topN;
       public int _bottomN;
       public boolean _compareAbs;
-
+      public boolean _outputSpace; // Used only iff SHAP is in link space
+      public boolean _outputPerReference; // If T, return contributions against each background sample (aka reference), i.e. phi(feature, x, bg), otherwise return contributions averaged over the background sample (phi(feature, x) = E_{bg} phi(feature, x, bg))
+      
+      
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
         return this;
@@ -158,18 +161,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return this;
       }
 
+      public ContributionsOptions setOutputSpace(boolean outputSpace) {
+        _outputSpace = outputSpace;
+        return this;
+      }
+      
+      
+      public ContributionsOptions setOutputPerReference(boolean perReference) {
+        _outputPerReference = perReference;
+        return this;
+      }
       public boolean isSortingRequired() {
         return _topN != 0 || _bottomN != 0;
       }
     }
 
-    Frame scoreContributions(Frame frame, Key<Frame> destination_key);
+    default Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+      throw H2O.unimpl("Calculating SHAP is not supported.");
+    }
 
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
       return scoreContributions(frame, destination_key, j, new ContributionsOptions());
     }
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
       return scoreContributions(frame, destination_key);
+    }
+
+    default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+      if (backgroundFrame != null) {
+        throw H2O.unimpl("Calculating SHAP with background frame is not supported for this model.");
+      }
+      return scoreContributions(frame, destination_key, j, options);
     }
 
     default void composeScoreContributionTaskMetadata(final String[] names, final byte[] types, final String[][] domains, final String[] originalFrameNames, final Contributions.ContributionsOptions options) {
@@ -205,6 +227,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       names[outputSize] = "BiasTerm";
       types[outputSize] = Vec.T_NUM;
       domains[outputSize] = null;
+    }
+    
+    default long scoreContributionsWorkEstimate(Frame frame, Frame backgroundFrame, boolean outputPerReference) {
+      long frameNRows = frame.numRows();
+      long bgFrameNRows = backgroundFrame.numRows();
+      long workAmount = Math.max(frameNRows, bgFrameNRows); // Maps over the bigger frame while the smaller is sent across the cluster
+      if (!outputPerReference) 
+        workAmount +=  frameNRows * bgFrameNRows; // Aggregating over the baselines
+      return workAmount;
     }
   }
 

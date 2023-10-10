@@ -4,6 +4,7 @@ options = dict(
         'h2o.model.extensions.ScoringHistoryDL',
         'h2o.model.extensions.VariableImportance',
         'h2o.model.extensions.Fairness',
+        'h2o.model.extensions.Contributions',
     ],
 )
 
