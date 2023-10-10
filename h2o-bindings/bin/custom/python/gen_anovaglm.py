@@ -61,6 +61,7 @@ examples = dict(
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
 >>> x = ['AGE','VOL','DCAPS']
 >>> y = 'CAPSULE'
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip", alpha=0.5)
 """,
     balance_classes="""
 >>> from h2o.estimators import H2OANOVAGLMEstimator
