@@ -1,17 +1,12 @@
-from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2OGradientBoostingEstimator
-import numpy as np
-import pandas as pd
 from h2o.exceptions import H2OServerError
-from pyunit_h_missing_values import prepare_data
-
 
 def h_stats_on_synthetic_data_with_categorical_variables():
-    df, x, target = prepare_data()
+    df, x, target = pyunit_utils.prepare_data()
     print(df.head())
 
     # Create the data frame

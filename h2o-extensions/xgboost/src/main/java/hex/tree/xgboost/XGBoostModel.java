@@ -993,6 +993,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
+    // remove non-feature columns
+    adaptFrm.remove(_parms._response_column);
+    adaptFrm.remove(_parms._fold_column);
+    adaptFrm.remove(_parms._weights_column);
+    adaptFrm.remove(_parms._offset_column);  
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
       Vec col = adaptFrm.vec(colId);
