@@ -3460,6 +3460,8 @@ h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree
 #' Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in h2o gbm and xgb models.
 #' H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a 
 #' stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
+#'
+#' This statistic can be calculated only for numerical variables. Missing values are supported.
 #' 
 #' See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.*
 #' **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.

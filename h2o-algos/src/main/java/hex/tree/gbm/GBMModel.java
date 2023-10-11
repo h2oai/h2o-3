@@ -11,7 +11,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -316,13 +315,17 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
-    Frame adaptFrm = removeSpecialColumns(frame);
+    Frame adaptFrm = removeSpecialNNonNumericColumns(frame);
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
       Vec col = adaptFrm.vec(colId);
       if (col.isBad()) {
         throw new UnsupportedOperationException(
-                "Calculating of H statistics error: row " + adaptFrm.name(colId) + " is missing.");
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is missing.");
+      }
+      if(!col.isNumeric()) {
+        throw new UnsupportedOperationException(
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is not numeric.");
       }
     }
 

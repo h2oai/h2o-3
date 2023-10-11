@@ -4680,3 +4680,65 @@ def checkLogWarning(warning_phrase, wantWarnMessage=False):
                                "received but are not found.".format(warning_phrase)
     else:
         assert numWarning == 0, "there should be no warning messages ({0}) found but are found.".format(warning_phrase)
+
+
+def prepare_data():
+    """
+    Generate data with target variable: 
+
+    p(Y) = 1/ (1 + exp(-(-3 + 0.5X1 + 0.5X2 - 0.5X3 + 2X2X3)))
+    
+    insert Nan into x3
+    
+    make x4 and x5 random binomial and categorical
+
+    :return: Dataframe, x, and y
+    """
+
+    # Setup the simulation
+    n = 100  # Number of records in the simulated data
+
+    # Simulate four predictors
+    np.random.seed(0)
+    x1 = np.random.normal(0, 1 ,size=n)
+    np.random.seed(1)
+    x2 = np.random.normal(0, 1, size=n)
+    np.random.seed(2)
+    x3 = np.random.normal(0, 1, size=n)
+    np.random.seed(3)
+    x4 = np.random.binomial(1, 0.5, size=n)
+    np.random.seed(4)
+    x5 = np.random.binomial(1, 0.5, size=n)
+
+    # Simulate a ranuni for assigning Y
+    np.random.seed(5)
+    r = np.random.uniform(0, 1, size=n)
+
+    # Put values in dataframe
+    df = pd.DataFrame( {'id': range(1, n+1), 'x1': x1, 'x2': x2, 'x3': x3, 'x4': x4, 'x5': x5, 'r': r})
+
+    # Define the linear predictor
+    b0 = -3
+    b1 = 0.5
+    b2 = 0.5
+    b3 = -0.5
+    b12 = 0
+    b13 = 0
+    b23 = 2
+    df['LP'] = b0 + b1*df['x1'] + b2*df['x2'] + b3*df['x3'] + b12*df['x1']*df['x2'] + b13*df['x1']*df['x3'] + b23*df['x2']*df['x3']
+
+    # Convert it to a probability
+    df['P'] = 1/(1+np.exp(-df['LP']))
+
+    # Convert it to a binary target
+    df['Y'] = (df['r']<df['P']).astype(int)
+
+    # Insert Nan into x3
+    df.loc[0, 'x3'] = np.nan
+    df.loc[2, 'x3'] = np.nan
+
+    # Define target and predictors
+    x = ['x1', 'x2', 'x3', 'x4', 'x5']
+    y = 'Y'
+
+    return df, x, y
