@@ -2,21 +2,19 @@ package hex.tree;
 
 import hex.ContributionsWithBackgroundFrameTask;
 import hex.DistributionFactory;
-import hex.genmodel.algos.tree.SharedTreeNode;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.Model;
 import hex.genmodel.algos.tree.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import hex.Model;
-import water.Key;
 
 public abstract class SharedTreeModelWithContributions<
         M extends SharedTreeModel<M, P, O>,
@@ -41,6 +39,17 @@ public abstract class SharedTreeModelWithContributions<
     adaptFrm.remove(_parms._fold_column);
     adaptFrm.remove(_parms._weights_column);
     adaptFrm.remove(_parms._offset_column);
+    return adaptFrm;
+  }
+
+  protected Frame removeSpecialNNonNumericColumns(Frame frame) {
+    Frame adaptFrm = removeSpecialColumns(frame);
+    // remove non-numeric columns
+    int numCols = adaptFrm.numCols()-1;
+    for (int index=numCols; index>=0; index--) {
+      if (!adaptFrm.vec(index).isNumeric())
+        adaptFrm.remove(index);
+    }
     return adaptFrm;
   }
 

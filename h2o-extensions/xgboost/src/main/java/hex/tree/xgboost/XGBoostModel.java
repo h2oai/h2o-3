@@ -989,15 +989,27 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   Predictor makePredictor(boolean scoringOnly) {
     return PredictorFactory.makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes(), scoringOnly);
   }
-  @Override
-  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+
+  protected Frame removeSpecialNNonNumericColumns(Frame frame) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     // remove non-feature columns
     adaptFrm.remove(_parms._response_column);
     adaptFrm.remove(_parms._fold_column);
     adaptFrm.remove(_parms._weights_column);
-    adaptFrm.remove(_parms._offset_column);  
+    adaptFrm.remove(_parms._offset_column);
+    // remove non-numeric columns
+    int numCols = adaptFrm.numCols()-1;
+    for (int index=numCols; index>=0; index--) {
+      if (!adaptFrm.vec(index).isNumeric())
+        adaptFrm.remove(index);
+    }
+    return adaptFrm;
+  }
+  
+  @Override
+  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    Frame adaptFrm = removeSpecialNNonNumericColumns(frame);
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
       Vec col = adaptFrm.vec(colId);
