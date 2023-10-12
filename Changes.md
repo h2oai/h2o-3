@@ -33,6 +33,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index
 - [[#6698]](https://github.com/h2oai/h2o-3/issues/6698) - Implemented Shapley values support for ensemble models.
 
 #### Security
+- [[#15815]](https://github.com/h2oai/h2o-3/issues/15815) - Addressed CVE-2023-36478 by upgrading Jetty server.
 - [[#15805]](https://github.com/h2oai/h2o-3/issues/15805) - Addressed CVE-2023-42503 by upgrading commons-compress to 1.24.0 in Standalone Jars.
 - [[#15802]](https://github.com/h2oai/h2o-3/issues/15802) - Addressed CVE-2023-39410 by upgrading org.apache.avro:avro to 1.11.3.
 - [[#15799]](https://github.com/h2oai/h2o-3/issues/15799) - Addressed CVE-2023-43642 by upgrading snappy-java in Standalone Jars to 1.1.10.5.
@@ -43,7 +44,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index
 - [[#15750]](https://github.com/h2oai/h2o-3/issues/15750) - Addressed CVE-2023-1370 by upgrading json-smart to 2.4.10 in Main standalone Jar.
 - [[#15746]](https://github.com/h2oai/h2o-3/issues/15746) - Addressed CVE-2023-1436, CVE-2022-40149, CVE-2022-40150, CVE-2022-45685, and CVE-2022-45693 by upgrading org.codehaus.jettison:jettison to 1.5.4 in Main Standalone Jar.
 - [[#15744]](https://github.com/h2oai/h2o-3/issues/15744) - Addressed CVE-2017-12197 by upgrading libpam4j to 1.11.
-- [[#15706]](https://github.com/h2oai/h2o-3/issues/15706) - Addressed CVE-2023-40167 and CVE-2023-36479 by upgrading the Jetty server to 9.4.51.v20230217.
+- [[#15706]](https://github.com/h2oai/h2o-3/issues/15706) - Addressed CVE-2023-40167 and CVE-2023-36479 by upgrading the Jetty server.
+- [[#15470]](https://github.com/h2oai/h2o-3/issues/15470) - Upgraded Hadoop Libraries in Main Standalone Jar to address high and critical vulnerabilities.
 
 ### 3.42.0.4 - 10/3/2023
 
