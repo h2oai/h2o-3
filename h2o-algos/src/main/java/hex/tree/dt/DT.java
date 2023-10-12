@@ -128,6 +128,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
 
     private static double calculateCriterionOfSplit(SplitStatistics binStatistics) {
+        // if(binStatistics.() == 2) // todo - fix bin statistics first, they are binomial-only now
         return binStatistics.binaryEntropy();
     }
 
@@ -139,7 +140,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      */
     private int selectDecisionValue(int[] countsByClass) {
         if (_nclass == 1) {
-            return countsByClass[0];
+            return 0;
         }
         int currentMaxClass = 0;
         int currentMax = countsByClass[currentMaxClass];
@@ -205,11 +206,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         // compute node depth
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
         // stop building from this node, the node will be a leaf
-        if ((nodeDepth >= _parms._max_depth)
-                || (countsByClass[0] <= _min_rows)
-                || (countsByClass[1] <= _min_rows)
-//                || zeroRatio > 0.999 || zeroRatio < 0.001
-        ) {
+        if ((nodeDepth >= _parms._max_depth) || Arrays.stream(countsByClass).anyMatch(c -> c <= _min_rows)) {
             // add imaginary left and right children to imitate valid tree structure
             // left child
             limitsQueue.add(null);
@@ -365,7 +362,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     public ModelCategory[] can_build() {
         return new ModelCategory[]{
                 ModelCategory.Binomial,
-//                ModelCategory.Multinomial,
+                ModelCategory.Multinomial,
 //                                            ModelCategory.Ordinal,
 //                ModelCategory.Regression
         };
