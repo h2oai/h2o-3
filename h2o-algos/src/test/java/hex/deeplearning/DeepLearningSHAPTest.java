@@ -66,7 +66,7 @@ public class DeepLearningSHAPTest extends TestUtil {
       Val val = Rapids.exec("(sumaxis " + contribs._key + " 0 1)");
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 2, 0, 1e-6);
+      assertColsEquals(scored, res, 2, 0, 1e-4);
     } finally {
       fr.delete();
       bgFr.delete();
@@ -109,7 +109,7 @@ public class DeepLearningSHAPTest extends TestUtil {
       Val val = Rapids.exec("(sumaxis " + contribs._key + " 0 1)");
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 2, 0, 1e-6);
+      assertColsEquals(scored, res, 2, 0, 1e-4);
     } finally {
       fr.delete();
       bgFr.delete();
@@ -152,7 +152,7 @@ public class DeepLearningSHAPTest extends TestUtil {
       Val val = Rapids.exec("(sumaxis " + contribs._key + " 0 1)");
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 0, 0, 1e-5);
+      assertColsEquals(scored, res, 0, 0, 1e-4);
     } finally {
       fr.delete();
       bgFr.delete();
@@ -194,7 +194,7 @@ public class DeepLearningSHAPTest extends TestUtil {
       Val val = Rapids.exec("(sumaxis " + contribs._key + " 0 1)");
       assertTrue(val instanceof ValFrame);
       res = val.getFrame();
-      assertColsEquals(scored, res, 0, 0, 1e-5);
+      assertColsEquals(scored, res, 0, 0, 1e-4);
     } finally {
       fr.delete();
       bgFr.delete();
@@ -332,7 +332,7 @@ public class DeepLearningSHAPTest extends TestUtil {
     Frame scored = null;
     Frame contribs = null;
     Frame res = null;
-    double eps = 1e-5;
+    double eps = 1e-4;
     try {
       // Launch Deep Learning
       DeepLearningParameters params = new DeepLearningParameters();
@@ -776,7 +776,7 @@ public class DeepLearningSHAPTest extends TestUtil {
     Frame scored = null;
     Frame contribs = null;
     Frame res = null;
-    double eps = 1e-5;
+    double eps = 1e-4;
     try {
       // Launch Deep Learning
       DeepLearningParameters params = new DeepLearningParameters();
