@@ -805,12 +805,12 @@ def test_fairness_plots():
     for c in [y]+protected_columns:
         data[c] = data[c].asfactor()
 
-    train, test = data.split_frame([0.98])
+    train, test = data.split_frame([0.98], seed=123456)
     print(test.nrow)
     reference = ["1", "2", "2"]  # university educated single man
     favorable_class = "0"  # no default next month
 
-    aml = H2OAutoML(max_models=12)
+    aml = H2OAutoML(max_models=12, seed=123456)
     aml.train(x, y, train)
 
     models = [h2o.get_model(m[0]) for m in aml.leaderboard["model_id"].as_data_frame(False, False)]
