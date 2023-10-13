@@ -318,8 +318,12 @@ public class StackedEnsembleModel
               !ContributionsWithBackgroundFrameTask.enoughMinMemory(numOfUsefulBaseModels() *
                       ContributionsWithBackgroundFrameTask.estimatePerNodeMinimalMemory(frame.numCols(), frame, backgroundFrame))) // or we have no other choice due to memory
         return SplitToChunksApplyCombine.splitApplyCombine(frame, fun, destination_key);
-      else
-        return fun.apply(frame);
+      else {
+        Frame result = fun.apply(frame);
+        result._key = destination_key;
+        DKV.put(result);
+        return result;
+      }
     } finally {
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
