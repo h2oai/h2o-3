@@ -10,11 +10,10 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.TwoDimTable;
-import water.util.fp.Function;
+import water.util.fp.Function2;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -297,7 +296,7 @@ public class StackedEnsembleModel
       if (options._outputPerReference)
         return baseLineContributions(frame, destination_key, j , options, backgroundFrame);
       
-      Function<Frame, Frame> fun = subFrame -> {
+      Function2<Frame, Boolean, Frame> fun = (subFrame, resultIsFinalFrame) -> {
         String[] columns = null;
         String[] colsWithBiasTerm = null;
         Frame indivContribs = baseLineContributions(subFrame,  Key.make(destination_key + "_individual_contribs_for_subframe_"+subFrame._key), j, options, backgroundFrame);
@@ -309,7 +308,10 @@ public class StackedEnsembleModel
           return new ContributionsMeanAggregator(j,(int) subFrame.numRows(), columns.length + 1 /* (bias term) */, (int)backgroundFrame.numRows())
                   .withPostMapAction(JobUpdatePostMap.forJob(j))
                   .doAll(columns.length + 1, Vec.T_NUM, indivContribs)
-                  .outputFrame(Key.make(destination_key + "_for_subframe_"+subFrame._key), colsWithBiasTerm, null);
+                  .outputFrame(resultIsFinalFrame
+                          ? destination_key // no subframes -> one result with the destination key
+                          : Key.make(destination_key + "_for_subframe_"+subFrame._key),
+                          colsWithBiasTerm, null);
         } finally {
           indivContribs.delete(true);
         }
@@ -317,10 +319,9 @@ public class StackedEnsembleModel
       if (backgroundFrame.anyVec().nChunks() > H2O.CLOUD._memary.length || // could be map-reduced over the bg frame 
               !ContributionsWithBackgroundFrameTask.enoughMinMemory(numOfUsefulBaseModels() *
                       ContributionsWithBackgroundFrameTask.estimatePerNodeMinimalMemory(frame.numCols(), frame, backgroundFrame))) // or we have no other choice due to memory
-        return SplitToChunksApplyCombine.splitApplyCombine(frame, fun, destination_key);
+        return SplitToChunksApplyCombine.splitApplyCombine(frame, (fr -> fun.apply(fr, false)), destination_key);
       else {
-        Frame result = fun.apply(frame);
-        result._key = destination_key;
+        Frame result = fun.apply(frame, true);
         DKV.put(result);
         return result;
       }
