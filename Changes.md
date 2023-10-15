@@ -2,6 +2,51 @@
 
 ## H2O
 
+### 3.44.0.1 - 10/16/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index.html</a>
+
+#### Bug
+- [[#15743]](https://github.com/h2oai/h2o-3/issues/15743) - Fixed`shap_summary_plot` for H2O Explainability Interface failing when one column was full of zeroes or NaN values.
+- [[#15669]](https://github.com/h2oai/h2o-3/issues/15669) - Fixed R package to ensure it downloads the fixed version of H2O.
+- [[#15651]](https://github.com/h2oai/h2o-3/issues/15651) - Upgraded the minimal supported version of `ggplot2` to 3.3.0 to remove the deprecated dot-dot notation.
+
+#### Improvement
+- [[#15801]](https://github.com/h2oai/h2o-3/issues/15801) - Updated Friedman and Popescu’s H statistic calculation to include missing values support.
+- [[#15741]](https://github.com/h2oai/h2o-3/issues/15741) - Implemented ability for force column types during parsing.
+- [[#15713]](https://github.com/h2oai/h2o-3/issues/15713) - Improved the default threshold API for binomial classification.
+- [[#15582]](https://github.com/h2oai/h2o-3/issues/15582) - Renamed prediction table header for UpliftDRF to be more user-friendly. 
+- [[#12678]](https://github.com/h2oai/h2o-3/issues/12678) - Added check to `mojo_predict_df` to look for a valid R dataframe.
+- [[#7079]](https://github.com/h2oai/h2o-3/issues/7079) - Added verbosity to H2O initialization. `h2oconn.clust.show_status()` is now guarded and will only be shown when `verbose=True` during initialization.
+- [[#6768]](https://github.com/h2oai/h2o-3/issues/6768) - Enabled categorical features for single decision tree. 
+
+#### New Feature
+- [[#15773]](https://github.com/h2oai/h2o-3/issues/15773) - Implemented `make_metrics` with custom AUUC thresholds for UpliftDRF.
+- [[#15565]](https://github.com/h2oai/h2o-3/issues/15565) - Implemented custom metric for AutoML.
+- [[#15559]](https://github.com/h2oai/h2o-3/issues/15559) - Implemented custom metric for Stacked Ensemble.
+- [[#15556]](https://github.com/h2oai/h2o-3/issues/15556) - Implemented MOJO support for UpliftDRF.
+- [[#15535]](https://github.com/h2oai/h2o-3/issues/15535) - Implemented Python 3.10 and 3.11 support.
+- [[#6784]](https://github.com/h2oai/h2o-3/issues/6784) - Implemented custom metric for Deep Learning.
+- [[#6783]](https://github.com/h2oai/h2o-3/issues/6783) - Implemented custom metric functionalities and the ATE, ATT, and ATC metrics for UpliftDRF.
+- [[#6779]](https://github.com/h2oai/h2o-3/issues/6779) - Implemented custom metric for leaderboard.
+- [[#6723]](https://github.com/h2oai/h2o-3/issues/6723) - Implemented new AdaBoost algorithm for binary classification.
+- [[#6698]](https://github.com/h2oai/h2o-3/issues/6698) - Implemented Shapley values support for ensemble models.
+
+#### Security
+- [[#15815]](https://github.com/h2oai/h2o-3/issues/15815) - Addressed CVE-2023-36478 by upgrading Jetty server.
+- [[#15805]](https://github.com/h2oai/h2o-3/issues/15805) - Addressed CVE-2023-42503 by upgrading commons-compress to 1.24.0 in Standalone Jars.
+- [[#15802]](https://github.com/h2oai/h2o-3/issues/15802) - Addressed CVE-2023-39410 by upgrading org.apache.avro:avro to 1.11.3.
+- [[#15799]](https://github.com/h2oai/h2o-3/issues/15799) - Addressed CVE-2023-43642 by upgrading snappy-java in Standalone Jars to 1.1.10.5.
+- [[#15759]](https://github.com/h2oai/h2o-3/issues/15759) - Addressed CVE-202-13949, CVE-2019-0205, CVE-2018-1320, and CVE-2018-11798 by excluding org.apache.thrift:libthrift from dependencies of Main Standalone Jar.
+- [[#15757]](https://github.com/h2oai/h2o-3/issues/15757) - Addressed CVE-2020-29582 and CVE-2022-24329 by upgrading org.jetbrains.kotlin:kotlin-stdlib to 1.6.21 in Main and Steam Standalone Jars.
+- [[#15755]](https://github.com/h2oai/h2o-3/issues/15755) - Addressed CVE-2023-3635 by upgrading com.squareup.okio:okio to 3.5.0 in Main and Steam Standalone Jars.
+- [[#15752]](https://github.com/h2oai/h2o-3/issues/15752) - Addressed CVE-2023-34455, CVE-2023-34454, and CVE-2023-34453 by upgrading snappy-java to 1.1.10.3 in Main and Steam Standalone Jars.
+- [[#15750]](https://github.com/h2oai/h2o-3/issues/15750) - Addressed CVE-2023-1370 by upgrading json-smart to 2.4.10 in Main standalone Jar.
+- [[#15746]](https://github.com/h2oai/h2o-3/issues/15746) - Addressed CVE-2023-1436, CVE-2022-40149, CVE-2022-40150, CVE-2022-45685, and CVE-2022-45693 by upgrading org.codehaus.jettison:jettison to 1.5.4 in Main Standalone Jar.
+- [[#15744]](https://github.com/h2oai/h2o-3/issues/15744) - Addressed CVE-2017-12197 by upgrading libpam4j to 1.11.
+- [[#15706]](https://github.com/h2oai/h2o-3/issues/15706) - Addressed CVE-2023-40167 and CVE-2023-36479 by upgrading the Jetty server.
+- [[#15470]](https://github.com/h2oai/h2o-3/issues/15470) - Upgraded Hadoop Libraries in Main Standalone Jar to address high and critical vulnerabilities.
+
 ### 3.42.0.4 - 10/3/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html</a>
