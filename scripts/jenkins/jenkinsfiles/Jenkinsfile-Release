@@ -406,7 +406,8 @@ EOF
                             echo 'Marked as TEST_RELEASE, don\'t check Conda packages from anaconda.org'
                         }
                     }
-
+                }
+                
                 if (params.BUILD_H2O_DOCKER) {
                     def assemblies = [
                         main: "h2o-open-source-k8s",
