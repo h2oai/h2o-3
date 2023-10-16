@@ -287,7 +287,7 @@ EOF
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
                         final def artifacts = ['main', 'client']
-                        final def pyVersions = ['3.10', 3.11']
+                        final def pyVersions = ['3.10', '3.11']
 
                         // build for all Python versions
                         for (artifact in artifacts) {
