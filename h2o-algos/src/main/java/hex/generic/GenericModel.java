@@ -108,6 +108,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH("start", "stop", false, new String[0]);
             case AnomalyDetection:
                 return new ModelMetricsAnomaly.MetricBuilderAnomaly();
+            case BinomialUplift:
+                // Solve thresholds, move threshods from Uplift Output to Model Output to calculate metrics
+                // return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output.default_auuc_thresholds);
+                return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, null);
             default:
                 throw H2O.unimpl();
         }
