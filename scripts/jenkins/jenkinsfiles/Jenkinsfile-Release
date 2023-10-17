@@ -356,7 +356,7 @@ EOF
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
                         final def artifacts = ['main', 'client']
-                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
+                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS
 
                         // build for all Python versions
                         for (artifact in artifacts) {
