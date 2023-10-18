@@ -47,7 +47,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index
 - [[#15706]](https://github.com/h2oai/h2o-3/issues/15706) - Addressed CVE-2023-40167 and CVE-2023-36479 by upgrading the Jetty server.
 - [[#15470]](https://github.com/h2oai/h2o-3/issues/15470) - Upgraded Hadoop Libraries in Main Standalone Jar to address high and critical vulnerabilities.
 
-#### *Known Bugs*
+#### *Known Bug*
 *(The list of bugs introduced by the changes in this release)*
 - [[#15832]](https://github.com/h2oai/h2o-3/issues/15832) - Broken Python and R API for UpliftDRF MOJO models.
 
