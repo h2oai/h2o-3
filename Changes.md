@@ -6,7 +6,7 @@
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#15743]](https://github.com/h2oai/h2o-3/issues/15743) - Fixed`shap_summary_plot` for H2O Explainability Interface failing when one column was full of zeroes or NaN values.
 - [[#15669]](https://github.com/h2oai/h2o-3/issues/15669) - Fixed R package to ensure it downloads the fixed version of H2O.
 - [[#15651]](https://github.com/h2oai/h2o-3/issues/15651) - Upgraded the minimal supported version of `ggplot2` to 3.3.0 to remove the deprecated dot-dot notation.
@@ -51,7 +51,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#15729]](https://github.com/h2oai/h2o-3/issues/15729) - Implemented multi-thread `as_data_frame` by using Datatable to speedup the conversion process.
 - [[#15643]](https://github.com/h2oai/h2o-3/issues/15643) - Fixed validation of `include_explanation` and `exclude_explanation` parameters
 
@@ -69,7 +69,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/4/index
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#15679]](https://github.com/h2oai/h2o-3/issues/15679) - Fixed GBM invalid tree index feature interaction.
 - [[#15666]](https://github.com/h2oai/h2o-3/issues/15666) - Updated test to showcase GBM checkpointing.
 - [[#6605]](https://github.com/h2oai/h2o-3/issues/6605) - Fixed `h2o.feature_interaction` failing on cross-validation models with early stopping. 
@@ -89,7 +89,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#15637]](https://github.com/h2oai/h2o-3/issues/15637) - Fixed AUCPR plot assigning incorrect values to the variable recalls and precisions. 
 - [[#6545]](https://github.com/h2oai/h2o-3/issues/6545) - Fixed out of memory error on multi-node sorting stage or sorted frame generation process.
 
@@ -115,7 +115,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#15423]](https://github.com/h2oai/h2o-3/issues/15423) - Fixed Infogram cross-validation with weights.
 - [[#15482]](https://github.com/h2oai/h2o-3/issues/15482) - Updated R package maintainer.
 - [[#15461]](https://github.com/h2oai/h2o-3/issues/15461) - Fixed leaks in GLM’s Negative Binomial estimation.
@@ -152,7 +152,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#6758]](https://github.com/h2oai/h2o-3/issues/6758) - Fixed the deprecation warning thrown for Python 2.7 and 3.5.
 
 #### Improvement
@@ -186,7 +186,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/3/ind
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#6818]](https://github.com/h2oai/h2o-3/issues/6818) - Fixed dependency on numpy in Fairness-related code.
 - [[#6819]](https://github.com/h2oai/h2o-3/issues/6819) - Added ability to debug GBM reproducibility by looking at tree structure with `equal_gbm_model_tree_structure`.
 
@@ -213,7 +213,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/ind
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html</a>
 
-#### Bug
+#### Bug Fix
 - [[#6845]](https://github.com/h2oai/h2o-3/issues/6845) - Improved GLM negative binomial calculation time.
 - [[#6882]](https://github.com/h2oai/h2o-3/issues/6882) - Cleaned up COLLATE field in the description of the R package by allowing Roxygen2 to generate the COLLATE field.
 - [[#6891]](https://github.com/h2oai/h2o-3/issues/6891) - Changed the exceptions in Stacked Ensembles checks to ModelBuilder warnings.
