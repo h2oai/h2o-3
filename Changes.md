@@ -611,7 +611,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.h
 - [[#7108]](https://github.com/h2oai/h2o-3/issues/7108) - Extended AWS default credential chain instead of replacing it.
 - [[#7112]](https://github.com/h2oai/h2o-3/issues/7112) - Fixed import failures for URLs longer than 152 characters.
 - [[#7113]](https://github.com/h2oai/h2o-3/issues/7113) -  Fix AutoML ignoring `verbosity` setting.
-- [[#7138]](https://github.com/h2oai/h2o-3/issues/7138) - Fixed Huber distribution Bug Fix for `deviance`.
+- [[#7138]](https://github.com/h2oai/h2o-3/issues/7138) - Fixed Huber distribution bug for `deviance`.
 
 #### Improvement
 
