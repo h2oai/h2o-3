@@ -27,6 +27,7 @@ public class GenericModelOutput extends Model.Output {
         _hasOffset = modelDescriptor.offsetColumn() != null;
         _hasWeights = modelDescriptor.weightsColumn() != null;
         _hasFold = modelDescriptor.foldColumn() != null;
+        _hasTreatment = modelDescriptor.treatmentColumn() != null;
         _modelClassDist = modelDescriptor.modelClassDist();
         _priorClassDist = modelDescriptor.priorClassDist();
         _names = modelDescriptor.columnNames();
@@ -36,6 +37,7 @@ public class GenericModelOutput extends Model.Output {
         _defaultThreshold = modelDescriptor.defaultThreshold();
         _original_model_identifier = modelDescriptor.algoName();
         _original_model_full_name = modelDescriptor.algoFullName();
+
     }
 
     public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes, 
@@ -298,5 +300,9 @@ public class GenericModelOutput extends Model.Output {
 
         return table;
     }
-    
+
+    @Override
+    public boolean hasTreatment() {
+        return super.hasTreatment();
+    }
 }

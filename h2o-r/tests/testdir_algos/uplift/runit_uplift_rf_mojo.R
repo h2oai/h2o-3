@@ -4,7 +4,7 @@ library(uplift)
 
 
 test.uplift <- function() {
-    ntrees <- 10
+    ntrees <- 6
     mtries <- 6
     seed <- 42
     uplift_metric <- "KL"
@@ -44,17 +44,38 @@ test.uplift <- function() {
 
     print(model)
     pred.uplift <- h2o.predict(model, testh2o)
-    print(pred.uplift)
+    pred.uplift.df <- as.data.frame(pred.uplift)
 
     tmpdir <- tempdir()
-    print(tmpdir)
     modelfile <- h2o.download_mojo(model, path=tmpdir)
-    print(modelfile)
     modelpath <- paste0(tmpdir, "/", modelfile)
-    print(modelpath)
+    
     model.mojo <- h2o.import_mojo(modelpath)
+    print(model.mojo)
     pred.mojo <- h2o.predict(model.mojo, testh2o)
-    print(pred.mojo)
+    pred.mojo.df <- as.data.frame(pred.mojo)
+
+    expect_equal(pred.mojo.df[1,1], pred.uplift.df[1,1])
+    expect_equal(pred.mojo.df[2,1], pred.uplift.df[2,1])
+    expect_equal(pred.mojo.df[10,1], pred.uplift.df[10,1])
+    expect_equal(pred.mojo.df[42,1], pred.uplift.df[42,1])
+    expect_equal(pred.mojo.df[550,1], pred.uplift.df[550,1])
+    expect_equal(pred.mojo.df[666,1], pred.uplift.df[666,1])
+
+    perf.uplift <- h2o.performance(model)
+    print(perf.uplift)
+    auuc.uplift <- h2o.auuc(perf.uplift)
+    print(auuc.uplift)
+
+    perf.mojo <- h2o.performance(model.mojo)
+    print(perf.mojo)
+    auuc.mojo <- h2o.auuc(perf.mojo)
+    print(auuc.mojo)
+
+    expect_equal(auuc.uplift, auuc.mojo)
+
+    on.exit(unlink(modelpath,recursive=TRUE))
+    on.exit(unlink(tmpdir,recursive=TRUE))
 }
 
 doTest("Uplift Random Forest Test: Test H2O RF uplift", test.uplift)

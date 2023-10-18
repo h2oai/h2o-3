@@ -79,7 +79,6 @@ public class AUUC extends Iced {
     public AUUC(AUUCBuilder bldr, AUUCType auucType) {
         this(bldr, true, auucType);
     }
-    
 
     public AUUC(double[] customThresholds, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(new AUUCImpl(customThresholds).doAll(probs, y, uplift)._bldr, auucType);

@@ -185,8 +185,15 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             final String offsetColumn = adaptFrameParameters.getOffsetColumn();
             final String weightsColumn = adaptFrameParameters.getWeightsColumn();
             final String responseColumn = adaptFrameParameters.getResponseColumn();
+            final String treatmentColumn = adaptFrameParameters.getTreatmentColumn();
             final boolean isClassifier = wrapper.getModel().isClassifier();
-            final float[] yact = new float[1];
+            final boolean isUplift = treatmentColumn != null;
+            final float[] yact;
+            if (isUplift) {
+                yact = new float[2];
+            } else {
+                yact = new float[1];
+            }
             for (int row = 0; row < cs[0]._len; row++) {
                 RowData rowData = new RowData();
                 RowDataUtils.extractChunkRow(cs, _fr._names, types, row, rowData);
@@ -210,6 +217,9 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                         yact[0] = (float) idx;
                     } else 
                         yact[0] = ((Number) response).floatValue();
+                    if (isUplift){
+                        yact[1] = (float) rowData.get(treatmentColumn);
+                    }
                     _mb.perRow(result, yact, weight, offset, GenericModel.this);
                 }
             }
@@ -289,7 +299,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 return genModel.isSupervised() ? genModel.getResponseName() : null; 
             }
             @Override
-            public String getTreatmentColumn() {return null;}
+            public String getTreatmentColumn() {return descriptor != null ? descriptor.treatmentColumn() : null;}
             @Override
             public double missingColumnsType() {
                 return Double.NaN;
