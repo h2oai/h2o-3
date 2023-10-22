@@ -8,7 +8,6 @@ import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.mrtasks.GetClassCountsMRTask;
 import hex.tree.dt.mrtasks.ScoreDTTask;
-import org.apache.commons.math3.util.Precision;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -19,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplit;
+import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplitMultinomial;
 
 /**
  * Decision Tree
@@ -108,8 +107,8 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
     private AbstractSplittingRule findBestSplitForFeature(Histogram histogram, int featureIndex) {
         return (_train.vec(featureIndex).isNumeric()
-                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex)
-                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex))
+                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex, _nclass)
+                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex, _nclass))
                 .stream()
                 // todo - consider setting min count of samples in bin instead of filtering splits
                 .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
@@ -216,10 +215,10 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             return;
         }
 
-        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH/*, minNumSamplesInBin - todo consider*/);
+        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH, _nclass/*, minNumSamplesInBin - todo consider*/);
 
         AbstractSplittingRule bestSplittingRule = findBestSplit(histogram);
-        double criterionForTheParentNode = entropyBinarySplit(1.0 * countsByClass[0] / (countsByClass[0] + countsByClass[1]));
+        double criterionForTheParentNode = entropyBinarySplitMultinomial(countsByClass, Arrays.stream(countsByClass).sum());
         // if no split could be found, make a list from current node
         // if the information gain is low, make a leaf from current node
         if (bestSplittingRule == null
