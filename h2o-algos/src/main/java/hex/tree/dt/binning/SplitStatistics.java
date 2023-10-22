@@ -27,7 +27,7 @@ public class SplitStatistics {
 
     public SplitStatistics() {
         // call constructor with default value
-        new SplitStatistics(1);
+        this(1);
     }
 
     public void accumulateLeftStatistics(int leftCount, int[] leftClassDistribution) {
