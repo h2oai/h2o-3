@@ -8,21 +8,15 @@ h2o3
 
 import logging
 import os
-import warnings
-
-from typing import Any, Dict, Optional
 
 import yaml
 
 import mlflow
-import mlflow.h2o
-from h2o.estimators.generic import H2OGenericEstimator
 from mlflow import pyfunc
 from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
 from mlflow.models.signature import ModelSignature
-from mlflow.models.signature import _infer_signature_from_input_example
 from mlflow.models.utils import ModelInputExample
 from mlflow.utils.environment import (
     _CONDA_ENV_FILE_NAME,
@@ -44,15 +38,12 @@ from mlflow.utils.model_utils import (
     _validate_and_prepare_target_save_path,
 )
 from mlflow.utils.requirements_utils import _get_pinned_requirement
-from pysparkling import *
+from mlflow.tracking.artifact_utils import _download_artifact_from_uri
+
+
 _logger = logging.getLogger(__name__)
 
-
 FLAVOR_NAME = "h2o_mojo"
-H2O3_MODEL_INI = "model.ini"
-MLFLOW_H2O3_MOJO_ARTIFACT = "mlflow/h2o_mojo"
-MLFLOW_H2O3_MODEL_FILENAME = "h2o_mojo_model.zip"
-
 
 def get_default_pip_requirements():
     """
@@ -93,8 +84,8 @@ def save_model(
         mlflow_model.signature = signature
     if input_example is not None:
         _save_example(mlflow_model, input_example, path)
-    
-    h2o_model.download_mojo(path=path, get_genmodel_jar=True)
+
+    model_data_subpath = h2o_model.download_mojo(path=path, get_genmodel_jar=True)
     
     pyfunc.add_to_model(
         mlflow_model,
@@ -107,7 +98,7 @@ def save_model(
 
     mlflow_model.add_flavor(
         FLAVOR_NAME,
-        pickled_model=model_data_subpath,
+        model_file=model_data_subpath,
         h2o_version=h2o.__version__,
         code=code_dir_subpath,
     )
@@ -137,7 +128,6 @@ def save_model(
     write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
 
     _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
-
 
 
 def log_model(
@@ -194,6 +184,12 @@ def log_model(
     )
 
 
+def load_model(model_uri, dst_path=None):
+    local_model_path = _download_artifact_from_uri(
+        artifact_uri=model_uri, output_path=dst_path
+    )
+    return _H2OModelWrapper(_load_model(path, init=True))
+
 
 def _load_model(path, init=False):
     import h2o
@@ -202,18 +198,11 @@ def _load_model(path, init=False):
     with open(os.path.join(path, "h2o.yaml")) as f:
         params = yaml.safe_load(f.read())
     if init:
-        h2o.init(**(params["init"] if "init" in params else {}))
+        h2o.init()
         h2o.no_progress()
 
     model_path = os.path.join(path, params["model_file"])
-    if hasattr(h2o, "upload_model"):
-        model = h2o.upload_model(model_path)
-    else:
-        warnings.warn(
-            "If your cluster is remote, H2O may not load the model correctly. "
-            "Please upgrade H2O version to a newer version"
-        )
-        model = h2o.load_model(model_path)
+    model = h2o.import_mojo(model_path)
 
     return model
 
@@ -222,9 +211,7 @@ class _H2OModelWrapper:
     def __init__(self, h2o_model):
         self.h2o_model = h2o_model
 
-    def predict(
-        self, dataframe, params: Optional[Dict[str, Any]] = None
-    ):  # pylint: disable=unused-argument
+    def predict(self, dataframe, params=None):
         """
         :param dataframe: Model input data.
         :param params: Additional parameters to pass to the model for inference.
