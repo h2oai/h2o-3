@@ -595,6 +595,9 @@ def javamunge(assembly, pojoname, test, compile_only=False):
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     
+def uninstall(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package])
+        
 def locate(path):
     """
     Search for a relative path and turn it into an absolute path.

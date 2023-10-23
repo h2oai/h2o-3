@@ -126,7 +126,6 @@ def is_module_available(mod):
     import importlib.util
     return importlib.util.find_spec(mod) is not None
 
-
 def can_use_pandas():
     return is_module_available('pandas')
 
