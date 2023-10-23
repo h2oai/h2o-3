@@ -168,6 +168,7 @@ def log_model(
     :return: A :py:class:`ModelInfo <mlflow.models.model.ModelInfo>` instance that contains the
              metadata of the logged model.
     """
+    import h2o_mlflow_flavors
     return Model.log(
         artifact_path=artifact_path,
         flavor=h2o_mlflow_flavors.h2o_mojo,
