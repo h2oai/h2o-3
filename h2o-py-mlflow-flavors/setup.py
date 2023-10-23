@@ -77,5 +77,5 @@ setup(
     ]},
 
     # run-time dependencies
-    install_requires=["h2o-mlops-client>=0.58"]
+    install_requires=["mlflow>=1.29.0"]
 )
