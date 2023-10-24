@@ -41,7 +41,7 @@ def test_datatable_without_datatable():
     # should run to completion
     with pyunit_utils.catch_warnings() as ws:
         test_frame_conversion("bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv", False)
-        assert "multi_thread mode can only be used when you have datatable installed.  Default to single-thread " \
+        assert "multi_thread mode can only be used when you have datatable installed.  Defaults to single-thread " \
                "operation." in str(ws[0].message)
         
     # re-install datatable before quitting.     
