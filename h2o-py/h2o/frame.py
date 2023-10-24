@@ -1981,7 +1981,7 @@ class H2OFrame(Keyed, H2ODisplay):
                         os.rmdir(tmpdir)
                 elif not(can_use_datatable()):
                     warnings.warn("multi_thread mode can only be used when you have datatable "
-                             "installed.  Default to single-thread operation.")                   
+                             "installed.  Defaults to single-thread operation.")                   
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
