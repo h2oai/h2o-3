@@ -243,15 +243,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    List<Frame> tmpFrames = new ArrayList<>();
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
     if (null == backgroundFrame)
       throw H2O.unimpl("GLM supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for " + this._key + "...");
-    try {
-      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+      Frame adaptedFrame = adaptFrameForScore(frame, false);
       DKV.put(adaptedBgFrame);
       DKV.put(adaptedFrame);
       DataInfo dinfo = _output._dinfo.clone();
@@ -277,13 +274,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }).toArray(String[]::new)
               : _output._coefficient_names, 0, colNames, 0, colNames.length - 1);
       colNames[colNames.length - 1] = "BiasTerm";
-      return contributions.runAndGetOutput(j, destination_key, colNames);
+      return Scope.untrack(contributions.runAndGetOutput(j, destination_key, colNames));
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
-
   }
 
   public static class RegularizationPath extends Iced {

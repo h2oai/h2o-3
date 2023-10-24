@@ -46,13 +46,10 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
     if (null == backgroundFrame)
       throw H2O.unimpl("DeepLearning supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for "+this._key+"...");
-    List<Frame> tmpFrames = new LinkedList<>();
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
-    try {
-      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
       DKV.put(adaptedBgFrame);
-      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      Frame adaptedFrame = adaptFrameForScore(frame, false);
       DKV.put(adaptedFrame);
       DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(this,
               adaptedFrame._key,
@@ -70,10 +67,8 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
 
       System.arraycopy(cols, 0, colNames, 0, colNames.length - 1);
       colNames[colNames.length - 1] = "BiasTerm";
-      return contributions.runAndGetOutput(j, destination_key, colNames);
+      return Scope.untrack(contributions.runAndGetOutput(j, destination_key, colNames));
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for "+this._key+"...");
     }
   }

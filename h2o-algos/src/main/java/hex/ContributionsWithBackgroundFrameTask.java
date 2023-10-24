@@ -200,9 +200,8 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
 
         Log.warn("Not enough memory to calculate SHAP at once. Calculating in " + (nSubFrames) + " iterations.");
         _isFrameBigger = false; // ensure we map over the BG frame so we can average over the results properly;
-        Frame result = null;
-        List<Frame> subFrames = new LinkedList<Frame>();
-        try {
+        try (Scope.Safe safe = Scope.safe()) {
+          List<Frame> subFrames = new LinkedList<Frame>();
           for (int i = 0; i < nSubFrames; i++) {
             setChunkRange(i * chunksPerIter, Math.min(nChunks - 1, (i + 1) * chunksPerIter - 1));
             Frame indivContribs = clone().withPostMapAction(JobUpdatePostMap.forJob(j))
@@ -217,23 +216,14 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
             indivContribs.delete();
           }
           
-          result = concatFrames(subFrames, destinationKey);
-          Set<String> homes = new HashSet<>();
+          Frame result = concatFrames(subFrames, destinationKey);
+          Set<String> homes = new HashSet<>(); // not used?
           for (int i = 0; i < result.anyVec().nChunks(); i++) {
             for (int k = 0; k < result.numCols(); k++) {
               homes.add(result.vec(k).chunkKey(i).home_node().getIpPortString());
             }
           }
-          return result;
-        } finally {
-          if (null != result) {
-            for (Frame fr : subFrames) {
-              Frame.deleteTempFrameAndItsNonSharedVecs(fr, result);
-            }
-          } else {
-            for (Frame fr : subFrames)
-              fr.delete();
-          }
+          return Scope.untrack(result);
         }
       } else {
         Frame indivContribs = withPostMapAction(JobUpdatePostMap.forJob(j))

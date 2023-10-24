@@ -177,12 +177,8 @@ public class StackedEnsembleModel
     List<Integer> baseModelsIdx = new ArrayList<>();
     String[] columns = null;
     baseModelsIdx.add(0);
-    Frame fr = new Frame();
-    Frame levelOneFrame = null;
-    Frame levelOneFrameBg = null;
-    Frame adaptFr = null;
-    Frame adaptFrBg = null;
-    try {
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame fr = new Frame();
       for (Key<Model> bm : _parms._base_models) {
         if (isUsefulBaseModel(bm)) {
           baseModels.add(bm.toString());
@@ -238,13 +234,11 @@ public class StackedEnsembleModel
       String[] colsWithRows = columns;
       columns = Arrays.copyOfRange(columns, 0, columns.length - 3);
 
-      List<Frame> tmpFrames = new ArrayList<>();
-      adaptFr = adaptFrameForScore(frame, false, tmpFrames);
-      levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, j);
+      Frame adaptFr = adaptFrameForScore(frame, false);
+      Frame levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, j);
 
-      tmpFrames = new ArrayList<>();
-      adaptFrBg = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, j);
+      Frame adaptFrBg = adaptFrameForScore(backgroundFrame, false);
+      Frame levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, j);
 
       Frame metalearnerContrib = ((Model.Contributions) _output._metalearner).scoreContributions(levelOneFrame,
               Key.make(destination_key + "_" + _output._metalearner._key), j,
@@ -258,22 +252,13 @@ public class StackedEnsembleModel
               .map(name -> "metalearner_" + name)
               .toArray(String[]::new));
 
-      fr.add(metalearnerContrib);
-      Frame.deleteTempFrameAndItsNonSharedVecs(metalearnerContrib, fr);
-
-
-      return new GDeepSHAP(columns, baseModels.toArray(new String[0]),
+      Scope.track(fr.add(metalearnerContrib));
+      
+      return Scope.untrack(new GDeepSHAP(columns, baseModels.toArray(new String[0]),
               fr._names, baseModelsIdx.toArray(new Integer[0]), _parms._metalearner_transform)
               .withPostMapAction(JobUpdatePostMap.forJob(j))
               .doAll(colsWithRows.length, Vec.T_NUM, fr)
-              .outputFrame(destination_key, colsWithRows, null);
-
-    } finally {
-      if (null != levelOneFrame) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, frame);
-      if (null != levelOneFrameBg) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrameBg, backgroundFrame);
-      Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
-      if (null != adaptFr) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, frame);
-      if (null != adaptFrBg) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFrBg, backgroundFrame);
+              .outputFrame(destination_key, colsWithRows, null));
     }
   }
 
@@ -487,36 +472,37 @@ public class StackedEnsembleModel
    */
   @Override
   protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    Frame levelOneFrame = getLevelOnePredictFrame(fr, adaptFrm, j);
-    // TODO: what if we're running multiple in parallel and have a name collision?
-    Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
+    try (Scope.Safe safe = Scope.safe(fr, adaptFrm)) {
+      Frame levelOneFrame = getLevelOnePredictFrame(fr, adaptFrm, j);
+      // TODO: what if we're running multiple in parallel and have a name collision?
+      Log.info("Finished creating \"level one\" frame for scoring: "+levelOneFrame.toString());
 
-    // Score the dataset, building the class distribution & predictions
+      // Score the dataset, building the class distribution & predictions
 
-    Model metalearner = this._output._metalearner;
-    Frame predictFr = metalearner.score(
-        levelOneFrame, 
-        destination_key, 
-        j, 
-        computeMetrics, 
-        CFuncRef.from(_parms._custom_metric_func)
-    );
-    ModelMetrics mmStackedEnsemble = null;
-    if (computeMetrics) {
-      // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
-      // We need to be able to look it up by the (this, fr) pair.
-      // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
-      Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
-      ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
-      mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
-      this.addModelMetrics(mmStackedEnsemble);
-      //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
-      for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
-        DKV.remove(mm);
+      Model metalearner = this._output._metalearner;
+      Frame predictFr = metalearner.score(
+              levelOneFrame,
+              destination_key,
+              j,
+              computeMetrics,
+              CFuncRef.from(_parms._custom_metric_func)
+      );
+      ModelMetrics mmStackedEnsemble = null;
+      if (computeMetrics) {
+        // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
+        // We need to be able to look it up by the (this, fr) pair.
+        // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
+        Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
+        ModelMetrics lastComputedMetric = mms[mms.length-1].get();
+        mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
+        this.addModelMetrics(mmStackedEnsemble);
+        //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
+        for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
+          DKV.remove(mm);
+        }
       }
+      return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
     }
-    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
-    return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
   }
 
   private Frame getLevelOnePredictFrame(Frame fr, Frame adaptFrm, Job j) {

@@ -716,15 +716,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     Log.info("Starting contributions calculation for " + this._key + "...");
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
-    try {
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
       if (null == backgroundFrame)
         return scoreContributions(frame, destination_key, j, options);
-      adaptedFrame = new Frame(frame);
+      Frame adaptedFrame = new Frame(frame);
       adaptTestForTrain(adaptedFrame, true, false);
       DKV.put(adaptedFrame);
-      adaptedBgFrame = new Frame(backgroundFrame);
+      Frame adaptedBgFrame = new Frame(backgroundFrame);
       adaptTestForTrain(adaptedBgFrame, true, false);
       DKV.put(adaptedBgFrame);
       
@@ -735,12 +733,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
 
-      return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, 
+      return Scope.untrack(new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, 
               adaptedFrame, adaptedBgFrame, options._outputPerReference, options._outputSpace)
-              .runAndGetOutput(j, destination_key, outputNames);
+              .runAndGetOutput(j, destination_key, outputNames));
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
   }
