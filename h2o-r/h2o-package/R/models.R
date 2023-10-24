@@ -5167,7 +5167,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc", "pr", "gains_lift")) stop("type must be 'roc', 'pr', or 'gains_lift'")
   if(type == "roc") {
-    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
+    xaxis <- "False Positive Rate (FPR)"; yaxis = "True Positive Rate (TPR)"
     if(missing(main)) {
       main <- "Receiver Operating Characteristic curve"
       if(x@on_train) {
