@@ -417,7 +417,7 @@ public final class ParseDataset {
       final int[] skippedColumns = setup.getSkippedColumns();
       String[] newColumnTypes;
       if (skippedColumns != null) {  // need to remove column types of skipped columns
-        List<Integer> skippedColIndices = Arrays.stream(skippedColumns).boxed().collect(Collectors.toList());
+        Set<Integer> skippedColIndices = Arrays.stream(skippedColumns).boxed().collect(Collectors.toSet());
         newColumnTypes = IntStream.range(0, originalColumnTypes.length).filter(x -> !(skippedColIndices.contains(x))).mapToObj(x -> originalColumnTypes[x]).toArray(String[]::new);
       } else {
         newColumnTypes = originalColumnTypes;
