@@ -19,8 +19,7 @@ def test_frame_conversion(dataset, compareTime):
     startT = time.time()
     new_pandas_frame = h2oFrame.as_data_frame(multi_thread=True)
     newTime = time.time()-startT
-    print("H2O frame to Pandas frame conversion time using datatable but not really because datatable module is not"
-          " installed: {0}".format(newTime))
+    print("H2O frame to Pandas frame conversion time using datatable: {0}".format(newTime))
     if compareTime: # disable for small dataset.  Multi-thread can be slower due to more overhead
         assert newTime <= oldTime, " original frame conversion time: {0} should exceed new frame conversion time:" \
                                    "{1} but is not.".format(oldTime, newTime)
@@ -40,10 +39,10 @@ def test_polars_pandas():
         return
     if not(can_use_pandas()):
         pyunit_utils.install("pandas")
-
+    import pandas
     if not(can_use_datatable()):
         pyunit_utils.install("datatable")
-
+    import datatable
     test_frame_conversion("bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv", False)
 
 
