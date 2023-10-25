@@ -5,6 +5,7 @@ import hex.genmodel.attributes.*;
 import hex.genmodel.attributes.metrics.*;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.tree.isofor.ModelMetricsAnomaly;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -192,6 +193,15 @@ public class GenericModelOutput extends Model.Output {
                         metricsCoxPH._sigma, metricsCoxPH._mae, metricsCoxPH._root_mean_squared_log_error, metricsCoxPH._mean_residual_deviance,
                         customMetric(mojoMetrics),
                         metricsCoxPH._concordance, metricsCoxPH._concordant, metricsCoxPH._discordant, metricsCoxPH._tied_y);
+            case BinomialUplift:
+                assert mojoMetrics instanceof MojoModelMetricsBinomialUplift;
+                MojoModelMetricsBinomialUplift metricsUplift = (MojoModelMetricsBinomialUplift) mojoMetrics;
+                AUUC.AUUCType auucType = AUUC.AUUCType.valueOf((String) modelAttributes.getParameterValueByName("auuc_type"));
+                AUUC auuc = createAUUC(auucType, metricsUplift._thresholds_and_metric_scores, metricsUplift._auuc_table, metricsUplift._aecu_table);
+                return new ModelMetricsBinomialUpliftGeneric(null, null, metricsUplift._nobs, _domains[_domains.length - 1], 
+                        metricsUplift._ate, metricsUplift._att, metricsUplift._atc, metricsUplift._sigma, auuc, customMetric(metricsUplift), 
+                        convertTable(metricsUplift._thresholds_and_metric_scores), convertTable(metricsUplift._auuc_table), 
+                        convertTable(metricsUplift._aecu_table), metricsUplift._description);
             case Unknown:
             case Clustering:
             case AutoEncoder:
@@ -285,7 +295,7 @@ public class GenericModelOutput extends Model.Output {
         }
         return tables;
     }
-    
+
     private static TwoDimTable convertTable(final Table convertedTable){
         if(convertedTable == null) return null;
         final TwoDimTable table = new TwoDimTable(convertedTable.getTableHeader(), convertedTable.getTableDescription(),
@@ -297,8 +307,73 @@ public class GenericModelOutput extends Model.Output {
                 table.set(j, i, convertedTable.getCell(i,j));
             }
         }
-
         return table;
+    }
+
+    private static AUUC createAUUC(AUUC.AUUCType auucType, Table thresholds_and_metric_scores, Table auuc_table, Table aecu_table){
+        int nbins = thresholds_and_metric_scores.rows();
+        double[] ths = new double[nbins];
+        long[] freq = new long[nbins];
+        AUUC.AUUCType[] auucTypes = AUUC.AUUCType.values();
+        double[][] uplift = new double[auucTypes.length][nbins];
+        double[][] upliftNorm = new double[auucTypes.length][nbins];
+        double[][] upliftRand = new double[auucTypes.length][nbins];
+        double[] auuc = new double[auucTypes.length];
+        double[] auucNorm = new double[auucTypes.length];
+        double[] auucRand = new double[auucTypes.length];
+        double[] aecu = new double[auucTypes.length];
+        
+        String[] thrHeader = thresholds_and_metric_scores.getColHeaders();
+        // threshold column index
+        int thrIndex = ArrayUtils.find(thrHeader, "thresholds");
+        int freqIndex = ArrayUtils.find(thrHeader, "n");
+        
+        // uplift type indices
+        int[] upliftIndices = new int[auucTypes.length];
+        int[] upliftNormIndices = new int[auucTypes.length];
+        int[] upliftRandIndices = new int[auucTypes.length];
+        for (int i = 1; i < auucTypes.length; i++) {
+            String auucTypeName  =  auucTypes[i].name(); 
+            upliftIndices[i] = ArrayUtils.find(thrHeader, auucTypeName);
+            upliftNormIndices[i] = ArrayUtils.find(thrHeader, auucTypeName+"_normalized");
+            upliftRandIndices[i] = ArrayUtils.find(thrHeader, auucTypeName+"_random");
+            // AUTO setting
+            if(auucTypeName.equals(AUUC.AUUCType.nameAuto())){
+                upliftIndices[0] = upliftIndices[i];
+                upliftNormIndices[0] = upliftNormIndices[i];
+                upliftRandIndices[0] = upliftRandIndices[i];
+            }
+        }
+        // fill thresholds and uplift values from table
+        for (int i = 0; i < thresholds_and_metric_scores.rows(); i++) {
+            ths[i] = (double) thresholds_and_metric_scores.getCell(thrIndex, i);
+            freq[i] = (long) thresholds_and_metric_scores.getCell(freqIndex, i);
+            for (int j = 0; j < auucTypes.length; j++) {
+                uplift[j][i] = (double) thresholds_and_metric_scores.getCell(upliftIndices[j], i);
+                upliftNorm[j][i] = (double) thresholds_and_metric_scores.getCell(upliftNormIndices[j], i);
+                upliftRand[j][i] = (double) thresholds_and_metric_scores.getCell(upliftRandIndices[j], i);
+            }
+        }
+        // fill auuc values and aecu values
+        String[] auucHeader = auuc_table.getColHeaders();
+        String[] aecuHeader = aecu_table.getColHeaders();
+        for (int i = 1; i < auucTypes.length; i++) {
+            AUUC.AUUCType type = auucTypes[i];
+            String auucTypeName = type.name();
+            int colIndex = ArrayUtils.find(auucHeader, auucTypeName);
+            auuc[i] = (double) auuc_table.getCell(colIndex, 0);
+            auucNorm[i] = (double) auuc_table.getCell(colIndex, 1);
+            auucRand[i] = (double) auuc_table.getCell(colIndex, 2);
+            colIndex = ArrayUtils.find(aecuHeader, auucTypeName);
+            aecu[i] = (double) aecu_table.getCell(colIndex, 0);
+            if(auucTypeName.equals(AUUC.AUUCType.nameAuto())){
+                auuc[0] = auuc[i];
+                auucNorm[0] = auucNorm[i];
+                auucRand[0] = auucRand[i];
+                aecu[0] = aecu[i];
+            }
+        }
+        return new AUUC(ths, freq, auuc, auucNorm, auucRand, aecu, auucType, uplift, upliftNorm, upliftRand);
     }
 
     @Override

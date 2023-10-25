@@ -10,7 +10,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -52,7 +51,7 @@ public class AUUC extends Iced {
     public long frequency( int idx ) { return _frequency[idx]; }
     public double uplift( int idx) { return _uplift[_auucTypeIndx][idx]; }
     
-    private int getIndexByAUUCType(AUUCType type){
+    public int getIndexByAUUCType(AUUCType type){
         return ArrayUtils.find(AUUC.AUUCType.VALUES, type);
     }
     
@@ -203,6 +202,25 @@ public class AUUC extends Iced {
         _uplift = new double[AUUCType.values().length][];
         _upliftNormalized = new double[AUUCType.values().length][];
         _upliftRandom = new double[AUUCType.values().length][];
+    }
+
+    public AUUC(double[] ths, long[] freq, double[] auuc, double[] auucNorm, double[] auucRand, double[] aecu,
+                AUUCType auucType, double[][] uplift, double[][] upliftNorm, double[][] upliftRand) {
+        _nBins = ths.length;
+        _n = freq[freq.length-1];
+        _ths = ths;
+        _frequencyCumsum = freq;
+        _treatment = _control = _yTreatment = _yControl = _frequency = new long[0];
+        _auucs = auuc;
+        _auucsNormalized = auucNorm;
+        _auucsRandom = auucRand;
+        _aecu = aecu;
+        _maxIdx = -1;
+        _auucType = auucType;
+        _auucTypeIndx = getIndexByAUUCType(_auucType);
+        _uplift = uplift;
+        _upliftNormalized = upliftNorm;
+        _upliftRandom = upliftRand;
     }
     
     public static double[] calculateQuantileThresholds(int groups, Vec preds) {
@@ -442,19 +460,14 @@ public class AUUC extends Iced {
          *  @return metric value */
         abstract double exec(long treatment, long control, long yTreatment, long yControl );
         public double exec(AUUC auc, int idx) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
-        
+
         public static final AUUCType[] VALUES = values();
 
-        public static AUUCType fromString(String strRepr) {
-            for (AUUCType tc : AUUCType.values()) {
-                if (tc.toString().equalsIgnoreCase(strRepr)) {
-                    return tc;
-                }
-            }
-            return null;
-        }
+        public static final AUUCType[] VALUES_WITHOUT_AUTO = ArrayUtils.remove(values().clone(), ArrayUtils.find(AUUCType.values(), AUTO));
 
-        public double maxCriterion(AUUC auuc) { return exec(auuc, maxCriterionIdx(auuc)); }
+        public static String nameAuto(){
+            return qini.name();
+        }
 
         /** Convert a criterion into a threshold index that maximizes the criterion
          *  @return Threshold index that maximizes the criterion

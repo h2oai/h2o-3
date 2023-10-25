@@ -69,13 +69,19 @@ def uplift_random_forest_mojo():
 
     perf_model = uplift_model.model_performance()
     print(perf_model)
-    perf_model_auuc = perf_model.auuc()
 
     perf_mojo = mojo_model.model_performance()
     print(perf_mojo)
-    perf_mojo_auuc = perf_mojo.auuc()
 
+    perf_model_auuc = perf_model.auuc()
+    perf_mojo_auuc = perf_mojo.auuc()
     assert_equals(perf_model_auuc, perf_mojo_auuc, "AUUC is not the same with MOJO")
+
+    perf_model_qini = perf_model.qini()
+    perf_mojo_qini = perf_mojo.qini()
+    assert_equals(perf_model_qini, perf_mojo_qini, "Qini is not the same with MOJO")
+    
+    
 
     os.remove(model_path)
     
