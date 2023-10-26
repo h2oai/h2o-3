@@ -16,7 +16,7 @@ We are excited to announce the release of H2O-3 3.44.0.1! We have added and impr
 AdaBoost (Adam Valenta)
 '''''''''''''''''''''''
 
-We are proud to introduce `AdaBoost <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/adaboost.html>`__, an algorithm known for its effectiveness in improving model performance. AdaBoost is particularly notable for its approach in constructing an ensemble of weak learners (typically decision trees) and sequentially refining them to enhance predictive accuracy. It achieves this by assigning higher weights to misclassified data points in each iteration. This emphasizes the correction of errors and ultimately leads to a more precise and robust predictive model. This adaptability and refinement makes AdaBoost a valuable tool in various domains, allowing it to aid in better predictions and informed decision-making.
+We are proud to introduce `AdaBoost <data-science/adaboost.html>`__, an algorithm known for its effectiveness in improving model performance. AdaBoost is particularly notable for its approach in constructing an ensemble of weak learners (typically decision trees) and sequentially refining them to enhance predictive accuracy. It achieves this by assigning higher weights to misclassified data points in each iteration. This emphasizes the correction of errors and ultimately leads to a more precise and robust predictive model. This adaptability and refinement makes AdaBoost a valuable tool in various domains, allowing it to aid in better predictions and informed decision-making.
 
 .. tabs::
     .. code-tab:: r R
@@ -158,7 +158,7 @@ There have been several enhancements to the Uplift DRF algorithm.
 New treatment effect metrics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`Treatment effect metrics <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/upliftdrf.html#treatment-effect-metrics-ate-att-atc>`__ show how the uplift predictions look across the whole dataset (population). Scored data are used to calculate these metrics (``uplift_predict`` column = individual treatment effect).
+`Treatment effect metrics <data-science/upliftdrf.html#treatment-effect-metrics-ate-att-atc>`__ show how the uplift predictions look across the whole dataset (population). Scored data are used to calculate these metrics (``uplift_predict`` column = individual treatment effect).
 
 - Average Treatment Effect (ATE): the average expected uplift prediction (treatment effect) over all records in the dataset.
 - Average Treatment Effect on the Treated (ATT): the average expected uplift prediction (treatment effect) of all records in the dataset belonging to the treatment group.
@@ -252,12 +252,12 @@ This new feature enables custom AUUC thresholds to calculate the AUUC metric usi
 Deep Learning with custom metric
 ''''''''''''''''''''''''''''''''
 
-We have implemented custom metric support for the Deep Learning model. This option is not available for AutoEncoder Deep Learning models.
+We have implemented `custom metric support for the Deep Learning model <data-science/algo-params/custom_metric_func.html>`__. This option is not available for AutoEncoder Deep Learning models.
 
 Prior Release Blogs
 ~~~~~~~~~~~~~~~~~~~
 
-You can find all prior release blogs `here <https://h2o.ai/blog/category/h2o-release/>`__.
+You can find all prior release blogs `here <https://h2o.ai/blog/?category=products/h2o_3/h2o_release>`__.
 
 General Blogs
 -------------
