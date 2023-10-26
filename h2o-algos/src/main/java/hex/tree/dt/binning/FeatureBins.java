@@ -150,7 +150,7 @@ public class FeatureBins {
     public List<SplitStatistics> calculateStatisticsForCategoricalFeatureBinomialClassification(int nclass) {
         List<CategoricalBin> sortedBins = _bins.stream()
                 .map(b -> (CategoricalBin) b)
-                .sorted(Comparator.comparingInt(c -> c.getClassCount(0)))
+                .sorted(Comparator.comparing(c -> c.getClassCount(0) / c._count))
                 .collect(Collectors.toList());
         
         // init list with empty instances

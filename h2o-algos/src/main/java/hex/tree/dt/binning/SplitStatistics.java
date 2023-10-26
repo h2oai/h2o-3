@@ -72,13 +72,16 @@ public class SplitStatistics {
     // todo - test it, compare to the previous one, check if additional 0-handling is needed
     public static double entropyBinarySplitMultinomial(final int[] classCountsDistribution, final int totalCount) {
         return -1 * Arrays.stream(classCountsDistribution)
-                .mapToDouble(count -> (count * 1.0 / totalCount) * Math.log((count * 1.0 / totalCount))).sum();
+                .mapToDouble(count -> (count == 0) ? 0 : (count * 1.0 / totalCount) * Math.log((count * 1.0 / totalCount)))
+                .sum();
     }
 
     // todo - what is the entropy for multiclass and what is important
     public Double binaryEntropy() {
         int totalCount = _leftCount + _rightCount;
-        return entropyBinarySplitMultinomial(_leftClassDistribution, _leftCount) * _leftCount / totalCount
+        double res =  entropyBinarySplitMultinomial(_leftClassDistribution, _leftCount) * _leftCount / totalCount
                 + entropyBinarySplitMultinomial(_rightClassDistribution, _rightCount) * _rightCount / totalCount;
+        System.out.println(Arrays.toString(_leftClassDistribution) + Arrays.toString(_rightClassDistribution) + " = " + res);
+        return res;
     }
 }

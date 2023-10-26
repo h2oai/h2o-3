@@ -48,6 +48,9 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
             double[][] tmpBins = new double[_bins.length][];
             for (int b = 0; b < _bins.length; b++) {
                 tmpBins[b] = Arrays.copyOf(_bins[b], _bins[b].length);
+                for(int c = _countsOffset; c < _bins[b].length; c++) {
+                    tmpBins[b][c] = 0; // set all the counts to 0 - throw away existing counts if any
+                }
             }
             _bins = tmpBins;
         }
@@ -85,6 +88,7 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
                 }
             }
         }
+        System.out.println(Arrays.deepToString(_bins));
     }
 
     private boolean isNumerical(int feature) {
@@ -113,5 +117,6 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
                 _bins[i][c] += mrt._bins[i][c];
             }
         }
+        System.out.println("Reduce " + Arrays.deepToString(_bins));
     }
 }
