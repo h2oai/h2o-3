@@ -117,3 +117,12 @@ coefficients, normalized coefficients, residual/null deviance, aic, and a host o
 MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices.
 """
 )
+examples = dict(
+    alpha="""
+>>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> train, test = h2o_data.split_frame(ratios = [.8])
+>>> y = "C11"
+>>> x = ["C1","C2"]
+>>> numKnots = [5,5,5]
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], alpha=.25)
+""",
