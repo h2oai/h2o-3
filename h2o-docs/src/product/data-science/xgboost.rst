@@ -373,6 +373,21 @@ Metrics
 
 Usage is illustrated in the Examples section.
 
+XGBoost Friedman and Popescu's H statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables. 
+
+H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
+
+This statistic can be calculated only for numerical variables. Missing values are supported. 
+
+See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.* **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.
+
+Reference implementation: https://pypi.org/project/sklearn-gbmi/ (Python) and https://rdrr.io/cran/gbm/man/interact.gbm.html (R)
+
+Usage is illustrated in the Examples section.b
+
 Examples
 ~~~~~~~~
 
@@ -415,6 +430,10 @@ Below is a simple example showing how to build a XGBoost model.
     # Extract feature interactions:
     feature_interactions = h2o.feature_interaction(titanic_xgb)
 
+    # Get Friedman and Popescu's H statistics
+    h <- h2o.h(titanic_xgb, train, c('sex','age'))
+    print(h)
+
 
    .. code-tab:: python
    
@@ -450,6 +469,10 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Extract feature interactions:
     feature_interactions = titanic_xgb.feature_interaction()
+
+    # Get Friedman and Popescu's H statistics
+    h = titanic_xgb.h(train, ['sex','age'])
+    print(h)
 
 Note
 ''''
