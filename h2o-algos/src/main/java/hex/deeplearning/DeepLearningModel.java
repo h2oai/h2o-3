@@ -2361,6 +2361,13 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
     }
   }
 
+  @Override
+  public double score(double[] data) {
+    double[] pred = score0(data, new double[_output.nclasses() + 1], 0);
+    score0PostProcessSupervised(pred, data);
+    return pred[0];
+  }
+
 
 }
 

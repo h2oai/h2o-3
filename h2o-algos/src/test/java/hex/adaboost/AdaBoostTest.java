@@ -103,6 +103,30 @@ public class AdaBoostTest extends TestUtil {
     }
 
     @Test
+    public void testBasicTrainDeepLearning() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            Scope.track(train);
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._nlearners = 20;
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._weak_learner = AdaBoostModel.Algorithm.DEEP_LEARNING;
+            p._response_column = response;
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
     public void testBasicTrainLarge() {
         try {
             Scope.enter();
@@ -475,6 +499,32 @@ public class AdaBoostTest extends TestUtil {
             p._seed = 0xDECAF;
             p._nlearners = 50;
             p._weak_learner = AdaBoostModel.Algorithm.GBM;
+            p._response_column = response;
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreDeepLearning() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._nlearners = 50;
+            p._weak_learner = AdaBoostModel.Algorithm.DEEP_LEARNING;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);

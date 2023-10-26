@@ -29,7 +29,7 @@ public class AdaBoostV3 extends ModelBuilderSchema<
         @API(help = "Number of AdaBoost weak learners.", gridable = true)
         public int nlearners;
 
-        @API(help = "Choose a weak learner type. Defaults to AUTO, which means DRF.", gridable = true, values = {"AUTO", "DRF", "GLM", "GBM"})
+        @API(help = "Choose a weak learner type. Defaults to AUTO, which means DRF.", gridable = true, values = {"AUTO", "DRF", "GLM", "GBM", "DEEP_LEARNING"})
         public AdaBoostModel.Algorithm weak_learner;
 
         @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
