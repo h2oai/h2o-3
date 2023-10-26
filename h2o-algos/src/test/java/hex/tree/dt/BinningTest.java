@@ -95,9 +95,9 @@ public class BinningTest extends TestUtil {
             DataFeaturesLimits dataLimits = getInitialFeaturesLimits(basicData);
             Histogram histogram = new Histogram(basicData, dataLimits, BinningStrategy.EQUAL_WIDTH, 2);
             
-            // extracting bins from the histogram and throwing away calculated values to test the calculation separately
+            // extracting bins from the histogram
             double[][] binsArray = histogram.getFeatureBins(0).stream()
-                    .map(bin -> new double[]{-1.0, 0, 0, ((NumericBin) bin)._min, ((NumericBin) bin)._max}).toArray(double[][]::new);
+                    .map(AbstractBin::toDoubles).toArray(double[][]::new);
             
             CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(
                     0, dataLimits.toDoubles(), binsArray, NUM_COUNT_OFFSET);
@@ -125,7 +125,7 @@ public class BinningTest extends TestUtil {
 
             // extracting bins from the histogram and throwing away calculated values to test the calculation separately
             binsArray = histogram.getFeatureBins(1).stream()
-                    .map(bin -> new double[]{((CategoricalBin) bin)._category, 0, 0}).toArray(double[][]::new);
+                    .map(bin -> new double[]{((CategoricalBin) bin)._category, 0, 0, 0}).toArray(double[][]::new);
 
             task = new CountBinsSamplesCountsMRTask(1, dataLimits.toDoubles(), binsArray, CAT_COUNT_OFFSET).doAll(basicData);
 

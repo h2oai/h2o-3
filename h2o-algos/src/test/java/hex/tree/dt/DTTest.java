@@ -43,7 +43,7 @@ public class DTTest extends TestUtil {
             p._train = train._key;
             p._seed = 0xDECAF;
             p._max_depth = 5;
-            p._min_rows = 2;
+            p._min_rows = 1;
             p._response_column = "Prediction";
 
             testDataset(train, p);
