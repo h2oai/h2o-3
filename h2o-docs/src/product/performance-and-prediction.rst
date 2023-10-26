@@ -2984,12 +2984,42 @@ For classification problems, when running ``h2o.predict()`` or ``.predict()``, t
 - If you train a model with training data and set the ``nfolds`` parameter, the Max F1 threshold from the training data model metrics is used.
 - If you train a model with the train data and validation data and also set the ``nfolds`` parameter, the Max F1 threshold from the validation data model metrics is used.
 
+Using the previous example, run the following code to find and interact with the model's threshold:
+
+.. tabs::
+    .. code-tab:: r R
+
+    .. code-tab:: python
+
+        # Retrieve your default threshold:
+        original_threshold = model.default_threshold()
+        origininal_threshold
+        0.3343532308872656
+
+        # You can reset your threshold:
+        from h2o.utils.model_utils import reset_model_threshold
+        old_returned = reset_model_threshold(model, new_threshold)
+        reset_model = h2o.get_model(model.model_id)
+        reset_threshold = reset_model.default_threshold()
+
+        # Predict with reset model:
+        preds_reset = reset_model.predict(pros)
+
+        # Compare thresholds:
+
+        # You can also get optimal thresholds for calculated metrics:
+        # This is available for UpliftDRF, so to test it out
+        # you will need to build a new model:
+        from h2o.estimators import H2OUpliftRandomForestEstimator
+        train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+
+
 Predict Feature Frequency
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``feature_frequencies`` function to retrieve the number of times a feature was used on a prediction path in a tree model. This option is only available in GBM, DRF, and IF.
 
-Using the previous example, run the following to the find frequency of each feature in the prediction path of the model:
+Using the previous GBM example, run the following to the find frequency of each feature in the prediction path of the model:
 
 .. tabs::
    .. code-tab:: r R
