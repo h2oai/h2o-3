@@ -1476,9 +1476,14 @@ public class imp {
      */
     private static void ensureFromList(PyObject mod, PyObject fromlist, String name,
                                        boolean recursive) {
+        // THE ONLY CUSTOM CHANGE MADE IN THIS FILE
+        // The last Jython version that contains this "if" statement is 2.7.1b3. The newer versions throw an exception
+        // on line 1495 "Item in from list not a string". The failing type [None] is created in the library, not in H2O
+        // code.
         if (mod.__findattr__("__path__") == null) {
             return;
         }
+        // THE END OF THE CUSTOM CHANGE 
         
         // This can happen with imports like "from . import foo"
         if (name.length() == 0) {

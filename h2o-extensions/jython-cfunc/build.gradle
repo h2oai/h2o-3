@@ -2,7 +2,15 @@ description = "H2O Jython Udfs"
 
 dependencies {
     api project(":h2o-core")
-    api 'org.python:jython:2.7.3'
+    api "org.python:jython:${jythonVersion}"
+
+    if ("${jythonVersion}".toString() != "2.7.3") {
+        throw new IllegalStateException(
+            "This module expects Jython 2.7.3, configured version is ${jythonVersion}. " +
+            "Please locate org.python.core.imp class (modified from Jython 2.7.3), " +
+            "upgrade it to your version, port our custom changes (Marked as CUSTOM CHANGE)." +
+            "Once you've done that you can modify this check.")
+    }
 
     testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
