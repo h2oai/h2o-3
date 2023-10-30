@@ -2989,6 +2989,42 @@ Using the previous example, run the following code to find and interact with the
 .. tabs::
     .. code-tab:: r R
 
+        # Retrieve your default threshold:
+        model@model$default_threshold
+        [1] 0.4393567
+
+        # Threshold is import to decide final prediction. Model prediction output 
+        # is a real number between 0-1 and the threshold is used to decide if the 
+        # output will be 0 or 1. Threshold is decided by max F1 metric by default, but
+        # you can reset the threshold:
+        new_threshold <- 0.6917189903
+        old_threshold <- h2o.reset_threshold(model, new_threshold)
+        reseted_model <- h2o.getModel(model@model_id)
+        # Predict with the reset model:
+        reset_pred <- h2o.predict(reseted_model, pros)
+        # Compare the predictions:
+        pred
+          predict        p0         p1
+        1       1 0.5332915 0.46670852
+        2       0 0.9199776 0.08002236
+        3       0 0.9170936 0.08290638
+        4       0 0.9519531 0.04804688
+        5       0 0.9512314 0.04876858
+        6       1 0.5405286 0.45947143
+
+        [73 rows x 3 columns] 
+        reset_pred
+          predict        p0         p1
+        1       0 0.9356172 0.06438281
+        2       0 0.5876052 0.41239482
+        3       0 0.8776079 0.12239212
+        4       0 0.5332915 0.46670852
+        5       0 0.9866473 0.01335266
+        6       1 0.1181366 0.88186335
+
+        [380 rows x 3 columns]  
+
+
     .. code-tab:: python
 
         # Retrieve your default threshold:
@@ -3006,7 +3042,7 @@ Using the previous example, run the following code to find and interact with the
         reset_model = h2o.get_model(model.model_id)
         reset_threshold = reset_model.default_threshold()
         # Predict with the reset model:
-        preds_reset = reset_model.predict(airlines)
+        preds_reset = reset_model.predict(pros)
         # Compare the predictions:
         predict.as_data_frame()
             predict        p0        p1
@@ -3041,10 +3077,7 @@ Using the previous example, run the following code to find and interact with the
 
 
         # You can also get optimal thresholds for calculated metrics:
-        # This is available for UpliftDRF, so to test it out
-        # you will need to build a new model:
-        from h2o.estimators import H2OUpliftRandomForestEstimator
-        train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+
 
 
 Predict Feature Frequency
