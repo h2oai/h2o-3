@@ -2998,14 +2998,12 @@ Using the previous example, run the following code to find and interact with the
 
         # You can reset your threshold:
         from h2o.utils.model_utils import reset_model_threshold
+        new_threshold = 0.6917189903
         old_returned = reset_model_threshold(model, new_threshold)
         reset_model = h2o.get_model(model.model_id)
         reset_threshold = reset_model.default_threshold()
-
-        # Predict with reset model:
-        preds_reset = reset_model.predict(pros)
-
-        # Compare thresholds:
+        reset_threshold
+        0.6917189903
 
         # You can also get optimal thresholds for calculated metrics:
         # This is available for UpliftDRF, so to test it out
