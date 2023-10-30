@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -412,11 +414,19 @@ public final class ParseDataset {
       String parseType = setup.getParseType().name();
       String[] originalColumnTypes = "PARQUET".equals(parseType) ? setup.getParquetColumnTypes() 
               : setup.getOrigColumnTypes();
-      if (originalColumnTypes != null) {
+      final int[] skippedColumns = setup.getSkippedColumns();
+      String[] newColumnTypes;
+      if (skippedColumns != null) {  // need to remove column types of skipped columns
+        Set<Integer> skippedColIndices = Arrays.stream(skippedColumns).boxed().collect(Collectors.toSet());
+        newColumnTypes = IntStream.range(0, originalColumnTypes.length).filter(x -> !(skippedColIndices.contains(x))).mapToObj(x -> originalColumnTypes[x]).toArray(String[]::new);
+      } else {
+        newColumnTypes = originalColumnTypes;
+      }
+      if (newColumnTypes != null) {
         if ("PARQUET".equals(parseType)) // force change the column types specified by user 
-          forceChangeColumnTypesParquet(fr, originalColumnTypes);
+          forceChangeColumnTypesParquet(fr, newColumnTypes);
         else
-          forceChangeColumnTypes(fr, originalColumnTypes);
+          forceChangeColumnTypes(fr, newColumnTypes);
       }
     }
       
