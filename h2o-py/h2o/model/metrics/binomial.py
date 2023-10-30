@@ -952,3 +952,27 @@ class H2OBinomialModelMetrics(MetricsBase):
         else:
             return decorate_plot_result(res=gl)
 
+    def thresholds_and_metric_scores(self):
+        """Retrieve the thresholds and metric scores table.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]
+        >>> h2o_data = h2o.H2OFrame(local_data)
+        >>> h2o_data.set_names(['response', 'predictor'])
+        >>> h2o_data["response"] = h2o_data["response"].asfactor()
+        >>> gbm = H2OGradientBoostingEstimator(ntrees=1,
+        ...                                    distribution="bernoulli")
+        >>> gbm.train(x=list(range(1,h2o_data.ncol)),
+        ...           y="response",
+        ...           training_frame=h2o_data)
+        >>> perf = gbm.model_performance()
+        >>> perf.
+        """
+        if 'thresholds_and_metric_scores' in self._metric_json:
+            return self._metric_json['thresholds_and_metric_scores']
+        return None

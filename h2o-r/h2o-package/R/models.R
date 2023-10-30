@@ -1667,12 +1667,15 @@ h2o.auuc_table <- function(object, train=FALSE, valid=FALSE) {
 
 #' Retrieve the thresholds and metric scores table
 #'
-#' Retrieves the thresholds and metric scores table from an \linkS4class{H2OBinomialUpliftMetrics}.
-#' The table contains indices, thresholds, all cumulative uplift values and cumulative number of observations.
+#' Retrieves the thresholds and metric scores table from a \linkS4class{H2OBinomialUpliftMetrics} 
+#' or a \linkS4class{H2OBinomialMetrics}.
+#' 
+#' The table contains indices, thresholds, all cumulative uplift values and cumulative number of observations for 
+#' uplift binomial models or thresholds and maximal metric values for binomial models. 
 #' If "train" and "valid" parameters are FALSE (default), then the training table is returned. If more
 #' than one parameter is set to TRUE, then a named vector of tables is returned, where the names are "train", "valid".
 #'
-#' @param object An \linkS4class{H2OBinomialUpliftMetrics}
+#' @param object A \linkS4class{H2OBinomialUpliftMetrics} or a \linkS4class{H2OBinomialMetrics}
 #' @param train Retrieve the training thresholds and metric scores table
 #' @param valid Retrieve the validation thresholds and metric scores table
 #' @examples
@@ -1691,11 +1694,11 @@ h2o.auuc_table <- function(object, train=FALSE, valid=FALSE) {
 #' h2o.thresholds_and_metric_scores(perf)
 #' }
 #' @export
-h2o.thresholds_and_metric_scores <- function(object, train=FALSE, valid=FALSE) {
+h2o.thresholds_and_metric_scores <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
     if( is(object, "H2OModelMetrics") ) return( object@metrics$thresholds_and_metric_score)
     if( is(object, "H2OModel") ) {
         model.parts <- .model.parts(object)
-        if ( !train && !valid ) {
+        if ( !train && !valid && !xval) {
             metric <- model.parts$tm@metrics$thresholds_and_metric_score
             if ( !is.null(metric) ) return(metric)
         }
@@ -1710,6 +1713,13 @@ h2o.thresholds_and_metric_scores <- function(object, train=FALSE, valid=FALSE) {
             else {
                 v <- c(v,model.parts$vm@metrics$thresholds_and_metric_score)
                 v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xval) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$thresholds_and_metric_score)
+                v_names <- c(v_names,"xval")
             }
         }
         if ( !is.null(v) ) {
