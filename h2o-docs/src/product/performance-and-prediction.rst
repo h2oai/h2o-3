@@ -2996,14 +2996,49 @@ Using the previous example, run the following code to find and interact with the
         origininal_threshold
         0.3343532308872656
 
-        # You can reset your threshold:
+        # Threshold is import to decide final prediction. Model prediction output 
+        # is a real number between 0-1 and the threshold is used to decide if the 
+        # output will be 0 or 1. Threshold is decided by max F1 metric by default, but
+        # you can reset the threshold:
         from h2o.utils.model_utils import reset_model_threshold
         new_threshold = 0.6917189903
         old_returned = reset_model_threshold(model, new_threshold)
         reset_model = h2o.get_model(model.model_id)
         reset_threshold = reset_model.default_threshold()
-        reset_threshold
-        0.6917189903
+        # Predict with the reset model:
+        preds_reset = reset_model.predict(airlines)
+        # Compare the predictions:
+        predict.as_data_frame()
+             predict        NO       YES
+        0        YES  0.426613  0.573387
+        1        YES  0.395564  0.604436
+        2        YES  0.436110  0.563890
+        3        YES  0.404858  0.595142
+        4        YES  0.426613  0.573387
+        ...      ...       ...       ...
+        4034     YES  0.295468  0.704532
+        4035     YES  0.377679  0.622321
+        4036     YES  0.333266  0.666734
+        4037     YES  0.296254  0.703746
+        4038     YES  0.357736  0.642264
+
+        [4039 rows x 3 columns] 
+        preds_reset.as_data_frame()
+             predict        NO       YES
+        0         NO  0.426613  0.573387
+        1         NO  0.395564  0.604436
+        2         NO  0.436110  0.563890
+        3         NO  0.404858  0.595142
+        4         NO  0.426613  0.573387
+        ...      ...       ...       ...
+        4034     YES  0.295468  0.704532
+        4035      NO  0.377679  0.622321
+        4036      NO  0.333266  0.666734
+        4037     YES  0.296254  0.703746
+        4038      NO  0.357736  0.642264
+
+        [4039 rows x 3 columns]
+
 
         # You can also get optimal thresholds for calculated metrics:
         # This is available for UpliftDRF, so to test it out
