@@ -61,8 +61,8 @@ lookup-fault-tolerance-tests: init-lookup
 	find h2o-py/tests -name '*fault_tolerance*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
 lookup-explain-tests: init-lookup
-	find h2o-r/tests/testdir_misc/explain -name '*.R' -exec basename {} \; | grep -v NOPASS >>h2o-r/tests/.lookup.txt
-	find h2o-py/tests/testdir_misc/explain -name '*.py' -exec basename {} \; | grep -v NOPASS >>h2o-py/tests/.lookup.txt
+	find h2o-r/tests -path '*testdir_misc/explain*' -name '*.R' -not -name '*NOPASS*' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests -path '*testdir_misc/explain*' -name '*.py'  -not -name '*NOPASS*' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 	
 lookup-mojo-to-assembly-tests: init-lookup
 	find h2o-r/tests -name '*h2oassembly_download_mojo*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
