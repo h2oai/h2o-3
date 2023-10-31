@@ -1,7 +1,5 @@
 """
-The `h2o_mlflow_flavors.h2o_mojo` module provides an API for logging H2O DriverlessAI models. This models
-exports H2O models in the following flavors:
-
+The `h2o_mlflow_flavors.h2o_mojo` module provides an API for working with H2O MOJO models.
 h2o3
 
 """
@@ -89,7 +87,7 @@ def save_model(
     
     pyfunc.add_to_model(
         mlflow_model,
-        loader_module="flavor",
+        loader_module=FLAVOR_NAME,
         model_path=model_data_subpath,
         conda_env=_CONDA_ENV_FILE_NAME,
         python_env=_PYTHON_ENV_FILE_NAME,
@@ -223,7 +221,7 @@ class _H2OModelWrapper:
         :return: Model predictions.
         """
         import h2o
-
+        
         predicted = self.h2o_model.predict(h2o.H2OFrame(dataframe)).as_data_frame()
         predicted.index = dataframe.index
         return predicted
@@ -237,3 +235,4 @@ def _load_pyfunc(path):
     """
     return _H2OModelWrapper(_load_model(path, init=True))
 
+    
