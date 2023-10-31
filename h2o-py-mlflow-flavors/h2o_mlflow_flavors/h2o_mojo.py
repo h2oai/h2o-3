@@ -87,7 +87,7 @@ def save_model(
     
     pyfunc.add_to_model(
         mlflow_model,
-        loader_module=FLAVOR_NAME,
+        loader_module="h2o_mlflow_flavors.h2o_mojo",
         model_path=model_data_subpath,
         conda_env=_CONDA_ENV_FILE_NAME,
         python_env=_PYTHON_ENV_FILE_NAME,
