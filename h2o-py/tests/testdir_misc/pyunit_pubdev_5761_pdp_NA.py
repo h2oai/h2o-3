@@ -47,16 +47,16 @@ def partial_plot_test():
     gbm_model.train(x=x, y=y, training_frame=data)
 
     # pdp without weight or NA
-    pdpOrig = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE'],server=True, plot=True)
+    pdpOrig = gbm_model.partial_plot(frame=data,cols=['AGE', 'RACE'],server=True, plot=True)
     # pdp with constant weight and NA
-    pdpcWNA = gbm_model.partial_plot(data=data, cols=['AGE', 'RACE'], server=True, plot=True,
+    pdpcWNA = gbm_model.partial_plot(frame=data, cols=['AGE', 'RACE'], server=True, plot=True,
                                      weight_column="constWeight", include_na=True)
 
     # compare results
     pyunit_utils.assert_H2OTwoDimTable_equal_upto(pdpOrig[0], pdpcWNA[0], pdpOrig[0].col_header, tolerance=1e-10)
     pyunit_utils.assert_H2OTwoDimTable_equal_upto(pdpOrig[1], pdpcWNA[1], pdpOrig[1].col_header, tolerance=1e-10)
     # pdp with changing weight NA
-    pdpvWNA = gbm_model.partial_plot(data=data, cols=['AGE', 'RACE'], server=True, plot=True,
+    pdpvWNA = gbm_model.partial_plot(frame=data, cols=['AGE', 'RACE'], server=True, plot=True,
                                      weight_column="variWeight", include_na=True)
     ageList = pyunit_utils.extract_col_value_H2OTwoDimTable(pdpvWNA[0], "age")
     raceList = pyunit_utils.extract_col_value_H2OTwoDimTable(pdpvWNA[1], "race")
