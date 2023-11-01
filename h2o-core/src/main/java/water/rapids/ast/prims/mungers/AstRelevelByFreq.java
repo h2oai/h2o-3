@@ -61,7 +61,7 @@ public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
         int[] newDomainOrder = ArrayUtils.seq(0, levelWeights.length); 
         ArrayUtils.sort(newDomainOrder, levelWeights, 0,-1 );
         if ((topN != -1) && (topN < newDomainOrder.length - 1)) {
-            newDomainOrder = takeTopN(newDomainOrder, topN, v.domain().length);
+            newDomainOrder = takeTopNMostFrequentDomain(newDomainOrder, topN);
         }
         String[] domain = v.domain();
         String[] newDomain = v.domain().clone();
@@ -89,12 +89,12 @@ public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
 
     /**
      * Take the top N domains and sort rest of the indexes ASC 
-     * @param domainOrder domain order 
+     * @param domainOrder domain order already ordered by frequency DESC
      * @param topN number of top N domains to keep unsorted
-     * @param domainSize if the domain size is higher than domainOrder, new indexes are created and sorted ASC
      * @return new domain order where top N domains are untouched and rest of the domains are sorted ASC
      */
-    static int[] takeTopN(int[] domainOrder, final int topN, final int domainSize) {
+    static int[] takeTopNMostFrequentDomain(int[] domainOrder, final int topN) {
+        int domainSize = domainOrder.length;
         int[] newDomainOrder = new int[domainSize];
         int[] topNidxs = new int[topN];
         for (int i = 0; i < topN; i++) {
