@@ -11,7 +11,7 @@ H2O Release 3.44
 
 .. image:: /images/blog/rel-3-44.png
 
-We are excited to announce the release of H2O-3 3.44.0.1! We have added and improved many items. A few of our highlights are the implementation of AdaBoost, Shapley values support, Python 3.10 and 3.11 support, and added custom metric support for Deep Learning, Uplift Distributed Random Forest (DRF), Stacked Ensemble, and AutoML. Please read on for more details.
+We are excited to announce the release of H2O-3 3.44.0.1! We have added and improved many items. A few of our highlights are the implementation of AdaBoost, Shapley values support, Python 3.10 and 3.11 support, and added custom metric support for Deep Learning, Uplift Distributed Random Forest (DRF), Stacked Ensemble, GLM, and AutoML. Please read on for more details.
 
 AdaBoost (Adam Valenta)
 '''''''''''''''''''''''
