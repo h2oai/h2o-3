@@ -1034,9 +1034,16 @@ def deep_copy(data, xid):
     assert_satisfies(xid, xid != data.frame_id)
     check_frame_id(xid)
     duplicate = data.apply(lambda x: x)
-    duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(None)
-    duplicate._ex._cache._id = xid
-    duplicate._ex._children = None
+    assign(duplicate, xid)
+    return duplicate
+
+def shallow_copy(data, xid):
+    assert_is_type(data, H2OFrame)
+    assert_is_type(xid, None, str)
+    duplicate = H2OFrame._expr(expr=ExprNode("cols_py", data, slice(data.ncols)))
+    if xid is not None:
+        assert_satisfies(xid, xid != data.frame_id)
+        assign(duplicate, xid)
     return duplicate
 
 

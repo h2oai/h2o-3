@@ -60,6 +60,7 @@ class H2OFrame(Keyed, H2ODisplay):
         - A Pandas dataframe, or a Numpy ndarray: create a matching H2OFrame.
         - A Scipy sparse matrix: create a matching sparse H2OFrame.
 
+    :param str destination_frame: (internal) name of the target DKV key in the H2O backend.
     :param int header: if ``python_obj`` is a list of lists, this parameter can be used to indicate whether the
         first row of the data represents headers. The value of -1 means the first row is data, +1 means the first
         row is the headers, 0 (default) allows H2O to guess whether the first row contains data or headers.
@@ -71,7 +72,6 @@ class H2OFrame(Keyed, H2ODisplay):
         types for only few columns, and let H2O choose the types of the rest.
     :param na_strings: List of strings in the input data that should be interpreted as missing values. This could
         be given on a per-column basis, either as a list-of-lists, or as a dictionary {column name: list of nas}.
-    :param str destination_frame: (internal) name of the target DKV key in the H2O backend.
     :param str separator: (deprecated)
 
     :example:
@@ -94,7 +94,7 @@ class H2OFrame(Keyed, H2ODisplay):
     
         coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                     "categorical", "factor", "enum", "time")
-        assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
+        assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse, H2OFrame)
         assert_is_type(destination_frame, None, str)
         assert_is_type(header, -1, 0, 1)
         assert_is_type(separator, I(str, lambda s: len(s) == 1))
@@ -103,12 +103,16 @@ class H2OFrame(Keyed, H2ODisplay):
         assert_is_type(na_strings, None, [str], [[str]], {str: [str]})
         check_frame_id(destination_frame)
 
-        self._ex = ExprNode()
-        self._ex._children = None
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
-        if python_obj is not None:
-            self._upload_python_object(python_obj, destination_frame, header, separator,
-                                       column_names, column_types, na_strings, skipped_columns, force_col_types)
+        if isinstance(python_obj, H2OFrame):
+            sc = h2o.h2o.shallow_copy(python_obj, destination_frame)
+            self._ex = sc._ex
+        else:    
+            self._ex = ExprNode()
+            self._ex._children = None
+            if python_obj is not None:
+                self._upload_python_object(python_obj, destination_frame, header, separator,
+                                           column_names, column_types, na_strings, skipped_columns, force_col_types)
 
     @staticmethod
     def _expr(expr, cache=None):
