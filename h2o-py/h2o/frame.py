@@ -4653,7 +4653,7 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         return H2OFrame._expr(expr=ExprNode('h2o.random_stratified_split', self, test_frac, seed))
 
-    def match(self, table, nomatch=0):
+    def match(self, table, nomatch=0, indexes=False):
         """
         Make a vector of the positions of (first) matches of its first argument in its second.
 
@@ -4661,6 +4661,8 @@ class H2OFrame(Keyed, H2ODisplay):
 
         :param List table: the list of items to match against
         :param int nomatch: value that should be returned when there is no match.
+        :param boolean indexes: if true return index of searched value, 
+            otherwise return 1 if the value is in the list of items to match against and nomatch value otherwise
         :returns: a new H2OFrame containing for each cell from the source frame the index where
             the pattern ``table`` first occurs within that cell.
 
@@ -4672,7 +4674,7 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> matchFrame = iris["C5"].match(['Iris-setosa'])
         >>> matchFrame
         """
-        return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, None))
+        return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, None, indexes))
 
     def cut(self, breaks, labels=None, include_lowest=False, right=True, dig_lab=3):
         """
