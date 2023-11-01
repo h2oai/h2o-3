@@ -49,7 +49,7 @@ test.GBM.bernoulli <- function() {
   R.auc <- gbm.roc.area(prostate.data$CAPSULE,R.preds)
   Log.info(paste("R AUC:", R.auc, "\tH2O AUC:", h2o.auc(h2o.performance(prostate.h2o))))
 
-  # PUBDEV-515
+  # GH-13556
   f0 = log(mean(prostate.data$CAPSULE)/(1-mean(prostate.data$CAPSULE)))
   print(f0)
   print(prostate.h2o@model$init_f)
