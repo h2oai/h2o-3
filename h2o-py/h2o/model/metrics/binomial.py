@@ -971,7 +971,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...           y="response",
         ...           training_frame=h2o_data)
         >>> perf = gbm.model_performance()
-        >>> perf.
+        >>> perf
         """
         if 'thresholds_and_metric_scores' in self._metric_json:
             return self._metric_json['thresholds_and_metric_scores']
