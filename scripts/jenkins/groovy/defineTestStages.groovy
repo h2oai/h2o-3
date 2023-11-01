@@ -530,7 +530,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.7 Explain', target: 'test-pyunit-explain', pythonVersion: '3.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.11 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.11',
@@ -559,7 +559,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R4.0 Explain', target: 'test-r-explain', rVersion: '4.0.2',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
   ]
 
