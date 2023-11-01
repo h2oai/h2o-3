@@ -83,12 +83,13 @@ def save_model(
     if input_example is not None:
         _save_example(mlflow_model, input_example, path)
 
-    model_data_subpath = h2o_model.download_mojo(path=path, get_genmodel_jar=True)
+    model_data_path = h2o_model.download_mojo(path=path, get_genmodel_jar=True)
+    model_file = os.path.basename(model_data_path)
     
     pyfunc.add_to_model(
         mlflow_model,
         loader_module="h2o_mlflow_flavors.h2o_mojo",
-        model_path=model_data_subpath,
+        model_path=model_file,
         conda_env=_CONDA_ENV_FILE_NAME,
         python_env=_PYTHON_ENV_FILE_NAME,
         code=code_dir_subpath,
@@ -96,7 +97,7 @@ def save_model(
 
     mlflow_model.add_flavor(
         FLAVOR_NAME,
-        model_file=model_data_subpath,
+        model_file=model_file,
         h2o_version=h2o.__version__,
         code=code_dir_subpath,
     )
@@ -193,14 +194,12 @@ def load_model(model_uri, dst_path=None):
 def _load_model(path, init=False):
     import h2o
 
-    path = os.path.abspath(path)
-    with open(os.path.join(path, "h2o.yaml")) as f:
-        params = yaml.safe_load(f.read())
     if init:
-        h2o.init()
+        h2o.init(strict_version_check=False)
         h2o.no_progress()
 
-    model_path = os.path.join(path, params["model_file"])
+    flavor_conf = _get_flavor_configuration(model_path=path, flavor_name=FLAVOR_NAME)
+    model_path = os.path.join(path, flavor_conf["model_file"])
     model = h2o.import_mojo(model_path)
 
     return model
@@ -214,9 +213,6 @@ class _H2OModelWrapper:
         """
         :param dataframe: Model input data.
         :param params: Additional parameters to pass to the model for inference.
-
-                       .. Note:: Experimental: This parameter may change or be removed in a future
-                                               release without warning.
 
         :return: Model predictions.
         """
