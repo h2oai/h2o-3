@@ -91,6 +91,8 @@ public class ModelAttributes implements Serializable {
         } else return new MojoModelMetricsOrdinal();
       case CoxPH:
         return new MojoModelMetricsRegressionCoxPH();
+      case BinomialUplift:
+        return new MojoModelMetricsBinomialUplift();
       case Unknown:
       case Clustering:
       case AutoEncoder:

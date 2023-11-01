@@ -1162,6 +1162,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
+    public String treatmentName() { return _hasTreatment ? _names[treatmentIdx()]: null;}
     public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
     // cn are predictor cols, r is response, w is weights, o is offset, f is fold and t is treatment - these are optional
@@ -3468,6 +3469,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String offsetColumn() { return _output.offsetName(); }
       @Override
       public String weightsColumn() { return _output.weightsName(); }
+      @Override
+      public String treatmentColumn() { return _output.treatmentName(); }
       @Override
       public String foldColumn() { return _output.foldName(); }
       @Override
