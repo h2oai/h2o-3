@@ -51,7 +51,7 @@ public class AUUC extends Iced {
     public long frequency( int idx ) { return _frequency[idx]; }
     public double uplift( int idx) { return _uplift[_auucTypeIndx][idx]; }
     
-    public int getIndexByAUUCType(AUUCType type){
+    private int getIndexByAUUCType(AUUCType type){
         return ArrayUtils.find(AUUC.AUUCType.VALUES, type);
     }
     
