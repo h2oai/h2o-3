@@ -1678,6 +1678,7 @@ h2o.auuc_table <- function(object, train=FALSE, valid=FALSE) {
 #' @param object A \linkS4class{H2OBinomialUpliftMetrics} or a \linkS4class{H2OBinomialMetrics}
 #' @param train Retrieve the training thresholds and metric scores table
 #' @param valid Retrieve the validation thresholds and metric scores table
+#' @param xval Retrieve the cross-validation thresholds and metric scores table (only for \linkS4class{H2OBinomialMetrics})
 #' @examples
 #' \dontrun{
 #' library(h2o)
