@@ -5624,6 +5624,13 @@ h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, pl
                             weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL,
                             row_index=-1, targets=NULL, ...) {
   varargs <- list(...)
+  for (arg in names(varargs)) {
+      if (arg == 'data') {
+          warning("argument 'data' is deprecated; please use 'newdata' instead.")
+          if (missing(newdata))
+              newdata <- varargs$data else warning("ignoring 'data' as 'newdata' was also provided.")
+      }
+  }
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
   if(!is(newdata, "H2OFrame")) stop("newdata must be H2OFrame")
@@ -5635,12 +5642,6 @@ h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, pl
     if(is.null(targets)) stop("targets parameter has to be set for multinomial classification")
     for(i in 1:length(targets)){
         if(!is.character(targets[i])) stop("targets parameter must be a list of string values")
-    }
-  }
-  for (arg in names(varargs)) {
-    if (arg == 'data') {
-      warning("argument 'data' is deprecated; please use 'newdata' instead.")
-      if (missing(newdata)) newdata <- varargs$data else warning("ignoring 'data' as 'newdata' was also provided.")
     }
   }
   
