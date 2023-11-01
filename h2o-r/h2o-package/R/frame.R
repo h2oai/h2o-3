@@ -858,6 +858,7 @@ cut.H2OFrame <- h2o.cut
 #' @param incomparables a vector of calues that cannot be matched. Any value in
 #'        \code{x} matching a value in this vector is assigned the
 #'        \code{nomatch} value.
+#' @param indexes boolean if True change the returned vector from boolean values to indexes of match values
 #' @return Returns a vector of the positions of (first) matches of its first argument in its second
 #' @seealso \code{\link[base]{match}} for base R implementation.
 #' @examples
@@ -867,9 +868,9 @@ cut.H2OFrame <- h2o.cut
 #' h2o.match(iris_hf[, 5], c("setosa", "versicolor"))
 #' }
 #' @export
-h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
+h2o.match <- function(x, table, nomatch = 0, incomparables = NULL, indexes=FALSE) {
   if( !is.H2OFrame(table) && length(table)==1 && base::is.character(table) ) table <- .quote(table)
-  .newExpr("match", chk.H2OFrame(x), table, nomatch, incomparables)
+  .newExpr("match", chk.H2OFrame(x), table, nomatch, incomparables, indexes)
 }
 
 #' @rdname h2o.match
