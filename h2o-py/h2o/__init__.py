@@ -93,6 +93,74 @@ __all__ = [s for s in dir()
            and "h2o.{}".format(s) not in sys.modules]
 
 
+def report_error(open_browser=False):
+    import platform
+    import traceback
+    from urllib.parse import quote_plus
+
+    h2o_version = __version__
+    python_version = " ".join(sys.version.split("\n"))
+    os_version = platform.platform()
+    last_type = sys.last_type.__name__ if hasattr(sys, "last_type") else ""
+    last_value = sys.last_value if hasattr(sys, "last_value") else ""
+    last_traceback = ''.join(traceback.format_tb(sys.last_traceback)) if hasattr(sys, "last_traceback") else ""
+    exception_found = len(last_type) > 1
+
+    error_description = "**Actual behavior**\nA clear and concise description of what happenned.\n"
+    if exception_found:
+        error_description = f"""
+**Error Description**
+{last_type}:
+```{"java" if "stacktrace" in str(last_value) else ""}
+{last_value}
+```
+
+```python
+Traceback:
+{last_traceback}
+```"""
+
+    body = f"""
+    
+> [!WARNING]
+> Please make sure this issue does not leak private information, such as system paths, variables mentioned in the traceback, credentials etc. 
+    
+**H2O version, Operating System and Environment**
+H2O version: {h2o_version}
+Python version: {python_version}
+OS version: {os_version}
+
+{error_description}
+**Expected behavior**
+A clear and concise description of what you expected to happen.
+
+**Steps to reproduce**
+Steps to reproduce the behavior (with working code on a sample dataset, if possible):
+1. Do this
+2. Do that
+3. Do something else
+4. See error
+
+**Upload logs**
+If you can, please upload the H2O logs.  More information on how to do that is available [here](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/logs.html), 
+or you can use the [`h2o.download_all_logs()`](https://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/h2o.html#h2o.download_all_logs) function.  
+
+**Screenshots**
+If applicable, add screenshots to help explain your problem.
+
+**Additional context**
+Add any other context about the problem here."""
+
+    title = f"{last_type}: {last_value}" if exception_found else "Please fill in a descriptive issue name"
+
+    url = f"https://github.com/h2oai/h2o-3/issues/new?title={quote_plus(title)}&body={quote_plus(body)}&labels=bug"
+    if open_browser:
+        import webbrowser
+        webbrowser.open(url)
+
+    return url
+
+
 def _init_():
     from .display import ReplHook, in_py_repl
     from .backend.connection import register_session_hook

@@ -8,7 +8,7 @@ All H2O exceptions derive from :class:`H2OError`.
 """
 
 __all__ = ("H2OStartupError", "H2OConnectionError", "H2OServerError", "H2OResponseError",
-           "H2OValueError", "H2OTypeError", "H2OJobCancelled", "H2OError",
+           "H2OValueError", "H2OTypeError", "H2OJobCancelled", "H2OError", "H2OBackendError",
            "H2ODeprecationWarning")
 
 
@@ -155,6 +155,21 @@ class H2OJobCancelled(H2OError):
     By default, this exception will not trigger any output (as if it is caught and ignored), however the user still
     has an ability to catch this explicitly and perform a custom action.
     """
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# H2OBackendError
+# ----------------------------------------------------------------------------------------------------------------------
+
+class H2OBackendError(EnvironmentError):
+    """
+    Raised when java stacktrace is available.
+    Shows the stacktrace instead of the traceback.
+    """
+    def __init__(self, message):
+        super().__init__(message)
+        self._traceback  = self.__traceback__
+        self.__traceback__ = None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
