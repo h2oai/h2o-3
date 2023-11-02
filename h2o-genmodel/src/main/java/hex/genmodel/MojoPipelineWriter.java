@@ -146,6 +146,9 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     }
 
     @Override
+    public String treatmentColumn() { return null; }
+
+    @Override
     public ModelCategory getModelCategory() {
       return _finalModel._category;
     }

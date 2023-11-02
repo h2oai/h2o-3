@@ -78,7 +78,7 @@ test.uplift.vs.h2oUplift <- function() {
     h2oQini <- qini(h2oPerf)
 
     print(paste("H2O:", h2oQini, "upliftRF:", upliftQini$Qini)) 
-    diff = abs(h2oQini$Qini - upliftQini$Qini)
+    diff <- abs(h2oQini$Qini - upliftQini$Qini)
     print(paste("Diff:", diff))
     expect_true(diff < 10e-1)
   }

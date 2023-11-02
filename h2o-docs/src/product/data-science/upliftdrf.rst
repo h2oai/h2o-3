@@ -13,7 +13,8 @@ The current version of Uplift DRF is based on the implementation of DRF because 
 MOJO Support
 ''''''''''''
 
-Uplift DRF currently doesn't support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+Uplift DRF supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 
 Uplift DRF demo
 ~~~~~~~~~~~~~~~

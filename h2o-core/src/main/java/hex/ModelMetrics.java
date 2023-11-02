@@ -435,6 +435,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       assert(weight == 1 && offset == 0);
       return perRow(ds, yact, m);
     }
+    
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
