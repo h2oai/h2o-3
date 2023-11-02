@@ -760,6 +760,10 @@ h2o.transform_frame <- function(model, fr) {
   return(.newExpr("transform", model@model_id, h2o.getId(fr)))
 }
 
+#' Retrieve the results to view the best predictor subsets
+#' @param model modelselection object
+#' @return Returns an H2OFrame object
+#' @export
 h2o.result <- function(model) {
   if (!is(model, "H2OModel")) stop("h2o.result can only be applied to H2OModel instances with constant results")
   return(.newExpr("result", model@model_id))

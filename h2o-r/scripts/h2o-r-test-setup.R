@@ -190,8 +190,13 @@ function() {
                     "upliftrandomforest.R", "infogram.R", "isotonicregression.R", "admissibleml.R", "decisiontree.R", "adaboost.R")
 
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
-        invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
-
+#         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
+        devtools::load_all(paste(h2oRDir,"h2o-package",sep=.Platform$file.sep), export_all=FALSE)
+        
+        additional_imports <- c("h2o.logIt", ".h2o.__remoteSend")
+        for (fn in additional_imports)
+            assign(fn, do.call(`:::`, list(quote(h2o), fn)))
+            
         # source h2o-r/tests/runitUtils
         to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "glrmR.R",
                     "gbmR.R", "kmeansR.R", "naivebayesR.R", "gridR.R", "shared_javapredict.R")
