@@ -15,6 +15,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index
 
 #### Docs
 - [[#15851]](https://github.com/h2oai/h2o-3/issues/15851) - Added the 3.44 major release blog to the user guide.
+- [[#15842]](https://github.com/h2oai/h2o-3/issues/15842) - Introduced *Known Bug* section to the release notes. 
 - [[#15840]](https://github.com/h2oai/h2o-3/issues/15840) -  Fixed the release notes UI not loading by making them smaller by putting all release notes prior to 3.28.0.1 into a separate file.
 - [[#6570]](https://github.com/h2oai/h2o-3/issues/6570) - Added information on the Friedman and Popescu H Statistic to XGBoost and GBM.
 
@@ -70,7 +71,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index
 #### *Known Bug*
 *(The list of bugs introduced by the changes in this release)*
 
-- [[#15832]](https://github.com/h2oai/h2o-3/issues/15832) - Broken Python and R API for UpliftDRF MOJO models.
+- [[#15832]](https://github.com/h2oai/h2o-3/issues/15832) - Broken Python and R API for UpliftDRF MOJO models. *Resolved in 3.44.0.2.*
 
 ### 3.42.0.4 - 10/3/2023
 
