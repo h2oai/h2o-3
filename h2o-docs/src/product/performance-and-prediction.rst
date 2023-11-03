@@ -2993,7 +2993,7 @@ Using the previous example, run the following code to find and interact with the
         model@model$default_threshold
         [1] 0.4393567
 
-        # Threshold is import to decide final prediction. Model prediction output 
+        # Threshold is important to decide final prediction. Model prediction output 
         # is a real number between 0-1 and the threshold is used to decide if the 
         # output will be 0 or 1. Threshold is decided by max F1 metric by default, but
         # you can reset the threshold:
@@ -3077,7 +3077,7 @@ Using the previous example, run the following code to find and interact with the
         origininal_threshold
         0.3343532308872656
 
-        # Threshold is import to decide final prediction. Model prediction output 
+        # Threshold is important to decide final prediction. Model prediction output 
         # is a real number between 0-1 and the threshold is used to decide if the 
         # output will be 0 or 1. Threshold is decided by max F1 metric by default, but
         # you can reset the threshold:
