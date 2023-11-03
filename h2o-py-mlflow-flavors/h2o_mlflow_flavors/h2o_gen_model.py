@@ -96,8 +96,9 @@ def save_model(
         model_data_path = h2o_model.download_mojo(path=path, get_genmodel_jar=True)
         model_file = os.path.basename(model_data_path)
     else:
-        model_data_path = h2o_model.downlaod_pojo(path=path, get_genmodel_jar=True)
-        javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", java_file]
+        model_data_path = h2o_model.download_pojo(path=path, get_genmodel_jar=True)
+        h2o_genmodel_jar = os.path.join(path, "h2o-genmodel.jar")
+        javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", model_data_path]
         subprocess.check_call(javac_cmd)
         model_file = os.path.basename(model_data_path).replace(".java", ".class")
     
@@ -236,8 +237,9 @@ class _H2OModelWrapper:
         with tempfile.TemporaryDirectory() as tempdir:
             input_file = os.path.join(tempdir, "input.csv")
             output_file = os.path.join(tempdir, "output.csv")
-            dataframe.to_csv(input_file)
-
+            separator = "`"
+            import csv
+            dataframe.to_csv(input_file, index=False, quoting=csv.QUOTE_NONNUMERIC, sep=separator)
             if self.model_type == "MOJO":
                 class_path = self.genmodel_jar_path
                 type_parameter = "--mojo"
@@ -249,13 +251,17 @@ class _H2OModelWrapper:
                 model_artefact = self.model_file.replace(".class", "")
 
             java_cmd = ["java", "-cp", class_path,
-                        "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m", "-XX:MaxPermSize=2g",
-                        "hex.genmodel.tools.PredictCsv",
+                        "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
+                        "hex.genmodel.tools.PredictCsv", "--separator", separator,
                         "--input", input_file, "--output", output_file, type_parameter, model_artefact, "--decimal"]
             ret = subprocess.call(java_cmd)
             assert ret == 0, "GenModel finished with return code %d." % ret
             predicted = pandas.read_csv(output_file)
             predicted.index = dataframe.index
+            with open(input_file, "r") as file:
+                print(file.read())
+            with open(output_file, "r") as file:
+                print(file.read())
             return predicted
 
 
