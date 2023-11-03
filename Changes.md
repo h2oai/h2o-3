@@ -2,9 +2,29 @@
 
 ## H2O
 
+### 3.44.0.2 - 11/7/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index.html</a>
+
+#### Bug Fix
+- [[#15889]](https://github.com/h2oai/h2o-3/issues/15889) - Fixed inability to call `thresholds_and_metric_scores()` with binomial models and metrics.
+- [[#15861]](https://github.com/h2oai/h2o-3/issues/15861) - Fixed the warning message that caused `as_data_frame` to fail due to not having datatable installed. 
+- [[#15860]](https://github.com/h2oai/h2o-3/issues/15860) - Fixed `force_col_type` not working with `skipped_columns` when parsing parquet files.
+- [[#15832]](https://github.com/h2oai/h2o-3/issues/15832) - Fixed UpliftDRF MOJO API and updated the documentation. 
+- [[#15761]](https://github.com/h2oai/h2o-3/issues/15761) - Fixed `relevel_by_frequency` resetting the values of the column.
+
+#### Docs
+- [[#15851]](https://github.com/h2oai/h2o-3/issues/15851) - Added the 3.44 major release blog to the user guide.
+- [[#15840]](https://github.com/h2oai/h2o-3/issues/15840) -  Fixed the release notes UI not loading by making them smaller by putting all release notes prior to 3.28.0.1 into a separate file.
+- [[#6570]](https://github.com/h2oai/h2o-3/issues/6570) - Added information on the Friedman and Popescu H Statistic to XGBoost and GBM.
+
+#### Security
+- [[#15865]](https://github.com/h2oai/h2o-3/issues/15865) - Upgraded org.python.jython to CWE-416 of com.github.jnr:jnr-posix.
+
 ### 3.44.0.1 - 10/16/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index.html</a>
+
 
 #### Bug Fix
 - [[#15743]](https://github.com/h2oai/h2o-3/issues/15743) - Fixed`shap_summary_plot` for H2O Explainability Interface failing when one column was full of zeroes or NaN values.
