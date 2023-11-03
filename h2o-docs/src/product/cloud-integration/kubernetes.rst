@@ -26,7 +26,7 @@ After H2O is started, there must be a way for H2O nodes to "find" themselves and
 
 For reproducibility, resource limits and requests should always be set to equal values.
 
-**Note**: Official K8s images don’t apply any security settings. The default user is ROOT. If you require a secure interface with H2O running the image, you need to change the user and execution command to add security parameters before running the image. The following is the default command used in Docker images:
+**Note**: Official K8s images don’t apply any `security settings <../security.html>`__. The default user is ``root``. If you require a secure interface with H2O running the image, you need to change the user and execution command to add security parameters before running the image. The following is the default command used in Docker images:
 
 ::
   
