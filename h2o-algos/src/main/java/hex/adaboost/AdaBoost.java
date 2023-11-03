@@ -1,5 +1,7 @@
 package hex.adaboost;
 
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -19,8 +21,11 @@ import water.fvec.Vec;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of AdaBoost algorithm based on
@@ -37,6 +42,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
 
     private AdaBoostModel _model;
     private String _weightsName = "weights";
+    private Model.Parameters _weakLearnerParams;
 
     // Called from an http request
     public AdaBoost(AdaBoostModel.AdaBoostParameters parms) {
@@ -73,6 +79,32 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         }
         if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) ) {
             error("learn_rate", "learn_rate must be between 0 and 1");
+        }
+        boolean filledParams = _parms._weak_learner_params != null && !_parms._weak_learner_params.isEmpty();
+        if (filledParams) {
+            try {
+                Gson gson = new GsonBuilder()
+                        .setFieldNamingStrategy(new PrecedingUnderscoreNamingStrategy())
+                        .create();
+                _weakLearnerParams =
+                        gson.fromJson(_parms._weak_learner_params, DRFModel.DRFParameters.class);
+            } catch (JsonSyntaxException syntaxException) {
+                error("weak_learner_params", "Syntax error!!!: " + syntaxException.getMessage());
+            }
+        }
+    }
+
+    private class PrecedingUnderscoreNamingStrategy implements FieldNamingStrategy
+    {
+        public String translateName(Field field)
+        {
+            String fieldName =
+                    FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES.translateName(field);
+            if (fieldName.startsWith("_"))
+            {
+                fieldName = fieldName.substring(1);
+            }
+            return fieldName;
         }
     }
 
@@ -181,16 +213,18 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     }
     
     private DRF getDRFWeakLearner(Frame frame) {
-        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        DRFModel.DRFParameters parms = _weakLearnerParams != null ? (DRFModel.DRFParameters) _weakLearnerParams : new DRFModel.DRFParameters();
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
         parms._weights_column = _weightsName;
-        parms._mtries = 1;
-        parms._min_rows = 1;
-        parms._ntrees = 1;
-        parms._sample_rate = 1;
-        parms._max_depth = 1;
         parms._seed = _parms._seed;
+        if (_weakLearnerParams == null) {
+            parms._mtries = 1;
+            parms._min_rows = 1;
+            parms._ntrees = 1;
+            parms._sample_rate = 1;
+            parms._max_depth = 1;
+        }
         return new DRF(parms);
     }
 
