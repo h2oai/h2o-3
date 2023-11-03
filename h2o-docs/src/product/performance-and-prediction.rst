@@ -3131,7 +3131,7 @@ Predict Feature Frequency
 
 Use the ``feature_frequencies`` function to retrieve the number of times a feature was used on a prediction path in a tree model. This option is only available in GBM, DRF, and IF.
 
-Using the previous GBM example, run the following to the find frequency of each feature in the prediction path of the model:
+Using the previous example, run the following to the find frequency of each feature in the prediction path of the model:
 
 .. tabs::
    .. code-tab:: r R
