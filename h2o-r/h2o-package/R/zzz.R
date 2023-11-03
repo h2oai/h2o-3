@@ -48,6 +48,10 @@
   registerS3method("print", "H2OExplanation", "print.H2OExplanation")
   .s3_register("repr", "repr_text", "H2OExplanation")
   .s3_register("repr", "repr_html", "H2OExplanation")
+  
+  # CoxPH
+  .s3_register("survival", "survfit", "H2OCoxPHModel")
+  
   invisible()
 }
 

@@ -755,6 +755,12 @@ predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Pat
 #' @export
 h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 
+#' Use GRLM to transform a frame.
+#'
+#' @param model H2O GRLM model
+#' @param fr H2OFrame
+#' @return Retuns a transformed frame
+#' @export
 h2o.transform_frame <- function(model, fr) {
   if (!is(model, "H2OModel") || (is(model, "H2OModel") && model@algorithm != "glrm")) stop("h2o.transform_frame can only be applied to GLRM H2OModel instance.")
   return(.newExpr("transform", model@model_id, h2o.getId(fr)))
