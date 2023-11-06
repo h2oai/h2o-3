@@ -5593,6 +5593,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @param row_index Row for which partial dependence will be calculated instead of the whole input frame.
 #' @param targets Target classes for multinomial model.    
+#' @param ... Mainly used for backwards compatibility, to allow deprecated parameters.
 #' @examples
 #' \dontrun{
 #' library(h2o)
