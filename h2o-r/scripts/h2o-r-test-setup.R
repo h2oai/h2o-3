@@ -197,7 +197,8 @@ function() {
             "h2o.logIt", ".h2o.__remoteSend", ".as.survival.coxph.model", ".as.survival.coxph.summary",
             ".getExpanded", ".str.list", "is.H2OFrame", ".get.session.property", ".set.session.property",
             ".h2o.maximizing_metrics", ".h2o.doSafeGET", ".parse.h2oconfig", ".h2o.check_java_version",
-            "cut.H2OFrame", "as.data.frame.H2OFrame", ".h2o.perfect_auc"
+            "cut.H2OFrame", "as.data.frame.H2OFrame", ".h2o.perfect_auc", ".newExpr", ".h2o.doSafeREST",
+            ".h2o.fromJSON"
          )
          
         for (fn in additional_imports)
