@@ -98,9 +98,10 @@ def save_model(
     else:
         model_data_path = h2o_model.download_pojo(path=path, get_genmodel_jar=True)
         h2o_genmodel_jar = os.path.join(path, "h2o-genmodel.jar")
-        javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", model_data_path]
+        output_path = os.path.join(path, "classes")
+        javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-d", output_path, "-J-Xmx12g", model_data_path]
         subprocess.check_call(javac_cmd)
-        model_file = os.path.basename(model_data_path).replace(".java", ".class")
+        model_file = os.path.basename(model_data_path).replace(".java", "")
     
     pyfunc.add_to_model(
         mlflow_model,
@@ -214,18 +215,17 @@ def load_model(model_uri, dst_path=None):
 def _load_model(path):
     flavor_conf = _get_flavor_configuration(model_path=path, flavor_name=FLAVOR_NAME)
     model_type = flavor_conf["model_type"]
-    model_path = os.path.join(path, flavor_conf["model_file"])
-    genmodel_jar_path = os.path.join(path, "h2o-genmodel.jar")
+    model_file = flavor_conf["model_file"]
 
-    return _H2OModelWrapper(flavor_conf["model_file"], model_path, model_type, genmodel_jar_path)
+    return _H2OModelWrapper(model_file, model_type, path)
 
 
 class _H2OModelWrapper:
-    def __init__(self, model_file, model_path, model_type, genmodel_jar_path):
+    def __init__(self, model_file, model_type, path):
         self.model_file = model_file
-        self.model_path = model_path
         self.model_type = model_type
-        self.genmodel_jar_path = genmodel_jar_path
+        self.path = path
+        self.genmodel_jar_path = os.path.join(path, "h2o-genmodel.jar")
 
     def predict(self, dataframe, params=None):
         """
@@ -243,10 +243,10 @@ class _H2OModelWrapper:
             if self.model_type == "MOJO":
                 class_path = self.genmodel_jar_path
                 type_parameter = "--mojo"
-                model_artefact = self.model_path
-            else:    
+                model_artefact = os.path.join(self.path, self.model_file)
+            else:
                 class_path_separator = ";" if sys.platform == "win32" else ":"
-                class_path = self.genmodel_jar_path + class_path_separator + self.model_path
+                class_path = self.genmodel_jar_path + class_path_separator + os.path.join(self.path, "classes")
                 type_parameter = "--pojo"
                 model_artefact = self.model_file.replace(".class", "")
 
@@ -258,10 +258,6 @@ class _H2OModelWrapper:
             assert ret == 0, "GenModel finished with return code %d." % ret
             predicted = pandas.read_csv(output_file)
             predicted.index = dataframe.index
-            with open(input_file, "r") as file:
-                print(file.read())
-            with open(output_file, "r") as file:
-                print(file.read())
             return predicted
 
 
