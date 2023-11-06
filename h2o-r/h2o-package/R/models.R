@@ -5624,12 +5624,12 @@ h2o.cross_validation_predictions <- function(object) {
 h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
                             weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL,
                             row_index=-1, targets=NULL, ...) {
-  varargs <- list(...)
-  for (arg in names(varargs)) {
+  dots <- list(...)
+  for (arg in names(dots)) {
       if (arg == 'data') {
           warning("argument 'data' is deprecated; please use 'newdata' instead.")
           if (missing(newdata))
-              newdata <- varargs$data else warning("ignoring 'data' as 'newdata' was also provided.")
+              newdata <- dots$data else warning("ignoring 'data' as 'newdata' was also provided.")
       } else {
           stop(paste("unused argument", arg))
       }
