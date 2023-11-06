@@ -63,6 +63,36 @@ def get_default_conda_env():
     return _mlflow_conda_env(additional_pip_deps=get_default_pip_requirements())
 
 
+def get_params(h2o_model):
+    return None  
+    
+    
+def get_metrics(h2o_model, metric_type=None):
+    def get_metrics_section(output, prefix, metric_type):
+        is_valid = lambda key, val: isinstance(val,(type(None), bool, float, int)) and not str(key).endswith("checksum")
+        items = output[metric_type]._metric_json.items()
+        return {prefix + str(key): val for key, val in items if is_valid(key, val)}
+
+    metric_type_lower = None
+    if metric_type:
+        metric_type_lower = metric_type.toLowerCase()    
+
+    output = h2o_model._model_json["output"]
+    metrics = {}
+
+    if output["training_metrics"] and (metric_type_lower is None or metric_type_lower == "training"):
+        training_metrics = get_metrics_section(output, "training_", "training_metrics")
+        metrics = dict(metrics, **training_metrics)
+    if output["validation_metrics"] and (metric_type_lower is None or metric_type_lower == "validation"):
+        validation_metrics = get_metrics_section(output, "validation_", "validation_metrics")
+        metrics = dict(metrics, **validation_metrics)
+    if output["cross_validation_metrics"] and (metric_type_lower is None or metric_type_lower in ["cv", "cross_validation"]):
+        cross_validation_metrics = get_metrics_section(output, "cv_", "cross_validation_metrics")
+        metrics = dict(metrics, **cross_validation_metrics)
+        
+    return metrics
+
+
 def save_model(
     h2o_model,
     path,
