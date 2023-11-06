@@ -14,6 +14,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index
 - [[#15761]](https://github.com/h2oai/h2o-3/issues/15761) - Fixed `relevel_by_frequency` resetting the values of the column.
 
 #### Docs
+- [[#15881]](https://github.com/h2oai/h2o-3/issues/15881) - Added security note that Kubernetes images don’t apply security settings by default.
 - [[#15851]](https://github.com/h2oai/h2o-3/issues/15851) - Added the 3.44 major release blog to the user guide.
 - [[#15842]](https://github.com/h2oai/h2o-3/issues/15842) - Introduced *Known Bug* section to the release notes. 
 - [[#15840]](https://github.com/h2oai/h2o-3/issues/15840) -  Fixed the release notes UI not loading by making them smaller by putting all release notes prior to 3.28.0.1 into a separate file.
