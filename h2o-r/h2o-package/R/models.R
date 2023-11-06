@@ -5608,7 +5608,7 @@ h2o.cross_validation_predictions <- function(object) {
 #'                         ntrees = 10,
 #'                         max_depth = 5,
 #'                         learn_rate = 0.1)
-#' h2o.partialPlot(object = prostate_gbm, data = prostate, cols = c("AGE", "RACE"))
+#' h2o.partialPlot(object = prostate_gbm, newdata = prostate, cols = c("AGE", "RACE"))
 #'
 #' iris_hex <- as.h2o(iris)
 #' iris_gbm <- h2o.gbm(x = c(1:4), y = 5, training_frame = iris_hex)
@@ -5677,6 +5677,7 @@ h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, pl
       stop("weight_column_index should be one of your columns in your data frame.")
     else
       weight_column <- match(weight_column, h2o.names(newdata))-1
+  }
   }
   
   if (!is.numeric(row_index)) {
