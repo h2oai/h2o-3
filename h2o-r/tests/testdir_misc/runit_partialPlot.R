@@ -178,7 +178,7 @@ test <- function() {
   ## Check deprecated params
   expect_warning(h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa")), "argument 'data' is deprecated")
   expect_warning(h2o.partialPlot(object = iris_gbm, newdata = iris_hex, data = iris_hex, cols="Petal.Length", targets=c("setosa")), "ignoring 'data' as 'newdata' was also provided")
-  expect_error(h2o.partialPlot(object = iris_gbm, newdata = iris_hex, wrong_data = iris_hex, cols="Petal.Length", targets=c("setosa")), "unused arguments wrong_data")
+  expect_error(h2o.partialPlot(object = iris_gbm, newdata = iris_hex, wrong_arg = iris_hex, cols="Petal.Length", targets=c("setosa")), "unused argument wrong_arg")
 
   ## Check failure cases
   ## 1) Selection of incorrect columns 

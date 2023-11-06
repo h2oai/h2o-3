@@ -5624,16 +5624,15 @@ h2o.cross_validation_predictions <- function(object) {
 h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
                             weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL,
                             row_index=-1, targets=NULL, ...) {
-  if ('data' %in% ...names()) {
-      warning("argument 'data' is deprecated; please use 'newdata' instead.")
-      if (missing(newdata))
-          newdata <- ...elt(which('data' == ...names()))
-      else
-          warning("ignoring 'data' as 'newdata' was also provided.")
-  }
-  if (...length() > 0) {
-      unused_args <- ...names()[! ...names() %in% c('data')]
-      if (length(unused_args) > 0) stop(paste("unused arguments", toString(unused_args)))
+  varargs <- list(...)
+  for (arg in names(varargs)) {
+      if (arg == 'data') {
+          warning("argument 'data' is deprecated; please use 'newdata' instead.")
+          if (missing(newdata))
+              newdata <- varargs$data else warning("ignoring 'data' as 'newdata' was also provided.")
+      } else {
+          stop(paste("unused argument", arg))
+      }
   }
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
@@ -5677,7 +5676,6 @@ h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, pl
       stop("weight_column_index should be one of your columns in your data frame.")
     else
       weight_column <- match(weight_column, h2o.names(newdata))-1
-  }
   }
   
   if (!is.numeric(row_index)) {
