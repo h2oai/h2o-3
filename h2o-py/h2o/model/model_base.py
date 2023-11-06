@@ -1251,15 +1251,15 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             metrics["train"] = output["training_metrics"]
         return metrics
 
-    @deprecated_params({'save_to_file': 'save_plot_path'})
-    def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
+    @deprecated_params({'data': 'frame', 'save_to_file': 'save_plot_path'})
+    def partial_plot(self, frame, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev=True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
                      col_pairs_2dpdp=None, save_plot_path=None, row_index=None, targets=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
 
-        :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
+        :param H2OFrame frame: An H2OFrame object used for scoring and constructing the plot.
         :param cols: Feature(s) for which partial dependence will be calculated.
         :param destination_key: A key reference to the created partial dependence tables in H2O.
         :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable ``add_missing_NA``, the returned length will be nbin+1.
@@ -1277,7 +1277,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using ``result.figure()``).
         """
-        if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
+        if not isinstance(frame, h2o.H2OFrame): raise ValueError("frame must be an instance of H2OFrame.")
         num_1dpdp = 0
         num_2dpdp = 0
         if cols is not None:
@@ -1301,22 +1301,22 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         # Check cols specified exist in frame data
         if cols is not None:
             for xi in cols:
-                if xi not in data.names:
+                if xi not in frame.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % xi)
         if col_pairs_2dpdp is not None:
             for oneP in col_pairs_2dpdp:
-                if oneP[0] not in data.names:
+                if oneP[0] not in frame.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % oneP[0])
-                if oneP[1] not in data.names:
+                if oneP[1] not in frame.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % oneP[1])
                 if oneP[0] is oneP[1]:
                     raise H2OValueError("2D pdp must be with different columns.")
         if isinstance(weight_column, int) and not (weight_column == -1):
             raise H2OValueError("Weight column should be a column name in your data frame.")
         elif isinstance(weight_column, str): # index is a name
-            if weight_column not in data.names:
+            if weight_column not in frame.names:
                 raise H2OValueError("Column %s does not exist in the data frame" % weight_column)
-            weight_column = data.names.index(weight_column)
+            weight_column = frame.names.index(weight_column)
         
         if row_index is not None:
             if not isinstance(row_index, int):
@@ -1334,7 +1334,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         kwargs = {}
         kwargs["cols"] = cols
         kwargs["model_id"] = self.model_id
-        kwargs["frame_id"] = data.frame_id
+        kwargs["frame_id"] = frame.frame_id
         kwargs["nbins"] = nbins
         kwargs["destination_key"] = destination_key
         kwargs["weight_column_index"] = weight_column
@@ -1344,7 +1344,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if targets:
             kwargs["targets"] = targets
 
-        self.__generate_user_splits(user_splits, data, kwargs)
+        self.__generate_user_splits(user_splits, frame, kwargs)
         json = H2OJob(h2o.api("POST /3/PartialDependence/", data=kwargs),  job_type="PartialDependencePlot").poll()
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
@@ -1353,7 +1353,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         # Plot partial dependence plots using matplotlib
         return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, 
-                                             col_pairs_2dpdp, data, nbins,
+                                             col_pairs_2dpdp, frame, nbins,
                                              kwargs["user_cols"], kwargs["num_user_splits"], 
                                              plot_stddev, cols, save_plot_path, row_index, targets, include_na)
 

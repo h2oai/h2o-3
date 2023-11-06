@@ -32,55 +32,55 @@ def partial_plot_test():
     # one class target
     cols = ["petal_len"]
     targets = ["Iris-setosa"]
-    pdp_petal_len_se = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=False, 
+    pdp_petal_len_se = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=False, 
                                           plot=True, server=True)
     print(pdp_petal_len_se)
     
-    pdp_petal_len_se_std = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, 
+    pdp_petal_len_se_std = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=True, 
                                               plot=True, server=True)
     print(pdp_petal_len_se_std)
     
     # two clasess target
     targets = ["Iris-setosa", "Iris-virginica"]
-    pdp_petal_len_se_vi = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=False, 
+    pdp_petal_len_se_vi = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=False, 
                                              plot=True, server=True)
     print(pdp_petal_len_se_vi)
     
-    pdp_petal_len_se_vi_std = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, 
+    pdp_petal_len_se_vi_std = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=True, 
                                                  plot=True, server=True)
     print(pdp_petal_len_se_vi_std)
     
     # three classes target
     targets = ["Iris-setosa", "Iris-virginica", "Iris-versicolor"]
-    pdp_petal_len_se_vi_ve_std = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, 
+    pdp_petal_len_se_vi_ve_std = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=True, 
                                                     plot=True, server=True)
     print(pdp_petal_len_se_vi_ve_std)
     
     # two columns and three classes target
     cols = ["sepal_len", "petal_len"]
-    pdp_petal_len_sepal_len_se_vi_ve_std = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, 
+    pdp_petal_len_sepal_len_se_vi_ve_std = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=True, 
                                                               plot=True, server=True)
     print(pdp_petal_len_sepal_len_se_vi_ve_std)
     
     # three columns and three classes target  
     cols = ["sepal_len","petal_len", "sepal_wid"]
-    pdp_petal_len_sepal_len_sepal_wid_se_vi_ve = model.partial_plot(data=iris, cols=cols, targets=targets, 
+    pdp_petal_len_sepal_len_sepal_wid_se_vi_ve = model.partial_plot(frame=iris, cols=cols, targets=targets, 
                                                                     plot_stddev=False, plot=True, server=True)
     print(pdp_petal_len_sepal_len_sepal_wid_se_vi_ve)
     
-    pdp_petal_len_sepal_len_sepal_wid_se_vi_ve_std = model.partial_plot(data=iris, cols=cols, targets=targets, 
+    pdp_petal_len_sepal_len_sepal_wid_se_vi_ve_std = model.partial_plot(frame=iris, cols=cols, targets=targets, 
                                                                         plot_stddev=True, plot=True, server=True)
     print(pdp_petal_len_sepal_len_sepal_wid_se_vi_ve_std)
     
     # categorical column - nonsense column, just for testing
     cols = ["random_cat"]
     targets = ["Iris-setosa"]
-    pdp_petal_len_cat = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=False, plot=True, 
+    pdp_petal_len_cat = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=False, plot=True, 
                                            server=True)
     print(pdp_petal_len_cat)
 
     targets = ["Iris-setosa", "Iris-versicolor"]
-    pdp_petal_len_cat_std = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True, 
+    pdp_petal_len_cat_std = model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=True, plot=True, 
                                                server=True)
     print(pdp_petal_len_cat_std)
 

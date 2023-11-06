@@ -5583,7 +5583,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' partial dependence the mean response (probabilities) is returned rather than the mean of the log class probability.
 #'
 #' @param object An \linkS4class{H2OModel} object.
-#' @param data An H2OFrame object used for scoring and constructing the plot.
+#' @param newdata An H2OFrame object used for scoring and constructing the plot.
 #' @param cols Feature(s) for which partial dependence will be calculated.
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
 #' @param nbins Number of bins used. For categorical columns make sure the number of bins exceeds the level count.
@@ -5604,6 +5604,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @param row_index Row for which partial dependence will be calculated instead of the whole input frame.
 #' @param targets Target classes for multinomial model.    
+#' @param ... Mainly used for backwards compatibility, to allow deprecated parameters.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -5618,25 +5619,35 @@ h2o.cross_validation_predictions <- function(object) {
 #'                         ntrees = 10,
 #'                         max_depth = 5,
 #'                         learn_rate = 0.1)
-#' h2o.partialPlot(object = prostate_gbm, data = prostate, cols = c("AGE", "RACE"))
+#' h2o.partialPlot(object = prostate_gbm, newdata = prostate, cols = c("AGE", "RACE"))
 #'
 #' iris_hex <- as.h2o(iris)
 #' iris_gbm <- h2o.gbm(x = c(1:4), y = 5, training_frame = iris_hex)
 #'
 #' # one target class
-#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"))
+#' h2o.partialPlot(object = iris_gbm, newdata = iris_hex, cols="Petal.Length", targets=c("setosa"))
 #' # three target classes
-#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", 
+#' h2o.partialPlot(object = iris_gbm, newdata = iris_hex, cols="Petal.Length", 
 #'                  targets=c("setosa", "virginica", "versicolor"))
 #' }
 #' @export
 
-h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
-                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL, 
-                            row_index=-1, targets=NULL) {
+h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
+                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL,
+                            row_index=-1, targets=NULL, ...) {
+  dots <- list(...)
+  for (arg in names(dots)) {
+      if (arg == 'data') {
+          warning("argument 'data' is deprecated; please use 'newdata' instead.")
+          if (missing(newdata))
+              newdata <- dots$data else warning("ignoring 'data' as 'newdata' was also provided.")
+      } else {
+          stop(paste("unused argument", arg))
+      }
+  }
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
-  if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
+  if(!is(newdata, "H2OFrame")) stop("newdata must be H2OFrame")
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
@@ -5648,60 +5659,60 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     }
   }
   
-  noPairs = missing(col_pairs_2dpdp)
-  noCols = missing(cols)
-  if(noCols && noPairs) cols =  object@parameters$x # set to default only if both are missing
+  noPairs <- missing(col_pairs_2dpdp)
+  noCols <- missing(cols)
+  if(noCols && noPairs) cols <- object@parameters$x # set to default only if both are missing
 
-  y = object@parameters$y
-  numCols = 0
-  numColPairs = 0    
+  y <- object@parameters$y
+  numCols <- 0
+  numColPairs <- 0    
   if (!missing(cols)) { # check valid cols in cols for 1d pdp
     x <- cols
-    args <- .verify_dataxy(data, x, y)
+    args <- .verify_dataxy(newdata, x, y)
   }
   cpairs <- NULL
   if (!missing(col_pairs_2dpdp))   { # verify valid cols for 2d pdp
     for (onePair in col_pairs_2dpdp) {
-      pargs <- .verify_dataxy(data, onePair, y)
+      pargs <- .verify_dataxy(newdata, onePair, y)
       cpairs <-
         c(cpairs, paste0("[", paste (pargs$x, collapse = ','), "]"))
     }
-    numColPairs = length(cpairs)
+    numColPairs <- length(cpairs)
   }
 
   if (is.numeric(weight_column) && (weight_column != -1)) {
       stop("weight_column should be a column name of your data frame.")
   } else if (is.character(weight_column)) { # weight_column_index is column name
-    if (!weight_column %in% h2o.names(data))
+    if (!weight_column %in% h2o.names(newdata))
       stop("weight_column_index should be one of your columns in your data frame.")
     else
-      weight_column <- match(weight_column, h2o.names(data))-1
+      weight_column <- match(weight_column, h2o.names(newdata))-1
   }
   
   if (!is.numeric(row_index)) {
     stop("row_index should be numeric.")
   }
   
-  parms = list()
+  parms <- list()
   if (!missing(col_pairs_2dpdp)) {
     parms$col_pairs_2dpdp <- paste0("[", paste (cpairs, collapse = ','), "]")
   }
   if (!missing(cols)) {
     parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
-    numCols = length(cols)
+    numCols <- length(cols)
   }
   if(is.null(targets)){
     num_1d_pp_data <- numCols
   } else {
     num_1d_pp_data <- numCols * length(targets)
   }
-  noCols = missing(cols)
+  noCols <- missing(cols)
   parms$model_id  <- attr(object, "model_id")
-  parms$frame_id <- attr(data, "id")
+  parms$frame_id <- attr(newdata, "id")
   parms$nbins <- nbins
   parms$weight_column_index <- weight_column
   parms$add_missing_na <- include_na
-  parms$row_index = row_index
+  parms$row_index <- row_index
 
   if (is.null(user_splits) || length(user_splits) == 0) {
     parms$user_cols <- NULL
@@ -5711,15 +5722,15 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     user_cols <- c()
     user_values <- c()
     user_num_splits <- c()
-    column_names <- h2o.names(data)
+    column_names <- h2o.names(newdata)
     for (ind in c(1:length(user_splits))) {
       aList <- user_splits[[ind]]
-      csname = aList[1]
+      csname <- aList[1]
       if (csname %in% column_names) {
-        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname]) || h2o.getTypes(data)[[which(names(data) == csname)]] == "time") {
+        if (h2o.isnumeric(newdata[csname]) || h2o.isfactor(newdata[csname]) || h2o.getTypes(newdata)[[which(names(newdata) == csname)]] == "time") {
           nVal <- length(aList)-1
-          if (h2o.isfactor(data[csname])) {
-            domains <- h2o.levels(data[csname]) # enum values
+          if (h2o.isfactor(newdata[csname])) {
+            domains <- h2o.levels(newdata[csname]) # enum values
             tempVal <- aList[2:length(aList)]
             intVals <- c(1:length(tempVal))
             for (eleind in c(1:nVal)) {
@@ -5780,7 +5791,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       max_upper <- max(max_upper, pp[,2] + pp[,3])
       if (i <= num_1d_pp_data) {
         if(is.null(targets)){
-          col_name_index = i
+          col_name_index <- i
           title <- paste("Partial dependency plot for", cols[col_name_index]) 
         } else if(!is.null(targets)){
           if(length(cols) > 1 && i %% length(cols) == 0) {
@@ -5809,8 +5820,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       }
     }
   }
-  col_types = unlist(h2o.getTypes(data))
-  col_names = names(data)
+  col_types <- unlist(h2o.getTypes(newdata))
+  col_names <- names(newdata)
     
   pp.plot.1d <- function(pp) {
     if(!all(is.na(pp))) {
@@ -5831,8 +5842,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       ## Plot one standard deviation above and below the mean
       if(plot_stddev) {
         ## Added upper and lower std dev confidence bound
-        upper = y + stddev
-        lower = y - stddev
+        upper <- y + stddev
+        lower <- y - stddev
         plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
         pp.plot.1d.plotNA(pp, type, "red")
         polygon(pp.plot.1d.proccessDataForPolygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper))) , col = adjustcolor("red", alpha.f = 0.1), border = F)
@@ -5851,7 +5862,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         
   pp.plot.1d.plotNA <- function(pp, type, color) {
     ## Plot NA value if numerical
-    NAsIds = which(is.na(pp[,1:1]))
+    NAsIds <- which(is.na(pp[,1:1]))
     if (type != "enum" && include_na && length(NAsIds) != 0) {
         points(pp[,1:1],array(pp[NAsIds, 2:2], dim = c(length(pp[,1:1]), 1)), col=color, type="l", lty=5)
         if (is.null(targets)) {
@@ -5891,10 +5902,10 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     
   pp.plot.1d.proccessDataForPolygon <- function(X, Y) {
     ## polygon can't handle NAs
-    NAsIds = which(is.na(X))
+    NAsIds <- which(is.na(X))
     if (length(NAsIds) != 0) {
-      X = X[-NAsIds]
-      Y = Y[-NAsIds]
+      X <- X[-NAsIds]
+      Y <- Y[-NAsIds]
     }
     return(cbind(X, Y))
   }        
@@ -5983,10 +5994,10 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       ## Plot one standard deviation above and below the mean
       if (plot_stddev) {
         ## Added upper and lower std dev confidence bound
-        upper = pp[, 3] + pp[, 4]
-        lower = pp[, 3] - pp[, 4]
-        Zupper = matrix(upper, ncol=dim(XX)[2], byrow=F)
-        Zlower = matrix(lower, ncol=dim(XX)[2], byrow=F)
+        upper <- pp[, 3] + pp[, 4]
+        lower <- pp[, 3] - pp[, 4]
+        Zupper <- matrix(upper, ncol=dim(XX)[2], byrow=F)
+        Zlower <- matrix(lower, ncol=dim(XX)[2], byrow=F)
         rgl::open3d()
         plot3Drgl::persp3Drgl(XX, YY, ZZ, theta=30, phi=15, axes=TRUE,scale=2, box=TRUE, nticks=5,
                 ticktype="detailed", xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots",
@@ -6026,7 +6037,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   pp.plot.save.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
     # If user accidentally provides one of the most common suffixes in R, it is removed.
     save_to <- gsub(replacement = "", pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
-    colnames = paste0(names(pp)[1], "_", names(pp)[2])
+    colnames <- paste0(names(pp)[1], "_", names(pp)[2])
     destination_file <- paste0(save_to,"_",colnames,'.png')
     pp.plot.2d(pp, nbins, user_cols, user_num_splits)
     rgl::snapshot3d(destination_file)
@@ -6044,7 +6055,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       from <- 1
       to <- length(targets)
       for(i in 1:numCols) {
-        pp = pps[from:to]
+        pp <- pps[from:to]
         pp.plot.1d.multinomial(pp)
         if(!is.null(save_to)){
           pp.plot.save.1d.multinomial(pp)
