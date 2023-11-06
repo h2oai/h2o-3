@@ -2703,7 +2703,6 @@ summary.H2OFrame <- h2o.summary
 h2o.median <- function(x, na.rm = TRUE) .eval.scalar(.newExpr("median",x,na.rm))
 
 #' @rdname h2o.median
-#' @export
 median.H2OFrame <- h2o.median
 
 #'

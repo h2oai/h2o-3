@@ -52,6 +52,9 @@
   # CoxPH
   .s3_register("survival", "survfit", "H2OCoxPHModel")
   
+  # H2OFrame
+  .s3_register("stats", "median", "H2OFrame")
+  
   invisible()
 }
 
