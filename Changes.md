@@ -13,6 +13,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index
 - [[#15832]](https://github.com/h2oai/h2o-3/issues/15832) - Fixed UpliftDRF MOJO API and updated the documentation. 
 - [[#15761]](https://github.com/h2oai/h2o-3/issues/15761) - Fixed `relevel_by_frequency` resetting the values of the column.
 
+#### Improvement
+- [[#15893]](https://github.com/h2oai/h2o-3/issues/15893) - Renamed the `data` parameter of the `partial_plot` function to `frame`.
+
 #### Docs
 - [[#15881]](https://github.com/h2oai/h2o-3/issues/15881) - Added security note that Kubernetes images don’t apply security settings by default.
 - [[#15851]](https://github.com/h2oai/h2o-3/issues/15851) - Added the 3.44 major release blog to the user guide.
