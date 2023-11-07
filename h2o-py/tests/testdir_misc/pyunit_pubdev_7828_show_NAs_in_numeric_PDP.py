@@ -31,20 +31,20 @@ def show_NAs_numeric_pdp_test():
     model.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
     col = ["petal_len"]
     # 1 class target
-    model.partial_plot(data=iris, cols=col, targets=["Iris-setosa"], plot_stddev=False, include_na=True,
+    model.partial_plot(frame=iris, cols=col, targets=["Iris-setosa"], plot_stddev=False, include_na=True,
                                       plot=True, server=True)
-    model.partial_plot(data=iris, cols=col, targets=["Iris-setosa"], plot_stddev=True, include_na=True,
+    model.partial_plot(frame=iris, cols=col, targets=["Iris-setosa"], plot_stddev=True, include_na=True,
                        plot=True, server=True)
     # 2 class target
-    model.partial_plot(data=iris, cols=col, targets=["Iris-setosa", "Iris-virginica"], plot_stddev=False, include_na=True,
+    model.partial_plot(frame=iris, cols=col, targets=["Iris-setosa", "Iris-virginica"], plot_stddev=False, include_na=True,
                                              plot=True, server=True)
-    model.partial_plot(data=iris, cols=col, targets=["Iris-setosa", "Iris-virginica"], plot_stddev=True, include_na=True,
+    model.partial_plot(frame=iris, cols=col, targets=["Iris-setosa", "Iris-virginica"], plot_stddev=True, include_na=True,
                        plot=True, server=True)
     # 3 class target
-    model.partial_plot(data=iris, cols=col, targets=["Iris-setosa", "Iris-virginica", "Iris-versicolor"], plot_stddev=True, include_na=True,
+    model.partial_plot(frame=iris, cols=col, targets=["Iris-setosa", "Iris-virginica", "Iris-versicolor"], plot_stddev=True, include_na=True,
                                                     plot=True, server=True)
     # 2 cols 3 classes
-    model.partial_plot(data=iris, cols=["sepal_len", "petal_len"], targets=["Iris-setosa", "Iris-virginica", "Iris-versicolor"], plot_stddev=True,
+    model.partial_plot(frame=iris, cols=["sepal_len", "petal_len"], targets=["Iris-setosa", "Iris-virginica", "Iris-versicolor"], plot_stddev=True,
                                                               include_na=True, plot=True, server=True)
 
 
