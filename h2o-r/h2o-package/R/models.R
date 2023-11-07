@@ -759,16 +759,120 @@ h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 #'
 #' @param model H2O GRLM model
 #' @param fr H2OFrame
-#' @return Retuns a transformed frame
+#' @return Returns a transformed frame
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the USArrests dataset into H2O:
+#' arrests <- h2o.importFile(
+#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv"
+#' )
+#'
+#' # Split the dataset into a train and valid set:
+#' arrests_splits <- h2o.splitFrame(data = arrests, ratios = 0.8, seed = 1234)
+#' train <- arrests_splits[[1]]
+#' valid <- arrests_splits[[2]]
+#'
+#' # Build and train the model:
+#' glrm_model = h2o.glrm(training_frame = train,
+#'                       k = 4,
+#'                       loss = "Quadratic",
+#'                       gamma_x = 0.5,
+#'                       gamma_y = 0.5,
+#'                       max_iterations = 700,
+#'                       recover_svd = TRUE,
+#'                       init = "SVD",
+#'                       transform = "STANDARDIZE")
+#'
+#' # Eval performance:
+#' arrests_perf <- h2o.performance(glrm_model)
+#'
+#' # Generate predictions on a validation set (if necessary):
+#' arrests_pred <- h2o.predict(glrm_model, newdata = valid)
+#'
+#' # Transform the data using the dataset "valid" to retrieve the new coefficients:
+#' glrm_transform <- h2o.transform_frame(glrm_model, valid)
+#'}
 #' @export
 h2o.transform_frame <- function(model, fr) {
   if (!is(model, "H2OModel") || (is(model, "H2OModel") && model@algorithm != "glrm")) stop("h2o.transform_frame can only be applied to GLRM H2OModel instance.")
   return(.newExpr("transform", model@model_id, h2o.getId(fr)))
 }
 
-#' Retrieve the results to view the best predictor subsets
-#' @param model modelselection object
+#' Retrieve the results to view the best predictor subsets.
+#'
+#' @param model H2OModelSelection  object
 #' @return Returns an H2OFrame object
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the prostate dataset:
+#' prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+#'
+#' # Set the predictors & response:
+#' predictors <- c("AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+#' response <- "GLEASON"
+#'
+#' # Build & train the model:
+#' allsubsetsModel <- h2o.modelSelection(x = predictors,
+#'                                       y = response,
+#'                                       training_frame = prostate,
+#'                                       seed = 12345,
+#'                                       max_predictor_number = 7,
+#'                                       mode = "allsubsets")
+#'
+#' # Retrieve the results (H2OFrame containing best model_ids, best_r2_value, & predictor subsets):
+#' results <- h2o.result(allsubsetsModel)
+#' print(results)
+#'
+#' # Retrieve the list of coefficients:
+#' coeff <- h2o.coef(allsubsetsModel)
+#' print(coeff)
+#'
+#' # Retrieve the list of coefficients for a subset size of 3:
+#' coeff3 <- h2o.coef(allsubsetsModel, 3)
+#' print(coeff3)
+#'
+#' # Retrieve the list of standardized coefficients:
+#' coeff_norm <- h2o.coef_norm(allsubsetsModel)
+#' print(coeff_norm)
+#'
+#' # Retrieve the list of standardized coefficients for a subset size of 3:
+#' coeff_norm3 <- h2o.coef_norm(allsubsetsModel)
+#' print(coeff_norm3)
+#'
+#' # Check the variables that were added during this process:
+#' h2o.get_predictors_added_per_step(allsubsetsModel)
+#'
+#' # To find out which variables get removed, build a new model with ``mode = "backward``
+#' # using the above training information:
+#' bwModel <- h2o.modelSelection(x = predictors,
+#'                               y = response,
+#'                               training_frame = prostate,
+#'                               seed = 12345,
+#'                               max_predictor_number = 7,
+#'                               mode = "backward")
+#' h2o.get_predictors_removed_per_step(bwModel)
+#'
+#' # To build the fastest model with ModelSelection, use ``mode = "maxrsweep"``:
+#' sweepModel <- h2o.modelSelection(x = predictors,
+#'                                  y = response,
+#'                                  training_frame = prostate,
+#'                                  mode = "maxrsweep",
+#'                                  build_glm_model = FALSE,
+#'                                  max_predictor_number = 3,
+#'                                  seed = 12345)
+#'
+#' # Retrieve the results to view the best predictor subsets:
+#' h2o.result(sweepModel)
+#' '}
+#'
 #' @export
 h2o.result <- function(model) {
   if (!is(model, "H2OModel")) stop("h2o.result can only be applied to H2OModel instances with constant results")
