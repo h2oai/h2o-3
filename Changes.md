@@ -7,7 +7,7 @@
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index.html</a>
 
 #### Bug Fix
-- [[#15906]](https://github.com/h2oai/h2o-3/issues/15906) - Fixed `learning_curve_plot` for CoxPH with specified metric = 'loglik'
+- [[#15906]](https://github.com/h2oai/h2o-3/issues/15906) - Fixed `learning_curve_plot` for CoxPH with specified metric = 'loglik'.
 - [[#15889]](https://github.com/h2oai/h2o-3/issues/15889) - Fixed inability to call `thresholds_and_metric_scores()` with binomial models and metrics.
 - [[#15861]](https://github.com/h2oai/h2o-3/issues/15861) - Fixed the warning message that caused `as_data_frame` to fail due to not having datatable installed. 
 - [[#15860]](https://github.com/h2oai/h2o-3/issues/15860) - Fixed `force_col_type` not working with `skipped_columns` when parsing parquet files.
