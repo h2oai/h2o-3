@@ -2513,7 +2513,8 @@ def learning_curve_plot(
                       'objective': 'objective',
                       'convergence': 'convergence',
                       'negative_log_likelihood': 'negative_log_likelihood',
-                      'sumetaieta02': 'sumetaieta02'}
+                      'sumetaieta02': 'sumetaieta02',
+                      'loglik': 'loglik'}
     inverse_metric_mappping = {v: k for k, v in metric_mapping.items()}
     inverse_metric_mappping["custom"] = "custom, custom_increasing"
 

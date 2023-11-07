@@ -3097,7 +3097,7 @@ h2o.learning_curve_plot <- function(model,
                                     metric = c("AUTO", "auc", "aucpr", "mae", "rmse", "anomaly_score",
                                                "convergence", "custom", "custom_increasing", "deviance",
                                                "lift_top_group", "logloss", "misclassification",
-                                               "negative_log_likelihood", "objective", "sumetaieta02"),
+                                               "negative_log_likelihood", "objective", "sumetaieta02", "loglik"),
                                     cv_ribbon = NULL,
                                     cv_lines = NULL
                                     ) {
@@ -3129,7 +3129,8 @@ h2o.learning_curve_plot <- function(model,
     objective = "objective",
     convergence = "convergence",
     negative_log_likelihood = "negative_log_likelihood",
-    sumetaieta02 = "sumetaieta02"
+    sumetaieta02 = "sumetaieta02",
+    loglik = "loglik"
   )
   inverse_metric_mapping <- stats::setNames(names(metric_mapping), metric_mapping)
   inverse_metric_mapping[["custom"]] <- "custom, custom_increasing"

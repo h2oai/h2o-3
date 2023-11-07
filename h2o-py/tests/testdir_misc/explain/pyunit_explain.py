@@ -649,6 +649,9 @@ def test_learning_curve_for_algos_not_present_in_automl():
     assert isinstance(coxph_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
+    assert isinstance(coxph_model.learning_curve_plot(metric="loglik").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
     # IsolationForest
     if_model = H2OIsolationForestEstimator(sample_rate=0.1,
                                            max_depth=20,

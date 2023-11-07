@@ -588,6 +588,7 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
                            ties = "breslow",
                            training_frame = heart)
   expect_ggplot(h2o.learning_curve_plot(coxph_model))
+  expect_ggplot(h2o.learning_curve_plot(coxph_model, metric = "loglik"))
 
   # IsolationForest
   if_model <- h2o.isolationForest(training_frame = prostate,
