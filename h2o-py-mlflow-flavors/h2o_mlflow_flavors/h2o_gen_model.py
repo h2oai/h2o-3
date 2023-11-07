@@ -64,14 +64,17 @@ def get_default_conda_env():
 
 
 def get_params(h2o_model):
-    return None  
+    return h2o_model.actual_params 
     
     
 def get_metrics(h2o_model, metric_type=None):
     def get_metrics_section(output, prefix, metric_type):
-        is_valid = lambda key, val: isinstance(val,(type(None), bool, float, int)) and not str(key).endswith("checksum")
+        is_valid = lambda key, val: isinstance(val, (bool, float, int)) and not str(key).endswith("checksum")
         items = output[metric_type]._metric_json.items()
-        return {prefix + str(key): val for key, val in items if is_valid(key, val)}
+        dictionary = dict(items)
+        if dictionary["custom_metric_name"] is None:
+            del dictionary["custom_metric_value"]
+        return {prefix + str(key): val for key, val in dictionary.items() if is_valid(key, val)}
 
     metric_type_lower = None
     if metric_type:
