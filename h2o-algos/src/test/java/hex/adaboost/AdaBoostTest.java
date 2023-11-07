@@ -1,9 +1,13 @@
 package hex.adaboost;
 
 import hex.Model;
+import hex.deeplearning.DeepLearningModel;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
+import hex.tree.gbm.GBMModel;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
@@ -527,6 +531,7 @@ public class AdaBoostTest extends TestUtil {
             p._nlearners = 50;
             p._weak_learner = AdaBoostModel.Algorithm.DEEP_LEARNING;
             p._response_column = response;
+
             AdaBoost adaBoost = new AdaBoost(p);
             AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
             Scope.track_generic(adaBoostModel);
@@ -563,11 +568,79 @@ public class AdaBoostTest extends TestUtil {
             assertEquals("Model should contain all the weak learners", nlearners, adaBoostModel._output.models.length);
 
             for (int i = 0; i < adaBoostModel._output.models.length; i++) {
-                System.out.println("Tree = " + i);
+                System.out.println("Model = " + i);
                 DRFModel drfModel = DKV.getGet(adaBoostModel._output.models[i]);
                 assertEquals(3, drfModel._output._ntrees);
             }
 
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testTrainWithCustomWeakLearnersGLM() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            String response = "CAPSULE";
+            int nlearners = 50;
+            train.toCategoricalCol(response);
+            Scope.track(train);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._nlearners = nlearners;
+            p._weak_learner = AdaBoostModel.Algorithm.GLM;
+            p._response_column = response;
+            p._weak_learner_params = "{max_iterations:1}";
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            for (int i = 0; i < adaBoostModel._output.models.length; i++) {
+                System.out.println("GLM model = " + i);
+                GLMModel glmModel = DKV.getGet(adaBoostModel._output.models[i]);
+                assertEquals(1, glmModel._parms._max_iterations);
+            }
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testTrainWithCustomWeakLearnersGBM() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            String response = "CAPSULE";
+            int nlearners = 50;
+            train.toCategoricalCol(response);
+            Scope.track(train);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._nlearners = nlearners;
+            p._weak_learner = AdaBoostModel.Algorithm.GBM;
+            p._response_column = response;
+            p._weak_learner_params = "{ntrees:3}";
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            for (int i = 0; i < adaBoostModel._output.models.length; i++) {
+                System.out.println("GBM model = " + i);
+                GBMModel gbmModel = DKV.getGet(adaBoostModel._output.models[i]);
+                assertEquals(3, gbmModel._output._ntrees);
+            }
             Frame score = adaBoostModel.score(train);
             Scope.track(score);
         } finally {
@@ -623,6 +696,155 @@ public class AdaBoostTest extends TestUtil {
 
             Frame score = adaBoostModel.score(train);
             Scope.track(score);
+
+            assertFrameEquals(scoreReference, score, 0.0, 0.0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreWeakLearnersEqualToDefaultGLM() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            String response = "CAPSULE";
+            int nlearners = 50;
+            train.toCategoricalCol(response);
+            Scope.track(train);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._nlearners = nlearners;
+            p._weak_learner = AdaBoostModel.Algorithm.GLM;
+            p._response_column = response;
+
+            AdaBoost adaBoostReference = new AdaBoost(p);
+            AdaBoostModel adaBoostModelReference = adaBoostReference.trainModel().get();
+            Scope.track_generic(adaBoostModelReference);
+            assertNotNull(adaBoostModelReference);
+            Frame scoreReference = adaBoostModelReference.score(train);
+            Scope.track(scoreReference);
+
+            p._weak_learner_params = "{}";
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            for (int i = 0; i < adaBoostModel._output.models.length; i++) {
+                System.out.println("GLM model = " + i);
+                GLMModel glmModel = DKV.getGet(adaBoostModel._output.models[i]);
+                assertEquals(50, glmModel._parms._max_iterations);
+            }
+
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+
+            assertFrameEquals(scoreReference, score, 0.0, 0.0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreWeakLearnersEqualToDefaultGBM() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            String response = "CAPSULE";
+            int nlearners = 50;
+            train.toCategoricalCol(response);
+            Scope.track(train);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._nlearners = nlearners;
+            p._weak_learner = AdaBoostModel.Algorithm.GBM;
+            p._response_column = response;
+
+            AdaBoost adaBoostReference = new AdaBoost(p);
+            AdaBoostModel adaBoostModelReference = adaBoostReference.trainModel().get();
+            Scope.track_generic(adaBoostModelReference);
+            assertNotNull(adaBoostModelReference);
+            Frame scoreReference = adaBoostModelReference.score(train);
+            Scope.track(scoreReference);
+
+            p._weak_learner_params = "{'ntrees':1, 'mtries':1, 'min_rows':1, 'sample_rate':1, 'max_depth':1, 'learn_rate':0.1}";
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+            assertEquals("Model should contain all the weak learners", nlearners, adaBoostModel._output.models.length);
+
+            for (int i = 0; i < adaBoostModel._output.models.length; i++) {
+                System.out.println("Tree = " + i);
+                GBMModel gbmModel = DKV.getGet(adaBoostModel._output.models[i]);
+                SharedTreeSubgraph tree = gbmModel.getSharedTreeSubgraph(0,0);
+                if (tree.rootNode.getColName() == null) {
+                    // FIXME - why are some of the trees empty? Are all of the columns bad for split?
+                    System.out.println("    Empty tree");
+                    continue;
+                }
+                System.out.println("    Root = " + tree.rootNode.getColName() + " " + tree.rootNode.getSplitValue());
+                System.out.println("    Left = " + tree.rootNode.getLeftChild().isLeaf() + " " + tree.rootNode.getLeftChild().getPredValue());
+                System.out.println("    Right = " + tree.rootNode.getRightChild().isLeaf() + " " + tree.rootNode.getRightChild().getPredValue());
+                assertNotNull(tree.rootNode.getColName());
+                assertTrue(tree.rootNode.getLeftChild().isLeaf());
+                assertTrue(tree.rootNode.getRightChild().isLeaf());
+            }
+
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+
+            assertFrameEquals(scoreReference, score, 0.0, 0.0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    @Ignore("Deep learning won't be equal because we are not seting reproducible=true by default.")
+    public void testBasicTrainAndScoreWeakLearnersAreEqualToDefaultDeepLearning() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            String response = "CAPSULE";
+            int nlearners = 10;
+            train.toCategoricalCol(response);
+            Scope.track(train);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._nlearners = nlearners;
+            p._weak_learner = AdaBoostModel.Algorithm.DEEP_LEARNING;
+            p._response_column = response;
+
+            AdaBoost adaBoostReference = new AdaBoost(p);
+            AdaBoostModel adaBoostModelReference = adaBoostReference.trainModel().get();
+            Scope.track_generic(adaBoostModelReference);
+            assertNotNull(adaBoostModelReference);
+            Frame scoreReference = adaBoostModelReference.score(train);
+            Scope.track(scoreReference);
+
+            p._weak_learner_params = "{'nepochs':10,'hidden': [2], 'reproducible':true}";
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            for (int i = 0; i < adaBoostModel._output.models.length; i++) {
+                System.out.println("DeepLearning model = " + i);
+                DeepLearningModel deepLearningModel = DKV.getGet(adaBoostModel._output.models[i]);
+                assertEquals(10, deepLearningModel._parms._epochs, 0);
+                assertArrayEquals(new int[]{2}, deepLearningModel._parms._hidden);
+            }
+
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+
+            System.out.println("scoreReference.toTwoDimTable(0,10,false) = " + scoreReference.toTwoDimTable(0, 10, false));
+            System.out.println("score.toTwoDimTable(0,10,false) = " + score.toTwoDimTable(0, 10, false));
 
             assertFrameEquals(scoreReference, score, 0.0, 0.0);
         } finally {

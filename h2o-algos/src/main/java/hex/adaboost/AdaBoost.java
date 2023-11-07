@@ -1,7 +1,6 @@
 package hex.adaboost;
 
 import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -22,10 +21,7 @@ import water.util.Timer;
 import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of AdaBoost algorithm based on
@@ -42,7 +38,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
 
     private AdaBoostModel _model;
     private String _weightsName = "weights";
-    private Model.Parameters _weakLearnerParams;
+    private Gson _gsonParser;
 
     // Called from an http request
     public AdaBoost(AdaBoostModel.AdaBoostParameters parms) {
@@ -80,18 +76,20 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) ) {
             error("learn_rate", "learn_rate must be between 0 and 1");
         }
-        boolean filledParams = _parms._weak_learner_params != null && !_parms._weak_learner_params.isEmpty();
-        if (filledParams) {
+        if (useCustomWeakLearnerParameters()) {
             try {
-                Gson gson = new GsonBuilder()
+                _gsonParser = new GsonBuilder()
                         .setFieldNamingStrategy(new PrecedingUnderscoreNamingStrategy())
                         .create();
-                _weakLearnerParams =
-                        gson.fromJson(_parms._weak_learner_params, DRFModel.DRFParameters.class);
+                _gsonParser.fromJson(_parms._weak_learner_params, JsonObject.class);
             } catch (JsonSyntaxException syntaxException) {
-                error("weak_learner_params", "Syntax error!!!: " + syntaxException.getMessage());
+                error("weak_learner_params", "Provided parameters are not in the valid json format. Got error: " + syntaxException.getMessage());
             }
         }
+    }
+
+    private boolean useCustomWeakLearnerParameters() {
+        return _parms._weak_learner_params != null && !_parms._weak_learner_params.isEmpty();
     }
 
     private class PrecedingUnderscoreNamingStrategy implements FieldNamingStrategy
@@ -213,12 +211,12 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     }
     
     private DRF getDRFWeakLearner(Frame frame) {
-        DRFModel.DRFParameters parms = _weakLearnerParams != null ? (DRFModel.DRFParameters) _weakLearnerParams : new DRFModel.DRFParameters();
+        DRFModel.DRFParameters parms = useCustomWeakLearnerParameters() ? _gsonParser.fromJson(_parms._weak_learner_params, DRFModel.DRFParameters.class) : new DRFModel.DRFParameters();
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
         parms._weights_column = _weightsName;
         parms._seed = _parms._seed;
-        if (_weakLearnerParams == null) {
+        if (!useCustomWeakLearnerParameters()) {
             parms._mtries = 1;
             parms._min_rows = 1;
             parms._ntrees = 1;
@@ -229,7 +227,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     }
 
     private GLM getGLMWeakLearner(Frame frame) {
-        GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+        GLMModel.GLMParameters parms = useCustomWeakLearnerParameters() ? _gsonParser.fromJson(_parms._weak_learner_params, GLMModel.GLMParameters.class) : new GLMModel.GLMParameters();
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
         parms._weights_column = _weightsName;
@@ -238,26 +236,30 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     }
 
     private GBM getGBMWeakLearner(Frame frame) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = useCustomWeakLearnerParameters() ? _gsonParser.fromJson(_parms._weak_learner_params, GBMModel.GBMParameters.class) : new GBMModel.GBMParameters();
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
         parms._weights_column = _weightsName;
-        parms._min_rows = 1;
-        parms._ntrees = 1;
-        parms._sample_rate = 1;
-        parms._max_depth = 1;
-        parms._seed = _parms._seed;
+        if (!useCustomWeakLearnerParameters()) {
+            parms._min_rows = 1;
+            parms._ntrees = 1;
+            parms._sample_rate = 1;
+            parms._max_depth = 1;
+            parms._seed = _parms._seed;
+        }
         return new GBM(parms);
     }
 
     private DeepLearning getDeepLearningWeakLearner(Frame frame) {
-        DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
+        DeepLearningModel.DeepLearningParameters parms = useCustomWeakLearnerParameters() ? _gsonParser.fromJson(_parms._weak_learner_params, DeepLearningModel.DeepLearningParameters.class)  :new DeepLearningModel.DeepLearningParameters();
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
         parms._weights_column = _weightsName;
         parms._seed = _parms._seed;
-        parms._epochs = 10;
-        parms._hidden = new int[]{2};
+        if (!useCustomWeakLearnerParameters()) {
+            parms._epochs = 10;
+            parms._hidden = new int[]{2};
+        }
         return new DeepLearning(parms);
     }
 
