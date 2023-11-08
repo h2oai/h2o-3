@@ -1,5 +1,45 @@
 #! /bin/bash -x
 
+bold=$(tput bold)
+normal=$(tput sgr0)
+  
+
+function section() {
+  echo
+  echo
+  echo $bold$1$normal  
+  echo $1 | sed -e 's/./=/g'
+}
+
+function subsection() {
+  echo
+  echo $1
+  echo $1 | sed -e 's/./-/g'
+}
+
+function docker_info() {
+  section "k3d ls"
+  k3d ls || true
+  
+  section "docker ps"
+  docker ps 
+  
+  section "docker ps -a"
+  docker ps -a
+  
+  section "Logs from recently exited containers"
+  exited_containers=$(docker ps -a | grep Exited | grep seconds | cut -d\  -f1)
+  
+  for ec in $exited_containers; do 
+    subsection $ec
+    docker logs $ec
+  done
+  
+  echo
+  echo "---------------------------------------------------------------------------------------------------------------"
+  echo
+}
+
 pwd
 export H2O_BASE=$(pwd)
 if [[ $string == *"@"* ]]; then
@@ -20,7 +60,9 @@ k3d delete
 k3d create -v "$H2O_BASE":"$H2O_BASE" --registries-file registries.yaml --publish 8080:80 --api-port localhost:6444 --server-arg --tls-san="127.0.0.1" --wait 120 --server-arg --kubelet-arg="node-ip=0.0.0.0" --agent-arg --kubelet-arg="node-ip=0.0.0.0"
 export KUBECONFIG="$(k3d get-kubeconfig --name='k3s-default')"
 kubectl cluster-info
+docker_info
 sleep 15 # Making sure the default namespace is initialized. The --wait flag does not guarantee this.
+docker_info
 kubectl get namespaces
 # Deploy H2O-3 Cluster as defined by Helm template in h2o-helm subproject
 # Also tests correctness of the H2O HELM chart
