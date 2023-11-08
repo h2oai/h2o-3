@@ -194,7 +194,7 @@ function() {
         devtools::load_all(paste(h2oRDir,"h2o-package",sep=.Platform$file.sep), export_all=FALSE)
         
         additional_imports <- c(
-            "h2o.logIt", ".h2o.__remoteSend", ".as.survival.coxph.model", ".as.survival.coxph.summary",
+            ".h2o.__remoteSend", ".as.survival.coxph.model", ".as.survival.coxph.summary",
             ".getExpanded", ".str.list", "is.H2OFrame", ".get.session.property", ".set.session.property",
             ".h2o.maximizing_metrics", ".h2o.doSafeGET", ".parse.h2oconfig", ".h2o.check_java_version",
             "cut.H2OFrame", "as.data.frame.H2OFrame", ".h2o.perfect_auc", ".newExpr", ".h2o.doSafeREST",
@@ -221,7 +221,7 @@ function() {
         masterSeedFile <- paste(getwd(), "/master_seed", sep = "")
         if (file.exists(masterSeedFile)) seed <- read.table(masterSeedFile)[[1]]
         setupSeed(seed)
-        h2o.logIt("[SEED] :", SEED)
+        cat("[SEED] :", SEED, "\n")
         
         if (!is.na(USERNAME)) {
             Log.info(paste0("Authenticating with http-basic, username: ", USERNAME, "."))

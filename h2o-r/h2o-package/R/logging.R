@@ -44,10 +44,6 @@ NULL
     write(x = message, file = .h2o.getLogFileName(), append = TRUE)
 }
 
-h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
-  # Legacy.  Do nothing.
-}
-
 #' Start Writing H2O R Logs
 #'
 #' Begin logging H2o R POST commands and error responses to local disk. Used
