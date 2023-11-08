@@ -83,6 +83,8 @@ public abstract class SharedTree<
   private transient SharedTreeDebugParams _debugParms;
 
   public boolean isSupervised(){return true;}
+  
+  public boolean isUplift() {return false;}
 
   public boolean providesVarImp() {
     return isSupervised();
@@ -551,7 +553,7 @@ public abstract class SharedTree<
   
   protected ScoreKeeper.ProblemType getProblemType() {
     assert isSupervised();
-    return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
+    return ScoreKeeper.ProblemType.forSupervised(isClassifier(), isUplift());
   }
   
   // --------------------------------------------------------------------------

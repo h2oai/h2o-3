@@ -30,6 +30,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
     public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
 
+    @Override
+    public boolean isUplift() {return true;}
+
     // Called from an http request
     public UpliftDRF(hex.tree.uplift.UpliftDRFModel.UpliftDRFParameters parms) {
         super(parms);
@@ -112,10 +115,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             error("_treatment_column", "The treatment column has to be defined.");
         if (_parms._custom_distribution_func != null)
             error("_custom_distribution_func", "The custom distribution is not yet supported for Uplift DRF.");
-        if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO)
-            error("_stopping_metric", "The early stopping is not yet supported for Uplift DRF.");
-        if (_parms._stopping_rounds != 0)
-            error("_stopping_rounds", "The early stopping is not yet supported for Uplift DRF.");
     }
     
     

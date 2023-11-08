@@ -38,7 +38,10 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "treatment_column",
                 "uplift_metric",
                 "auuc_type",
-                "auuc_nbins"
+                "auuc_nbins",
+                "stopping_rounds",
+                "stopping_metric",
+                "stopping_tolerance"
         };
 
         // Input fields
