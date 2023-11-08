@@ -29,7 +29,6 @@ from mlflow.utils.environment import (
     _PythonEnv,
     _validate_env_arguments,
 )
-
 from mlflow.utils.file_utils import write_to
 from mlflow.utils.model_utils import (
     _add_code_from_conf_to_system_path,
@@ -39,7 +38,7 @@ from mlflow.utils.model_utils import (
 )
 from mlflow.utils.requirements_utils import _get_pinned_requirement
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
-
+from mlflow.models.signature import _infer_signature_from_input_example
 
 _logger = logging.getLogger(__name__)
 
@@ -64,10 +63,29 @@ def get_default_conda_env():
 
 
 def get_params(h2o_model):
-    return h2o_model.actual_params 
+    """
+    Extracts training parameters for the H2O binary model.
     
-    
+    :param h2o_model: An H2O binary model.
+    :return: A dictionary of parameters that were used for training the model. 
+    """    
+    def is_valid(key): 
+        return key != "model_id" and \
+               not key.endswith("_frame") and \
+               not key.startswith("keep_cross_validation_")
+
+    return {key: val for key, val in h2o_model.actual_params.items() if is_valid(key)}
+
+
 def get_metrics(h2o_model, metric_type=None):
+    """
+    Extracts metrics from the H2O binary model.
+    
+    :param h2o_model: An H2O binary model.
+    :param metric_type: The type of metrics. Possible values are "training", "validation", "cross_validation".
+                        If parameter is not specified, metrics for all types are returned.
+    :return: A dictionary of model metrics.
+    """
     def get_metrics_section(output, prefix, metric_type):
         is_valid = lambda key, val: isinstance(val, (bool, float, int)) and not str(key).endswith("checksum")
         items = output[metric_type]._metric_json.items()
@@ -78,7 +96,7 @@ def get_metrics(h2o_model, metric_type=None):
 
     metric_type_lower = None
     if metric_type:
-        metric_type_lower = metric_type.toLowerCase()    
+        metric_type_lower = metric_type.toLowerCase()
 
     output = h2o_model._model_json["output"]
     metrics = {}
@@ -89,11 +107,34 @@ def get_metrics(h2o_model, metric_type=None):
     if output["validation_metrics"] and (metric_type_lower is None or metric_type_lower == "validation"):
         validation_metrics = get_metrics_section(output, "validation_", "validation_metrics")
         metrics = dict(metrics, **validation_metrics)
-    if output["cross_validation_metrics"] and (metric_type_lower is None or metric_type_lower in ["cv", "cross_validation"]):
+    if output["cross_validation_metrics"] and (
+        metric_type_lower is None or metric_type_lower in ["cv", "cross_validation"]):
         cross_validation_metrics = get_metrics_section(output, "cv_", "cross_validation_metrics")
         metrics = dict(metrics, **cross_validation_metrics)
-        
+
     return metrics
+
+
+def get_input_example(h2o_model, number_of_records=5, relevant_columns_only=True):
+    """
+    Creates an example Pandas dataset from the training dataset of H2O binary model.
+    
+    :param h2o_model: An H2O binary model.
+    :param number_of_records: A number of records that will be extracted from the training dataset.
+    :param relevant_columns_only: A flag indicating whether the output dataset should contain 
+                                  only columns required by the model.  Defaults to ``True``.
+    :return: 
+    """
+    
+    import h2o
+    frame = h2o.get_frame(h2o_model.actual_params["training_frame"]).head(number_of_records)
+    result = frame.as_data_frame()
+    if relevant_columns_only:
+        relevant_columns = h2o_model.varimp(use_pandas=True)["variable"].values.tolist()
+        input_columns = [col for col in frame.col_names if col in relevant_columns]
+        return result[input_columns]
+    else: 
+        return result
 
 
 def save_model(
@@ -106,24 +147,39 @@ def save_model(
     input_example=None,
     pip_requirements=None,
     extra_pip_requirements=None,
-    model_type="MOJO"
+    model_type="MOJO",
+    extra_prediction_args=[]
 ):
-    import h2o
+    """
+    Saves an H2O binary model to a path on the local file system in MOJO or POJO format.
+    
+    :param h2o_model: H2O binary model to be saved to MOJO or POJO.
+    :param path: Local path where the model is to be saved.
+    :param conda_env: {{ conda_env }}
+    :param code_paths: A list of local filesystem paths to Python file dependencies (or directories
+                       containing file dependencies). These files are *prepended* to the system
+                       path when the model is loaded.
+    :param mlflow_model: :py:mod:`mlflow.models.Model` this flavor is being added to.
 
+    :param signature: {{ signature }}
+    :param input_example: {{ input_example }}
+    :param pip_requirements: {{ pip_requirements }}
+    :param extra_pip_requirements: {{ extra_pip_requirements }}
+    :param model_type: A flag deciding whether the model is MOJO or POJO.  
+    :param extra_prediction_args: A list of extra arguments for java predictions process. Possible values: 
+                                  --setConvertInvalidNum - Converts invalid numbers to NA
+                                  --predictContributions - Returns also Shapley values a long with the predictions 
+                                  --predictCalibrated - Return also calibrated prediction values.     
+    """    
+    
+    import h2o
     model_type_upper = model_type.upper()
     if model_type_upper != "MOJO" and model_type_upper != "POJO":
         raise ValueError(f"The `model_type` parameter must be 'MOJO' or 'POJO'. The passed value was '{model_type}'.")
-    
+
     _validate_env_arguments(conda_env, pip_requirements, extra_pip_requirements)
     _validate_and_prepare_target_save_path(path)
     code_dir_subpath = _validate_and_copy_code_paths(code_paths, path)
-
-    if mlflow_model is None:
-        mlflow_model = Model()
-    if signature is not None:
-        mlflow_model.signature = signature
-    if input_example is not None:
-        _save_example(mlflow_model, input_example, path)
 
     if model_type_upper == "MOJO":
         model_data_path = h2o_model.download_mojo(path=path, get_genmodel_jar=True)
@@ -135,7 +191,22 @@ def save_model(
         javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-d", output_path, "-J-Xmx12g", model_data_path]
         subprocess.check_call(javac_cmd)
         model_file = os.path.basename(model_data_path).replace(".java", "")
+
+    if signature is None and input_example is not None:
+        wrapped_model = _H2OModelWrapper(model_file, model_type, path, extra_prediction_args)
+        signature = _infer_signature_from_input_example(input_example, wrapped_model)
+    elif signature is False:
+        signature = None
     
+    if mlflow_model is None:
+        mlflow_model = Model()
+    if signature is not None:
+        mlflow_model.signature = signature
+    if input_example is not None:
+        _save_example(mlflow_model, input_example, path)
+    if metadata is not None:
+        mlflow_model.metadata = metadata
+
     pyfunc.add_to_model(
         mlflow_model,
         loader_module="h2o_mlflow_flavors.h2o_gen_model",
@@ -149,6 +220,7 @@ def save_model(
         FLAVOR_NAME,
         model_file=model_file,
         model_type=model_type_upper,
+        extra_prediction_args=extra_prediction_args,
         h2o_version=h2o.__version__,
         code=code_dir_subpath,
     )
@@ -190,12 +262,12 @@ def log_model(
     input_example: ModelInputExample = None,
     pip_requirements=None,
     extra_pip_requirements=None,
-    metadata=None,
     model_type="MOJO",
+    extra_prediction_args=[],
     **kwargs,
 ):
     """
-    Log an H2O model as an MLflow artifact for the current run.
+    Logs an H2O model as an MLflow artifact for the current run.
 
     :param h2o_model: H2O model to be saved.
     :param artifact_path: Run-relative artifact path.
@@ -211,11 +283,11 @@ def log_model(
     :param input_example: {{ input_example }}
     :param pip_requirements: {{ pip_requirements }}
     :param extra_pip_requirements: {{ extra_pip_requirements }}
-    :param metadata: Custom metadata dictionary passed to the model and stored in the MLmodel file.
-
-                     .. Note:: Experimental: This parameter may change or be removed in a future
-                                             release without warning.
-    :param model_type: A flag deciding whether the model is MOJO or POJO.                                            
+    :param model_type: A flag deciding whether the model is MOJO or POJO.  
+    :param extra_prediction_args: A list of extra arguments for java predictions process. Possible values: 
+                                  --setConvertInvalidNum - Converts invalid numbers to NA
+                                  --predictContributions - Returns also Shapley values a long with the predictions 
+                                  --predictCalibrated - Return also calibrated prediction values.                                        
     :param kwargs: kwargs to pass to ``h2o.save_model`` method.
     :return: A :py:class:`ModelInfo <mlflow.models.model.ModelInfo>` instance that contains the
              metadata of the logged model.
@@ -234,6 +306,7 @@ def log_model(
         extra_pip_requirements=extra_pip_requirements,
         model_type=model_type,
         metadata=metadata,
+        extra_prediction_args=extra_prediction_args,
         **kwargs,
     )
 
@@ -249,15 +322,16 @@ def _load_model(path):
     flavor_conf = _get_flavor_configuration(model_path=path, flavor_name=FLAVOR_NAME)
     model_type = flavor_conf["model_type"]
     model_file = flavor_conf["model_file"]
-
-    return _H2OModelWrapper(model_file, model_type, path)
+    extra_prediction_args = flavor_conf["extra_prediction_args"]
+    return _H2OModelWrapper(model_file, model_type, path, extra_prediction_args)
 
 
 class _H2OModelWrapper:
-    def __init__(self, model_file, model_type, path):
+    def __init__(self, model_file, model_type, path, extra_prediction_args):
         self.model_file = model_file
         self.model_type = model_type
         self.path = path
+        self.extra_prediction_args = extra_prediction_args if extra_prediction_args is not None else []
         self.genmodel_jar_path = os.path.join(path, "h2o-genmodel.jar")
 
     def predict(self, dataframe, params=None):
@@ -287,6 +361,7 @@ class _H2OModelWrapper:
                         "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
                         "hex.genmodel.tools.PredictCsv", "--separator", separator,
                         "--input", input_file, "--output", output_file, type_parameter, model_artefact, "--decimal"]
+            java_cmd += self.extra_prediction_args
             ret = subprocess.call(java_cmd)
             assert ret == 0, "GenModel finished with return code %d." % ret
             predicted = pandas.read_csv(output_file)
@@ -301,5 +376,3 @@ def _load_pyfunc(path):
     :param path: Local filesystem path to the MLflow Model with the ``h2o`` flavor.
     """
     return _load_model(path)
-
-    
