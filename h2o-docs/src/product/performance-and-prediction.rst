@@ -3001,7 +3001,7 @@ Using the previous example, run the following code to find and interact with the
         old_threshold <- h2o.reset_threshold(model, new_threshold)
         reseted_model <- h2o.getModel(model@model_id)
         # Predict with the reset model:
-        reset_pred <- h2o.predict(reseted_model, pros)
+        reset_pred <- h2o.predict(reseted_model, test)
         # Compare the predictions:
         pred
           predict        p0         p1
@@ -3015,14 +3015,14 @@ Using the previous example, run the following code to find and interact with the
         [90 rows x 3 columns] 
         reset_pred
           predict        p0         p1
-        1       0 0.9154417 0.08455827
-        2       0 0.5971818 0.40281823
-        3       0 0.7321094 0.26789060
-        4       0 0.7260791 0.27392089
-        5       0 0.8448855 0.15511446
-        6       1 0.1008846 0.89911536
+        1       0 0.7260791 0.27392089
+        2       0 0.8193595 0.18064046
+        3       0 0.3400551 0.65994490
+        4       0 0.9853045 0.01469547
+        5       0 0.9411660 0.05883396
+        6       0 0.7392462 0.26075376
 
-        [380 rows x 3 columns]  
+        [90 rows x 3 columns]   
 
         # You can also get optimal thresholds table for the calculated metrics:
         h2o.thresholds_and_metric_scores(model)
@@ -3087,7 +3087,7 @@ Using the previous example, run the following code to find and interact with the
         reset_model = h2o.get_model(model.model_id)
         reset_threshold = reset_model.default_threshold()
         # Predict with the reset model:
-        preds_reset = reset_model.predict(pros)
+        predict_reset = reset_model.predict(test)
         # Compare the predictions:
         predict.as_data_frame()
             predict        p0        p1
@@ -3104,21 +3104,21 @@ Using the previous example, run the following code to find and interact with the
         89        0  0.697517  0.302483
 
         [90 rows x 3 columns] 
-        preds_reset.as_data_frame()
+        predict_reset.as_data_frame()
              predict        p0        p1
-        0          0  0.915442  0.084558
-        1          0  0.597182  0.402818
-        2          0  0.732109  0.267891
-        3          0  0.726079  0.273921
-        4          0  0.844886  0.155114
-        ..       ...       ...       ...
-        375        0  0.580164  0.419836
-        376        0  0.721000  0.279000
-        377        1  0.193187  0.806813
-        378        0  0.978952  0.021048
-        379        0  0.697517  0.302483
+        0         0  0.726079  0.273921
+        1         0  0.819360  0.180640
+        2         0  0.340055  0.659945
+        3         0  0.985305  0.014695
+        4         0  0.941166  0.058834
+        ..      ...       ...       ...
+        85        0  0.989945  0.010055
+        86        0  0.915216  0.084784
+        87        0  0.802202  0.197798
+        88        0  0.893146  0.106854
+        89        0  0.697517  0.302483
 
-        [380 rows x 3 columns]
+        [90 rows x 3 columns]
 
 
         # You can also get optimal thresholds for calculated metrics:
