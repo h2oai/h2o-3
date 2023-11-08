@@ -37,30 +37,37 @@ def call(final pipelineContext) {
   // Job will execute PR_STAGES only if these are green.
   // for Python, smoke only oldest and latest supported versions
   def SMOKE_STAGES = [
-    [
-      stageName: 'Py3.6 Smoke', target: 'test-py-smoke', pythonVersion: '3.6',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 Smoke', target: 'test-py-smoke', pythonVersion: '3.11', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R4.0 Smoke', target: 'test-r-smoke', rVersion: '4.0.2',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JS
-    ],
-    [
-      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ]
+      [
+              stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20, activatePythonEnv: false,
+              component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+              image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
+              customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'],
+              addToDockerGroup: true, nodeLabel: "micro"
+      ],
+//    [
+//      stageName: 'Py3.6 Smoke', target: 'test-py-smoke', pythonVersion: '3.6',timeoutValue: 8,
+//      component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py3.11 Smoke', target: 'test-py-smoke', pythonVersion: '3.11', timeoutValue: 8,
+//      component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
+//      component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R4.0 Smoke', target: 'test-r-smoke', rVersion: '4.0.2',timeoutValue: 8,
+//      component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 20,
+//      component: pipelineContext.getBuildConfig().COMPONENT_JS
+//    ],
+//    [
+//      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
+//      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+//    ]
   ]
 
   def SMOKE_PR_STAGES = [
