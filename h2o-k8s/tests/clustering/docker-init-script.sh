@@ -17,7 +17,7 @@ cat $H2O_BASE/h2o-helm/templates/tests/test-connection.yaml
 cd $H2O_BASE/h2o-k8s/tests/clustering/
 k3d --version
 k3d delete
-k3d create -v "$H2O_BASE":"$H2O_BASE" --registries-file registries.yaml --publish 8080:80 --api-port localhost:6444 --server-arg --tls-san="127.0.0.1" --wait 120
+k3d create -v "$H2O_BASE":"$H2O_BASE" --registries-file registries.yaml --publish 8080:80 --api-port localhost:6444 --server-arg --tls-san="127.0.0.1" --wait 120 --server-arg --kubelet-arg="node-ip=0.0.0.0" --agent-arg --kubelet-arg="node-ip=0.0.0.0"
 export KUBECONFIG="$(k3d get-kubeconfig --name='k3s-default')"
 kubectl cluster-info
 sleep 15 # Making sure the default namespace is initialized. The --wait flag does not guarantee this.
