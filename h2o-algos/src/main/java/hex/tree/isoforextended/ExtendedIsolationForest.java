@@ -162,6 +162,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             _model._output._scored_train[0] = new ScoreKeeper();
             _model._output._training_time_ms = new long[_parms._ntrees + 1];
             _model._output._training_time_ms[0] = System.currentTimeMillis();
+            long timeLastScoreStart = 0;
+            long timeLastScoreEnd = 0;
+            long sinceLastScore = 0;
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
@@ -183,15 +186,24 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 LOG.info((tid + 1) + ". tree was built in " + timer);
                 isolationTreeStats.updateBy(isolationTree);
 
+                long now = System.currentTimeMillis();
+                sinceLastScore = now - timeLastScoreStart;
+                boolean timeToScore = (now-_job.start_time() < _parms._initial_score_interval) || // Score every time for 4 secs
+                        // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+                        (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
+                                (double)(timeLastScoreEnd - timeLastScoreStart)/sinceLastScore < 0.1); //10% duty cycle
+
                 boolean manualInterval = _parms._score_tree_interval > 0 && (tid +1) % _parms._score_tree_interval == 0;
                 boolean finalScoring = _parms._ntrees == (tid + 1);
 
                 _model._output._scored_train[tid + 1] = new ScoreKeeper();
-                if ((_parms._score_each_iteration || manualInterval || finalScoring) && !_parms._disable_training_metrics) {
+                if (_parms._score_each_iteration || manualInterval || finalScoring || (timeToScore && _parms._score_tree_interval == 0) && !_parms._disable_training_metrics) {
+                    timeLastScoreStart = System.currentTimeMillis();
                     ModelMetrics.MetricBuilder metricsBuilder = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder();
                     ModelMetrics modelMetrics = metricsBuilder.makeModelMetrics(_model, _parms.train(), null, null);
                     _model._output._training_metrics = modelMetrics;
                     _model._output._scored_train[tid + 1].fillFrom(modelMetrics);
+                    timeLastScoreEnd = System.currentTimeMillis();
                 }
             }
             _model._output._scoring_history = _parms._disable_training_metrics ? null : createScoringHistoryTable();
