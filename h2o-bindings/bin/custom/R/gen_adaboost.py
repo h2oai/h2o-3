@@ -1,14 +1,23 @@
+def update_param(name, param):
+    if name == 'weak_learner_params':
+        param['default_value'] = None
+        return param
+    return None  # param untouched
+
 extensions = dict(
     skip_default_set_params_for=['training_frame', 'ignored_columns', 'response_column', 
-                                 'max_confusion_matrix_size', 'distribution', 'offset_column'],
+                                 'max_confusion_matrix_size', 'distribution', 'offset_column', 'weak_learner_params'],
     set_required_params="""
 parms$training_frame <- training_frame
 args <- .verify_dataxy(training_frame, x, y)
 parms$ignored_columns <- args$x_ignore
 parms$response_column <- args$y
 """,
+    set_params="""
+if (!missing(weak_learner_params))
+    parms$weak_learner_params <- as.character(toJSON(weak_learner_params, pretty = TRUE, auto_unbox = TRUE))
+"""
 )
-
 
 doc = dict(
     preamble="""

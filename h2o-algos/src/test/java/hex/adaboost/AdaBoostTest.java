@@ -4,6 +4,7 @@ import hex.Model;
 import hex.deeplearning.DeepLearningModel;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLMModel;
+import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -629,7 +630,7 @@ public class AdaBoostTest extends TestUtil {
             p._nlearners = nlearners;
             p._weak_learner = AdaBoostModel.Algorithm.GBM;
             p._response_column = response;
-            p._weak_learner_params = "{ntrees:3}";
+            p._weak_learner_params = "{ntrees:3, 'histogram_type': 'UniformAdaptive'}";
 
             AdaBoost adaBoost = new AdaBoost(p);
             AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
@@ -640,6 +641,7 @@ public class AdaBoostTest extends TestUtil {
                 System.out.println("GBM model = " + i);
                 GBMModel gbmModel = DKV.getGet(adaBoostModel._output.models[i]);
                 assertEquals(3, gbmModel._output._ntrees);
+                assertEquals(SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, gbmModel._parms._histogram_type);
             }
             Frame score = adaBoostModel.score(train);
             Scope.track(score);

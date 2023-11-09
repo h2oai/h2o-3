@@ -23,6 +23,7 @@ public class AdaBoostV3 extends ModelBuilderSchema<
                 "nlearners",
                 "weak_learner",
                 "learn_rate",
+                "weak_learner_params",
                 "seed",
         };
 
@@ -34,6 +35,9 @@ public class AdaBoostV3 extends ModelBuilderSchema<
 
         @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
         public double learn_rate;
+
+        @API(help = "Customized parameters for the weak_learner algorithm.", gridable=true)
+        public String weak_learner_params;
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
         public long seed;
