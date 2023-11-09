@@ -131,7 +131,7 @@ public class FriedmanPopescusH {
         String[] currNames;
         String[] currFValuesNames;
         double eps;
-
+        
         FindFValue(double[] valueToFindFValueFor, String[] currNames, String[] currFValuesNames, double eps) {
             this.valueToFindFValueFor = valueToFindFValueFor;
             this.currNames = currNames;
@@ -141,6 +141,7 @@ public class FriedmanPopescusH {
 
         @Override public void map(Chunk[] cs, NewChunk[] nc) {
             int count = 0;
+            
             for (int iRow = 0; iRow < cs[0].len(); iRow++) {
                 for (int k = 0; k < valueToFindFValueFor.length; k++) {
                     int id = ArrayUtils.find(currFValuesNames, currNames[k]);
@@ -153,6 +154,7 @@ public class FriedmanPopescusH {
                 }
                 if (count == valueToFindFValueFor.length) {
                     nc[0].addNum(cs[0].atd(iRow));
+                    break;
                 } else {
                     count = 0;
                 }
@@ -232,10 +234,14 @@ public class FriedmanPopescusH {
         for (int treeClass = 0; treeClass < nclasses; treeClass++) {
             Vec pdp = Vec.makeZero(uniqueWithCounts.numRows());
             for (int i = 0; i < ntrees; i++) {
-                SharedTreeSubgraph sharedTreeSubgraph = sharedTreeSubgraphs[i][treeClass];
-                Vec currTreePdp = partialDependenceTree(sharedTreeSubgraph, modelIds, learnRate, uniqueWithCounts);
-                for (long j = 0; j < uniqueWithCounts.numRows(); j++) {
-                    pdp.set(j, pdp.at(j) + currTreePdp.at(j));
+                try(Vec.Writer pdpWriter = pdp.open()) {
+                    SharedTreeSubgraph sharedTreeSubgraph = sharedTreeSubgraphs[i][treeClass];
+                    Vec currTreePdp = partialDependenceTree(sharedTreeSubgraph, modelIds, learnRate, uniqueWithCounts);
+                    Vec.Reader currTreePdpReader = currTreePdp.new Reader();
+                    Vec.Reader pdpReader = pdp.new Reader();
+                    for (long j = 0; j < uniqueWithCounts.numRows(); j++) {
+                        pdpWriter.set(j, pdpReader.at(j) + currTreePdpReader.at(j));
+                    }
                 }
             }
             result.add("pdp_C" + treeClass  , pdp);
@@ -317,7 +323,6 @@ public class FriedmanPopescusH {
      */
     static Vec partialDependenceTree(SharedTreeSubgraph tree, int[] targetFeature, double learnRate, Frame grid) {
         Vec outVec = Vec.makeZero(grid.numRows());
-        
         int stackSize;
         SharedTreeNode[] nodeStackAr = new SharedTreeNode[tree.nodesArray.size() * 2];
         Double[] weightStackAr = new Double[tree.nodesArray.size() * 2];
@@ -325,53 +330,60 @@ public class FriedmanPopescusH {
         double totalWeight;
         SharedTreeNode currNode;
         double currWeight;
-        
-        for (long i = 0; i < grid.numRows(); i++) {
-            stackSize = 1;
-            nodeStackAr[0] = tree.rootNode;
-            weightStackAr[0] = 1.0;
-            totalWeight = 0.0;
-            
-            while (stackSize > 0) {
-                // get top node on stack
-                stackSize -= 1;
-                currNode = nodeStackAr[stackSize];
-                
-                if (currNode.isLeaf()) {
-                    outVec.set(i, outVec.at(i) +  weightStackAr[stackSize] * currNode.getPredValue() * learnRate);
-                    totalWeight += weightStackAr[stackSize];
-                } else {
-                    // non-terminal node:
-                    int featureId = ArrayUtils.find(targetFeature, currNode.getColId());
-                    if (featureId >= 0) {
-                        // split feature in target set
-                        // push left or right child on stack
-                        if (grid.vec(featureId).at(i) <= currNode.getSplitValue()) {
-                            // left
-                            nodeStackAr[stackSize] = currNode.getLeftChild();
-                        } else {
-                            nodeStackAr[stackSize] = currNode.getRightChild();
-                        }
-                        stackSize += 1;
+        try( Vec.Writer vw = outVec.open() ) {
+            Vec.Reader gridReaders[] = new Vec.Reader[grid.numCols()];
+            for (int i = 0; i < grid.numCols(); i++) {
+                gridReaders[i] = grid.vec(i).new Reader();
+            }
+            for (long i = 0; i < grid.numRows(); i++) {
+                stackSize = 1;
+                nodeStackAr[0] = tree.rootNode;
+                weightStackAr[0] = 1.0;
+                totalWeight = 0.0;
+                double result = 0;
+
+                while (stackSize > 0) {
+                    // get top node on stack
+                    stackSize -= 1;
+                    currNode = nodeStackAr[stackSize];
+
+                    if (currNode.isLeaf()) {
+                        result += weightStackAr[stackSize] * currNode.getPredValue() * learnRate;
+                        totalWeight += weightStackAr[stackSize];
                     } else {
-                        double left_sample_frac;
-                        // split feature complement set
-                        // push both children onto stack
-                        currWeight = weightStackAr[stackSize];
-                        // push left
-                        nodeStackAr[stackSize] = currNode.getLeftChild();
-                        left_sample_frac = currNode.getLeftChild().getWeight() / currNode.getWeight();
-                        weightStackAr[stackSize] = currWeight * left_sample_frac;
-                        stackSize++;
-                        // push right
-                        nodeStackAr[stackSize] = currNode.getRightChild();
-                        weightStackAr[stackSize] = currWeight * (1.0 - left_sample_frac);
-                        stackSize++;
+                        // non-terminal node:
+                        int featureId = ArrayUtils.find(targetFeature, currNode.getColId());
+                        if (featureId >= 0) {
+                            // split feature in target set
+                            // push left or right child on stack
+                            if (gridReaders[featureId].at(i) <= currNode.getSplitValue()) {
+                                // left
+                                nodeStackAr[stackSize] = currNode.getLeftChild();
+                            } else {
+                                nodeStackAr[stackSize] = currNode.getRightChild();
+                            }
+                            stackSize += 1;
+                        } else {
+                            double left_sample_frac;
+                            // split feature complement set
+                            // push both children onto stack
+                            currWeight = weightStackAr[stackSize];
+                            // push left
+                            nodeStackAr[stackSize] = currNode.getLeftChild();
+                            left_sample_frac = currNode.getLeftChild().getWeight() / currNode.getWeight();
+                            weightStackAr[stackSize] = currWeight * left_sample_frac;
+                            stackSize++;
+                            // push right
+                            nodeStackAr[stackSize] = currNode.getRightChild();
+                            weightStackAr[stackSize] = currWeight * (1.0 - left_sample_frac);
+                            stackSize++;
+                        }
                     }
                 }
-            }
-            if (!(0.999 < totalWeight && totalWeight < 1.001)) {
-                throw new RuntimeException("Total weight should be 1.0 but was " + totalWeight);
+                vw.set(i, result);
+                if (!(0.999 < totalWeight && totalWeight < 1.001)) {
+                    throw new RuntimeException("Total weight should be 1.0 but was " + totalWeight);
+                }
             }
         }
         return outVec;
