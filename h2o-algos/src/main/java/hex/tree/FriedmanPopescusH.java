@@ -7,7 +7,6 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -118,11 +117,11 @@ public class FriedmanPopescusH {
         double[] valueToFindFValueFor = getValueToFindFValueFor(currCombination, filteredFrame, i);
         String[] currNames = getCurrCombinationNames(currCombination, filteredFrame.names());
         FindFValue findFValueTask = new FindFValue(valueToFindFValueFor, currNames, currFValues._names, 1e-5);
-        Frame result = findFValueTask.doAll(Vec.T_NUM, currFValues).outputFrame();
-        if (result.numRows() == 0) {
+        Double result = findFValueTask.doAll(currFValues).result;
+        if (null == result) {
             throw new RuntimeException("FValue was not found!" + Arrays.toString(currCombination) + "value: " + Arrays.toString(valueToFindFValueFor));
         } else {
-            return result.vec(0).at(0);
+            return result.doubleValue();
         }
     }
 
@@ -131,7 +130,8 @@ public class FriedmanPopescusH {
         String[] currNames;
         String[] currFValuesNames;
         double eps;
-        
+        public Double result;
+        long resultIndex = Long.MAX_VALUE;
         FindFValue(double[] valueToFindFValueFor, String[] currNames, String[] currFValuesNames, double eps) {
             this.valueToFindFValueFor = valueToFindFValueFor;
             this.currNames = currNames;
@@ -139,9 +139,9 @@ public class FriedmanPopescusH {
             this.eps = eps;
         }
 
-        @Override public void map(Chunk[] cs, NewChunk[] nc) {
+        @Override public void map(Chunk[] cs) {
             int count = 0;
-            
+            if (cs[0].start() > resultIndex) return;
             for (int iRow = 0; iRow < cs[0].len(); iRow++) {
                 for (int k = 0; k < valueToFindFValueFor.length; k++) {
                     int id = ArrayUtils.find(currFValuesNames, currNames[k]);
@@ -153,10 +153,23 @@ public class FriedmanPopescusH {
                     }
                 }
                 if (count == valueToFindFValueFor.length) {
-                    nc[0].addNum(cs[0].atd(iRow));
+                    if (cs[0].start()+iRow < resultIndex) {
+                        result = cs[0].atd(iRow);
+                        resultIndex = cs[0].start()+iRow;
+                    }
                     break;
                 } else {
                     count = 0;
+                }
+            }
+        }
+
+        @Override
+        public void reduce(FindFValue mrt) {
+            if (null != mrt && null != mrt.result) {
+                if (this.resultIndex > mrt.resultIndex) {
+                    this.result = mrt.result;
+                    this.resultIndex = mrt.resultIndex;
                 }
             }
         }
@@ -218,9 +231,12 @@ public class FriedmanPopescusH {
         Frame uniqueWithCounts = uniqueRowsWithCounts(filteredFrame);
         Frame uncenteredFvalues = new Frame(partialDependence(modelIds, uniqueWithCounts, learnRate, sharedTreeSubgraphs).vec(0));
         VecUtils.DotProduct multiply = new VecUtils.DotProduct().doAll(uniqueWithCounts.vec("nrow"), uncenteredFvalues.vec(0));
-        double meanUncenteredFValue = multiply.result / filteredFrame.numRows();
-        for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
-            uncenteredFvalues.vec(0).set(i, uncenteredFvalues.vec(0).at(i) - meanUncenteredFValue);
+        final double meanUncenteredFValue = multiply.result / filteredFrame.numRows();
+        try (Vec.Writer uncenteredFValuesWriter = uncenteredFvalues.vec(0).open()) {
+            Vec.Reader uncenteredFValuesReader = uncenteredFvalues.vec(0).new Reader();
+            for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
+                uncenteredFValuesWriter.set(i, uncenteredFValuesReader.at(i) - meanUncenteredFValue);
+            }
         }
         return uncenteredFvalues.add(uniqueWithCounts);
     }
@@ -330,7 +346,7 @@ public class FriedmanPopescusH {
         double totalWeight;
         SharedTreeNode currNode;
         double currWeight;
-        try( Vec.Writer vw = outVec.open() ) {
+        try(Vec.Writer outVecWriter = outVec.open()) {
             Vec.Reader gridReaders[] = new Vec.Reader[grid.numCols()];
             for (int i = 0; i < grid.numCols(); i++) {
                 gridReaders[i] = grid.vec(i).new Reader();
@@ -380,7 +396,7 @@ public class FriedmanPopescusH {
                         }
                     }
                 }
-                vw.set(i, result);
+                outVecWriter.set(i, result);
                 if (!(0.999 < totalWeight && totalWeight < 1.001)) {
                     throw new RuntimeException("Total weight should be 1.0 but was " + totalWeight);
                 }
