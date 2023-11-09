@@ -11,7 +11,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -143,6 +142,11 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   public void initActualParamValuesAfterOutputSetup(int nclasses, boolean isClassifier) {
     EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
     EffectiveParametersUtils.initDistribution(_parms, nclasses);
+  }
+
+  @Override
+  protected SharedTreeModelWithContributions<GBMModel, GBMParameters, GBMOutput>.ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, ContributionsOptions options) {
+    return new ScoreContributionsWithBackgroundTask(fr._key, backgroundFrame._key, options._outputPerReference, this, expand, catOffsets, options._outputSpace);
   }
 
   @Override
@@ -311,13 +315,17 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
-    Frame adaptFrm = removeSpecialColumns(frame);
+    Frame adaptFrm = removeSpecialNNonNumericColumns(frame);
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
       Vec col = adaptFrm.vec(colId);
       if (col.isBad()) {
         throw new UnsupportedOperationException(
-                "Calculating of H statistics error: row " + adaptFrm.name(colId) + " is missing.");
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is missing.");
+      }
+      if(!col.isNumeric()) {
+        throw new UnsupportedOperationException(
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is not numeric.");
       }
     }
 
@@ -376,6 +384,13 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
          }
        }
      }.withPostMapAction(JobUpdatePostMap.forJob(j)).doAll(types, vs).outputFrame(destination_key, names, domains);
+  }
+
+  @Override
+  public double score(double[] data) {
+    double[] pred = score0(data, new double[_output.nclasses() + 1], 0, _output._ntrees);
+    score0PostProcessSupervised(pred, data);
+    return pred[0];
   }
 
 }

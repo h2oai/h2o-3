@@ -51,7 +51,7 @@ dependencies {
     }
 
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
-    api "org.apache.commons:commons-compress:1.21"
+    api "org.apache.commons:commons-compress:1.24.0"
     api "com.google.protobuf:protobuf-java:3.21.7"
 
     constraints {
@@ -77,10 +77,11 @@ dependencies {
         api('com.squareup.okio:okio:3.5.0') {
             because 'Fixes CVE-2023-3635'
         }
-        api('org.xerial.snappy:snappy-java:1.1.10.3') {
+        api('org.xerial.snappy:snappy-java:1.1.10.5') {
             because 'Fixes CVE-2023-34455'
             because 'Fixes CVE-2023-34454'
             because 'Fixes CVE-2023-34453'
+            because 'Fixes CVE-2023-43642'
         }
     }
 }

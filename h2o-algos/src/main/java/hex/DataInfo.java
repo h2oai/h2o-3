@@ -7,6 +7,7 @@ import water.util.ArrayUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static water.util.ArrayUtils.findLongestCommonPrefix;
 
@@ -823,12 +824,11 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
-  public final int[] coefOriginalColumnIndices() {
-    if (_coefOriginalIndices != null) return _coefOriginalIndices; // already computed
+  public final int[] coefOriginalColumnIndices(Frame adaptedFrame) {
     int k = 0;
     final int n = fullN(); // total number of columns to compute
     int[] res = new int[n];
-    final Vec [] vecs = _adaptedFrame.vecs();
+    final Vec [] vecs = adaptedFrame.vecs();
 
     // first do all of the expanded categorical names
     for(int i = 0; i < _cats; ++i) {
@@ -868,19 +868,32 @@ public class DataInfo extends Keyed<DataInfo> {
           res[k++] = i+_cats;
       }
     }
-    _coefOriginalIndices = res;
+    if (null != _adaptedFrame && Objects.equals(_adaptedFrame._key, adaptedFrame._key))
+      _coefOriginalIndices = res;
     return res;
   }
+  
+  public final int[] coefOriginalColumnIndices() {
+    if (_coefOriginalIndices != null) return _coefOriginalIndices; // already computed
+    return coefOriginalColumnIndices(_adaptedFrame);
+  }
 
-  public final String[] coefOriginalNames() {
-    int[] coefOriginalIndices = coefOriginalColumnIndices();
-    String[] originalNames = new String[coefOriginalIndices[coefOriginalIndices.length - 1]];
+  public final String[] coefOriginalNames(Frame adaptedFrame) {
+    int[] coefOriginalIndices = coefOriginalColumnIndices(adaptedFrame);
+    String[] originalNames = new String[coefOriginalIndices[coefOriginalIndices.length - 1] + 1]; //needs +1 since we have 0 based indexing so if we have index N we need to have N+1 elements
     int i = 0, j = 0;
     while (i < coefOriginalIndices.length && j < originalNames.length) {
       List<Integer> coefOriginalIndicesList = new ArrayList<>(coefOriginalIndices.length);
       for (int value : coefOriginalIndices) coefOriginalIndicesList.add(value);
       int end = coefOriginalIndicesList.lastIndexOf(coefOriginalIndices[i]);
       String prefix = findLongestCommonPrefix(Arrays.copyOfRange(coefNames(), i, end + 1));
+      if (end > i) { // categorical variable
+        // Let's hope levels in this categorical variable don't have common prefix with '.'
+        // We know that we encode cat. vars as "variable_name.level" so we know that the prefix should end
+        // with ".". So make sure it's the case otherwise this can break on categorical variables like "pclass" in titanic
+        // dataset where every level starts with "Class " which leads to "pclass.Class " as the original name
+        prefix = prefix.substring(0, prefix.lastIndexOf("."));
+      }
       if (".".equals(prefix.substring(prefix.length() - 1))) {
         prefix = prefix.substring(0, prefix.length() - 1);
       }
@@ -889,6 +902,10 @@ public class DataInfo extends Keyed<DataInfo> {
       j++;
     }
     return originalNames;
+  }
+  
+  public final String[] coefOriginalNames() {
+    return coefOriginalNames(_adaptedFrame);
   }
 
   // Return permutation matrix mapping input names to adaptedFrame colnames

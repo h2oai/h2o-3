@@ -649,6 +649,9 @@ def test_learning_curve_for_algos_not_present_in_automl():
     assert isinstance(coxph_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
+    assert isinstance(coxph_model.learning_curve_plot(metric="loglik").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
     # IsolationForest
     if_model = H2OIsolationForestEstimator(sample_rate=0.1,
                                            max_depth=20,
@@ -805,12 +808,12 @@ def test_fairness_plots():
     for c in [y]+protected_columns:
         data[c] = data[c].asfactor()
 
-    train, test = data.split_frame([0.98])
+    train, test = data.split_frame([0.98], seed=123456)
     print(test.nrow)
     reference = ["1", "2", "2"]  # university educated single man
     favorable_class = "0"  # no default next month
 
-    aml = H2OAutoML(max_models=12)
+    aml = H2OAutoML(max_models=12, seed=123456)
     aml.train(x, y, train)
 
     models = [h2o.get_model(m[0]) for m in aml.leaderboard["model_id"].as_data_frame(False, False)]
@@ -868,6 +871,105 @@ def test_pd_plot_row_value():
     assert_row_value(gbm.pd_plot(train, "sex", row_index=i).figure(), train[i, "sex"], "sex")
 
 
+def test_shap_plots_with_background_frame():
+    data = h2o.upload_file(pyunit_utils.locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+    x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',]
+        # 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6' ]
+    y = "default payment next month"
+    protected_columns = ['SEX', 'EDUCATION',]
+    reference = ["1", "2"]
+    favorable_class = "0"
+    seed = 0xCAFFE
+
+    for c in [y]+protected_columns:
+        data[c] = data[c].asfactor()
+
+    train, test = data[1:500,:].split_frame([0.98], seed=seed)
+    print(test.nrow)
+    
+
+    aml = H2OAutoML(max_models=12, seed=seed)
+    aml.train(x, y, train)
+
+    models = []
+    for algo in ["deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"]:
+        print(algo)
+        model = aml.get_best_model(algo)
+        models.append(model)
+        # test shap summary
+        assert isinstance(model.shap_summary_plot(test, background_frame=train).figure(), matplotlib.pyplot.Figure)
+        matplotlib.pyplot.close()
+
+        # test shap explain row
+        assert isinstance(model.shap_explain_row_plot(test, 1, background_frame=train).figure(), matplotlib.pyplot.Figure)
+        matplotlib.pyplot.close()
+    
+        # test fair shap plot
+        for p in model.fair_shap_plot(test, "AGE", protected_columns, figsize=(4, 3), background_frame=train).values():
+            assert isinstance(p, matplotlib.pyplot.Figure)
+        matplotlib.pyplot.close()
+
+        mf =  model.inspect_model_fairness(test, protected_columns, reference, favorable_class, background_frame=train, render=False)
+        assert len(mf["shap"]["plots"]) > 1
+        matplotlib.pyplot.close("all")
+
+    # Test that explain has the correct shap plots
+    print("checking explain")
+    ex = h2o.explain(models, test, render=False)
+    exb = h2o.explain(models, test, background_frame=train, render=False)
+
+    ex_shap_plots = ex["shap_summary"]["plots"]
+    exb_shap_plots = exb["shap_summary"]["plots"]
+
+    assert len(ex_shap_plots) < len(exb_shap_plots)
+
+    assert not any("GLM" in k or "StackedEnsemble" in k or "DeepLearning" in k for k in ex_shap_plots.keys())
+    assert any("GLM" in k or "StackedEnsemble" in k or "DeepLearning" in k for k in exb_shap_plots.keys())
+    ex, exb, ex_shap_plots, exb_shap_plots = None, None, None, None
+    matplotlib.pyplot.close("all")
+
+    print("checking explain_row")
+    ex = h2o.explain_row(models, test, 1, render=False)
+    exb = h2o.explain_row(models, test, 1, background_frame=train, render=False)
+
+    ex_shap_plots = ex["shap_explain_row"]["plots"]
+    exb_shap_plots = exb["shap_explain_row"]["plots"]
+
+    assert len(ex_shap_plots) < len(exb_shap_plots)
+
+    assert not any("GLM" in k or "StackedEnsemble" in k or "DeepLearning" in k for k in ex_shap_plots.keys())
+    assert any("GLM" in k or "StackedEnsemble" in k or "DeepLearning" in k for k in exb_shap_plots.keys())
+    ex, exb, ex_shap_plots, exb_shap_plots = None, None, None, None
+    matplotlib.pyplot.close("all")
+
+    
+def test_include_exclude_validation():
+    from h2o.exceptions import H2OValueError
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+    
+    gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model", ntrees=3)
+    gbm.train(y=y, training_frame=train)
+
+    try:
+        gbm.explain(train, include_explanations=["lorem"])
+        assert False, "Should fail as 'lorem' is not a valid explanation"
+    except H2OValueError:
+        pass
+
+    try:
+        gbm.explain(train, exclude_explanations=["lorem"])
+        assert False, "Should fail as 'lorem' is not a valid explanation"
+    except H2OValueError:
+        pass
+
+    assert isinstance(gbm.explain(train, include_explanations=["varimp"]), H2OExplanation)
+
+    assert isinstance(gbm.explain(train, exclude_explanations=["pdp", "shap_summary", "ice", "residual_analysis"]), H2OExplanation)
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -888,4 +990,6 @@ pyunit_utils.run_tests([
     test_pareto_front_corner_cases,
     test_pd_plot_row_value,
     test_fairness_plots,
+    test_shap_plots_with_background_frame,
+    test_include_exclude_validation,
     ])

@@ -38,6 +38,8 @@
 #' @param format string, one of "csv" or "parquet". Default is "csv". Export
 #'        to parquet is multipart and H2O itself determines the optimal number
 #'        of files (1 file per chunk).
+#' @param write_checksum logical, if supported by the format (e.g. 'parquet'), 
+#'        export will include a checksum file for each exported data file.
 #'        
 #' @examples
 #'\dontrun{
@@ -52,7 +54,7 @@
 #' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = NULL, parts = 1,
-                           header = TRUE, quote_header = TRUE, format = "csv") {
+                           header = TRUE, quote_header = TRUE, format = "csv", write_checksum = TRUE) {
   if (!is.H2OFrame(data))
     stop("`data` must be an H2OFrame object")
 
@@ -73,8 +75,12 @@ h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = N
 
   if(!is.character(format) && !(format == "csv" || format == "parquet"))
     stop("`format` must be 'csv' or 'parquet'")
-    
-  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep), header=header, quote_header=quote_header, format=format)
+
+  if(!is.logical(write_checksum) || length(write_checksum) != 1L || is.na(write_checksum))
+    stop("`write_checksum` must be TRUE or FALSE")
+
+  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep), header=header, quote_header=quote_header, 
+                 format=format, write_checksum=write_checksum)
   if (! is.null(compression)) {
     params$compression <- compression
   }

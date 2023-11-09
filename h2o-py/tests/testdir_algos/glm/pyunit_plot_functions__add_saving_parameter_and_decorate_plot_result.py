@@ -151,8 +151,8 @@ def partial_plots():
     with TemporaryDirectory() as tmpdir:
         path1 = "{}/plot1.png".format(tmpdir)
         path2 = "{}/plot2.png".format(tmpdir)
-        test_plot_result_saving(gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1), path2,
-                                gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1, save_plot_path=path1), path1)
+        test_plot_result_saving(gbm_model.partial_plot(frame=data, cols=['AGE'], server=True, plot=True, row_index=1), path2,
+                                gbm_model.partial_plot(frame=data, cols=['AGE'], server=True, plot=True, row_index=1, save_plot_path=path1), path1)
 
 
 def partial_plots_multinomial():
@@ -178,9 +178,9 @@ def partial_plots_multinomial():
     
         test_plot_result_saving(model.plot(), path2, model.plot(save_plot_path=path1), path1)
         
-        test_plot_result_saving(model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
+        test_plot_result_saving(model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
                                                    server=True), path2,
-                                model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
+                                model.partial_plot(frame=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
                                                    server=True, save_to_file=path1), path1)
 
 def roc_pr_curve():

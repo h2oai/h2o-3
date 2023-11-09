@@ -30,6 +30,9 @@
 #'        acquired by calling \link{h2o.decryptionSetup}.
 #' @param chunk_size size of chunk of (input) data in bytes
 #' @param skipped_columns a list of column indices to be excluded from parsing
+#' @param force_col_types (Optional) if true will force parser to return the exact column types specified in 
+#'         column_types.  For parquet, if column_types is not specified, the parquet schema will be used to determine 
+#'         the actual column type.
 #' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @param partition_by (Optional) Names of the columns the persisted dataset has been partitioned by.
 #' @param quotechar A hint for the parser which character to expect as quoting character. None (default) means autodetection.
@@ -38,14 +41,14 @@
 #' @export
 h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, sep = "", col.names=NULL,
                          col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type = NULL, chunk_size = NULL,
-                         decrypt_tool = NULL, skipped_columns = NULL, custom_non_data_line_markers = NULL, partition_by=NULL,
-                         quotechar = NULL, escapechar = "") {
+                         decrypt_tool = NULL, skipped_columns = NULL, force_col_types=FALSE, 
+                         custom_non_data_line_markers = NULL, partition_by=NULL, quotechar = NULL, escapechar = "") {
   single_quotes <- quotechar == "'"
   # Check and parse col.types in case col.types is supplied col.name = col.type vec
   if( length(names(col.types)) > 0 & typeof(col.types) != "list" ) {
     parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types = NULL,
                                    na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
-                                   decrypt_tool = decrypt_tool, skipped_columns=skipped_columns,
+                                   decrypt_tool = decrypt_tool, skipped_columns=skipped_columns, force_col_types=force_col_types,
                                    custom_non_data_line_markers = custom_non_data_line_markers, 
                                    partition_by = partition_by, single_quotes = single_quotes, escapechar = escapechar)
     idx <- match(names(col.types), parse.params$column_names)
@@ -54,6 +57,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
     parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types,
                                    na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
                                    decrypt_tool = decrypt_tool, skipped_columns=skipped_columns,
+                                   force_col_types = force_col_types,
                                    custom_non_data_line_markers = custom_non_data_line_markers,
                                    partition_by = partition_by, single_quotes = single_quotes, escapechar = escapechar)
   }
@@ -76,6 +80,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
             blocking = blocking,
             decrypt_tool = .decrypt_tool_id(parse.params$decrypt_tool),
             skipped_columns = paste0("[", paste(parse.params$skipped_columns, collapse=','), "]"),
+            force_col_types = parse.params$force_col_types,
             partition_by = .collapse.array(parse.params$partition_by),
             escapechar = parse.params$escapechar
             )
@@ -145,7 +150,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
 #' @export
 h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA, sep = "", col.names = NULL, col.types = NULL,
                            na.strings = NULL, parse_type = NULL, chunk_size = NULL, decrypt_tool = NULL, skipped_columns = NULL,
-                           custom_non_data_line_markers = NULL, partition_by=NULL, single_quotes = FALSE, escapechar = "") {
+                           force_col_types=FALSE, custom_non_data_line_markers = NULL, partition_by=NULL, single_quotes = FALSE, escapechar = "") {
 
   # Allow single frame or list of frames; turn singleton into a list
   if( is.H2OFrame(data) ) data <- list(data)
@@ -196,6 +201,8 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
 
   # set decrypt_tool
   if( !is.null(decrypt_tool) ) parseSetup.params$decrypt_tool <- .decrypt_tool_id(decrypt_tool)
+    
+  parseSetup.params$force_col_types <- force_col_types   
 
   parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
   parsedColLength <- parseSetup$number_columns
@@ -285,6 +292,7 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
   # make a name only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
   if( !nzchar(destination_frame) ) destination_frame <- .key.make(parseSetup$destination_frame)
 
+  parseSetup$force_col_types <- force_col_types
   # return the parse setup as a list of setup :D
   parse.params <- list(
         source_frames      = sapply(parseSetup$source_frames, function(asrc) asrc$name),
@@ -302,6 +310,7 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
         warnings           = parseSetup$warnings,
         decrypt_tool       = parseSetup$decrypt_tool,
         skipped_columns    = parseSetup$skipped_columns,
+        force_col_types    = parseSetup$force_col_types,
         custom_non_data_line_markers = parseSetup$custom_non_data_line_markers,
         partition_by       = parseSetup$partition_by,
         escapechar        = parseSetup$escapechar

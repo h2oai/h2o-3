@@ -41,7 +41,7 @@ dependencies {
         exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
-    api "org.apache.commons:commons-compress:1.21"
+    api "org.apache.commons:commons-compress:1.24.0"
     // Force specific Parquet version to avoid dependency on vulnerable FasterXML jackson-mapper-asl
     api "org.apache.parquet:parquet-hadoop:${defaultParquetVersion}"
     api("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
@@ -74,10 +74,11 @@ dependencies {
         api('com.squareup.okio:okio:3.5.0') {
             because 'Fixes CVE-2023-3635'
         }
-        api('org.xerial.snappy:snappy-java:1.1.10.3') {
+        api('org.xerial.snappy:snappy-java:1.1.10.5') {
             because 'Fixes CVE-2023-34455'
             because 'Fixes CVE-2023-34454'
             because 'Fixes CVE-2023-34453'
+            because 'Fixes CVE-2023-43642'
         }
     }
 }

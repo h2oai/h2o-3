@@ -1,6 +1,8 @@
 package hex.tree.uplift;
 
 import hex.*;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.upliftdrf.UpliftDrfMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import org.apache.log4j.Logger;
@@ -50,7 +52,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
     @Override
     public boolean haveMojo() {
-        return false;
+        return true;
     }
 
     @Override
@@ -470,6 +472,15 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             row++;
         }
         return table;
+    }
+
+    @Override
+    protected void addCustomInfo(UpliftDRFModel.UpliftDRFOutput out) {
+        if(out._validation_metrics != null){
+            out._defaultAuucThresholds = ((ModelMetricsBinomialUplift)out._validation_metrics)._auuc._ths;
+        } else {
+            out._defaultAuucThresholds = ((ModelMetricsBinomialUplift)out._training_metrics)._auuc._ths;
+        }
     }
 
     @Override

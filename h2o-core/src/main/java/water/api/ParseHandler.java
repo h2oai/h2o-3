@@ -28,7 +28,7 @@ class ParseHandler extends Handler {
                                       new ParseWriter.ParseErr[0], parse.chunk_size,
                                       parse.decrypt_tool != null ? parse.decrypt_tool.key() : null, parse.skipped_columns,
                                       parse.custom_non_data_line_markers != null ? parse.custom_non_data_line_markers.getBytes(): null,
-                                      parse.escapechar);
+                                      parse.escapechar, parse.force_col_types);
 
     if (parse.source_frames == null)
       throw new H2OIllegalArgumentException("Data for Frame '" + parse.destination_frame.name + "' is not available. Please check that the path is valid (for all H2O nodes).'");
@@ -51,7 +51,10 @@ class ParseHandler extends Handler {
             ((setup.get_parse_columns_indices()==null) || (setup.get_parse_columns_indices().length==0)))
       throw new H2OIllegalArgumentException("Parser:  all columns in the file are skipped and no H2OFrame" +
               " can be returned."); // Need this to send error message to R
-
+    
+    if (parse.force_col_types && parse.column_types != null)
+      setup.setOrigColumnTypes(parse.column_types);
+    
     parse.job = new JobV3(ParseDataset.parse(
             parse.destination_frame.key(), srcs, parse.delete_on_done, setup, parse.blocking
     )._job);

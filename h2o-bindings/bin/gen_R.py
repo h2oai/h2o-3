@@ -272,6 +272,7 @@ def algo_to_modelname(algo):
     if algo == "gam": return "Generalized Additive Model"
     if algo == "modelselection": return "Model Selection"
     if algo == "infogram": return "Infogram"
+    if algo == "adaboost": return "AdaBoost Model"
     return algo
 
 
@@ -347,6 +348,7 @@ def main():
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"
         if name == "modelselection": module = "modelSelection"
+        if name == "adaboost": module = "adaBoost"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
 

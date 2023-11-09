@@ -57,8 +57,7 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
             qini = auuc.qini();
             // Fill TwoDimTable
             String[] thresholds = new String[auuc._nBins];
-            AUUCType metrics[] = AUUCType.VALUES;
-            metrics = ArrayUtils.remove(metrics, Arrays.asList(metrics).indexOf(AUUCType.AUTO));
+            AUUCType metrics[] = AUUCType.VALUES_WITHOUT_AUTO;
             int metricsLength = metrics.length;
             long[] n = new long[auuc._nBins];
             double[][] uplift = new double[metricsLength][];
@@ -89,7 +88,7 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
                 types     [i + 1 + 2 * metricsLength] = "double";
                 formats   [i + 1 + 2 * metricsLength] = "%f";
             }
-            colHeaders[i + 1 + 2 * metricsLength]  = "n"; types[i + 1 + 2 * metricsLength] = "int"; formats[i + 1 + 2 * metricsLength] = "%d";
+            colHeaders[i + 1 + 2 * metricsLength]  = "n"; types[i + 1 + 2 * metricsLength] = "long"; formats[i + 1 + 2 * metricsLength] = "%d";
             colHeaders[i + 2 + 2 * metricsLength]  = "idx"; types[i + 2 + 2 * metricsLength] = "int"; formats[i + 2 + 2 * metricsLength] = "%d";
             TwoDimTable thresholdsByMetrics = new TwoDimTable("Metrics for Thresholds", "Cumulative Uplift metrics for a given percentile", new String[auuc._nBins], colHeaders, types, formats, null );
             for (i = 0; i < auuc._nBins; i++) {

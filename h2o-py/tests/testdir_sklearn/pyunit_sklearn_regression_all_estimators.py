@@ -138,7 +138,8 @@ failing = [
     'H2OCoxProportionalHazardsRegressor',  # doesn't support regression?
     'H2OStackedEnsembleRegressor',  # needs a separate test (requires models as parameters),
     'H2OUpliftRandomForestRegressor',  # does not support regression yet
-    'H2ODecisionTreeRegressor'  # does not support regression yet
+    'H2ODecisionTreeRegressor',  # does not support regression yet
+    'H2OAdaBoostRegressor'  # does not support regression yet
 ]
 regressors = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Regressor') and name not in ['H2OAutoMLRegressor']+failing]

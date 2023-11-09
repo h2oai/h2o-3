@@ -137,7 +137,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public int _topN;
       public int _bottomN;
       public boolean _compareAbs;
-
+      public boolean _outputSpace; // Used only iff SHAP is in link space
+      public boolean _outputPerReference; // If T, return contributions against each background sample (aka reference), i.e. phi(feature, x, bg), otherwise return contributions averaged over the background sample (phi(feature, x) = E_{bg} phi(feature, x, bg))
+      
+      
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
         return this;
@@ -158,18 +161,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return this;
       }
 
+      public ContributionsOptions setOutputSpace(boolean outputSpace) {
+        _outputSpace = outputSpace;
+        return this;
+      }
+      
+      
+      public ContributionsOptions setOutputPerReference(boolean perReference) {
+        _outputPerReference = perReference;
+        return this;
+      }
       public boolean isSortingRequired() {
         return _topN != 0 || _bottomN != 0;
       }
     }
 
-    Frame scoreContributions(Frame frame, Key<Frame> destination_key);
+    default Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+      throw H2O.unimpl("Calculating SHAP is not supported.");
+    }
 
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
       return scoreContributions(frame, destination_key, j, new ContributionsOptions());
     }
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
       return scoreContributions(frame, destination_key);
+    }
+
+    default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+      if (backgroundFrame != null) {
+        throw H2O.unimpl("Calculating SHAP with background frame is not supported for this model.");
+      }
+      return scoreContributions(frame, destination_key, j, options);
     }
 
     default void composeScoreContributionTaskMetadata(final String[] names, final byte[] types, final String[][] domains, final String[] originalFrameNames, final Contributions.ContributionsOptions options) {
@@ -205,6 +227,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       names[outputSize] = "BiasTerm";
       types[outputSize] = Vec.T_NUM;
       domains[outputSize] = null;
+    }
+    
+    default long scoreContributionsWorkEstimate(Frame frame, Frame backgroundFrame, boolean outputPerReference) {
+      long frameNRows = frame.numRows();
+      long bgFrameNRows = backgroundFrame.numRows();
+      long workAmount = Math.max(frameNRows, bgFrameNRows); // Maps over the bigger frame while the smaller is sent across the cluster
+      if (!outputPerReference) 
+        workAmount +=  frameNRows * bgFrameNRows; // Aggregating over the baselines
+      return workAmount;
     }
   }
 
@@ -1131,6 +1162,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
+    public String treatmentName() { return _hasTreatment ? _names[treatmentIdx()]: null;}
     public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
     // cn are predictor cols, r is response, w is weights, o is offset, f is fold and t is treatment - these are optional
@@ -2221,8 +2253,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (isCancelled() || _j != null && _j.stop_requested()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
+      Chunk treatmentChunk = _output.hasTreatment() ? chks[_output.treatmentIdx()] : null;
       Chunk responseChunk = null;
-      Chunk treatmentChunk = null;
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
@@ -3036,6 +3068,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 decisionPath = adp.leafNodeAssignments;
                 nodeIds = adp.leafNodeAssignmentIds;
                 break;
+              case BinomialUplift:
+                UpliftBinomialModelPrediction bup = (UpliftBinomialModelPrediction) p;
+                d2 = bup.predictions[col];
+                break;
               case DimReduction:
                 d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:
                         ((DimReductionModelPrediction) p).dimensions[col];    // look at the reconstructed matrix
@@ -3048,7 +3084,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             actual_preds[col] = d2;
           }
 
-          if (trees != null) {
+          if (trees != null && (genmodel.getModelCategory() != ModelCategory.BinomialUplift) /* UpliftModel doesn't support decisionPath yet */) {
             for (int t = 0; t < trees.length; t++) {
               SharedTreeGraph tree = trees[t];
               SharedTreeNode node = tree.walkNodes(0, decisionPath[t]);
@@ -3433,6 +3469,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String offsetColumn() { return _output.offsetName(); }
       @Override
       public String weightsColumn() { return _output.weightsName(); }
+      @Override
+      public String treatmentColumn() { return _output.treatmentName(); }
       @Override
       public String foldColumn() { return _output.foldName(); }
       @Override

@@ -29,7 +29,7 @@ from h2o.utils.metaclass import deprecated_fn
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized, 
-                                    check_frame_id, can_use_polars, can_use_pyarrow)
+                                    check_frame_id, can_use_datatable)
 from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
@@ -90,7 +90,7 @@ class H2OFrame(Keyed, H2ODisplay):
     # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
-                 column_names=None, column_types=None, na_strings=None, skipped_columns=None):
+                 column_names=None, column_types=None, na_strings=None, skipped_columns=None, force_col_types=False):
     
         coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                     "categorical", "factor", "enum", "time")
@@ -108,7 +108,7 @@ class H2OFrame(Keyed, H2ODisplay):
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if python_obj is not None:
             self._upload_python_object(python_obj, destination_frame, header, separator,
-                                       column_names, column_types, na_strings, skipped_columns)
+                                       column_names, column_types, na_strings, skipped_columns, force_col_types)
 
     @staticmethod
     def _expr(expr, cache=None):
@@ -120,7 +120,7 @@ class H2OFrame(Keyed, H2ODisplay):
         return fr
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
-                              column_names=None, column_types=None, na_strings=None, skipped_columns=None):
+                              column_names=None, column_types=None, na_strings=None, skipped_columns=None, force_col_types=False):
         assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         if is_type(python_obj, scipy_sparse):
             self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
@@ -148,7 +148,8 @@ class H2OFrame(Keyed, H2ODisplay):
         else:
             csv_writer.writerows(data_to_write)
         tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings, skipped_columns)
+        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings,
+                           skipped_columns, force_col_types)
         os.remove(tmp_path)  # delete the tmp file
 
     def _upload_sparse_matrix(self, matrix, destination_frame=None):
@@ -440,27 +441,28 @@ class H2OFrame(Keyed, H2ODisplay):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
+                      skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None,
+                      quotechar=None, escapechar=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. https://github.com/h2oai/h2o-3/issues/12573
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                    skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None,
-                      quotechar=None, escapechar=None):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, 
+                      skipped_columns=None, force_col_types=False, quotechar=None, escapechar=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
         self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns,
-                    quotechar=quotechar, escapechar=escapechar)
+                    force_col_types, quotechar=quotechar, escapechar=escapechar)
         return self
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
+               na_strings=None, skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
                escapechar=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                                skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self._parse_raw(setup)
 
     def _parse_raw(self, setup):
@@ -475,6 +477,7 @@ class H2OFrame(Keyed, H2ODisplay):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
+             "force_col_types": False,
              "custom_non_data_line_markers": None,
              "partition_by": None,
              "single_quotes": None,
@@ -1936,7 +1939,7 @@ class H2OFrame(Keyed, H2ODisplay):
         :param bool use_pandas: If True (default) then return the H2OFrame as a pandas DataFrame (requires that the
             ``pandas`` library was installed). If False, then return the contents of the H2OFrame as plain nested
             list, in a row-wise order.
-        :param bool multi_thread: if True and if use_pandas is True, will use polars to speedup the conversion from
+        :param bool multi_thread: if True and if use_pandas is True, will use datatable to speedup the conversion from
              H2O frame to pandas frame that uses multi-thread.
         :param bool header: If True (default), then column names will be appended as the first row in list
 
@@ -1957,20 +1960,28 @@ class H2OFrame(Keyed, H2ODisplay):
         if can_use_pandas() and use_pandas:
             import pandas
             if multi_thread:
-                if can_use_polars() and can_use_pyarrow():
+                if can_use_datatable():
                     try:
                         tmpdir = tempfile.mkdtemp()
                         fileName = os.path.join(tmpdir, "h2oframe2Convert.csv")
                         h2o.export_file(self, fileName)
-                        import polars as pl
-                        dt_frame = pl.read_csv(fileName)
+                        #h2o.download_csv(self, fileName)
+                        import datatable as dt
+                        frameTypes = self.types
+                        validFrameTypes = {}
+                        for key, value in frameTypes.items():
+                            if value.startswith('int'):
+                                validFrameTypes[key] = dt.int64
+                            elif value.startswith("real"):
+                                validFrameTypes[key] = dt.float64
+                        dt_frame = dt.fread(fileName, na_strings=[""], columns=validFrameTypes)
                         return dt_frame.to_pandas()
                     finally:
                         os.remove(fileName)
                         os.rmdir(tmpdir)
-                elif not(can_use_polars()) or not(can_use_pyarrow()):
-                    warnings("multi_thread mode can only be used when you have polars "
-                             "and pyarrow modules installed.")                   
+                elif not(can_use_datatable()):
+                    warnings.warn("multi_thread mode can only be used when you have datatable "
+                             "installed.  Defaults to single-thread operation.")                   
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]

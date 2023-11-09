@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues = TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source("../../../scripts/h2o-r-test-setup.R")
 
 expect_ggplot <- function(gg) {
   p <- force(gg)
@@ -100,10 +100,10 @@ explanation_test_automl_regression <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -155,10 +155,10 @@ explanation_test_list_of_models_regression <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -256,10 +256,10 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -285,10 +285,10 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml@leaderboard[-1,]))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml@leaderboard[-1,], train), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_summary_plot(aml@leaderboard[-1,], train), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[-1,], train, 1), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[-1,], train, 1), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test partial dependences
   expect_ggplot(h2o.pd_multi_plot(aml@leaderboard[-1,], train, cols_to_test[[1]]))
@@ -327,10 +327,10 @@ explanation_test_list_of_models_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -419,10 +419,10 @@ explanation_test_automl_multinomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -473,10 +473,10 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions requires a tree-based model.")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions without a background frame requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -588,6 +588,7 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
                            ties = "breslow",
                            training_frame = heart)
   expect_ggplot(h2o.learning_curve_plot(coxph_model))
+  expect_ggplot(h2o.learning_curve_plot(coxph_model, metric = "loglik"))
 
   # IsolationForest
   if_model <- h2o.isolationForest(training_frame = prostate,
@@ -755,6 +756,63 @@ fairness_plots_test <- function() {
 }
 
 
+shap_plots_work_with_background_frame_test <- function(){
+ data <- h2o.uploadFile(locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+  x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3')
+  y <- "default payment next month"
+  protected_columns <- c('SEX', 'EDUCATION', 'MARRIAGE')
+
+  for (col in c(y, protected_columns))
+    data[[col]] <- h2o.asfactor(data[[col]])
+
+  splits <- h2o.splitFrame(data[1:500,])
+  train <- splits[[1]]
+  test <- splits[[2]]
+  reference <- c("1", "2", "2")  # university educated single man
+  favorable_class <- "0"  # no default next month
+
+  aml <- h2o.automl(x, y, train, max_models=12)
+
+
+  ALGOS <- c("deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost")
+  models <- c()
+  for (algo in ALGOS) {
+    cat(algo, "\n")
+    model <- h2o.get_best_model(aml, algo)
+    models <- c(model, models)
+    expect_ggplot(plot(h2o.shap_summary_plot(model, test, background_frame = train)))
+    expect_ggplot(plot(h2o.shap_explain_row_plot(model, test, 2, background_frame = train)))
+    lapply(h2o.fair_shap_plot(model, test, protected_columns = protected_columns, column="AGE", background_frame = train), 
+        function (gg) expect_ggplot(plot(gg))
+    )
+
+    imf <- h2o.inspect_model_fairness(model, test, protected_columns = protected_columns,
+                                      reference = reference, favorable_class = favorable_class, background_frame = train)
+    expect_true(length(imf[["SHAP"]][["plots"]]) > 1)
+  }
+
+  cat("explain\n")
+  ex <- h2o.explain(models, test)
+  exb <- h2o.explain(models, test, background_frame = train)
+
+  expect_true(length(ex$shap_summary$plots) < length(exb$shap_summary$plots))
+
+  expect_true(!any(grepl("GLM|DeepLearning|StackedEnsemble", names(ex$shap_summary$plots))))
+  expect_true(any(grepl("GLM|DeepLearning|StackedEnsemble", names(exb$shap_summary$plots))))
+
+  cat("explain_row\n")
+  ex <- h2o.explain_row(models, test, 1)
+  exb <- h2o.explain_row(models, test, 1, background_frame = train)
+
+  expect_true(length(ex$shap_explain_row$plots) < length(exb$shap_explain_row$plots))
+
+  expect_true(!any(grepl("GLM|DeepLearning|StackedEnsemble", names(ex$shap_explain_row$plots))))
+  expect_true(any(grepl("GLM|DeepLearning|StackedEnsemble", names(exb$shap_explain_row$plots))))
+
+}
+
+
 doSuite("Explanation Tests", makeSuite(
    varimp_test
    , explanation_test_single_model_regression
@@ -773,4 +831,5 @@ doSuite("Explanation Tests", makeSuite(
    , explanation_test_some_dataframe_pareto_front
    , pareto_front_corner_cases_test
    , fairness_plots_test
+   , shap_plots_work_with_background_frame_test
 ))
