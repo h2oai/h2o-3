@@ -11,15 +11,19 @@ def extended_isolation_forest_scoring_history():
 
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/single_blob.csv"))
 
-    eif_model = H2OExtendedIsolationForestEstimator(ntrees=10, seed=0xBEEF, sample_size=255, extension_level=1,
-                                                    score_each_iteration=True)
+    eif_model = H2OExtendedIsolationForestEstimator(ntrees=10, seed=0xBEEF, sample_size=255, extension_level=1)
     eif_model.train(training_frame=train)
+    print(eif_model.scoring_history())
+    assert_equals(None, eif_model.scoring_history(), "No scoring history by default")
 
+    eif_model = H2OExtendedIsolationForestEstimator(ntrees=10, seed=0xBEEF, sample_size=255, extension_level=1,
+                                                    score_each_iteration=True, disable_training_metrics=False)
+    eif_model.train(training_frame=train)
     print(eif_model.scoring_history())
     assert_equals(11, len(eif_model.scoring_history()), "There should be one empty row and one row for each tree")
 
     eif_model = H2OExtendedIsolationForestEstimator(ntrees=10, seed=0xBEEF, sample_size=255, extension_level=1,
-                                                    score_tree_interval=3)
+                                                    score_tree_interval=3, disable_training_metrics=False)
     eif_model.train(training_frame=train)
     print(eif_model.scoring_history())
     assert_equals(5, len(eif_model.scoring_history()), "There should be one empty row and one row for each interval")

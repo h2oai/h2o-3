@@ -19,6 +19,7 @@
 #'        Isolation Forest. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
+#' @param disable_training_metrics \code{Logical}. Disable calculating training metrics (expensive on large datasets) Defaults to TRUE.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -60,7 +61,8 @@ h2o.extendedIsolationForest <- function(training_frame,
                                         ntrees = 100,
                                         sample_size = 256,
                                         extension_level = 0,
-                                        seed = -1)
+                                        seed = -1,
+                                        disable_training_metrics = TRUE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -89,6 +91,8 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$extension_level <- extension_level
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(disable_training_metrics))
+    parms$disable_training_metrics <- disable_training_metrics
 
   # Error check and build model
   model <- .h2o.modelJob('extendedisolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -104,6 +108,7 @@ h2o.extendedIsolationForest <- function(training_frame,
                                                         sample_size = 256,
                                                         extension_level = 0,
                                                         seed = -1,
+                                                        disable_training_metrics = TRUE,
                                                         segment_columns = NULL,
                                                         segment_models_id = NULL,
                                                         parallelism = 1)
@@ -137,6 +142,8 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$extension_level <- extension_level
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(disable_training_metrics))
+    parms$disable_training_metrics <- disable_training_metrics
 
   # Build segment-models specific parameters
   segment_parms <- list()

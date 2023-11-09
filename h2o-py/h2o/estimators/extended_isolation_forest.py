@@ -42,6 +42,7 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
                  sample_size=256,  # type: int
                  extension_level=0,  # type: int
                  seed=-1,  # type: int
+                 disable_training_metrics=True,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -79,6 +80,9 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         :param seed: Seed for pseudo random number generator (if applicable)
                Defaults to ``-1``.
         :type seed: int
+        :param disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
+               Defaults to ``True``.
+        :type disable_training_metrics: bool
         """
         super(H2OExtendedIsolationForestEstimator, self).__init__()
         self._parms = {}
@@ -93,6 +97,7 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         self.sample_size = sample_size
         self.extension_level = extension_level
         self.seed = seed
+        self.disable_training_metrics = disable_training_metrics
 
     @property
     def training_frame(self):
@@ -313,5 +318,19 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
+
+    @property
+    def disable_training_metrics(self):
+        """
+        Disable calculating training metrics (expensive on large datasets)
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("disable_training_metrics")
+
+    @disable_training_metrics.setter
+    def disable_training_metrics(self, disable_training_metrics):
+        assert_is_type(disable_training_metrics, None, bool)
+        self._parms["disable_training_metrics"] = disable_training_metrics
 
 

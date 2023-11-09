@@ -53,6 +53,8 @@ Algorithm-specific parameters
 
 -  `sample_size <algo-params/sample_size.html>`__: The number of randomly sampled observations used to train each Extended Isolation Forest tree. This option defaults to ``256``.
 
+-  **disable_training_metrics**: Disable calculating training metrics (expensive on large datasets). This option defaults to ``True`` (enabled).
+
 Shared tree-algorithm parameters
 ''''''''''''''''''''''''''''''''
 
