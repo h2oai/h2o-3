@@ -338,6 +338,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._extension_level = train.numCols() - 1;
+            p._disable_training_metrics = false;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
@@ -395,6 +396,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._ntrees = 5;
             p._score_each_iteration = true;
             p._extension_level = train.numCols() - 1;
+            p._disable_training_metrics = false;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
@@ -424,6 +426,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._ntrees = 5;
             p._score_tree_interval = 2;
             p._extension_level = train.numCols() - 1;
+            p._disable_training_metrics = false;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
@@ -454,6 +457,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._ntrees = 100;
             p._score_tree_interval = 30;
             p._extension_level = train.numCols() - 1;
+            p._disable_training_metrics = false;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();

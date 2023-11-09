@@ -187,7 +187,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 boolean finalScoring = _parms._ntrees == (tid + 1);
 
                 _model._output._scored_train[tid + 1] = new ScoreKeeper();
-                if (_parms._score_each_iteration || manualInterval || finalScoring) {
+                if ((_parms._score_each_iteration || manualInterval || finalScoring) && !_parms._disable_training_metrics) {
                     ModelMetrics.MetricBuilder metricsBuilder = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder();
                     ModelMetrics modelMetrics = metricsBuilder.makeModelMetrics(_model, _parms.train(), null, null);
                     _model._output._training_metrics = modelMetrics;

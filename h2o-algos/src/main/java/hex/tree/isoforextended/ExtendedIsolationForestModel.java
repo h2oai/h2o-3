@@ -104,13 +104,20 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         /**
          * Score every so many trees (no matter what)
          */
-        public int _score_tree_interval = 0;
+        public int _score_tree_interval;
+
+        /**
+         * Disable calculating training metrics (expensive on large datasets).
+         */
+        public boolean _disable_training_metrics;
 
         public ExtendedIsolationForestParameters() {
             super();
             _ntrees = 100;
             _sample_size = 256;
             _extension_level = 0;
+            _score_tree_interval = 0;
+            _disable_training_metrics = true;
         }        
     }
 
