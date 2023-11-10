@@ -17,7 +17,6 @@ from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
 from mlflow.models import ModelSignature, ModelInputExample
-from mlflow.types.schema import ColSpec, ParamSchema, ParamSpec, Schema, DataType
 from mlflow.utils.environment import (
     _CONDA_ENV_FILE_NAME,
     _CONSTRAINTS_FILE_NAME,
@@ -36,11 +35,10 @@ from mlflow.utils.model_utils import (
     _validate_and_prepare_target_save_path,
 )
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
-from mlflow.types.utils import _infer_pandas_column
 
 _logger = logging.getLogger(__name__)
 
-FLAVOR_NAME = "h2o_gen_model"
+FLAVOR_NAME = "h2o_mojo_pojo"
 
 
 def get_default_pip_requirements():
@@ -128,31 +126,20 @@ def get_input_example(h2o_model, number_of_records=5, relevant_columns_only=True
     frame = h2o.get_frame(h2o_model.actual_params["training_frame"]).head(number_of_records)
     result = frame.as_data_frame()
     if relevant_columns_only:
-        relevant_columns = h2o_model.varimp(use_pandas=True)["variable"].values.tolist()
+        relevant_columns = _get_relevant_columns(h2o_model)
         input_columns = [col for col in frame.col_names if col in relevant_columns]
         return result[input_columns]
     else:
         return result
 
 
-def _infer_signature(h2o_model, wrapped_model, input_example):
-    
-    input_schema = _get_input_schema(h2o_model)
-    prediction = wrapped_model.predict(input_example)
-    output_schema = Schema(
-        [ColSpec(type=_infer_pandas_column(prediction[col]), name=col) for col in prediction.columns]
-    )
-    return ModelSignature(inputs=input_schema, outputs=output_schema)
-    
-    
-def _get_input_schema(h2o_model):
-    import h2o
-    training_frame = h2o.get_frame(h2o_model.actual_params["training_frame"])
-    relevant_columns = h2o_model.varimp(use_pandas=True)["variable"].values.tolist()
-    input_columns = [ColSpec(name=key, type=DataType.string)
-                     for key, val in training_frame.types.items()
-                     if key in relevant_columns]
-    return Schema(input_columns) 
+def _get_relevant_columns(h2o_model):
+    names = h2o_model._model_json["output"]["original_names"] or h2o_model._model_json["output"]["names"]
+    response_column = h2o_model.actual_params.get("response_column")
+    ignored_columns = h2o_model.actual_params.get("ignored_columns") or []
+    irrelevant_columns = ignored_columns + [response_column] if response_column else ignored_columns
+    relevant_columns = [feature for feature in names if feature not in irrelevant_columns]
+    return relevant_columns
 
 def save_model(
     h2o_model,
@@ -209,12 +196,6 @@ def save_model(
         subprocess.check_call(javac_cmd)
         model_file = os.path.basename(model_data_path).replace(".java", "")
 
-    if signature is None and input_example is not None:
-        wrapped_model = _H2OModelWrapper(model_file, model_type, path, extra_prediction_args)
-        signature = _infer_signature(h2o_model, wrapped_model, input_example)
-    elif signature is False:
-        signature = None
-
     if mlflow_model is None:
         mlflow_model = Model()
     if signature is not None:
@@ -236,6 +217,7 @@ def save_model(
         model_file=model_file,
         model_type=model_type_upper,
         extra_prediction_args=extra_prediction_args,
+        relevant_columns=_get_relevant_columns(h2o_model),
         h2o_version=h2o.__version__,
         code=code_dir_subpath,
     )
@@ -337,15 +319,17 @@ def _load_model(path):
     model_type = flavor_conf["model_type"]
     model_file = flavor_conf["model_file"]
     extra_prediction_args = flavor_conf["extra_prediction_args"]
-    return _H2OModelWrapper(model_file, model_type, path, extra_prediction_args)
+    relevant_columns = flavor_conf["relevant_columns"]
+    return _H2OModelWrapper(model_file, model_type, path, extra_prediction_args, relevant_columns)
 
 
 class _H2OModelWrapper:
-    def __init__(self, model_file, model_type, path, extra_prediction_args):
+    def __init__(self, model_file, model_type, path, extra_prediction_args, relevant_columns):
         self.model_file = model_file
         self.model_type = model_type
         self.path = path
         self.extra_prediction_args = extra_prediction_args if extra_prediction_args is not None else []
+        self.relevant_columns = relevant_columns
         self.genmodel_jar_path = os.path.join(path, "h2o-genmodel.jar")
 
     def predict(self, dataframe, params=None):
@@ -360,7 +344,8 @@ class _H2OModelWrapper:
             output_file = os.path.join(tempdir, "output.csv")
             separator = "`"
             import csv
-            dataframe.to_csv(input_file, index=False, quoting=csv.QUOTE_NONNUMERIC, sep=separator)
+            sub_dataframe = dataframe[self.relevant_columns]
+            sub_dataframe.to_csv(input_file, index=False, quoting=csv.QUOTE_NONNUMERIC, sep=separator)
             if self.model_type == "MOJO":
                 class_path = self.genmodel_jar_path
                 type_parameter = "--mojo"
