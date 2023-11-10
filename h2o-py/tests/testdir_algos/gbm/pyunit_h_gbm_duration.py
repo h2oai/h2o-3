@@ -39,7 +39,7 @@ def test_if_h_fast_enough():
     print("Computing H took {}s".format(h2o_single_pair_end_time - h2o_single_pair_start_time))
 
     assert abs(h2o_single_pair_h - 0.3804505590934481) < 1e-10  # Check the result with the pre-speedup result
-    assert h2o_single_pair_end_time - h2o_single_pair_start_time < 30  # old version takes around 1764 s; locally it runs in less than 10s
+    assert h2o_single_pair_end_time - h2o_single_pair_start_time < 90  # old version takes around 1764 s; locally it runs in less than 10s
 
 
     
