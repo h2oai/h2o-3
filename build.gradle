@@ -156,7 +156,7 @@ ext {
     pythonProjects = [
       project(':h2o-py'),
       project(':h2o-py-cloud-extensions'),
-      project(':h2o-py-mlflow-flavors')
+      project(':h2o-py-mlflow-flavor')
     ]
 
     // The project which need to be run under CI only

@@ -1,5 +1,5 @@
 """
-The `h2o_mlflow_flavors.h2o_gen_model` module provides an API for working with H2O MOJO and POJO models.
+The `h2o_mlflow_flavor` module provides an API for working with H2O MOJO and POJO models.
 """
 
 import logging
@@ -16,8 +16,8 @@ from mlflow import pyfunc
 from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
-from mlflow.models.signature import ModelSignature
-from mlflow.models.utils import ModelInputExample
+from mlflow.models import ModelSignature, ModelInputExample
+from mlflow.types.schema import ColSpec, ParamSchema, ParamSpec, Schema, DataType
 from mlflow.utils.environment import (
     _CONDA_ENV_FILE_NAME,
     _CONSTRAINTS_FILE_NAME,
@@ -31,14 +31,12 @@ from mlflow.utils.environment import (
 )
 from mlflow.utils.file_utils import write_to
 from mlflow.utils.model_utils import (
-    _add_code_from_conf_to_system_path,
     _get_flavor_configuration,
     _validate_and_copy_code_paths,
     _validate_and_prepare_target_save_path,
 )
-from mlflow.utils.requirements_utils import _get_pinned_requirement
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
-from mlflow.models.signature import _infer_signature_from_input_example
+from mlflow.types.utils import _infer_pandas_column
 
 _logger = logging.getLogger(__name__)
 
@@ -68,11 +66,11 @@ def get_params(h2o_model):
     
     :param h2o_model: An H2O binary model.
     :return: A dictionary of parameters that were used for training the model. 
-    """    
-    def is_valid(key): 
+    """
+    def is_valid(key):
         return key != "model_id" and \
-               not key.endswith("_frame") and \
-               not key.startswith("keep_cross_validation_")
+            not key.endswith("_frame") and \
+            not key.startswith("keep_cross_validation_")
 
     return {key: val for key, val in h2o_model.actual_params.items() if is_valid(key)}
 
@@ -123,9 +121,9 @@ def get_input_example(h2o_model, number_of_records=5, relevant_columns_only=True
     :param number_of_records: A number of records that will be extracted from the training dataset.
     :param relevant_columns_only: A flag indicating whether the output dataset should contain 
                                   only columns required by the model.  Defaults to ``True``.
-    :return: 
+    :return: Pandas dataset made from the training dataset of H2O binary model
     """
-    
+
     import h2o
     frame = h2o.get_frame(h2o_model.actual_params["training_frame"]).head(number_of_records)
     result = frame.as_data_frame()
@@ -133,9 +131,28 @@ def get_input_example(h2o_model, number_of_records=5, relevant_columns_only=True
         relevant_columns = h2o_model.varimp(use_pandas=True)["variable"].values.tolist()
         input_columns = [col for col in frame.col_names if col in relevant_columns]
         return result[input_columns]
-    else: 
+    else:
         return result
 
+
+def _infer_signature(h2o_model, wrapped_model, input_example):
+    
+    input_schema = _get_input_schema(h2o_model)
+    prediction = wrapped_model.predict(input_example)
+    output_schema = Schema(
+        [ColSpec(type=_infer_pandas_column(prediction[col]), name=col) for col in prediction.columns]
+    )
+    return ModelSignature(inputs=input_schema, outputs=output_schema)
+    
+    
+def _get_input_schema(h2o_model):
+    import h2o
+    training_frame = h2o.get_frame(h2o_model.actual_params["training_frame"])
+    relevant_columns = h2o_model.varimp(use_pandas=True)["variable"].values.tolist()
+    input_columns = [ColSpec(name=key, type=DataType.string)
+                     for key, val in training_frame.types.items()
+                     if key in relevant_columns]
+    return Schema(input_columns) 
 
 def save_model(
     h2o_model,
@@ -170,8 +187,8 @@ def save_model(
                                   --setConvertInvalidNum - Converts invalid numbers to NA
                                   --predictContributions - Returns also Shapley values a long with the predictions 
                                   --predictCalibrated - Return also calibrated prediction values.     
-    """    
-    
+    """
+
     import h2o
     model_type_upper = model_type.upper()
     if model_type_upper != "MOJO" and model_type_upper != "POJO":
@@ -194,22 +211,20 @@ def save_model(
 
     if signature is None and input_example is not None:
         wrapped_model = _H2OModelWrapper(model_file, model_type, path, extra_prediction_args)
-        signature = _infer_signature_from_input_example(input_example, wrapped_model)
+        signature = _infer_signature(h2o_model, wrapped_model, input_example)
     elif signature is False:
         signature = None
-    
+
     if mlflow_model is None:
         mlflow_model = Model()
     if signature is not None:
         mlflow_model.signature = signature
     if input_example is not None:
         _save_example(mlflow_model, input_example, path)
-    if metadata is not None:
-        mlflow_model.metadata = metadata
 
     pyfunc.add_to_model(
         mlflow_model,
-        loader_module="h2o_mlflow_flavors.h2o_gen_model",
+        loader_module="h2o_mlflow_flavor",
         model_path=model_file,
         conda_env=_CONDA_ENV_FILE_NAME,
         python_env=_PYTHON_ENV_FILE_NAME,
@@ -292,10 +307,10 @@ def log_model(
     :return: A :py:class:`ModelInfo <mlflow.models.model.ModelInfo>` instance that contains the
              metadata of the logged model.
     """
-    import h2o_mlflow_flavors
+    import h2o_mlflow_flavor
     return Model.log(
         artifact_path=artifact_path,
-        flavor=h2o_mlflow_flavors.h2o_gen_model,
+        flavor=h2o_mlflow_flavor,
         registered_model_name=registered_model_name,
         h2o_model=h2o_model,
         conda_env=conda_env,
@@ -305,7 +320,6 @@ def log_model(
         pip_requirements=pip_requirements,
         extra_pip_requirements=extra_pip_requirements,
         model_type=model_type,
-        metadata=metadata,
         extra_prediction_args=extra_prediction_args,
         **kwargs,
     )

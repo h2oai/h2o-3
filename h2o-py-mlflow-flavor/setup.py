@@ -2,8 +2,6 @@
 from setuptools import setup, find_packages
 from codecs import open
 import os
-import sys
-import shutil
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -11,23 +9,23 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-version = "0.0.local"
+version = "0.1.0-SNAPSHOT"
 # Get the version from the relevant file
-with open(os.path.join(here, 'h2o_mlflow_flavors/version.txt'), encoding='utf-8') as f:
+with open(os.path.join(here, 'h2o_mlflow_flavor/version.txt'), encoding='utf-8') as f:
     version = f.read()
 
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)
 
 setup(
-    name='h2o_mlflow_flavors',
+    name='h2o_mlflow_flavor',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
     version = version,
 
-    description='Collection of extensions for integration of H2O-3 with H2O.ai Cloud',
+    description='A mlflow flavor for working with H2O-3 MOJO and POJO models',
     long_description=long_description,
 
     # The project's main homepage.
@@ -68,7 +66,7 @@ setup(
         "Programming Language :: Python :: 3.11",
     ],
 
-    keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
+    keywords='ML Flow, H2O-3',
 
     packages=packages,
     package_data={"h2o": [

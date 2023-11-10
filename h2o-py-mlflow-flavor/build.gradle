@@ -1,4 +1,4 @@
-description = "H2O-3 MLFlow Flavors"
+description = "H2O-3 MLFlow Flavor"
 
 dependencies {}
 
@@ -20,11 +20,11 @@ ext {
 //
 task createVersionFiles() {
     doLast {
-        file("${buildDir}/h2o_mlflow_flavors/").mkdirs()
-        File version_file = new File("${buildDir}/h2o_mlflow_flavors/", "version.txt")
+        file("${buildDir}/h2o_mlflow_flavor/").mkdirs()
+        File version_file = new File("${buildDir}/h2o_mlflow_flavor/", "version.txt")
         version_file.write(PROJECT_VERSION)
 
-        File build_file = new File("${buildDir}/h2o_mlflow_flavors/", "buildinfo.txt")
+        File build_file = new File("${buildDir}/h2o_mlflow_flavor/", "buildinfo.txt")
         build_file.write(buildVersion.toString())
     }
 }
@@ -34,7 +34,7 @@ task copySrcFiles(type: Copy) {
     from ("${projectDir}") {
         include "setup.py"
         include "setup.cfg"
-        include "h2o_mlflow_flavors/**"
+        include "h2o_mlflow_flavor/**"
         include "README.md"
         include "DESCRIPTION.rst"
     }
@@ -45,7 +45,7 @@ task buildDist(type: Exec, dependsOn: [createVersionFiles, copySrcFiles]) {
     workingDir buildDir
     doFirst {
         file("${buildDir}/tmp").mkdirs()
-        standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o_mlflow_flavors_buildDist.out"))
+        standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o_mlflow_flavor_buildDist.out"))
     }
     commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
 }
