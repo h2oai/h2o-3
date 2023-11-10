@@ -47,11 +47,11 @@ if [[ $string == *"@"* ]]; then
   exit 1
 fi
 
-if [ "$CI" = "true" ]; then
-  # Force in-house version of the image when tests are running in CI
-  # This is only temporary until we fix 3rd party image resolution problem
-  sed -i 's,everpeace,harbor.h2o.ai/opsh2oai,' $H2O_BASE/h2o-helm/templates/tests/test-connection.yaml
-fi
+#if [ "$CI" = "true" ]; then
+#  # Force in-house version of the image when tests are running in CI
+#  # This is only temporary until we fix 3rd party image resolution problem
+#  sed -i 's,everpeace,harbor.h2o.ai/opsh2oai,' $H2O_BASE/h2o-helm/templates/tests/test-connection.yaml
+#fi
 cat $H2O_BASE/h2o-helm/templates/tests/test-connection.yaml
 
 cd $H2O_BASE/h2o-k8s/tests/clustering/
