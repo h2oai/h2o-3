@@ -451,6 +451,7 @@ coef.H2OCoxPHModelSummary <- function(object, ...) object@summary$coefficients
 #' @param fit an \code{H2OCoxPHModel} object.
 #' @param scale optional numeric specifying the scale parameter of the model.
 #' @param k numeric specifying the weight of the equivalent degrees of freedom.
+#' @export
 extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
   fun <- get("extractAIC.coxph", getNamespace("stats"))
   if (missing(scale))
