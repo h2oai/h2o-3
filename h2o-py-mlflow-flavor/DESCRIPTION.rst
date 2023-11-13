@@ -3,8 +3,8 @@ H2O-3 MLFlow Flavor
 
 A tiny library containing a `MLFlow <https://mlflow.org/>`_ flavor for working with H2O-3 MOJO and POJO models.
 
-# Logging Models to MLFlow Registry
-===================================
+Logging Models to MLFlow Registry
+=================================
 
 The model that was trained with H2O-3 runtime can be exported to MLFlow registry with `log_model` function.:
 
@@ -52,8 +52,8 @@ Compared to `log_model` functions of the other flavors being a part of MLFlow, t
    
 The `save*model` function that persists h2o binary model to MOJO or POJO has the same signature as the `log*model` function.
 
-# Extracting Information about Model
-====================================
+Extracting Information about Model
+==================================
 
 The flavor offers several functions to extract information about the model.
 
@@ -117,8 +117,8 @@ with mlflow.start*run(run*name="myrun") as run:
 
 ```
 
-# Model Scoring
-===============
+Model Scoring
+=============
 
 After a model obtained from the model registry, the model doesn't require h2o runtime for ability to score. The only thing
 
