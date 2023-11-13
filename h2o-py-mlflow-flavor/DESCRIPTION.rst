@@ -29,9 +29,9 @@ Compared to `log_model` functions of the other flavors being a part of MLFlow, t
 - ``model_type`` - It indicates whether the model should be exported as `MOJO <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/mojo-quickstart.html#what-is-a-mojo>`_
 or `POJO <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/pojo-quickstart.html#what-is-a-pojo>`_. The default value is `MOJO`.
 - ``extra_prediction_args`` - A list of extra arguments for java scoring process. Possible values:
-	* ``--setConvertInvalidNum`` - The scoring process will convert invalid numbers to NA.
-	* ``--predictContributions`` - The scoring process will Return also Shapley values a long with the predictions. Model must support that Shapley values, otherwise scoring process will throw an error.
-	* ``--predictCalibrated`` - The scoring process will also return calibrated prediction values.
+	- ``--setConvertInvalidNum`` - The scoring process will convert invalid numbers to NA.
+	- ``--predictContributions`` - The scoring process will Return also Shapley values a long with the predictions. Model must support that Shapley values, otherwise scoring process will throw an error.
+	- ``--predictCalibrated`` - The scoring process will also return calibrated prediction values.
    
 The `save_model` function that persists h2o binary model to MOJO or POJO has the same signature as the `log_model` function.
 
@@ -84,9 +84,8 @@ The model could be loaded by the function ``load_model(model_uri, dst_path=None)
 
 predictions on Pandas dataframe and takes the following parameters:
 
-* ``model_uri`` - An unique identifier of the model within MLFlow registry.
-
-* ``dst_path`` - (Optional) A local filesystem path for downloading the persisted form of the model. 
+- ``model_uri`` - An unique identifier of the model within MLFlow registry.
+- ``dst_path`` - (Optional) A local filesystem path for downloading the persisted form of the model. 
 
 The object for scoring could be obtained also via the `pyfunc` flavor as follows:
 
