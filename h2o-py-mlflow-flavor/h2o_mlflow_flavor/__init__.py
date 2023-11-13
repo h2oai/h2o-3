@@ -35,6 +35,7 @@ from mlflow.utils.model_utils import (
     _validate_and_prepare_target_save_path,
 )
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
+from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 _logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def get_default_pip_requirements():
              Calls to :func:`save_model()` and :func:`log_model()` produce a pip environment
              that, at minimum, contains these requirements.
     """
-    return []
+    return [_get_pinned_requirement("h2o_mlflow_flavor")]
 
 
 def get_default_conda_env():
