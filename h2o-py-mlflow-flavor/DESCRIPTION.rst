@@ -31,11 +31,11 @@ or `POJO <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/pojo-quickstart.html#wh
 
 * ``extra_prediction_args`` - A list of extra arguments for java scoring process. Possible values:
 
-	* ``--setConvertInvalidNum`` - The scoring process will convert invalid numbers to NA.
+  * ``--setConvertInvalidNum`` - The scoring process will convert invalid numbers to NA.
 
-	* ``--predictContributions`` - The scoring process will Return also Shapley values a long with the predictions. Model must support that Shapley values, otherwise scoring process will throw an error.
+  * ``--predictContributions`` - The scoring process will Return also Shapley values a long with the predictions. Model must support that Shapley values, otherwise scoring process will throw an error.
 
-	* ``--predictCalibrated`` - The scoring process will also return calibrated prediction values.
+  * ``--predictCalibrated`` - The scoring process will also return calibrated prediction values.
    
 The `save_model` function that persists h2o binary model to MOJO or POJO has the same signature as the `log_model` function.
 
@@ -46,21 +46,21 @@ The flavor offers several functions to extract information about the model.
 
 * ``get_metrics(h2o_model, metric_type=None)`` - Extracts metrics from the trained H2O binary model. It returns dictionary and takes following parameters:
 
-	* ``h2o_model`` - An H2O binary model.
+  * ``h2o_model`` - An H2O binary model.
 
-	* ``metric_type`` - The type of metrics. Possible values are "training", "validation", "cross_validation". If parameter is not specified, metrics for all types are returned.
+  * ``metric_type`` - The type of metrics. Possible values are "training", "validation", "cross_validation". If parameter is not specified, metrics for all types are returned.
 
 * ``get_params(h2o_model)`` - Extracts training parameters for the H2O binary model. It returns dictionary and expects one parameter:
 
-	* ``h2o_model`` - An H2O binary model.
+  * ``h2o_model`` - An H2O binary model.
 
 * ``get_input_example(h2o_model, number_of_records=5, relevant_columns_only=True)`` - Creates an example Pandas dataset from the training dataset of H2O binary model. It takes following parameters:
 
-	* ``h2o_model`` - An H2O binary model.
+  * ``h2o_model`` - An H2O binary model.
 
-	* ``number_of_records`` - A number of records that will be extracted from the training dataset.
+  * ``number_of_records`` - A number of records that will be extracted from the training dataset.
 
-    * ``relevant_columns_only`` - A flag indicating whether the output dataset should contain only columns required by the model. Defaults to ``True``.
+  * ``relevant_columns_only`` - A flag indicating whether the output dataset should contain only columns required by the model. Defaults to ``True``.
   
 The functions can be utilized as follows:
 
