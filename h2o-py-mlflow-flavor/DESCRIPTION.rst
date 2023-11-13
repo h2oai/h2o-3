@@ -77,11 +77,8 @@ Model Scoring
 -------------
 
 After a model obtained from the model registry, the model doesn't require h2o runtime for ability to score. The only thing
-
-that model requires is a ``h2o-gemodel.jar`` which was persisted with the model during saving procedure. 
-
+that model requires is a ``h2o-gemodel.jar`` which was persisted with the model during saving procedure.
 The model could be loaded by the function ``load_model(model_uri, dst_path=None)``. It returns an objecting making
-
 predictions on Pandas dataframe and takes the following parameters:
 
 - ``model_uri`` - An unique identifier of the model within MLFlow registry.
@@ -89,7 +86,7 @@ predictions on Pandas dataframe and takes the following parameters:
 
 The object for scoring could be obtained also via the `pyfunc` flavor as follows:
 
- .. code-block:: Python
+.. code-block:: Python
 
     import mlflow
     mlflow.set_tracking_uri("http://127.0.0.1:8080")
