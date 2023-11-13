@@ -41,15 +41,15 @@ Extracting Information about Model
 The flavor offers several functions to extract information about the model.
 
 - ``get_metrics(h2o_model, metric_type=None)`` - Extracts metrics from the trained H2O binary model. It returns dictionary and takes following parameters:
-	* ``h2o_model`` - An H2O binary model.
-	* ``metric_type`` - The type of metrics. Possible values are "training", "validation", "cross_validation".
+	- ``h2o_model`` - An H2O binary model.
+	- ``metric_type`` - The type of metrics. Possible values are "training", "validation", "cross_validation".
 					  If parameter is not specified, metrics for all types are returned.
 - ``get_params(h2o_model)`` - Extracts training parameters for the H2O binary model. It returns dictionary and expects one parameter:
-	* ``h2o_model`` - An H2O binary model.
+	- ``h2o_model`` - An H2O binary model.
 - ``get_input_example(h2o_model, number_of_records=5, relevant_columns_only=True)`` - Creates an example Pandas dataset from the training dataset of H2O binary model. It takes following parameters:
-	* ``h2o_model`` - An H2O binary model.
-	* ``number_of_records`` - A number of records that will be extracted from the training dataset.
-	* ``relevant_columns_only`` - A flag indicating whether the output dataset should contain only columns required by the model. Defaults to ``True``.
+	- ``h2o_model`` - An H2O binary model.
+	- ``number_of_records`` - A number of records that will be extracted from the training dataset.
+    -``relevant_columns_only`` - A flag indicating whether the output dataset should contain only columns required by the model. Defaults to ``True``.
   
 The functions can be utilized as follows:
 
