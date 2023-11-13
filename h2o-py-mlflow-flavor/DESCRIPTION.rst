@@ -26,12 +26,12 @@ The model that was trained with H2O-3 runtime can be exported to MLFlow registry
 
 Compared to `log_model` functions of the other flavors being a part of MLFlow, this function has two extra arguments:
 	
-*  ``model_type`` - It indicates whether the model should be exported as
+* ``model_type`` - It indicates whether the model should be exported as
 					`MOJO <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/mojo-quickstart.html#what-is-a-mojo>`_
 					or `POJO <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/pojo-quickstart.html#what-is-a-pojo>`_.
 					The default value is `MOJO`.
 
-*  ``extra_prediction_args`` - A list of extra arguments for java scoring process. Possible values:
+* ``extra_prediction_args`` - A list of extra arguments for java scoring process. Possible values:
 	* ``--setConvertInvalidNum`` - The scoring process will convert invalid numbers to NA.
 	* ``--predictContributions`` - The scoring process will Return also Shapley values a long with the predictions. Model must support that Shapley values, otherwise scoring process will throw an error.
 	* ``--predictCalibrated`` - The scoring process will also return calibrated prediction values.
@@ -43,9 +43,9 @@ Extracting Information about Model
 
 The flavor offers several functions to extract information about the model.
 
-* `get_metrics(h2o*model, metric_type=None)` - Extracts metrics from the trained H2O binary model. It returns dictionary and takes following parameters:
+* ``get_metrics(h2o_model, metric_type=None)`` - Extracts metrics from the trained H2O binary model. It returns dictionary and takes following parameters:
 	* ``h2o_model`` - An H2O binary model.
-	* ``metric_type`` - The type of metrics. Possible values are "training", "validation", "cross\_validation".
+	* ``metric_type`` - The type of metrics. Possible values are "training", "validation", "cross_validation".
 					  If parameter is not specified, metrics for all types are returned.
 
 * ``get_params(h2o_model)`` - Extracts training parameters for the H2O binary model. It returns dictionary and expects one parameter:
