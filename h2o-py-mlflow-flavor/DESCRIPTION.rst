@@ -19,9 +19,9 @@ The model that was trained with H2O-3 runtime can be exported to MLFlow registry
     
     with mlflow.start_run(run_name="myrun") as run:
 	h2o_mlflow_flavor.log_model(h2o_model=h2o_model,
-								artifact_path="folder",
-								model_type="MOJO",
-								extra_prediction_args=["--predictCalibrated"])
+        artifact_path="folder",
+        model_type="MOJO",
+        extra_prediction_args=["--predictCalibrated"])
 
 
 Compared to `log_model` functions of the other flavors being a part of MLFlow, this function has two extra arguments:
@@ -78,10 +78,10 @@ The functions can be utilized as follows:
 	    mlflow.log_metrics(h2o_mlflow_flavor.get_metrics(h2o_model))
 	    input_example = h2o_mlflow_flavor.get_input_example(h2o_model)
 	    h2o_mlflow_flavor.log_model(h2o_model=h2o_model,
-		      						input_example=input_example,
-				    				artifact_path="folder",
-			    					model_type="MOJO",
-					    			extra_prediction_args=["--predictCalibrated"])
+            input_example=input_example,
+            artifact_path="folder",
+            model_type="MOJO",
+            extra_prediction_args=["--predictCalibrated"])
 
 
 Model Scoring
