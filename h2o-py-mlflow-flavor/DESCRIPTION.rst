@@ -8,14 +8,14 @@ Logging Models to MLFlow Registry
 
 The model that was trained with H2O-3 runtime can be exported to MLFlow registry with `log_model` function.:
 
- .. code-block:: python
+ .. code-block:: Python
 
-import mlflow
-import h2o*mlflow*flavor
+    import mlflow
+    import h2o*mlflow*flavor
 
-mlflow.set*tracking*uri("http://127.0.0.1:8080")
-h2o_model = ... training phase ...
-with mlflow.start*run(run*name="myrun") as run:
+    mlflow.set*tracking*uri("http://127.0.0.1:8080")
+    h2o_model = ... training phase ...
+    with mlflow.start*run(run*name="myrun") as run:
 	h2o\_mlflow\_flavor.log\_model(h2o\_model=h2o\_model,
 								artifact\_path="folder",
 								model\_type="MOJO",
@@ -34,13 +34,11 @@ Compared to `log_model` functions of the other flavors being a part of MLFlow, t
 
 *  **extra*prediction*args** A list of extra arguments for java scoring process. Possible values:
 
-	\* ``\-\-setConvertInvalidNum`` \- The scoring process will convert invalid numbers to NA.
+	* ``\-\-setConvertInvalidNum`` \- The scoring process will convert invalid numbers to NA.
 
-	\* ``\-\-predictContributions`` \- The scoring process will Return also Shapley values a long with the predictions.
+	* ``\-\-predictContributions`` \- The scoring process will Return also Shapley values a long with the predictions. Model must support that Shapley values, otherwise scoring process will throw an error. 
 
-								 Model must support that Shapley values, otherwise scoring process will throw an error. 
-
-	\* ``\-\-predictCalibrated`` \- The scoring process will also return calibrated prediction values.
+	* ``\-\-predictCalibrated`` \- The scoring process will also return calibrated prediction values.
    
 The `save*model` function that persists h2o binary model to MOJO or POJO has the same signature as the `log*model` function.
 
@@ -79,23 +77,23 @@ from the training dataset of H2O binary model. It takes following parameters:
   
 The functions can be utilized as follows:
 
- .. code-block:: python
+ .. code-block:: Python
 
-import mlflow
-import h2o*mlflow*flavor
-mlflow.set*tracking*uri("http://127.0.0.1:8080")
+    import mlflow
+    import h2o_mlflow_flavor
+    mlflow.set*tracking*uri("http://127.0.0.1:8080")
 
-h2o_model = ... training phase ...
+    h2o_model = ... training phase ...
 
-with mlflow.start*run(run*name="myrun") as run:
-	mlflow.log\_params(h2o\_mlflow\_flavor.get\_params(h2o\_model))
-	mlflow.log\_metrics(h2o\_mlflow\_flavor.get\_metrics(h2o\_model))
-	input\_example = h2o\_mlflow\_flavor.get\_input\_example(h2o\_model)
-	h2o\_mlflow\_flavor.log\_model(h2o\_model=h2o\_model,
-								input\_example=input\_example,
-								artifact\_path="folder",
-								model\_type="MOJO",
-								extra\_prediction\_args=["\-\-predictCalibrated"])
+    with mlflow.start*run(run*name="myrun") as run:
+	    mlflow.log\_params(h2o\_mlflow\_flavor.get\_params(h2o\_model))
+	    mlflow.log\_metrics(h2o\_mlflow\_flavor.get\_metrics(h2o\_model))
+	    input\_example = h2o\_mlflow\_flavor.get\_input\_example(h2o\_model)
+	    h2o\_mlflow\_flavor.log\_model(h2o\_model=h2o\_model,
+		      						input\_example=input\_example,
+				    				artifact\_path="folder",
+			    					model\_type="MOJO",
+					    			extra\_prediction\_args=["\-\-predictCalibrated"])
 
 
 Model Scoring
@@ -115,14 +113,14 @@ predictions on Pandas dataframe and takes the following parameters:
 
 The object for scoring could be obtained also via the `pyfunc` flavor as follows:
 
- .. code-block:: python
+ .. code-block:: Python
 
-import mlflow
-mlflow.set_tracking_uri("http://127.0.0.1:8080")
+    import mlflow
+    mlflow.set_tracking_uri("http://127.0.0.1:8080")
 
-logged_model = 'runs:/9a42265cf0ef484c905b02afb8fe6246/iris'
-loaded_model = mlflow.pyfunc.load_model(logged_model)
+    logged_model = 'runs:/9a42265cf0ef484c905b02afb8fe6246/iris'
+    loaded_model = mlflow.pyfunc.load_model(logged_model)
 
-import pandas as pd
-data = pd.read_csv("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-loaded_model.predict(data)
+    import pandas as pd
+    data = pd.read_csv("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    loaded_model.predict(data)
