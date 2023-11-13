@@ -15,21 +15,6 @@ ext {
     testsPath = file("tests")
 }
 
-//
-// Create a file with version for Python dist task
-//
-task createVersionFiles() {
-    doLast {
-        file("${buildDir}/h2o_mlflow_flavor/").mkdirs()
-        File version_file = new File("${buildDir}/h2o_mlflow_flavor/", "version.txt")
-        version_file.write(PROJECT_VERSION)
-
-        File build_file = new File("${buildDir}/h2o_mlflow_flavor/", "buildinfo.txt")
-        build_file.write(buildVersion.toString())
-    }
-}
-
-
 task copySrcFiles(type: Copy) {
     from ("${projectDir}") {
         include "setup.py"
@@ -41,7 +26,7 @@ task copySrcFiles(type: Copy) {
     into "${buildDir}"
 }
 
-task buildDist(type: Exec, dependsOn: [createVersionFiles, copySrcFiles]) {
+task buildDist(type: Exec, dependsOn: [copySrcFiles]) {
     workingDir buildDir
     doFirst {
         file("${buildDir}/tmp").mkdirs()

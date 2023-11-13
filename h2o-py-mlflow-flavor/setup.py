@@ -9,11 +9,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-version = "0.1.0-SNAPSHOT"
-# Get the version from the relevant file
-with open(os.path.join(here, 'h2o_mlflow_flavor/version.txt'), encoding='utf-8') as f:
-    version = f.read()
-
+version = "0.1.0"
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)
 
@@ -69,10 +65,6 @@ setup(
     keywords='ML Flow, H2O-3',
 
     packages=packages,
-    package_data={"h2o": [
-        "version.txt",      # version file
-        "buildinfo.txt"     # buildinfo file
-    ]},
 
     # run-time dependencies
     install_requires=["mlflow>=1.29.0"]
