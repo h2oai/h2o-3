@@ -281,7 +281,7 @@ def log_model(
     :param pip_requirements: {{ pip_requirements }}
     :param extra_pip_requirements: {{ extra_pip_requirements }}
     :param model_type: A flag deciding whether the model is MOJO or POJO.  
-    :param extra_prediction_args: A list of extra arguments for java predictions process. Possible values: 
+    :param extra_prediction_args: A list of extra arguments for java scoring process. Possible values: 
                                   --setConvertInvalidNum - Converts invalid numbers to NA
                                   --predictContributions - Returns also Shapley values a long with the predictions 
                                   --predictCalibrated - Return also calibrated prediction values.                                        
@@ -308,6 +308,12 @@ def log_model(
 
 
 def load_model(model_uri, dst_path=None):
+    """
+    Obtains a model from MLFlow registry.
+    :param model_uri: An unique identifier of the model within MLFlow registry.
+    :param dst_path: (Optional) A temporary folder for downloading the persisted form of the model. 
+    :return: A model making predictions on Pandas dataframe.
+    """
     path = _download_artifact_from_uri(
         artifact_uri=model_uri, output_path=dst_path
     )
