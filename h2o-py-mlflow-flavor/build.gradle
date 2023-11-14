@@ -20,8 +20,7 @@ task copySrcFiles(type: Copy) {
         include "setup.py"
         include "setup.cfg"
         include "h2o_mlflow_flavor/**"
-        include "README.md"
-        include "DESCRIPTION.rst"
+        include "README.rst"
     }
     into "${buildDir}"
 }
