@@ -42,7 +42,7 @@
 #'        "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param distribution Distribution function Must be one of: "bernoulli". Defaults to AUTO.
+#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli". Defaults to AUTO.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
@@ -87,7 +87,7 @@ h2o.upliftRandomForest <- function(x,
                                    col_sample_rate_per_tree = 1,
                                    histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust"),
                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                   distribution = c("bernoulli"),
+                                   distribution = c("AUTO", "bernoulli"),
                                    check_constant_response = TRUE,
                                    custom_metric_func = NULL,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
@@ -213,7 +213,7 @@ h2o.upliftRandomForest <- function(x,
                                                    col_sample_rate_per_tree = 1,
                                                    histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust"),
                                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                                   distribution = c("bernoulli"),
+                                                   distribution = c("AUTO", "bernoulli"),
                                                    check_constant_response = TRUE,
                                                    custom_metric_func = NULL,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),

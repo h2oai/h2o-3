@@ -47,7 +47,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  col_sample_rate_per_tree=1.0,  # type: float
                  histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
-                 distribution="auto",  # type: Literal["bernoulli"]
+                 distribution="auto",  # type: Literal["auto", "bernoulli"]
                  check_constant_response=True,  # type: bool
                  custom_metric_func=None,  # type: Optional[str]
                  treatment_column="treatment",  # type: str
@@ -137,7 +137,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                "sort_by_response", "enum_limited"]
         :param distribution: Distribution function
                Defaults to ``"auto"``.
-        :type distribution: Literal["bernoulli"]
+        :type distribution: Literal["auto", "bernoulli"]
         :param check_constant_response: Check if response column is constant. If enabled, then an exception is thrown if
                the response column is a constant value.If disabled, then model will train regardless of the response
                column being a constant value or not.
@@ -525,13 +525,13 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         """
         Distribution function
 
-        Type: ``Literal["bernoulli"]``, defaults to ``"auto"``.
+        Type: ``Literal["auto", "bernoulli"]``, defaults to ``"auto"``.
         """
         return self._parms.get("distribution")
 
     @distribution.setter
     def distribution(self, distribution):
-        assert_is_type(distribution, None, Enum("bernoulli"))
+        assert_is_type(distribution, None, Enum("auto", "bernoulli"))
         self._parms["distribution"] = distribution
 
     @property

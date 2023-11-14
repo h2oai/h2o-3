@@ -3,7 +3,7 @@ def update_param(name, param):
         param['values'] = ['AUTO', 'AUUC', 'ATE', 'ATT', 'ATC', 'qini']
         return param
     if name == 'distribution':
-        param['values'] = ['bernoulli']
+        param['values'] = ['AUTO', 'bernoulli']
         return param
     return None  # param untouched
 
