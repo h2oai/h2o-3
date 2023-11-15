@@ -194,7 +194,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                     _model._output._scored_train[tid + 1].fillFrom(modelMetrics);
                 }
             }
-            _model._output._scoring_history = createScoringHistoryTable();
+            _model._output._scoring_history = _parms._disable_training_metrics ? null : createScoringHistoryTable();
         }
     }
 

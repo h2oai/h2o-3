@@ -42,6 +42,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             ExtendedIsolationForestModel model = eif.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
+            assertNull("No scoring history by default", model._output._scoring_history);
         } finally {
             Scope.exit();
         }
