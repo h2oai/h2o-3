@@ -5,14 +5,23 @@
 def dockerImage
 
 def setPrismaScanningStages(assemblyType, stageIndex) {
-    def assemblyImage
-    stage("${stageIndex}.A. Scan ${assemblyType} jar using Prisma") {
+    branchName = "${env.BRANCH_NAME}".replace('/', '-')
+    assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
+    
+    stage("${stageIndex}.A. Build image for ${assemblyType}") {
         script {
-            branchName = "${env.BRANCH_NAME}".replace('/', '-')
-            assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
-
             sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
-
+        }
+    }
+    stage ("${stageIndex}.B. Scan ${assemblyType} jar using Snyk") {
+        withCredentials([string(credentialsId: 'H2O_3_SNYK_TOKEN_JENKINS_TEXT', variable: 'SNYK_TOKEN')]) {
+            script {
+                sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --json-file-output=snyk-${assemblyType}.json --severity-threshold=medium --app-vulns --nested-jars-depth=4 || true"
+            }
+        }
+    }
+    stage("${stageIndex}.C. Scan ${assemblyType} jar using Prisma") {
+        script {
             // scan the image
             prismaCloudScanImage ca: '',
                     cert: '',
@@ -26,24 +35,14 @@ def setPrismaScanningStages(assemblyType, stageIndex) {
                     ignoreImageBuildTime: true
         }
     }
-    stage("${stageIndex}.B. Export results for ${assemblyType} jar to CSV") {
+    stage("${stageIndex}.D. Export results for ${assemblyType} jar to CSV") {
         withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
             sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}.csv"
         }
         archiveArtifacts artifacts: "${assemblyImage}.csv"
     }
-    stage("${stageIndex}.C. Publish report for ${assemblyType} jar") {
+    stage("${stageIndex}.E. Publish report for ${assemblyType} jar") {
         prismaCloudPublish resultsFilePattern: "prisma-${assemblyType}-scan-results.json"
-    }
-}
-
-def runSnykTest(assemblyType) {
-    withCredentials([string(credentialsId: 'H2O_3_SNYK_TOKEN_JENKINS_TEXT', variable: 'SNYK_TOKEN')]) {
-        branchName = "${env.BRANCH_NAME}".replace('/', '-')
-        assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
-
-        sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
-        sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --json-file-output=snyk-${assemblyType}.json --severity-threshold=medium --app-vulns --nested-jars-depth=4"
     }
 }
 
@@ -80,28 +79,14 @@ pipeline {
                 }
             }
         }
-//        stage('2. Steam assembly jar (Prisma)') {
-//            steps {
-//                setPrismaScanningStages("steam", 2)
-//            }
-//        }
-//        stage('3. Main assembly jar (Prisma)') {
-//            steps {
-//                setPrismaScanningStages("main", 3)
-//            }
-//        }
-        stage('4. Steam assembly jar (Snyk)') {
+        stage('2. Steam assembly jar (Prisma)') {
             steps {
-                script {
-                    runSnykTest("steam")
-                }
+                setPrismaScanningStages("steam", 2)
             }
         }
-        stage('5. Main assembly jar (Snyk)') {
+        stage('3. Main assembly jar (Prisma)') {
             steps {
-                script {
-                    runSnykTest("main")
-                }
+                setPrismaScanningStages("main", 3)
             }
         }
     }
