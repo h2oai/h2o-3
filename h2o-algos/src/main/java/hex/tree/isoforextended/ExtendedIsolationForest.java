@@ -148,8 +148,6 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                         new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
                 _model.delete_and_lock(_job);
                 buildIsolationTreeEnsemble();
-                _model._output._model_summary = createModelSummaryTable();
-                LOG.info(_model.toString());
             } finally {
                 if(_model != null)
                     _model.unlock(_job);
@@ -195,18 +193,27 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
                 boolean manualInterval = _parms._score_tree_interval > 0 && (tid +1) % _parms._score_tree_interval == 0;
                 boolean finalScoring = _parms._ntrees == (tid + 1);
+                boolean scored = false;
 
                 _model._output._scored_train[tid + 1] = new ScoreKeeper();
                 if (_parms._score_each_iteration || manualInterval || finalScoring || (timeToScore && _parms._score_tree_interval == 0) && !_parms._disable_training_metrics) {
+                    _model._output._scored_train[tid + 1] = new ScoreKeeper();
                     timeLastScoreStart = System.currentTimeMillis();
                     ModelMetrics.MetricBuilder metricsBuilder = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder();
                     ModelMetrics modelMetrics = metricsBuilder.makeModelMetrics(_model, _parms.train(), null, null);
                     _model._output._training_metrics = modelMetrics;
                     _model._output._scored_train[tid + 1].fillFrom(modelMetrics);
+                    scored = true;
                     timeLastScoreEnd = System.currentTimeMillis();
                 }
+
+                final boolean printout = (_parms._score_each_iteration || finalScoring || (sinceLastScore > _parms._score_interval && scored)) && !_parms._disable_training_metrics;
+                if (printout) {
+                    _model._output._model_summary = createModelSummaryTable();
+                    _model._output._scoring_history = createScoringHistoryTable();
+                    LOG.info(_model.toString());
+                }
             }
-            _model._output._scoring_history = _parms._disable_training_metrics ? null : createScoringHistoryTable();
         }
     }
 
@@ -287,7 +294,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
         int rows = 0;
         for (int i = 0; i < sks.length; i++) {
-            if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+            if (i != 0 && sks[i] != null && Double.isNaN(sks[i]._anomaly_score) || sks[i] == null) continue;
             rows++;
         }
         TwoDimTable table = new TwoDimTable(
@@ -299,7 +306,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 "");
         int row = 0;
         for( int i = 0; i<sks.length; i++ ) {
-            if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+            if (i != 0 && sks[i] != null && Double.isNaN(sks[i]._anomaly_score) || sks[i] == null) continue;
             int col = 0;
             DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
             table.set(row, col++, fmt.print(_model._output._training_time_ms[i]));
