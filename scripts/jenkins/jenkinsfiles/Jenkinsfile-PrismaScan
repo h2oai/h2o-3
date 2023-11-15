@@ -61,9 +61,9 @@ pipeline {
                 script{
                     dir("docker/prisma"){
                         dockerImage = docker.build("node-java","-f Dockerfile .")
-                        sh "curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk"
-                        sh "chmod +x ./snyk"
                     }
+                    sh "curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk"
+                    sh "chmod +x ./snyk"
                 }
                 
             }
