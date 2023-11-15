@@ -91,18 +91,14 @@ pipeline {
         stage('4. Steam assembly jar (Snyk)') {
             steps {
                 script {
-                    dockerImage.inside() {
-                        runSnykTest("steam")
-                    }
+                    runSnykTest("steam")
                 }
             }
         }
         stage('5. Main assembly jar (Snyk)') {
             steps {
                 script {
-                    dockerImage.inside() {
-                        runSnykTest("main")
-                    }
+                    runSnykTest("main")
                 }
             }
         }
