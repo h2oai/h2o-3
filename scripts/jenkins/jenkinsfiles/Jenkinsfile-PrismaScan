@@ -43,7 +43,7 @@ def runSnykTest(assemblyType) {
         assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
 
         sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
-        sh "snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --json-file-output=snyk-${assemblyType}.json --severity-threshold=medium --app-vulns --nested-jars-depth=4"
+        sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --json-file-output=snyk-${assemblyType}.json --severity-threshold=medium --app-vulns --nested-jars-depth=4"
     }
 }
 
@@ -61,6 +61,8 @@ pipeline {
                 script{
                     dir("docker/prisma"){
                         dockerImage = docker.build("node-java","-f Dockerfile .")
+                        sh "curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk"
+                        sh "chmod +x ./snyk"
                     }
                 }
                 
