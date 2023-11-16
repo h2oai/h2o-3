@@ -4655,16 +4655,14 @@ class H2OFrame(Keyed, H2ODisplay):
 
     def match(self, table, nomatch=None, start_index=1):
         """
-        Make a vector of the positions of (first) matches of its first argument in its second.
-
-        Only applicable to single-column categorical/string frames.
+        Make a vector where index of value form the table is returned if the value match, nomatch value otherwise. 
 
         :param List table: the list of items to match against
-        :param int or 'nan' nomatch: value that should be returned when there is no match. Numeric value or 'nan'. 
-        :param int start_index: numeric value >=0, default is 1, 
-            otherwise return 1 if the value is in the list of items to match against and nomatch value otherwise
-        :returns: a new H2OFrame containing for each cell from the source frame the index where
-            the pattern ``table`` first occurs within that cell.
+        :param int nomatch: value that should be returned when there is no match. Numeric value or None. 
+            If nomatch=None, nan values are generated. 
+        :param int start_index: index from which start indexing of table list, numeric value >=0, default is 1.
+        :returns: a new H2OFrame containing a vector where index of value form the table is returned if the value match, 
+            nomatch value otherwise. 
 
         :examples:
 

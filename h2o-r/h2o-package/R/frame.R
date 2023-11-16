@@ -851,12 +851,13 @@ cut.H2OFrame <- h2o.cut
 #' \code{match} and \code{\%in\%} return values similar to the base R generic
 #' functions.
 #'
-#' @param x a categorical vector from an H2OFrame object with
+#' @param x a vector from an H2OFrame object with
 #'        values to be matched.
 #' @param table an R object to match \code{x} against.
-#' @param nomatch the value to be returned in the case when no match is found. Numeric value or 'nan', default is 'nan'.
-#' @param start_index number >=0, default is 1.
-#' @return Returns a vector of the positions of (first) matches of its first argument in its second
+#' @param nomatch the value to be returned in the case when no match is found. Numeric value or NaN, default is NaN.
+#' @param start_index  index from which start indexing of table list, numeric value >=0, default is 1.
+#' @return Returns a new H2OFrame containing a vector where index of value form the table is returned 
+#'        if the value match, nomatch value otherwise.
 #' @seealso \code{\link[base]{match}} for base R implementation.
 #' @examples
 #' \dontrun{
