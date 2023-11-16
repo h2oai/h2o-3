@@ -854,11 +854,8 @@ cut.H2OFrame <- h2o.cut
 #' @param x a categorical vector from an H2OFrame object with
 #'        values to be matched.
 #' @param table an R object to match \code{x} against.
-#' @param nomatch the value to be returned in the case when no match is found.
-#' @param incomparables a vector of calues that cannot be matched. Any value in
-#'        \code{x} matching a value in this vector is assigned the
-#'        \code{nomatch} value.
-#' @param indexes boolean if True change the returned vector from boolean values to indexes of match values
+#' @param nomatch the value to be returned in the case when no match is found. Numeric value or 'nan', default is 'nan'.
+#' @param start_index number >=0, default is 1.
 #' @return Returns a vector of the positions of (first) matches of its first argument in its second
 #' @seealso \code{\link[base]{match}} for base R implementation.
 #' @examples
@@ -868,9 +865,9 @@ cut.H2OFrame <- h2o.cut
 #' h2o.match(iris_hf[, 5], c("setosa", "versicolor"))
 #' }
 #' @export
-h2o.match <- function(x, table, nomatch = 0, incomparables = NULL, indexes=FALSE) {
+h2o.match <- function(x, table, nomatch=NA_integer_, start_index=1) {
   if( !is.H2OFrame(table) && length(table)==1 && base::is.character(table) ) table <- .quote(table)
-  .newExpr("match", chk.H2OFrame(x), table, nomatch, incomparables, indexes)
+  .newExpr("match", chk.H2OFrame(x), table, nomatch, start_index)
 }
 
 #' @rdname h2o.match

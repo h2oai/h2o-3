@@ -7,13 +7,11 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.Env;
+import water.rapids.ast.params.*;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.params.AstNum;
-import water.rapids.ast.params.AstNumList;
-import water.rapids.ast.params.AstStr;
-import water.rapids.ast.params.AstStrList;
+import water.util.IcedHashMap;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -23,13 +21,13 @@ import java.util.Arrays;
 public class AstMatch extends AstPrimitive {
   @Override
   public String[] args() {
-    return new String[]{"ary", "table", "nomatch", "incomparables", "indexes"};
+    return new String[]{"ary", "table", "nomatch", "start_index"};
   }
 
   @Override
   public int nargs() {
-    return 1 + 5;
-  } // (match fr table nomatch incomps indexes)
+    return 1 + 4;
+  } // (match fr table nomatch start_index)
 
   @Override
   public String str() {
@@ -40,27 +38,41 @@ public class AstMatch extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
 
-    if ((fr.numCols() != 1) || ! (fr.anyVec().isCategorical() || fr.anyVec().isString()))
-      throw new IllegalArgumentException("can only match on a single categorical/string column.");
-
     final MRTask<?> matchTask;
-    double noMatch = asts[3].exec(env).getNum();
-    boolean indexes = asts[5].exec(env).getBool();
     
-
+    // nomatch can be NaN or number, Nan is default
+    double noMatch;
+    if (asts[3] instanceof AstNum) {
+      noMatch = asts[3].exec(env).getNum();
+    } else if (asts[3] instanceof AstId && (asts[3]).str().equals("NA")){
+      noMatch = Double.NaN;
+    } else {
+      throw new IllegalArgumentException("Expected number or 'NA'. Got: " + asts[3]);
+    }
+    
+    // start index is 1 by default
+    int startIndex;
+    if (asts[4] instanceof AstNum) {
+      startIndex = (int) asts[4].exec(env).getNum();
+      if (startIndex < 0) {
+        throw new IllegalArgumentException("Expected number >= 0. Got: " + asts[4].getClass());
+      }
+    } else {
+      throw new IllegalArgumentException("Expected number. Got: " + asts[4].getClass());
+    }
+    
     if (asts[2] instanceof AstNumList) {
-      matchTask = new NumMatchTask(((AstNumList) asts[2]).sort().expand(), noMatch, indexes);
+      matchTask = new NumMatchTask(((AstNumList) asts[2]).sort().expand(), noMatch, startIndex);
     }  else if (asts[2] instanceof AstNum) {
-      matchTask = new NumMatchTask(new double[]{asts[2].exec(env).getNum()}, noMatch, indexes);
+      matchTask = new NumMatchTask(new double[]{asts[2].exec(env).getNum()}, noMatch, startIndex);
     } else if (asts[2] instanceof AstStrList) {
       String[] values = ((AstStrList) asts[2])._strs;
-      Arrays.sort(values);
-      matchTask = fr.anyVec().isString() ? new StrMatchTask(values, noMatch, indexes) : 
-              new CatMatchTask(values, noMatch, indexes);
+      matchTask = fr.anyVec().isString() ? new StrMatchTask(values, noMatch, startIndex) : 
+              new CatMatchTask(values, noMatch, startIndex);
     } else if (asts[2] instanceof AstStr) {
       String[] values = new String[]{asts[2].exec(env).getStr()};
-      matchTask = fr.anyVec().isString() ? new StrMatchTask(values, noMatch, indexes) : 
-              new CatMatchTask(values, noMatch, indexes);
+      matchTask = fr.anyVec().isString() ? new StrMatchTask(values, noMatch, startIndex) : 
+              new CatMatchTask(values, noMatch, startIndex);
     } else
       throw new IllegalArgumentException("Expected numbers/strings. Got: " + asts[2].getClass());
 
@@ -71,19 +83,21 @@ public class AstMatch extends AstPrimitive {
   private static class StrMatchTask extends MRTask<CatMatchTask> {
     String[] _values;
     double _noMatch;
-    boolean _indexes;
+    int _startIndex;
+    IcedHashMap<String, Integer> _matchesIndexes;
 
-    StrMatchTask(String[] values, double noMatch, boolean indexes) {
+    StrMatchTask(String[] values, double noMatch, int indexes) {
       _values = values;
       _noMatch = noMatch;
-      _indexes = indexes;
+      _startIndex = indexes;
+      _matchesIndexes = new IcedHashMap<>();
     }
     @Override
     public void map(Chunk c, NewChunk nc) {
       BufferedString bs = new BufferedString();
       int rows = c._len;
       for (int r = 0; r < rows; r++) {
-        double x = c.isNA(r) ? _noMatch : in(_values, c.atStr(bs, r).toString(), _noMatch, _indexes);
+        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _values, c.atStr(bs, r).toString(), _noMatch, _startIndex);
         nc.addNum(x);
       }
     }
@@ -93,13 +107,16 @@ public class AstMatch extends AstPrimitive {
     String[] _values;
     int[] _firstMatchRow;
     double _noMatch;
-    boolean _indexes;
+    int _startIndex;
+    IcedHashMap<String, Integer> _matchesIndexes;
+    
  
-    CatMatchTask(String[] values, double noMatch, boolean indexes) {
+    CatMatchTask(String[] values, double noMatch, int startIndex) {
       _values = values;
       _noMatch = noMatch;
-      _indexes = indexes;
+      _startIndex = startIndex;
       _firstMatchRow = new int[values.length];
+      _matchesIndexes = new IcedHashMap<>();
     }
 
     @Override
@@ -107,7 +124,7 @@ public class AstMatch extends AstPrimitive {
       String[] domain = c.vec().domain();
       int rows = c._len;
       for (int r = 0; r < rows; r++) {
-        double x = c.isNA(r) ? _noMatch : in(_values, domain[(int) c.at8(r)], _noMatch, _indexes);
+        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _values, domain[(int) c.at8(r)], _noMatch, _startIndex);
         nc.addNum(x);
       }
     }
@@ -116,32 +133,53 @@ public class AstMatch extends AstPrimitive {
   private static class NumMatchTask extends MRTask<CatMatchTask> {
     double[] _values;
     double _noMatch;
-    boolean _indexes;
+    int _startIndex;
+    IcedHashMap<Double, Integer> _matchesIndexes;
 
-    NumMatchTask(double[] values, double noMatch, boolean indexes) {
+    NumMatchTask(double[] values, double noMatch, int startIndex) {
       _values = values;
       _noMatch = noMatch;
-      _indexes = indexes;
+      _startIndex = startIndex;
+      _matchesIndexes = new IcedHashMap<>();
     }
  
     @Override
     public void map(Chunk c, NewChunk nc) {
       int rows = c._len;
       for (int r = 0; r < rows; r++) {
-        double x = c.isNA(r) ? _noMatch : in(_values, c.atd(r), _noMatch, _indexes);
+        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _values, c.atd(r), _noMatch, _startIndex);
         nc.addNum(x);
       }
     }
   }
 
-  private static double in(String[] matches, String s, double nomatch, boolean indexes) {
-    int match = Arrays.binarySearch(matches, s);
-    return match >= 0 ? indexes ? match : 1 : nomatch;
+  private static double in(IcedHashMap<String, Integer> matchesIndexes, String[] matches, String s, double noMatch, int startIndex) {
+    Integer mapResult = matchesIndexes.get(s);
+    int match;
+    if (mapResult == null){
+      match = Arrays.binarySearch(matches, s);
+      matchesIndexes.put(s, match);
+    } else {
+      match = mapResult;
+    }
+    return match >= 0 ? applyStartIndex(match, startIndex) : noMatch;
   }
 
-  private static double in(double[] matches, double d, double nomatch, boolean indexes) {
-    int match = binarySearchDoublesUlp(matches, 0, matches.length, d);
-    return match >= 0 ? indexes ? match : 1 : nomatch;
+  private static double in(IcedHashMap<Double, Integer> matchesIndexes, double[] matches, double d, double noMatch, int startIndex) {
+    Integer mapResult = matchesIndexes.get(d);
+    int match;
+    if (mapResult == null){
+      match = binarySearchDoublesUlp(matches, 0, matches.length, d);
+      matchesIndexes.put(d, match);
+    } else {
+      match = mapResult;
+    }
+    return match >= 0 ? applyStartIndex(match, startIndex) : noMatch;
+  }
+  
+  private static double applyStartIndex(double value, int startIndex) {
+    assert startIndex >= 0;
+    return value + startIndex;
   }
 
   private static int binarySearchDoublesUlp(double[] a, int from, int to, double key) {
