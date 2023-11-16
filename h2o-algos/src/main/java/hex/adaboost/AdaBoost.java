@@ -3,6 +3,8 @@ package hex.adaboost;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
@@ -169,6 +171,8 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 return getGLMWeakLearner(frame);
             case GBM:
                 return getGBMWeakLearner(frame);
+            case DEEP_LEARNING:
+                return getDeepLearningWeakLearner(frame);
             default:
             case DRF:
                 return getDRFWeakLearner(frame);
@@ -210,6 +214,17 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         parms._max_depth = 1;
         parms._seed = _parms._seed;
         return new GBM(parms);
+    }
+
+    private DeepLearning getDeepLearningWeakLearner(Frame frame) {
+        DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
+        parms._train = frame._key;
+        parms._response_column = _parms._response_column;
+        parms._weights_column = _weightsName;
+        parms._seed = _parms._seed;
+        parms._epochs = 10;
+        parms._hidden = new int[]{2};
+        return new DeepLearning(parms);
     }
 
     public TwoDimTable createModelSummaryTable() {

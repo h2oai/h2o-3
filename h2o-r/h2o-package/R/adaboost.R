@@ -25,8 +25,8 @@
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param nlearners Number of AdaBoost weak learners. Defaults to 50.
-#' @param weak_learner Choose a weak learner type. Defaults to AUTO, which means DRF. Must be one of: "AUTO", "DRF", "GLM", "GBM".
-#'        Defaults to AUTO.
+#' @param weak_learner Choose a weak learner type. Defaults to AUTO, which means DRF. Must be one of: "AUTO", "DRF", "GLM", "GBM",
+#'        "DEEP_LEARNING". Defaults to AUTO.
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.5.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
@@ -58,7 +58,7 @@ h2o.adaBoost <- function(x,
                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                          weights_column = NULL,
                          nlearners = 50,
-                         weak_learner = c("AUTO", "DRF", "GLM", "GBM"),
+                         weak_learner = c("AUTO", "DRF", "GLM", "GBM", "DEEP_LEARNING"),
                          learn_rate = 0.5,
                          seed = -1)
 {
@@ -110,7 +110,7 @@ h2o.adaBoost <- function(x,
                                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                          weights_column = NULL,
                                          nlearners = 50,
-                                         weak_learner = c("AUTO", "DRF", "GLM", "GBM"),
+                                         weak_learner = c("AUTO", "DRF", "GLM", "GBM", "DEEP_LEARNING"),
                                          learn_rate = 0.5,
                                          seed = -1,
                                          segment_columns = NULL,
