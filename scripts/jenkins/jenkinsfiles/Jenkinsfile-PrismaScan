@@ -16,7 +16,7 @@ def setPrismaScanningStages(assemblyType, stageIndex) {
     stage ("${stageIndex}.B. Scan ${assemblyType} jar using Snyk") {
         withCredentials([string(credentialsId: 'H2O_3_SNYK_TOKEN_JENKINS_TEXT', variable: 'SNYK_TOKEN')]) {
             script {
-                sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --json-file-output=snyk-${assemblyType}.json --severity-threshold=medium --app-vulns --nested-jars-depth=4 || true"
+                sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --severity-threshold=medium --app-vulns --nested-jars-depth=4 | tee snyk-${assemblyType}.out || true"
             }
         }
     }
