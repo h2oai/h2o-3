@@ -16,8 +16,9 @@ def setPrismaScanningStages(assemblyType, stageIndex) {
     stage ("${stageIndex}.B. Scan ${assemblyType} jar using Snyk") {
         withCredentials([string(credentialsId: 'H2O_3_SNYK_TOKEN_JENKINS_TEXT', variable: 'SNYK_TOKEN')]) {
             script {
-                sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --severity-threshold=medium --app-vulns --nested-jars-depth=4 | tee snyk-${assemblyType}.out || true"
+                sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --severity-threshold=medium --app-vulns --nested-jars-depth=4 | tee ${assemblyImage}-snyk.out || true"
             }
+            archiveArtifacts artifacts: "${assemblyImage}-snyk.out"
         }
     }
     stage("${stageIndex}.C. Scan ${assemblyType} jar using Prisma") {
@@ -37,9 +38,9 @@ def setPrismaScanningStages(assemblyType, stageIndex) {
     }
     stage("${stageIndex}.D. Export results for ${assemblyType} jar to CSV") {
         withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-            sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}.csv"
+            sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}-prisma.csv"
         }
-        archiveArtifacts artifacts: "${assemblyImage}.csv"
+        archiveArtifacts artifacts: "${assemblyImage}-prisma.csv"
     }
     stage("${stageIndex}.E. Publish report for ${assemblyType} jar") {
         prismaCloudPublish resultsFilePattern: "prisma-${assemblyType}-scan-results.json"
