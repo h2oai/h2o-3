@@ -86,6 +86,40 @@ public class AstMatchTest extends TestUtil {
     }
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testMatchStrListNumericDomain() {
+    final Frame data = makeTestFrame();
+    Frame output = null;
+    try {
+      String rapids = "(tmp= tst (match (cols data [2]) [1,2,3] -1 0))";
+      Val val = Rapids.exec(rapids);
+      output = val.getFrame();
+      assertVecEquals(data.vec(0), output.vec(0), 0.0);
+    } finally {
+      data.delete();
+      if (output != null) {
+        output.delete();
+      }
+    }
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testMatchNumListStringDomain() {
+    final Frame data = makeTestFrame();
+    Frame output = null;
+    try {
+      String rapids = "(tmp= tst (match (cols data [3]) [[\"sB\",\"sC\",\"sD\"] -1 0))";
+      Val val = Rapids.exec(rapids);
+      output = val.getFrame();
+      assertVecEquals(data.vec(0), output.vec(0), 0.0);
+    } finally {
+      data.delete();
+      if (output != null) {
+        output.delete();
+      }
+    }
+  }
+
   
 
   private Frame makeTestFrame() {

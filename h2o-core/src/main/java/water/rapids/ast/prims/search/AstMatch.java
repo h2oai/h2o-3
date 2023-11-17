@@ -37,6 +37,9 @@ public class AstMatch extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if(fr.anyVec() == null){
+      throw new IllegalArgumentException("Expected frame with one vector. Got empty frame.");
+    }
 
     final MRTask<?> matchTask;
     
@@ -44,10 +47,10 @@ public class AstMatch extends AstPrimitive {
     double noMatch;
     if (asts[3] instanceof AstNum) {
       noMatch = asts[3].exec(env).getNum();
-    } else if (asts[3] instanceof AstId && (asts[3]).str().equals("NA")){
+    } else if (asts[3] instanceof AstId && ((asts[3]).str().equals("NA") || (asts[3]).str().equals("nan"))){
       noMatch = Double.NaN;
     } else {
-      throw new IllegalArgumentException("Expected number or 'NA'. Got: " + asts[3]);
+      throw new IllegalArgumentException("Expected number or 'NA' or 'nan'. Got: " + asts[3]);
     }
     
     // start index is 1 by default
@@ -62,15 +65,27 @@ public class AstMatch extends AstPrimitive {
     }
     
     if (asts[2] instanceof AstNumList) {
-      matchTask = new NumMatchTask(((AstNumList) asts[2]).sort().expand(), noMatch, startIndex);
+      if(fr.anyVec().isString()){
+        throw new IllegalArgumentException("Input vector is string and has string domain. Got numeric match values.");
+      }
+      matchTask = new NumMatchTask(((AstNumList) asts[2]).expand(), noMatch, startIndex);
     }  else if (asts[2] instanceof AstNum) {
+      if(fr.anyVec().isString()){
+        throw new IllegalArgumentException("Input vector is string and has string domain. Got numeric match values.");
+      }
       matchTask = new NumMatchTask(new double[]{asts[2].exec(env).getNum()}, noMatch, startIndex);
     } else if (asts[2] instanceof AstStrList) {
+      if(fr.anyVec().isNumeric()){
+        throw new IllegalArgumentException("Input vector is numeric and has no domain.");
+      }
       String[] values = ((AstStrList) asts[2])._strs;
       matchTask = fr.anyVec().isString() ? new StrMatchTask(values, noMatch, startIndex) : 
               new CatMatchTask(values, noMatch, startIndex);
     } else if (asts[2] instanceof AstStr) {
       String[] values = new String[]{asts[2].exec(env).getStr()};
+      if(fr.anyVec().isNumeric()){
+        throw new IllegalArgumentException("Input vector is numeric and has no domain.");
+      }
       matchTask = fr.anyVec().isString() ? new StrMatchTask(values, noMatch, startIndex) : 
               new CatMatchTask(values, noMatch, startIndex);
     } else

@@ -64,5 +64,12 @@ def h2o_H2OFrame_match():
     assert match_frame[19, 0] == 1, "match value should be 1"
     assert math.isnan(match_frame[1, 0]), "match value should be nan"
     
+    # test example for doc
+    match_col = iris["C5"].match(['Iris-setosa', 'Iris-versicolor'])
+    match_col.names = ['match']
+    iris_match = iris.cbind(match_col)
+    splited = iris_match.split_frame(ratios=[0.05], seed=1)[0]
+    print(splited)
+    
     
 pyunit_utils.standalone_test(h2o_H2OFrame_match)

@@ -4653,13 +4653,12 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         return H2OFrame._expr(expr=ExprNode('h2o.random_stratified_split', self, test_frac, seed))
 
-    def match(self, table, nomatch=None, start_index=1):
+    def match(self, table, nomatch=float("nan"), start_index=1):
         """
         Make a vector where index of value form the table is returned if the value match, nomatch value otherwise. 
 
         :param List table: the list of items to match against
-        :param int nomatch: value that should be returned when there is no match. Numeric value or None. 
-            If nomatch=None, nan values are generated. 
+        :param int nomatch: value that should be returned when there is no match. Numeric value or nan. 
         :param int start_index: index from which start indexing of table list, numeric value >=0, default is 1.
         :returns: a new H2OFrame containing a vector where index of value form the table is returned if the value match, 
             nomatch value otherwise. 
@@ -4667,10 +4666,11 @@ class H2OFrame(Keyed, H2ODisplay):
         :examples:
 
         >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
-        >>> matchFrame = iris["C5"].match(['Iris-versicolor'])
-        >>> matchFrame
-        >>> matchFrame = iris["C5"].match(['Iris-setosa'])
-        >>> matchFrame
+        >>> match_col = iris["C5"].match(['Iris-setosa', 'Iris-versicolor'])
+        >>> match_col.names = ['match']
+        >>> iris_match = iris.cbind(match_col)
+        >>> splited = iris_match.split_frame(ratios=[0.05], seed=1)[0]
+        >>> print(splited)
         """
         return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, start_index))
 
