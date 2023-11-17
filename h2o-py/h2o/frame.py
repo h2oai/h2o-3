@@ -4655,13 +4655,13 @@ class H2OFrame(Keyed, H2ODisplay):
 
     def match(self, table, nomatch=float("nan"), start_index=1):
         """
-        Make a vector where index of value form the table is returned if the value match, nomatch value otherwise. 
+        Makes a vector where an index of value from the table is returned if the value matches; returns ``nomatch`` value otherwise. 
 
-        :param List table: the list of items to match against
-        :param int nomatch: value that should be returned when there is no match. Numeric value or nan. 
-        :param int start_index: index from which start indexing of table list, numeric value >=0, default is 1.
-        :returns: a new H2OFrame containing a vector where index of value form the table is returned if the value match, 
-            nomatch value otherwise. 
+        :param List table: The list of items to match against.
+        :param int nomatch: Value that should be returned when there is no match. Numeric value or ``nan``. 
+        :param int start_index: Index from which this starts the indexing of the table list, numeric value >=0 (default is ``1``).
+        :returns: A new H2OFrame containing a vector where the index of value from the table is returned if the value matches; returns 
+            ``nomatch`` value otherwise. 
 
         :examples:
 
@@ -4669,8 +4669,8 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> match_col = iris["C5"].match(['Iris-setosa', 'Iris-versicolor'])
         >>> match_col.names = ['match']
         >>> iris_match = iris.cbind(match_col)
-        >>> splited = iris_match.split_frame(ratios=[0.05], seed=1)[0]
-        >>> print(splited)
+        >>> iris_split = iris_match.split_frame(ratios=[0.05], seed=1)[0]
+        >>> print(iris_split)
         """
         return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, start_index))
 
