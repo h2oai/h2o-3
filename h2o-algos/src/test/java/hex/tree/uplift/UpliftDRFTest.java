@@ -84,7 +84,7 @@ public class UpliftDRFTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = generateFrame();
-            train.toCategoricalCol("treatment_not_default");
+            train.remove("treatment");
             train.toCategoricalCol("conversion");
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
@@ -463,7 +463,7 @@ public class UpliftDRFTest extends TestUtil {
     
     private Frame generateFrame(){
         return new TestFrameBuilder()
-                .withColNames("C0", "C1", "treatment_not_default", "conversion")
+                .withColNames("C0", "C1", "treatment", "conversion")
                 .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
                 .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                 .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
