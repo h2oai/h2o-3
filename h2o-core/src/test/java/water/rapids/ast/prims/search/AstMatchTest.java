@@ -21,7 +21,7 @@ public class AstMatchTest extends TestUtil {
     final Frame data = makeTestFrame();
     Frame output = null;
     try {
-      String numList = idx(data.vec(3), "cB", "cC", "cD");
+      String numList = idx(data.vec(3), "cC", "cB", "cD");
       String rapids = "(tmp= tst (match (cols data [3]) [" + numList + "] -1 0))";
       Val val = Rapids.exec(rapids);
       output = val.getFrame();
@@ -39,7 +39,7 @@ public class AstMatchTest extends TestUtil {
     final Frame data = makeTestFrame();
     Frame output = null;
     try {
-      String numList = idx(data.vec(3), "cB", "cC", "cD");
+      String numList = idx(data.vec(3), "cC", "cB", "cD");
       String rapids = "(tmp= tst (match (cols data [3]) [" + numList + "] 0 1))";
       Val val = Rapids.exec(rapids);
       output = val.getFrame();
@@ -57,7 +57,7 @@ public class AstMatchTest extends TestUtil {
     final Frame data = makeTestFrame();
     Frame output = null;
     try {
-      String rapids = "(tmp= tst (match (cols data [3]) [\"cB\",\"cC\",\"cD\"] -1 0))";
+      String rapids = "(tmp= tst (match (cols data [3]) [\"cC\",\"cB\",\"cD\"] -1 0))";
       Val val = Rapids.exec(rapids);
       output = val.getFrame();
       assertVecEquals(data.vec(0), output.vec(0), 0.0);
@@ -74,7 +74,7 @@ public class AstMatchTest extends TestUtil {
     final Frame data = makeTestFrame();
     Frame output = null;
     try {
-      String rapids = "(tmp= tst (match (cols data [2]) [\"sB\",\"sC\",\"sD\"] -1 0))";
+      String rapids = "(tmp= tst (match (cols data [2]) [\"sC\",\"sB\",\"sD\"] -1 0))";
       Val val = Rapids.exec(rapids);
       output = val.getFrame();
       assertVecEquals(data.vec(0), output.vec(0), 0.0);
@@ -131,8 +131,8 @@ public class AstMatchTest extends TestUtil {
     String[] catData = new String[len];
     for (int i = 0; i < len; i++) {
       char c = (char) ('A' + rnd.nextInt('Z' - 'A'));
-      numData[i] = c == 'B' ? 0 : c == 'C' ? 1 : c == 'D' ? 2 : -1;
-      numDataStart[i] = c == 'B' ? 1 : c == 'C' ? 2 : c == 'D' ? 3 : 0;
+      numData[i] = c == 'B' ? 1 : c == 'C' ? 0 : c == 'D' ? 2 : -1;
+      numDataStart[i] = c == 'B' ? 2 : c == 'C' ? 1 : c == 'D' ? 3 : 0;
       strData[i] = "s" + c;
       catData[i] = "c" + c;
     }

@@ -17,6 +17,10 @@ import water.util.MathUtils;
 import java.util.Arrays;
 
 /**
+ * Makes a vector where an index of value from the table is returned if the value matches; 
+ * returns nomatch value otherwise. 
+ * 
+ * Implemented as R base::match function.
  */
 public class AstMatch extends AstPrimitive {
   @Override
@@ -96,38 +100,51 @@ public class AstMatch extends AstPrimitive {
   }
 
   private static class StrMatchTask extends MRTask<CatMatchTask> {
-    String[] _values;
+    String[] _sortedValues;
     double _noMatch;
     int _startIndex;
+    IcedHashMap<String, Integer> _mapping;
     IcedHashMap<String, Integer> _matchesIndexes;
 
     StrMatchTask(String[] values, double noMatch, int indexes) {
-      _values = values;
+      _mapping = new IcedHashMap<>();
+      for (int i = 0; i < values.length; i++) {
+        _mapping.put(values[i], i);
+      }
+      _sortedValues = values.clone();
+      Arrays.sort(_sortedValues);
       _noMatch = noMatch;
       _startIndex = indexes;
       _matchesIndexes = new IcedHashMap<>();
     }
+    
     @Override
     public void map(Chunk c, NewChunk nc) {
       BufferedString bs = new BufferedString();
       int rows = c._len;
       for (int r = 0; r < rows; r++) {
-        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _values, c.atStr(bs, r).toString(), _noMatch, _startIndex);
+        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _sortedValues, _mapping, c.atStr(bs, r).toString(), _noMatch, _startIndex);
         nc.addNum(x);
       }
     }
   }
 
   private static class CatMatchTask extends MRTask<CatMatchTask> {
-    String[] _values;
+    String[] _sortedValues;
     int[] _firstMatchRow;
     double _noMatch;
     int _startIndex;
+    IcedHashMap<String, Integer> _mapping;
     IcedHashMap<String, Integer> _matchesIndexes;
     
  
     CatMatchTask(String[] values, double noMatch, int startIndex) {
-      _values = values;
+      _mapping = new IcedHashMap<>();
+      for (int i = 0; i < values.length; i++) {
+        _mapping.put(values[i], i);
+      }
+      _sortedValues = values.clone();
+      Arrays.sort(_sortedValues);
       _noMatch = noMatch;
       _startIndex = startIndex;
       _firstMatchRow = new int[values.length];
@@ -139,20 +156,26 @@ public class AstMatch extends AstPrimitive {
       String[] domain = c.vec().domain();
       int rows = c._len;
       for (int r = 0; r < rows; r++) {
-        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _values, domain[(int) c.at8(r)], _noMatch, _startIndex);
+        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _sortedValues, _mapping, domain[(int) c.at8(r)], _noMatch, _startIndex);
         nc.addNum(x);
       }
     }
   }
 
   private static class NumMatchTask extends MRTask<CatMatchTask> {
-    double[] _values;
+    double[] _sortedValues;
     double _noMatch;
     int _startIndex;
+    IcedHashMap<Double, Integer> _mapping;
     IcedHashMap<Double, Integer> _matchesIndexes;
 
     NumMatchTask(double[] values, double noMatch, int startIndex) {
-      _values = values;
+      _mapping = new IcedHashMap<>();
+      for (int i = 0; i < values.length; i++) {
+        _mapping.put(values[i], i);
+      }
+      _sortedValues = values.clone();
+      Arrays.sort(_sortedValues);
       _noMatch = noMatch;
       _startIndex = startIndex;
       _matchesIndexes = new IcedHashMap<>();
@@ -162,34 +185,34 @@ public class AstMatch extends AstPrimitive {
     public void map(Chunk c, NewChunk nc) {
       int rows = c._len;
       for (int r = 0; r < rows; r++) {
-        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _values, c.atd(r), _noMatch, _startIndex);
+        double x = c.isNA(r) ? _noMatch : in(_matchesIndexes, _sortedValues, _mapping, c.atd(r), _noMatch, _startIndex);
         nc.addNum(x);
       }
     }
   }
 
-  private static double in(IcedHashMap<String, Integer> matchesIndexes, String[] matches, String s, double noMatch, int startIndex) {
+  private static double in(IcedHashMap<String, Integer> matchesIndexes, String[] sortedMatches, IcedHashMap<String, Integer> mapping, String s, double noMatch, int startIndex) {
     Integer mapResult = matchesIndexes.get(s);
     int match;
     if (mapResult == null){
-      match = Arrays.binarySearch(matches, s);
+      match = Arrays.binarySearch(sortedMatches, s);
       matchesIndexes.put(s, match);
     } else {
       match = mapResult;
     }
-    return match >= 0 ? applyStartIndex(match, startIndex) : noMatch;
+    return match >= 0 ? applyStartIndex(mapping.get(s), startIndex) : noMatch;
   }
 
-  private static double in(IcedHashMap<Double, Integer> matchesIndexes, double[] matches, double d, double noMatch, int startIndex) {
+  private static double in(IcedHashMap<Double, Integer> matchesIndexes, double[] sortedMatches, IcedHashMap<Double, Integer> mapping, double d, double noMatch, int startIndex) {
     Integer mapResult = matchesIndexes.get(d);
     int match;
     if (mapResult == null){
-      match = binarySearchDoublesUlp(matches, 0, matches.length, d);
+      match = binarySearchDoublesUlp(sortedMatches, 0, sortedMatches.length, d);
       matchesIndexes.put(d, match);
     } else {
       match = mapResult;
     }
-    return match >= 0 ? applyStartIndex(match, startIndex) : noMatch;
+    return match >= 0 ? applyStartIndex(mapping.get(d), startIndex) : noMatch;
   }
   
   private static double applyStartIndex(double value, int startIndex) {
