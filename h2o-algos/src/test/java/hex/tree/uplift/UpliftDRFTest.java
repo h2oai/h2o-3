@@ -88,6 +88,7 @@ public class UpliftDRFTest extends TestUtil {
             train.toCategoricalCol("conversion");
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
+            p._treatment_column = "treatment";
             p._response_column = "conversion";
 
             UpliftDRF udrf = new UpliftDRF(p);
@@ -104,7 +105,7 @@ public class UpliftDRFTest extends TestUtil {
             Frame train = generateFrame();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
-            p._treatment_column = "treatment";
+            p._treatment_column = "treatment2";
             p._response_column = "conversion";
 
             UpliftDRF udrf = new UpliftDRF(p);
@@ -121,7 +122,7 @@ public class UpliftDRFTest extends TestUtil {
             Frame train = generateFrame();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
-            p._treatment_column = "treatment";
+            p._treatment_column = "C0";
             p._response_column = "conversion";
 
             UpliftDRF udrf = new UpliftDRF(p);
@@ -139,7 +140,7 @@ public class UpliftDRFTest extends TestUtil {
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
-            p._response_column = "conversion";
+            p._response_column = "C1";
 
             UpliftDRF udrf = new UpliftDRF(p);
             udrf.trainModel().get();
@@ -232,8 +233,9 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._stopping_metric = ScoreKeeper.StoppingMetric.AUUC;
-            p._stopping_rounds = 4;
+            p._stopping_rounds = 2;
             p._ntrees = ntrees;
+            p._score_each_iteration = true;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -256,8 +258,9 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._stopping_metric = ScoreKeeper.StoppingMetric.ATE;
-            p._stopping_rounds = 4;
+            p._stopping_rounds = 2;
             p._ntrees = ntrees;
+            p._score_each_iteration = true;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -280,8 +283,9 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._stopping_metric = ScoreKeeper.StoppingMetric.ATT;
-            p._stopping_rounds = 4;
+            p._stopping_rounds = 2;
             p._ntrees = ntrees;
+            p._score_each_iteration = true;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -304,8 +308,9 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._stopping_metric = ScoreKeeper.StoppingMetric.ATC;
-            p._stopping_rounds = 4;
+            p._stopping_rounds = 2;
             p._ntrees = ntrees;
+            p._score_each_iteration = true;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -328,8 +333,9 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._stopping_metric = ScoreKeeper.StoppingMetric.qini;
-            p._stopping_rounds = 4;
+            p._stopping_rounds = 2;
             p._ntrees = ntrees;
+            p._score_each_iteration = true;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -463,12 +469,13 @@ public class UpliftDRFTest extends TestUtil {
     
     private Frame generateFrame(){
         return new TestFrameBuilder()
-                .withColNames("C0", "C1", "treatment", "conversion")
-                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                .withColNames("C0", "C1", "treatment", "treatment2", "conversion")
+                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
                 .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                 .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                 .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
-                .withDataForCol(3, ar("1", "0", "1", "0", "1", "0", "1", "0", "1", "1"))
+                .withDataForCol(3, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C2"))
+                .withDataForCol(4, ar("1", "0", "1", "0", "1", "0", "1", "0", "1", "1"))
                 .build();
     }
 }
