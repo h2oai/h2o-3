@@ -1727,7 +1727,7 @@ Below is a simple example showing how to build a Generalized Linear model.
     print(prostate_glm.coef())
     {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
 
-    # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
+    # Coefficients fitted on the standardized data (requires standardize = True, which is on by default) 
     print(prostate_glm.coef_norm())
     {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
 
