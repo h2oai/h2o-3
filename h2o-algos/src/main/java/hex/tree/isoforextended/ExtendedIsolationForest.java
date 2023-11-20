@@ -148,6 +148,10 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                         new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
                 _model.delete_and_lock(_job);
                 buildIsolationTreeEnsemble();
+                if (_parms._disable_training_metrics) {
+                    _model._output._model_summary = createModelSummaryTable();
+                    LOG.info(_model.toString());
+                } // if model is scored then it is already done in the buildIsolationTreeEnsemble() in final scoring
             } finally {
                 if(_model != null)
                     _model.unlock(_job);
