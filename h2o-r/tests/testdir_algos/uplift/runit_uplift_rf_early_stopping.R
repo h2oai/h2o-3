@@ -65,6 +65,9 @@ test.uplift <- function() {
     print("Number of trees built with AUUC early-stopping:")
     print(num_trees_es)
     expect_true(num_trees >= num_trees_es)
+    expect_true(num_trees > num_trees_es@params$actual$ntrees)
+    expect_true(num_trees_es == num_trees_es@params$actual$ntrees)
+    expect_true(ntrees == num_trees_es@params$input$ntrees)
     
 }
 
