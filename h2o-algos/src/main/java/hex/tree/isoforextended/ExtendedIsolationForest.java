@@ -148,8 +148,10 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                         new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
                 _model.delete_and_lock(_job);
                 buildIsolationTreeEnsemble();
-                _model._output._model_summary = createModelSummaryTable();
-                LOG.info(_model.toString());
+                if (_parms._disable_training_metrics) {
+                    _model._output._model_summary = createModelSummaryTable();
+                    LOG.info(_model.toString());
+                } // if model is scored then it is already done in the buildIsolationTreeEnsemble() in final scoring
             } finally {
                 if(_model != null)
                     _model.unlock(_job);
@@ -162,6 +164,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             _model._output._scored_train[0] = new ScoreKeeper();
             _model._output._training_time_ms = new long[_parms._ntrees + 1];
             _model._output._training_time_ms[0] = System.currentTimeMillis();
+            long timeLastScoreStart = 0;
+            long timeLastScoreEnd = 0;
+            long sinceLastScore = 0;
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
@@ -183,18 +188,36 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 LOG.info((tid + 1) + ". tree was built in " + timer);
                 isolationTreeStats.updateBy(isolationTree);
 
+                long now = System.currentTimeMillis();
+                sinceLastScore = now - timeLastScoreStart;
+                boolean timeToScore = (now-_job.start_time() < _parms._initial_score_interval) || // Score every time for 4 secs
+                        // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+                        (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
+                                (double)(timeLastScoreEnd - timeLastScoreStart)/sinceLastScore < 0.1); //10% duty cycle
+
                 boolean manualInterval = _parms._score_tree_interval > 0 && (tid +1) % _parms._score_tree_interval == 0;
                 boolean finalScoring = _parms._ntrees == (tid + 1);
+                boolean scored = false;
 
                 _model._output._scored_train[tid + 1] = new ScoreKeeper();
-                if ((_parms._score_each_iteration || manualInterval || finalScoring) && !_parms._disable_training_metrics) {
+                if (_parms._score_each_iteration || manualInterval || finalScoring || (timeToScore && _parms._score_tree_interval == 0) && !_parms._disable_training_metrics) {
+                    _model._output._scored_train[tid + 1] = new ScoreKeeper();
+                    timeLastScoreStart = System.currentTimeMillis();
                     ModelMetrics.MetricBuilder metricsBuilder = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder();
                     ModelMetrics modelMetrics = metricsBuilder.makeModelMetrics(_model, _parms.train(), null, null);
                     _model._output._training_metrics = modelMetrics;
                     _model._output._scored_train[tid + 1].fillFrom(modelMetrics);
+                    scored = true;
+                    timeLastScoreEnd = System.currentTimeMillis();
+                }
+
+                final boolean printout = (_parms._score_each_iteration || finalScoring || (sinceLastScore > _parms._score_interval && scored)) && !_parms._disable_training_metrics;
+                if (printout) {
+                    _model._output._model_summary = createModelSummaryTable();
+                    _model._output._scoring_history = createScoringHistoryTable(tid+1);
+                    LOG.info(_model.toString());
                 }
             }
-            _model._output._scoring_history = _parms._disable_training_metrics ? null : createScoringHistoryTable();
         }
     }
 
@@ -258,7 +281,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         return table;
     }
 
-    protected TwoDimTable createScoringHistoryTable() {
+    protected TwoDimTable createScoringHistoryTable(int ntreesTrained) {
         List<String> colHeaders = new ArrayList<>();
         List<String> colTypes = new ArrayList<>();
         List<String> colFormat = new ArrayList<>();
@@ -274,8 +297,8 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         ScoreKeeper[] sks = _model._output._scored_train;
 
         int rows = 0;
-        for (int i = 0; i < sks.length; i++) {
-            if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+        for (int i = 0; i <= ntreesTrained; i++) {
+            if (i != 0 && sks[i] != null && Double.isNaN(sks[i]._anomaly_score) || sks[i] == null) continue;
             rows++;
         }
         TwoDimTable table = new TwoDimTable(
@@ -286,8 +309,8 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 colFormat.toArray(new String[0]),
                 "");
         int row = 0;
-        for( int i = 0; i<sks.length; i++ ) {
-            if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+        for( int i = 0; i<=ntreesTrained; i++ ) {
+            if (i != 0 && sks[i] != null && Double.isNaN(sks[i]._anomaly_score) || sks[i] == null) continue;
             int col = 0;
             DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
             table.set(row, col++, fmt.print(_model._output._training_time_ms[i]));
