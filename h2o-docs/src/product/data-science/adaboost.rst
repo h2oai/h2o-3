@@ -51,7 +51,7 @@ Algorithm-specific parameters
 
       - ``DEEP_LEARNING``: Trains a binary classifier with ``(epochs=10, hidden=[2])``.
 
--  **weak_learner_params**:  With ``weak_learner``, you can also specify a dict/list of customized parameters for that algorithm. For example if we use a ``GBM``, we can specify ``{'max_depth': 10}`` in Python and ``list(max_depth = 10)`` in R.
+-  **weak_learner_params**:  With ``weak_learner``, you can also specify a dict/list of customized parameters for that algorithm. For example if we use a ``GBM``, we can specify ``{'ntrees': 1, 'max_depth': 10}`` in Python and ``list(ntrees = 1, max_depth = 10)`` in R. AdaBoost does not apply defaults from the ``weak_learner`` at all. The defaults of the algorithm itself will be used instead.
 
 Common parameters
 '''''''''''''''''
