@@ -2,11 +2,15 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.ModelMetrics;
+import hex.ScoreKeeper;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTreeStats;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.DKV;
 import water.H2O;
 import water.Job;
@@ -154,6 +158,10 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
         private void buildIsolationTreeEnsemble() {
             _model._output._iTreeKeys = new Key[_parms._ntrees];
+            _model._output._scored_train = new ScoreKeeper[_parms._ntrees + 1];
+            _model._output._scored_train[0] = new ScoreKeeper();
+            _model._output._training_time_ms = new long[_parms._ntrees + 1];
+            _model._output._training_time_ms[0] = System.currentTimeMillis();
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
@@ -171,9 +179,22 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 DKV.put(compressedIsolationTree);
                 _job.update(1);
                 _model.update(_job);
-                LOG.info((tid + 1) + ". tree was built in " + timer.toString());
+                _model._output._training_time_ms[tid + 1] = System.currentTimeMillis();
+                LOG.info((tid + 1) + ". tree was built in " + timer);
                 isolationTreeStats.updateBy(isolationTree);
+
+                boolean manualInterval = _parms._score_tree_interval > 0 && (tid +1) % _parms._score_tree_interval == 0;
+                boolean finalScoring = _parms._ntrees == (tid + 1);
+
+                _model._output._scored_train[tid + 1] = new ScoreKeeper();
+                if ((_parms._score_each_iteration || manualInterval || finalScoring) && !_parms._disable_training_metrics) {
+                    ModelMetrics.MetricBuilder metricsBuilder = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder();
+                    ModelMetrics modelMetrics = metricsBuilder.makeModelMetrics(_model, _parms.train(), null, null);
+                    _model._output._training_metrics = modelMetrics;
+                    _model._output._scored_train[tid + 1].fillFrom(modelMetrics);
+                }
             }
+            _model._output._scoring_history = _parms._disable_training_metrics ? null : createScoringHistoryTable();
         }
     }
 
@@ -237,4 +258,50 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         return table;
     }
 
+    protected TwoDimTable createScoringHistoryTable() {
+        List<String> colHeaders = new ArrayList<>();
+        List<String> colTypes = new ArrayList<>();
+        List<String> colFormat = new ArrayList<>();
+        colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+        colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
+        colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+        colHeaders.add("Mean Tree Path Length"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Mean Anomaly Score"); colTypes.add("double"); colFormat.add("%.5f");
+        if (_parms._custom_metric_func != null) {
+            colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
+        }
+
+        ScoreKeeper[] sks = _model._output._scored_train;
+
+        int rows = 0;
+        for (int i = 0; i < sks.length; i++) {
+            if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+            rows++;
+        }
+        TwoDimTable table = new TwoDimTable(
+                "Scoring History", null,
+                new String[rows],
+                colHeaders.toArray(new String[0]),
+                colTypes.toArray(new String[0]),
+                colFormat.toArray(new String[0]),
+                "");
+        int row = 0;
+        for( int i = 0; i<sks.length; i++ ) {
+            if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+            int col = 0;
+            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+            table.set(row, col++, fmt.print(_model._output._training_time_ms[i]));
+            table.set(row, col++, PrettyPrint.msecs(_model._output._training_time_ms[i] - _job.start_time(), true));
+            table.set(row, col++, i);
+            ScoreKeeper st = sks[i];
+            table.set(row, col++, st._anomaly_score);
+            table.set(row, col++, st._anomaly_score_normalized);
+            if (_parms._custom_metric_func != null) {
+                table.set(row, col++, st._custom_metric);
+            }
+            assert col == colHeaders.size();
+            row++;
+        }
+        return table;
+    }
 }
