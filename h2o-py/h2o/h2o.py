@@ -834,7 +834,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames],
+    kwargs = {"check_header": header, 
+              "source_frames": [quoted(frame_id) for frame_id in raw_frames],
               "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
@@ -844,6 +845,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
 
     if custom_non_data_line_markers is not None:
         kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers
+        
     if partition_by is not None:
         kwargs["partition_by"] = partition_by
 
