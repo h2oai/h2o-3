@@ -25,6 +25,9 @@ Build an AdaBoost model
 
 Builds an AdaBoost model on an H2OFrame.
 """,
+    params=dict(
+        weak_learner_params="Customized parameters for the weak_learner algorithm. E.g list(ntrees=3, max_depth=2, histogram_type='UniformAdaptive'))",
+    ),
     returns="""
 Creates a \linkS4class{H2OModel} object of the right type.
 """,

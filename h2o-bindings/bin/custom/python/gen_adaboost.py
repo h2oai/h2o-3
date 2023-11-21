@@ -41,3 +41,19 @@ else:
 """
     )
 )
+
+examples = dict(
+    weak_learner_params="""
+>>> prostate_hex = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+>>> prostate_hex["CAPSULE"] = prostate_hex["CAPSULE"].asfactor()
+>>> response = "CAPSULE"
+>>> seed = 42
+>>> adaboost_model = H2OAdaBoostEstimator(seed=seed,
+...                                       weak_learner="DRF",
+...                                       weak_learner_params={'ntrees':1,'max_depth':3})
+>>> adaboost_model.train(y=response,
+...                 ignored_columns=["ID"],
+...                 training_frame=prostate_hex)
+>>> print(adaboost_model)
+""",
+)
