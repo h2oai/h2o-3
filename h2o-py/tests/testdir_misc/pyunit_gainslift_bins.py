@@ -47,9 +47,6 @@ def get_ks(model, data):
     return max(perf.gains_lift()["kolmogorov_smirnov"])
 
 
-
-
-
 def assert_eq(a, b):
     if abs(a - b) >= eps:
         print("Expected: {}, Actual: {}, diff: {}".format(b, a, a - b))
@@ -106,7 +103,7 @@ def test_stacked_ensemble():
     df = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"))
     y = "survived"
     df[y] = df[y].asfactor()
-    
+
     base_kwargs = dict(nfolds=3, keep_cross_validation_predictions=True)
 
     base_models = [
@@ -115,7 +112,7 @@ def test_stacked_ensemble():
         fast_estimator(H2ODeepLearningEstimator, **base_kwargs),
         fast_estimator(H2OGeneralizedLinearEstimator, **base_kwargs),
     ]
-    
+
     for est in base_models:
         est.train(y=y, training_frame=df)
 
