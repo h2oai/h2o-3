@@ -24,7 +24,7 @@ Algorithm-specific parameters
 
 -  `learn_rate <algo-params/learn_rate.html>`__: Specify the learning rate. The range is 0.0 to 1.0, and the default value is ``0.5``.
 
--  **nlearners**: Number of AdaBoost weak learners.
+-  **nlearners**: Number of AdaBoost weak learners. This option defaults to ``50``.
 
 -  **weak_learner**: Choose a weak learner type. Must be one of: ``"AUTO"``, ``"DRF"``, ``"GBM"``, ``"GLM"``, or ``DEEP_LEARNING``. Defaults to ``"AUTO"`` (which means ``"DRF"``).
 
