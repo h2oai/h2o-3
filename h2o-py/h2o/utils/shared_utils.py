@@ -126,19 +126,33 @@ def is_module_available(mod):
     import importlib.util
     return importlib.util.find_spec(mod) is not None
 
-
 def can_use_pandas():
     return is_module_available('pandas')
 
 def can_install_datatable():
     return sys.version_info.major == 3 and sys.version_info.minor <= 9
 
+def can_install_polars():
+    return sys.version_info.major == 3
+
+def can_install_pyarrow():
+    if can_use_pandas():
+        import pandas
+        return sys.version_info.major == 3 and float(pandas.__version__[0]) >= 1
+    else:
+        return False
+
 def can_use_datatable():
     return is_module_available('datatable')
 
+def can_use_polars():
+    return is_module_available('polars')
+
+def can_use_pyarrow():
+    return is_module_available('pyarrow')
+
 def can_use_numpy():
     return is_module_available('numpy')
-
 
 _url_safe_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
 _url_chars_map = [chr(i) if chr(i) in _url_safe_chars else "%%%02X" % i for i in range(256)]
@@ -148,19 +162,15 @@ def url_encode(s):
     # Note: type cast str(s) will not be needed once all code is made compatible
     return "".join(_url_chars_map[c] for c in bytes_iterator(s))
 
-
 def quote(s):
     return url_encode(s)
-
 
 def clamp(x, xmin, xmax):
     """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
     return max(xmin, min(x, xmax))
 
-
 def _gen_header(cols):
     return ["C" + str(c) for c in range(1, cols + 1, 1)]
-
 
 def stringify_dict(d):
     return stringify_list(["{'key': %s, 'value': %s}" % (_quoted(k), v) for k, v in d.items()])
