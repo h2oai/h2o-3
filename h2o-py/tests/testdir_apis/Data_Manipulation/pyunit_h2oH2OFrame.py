@@ -104,9 +104,9 @@ def H2OFrame_from_H2OFrame():
     check_frame(dupl1)
     assert fr.key != dupl1.key
     
-    dupl2 = h2o.H2OFrame(python_obj=fr, destination_frame="h2oframe_duplicate")
+    dupl2 = h2o.H2OFrame(python_obj=fr, destination_frame="h2oframe_duplicate_with_new_name")
     assert_is_type(dupl2, H2OFrame)
-    check_frame(dupl2, "h2oframe_duplicate")
+    check_frame(dupl2, "h2oframe_duplicate_with_new_name")
 
     dupl3 = h2o.H2OFrame(python_obj=fr, column_names=["n1", "n2", "s1", "e1"], destination_frame="h2oframe_duplicate_with_renamed_columns")
     assert_is_type(dupl3, H2OFrame)
