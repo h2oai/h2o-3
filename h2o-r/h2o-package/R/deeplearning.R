@@ -141,6 +141,7 @@
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per epoch). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -243,6 +244,7 @@ h2o.deeplearning <- function(x,
                              export_checkpoints_dir = NULL,
                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                              custom_metric_func = NULL,
+                             gainslift_bins = -1,
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -446,6 +448,8 @@ h2o.deeplearning <- function(x,
     parms$auc_type <- auc_type
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Error check and build model
   model <- .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -539,6 +543,7 @@ h2o.deeplearning <- function(x,
                                              export_checkpoints_dir = NULL,
                                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                              custom_metric_func = NULL,
+                                             gainslift_bins = -1,
                                              segment_columns = NULL,
                                              segment_models_id = NULL,
                                              parallelism = 1)
@@ -746,6 +751,8 @@ h2o.deeplearning <- function(x,
     parms$auc_type <- auc_type
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Build segment-models specific parameters
   segment_parms <- list()

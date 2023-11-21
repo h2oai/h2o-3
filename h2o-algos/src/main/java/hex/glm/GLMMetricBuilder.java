@@ -246,6 +246,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
           Vec weights = f.vec(m._parms._weights_column);
           if (resp != null && Family.fractionalbinomial != _glmf._family) { // don't calculate for frac binomial
             gl = new GainsLift(preds.lastVec(), resp, weights);
+            gl._groups = m._parms._gainslift_bins;
             gl.exec(m._output._job);
           }
         }
