@@ -453,7 +453,10 @@ public class UpliftDRFTest extends TestUtil {
             for (int i = 0; i < featureFr.numRows(); i++) {
                 RowData row = new RowData();
                 for (String feat : featureFr.names()) {
-                    if (!featureFr.vec(feat).isNA(i)) {
+                    if (featureFr.vec(feat).isCategorical()){
+                        String value = featureFr.vec(feat).stringAt(i);
+                        row.put(feat, value);
+                    } else if (!featureFr.vec(feat).isNA(i)) {
                         double value = featureFr.vec(feat).at(i);
                         row.put(feat, value);
                     }
@@ -474,7 +477,7 @@ public class UpliftDRFTest extends TestUtil {
                 .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                 .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                 .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
-                .withDataForCol(3, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C2"))
+                .withDataForCol(3, ar("T", "C2", "T", "T", "T", "C2", "C", "C", "C", "C2"))
                 .withDataForCol(4, ar("1", "0", "1", "0", "1", "0", "1", "0", "1", "1"))
                 .build();
     }
