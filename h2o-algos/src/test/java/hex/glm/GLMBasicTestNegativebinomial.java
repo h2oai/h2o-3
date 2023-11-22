@@ -16,6 +16,7 @@ import water.runner.H2ORunner;
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
