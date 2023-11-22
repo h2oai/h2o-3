@@ -77,7 +77,7 @@ def H2OFrame_from_scipy():
         assert fr.key == dest
         assert fr.nrows == len(nostr_data)
         assert fr.ncols == len(nostr_data[0])
-        assert fr.columns == ["C%i"%i for i in range(1, fr.ncols+1)]  # BUG! construction with scipy matrix ignores `column_names` param: see ticket GH-#####
+        assert fr.columns == ["C%i"%i for i in range(1, fr.ncols+1)]  # BUG! construction with scipy matrix ignores `column_names` param: see issue https://github.com/h2oai/h2o-3/issues/15946
         assert fr.types == dict(C1='int', C2='real', C3='int', C4='int') # enum types are also ignored, but it makes sense for sparse matrices, we could add a warning though.
         for i, row in enumerate(data):
             for j, value in enumerate(row):
@@ -128,7 +128,7 @@ def H2OFrame_from_H2OFrame():
 def H2OFrame_skipped_columns_is_BUGGY():
     try:
         h2o.H2OFrame(data, skipped_columns=[1])
-        assert False, "skipped_columns handling may be fixed now"  # parse_setup is absolutely weird, with only half parameters passed to build the ParseSetup, and then a bunch of logic done locally, that's why it's buggy: see issue GH-#####
+        assert False, "skipped_columns handling may be fixed now"  # parse_setup is absolutely weird, with only half parameters passed to build the ParseSetup, and then a bunch of logic done locally, that's why it's buggy: see issue https://github.com/h2oai/h2o-3/issues/15947 
     except ValueError as e:
         assert "length of col_names should be equal to the number of columns parsed: 4 vs 3" in str(e)
 
