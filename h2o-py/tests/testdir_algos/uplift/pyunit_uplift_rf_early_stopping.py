@@ -61,6 +61,11 @@ def uplift_random_forest_early_stopping():
     print("Number of tress built with early stopping: {0}.  Number of trees built without early stopping: "
           "{1}".format(num_trees_es[0], num_trees[0]))
     assert num_trees_es[0] <= num_trees[0], "Early stopping criteria AUUC is not working."
+    assert pyunit_utils.assert_equals(num_trees_es[0], uplift_model_es.actual_params["ntrees"],
+                                      "Actual parameters and model summary should be equal")
+    assert pyunit_utils.assert_equals(ntrees, uplift_model_es.input_params["ntrees"],
+                                      "Input parameters should not be changed")
+    assert uplift_model_es.actual_params["ntrees"] < num_trees[0], "Actual parameters are not updated."
 
 
 if __name__ == "__main__":
