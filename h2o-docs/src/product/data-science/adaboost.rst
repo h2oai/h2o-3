@@ -24,9 +24,9 @@ Algorithm-specific parameters
 
 -  `learn_rate <algo-params/learn_rate.html>`__: Specify the learning rate. The range is 0.0 to 1.0, and the default value is ``0.5``.
 
--  **nlearners**: Number of AdaBoost weak learners.
+-  **nlearners**: Number of AdaBoost weak learners. This option defaults to ``50``.
 
--  **weak_learner**: Choose a weak learner type. Must be one of: ``"AUTO"``, ``"DRF"``, ``"GBM"``, or ``"GLM"``. Defaults to ``"AUTO"`` (which means ``"DRF"``).
+-  **weak_learner**: Choose a weak learner type. Must be one of: ``"AUTO"``, ``"DRF"``, ``"GBM"``, ``"GLM"``, or ``DEEP_LEARNING``. Defaults to ``"AUTO"`` (which means ``"DRF"``).
 
       - ``DRF``: Trains only one tree in each iteration with the following parameters: 
 
@@ -48,6 +48,10 @@ Algorithm-specific parameters
              learn_rate=0.1)
 
       - ``GLM``: Trains a binary classifier with ``max_iterations=50``.
+
+      - ``DEEP_LEARNING``: Trains a binary classifier with ``(epochs=10, hidden=[2])``.
+
+-  **weak_learner_params**:  With ``weak_learner``, you can also specify a dict/list of customized parameters for that algorithm. For example if we use a ``GBM``, we can specify ``{'ntrees': 1, 'max_depth': 10}`` in Python and ``list(ntrees = 1, max_depth = 10)`` in R. AdaBoost does not apply defaults from the ``weak_learner`` at all. The defaults of the algorithm itself will be used instead.
 
 Common parameters
 '''''''''''''''''
