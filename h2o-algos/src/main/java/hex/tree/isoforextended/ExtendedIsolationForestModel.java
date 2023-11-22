@@ -111,6 +111,18 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
          */
         public boolean _disable_training_metrics;
 
+        /**
+         * For _initial_score_interval milliseconds - score each iteration of the algorithm.
+         */
+        public int _initial_score_interval = 4000;
+
+        /**
+         * After each _score_interval milliseconds - run scoring
+         *
+         * But limit the scoring time consumption to 10% of whole training time.
+         */
+        public int _score_interval = 4000;
+
         public ExtendedIsolationForestParameters() {
             super();
             _ntrees = 100;
