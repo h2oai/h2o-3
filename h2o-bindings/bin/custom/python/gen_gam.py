@@ -119,7 +119,19 @@ MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices.
 )
 examples = dict(
     alpha="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -128,7 +140,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     balance_classes="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -137,7 +161,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     beta_epsilon="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -146,7 +182,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     class_sampling_factors="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -156,7 +204,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     cold_start="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -165,7 +225,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     compute_p_values="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -174,7 +246,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     early_stopping="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()r
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -183,7 +267,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     export_checkpoints_dir="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -193,7 +289,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     family="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -202,7 +310,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     fold_assignment="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -211,7 +331,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     fold_column="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -220,7 +352,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     gam_columns="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -229,7 +373,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     get_gam_knot_column_names="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -238,7 +394,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     get_knot_locations="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -247,7 +415,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     gradient_epsilon="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -256,7 +436,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     ignore_const_cols="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -265,7 +457,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     ignored_columns="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -274,7 +478,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     interaction_pairs="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -283,7 +499,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     interactions="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -292,7 +520,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     intercept="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -301,7 +541,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     keep_cross_validation_fold_assignment="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -310,7 +562,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     keep_cross_validation_models="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -319,7 +583,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     keep_cross_validation_predictions="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -328,7 +604,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     keep_gam_cols="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -337,7 +625,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     knot_ids="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -346,7 +646,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     lambda_="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -355,7 +667,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     lambda_min_ratio="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -364,7 +688,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     lambda_search="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -373,7 +709,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     link="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -382,7 +730,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     max_active_predictors="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -391,7 +751,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     max_after_balance_size="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -400,7 +772,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     max_confusion_matrix_size="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -409,7 +793,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     max_iterations="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -418,7 +814,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     max_runtime_secs="""
+>>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -427,7 +835,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     missing_values_handling="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -436,7 +856,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     nfolds="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -445,7 +877,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     nlambdas="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -454,7 +898,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     non_negative="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -463,7 +919,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     num_knots="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -472,7 +940,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     obj_reg="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -481,7 +961,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     objective_epsilon="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -490,7 +982,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     offset_column="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -499,7 +1003,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     plug_values="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -508,7 +1024,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     prior="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -517,7 +1045,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     remove_collinear_columns="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -526,7 +1066,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     response_column="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -535,7 +1087,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     scale="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -544,7 +1108,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     scale_tp_penalty_mat="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -553,7 +1129,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     score_each_iteration="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -562,7 +1150,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     seed="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -571,7 +1171,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     solver="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -580,7 +1192,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     splines_non_negative="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -589,7 +1213,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     spline_orders="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -598,7 +1234,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     standardize="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -607,7 +1255,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     standardize_tp_gam_cols="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -616,7 +1276,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     startval="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -625,7 +1297,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     stopping_metric="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -634,7 +1318,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     stopping_rounds="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -643,7 +1339,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     stopping_tolerance="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -652,7 +1360,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     store_knot_locations="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -661,7 +1381,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     theta="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -670,7 +1402,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     training_frame="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -679,7 +1423,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     tweedie_link_power="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -688,7 +1444,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     tweedie_variance_power="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -697,7 +1465,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     validation_frame="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -706,7 +1486,19 @@ examples = dict(
 >>> h2o_model.coef()
 """,
     weights_column="""
+>>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
 >>> train, test = h2o_data.split_frame(ratios = [.8])
 >>> y = "C11"
 >>> x = ["C1","C2"]
@@ -714,3 +1506,4 @@ examples = dict(
 >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], weights_column=None)
 >>> h2o_model.coef()
 """
+)
