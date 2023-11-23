@@ -866,7 +866,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.from(_parms._custom_metric_func));
             preds = result.getPredictions();
             Scope.untrack(preds);
-//            System.out.println(ScopeInspect.keysToString("CV Predictions "+i, preds._key));
             result.makeModelMetrics(cvValid, adaptFr);
             mbs[i] = result.getMetricBuilder();
             DKV.put(cvModel);
@@ -882,7 +881,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }
-//    System.out.println("Scope after cv_scoreCVModels of "+_result+":\n"+ScopeInspect.dataKeysToString());
     
     fs.blockForPending();
     return mbs;

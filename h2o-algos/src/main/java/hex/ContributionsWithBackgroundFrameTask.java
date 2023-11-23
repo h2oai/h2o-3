@@ -217,12 +217,6 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
           }
           
           Frame result = concatFrames(subFrames, destinationKey);
-          Set<String> homes = new HashSet<>(); // not used?
-          for (int i = 0; i < result.anyVec().nChunks(); i++) {
-            for (int k = 0; k < result.numCols(); k++) {
-              homes.add(result.vec(k).chunkKey(i).home_node().getIpPortString());
-            }
-          }
           return Scope.untrack(result);
         }
       } else {
