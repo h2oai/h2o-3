@@ -28,6 +28,7 @@
 #' @param weak_learner Choose a weak learner type. Defaults to AUTO, which means DRF. Must be one of: "AUTO", "DRF", "GLM", "GBM",
 #'        "DEEP_LEARNING". Defaults to AUTO.
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.5.
+#' @param weak_learner_params Customized parameters for the weak_learner algorithm. E.g list(ntrees=3, max_depth=2, histogram_type='UniformAdaptive'))
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
@@ -60,6 +61,7 @@ h2o.adaBoost <- function(x,
                          nlearners = 50,
                          weak_learner = c("AUTO", "DRF", "GLM", "GBM", "DEEP_LEARNING"),
                          learn_rate = 0.5,
+                         weak_learner_params = NULL,
                          seed = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -99,6 +101,9 @@ h2o.adaBoost <- function(x,
   if (!missing(seed))
     parms$seed <- seed
 
+  if (!missing(weak_learner_params))
+      parms$weak_learner_params <- as.character(toJSON(weak_learner_params, pretty = TRUE, auto_unbox = TRUE))
+
   # Error check and build model
   model <- .h2o.modelJob('adaboost', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
@@ -112,6 +117,7 @@ h2o.adaBoost <- function(x,
                                          nlearners = 50,
                                          weak_learner = c("AUTO", "DRF", "GLM", "GBM", "DEEP_LEARNING"),
                                          learn_rate = 0.5,
+                                         weak_learner_params = NULL,
                                          seed = -1,
                                          segment_columns = NULL,
                                          segment_models_id = NULL,
@@ -155,6 +161,9 @@ h2o.adaBoost <- function(x,
     parms$learn_rate <- learn_rate
   if (!missing(seed))
     parms$seed <- seed
+
+  if (!missing(weak_learner_params))
+      parms$weak_learner_params <- as.character(toJSON(weak_learner_params, pretty = TRUE, auto_unbox = TRUE))
 
   # Build segment-models specific parameters
   segment_parms <- list()
