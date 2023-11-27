@@ -208,11 +208,12 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
                     .doAll(namesWithRowIdx.length, Vec.T_NUM, _backgroundFrame)
                     .outputFrame(Key.make(destinationKey + "_individual_contribs_" + i), namesWithRowIdx, null);
 
-            subFrames.add(new ContributionsMeanAggregator(_job,(int) (_endRow - _startRow), names.length, (int) _backgroundFrame.numRows())
+            Frame subFrame = new ContributionsMeanAggregator(_job,(int) (_endRow - _startRow), names.length, (int) _backgroundFrame.numRows())
                     .setStartIndex((int) _startRow)
                     .withPostMapAction(JobUpdatePostMap.forJob(j))
                     .doAll(names.length, Vec.T_NUM, indivContribs)
-                    .outputFrame(Key.make(destinationKey + "_part_" + i), names, null));
+                    .outputFrame(Key.make(destinationKey + "_part_" + i), names, null);
+            subFrames.add(Scope.track(subFrame));
             indivContribs.delete();
           }
           

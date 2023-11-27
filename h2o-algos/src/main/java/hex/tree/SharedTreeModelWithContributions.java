@@ -120,19 +120,20 @@ public abstract class SharedTreeModelWithContributions<
     }
     Log.info("Starting contributions calculation for " + this._key + "...");
     try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame scoreContribution;
       if (options._outputFormat == ContributionsOutputFormat.Compact || _output._domains == null) {
-        Frame adaptedFrame = removeSpecialColumns(frame);
-        Frame adaptedBgFrame = removeSpecialColumns(backgroundFrame);
+        Frame adaptedFrame = Scope.track(removeSpecialColumns(frame));
+        Frame adaptedBgFrame = Scope.track(removeSpecialColumns(backgroundFrame));
 
         DKV.put(adaptedFrame);
         DKV.put(adaptedBgFrame);
         
         final String[] outputNames = ArrayUtils.append(adaptedFrame.names(), "BiasTerm");
-        return getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, false, null, options)
+        scoreContribution = getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, false, null, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       } else {
-        Frame adaptedFrame = removeSpecialColumns(frame);
-        Frame adaptedBgFrame = removeSpecialColumns(backgroundFrame);
+        Frame adaptedFrame = Scope.track(removeSpecialColumns(frame));
+        Frame adaptedBgFrame = Scope.track(removeSpecialColumns(backgroundFrame));
         DKV.put(adaptedFrame);
         DKV.put(adaptedBgFrame);
         assert Parameters.CategoricalEncodingScheme.Enum.equals(_parms._categorical_encoding) : "Unsupported categorical encoding. Only enum is supported.";
@@ -176,9 +177,10 @@ public abstract class SharedTreeModelWithContributions<
           }
         }
 
-        return Scope.untrack(getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, true, catOffsets, options)
-                .runAndGetOutput(j, destination_key, outputNames));
+        scoreContribution = getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, true, catOffsets, options)
+                .runAndGetOutput(j, destination_key, outputNames);
       }
+      return Scope.untrack(scoreContribution);
     } finally {
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
