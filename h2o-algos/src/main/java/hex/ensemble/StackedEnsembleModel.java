@@ -191,7 +191,6 @@ public class StackedEnsembleModel
                           .setOutputSpace(true)
                           .setOutputPerReference(true),
                   backgroundFrame);
-
           if (null == columns)
             columns = contributions._names;
 
@@ -227,6 +226,7 @@ public class StackedEnsembleModel
           baseModelsIdx.add(fr.numCols());
         }
       }
+      
       if (baseModels.isEmpty())
         throw new RuntimeException("Stacked Ensemble \"" + this._key + "\" doesn't use any base models. Stopping contribution calculation as no feature contributes.");
 
@@ -235,10 +235,10 @@ public class StackedEnsembleModel
       columns = Arrays.copyOfRange(columns, 0, columns.length - 3);
 
       Frame adaptFr = adaptFrameForScore(frame, false);
-      Frame levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, j);
+      Frame levelOneFrame = makeLevelOnePredictFrame(frame, adaptFr, j);
 
       Frame adaptFrBg = adaptFrameForScore(backgroundFrame, false);
-      Frame levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, j);
+      Frame levelOneFrameBg = makeLevelOnePredictFrame(backgroundFrame, adaptFrBg, j);
 
       Frame metalearnerContrib = ((Model.Contributions) _output._metalearner).scoreContributions(levelOneFrame,
               Key.make(destination_key + "_" + _output._metalearner._key), j,
@@ -473,7 +473,7 @@ public class StackedEnsembleModel
   @Override
   protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     try (Scope.Safe safe = Scope.safe(fr, adaptFrm)) {
-      Frame levelOneFrame = getLevelOnePredictFrame(fr, adaptFrm, j);
+      Frame levelOneFrame = Scope.track(makeLevelOnePredictFrame(fr, adaptFrm, j));
       // TODO: what if we're running multiple in parallel and have a name collision?
       Log.info("Finished creating \"level one\" frame for scoring: "+levelOneFrame.toString());
 
@@ -505,7 +505,7 @@ public class StackedEnsembleModel
     }
   }
 
-  private Frame getLevelOnePredictFrame(Frame fr, Frame adaptFrm, Job j) {
+  private Frame makeLevelOnePredictFrame(Frame fr, Frame adaptFrm, Job j) {
     final StackedEnsembleParameters.MetalearnerTransform transform;
     if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
       if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))

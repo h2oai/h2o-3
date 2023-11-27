@@ -23,16 +23,19 @@ public class ScopeInspect {
     for (int i=levels.size()-1; i >= 0; i--) {
       Set<Key> ks = new TreeSet<>(levels.get(i)._keys);
       Set<Key> pks = new TreeSet<>(levels.get(i)._protectedKeys);
+      Map<Key, Scope.TrackingInfo> tracks = levels.get(i)._trackingInfo;
       scoped.addAll(ks);
       scoped.addAll(pks);
       if (hierarchy) indent(sb, 1).append("level ").append(i).append(": \n");
       indent(sb, 2).append("tracking ").append(ks.size()).append(" keys:\n");
       for (Key k : ks) {
-        appendKey(sb, k, 3, null, subKeys, keyFilter);
+        String desc = tracks.containsKey(k) ? tracks.get(k)._source : null;
+        appendKey(sb, k, 3, desc, subKeys, keyFilter);
       }
       indent(sb, 2).append("protecting ").append(pks.size()).append(" keys:\n");
       for (Key k : pks) {
-        appendKey(sb, k, 3, null, subKeys, keyFilter);
+        String desc = tracks.containsKey(k) ? tracks.get(k)._source : null;
+        appendKey(sb, k, 3, desc, subKeys, keyFilter);
       }
       if (!hierarchy) break;
     }

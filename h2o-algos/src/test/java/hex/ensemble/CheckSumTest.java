@@ -6,10 +6,7 @@ import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
@@ -105,6 +102,8 @@ public class CheckSumTest extends TestUtil {
                 stackedEnsembleModel._output._metalearner.remove();
             }
             Scope.exit();
+
+            System.out.println(ScopeInspect.dataKeysToString());
         } 
     }
 

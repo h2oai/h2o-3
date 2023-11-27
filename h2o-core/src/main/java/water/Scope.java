@@ -172,7 +172,8 @@ public class Scope {
     for (Frame fr : frames) {
       if (fr == null) continue;
       track_impl(level, fr._key);
-      final TrackingInfo vecInfo = new TrackingInfo(); 
+      final TrackingInfo vecInfo = new TrackingInfo();
+      vecInfo._source = Objects.toString(fr._key);
       for (Key<Vec> vkey : fr.keys()) {
         track_impl(level, vkey);
         if (vecInfo._nchunks < 0) {
@@ -320,8 +321,9 @@ public class Scope {
     }
   }
   
-  private static class TrackingInfo {
+  static class TrackingInfo {
     int _nchunks = -1; 
+    String _source;
   }
   
 

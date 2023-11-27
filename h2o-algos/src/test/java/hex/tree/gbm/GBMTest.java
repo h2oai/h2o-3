@@ -4491,7 +4491,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
       Scope.track_generic(gbm);
       Frame train_score = gbm.score(frame);
-      Scope.track_generic(train_score);
+      Scope.track(train_score);
       
       assertTrue(gbm.testJavaScoring(frame, train_score, 1e-15));
 

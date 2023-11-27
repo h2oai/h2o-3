@@ -352,7 +352,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             ModelMetricsAnomaly modelMetricsAnomaly = (ModelMetricsAnomaly) model._output._training_metrics;
 
             Frame out = model.score(train);
-            Scope.track_generic(out);
+            Scope.track(out);
 
             MeanScoreTask meanScoreTask = new MeanScoreTask().doAll(out);
             double meanAnomalyScore = meanScoreTask.totalAnomalyScore / out.numRows();
