@@ -97,7 +97,6 @@ public class Scope {
       }
     }
     for (Map.Entry<Integer, List<Key<Vec>>> bulkRemoval : bulkRemovals.entrySet()) {
-      System.out.println("Bulk removing keys with nchunks = "+bulkRemoval.getKey()+" :\n"+bulkRemoval.getValue());
       Vec.bulk_remove(bulkRemoval.getValue().toArray(new Key[0]), bulkRemoval.getKey());
     }
     
