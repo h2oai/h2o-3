@@ -198,7 +198,7 @@ function() {
             ".getExpanded", ".str.list", "is.H2OFrame", ".get.session.property", ".set.session.property",
             ".h2o.maximizing_metrics", ".h2o.doSafeGET", ".parse.h2oconfig", ".h2o.check_java_version",
             "cut.H2OFrame", "as.data.frame.H2OFrame", ".h2o.perfect_auc", ".newExpr", ".h2o.doSafeREST",
-            ".h2o.fromJSON"
+            ".h2o.fromJSON", ".shorten_model_ids", ".calculate_pareto_front", ".h2o.__IMPORT"
          )
          
         for (fn in additional_imports)
