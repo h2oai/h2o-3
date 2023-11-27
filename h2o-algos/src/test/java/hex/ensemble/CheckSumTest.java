@@ -102,8 +102,6 @@ public class CheckSumTest extends TestUtil {
                 stackedEnsembleModel._output._metalearner.remove();
             }
             Scope.exit();
-
-            System.out.println(ScopeInspect.dataKeysToString());
         } 
     }
 
