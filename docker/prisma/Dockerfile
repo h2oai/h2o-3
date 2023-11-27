@@ -6,6 +6,8 @@ ENV DIRECTORIES=".config .npm .cache .local"
 RUN for dir in $DIRECTORIES; do \
       mkdir -p /$dir; \
       chown -R 2117:2117 /$dir; \
-    done
+    done 
+
+RUN npm install snyk -g
 
 CMD ["/bin/bash"]
