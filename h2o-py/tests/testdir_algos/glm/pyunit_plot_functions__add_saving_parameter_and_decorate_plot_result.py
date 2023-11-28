@@ -304,15 +304,15 @@ def test_varimp_heatmap_model_correlation_heatmap():
     h2o.varimp_heatmap(models)
 
 pyunit_utils.run_tests([
-    # binomial_plot_test,
-    # test_decorate_plot_result,
-    # regression__plot_learning_curve_plot,
+    binomial_plot_test,
+    test_decorate_plot_result,
+    regression__plot_learning_curve_plot,
     binomial_pd_multi_plot,
-    # test_decorate_plot_result,
-    # partial_plots,
-    # partial_plots_multinomial,
-    # roc_pr_curve,
-    # screeplot,
-    # test_hist,
-    # test_varimp_heatmap_model_correlation_heatmap
+    test_decorate_plot_result,
+    partial_plots,
+    partial_plots_multinomial,
+    roc_pr_curve,
+    screeplot,
+    test_hist,
+    test_varimp_heatmap_model_correlation_heatmap
 ])
