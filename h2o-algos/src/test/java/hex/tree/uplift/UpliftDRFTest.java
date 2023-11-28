@@ -383,7 +383,7 @@ public class UpliftDRFTest extends TestUtil {
             UpliftDRFModel model = udrf.trainModel().get();
             Scope.track_generic(model);
             Frame preds = model.score(train);
-            Scope.track_generic(preds);
+            Scope.track(preds);
 
             Model.JavaScoringOptions options = new Model.JavaScoringOptions();
             options._disable_pojo = true;

@@ -47,10 +47,10 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
       throw H2O.unimpl("DeepLearning supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for "+this._key+"...");
     try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
-      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
-      DKV.put(adaptedBgFrame);
       Frame adaptedFrame = adaptFrameForScore(frame, false);
-      DKV.put(adaptedFrame);
+      DKV.put(Scope.track_generic(adaptedFrame)); //use track_generic as a Scope lookup optimization as we know it contains only protected vecs
+      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+      DKV.put(Scope.track_generic(adaptedBgFrame)); //same as above
       DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(this,
               adaptedFrame._key,
               adaptedBgFrame._key,

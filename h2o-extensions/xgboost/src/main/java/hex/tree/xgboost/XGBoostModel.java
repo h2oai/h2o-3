@@ -721,11 +721,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       if (null == backgroundFrame) {
         contributions = scoreContributions(frame, destination_key, j, options);
       } else {
-        Frame adaptedFrame = new Frame(frame);
-        adaptTestForTrain(adaptedFrame, true, false);
+        Frame adaptedFrame = adaptFrameForScore(frame, false);
         DKV.put(adaptedFrame);
-        Frame adaptedBgFrame = new Frame(backgroundFrame);
-        adaptTestForTrain(adaptedBgFrame, true, false);
+        Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
         DKV.put(adaptedBgFrame);
 
         DataInfo di = model_info().dataInfo();
