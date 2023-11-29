@@ -386,7 +386,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         } else {
           fr = _frame_id.get();
         }
-        Frame test = new Frame(fr.names(), fr.vecs());
+        Frame test = new Frame(fr);
         Vec orig = test.remove(_col);
         Vec cons = orig.makeCon(_value);
         if (_col1_cat) cons.setDomain(fr.vec(_col).domain());
