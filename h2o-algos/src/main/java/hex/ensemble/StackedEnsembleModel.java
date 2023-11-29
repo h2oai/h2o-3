@@ -504,6 +504,7 @@ public class StackedEnsembleModel
           DKV.remove(mm);
         }
       }
+      Scope.untrack(predictFr); // needed in the result
       return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
     }
   }
@@ -518,11 +519,11 @@ public class StackedEnsembleModel
       transform = null;
     }
     final String seKey = this._key.toString();
-    final Key<Frame> levelOneFrameKey = Key.make("preds_levelone_" + seKey + fr._key);
-    Frame levelOneFrame = transform == null ?
-            new Frame(levelOneFrameKey)  // no transform -> this will be the final frame
-            :
-            new Frame();        // transform -> this is only an intermediate result
+    final String frId = ""+(fr._key == null ? fr.checksum() : fr._key);
+    final Key<Frame> levelOneFrameKey = Key.make("preds_levelone_"+seKey+"_"+frId);
+    Frame levelOneFrame = transform == null 
+            ? new Frame(levelOneFrameKey)  // no transform -> this will be the final frame
+            : new Frame();                 // transform -> this is only an intermediate result
 
     Model[] usefulBaseModels = Stream.of(_parms._base_models)
             .filter(this::isUsefulBaseModel)
@@ -538,7 +539,7 @@ public class StackedEnsembleModel
         protected void map(int id) {
           baseModelPredictions[id] = usefulBaseModels[id].score(
                   fr,
-                  "preds_base_" + seKey + usefulBaseModels[id]._key + fr._key,
+                  "preds_base_"+seKey+"_"+usefulBaseModels[id]._key+"_"+frId,
                   j,
                   false
           );

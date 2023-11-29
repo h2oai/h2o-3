@@ -2004,8 +2004,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
         }
       }
-      Scope.untrack(output);
-      return output;
+      return Scope.untrack(output);
     }
   }
   
