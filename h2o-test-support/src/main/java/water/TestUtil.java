@@ -14,6 +14,8 @@ import org.junit.runners.model.Statement;
 import water.api.StreamingSchema;
 import water.fvec.*;
 import water.init.NetworkInit;
+import water.junit.Priority;
+import water.junit.rules.RulesPriorities;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
@@ -402,9 +404,9 @@ public class TestUtil extends Iced {
     }
   };
 
-  /* Ignore tests specified in the ignore.tests system property */
+  /* Ignore tests specified in the ignore.tests system property: applied last, if test is ignored, no other rule with be evaluated */
   @Rule
-  transient public TestRule runRule = new TestRule() {
+  transient public TestRule runRule = new @Priority(RulesPriorities.RUN_TEST) TestRule() {
     @Override
     public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
@@ -450,7 +452,6 @@ public class TestUtil extends Iced {
     class TimerStatement extends Statement {
       private final Statement _base;
       private final String _tname;
-      Throwable _ex;
 
       public TimerStatement(Statement base, String tname) {
         _base = base;
@@ -462,11 +463,8 @@ public class TestUtil extends Iced {
         Timer t = new Timer();
         try {
           _base.evaluate();
-        } catch (Throwable ex) {
-          _ex = ex;
-          throw _ex;
         } finally {
-          Log.info("#### TEST " + _tname + " EXECUTION TIME: " + t.toString());
+          Log.info("#### TEST " + _tname + " EXECUTION TIME: " + t);
         }
       }
     }

@@ -3888,8 +3888,8 @@ public class GBMTest extends TestUtil {
 
       // compare training predictions of both models (just compare probs)
       if (preds!=null && preds2!=null) {
-        preds.remove(0);
-        preds2.remove(0);
+        Scope.track(preds.remove(0));
+        Scope.track(preds2.remove(0));
         System.out.println("Compare training predictions of both models (just compare probs)");
         assertIdenticalUpToRelTolerance(preds, preds2, 1e-2);
       }
@@ -3905,23 +3905,18 @@ public class GBMTest extends TestUtil {
       if (fr4!=null) fr4.delete();
       if (fr5!=null) fr5.delete();
       if(model != null){
-        model.deleteCrossValidationModels();
         model.delete();
       }
       if(model2 != null){
-        model2.deleteCrossValidationModels();
         model2.delete();
       }
       if(model3 != null){
-        model3.deleteCrossValidationModels();
         model3.delete();
       }
       if(model4 != null){
-        model4.deleteCrossValidationModels();
         model4.delete();
       }
       if(model5 != null){
-        model5.deleteCrossValidationModels();
         model5.delete();
       }
       Scope.exit();
@@ -4496,7 +4491,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
       Scope.track_generic(gbm);
       Frame train_score = gbm.score(frame);
-      Scope.track_generic(train_score);
+      Scope.track(train_score);
       
       assertTrue(gbm.testJavaScoring(frame, train_score, 1e-15));
 

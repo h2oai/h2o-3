@@ -5,19 +5,19 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.logging.LoggingLevel;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.TwoDimTable;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class EventLogTest extends water.TestUtil {
-
-    @BeforeClass
-    public static void setup() {
-        stall_till_cloudsize(1);
-    }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class EventLogTest {
 
     private static Key<AutoML> dummy = Key.make();
 

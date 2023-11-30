@@ -1,4 +1,4 @@
-package water.runner;
+package water.junit.rules.tasks;
 
 import org.junit.Ignore;
 import water.Key;

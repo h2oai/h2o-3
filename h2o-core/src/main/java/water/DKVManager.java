@@ -1,13 +1,26 @@
 package water;
 
 import hex.Model;
-import hex.ModelMetrics;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
 import java.util.*;
 
 public class DKVManager {
+
+  public static void clear() {
+    // Bulk brainless key removal.  Completely wipes all Keys without regard.
+    new MRTask(H2O.MIN_HI_PRIORITY) {
+      @Override
+      public void setupLocal() {
+        H2O.raw_clear();
+        water.fvec.Vec.ESPC.clear();
+      }
+    }.doAllNodes();
+    // Wipe the backing store without regard as well
+    H2O.getPM().getIce().cleanUp();
+    H2O.updateNotIdle();
+  }
 
   /**
    * Clears keys in all H2O nodes, except for the ones marked as retained.

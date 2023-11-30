@@ -529,7 +529,7 @@ public abstract class SharedTree<
           _job.update(_parms._ntrees-tid-1); // add remaining trees to progress bar
           break; // If timed out, do the final scoring
         }
-        if (stop_requested()) throw new Job.JobCancelledException();
+        if (stop_requested()) throw new Job.JobCancelledException(_job);
         if (tid == _ntrees - 1 && _coordinator != null) {
           _coordinator.updateParameters();
         }
