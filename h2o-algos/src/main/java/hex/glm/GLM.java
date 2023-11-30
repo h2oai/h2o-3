@@ -3025,7 +3025,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       // Make sure if we set dispersion for Tweedie p and phi estimation even without calculating p values
       if (tweedie.equals(_parms._family) && !_parms._fix_dispersion_parameter && !_parms._fix_tweedie_variance_power) {
-        _model.setDispersion(_parms._init_dispersion_parameter, true);
+        _model.setDispersion(_parms._dispersion_estimated, true);
       }
       if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters...
         double se = _parms._init_dispersion_parameter;

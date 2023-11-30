@@ -829,7 +829,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                         yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
                 ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
       }  else if (Family.tweedie.equals(_family) && DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
-        return -TweedieEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
+        return -TweedieEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _dispersion_estimated);
       }  else
         return .5 * deviance(yr,ym);
     }
@@ -1039,6 +1039,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _tweedie_variance_power = tweedieVariancePower;
       _tweedie_link_power = tweedieLinkPower;
       _dispersion_estimated = dispersion;
+      _init_dispersion_parameter = dispersion;
     }
   } // GLMParameters
 
