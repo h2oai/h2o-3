@@ -4,6 +4,7 @@ import hex.DataInfo;
 import water.Job;
 import water.Key;
 import water.MRTask;
+import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -12,6 +13,7 @@ import water.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.commons.math3.special.Gamma.*;
 
@@ -68,6 +70,108 @@ public class DispersionUtils {
         return seOld;
     }
 
+    private static double getTweedieLogLikelihood(GLMModel.GLMParameters parms, DataInfo dinfo, double phi, Vec mu) {
+        final double llh = new TweedieEstimator(
+                parms._tweedie_variance_power,
+                phi,
+                false,
+                false,
+                false,
+                false)
+                .compute(mu,
+                        dinfo._adaptedFrame.vec(parms._response_column),
+                        parms._weights_column == null
+                                ? Vec.makeOne(mu.length())
+                                : dinfo._adaptedFrame.vec(parms._weights_column))
+                ._loglikelihood;
+        Log.debug("Tweedie LogLikelihood(p=" + parms._tweedie_variance_power + ", phi=" + phi + ") = " + llh);
+        return llh;
+    }
+
+
+    private static double goldenRatioDispersionSearch(GLMModel.GLMParameters parms, DataInfo dinfo, Vec mu,
+                                                      List<Double> logLikelihoods, List<Double> phis, Job job) {
+        // make monotonic
+        List<Double> sortedPhis = phis.stream().sorted().collect(Collectors.toList());
+        List<Double> sortedLLHs = new ArrayList<>();
+        for (int i = 0; i < sortedPhis.size(); i++) {
+            double phi = sortedPhis.get(i);
+            int index = phis.indexOf(phi);
+            sortedLLHs.add(logLikelihoods.get(index));
+        }
+
+        // did we already find a region where there is the maximum?
+        boolean increasing = true;
+        double lowerBound = 1e-16;
+        double upperBound = sortedPhis.get(0);
+        for (int i = 1; i < sortedPhis.size(); i++) {
+            upperBound = sortedPhis.get(i);
+            if (sortedLLHs.get(i - 1) > sortedLLHs.get(i)) {
+                increasing = false;
+                if (i > 2)
+                    lowerBound = sortedPhis.get(i - 2);
+                else {
+                    sortedPhis.add(0, lowerBound);
+                    sortedLLHs.add(0, getTweedieLogLikelihood(parms, dinfo, lowerBound, mu));
+                }
+                break;
+            }
+        }
+        int counter = sortedPhis.size();
+        int iterationsLeft = parms._max_iterations_dispersion - 10 * counter;
+        while (increasing && iterationsLeft > counter && !job.stop_requested()) { // not yet
+            counter++;
+            upperBound *= 2;
+            sortedPhis.add(upperBound);
+            double newLLH = getTweedieLogLikelihood(parms, dinfo, upperBound, mu);
+            Log.debug("Tweedie looking for the region containing the max. likelihood; upper bound = " + upperBound + "; llh = " + newLLH);
+            sortedLLHs.add(newLLH);
+            if (sortedLLHs.get(counter - 2) > sortedLLHs.get(counter - 1)) {
+                if (counter > 3)
+                    lowerBound = sortedPhis.get(counter - 3);
+                Log.debug("Tweedie found the region containing the max. likelihood; phi lower bound = " + lowerBound + "; phi upper bound = " + upperBound);
+                break;
+            }
+        }
+
+        // now we should have the maximum between lowerBound and upperBound
+        double d = (upperBound - lowerBound) * 0.618; // (hiPhi - lowPhi)/golden ratio 
+        double lowPhi = lowerBound;
+        double hiPhi = upperBound;
+
+        double midLoPhi = sortedPhis.get(counter - 2);
+        double midLoLLH = sortedLLHs.get(counter - 2);
+        if (midLoPhi > upperBound) {
+            midLoPhi = hiPhi - d;
+            midLoLLH = getTweedieLogLikelihood(parms, dinfo, midLoPhi, mu);
+        }
+        double midHiPhi = lowPhi + d;
+        double midHiLLH = getTweedieLogLikelihood(parms, dinfo, midHiPhi, mu);
+        for (; counter < iterationsLeft; counter++) {
+            Log.info("Tweedie golden-section search[iter=" + counter + ", phis=(" + lowPhi + ", " + midLoPhi +
+                    ", " + midHiPhi + ", " + hiPhi + "), likelihoods=(" +
+                    "..., " + midLoLLH + ", " + midHiLLH + ", ...)]");
+            if (job.stop_requested()) {
+                return (hiPhi + lowPhi) / 2;
+            }
+            if (midHiLLH > midLoLLH) {
+                lowPhi = midLoPhi;
+            } else {
+                hiPhi = midHiPhi;
+            }
+            d = (hiPhi - lowPhi) * 0.618;  // (hiPhi - lowPhi)/golden ratio
+            if (hiPhi - lowPhi < parms._dispersion_epsilon) {
+                return (hiPhi + lowPhi) / 2;
+            }
+            midLoPhi = hiPhi - d;
+            midHiPhi = lowPhi + d;
+            midLoLLH = getTweedieLogLikelihood(parms, dinfo, midLoPhi, mu);
+            midHiLLH = getTweedieLogLikelihood(parms, dinfo, midHiPhi, mu);
+        }
+        return (hiPhi + lowPhi) / 2;
+    }
+    
+    
     /**
      * This method estimates the tweedie dispersion parameter.  It will use Newton's update if the new update will 
      * increase the loglikelihood.  Otherwise, the dispersion will be updated as 
@@ -75,7 +179,7 @@ public class DispersionUtils {
      * In addition, line search is used to increase the magnitude of the update when the update magnitude is too small
      * (< 1e-3).  
      * 
-     * For details, please see seciton IV.I, IV.II, and IV.III in document here: 
+     * For details, please see section IV.I, IV.II, and IV.III in document here: 
      */
     public static double estimateTweedieDispersionOnly(GLMModel.GLMParameters parms, GLMModel model, Job job,
                                                               double[] beta, DataInfo dinfo) {
@@ -84,6 +188,10 @@ public class DispersionUtils {
         long timeLeft = parms._max_runtime_secs > 0 ? (long) (parms._max_runtime_secs * 1000 - modelBuiltTime)
                 : Long.MAX_VALUE;
         TweedieMLDispersionOnly tDispersion = new TweedieMLDispersionOnly(parms.train(), parms, model, beta, dinfo);
+        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
+                1, Vec.T_NUM, dinfo._adaptedFrame);
+        Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
+
         double dispersionCurr = tDispersion._dispersionParameter;   // initial value of dispersion parameter
         double dispersionNew;
         double update;
@@ -91,20 +199,40 @@ public class DispersionUtils {
         List<Double> loglikelihoodList = new ArrayList<>();
         List<Double> llChangeList = new ArrayList<>();
         List<Double> dispersionList = new ArrayList<>();
-
+        double bestLogLikelihoodFromSanityCheck = getTweedieLogLikelihood(parms, dinfo,dispersionCurr,mu);
+        List<Double> logLikelihoodSanityChecks = new ArrayList<>();
+        List<Double> dispersionsSanityChecks = new ArrayList<>();
+        logLikelihoodSanityChecks.add(bestLogLikelihoodFromSanityCheck);
+        dispersionsSanityChecks.add(dispersionCurr);
         for (int index = 0; index < parms._max_iterations_dispersion; index++) {
             tDispersion.updateDispersionP(dispersionCurr);
             DispersionTask.ComputeMaxSumSeriesTsk computeTask = new DispersionTask.ComputeMaxSumSeriesTsk(tDispersion,
                     parms, true);
             computeTask.doAll(tDispersion._infoFrame);
             logLLCurr = computeTask._logLL / computeTask._nobsLL;
-
             // record loglikelihood values
             loglikelihoodList.add(logLLCurr);
             dispersionList.add(dispersionCurr);
             if (loglikelihoodList.size() > 1) {
                 llChangeList.add(loglikelihoodList.get(index) - loglikelihoodList.get(index - 1));
-                if ((Math.abs(llChangeList.get(llChangeList.size() - 1)) < parms._dispersion_epsilon)) {
+                boolean converged = (Math.abs(llChangeList.get(llChangeList.size() - 1)) < parms._dispersion_epsilon);
+                if (index % 10 == 0 || converged) { // do a sanity check once in a while and if we think we converged
+                    double newLogLikelihood = getTweedieLogLikelihood(parms, dinfo, dispersionCurr, mu);
+                    logLikelihoodSanityChecks.add(newLogLikelihood);
+                    dispersionsSanityChecks.add(dispersionCurr);
+                    if (newLogLikelihood < bestLogLikelihoodFromSanityCheck) {
+                        // we are getting worse.
+                        Log.info("Tweedie sanity check FAIL. Trying Golden-section search instead of Newton's method.");
+                        tDispersion.cleanUp();
+                        final double dispersion = goldenRatioDispersionSearch(parms, dinfo, mu, logLikelihoodSanityChecks, dispersionsSanityChecks, job);
+                        Log.info("Tweedie dispersion estimate = "+dispersion);
+                        return dispersion;
+                    }
+                    bestLogLikelihoodFromSanityCheck = Math.max(bestLogLikelihoodFromSanityCheck, newLogLikelihood);
+                    Log.debug("Tweedie sanity check OK");
+                }
+
+                if (converged) {
                     tDispersion.cleanUp(); // early stop if loglikelihood has'n changed by > parms._dispersion_epsilon
                     Log.info("last dispersion "+dispersionCurr);
                     return dispersionList.get(loglikelihoodList.indexOf(Collections.max(loglikelihoodList)));
@@ -118,6 +246,8 @@ public class DispersionUtils {
                     return Double.NaN;
                 }
             }
+
+
             // get new update to dispersion
             update = computeTask._dLogLL / computeTask._d2LogLL;
             if (Math.abs(update) < 1e-3) { // line search for speedup and increase magnitude of change

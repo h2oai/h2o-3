@@ -873,7 +873,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return w * invPhiEst * log(w * yr * invPhiEst / prediction) - w * yr * invPhiEst / prediction 
                   - log(yr) - Gamma.logGamma(w * invPhiEst);
         case tweedie:
-          return -TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _init_dispersion_parameter);
+          return -TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _dispersion_estimated);
         case multinomial:
           // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
           double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);
@@ -1038,7 +1038,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void updateTweedieParams(double tweedieVariancePower, double tweedieLinkPower, double dispersion){
       _tweedie_variance_power = tweedieVariancePower;
       _tweedie_link_power = tweedieLinkPower;
-      _init_dispersion_parameter = dispersion;
+      _dispersion_estimated = dispersion;
     }
   } // GLMParameters
 
