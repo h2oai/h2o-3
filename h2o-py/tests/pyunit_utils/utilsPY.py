@@ -48,7 +48,7 @@ from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimato
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
     H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
-from h2o.utils.shared_utils import can_use_pandas
+from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
 
 
 class TemporaryDirectory:
