@@ -120,7 +120,22 @@ public class AstMatchTest extends TestUtil {
     }
   }
 
-  
+  @Test()
+  public void testMatchSameValueInMatchList() {
+    final Frame data = makeTestFrame();
+    Frame output = null;
+    try {
+      String rapids = "(tmp= tst (match (cols data [3]) [2,1,3,1] -1 0))";
+      Val val = Rapids.exec(rapids);
+      output = val.getFrame();
+      assertVecEquals(data.vec(0), output.vec(0), 0.0);
+    } finally {
+      data.delete();
+      if (output != null) {
+        output.delete();
+      }
+    }
+  }
 
   private Frame makeTestFrame() {
     Random rnd = new Random();

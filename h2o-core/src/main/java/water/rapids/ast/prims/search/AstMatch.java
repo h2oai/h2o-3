@@ -109,7 +109,8 @@ public class AstMatch extends AstPrimitive {
     StrMatchTask(String[] values, double noMatch, int indexes) {
       _mapping = new IcedHashMap<>();
       for (int i = 0; i < values.length; i++) {
-        _mapping.put(values[i], i);
+        String value = values[i];
+        if (!_mapping.containsKey(value)) _mapping.put(values[i], i);
       }
       _sortedValues = values.clone();
       Arrays.sort(_sortedValues);
@@ -141,7 +142,8 @@ public class AstMatch extends AstPrimitive {
     CatMatchTask(String[] values, double noMatch, int startIndex) {
       _mapping = new IcedHashMap<>();
       for (int i = 0; i < values.length; i++) {
-        _mapping.put(values[i], i);
+        String value = values[i];
+        if (!_mapping.containsKey(value)) _mapping.put(values[i], i);
       }
       _sortedValues = values.clone();
       Arrays.sort(_sortedValues);
@@ -172,7 +174,8 @@ public class AstMatch extends AstPrimitive {
     NumMatchTask(double[] values, double noMatch, int startIndex) {
       _mapping = new IcedHashMap<>();
       for (int i = 0; i < values.length; i++) {
-        _mapping.put(values[i], i);
+        double value = values[i];
+        if (!_mapping.containsKey(value)) _mapping.put(values[i], i);
       }
       _sortedValues = values.clone();
       Arrays.sort(_sortedValues);
