@@ -58,14 +58,24 @@ def uplift_random_forest_early_stopping():
                                                      "number_of_trees", takeFirst=True)[0])
     num_trees_es = int(pyunit_utils.extract_from_twoDimTable(uplift_model_es._model_json["output"]["model_summary"],
                                                           "number_of_trees", takeFirst=True)[0])
+    num_trees_es_act = int(uplift_model_es.actual_params["ntrees"])
+    num_trees_es_in = uplift_model_es.get_params()['ntrees']
+    
     print("Number of tress built with early stopping: {0}.  Number of trees built without early stopping: "
           "{1}".format(num_trees_es, num_trees))
-    assert num_trees_es <= num_trees, "Early stopping criteria AUUC is not working."
-    assert pyunit_utils.assert_equals(num_trees_es, uplift_model_es.actual_params["ntrees"],
+    assert num_trees_es < num_trees, "Early stopping criteria AUUC is not working."
+    
+    print("Number of tress built with early stopping: {0}.  Number of trees in actual params: "
+          "{1}".format(num_trees_es, num_trees_es_act))
+    pyunit_utils.assert_equals(num_trees_es, num_trees_es_act,
                                       "Actual parameters and model summary should be equal")
-    assert pyunit_utils.assert_equals(ntrees, uplift_model_es.input_params["ntrees"],
+    
+    print("Number of tress set: {0}.  Number of trees in input params: "
+          "{1}".format(ntrees, num_trees_es_in))
+    pyunit_utils.assert_equals(ntrees, num_trees_es_in,
                                       "Input parameters should not be changed")
-    assert uplift_model_es.actual_params["ntrees"] < num_trees, "Actual parameters are not updated."
+    
+    assert num_trees_es_act < num_trees, "Actual parameters are not updated."
 
 
 if __name__ == "__main__":

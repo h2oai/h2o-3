@@ -64,11 +64,10 @@ test.uplift <- function() {
     num_trees_es <- model_es@model$model_summary$number_of_trees
     print("Number of trees built with AUUC early-stopping:")
     print(num_trees_es)
-    expect_true(num_trees >= num_trees_es)
+    expect_true(num_trees > num_trees_es)
     expect_true(num_trees > num_trees_es@params$actual$ntrees)
     expect_true(num_trees_es == num_trees_es@params$actual$ntrees)
     expect_true(ntrees == num_trees_es@params$input$ntrees)
-    
 }
 
 doTest("Uplift Random Forest Test: Test H2O RF uplift", test.uplift)
