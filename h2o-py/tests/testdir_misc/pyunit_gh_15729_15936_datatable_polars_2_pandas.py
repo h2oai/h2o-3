@@ -52,15 +52,13 @@ def test_polars_datatable():
     file2 = "smalldata/glm_test/multinomial_3Class_10KRow.csv"
     file3 = "smalldata/timeSeries/CreditCard-ts_train.csv"
 
-    if pyunit_utils.can_install_datatable() or (pyunit_utils.can_install_polars() and pyunit_utils.can_install_pyarrow()):    
+    if can_use_datatable() or (can_use_polars() and can_use_pyarrow()):    
         original_converted_frame1 = singl_thread_pandas_conversion(file1)
         original_converted_frame2 = singl_thread_pandas_conversion(file2)
         original_converted_frame3 = singl_thread_pandas_conversion(file3)
         
         with local_context(polars_disabled=True):   # run with datatable
-            if pyunit_utils.can_install_datatable():
-                if not(can_use_datatable()):
-                    pyunit_utils.install("datatable")
+            if can_use_datatable():
                 print("test data frame conversion using datatable.")
                 test_frame_conversion(file1, original_converted_frame1, "datatable")
                 test_frame_conversion(file2, original_converted_frame2, "datatable")
@@ -69,12 +67,7 @@ def test_polars_datatable():
                 print("datatable is not available.  Skipping tests using datatable.")
         
         with local_context(datatable_disabled=True):
-            if pyunit_utils.can_install_polars() and pyunit_utils.can_install_pyarrow():
-                if not(can_use_polars()):
-                    pyunit_utils.install('polars')
-                if not(can_use_pyarrow()):
-                    pyunit_utils.install('pyarrow')
-
+            if can_use_polars() and can_use_pyarrow():
                 print("test data frame conversion using polars and pyarrow.")
                 test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
                 test_frame_conversion(file2, original_converted_frame2, "polars and pyarrow")

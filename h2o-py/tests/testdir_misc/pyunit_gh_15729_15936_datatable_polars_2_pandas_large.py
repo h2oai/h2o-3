@@ -48,27 +48,18 @@ def single_thread_pandas_conversion(dataset):
 # frame is much faster for large datasets.
 def test_polars_datatable_2_pandas():
     file1 = "bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv"
-    if pyunit_utils.can_install_datatable() or (pyunit_utils.can_install_polars() and pyunit_utils.can_install_pyarrow()): 
+    if can_use_datatable() or (can_use_polars() and can_use_pyarrow()): 
         original_converted_frame1 = single_thread_pandas_conversion(file1)  # need to run conversion in single thread
 
         with local_context(polars_disabled=True):   # run with datatable
-            if pyunit_utils.can_install_datatable():
-                if not(can_use_datatable()):
-                    pyunit_utils.install("datatable")
+            if can_use_datatable():
                 print("test data frame conversion using datatable.")
                 test_frame_conversion(file1, original_converted_frame1, "datatable")
-                pyunit_utils.uninstall("datatable")
             else:
                 print("datatable is not available.  Skipping tests using datatable.")
 
         with local_context(datatable_disabled=True):
-            if pyunit_utils.can_install_polars() and pyunit_utils.can_install_pyarrow():
-                if not(can_use_polars()):
-                    pyunit_utils.install('polars')
-
-                if not(can_use_pyarrow()):
-                    pyunit_utils.install('pyarrow')
-
+            if can_use_polars() and can_use_pyarrow():
                 print("test data frame conversion using polars and pyarrow.")
                 test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
             else:

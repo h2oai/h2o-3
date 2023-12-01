@@ -133,13 +133,18 @@ def can_use_pandas():
     return is_module_available('pandas')
 
 def can_use_datatable():
-    return is_module_available('datatable')
+    return is_module_available('datatable') and sys.version_info.major == 3 and sys.version_info.minor <= 9
 
 def can_use_polars():
-    return is_module_available('polars')
+    return is_module_available('polars') and sys.version_info.major == 3 and sys.version_info.minor > 9
 
 def can_use_pyarrow():
-    return is_module_available('pyarrow')
+    if can_use_pandas() and sys.version_info.minor > 9:
+        import pandas
+        return is_module_available('pyarrow') and sys.version_info.major == 3 and sys.version_info.minor > 9 and \
+           sys.version_info.major == 3 and float(pandas.__version__[0]) >= 1
+    else:
+        return False
 
 def can_use_numpy():
     return is_module_available('numpy')

@@ -32,16 +32,11 @@ def test_frame_conversion(h2oFrame, original_pandas_frame):
             assert diff.max() < 1e-10
             
 def test_polars_pyarrow():
-    if pyunit_utils.can_install_polars() and pyunit_utils.can_install_pyarrow():
+    if can_use_polars() and can_use_pyarrow():
         with local_context(datatable_disabled=True, polars_disabled=True):
             h2oframe = genFrame()
             print("converting h2o frame to pandas frame using single thread:")
             original_pandas = h2oframe.as_data_frame()
-
-        if not(can_use_polars()):
-            pyunit_utils.install('polars')
-        if not(can_use_pyarrow()):
-            pyunit_utils.install('pyarrow')
         with local_context(datatable_disabled=True):
             test_frame_conversion(h2oframe, original_pandas)  
     else:
