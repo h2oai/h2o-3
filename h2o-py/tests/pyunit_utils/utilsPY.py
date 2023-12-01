@@ -4745,16 +4745,3 @@ def prepare_data():
     y = 'Y'
 
     return df, x, y
-
-def can_install_datatable():
-    return sys.version_info.major == 3 and sys.version_info.minor <= 9
-
-def can_install_polars():
-    return sys.version_info.major == 3 and sys.version_info.minor > 9
-
-def can_install_pyarrow():
-    if can_use_pandas() and sys.version_info.minor > 9:
-        import pandas
-        return sys.version_info.major == 3 and float(pandas.__version__[0]) >= 1
-    else:
-        return False
