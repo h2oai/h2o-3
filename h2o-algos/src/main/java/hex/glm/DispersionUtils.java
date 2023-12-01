@@ -81,7 +81,7 @@ public class DispersionUtils {
                 .compute(mu,
                         dinfo._adaptedFrame.vec(parms._response_column),
                         parms._weights_column == null
-                                ? Vec.makeOne(mu.length())
+                                ? dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(dinfo._adaptedFrame.numRows())))[0]
                                 : dinfo._adaptedFrame.vec(parms._weights_column))
                 ._loglikelihood;
         Log.debug("Tweedie LogLikelihood(p=" + parms._tweedie_variance_power + ", phi=" + phi + ") = " + llh);
