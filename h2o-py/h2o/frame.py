@@ -4668,12 +4668,12 @@ class H2OFrame(Keyed, H2ODisplay):
 
         :examples:
 
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> iris = h2o.import_file("h2o://iris")
         >>> match_col = iris["C5"].match(['Iris-setosa', 'Iris-versicolor'])
         >>> match_col.names = ['match']
         >>> iris_match = iris.cbind(match_col)
         >>> iris_split = iris_match.split_frame(ratios=[0.05], seed=1)[0]
-        >>> print(iris_split)
+        >>> iris_split
         """
         return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, start_index))
 

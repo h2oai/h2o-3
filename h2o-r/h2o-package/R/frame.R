@@ -863,11 +863,11 @@ cut.H2OFrame <- h2o.cut
 #' @examples
 #' \dontrun{
 #' h2o.init()
-#' iris <- as.h2o(iris)
-#' match_col <- h2o.match(iris$Species, c("setosa", "versicolor", "setosa"))
-#' iris_match <- h2o.cbind(iris, match_col)
+#' frame <- as.h2o(iris)
+#' match_col <- h2o.match(frame$Species, c("setosa", "versicolor", "setosa"))
+#' iris_match <- h2o.cbind(frame, match_col)
 #' iris_split <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)
-#' print(iris_split[1])
+#' iris_split[1]
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch=NA_integer_, start_index=1) {
