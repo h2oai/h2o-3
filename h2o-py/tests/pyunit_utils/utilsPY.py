@@ -591,12 +591,6 @@ def javamunge(assembly, pojoname, test, compile_only=False):
                 assert (math.fabs(hp-pp) < 1e-8) or (math.isnan(hp) and math.isnan(pp)), "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
               else:
                 assert hp==pp, "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
-
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    
-def uninstall(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package])
         
 def locate(path):
     """
