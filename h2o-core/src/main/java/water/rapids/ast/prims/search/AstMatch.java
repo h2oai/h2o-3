@@ -15,6 +15,7 @@ import water.util.IcedHashMap;
 import water.util.MathUtils;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Makes a vector where an index of value from the table is returned if the value matches; 
@@ -194,7 +195,7 @@ public class AstMatch extends AstPrimitive {
     }
   }
 
-  private static double in(IcedHashMap<String, Integer> matchesIndexes, String[] sortedMatches, IcedHashMap<String, Integer> mapping, String s, double noMatch, int startIndex) {
+  private static double in(Map<String, Integer> matchesIndexes, String[] sortedMatches, IcedHashMap<String, Integer> mapping, String s, double noMatch, int startIndex) {
     Integer mapResult = matchesIndexes.get(s);
     int match;
     if (mapResult == null){
@@ -206,7 +207,7 @@ public class AstMatch extends AstPrimitive {
     return match >= 0 ? applyStartIndex(mapping.get(s), startIndex) : noMatch;
   }
 
-  private static double in(IcedHashMap<Double, Integer> matchesIndexes, double[] sortedMatches, IcedHashMap<Double, Integer> mapping, double d, double noMatch, int startIndex) {
+  private static double in(Map<Double, Integer> matchesIndexes, double[] sortedMatches, IcedHashMap<Double, Integer> mapping, double d, double noMatch, int startIndex) {
     Integer mapResult = matchesIndexes.get(d);
     int match;
     if (mapResult == null){

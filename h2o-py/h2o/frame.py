@@ -4655,13 +4655,16 @@ class H2OFrame(Keyed, H2ODisplay):
 
     def match(self, table, nomatch=float("nan"), start_index=1):
         """
-        Makes a vector where an index of value from the table is returned if the value matches; returns ``nomatch`` value otherwise. 
+        Makes a vector where an index of value from the table is returned if the value matches; 
+        returns ``nomatch`` value otherwise.
 
-        :param List table: The list of items to match against.
+        :param List table: The list of items to match against. Duplicates are ignored. The index of the first 
+            occurrence will be used.
         :param int nomatch: Value that should be returned when there is no match. Numeric value or ``nan``. 
-        :param int start_index: Index from which this starts the indexing of the table list, numeric value >=0 (default is ``1``).
-        :returns: A new H2OFrame containing a vector where the index of value from the table is returned if the value matches; returns 
-            ``nomatch`` value otherwise. 
+        :param int start_index: Index from which this starts the indexing of the table list, numeric value >=0 
+            (default is ``1``).
+        :returns: A new H2OFrame containing a vector where the index of value from the table is returned if the value 
+            matches; returns ``nomatch`` value otherwise. 
 
         :examples:
 

@@ -22,6 +22,7 @@ test.match <- function() {
     expect_equal(hh_in, hh_in_base)
     
     # compare h2o and base match
+    # string values, default setting
     sub_h2o_match <- h2o.match(iris$Species, c("setosa", "versicolor"))
     sub_h2o_match <- as.vector(sub_h2o_match)
     expect_equal(sub_h2o_match[1], 1)
@@ -35,12 +36,14 @@ test.match <- function() {
 
     expect_equal(sub_h2o_match, sub_base_match)
 
+    # string values, nomatch=0
     sub_h2o_match <- h2o.match(iris$Species, c("setosa", "versicolor"), nomatch=0)
     sub_h2o_match <- as.vector(sub_h2o_match)
     expect_equal(sub_h2o_match[1], 1)
     expect_equal(sub_h2o_match[51], 2)
     expect_equal(sub_h2o_match[101], 0)
 
+    # string values, start_index=0
     sub_h2o_match <- h2o.match(iris$Species, c("setosa", "versicolor"), start_index=0)
     sub_h2o_match <- as.vector(sub_h2o_match)
     expect_equal(sub_h2o_match[1], 0)
@@ -50,7 +53,8 @@ test.match <- function() {
     sub_h2o_in <- iris$Sepal.Length %in% c(5.1)
     hh_in <- iris[sub_h2o_in,]
     expect_equal(dim(hh_in), c(9,5))
-    
+
+    # numeric value, default setting
     sub_h2o_match <- h2o.match(iris$Sepal.Length, c(5.1))
     sub_h2o_match <- as.vector(sub_h2o_match)
     expect_equal(sub_h2o_match[1], 1)
@@ -58,8 +62,15 @@ test.match <- function() {
     expect_equal(sub_h2o_match[20], 1)
     expect_equal(sub_h2o_match[2], NA_integer_)
 
+    # string values, duplicates in match values
+    sub_h2o_match <- h2o.match(iris$Species, c("setosa", "versicolor", "setosa"))
+    sub_h2o_match <- as.vector(sub_h2o_match)
+    expect_equal(sub_h2o_match[1], 1)
+    expect_equal(sub_h2o_match[51], 2)
+    expect_equal(sub_h2o_match[101], NA_integer_)
+
     # test doc example 
-    match_col <- h2o.match(iris$Species, c("setosa", "versicolor"))
+    match_col <- h2o.match(iris$Species, c("setosa", "versicolor", "setosa"))
     iris_match <- h2o.cbind(iris, match_col)
     splited <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)
     print(splited[1])

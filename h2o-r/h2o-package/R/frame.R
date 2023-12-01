@@ -853,7 +853,8 @@ cut.H2OFrame <- h2o.cut
 #'
 #' @param x a vector from an H2OFrame object with
 #'        values to be matched.
-#' @param table an R object to match \code{x} against.
+#' @param table an R object to match \code{x} against. Duplicates are ignored. The index of the first occurrence 
+#'        will be used.
 #' @param nomatch the value to be returned in the case when no match is found. Numeric value or NaN, default is NaN.
 #' @param start_index  index from which this starts the indexing of the table list, numeric value >=0, default is 1.
 #' @return Returns a new H2OFrame containing a vector where the index of value from the table is returned 
@@ -863,7 +864,7 @@ cut.H2OFrame <- h2o.cut
 #' \dontrun{
 #' h2o.init()
 #' iris <- as.h2o(iris)
-#' match_col <- h2o.match(iris$Species, c("setosa", "versicolor"))
+#' match_col <- h2o.match(iris$Species, c("setosa", "versicolor", "setosa"))
 #' iris_match <- h2o.cbind(iris, match_col)
 #' iris_split <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)
 #' print(iris_split[1])
