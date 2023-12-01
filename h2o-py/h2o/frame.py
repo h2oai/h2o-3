@@ -1970,17 +1970,12 @@ class H2OFrame(Keyed, H2ODisplay):
         if can_use_pandas() and use_pandas:
             import pandas
             if (can_use_datatable()) or (can_use_polars() and can_use_pyarrow()): # can use multi-thread
-                try:
-                    tmpdir = tempfile.mkdtemp()
-                    fileName = os.path.join(tmpdir, "h2oframe2Convert.csv")
-                    h2o.export_file(self, fileName)
+                with tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv") as exportFile:
+                    h2o.export_file(self, exportFile.name, force=True)
                     if can_use_datatable(): # use datatable for multi-thread by default
-                        return self.convert_with_datatable(fileName)
+                        return self.convert_with_datatable(exportFile.name)
                     elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
-                        return self.convert_with_polars(fileName)
-                finally:
-                    os.remove(fileName)
-                    os.rmdir(tmpdir)
+                        return self.convert_with_polars(exportFile.name)
             warnings.warn("converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install datatable, or polars and pyarrow.")
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                

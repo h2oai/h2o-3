@@ -48,7 +48,7 @@ from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimato
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
     H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
-from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
+from h2o.utils.shared_utils import can_use_pandas
 
 
 class TemporaryDirectory:
@@ -4745,3 +4745,16 @@ def prepare_data():
     y = 'Y'
 
     return df, x, y
+
+def can_install_datatable():
+    return sys.version_info.major == 3 and sys.version_info.minor <= 9
+
+def can_install_polars():
+    return sys.version_info.major == 3 and sys.version_info.minor > 9
+
+def can_install_pyarrow():
+    if can_use_pandas() and sys.version_info.minor > 9:
+        import pandas
+        return sys.version_info.major == 3 and float(pandas.__version__[0]) >= 1
+    else:
+        return False

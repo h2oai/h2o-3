@@ -47,6 +47,7 @@ except ImportError:
 from h2o.backend.server import H2OLocalServer
 from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.utils.threading import local_env
 
 _id_ctr = 0
 
@@ -120,6 +121,8 @@ def temp_ctr():
 
 
 def is_module_available(mod):
+    if local_env(mod+"_disabled"): # fast track if module is explicitly disabled
+        return False
     if mod in sys.modules and sys.modules[mod] is not None:  # fast track + safer in unusual environments 
         return True
         
@@ -128,19 +131,6 @@ def is_module_available(mod):
 
 def can_use_pandas():
     return is_module_available('pandas')
-
-def can_install_datatable():
-    return sys.version_info.major == 3 and sys.version_info.minor <= 9
-
-def can_install_polars():
-    return sys.version_info.major == 3
-
-def can_install_pyarrow():
-    if can_use_pandas():
-        import pandas
-        return sys.version_info.major == 3 and float(pandas.__version__[0]) >= 1
-    else:
-        return False
 
 def can_use_datatable():
     return is_module_available('datatable')
