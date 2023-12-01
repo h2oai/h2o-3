@@ -48,24 +48,21 @@ def single_thread_pandas_conversion(dataset):
 # frame is much faster for large datasets.
 def test_polars_datatable_2_pandas():
     file1 = "bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv"
-    if can_use_datatable() or (can_use_polars() and can_use_pyarrow()): 
-        original_converted_frame1 = single_thread_pandas_conversion(file1)  # need to run conversion in single thread
+    original_converted_frame1 = single_thread_pandas_conversion(file1)  # need to run conversion in single thread
 
-        with local_context(polars_disabled=True):   # run with datatable
-            if can_use_datatable():
-                print("test data frame conversion using datatable.")
-                test_frame_conversion(file1, original_converted_frame1, "datatable")
-            else:
-                print("datatable is not available.  Skipping tests using datatable.")
+    with local_context(polars_disabled=True):   # run with datatable
+        if can_use_datatable():
+            print("test data frame conversion using datatable.")
+            test_frame_conversion(file1, original_converted_frame1, "datatable")
+        else:
+            print("datatable is not available.  Skipping tests using datatable.")
 
-        with local_context(datatable_disabled=True):
-            if can_use_polars() and can_use_pyarrow():
-                print("test data frame conversion using polars and pyarrow.")
-                test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
-            else:
-                print("polars, pyarrow are not available.  Skipping tests using polars and pyarrow")
-    else:
-        print("datatable or polars and pyarrow are not available to test.  Skipping tests using polars and pyarrow.")
+    with local_context(datatable_disabled=True):
+        if can_use_polars() and can_use_pyarrow():
+            print("test data frame conversion using polars and pyarrow.")
+            test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
+        else:
+            print("polars, pyarrow are not available.  Skipping tests using polars and pyarrow")
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_polars_datatable_2_pandas)

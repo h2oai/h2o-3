@@ -51,33 +51,28 @@ def test_polars_datatable():
     file1 = "smalldata/titanic/titanic_expanded.csv"
     file2 = "smalldata/glm_test/multinomial_3Class_10KRow.csv"
     file3 = "smalldata/timeSeries/CreditCard-ts_train.csv"
-
-    if can_use_datatable() or (can_use_polars() and can_use_pyarrow()):    
-        original_converted_frame1 = singl_thread_pandas_conversion(file1)
-        original_converted_frame2 = singl_thread_pandas_conversion(file2)
-        original_converted_frame3 = singl_thread_pandas_conversion(file3)
+    
+    original_converted_frame1 = singl_thread_pandas_conversion(file1)
+    original_converted_frame2 = singl_thread_pandas_conversion(file2)
+    original_converted_frame3 = singl_thread_pandas_conversion(file3)
         
-        with local_context(polars_disabled=True):   # run with datatable
-            if can_use_datatable():
-                print("test data frame conversion using datatable.")
-                test_frame_conversion(file1, original_converted_frame1, "datatable")
-                test_frame_conversion(file2, original_converted_frame2, "datatable")
-                test_frame_conversion(file3, original_converted_frame3, "datatable")
-            else:
-                print("datatable is not available.  Skipping tests using datatable.")
+    with local_context(polars_disabled=True):   # run with datatable
+        if can_use_datatable():
+            print("test data frame conversion using datatable.")
+            test_frame_conversion(file1, original_converted_frame1, "datatable")
+            test_frame_conversion(file2, original_converted_frame2, "datatable")
+            test_frame_conversion(file3, original_converted_frame3, "datatable")
+        else:
+            print("datatable is not available.  Skipping tests using datatable.")
         
-        with local_context(datatable_disabled=True):
-            if can_use_polars() and can_use_pyarrow():
-                print("test data frame conversion using polars and pyarrow.")
-                test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
-                test_frame_conversion(file2, original_converted_frame2, "polars and pyarrow")
-                test_frame_conversion(file3, original_converted_frame3, "polars and pyarrow")    
-            else:
-                print("polars, pyarrow are not available.  Skipping tests using polars and pyarrow")             
-    else:
-        print("datatable or polars and pyarrow are not available to test.  Skipping tests using polars and pyarrow.")
-
-
+    with local_context(datatable_disabled=True):
+        if can_use_polars() and can_use_pyarrow():
+            print("test data frame conversion using polars and pyarrow.")
+            test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
+            test_frame_conversion(file2, original_converted_frame2, "polars and pyarrow")
+            test_frame_conversion(file3, original_converted_frame3, "polars and pyarrow")    
+        else:
+            print("polars, pyarrow are not available.  Skipping tests using polars and pyarrow")             
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_polars_datatable)
