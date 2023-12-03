@@ -575,7 +575,7 @@ public class FrameUtils {
         os.write(bytes, 0, count);
         int workDone = is._curChkIdx - curChkIdx;
         if (workDone > 0) {
-          if (_j.stop_requested()) throw new Job.JobCancelledException();
+          if (_j.stop_requested()) throw new Job.JobCancelledException(_j);
           _j.update(workDone);
           curChkIdx = is._curChkIdx;
         }

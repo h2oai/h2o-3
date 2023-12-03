@@ -834,7 +834,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames],
+    kwargs = {"check_header": header, 
+              "source_frames": [quoted(frame_id) for frame_id in raw_frames],
               "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
@@ -844,6 +845,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
 
     if custom_non_data_line_markers is not None:
         kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers
+        
     if partition_by is not None:
         kwargs["partition_by"] = partition_by
 
@@ -1034,9 +1036,16 @@ def deep_copy(data, xid):
     assert_satisfies(xid, xid != data.frame_id)
     check_frame_id(xid)
     duplicate = data.apply(lambda x: x)
-    duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(None)
-    duplicate._ex._cache._id = xid
-    duplicate._ex._children = None
+    assign(duplicate, xid)
+    return duplicate
+
+def shallow_copy(data, xid):
+    assert_is_type(data, H2OFrame)
+    assert_is_type(xid, None, str)
+    duplicate = H2OFrame._expr(expr=ExprNode("cols_py", data, slice(data.ncols)))
+    if xid is not None:
+        assert_satisfies(xid, xid != data.frame_id)
+        assign(duplicate, xid)
     return duplicate
 
 

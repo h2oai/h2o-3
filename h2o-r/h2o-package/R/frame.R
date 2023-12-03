@@ -879,9 +879,9 @@ match.H2OFrame <- h2o.match
 # %in% method
 #' @rdname h2o.match
 #' @export
-`%in%` <- function(x,table) {
-  if( is.H2OFrame(x) ) h2o.match(x,table,nomatch=0)
-  else base::`%in%`(x,table)
+`%in%` <- function(x,table) { 
+  if( is.H2OFrame(x) ) h2o.match(x,table,nomatch=0) > 0
+  else base::`%in%`(x, as.vector(table))
 }
 
 #' Remove Rows With NAs

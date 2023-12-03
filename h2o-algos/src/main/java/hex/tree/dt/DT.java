@@ -62,7 +62,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         _nodesCount = 0;
         _leavesCount = 0;
         _tree = null;
-        init(true);
+        init(false);
     }
 
     public DT(boolean startup_once) {

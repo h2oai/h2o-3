@@ -5,6 +5,12 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 
+import ast
+import json
+from h2o.estimators.estimator_base import H2OEstimator
+from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -31,6 +37,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
                  nlearners=50,  # type: int
                  weak_learner="auto",  # type: Literal["auto", "drf", "glm", "gbm", "deep_learning"]
                  learn_rate=0.5,  # type: float
+                 weak_learner_params=None,  # type: Optional[dict]
                  seed=-1,  # type: int
                  ):
         """
@@ -68,6 +75,9 @@ class H2OAdaBoostEstimator(H2OEstimator):
         :param learn_rate: Learning rate (from 0.0 to 1.0)
                Defaults to ``0.5``.
         :type learn_rate: float
+        :param weak_learner_params: Customized parameters for the weak_learner algorithm.
+               Defaults to ``None``.
+        :type weak_learner_params: dict, optional
         :param seed: Seed for pseudo random number generator (if applicable)
                Defaults to ``-1``.
         :type seed: int
@@ -83,6 +93,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
         self.nlearners = nlearners
         self.weak_learner = weak_learner
         self.learn_rate = learn_rate
+        self.weak_learner_params = weak_learner_params
         self.seed = seed
 
     @property
@@ -202,6 +213,42 @@ class H2OAdaBoostEstimator(H2OEstimator):
     def learn_rate(self, learn_rate):
         assert_is_type(learn_rate, None, numeric)
         self._parms["learn_rate"] = learn_rate
+
+    @property
+    def weak_learner_params(self):
+        """
+        Customized parameters for the weak_learner algorithm.
+
+        Type: ``dict``.
+
+        :examples:
+
+        >>> prostate_hex = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> prostate_hex["CAPSULE"] = prostate_hex["CAPSULE"].asfactor()
+        >>> response = "CAPSULE"
+        >>> seed = 42
+        >>> adaboost_model = H2OAdaBoostEstimator(seed=seed,
+        ...                                       weak_learner="DRF",
+        ...                                       weak_learner_params={'ntrees':1,'max_depth':3})
+        >>> adaboost_model.train(y=response,
+        ...                 ignored_columns=["ID"],
+        ...                 training_frame=prostate_hex)
+        >>> print(adaboost_model)
+        """
+        if self._parms.get("weak_learner_params") != None:
+            return json.loads(self._parms.get("weak_learner_params"))
+        else:
+            self._parms["weak_learner_params"] = None
+
+    @weak_learner_params.setter
+    def weak_learner_params(self, weak_learner_params):
+        assert_is_type(weak_learner_params, None, dict)
+        if weak_learner_params is not None and weak_learner_params != "":
+            for k in weak_learner_params:
+                weak_learner_params[k] = weak_learner_params[k]
+            self._parms["weak_learner_params"] = str(json.dumps(weak_learner_params))
+        else:
+            self._parms["weak_learner_params"] = None
 
     @property
     def seed(self):

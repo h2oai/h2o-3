@@ -3,7 +3,7 @@
 ``score_tree_interval``
 ------------------------
 
-- Available in: GBM, DRF, XGBoost, Isolation Forest, Uplift DRF
+- Available in: GBM, DRF, XGBoost, Isolation Forest, Extended Isolation Forest, Uplift DRF
 - Hyperparameter: no
 
 Description

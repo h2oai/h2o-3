@@ -11,12 +11,15 @@
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
+#' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ntrees Number of Extended Isolation Forest trees. Defaults to 100.
 #' @param sample_size Number of randomly sampled observations used to train each Extended Isolation Forest tree. Defaults to 256.
 #' @param extension_level Maximum is N - 1 (N = numCols). Minimum is 0. Extended Isolation Forest with extension_Level = 0 behaves like
 #'        Isolation Forest. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
+#' @param disable_training_metrics \code{Logical}. Disable calculating training metrics (expensive on large datasets) Defaults to TRUE.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -53,10 +56,13 @@ h2o.extendedIsolationForest <- function(training_frame,
                                         model_id = NULL,
                                         ignore_const_cols = TRUE,
                                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                        score_each_iteration = FALSE,
+                                        score_tree_interval = 0,
                                         ntrees = 100,
                                         sample_size = 256,
                                         extension_level = 0,
-                                        seed = -1)
+                                        seed = -1,
+                                        disable_training_metrics = TRUE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -73,6 +79,10 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_tree_interval))
+    parms$score_tree_interval <- score_tree_interval
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(sample_size))
@@ -81,6 +91,8 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$extension_level <- extension_level
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(disable_training_metrics))
+    parms$disable_training_metrics <- disable_training_metrics
 
   # Error check and build model
   model <- .h2o.modelJob('extendedisolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -90,10 +102,13 @@ h2o.extendedIsolationForest <- function(training_frame,
                                                         x,
                                                         ignore_const_cols = TRUE,
                                                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                                        score_each_iteration = FALSE,
+                                                        score_tree_interval = 0,
                                                         ntrees = 100,
                                                         sample_size = 256,
                                                         extension_level = 0,
                                                         seed = -1,
+                                                        disable_training_metrics = TRUE,
                                                         segment_columns = NULL,
                                                         segment_models_id = NULL,
                                                         parallelism = 1)
@@ -115,6 +130,10 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_tree_interval))
+    parms$score_tree_interval <- score_tree_interval
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(sample_size))
@@ -123,6 +142,8 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$extension_level <- extension_level
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(disable_training_metrics))
+    parms$disable_training_metrics <- disable_training_metrics
 
   # Build segment-models specific parameters
   segment_parms <- list()

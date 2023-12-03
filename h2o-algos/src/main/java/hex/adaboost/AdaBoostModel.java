@@ -103,6 +103,11 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
          */
         public double _learn_rate;
 
+        /**
+         * Custom _weak_learner parameters.
+         */
+        public String _weak_learner_params;
+
         @Override
         public String algoName() {
             return "AdaBoost";
@@ -128,6 +133,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
             _nlearners = 50;
             _weak_learner = Algorithm.AUTO;
             _learn_rate = 0.5;
+            _weak_learner_params = "";
         }
     }
 }
