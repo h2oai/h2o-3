@@ -377,11 +377,15 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         training_frame = algo_params.pop("training_frame")
         validation_frame = algo_params.pop("validation_frame", None)
         is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
+        is_uplift = (algo_params is not None) and ("treatment_column" in algo_params and algo_params["treatment_column"])
         if is_auto_encoder and y is not None:
             raise ValueError("y should not be specified for autoencoder.")
         if self.model.supervised_learning:
             if y is None:
                 raise ValueError("Missing response")
+            elif is_uplift:
+                y = y if y in training_frame.names else training_frame.names[y]
+                self.model._estimator_type = "binomial_uplift"
             else:
                 y = y if y in training_frame.names else training_frame.names[y]
                 self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
@@ -396,11 +400,12 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         if y is not None: kwargs['response_column'] = y
         if not is_type(x, list, tuple): x = [x]
         if is_type(x[0], int):
-            x = [tframe.names[i] for i in x]
+            x = [tframe.names[i] for i in x] 
         offset = kwargs["offset_column"]
         folds = kwargs["fold_column"]
         weights = kwargs["weights_column"]
-        ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights]))
+        treatment = kwargs["treatment_column"]
+        ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights, treatment]))
         kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
         kwargs = {k: H2OEstimator._keyify(kwargs[k]) for k in kwargs}
         if self.grid_id is not None: kwargs["grid_id"] = self.grid_id
@@ -1481,6 +1486,8 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         elif model_type == "DimReduction":
             model_class = H2ODimReductionGridSearch
         elif model_type == "AnomalyDetection":
+            model_class = H2OBinomialGridSearch
+        elif model_type == "BinomialUplift":
             model_class = H2OBinomialGridSearch
         else:
             raise NotImplementedError(model_type)
