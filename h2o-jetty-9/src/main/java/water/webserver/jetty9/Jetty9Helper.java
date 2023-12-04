@@ -86,12 +86,16 @@ class Jetty9Helper {
         return jettyServer;
     }
 
+    /**
+     * A method which tries to get the proper SslContextFactory - for older Jetty 9 versions SslContextFactory,
+     * and for newer ones (which fail with the former one) SslContextFactory$Server
+     */
     protected static SslContextFactory getSslContextFactory() {
         try {
-            return (SslContextFactory) Class.forName("org.eclipse.jetty.util.ssl.SslContextFactory").newInstance();
+            return (SslContextFactory) Class.forName("org.eclipse.jetty.util.ssl.SslContextFactory$Server").newInstance();
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             try {
-                return (SslContextFactory) Class.forName("org.eclipse.jetty.util.ssl.SslContextFactory$Server").newInstance();
+                return (SslContextFactory) Class.forName("org.eclipse.jetty.util.ssl.SslContextFactory").newInstance();
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
                 throw new RuntimeException(ex);
             }
