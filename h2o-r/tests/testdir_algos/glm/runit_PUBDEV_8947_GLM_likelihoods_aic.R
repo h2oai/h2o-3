@@ -16,7 +16,7 @@ test.glm.aic.likelihood <- function() {
   dev <- 157465
   rRank <- 9
   loglikeR <- -0.5*((nobs-1) + nobs*log(2*pi*dev/(nobs-1)))
-  aicR <- -2*loglikeR+2*rRank
+  aicR <- 2*loglikeR+2*rRank
   perf <- h2o.performance(model.h2o.gaussian.identity)
   print("GLM Gaussian")
   print("H2O AIC")
