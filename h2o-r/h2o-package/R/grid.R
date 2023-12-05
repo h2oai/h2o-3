@@ -64,6 +64,7 @@ h2o.grid <- function(algorithm,
                      x,
                      y,
                      training_frame,
+                     treatment_column = NULL,
                      ...,
                      hyper_params = list(),
                      is_supervised = NULL,
@@ -108,6 +109,13 @@ h2o.grid <- function(algorithm,
       dots$x <- x
     }
   }
+  if(algorithm %in% c("upliftdrf")){
+      if(missing(treatment_column)) {
+        stop("Must specify treatment column")
+      } else {
+        dots$treatment_column <- treatment_column
+      }
+  }  
   algorithm <- .h2o.unifyAlgoName(algorithm)
   model_param_names <- names(dots)
   hyper_param_names <- names(hyper_params)
