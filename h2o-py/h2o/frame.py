@@ -1977,7 +1977,8 @@ class H2OFrame(Keyed, H2ODisplay):
                     elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
                         return self.convert_with_polars(exportFile.name)
             warnings.warn("converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
-                          " multi-thread, install datatable, or polars and pyarrow.")
+                          " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
+                          "(for Python 3.10 or above).")
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
                 
         from h2o.utils.csv.readers import reader
