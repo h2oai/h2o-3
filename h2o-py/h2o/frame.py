@@ -19,7 +19,7 @@ import warnings
 import h2o
 from h2o.base import Keyed
 from h2o.display import H2ODisplay, H2ODisplayWrapper, H2OItemsDisplay, H2OTableDisplay, display, repr_def
-from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
+from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning, H2ODependencyWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
@@ -1978,7 +1978,7 @@ class H2OFrame(Keyed, H2ODisplay):
                         return self.convert_with_polars(exportFile.name)
             warnings.warn("converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
-                          "(for Python 3.10 or above).")
+                          "(for Python 3.10 or above).", H2ODependencyWarning)
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
                 
         from h2o.utils.csv.readers import reader
