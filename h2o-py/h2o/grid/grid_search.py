@@ -404,7 +404,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         offset = kwargs["offset_column"]
         folds = kwargs["fold_column"]
         weights = kwargs["weights_column"]
-        treatment = kwargs["treatment_column"]
+        treatment = kwargs["treatment_column"] if "treatment_column" in kwargs else None
         ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights, treatment]))
         kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
         kwargs = {k: H2OEstimator._keyify(kwargs[k]) for k in kwargs}
