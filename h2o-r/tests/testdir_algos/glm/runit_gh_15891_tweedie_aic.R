@@ -1,79 +1,85 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-test_tweedie_aic <- function() {
+test_glm_tweedies <- function() {
     require(statmod)
     require(tweedie)
-
-
-    #h2o.init()
-    set.seed(100)
-    # simulating data with log link and Tweedie distribution with known dispersion parameter and tweedie power
-    tweedie_p <- 1.6
-    molsp <- 1000
-    x <- seq(1, 10, 1)
-    yd <- exp(1 + 1.015 * x)
-    phi = 2
-    simData <- matrix(0, nrow = molsp * 10, ncol = 5)
-    colnames(simData) <-
-        c('xt', 'yt', 'yr', 'weight', 'offset_col')
-    for (i in 1:length(x)) {
-        simData[((i - 1) * molsp + 1):(i * molsp), 1] <- x[i]
-        simData[((i - 1) * molsp + 1):(i * molsp), 2] <- yd[i]
-        simData[((i - 1) * molsp + 1):(i * molsp), 3] <-
-            tweedie::rtweedie(molsp,
-                              xi = tweedie_p,
-                              mu = yd[i],
-                              phi = phi)
-        simData[((i - 1) * molsp + 1):(i * molsp), 4] <- 1
-        simData[((i - 1) * molsp + 1):(i * molsp), 5] <- 1
+    if (requireNamespace("tweedie")) {
+        num_rows <- 1000
+        num_cols <- 5
+        f1 <- random_dataset_real_only(num_rows, num_cols) # generate dataset containing the predictors.
+        f1R <- as.data.frame(h2o.abs(f1))
+        weights <- c(0.1, 0.2, 0.3, 0.4, 0.5, 1) # weights to generate the mean
+        mu <- generate_mean(f1R, num_rows, num_cols, weights)
+        pow <- c(1.1) # variance power range
+        phi <- c(1) # dispersion factor range
+        y <- "resp" # response column
+        x <- c("abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.")
+        for (ind in c(1:length(pow))) { # generate dataset with each variance power and dispersion factor
+            trainF <- generate_dataset(f1R, num_rows, num_cols, pow[ind], phi[ind], mu)
+            print(paste("Compare H2O, R GLM model coefficients and standard error for var_power=", pow[ind], "link_power=", 1 - pow[ind], sep = " "))
+            compareH2ORGLM(pow[ind], 1 - pow[ind], x, y, trainF, as.data.frame(trainF), phi[ind])
+        }
+    } else {
+        print("test_glm_tweedies is skipped. Need to install tweedie package.")
     }
-    simDataH2O <- as.h2o(simData)
-    simData <- as.data.frame(simData)
-
-    fitBase <- glm(yr~xt, family=tweedie(var.power=1.6, link.power=0), data=simData, weights = weight, offset=offset_col)
-    print("Fitting with R")
-    print(summary(fitBase)$AIC)
-    print(summary(fitBase)$dispersion)
-    AICtweedie(fitBase)
-    
-    ############################### fit R base glm ########################################
-    fitBase <- glm(yr~xt, family=tweedie(var.power=1.6, link.power=0), data=simData, weights = weight, offset=offset_col)
-    print("Fitting with R")
-    print(summary(fitBase)$AIC)
-    print(summary(fitBase)$dispersion)
-    aic_tweedie = AICtweedie(fitBase)
-    print(aic_tweedie)
-
-
-    fitH2Otest2 <- h2o.glm(
-        remove_collinear_columns=TRUE,
-        training_frame = simDataH2O,
-        x = 'xt',
-        y = 'yr',
-        family = "tweedie",
-        link = "tweedie",
-        tweedie_variance_power = tweedie_p,
-        lambda = 0,
-        compute_p_values = T,
-        dispersion_parameter_method = "ml",
-        calc_like=TRUE,
-        fix_tweedie_variance_power = F,
-        tweedie_link_power = 0
-    )
-    
-    print("loglikelihood from function call")
-    print(h2o.loglikelihood(fitH2Otest2, train=TRUE))
-    print("AIC from function call")
-    aic_h2o = h2o.aic(fitH2Otest2, train=TRUE)
-    print(aic_h2o)
-
-    # 139033.7, 139007.6
-    expect_equal(aic_tweedie, aic_h2o, tolerance = aic_h2o * 1e-3)
-    expect_true(aic_h2o > 0)
-    print(aic_h2o * 1e-3)
-   
 }
 
-doTest("GLM: Tweedie AIC test",
-       test_tweedie_aic)
+generate_dataset <- function(f1R, numRows, numCols, pow, phi, mu) {
+    resp <- tweedie::rtweedie(numRows, xi = pow, mu, phi, power = pow)
+    f1h2o <- as.h2o(f1R)
+    resph2o <- as.h2o(as.data.frame(resp))
+    finalFrame <- h2o.cbind(f1h2o, resph2o)
+    return(finalFrame)
+}
+
+generate_mean <- function(f1R, numRows, numCols, weights) {
+    y <- c(1:numRows)
+    for (rowIndex in c(1:numRows)) {
+        tempResp = 0.0
+        for (colIndex in c(1:numCols)) {
+            tempResp = tempResp + weights[colIndex] * f1R[rowIndex, colIndex]
+        }
+        y[rowIndex] = tempResp
+    }
+    return(y)
+}
+
+compareH2ORGLM <-
+    function(vpower, lpower, x, y, hdf, df, truedisp, tolerance = 2e-4) {
+        print("Define formula for R")
+        formula <- (df[, "resp"] ~ .)
+        rmodel <- glm(
+            formula = formula,
+            data = df[, x],
+            family = tweedie(var.power = vpower, link.power =
+                lpower),
+            na.action = na.omit
+        )
+        rAIC <- AICtweedie(rmodel)
+        h2omodel <-
+            h2o.glm(
+                x = x,
+                y = y,
+                training_frame = hdf,
+                family = "tweedie",
+                link = "tweedie",
+                tweedie_variance_power = vpower,
+                tweedie_link_power = lpower,
+                alpha = 0.5,
+                lambda = 0,
+                nfolds = 0,
+                compute_p_values = TRUE,
+                calc_like = TRUE,
+                fix_tweedie_variance_power = TRUE
+            )
+        h2oAIC <- h2o.aic(h2omodel)
+        print("Comparing H2O and R GLM model AIC.")
+        print("R AIC")
+        print(rAIC)
+        print("h2o model AIC")
+        print(h2oAIC)
+        expect_true(abs(rAIC - h2oAIC) / h2oAIC < 1e-2)
+    }
+
+doTest("Comparison of H2O to R TWEEDIE family AIC with tweedie dataset", test_glm_tweedies)
