@@ -22,7 +22,7 @@ def uplift_random_forest_early_stopping():
     valid_h2o[treatment_column] = valid_h2o[treatment_column].asfactor()
     valid_h2o[response_column] = valid_h2o[response_column].asfactor()
 
-    ntrees = 20
+    ntrees = 42
 
     uplift_model = H2OUpliftRandomForestEstimator(
         ntrees=ntrees,
