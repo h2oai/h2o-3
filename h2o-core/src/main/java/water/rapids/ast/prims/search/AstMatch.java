@@ -65,6 +65,8 @@ public class AstMatch extends AstPrimitive {
       if (startIndex < 0) {
         throw new IllegalArgumentException("Expected number >= 0. Got: " + asts[4].getClass());
       }
+    } else if(asts[4] instanceof AstId) {
+      startIndex = 1;
     } else {
       throw new IllegalArgumentException("Expected number. Got: " + asts[4].getClass());
     }

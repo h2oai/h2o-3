@@ -78,7 +78,8 @@ def h2o_H2OFrame_match():
     assert match_frame[100, 0] == nomatch, "match value should be 0"
     
     # test example for doc
-    match_col = data["C5"].match(['Iris-setosa', 'Iris-versicolor', 'Iris-setosa'])
+    data = h2o.import_file("h2o://iris")
+    match_col = data['class'].match(['Iris-setosa', 'Iris-versicolor', 'Iris-setosa'])
     match_col.names = ['match']
     iris_match = data.cbind(match_col)
     sample = iris_match.split_frame(ratios=[0.05], seed=1)[0]

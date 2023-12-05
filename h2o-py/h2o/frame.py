@@ -4674,6 +4674,19 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> iris_match = data.cbind(match_col)
         >>> sample = iris_match.split_frame(ratios=[0.05], seed=1)[0]
         >>> sample
+          sepal_len    sepal_wid    petal_len    petal_wid  class              match
+        -----------  -----------  -----------  -----------  ---------------  -------
+                5.2          3.5          1.5          0.2  Iris-setosa            1
+                5            3.5          1.3          0.3  Iris-setosa            1
+                7            3.2          4.7          1.4  Iris-versicolor        2
+                4.9          2.4          3.3          1    Iris-versicolor        2
+                5.5          2.4          3.8          1.1  Iris-versicolor        2
+                5.8          2.7          5.1          1.9  Iris-virginica       nan
+                6.3          2.9          5.6          1.8  Iris-virginica       nan
+                5.8          2.8          5.1          2.4  Iris-virginica       nan
+                7.7          2.6          6.9          2.3  Iris-virginica       nan
+                6.3          2.7          4.9          1.8  Iris-virginica       nan
+        [12 rows x 6 columns]
         """
         return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, start_index))
 
