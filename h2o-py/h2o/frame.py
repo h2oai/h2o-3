@@ -4669,7 +4669,7 @@ class H2OFrame(Keyed, H2ODisplay):
         :examples:
 
         >>> data = h2o.import_file("h2o://iris")
-        >>> match_col = data["C5"].match(['Iris-setosa', 'Iris-versicolor'])
+        >>> match_col = data["class"].match(['Iris-setosa', 'Iris-versicolor'])
         >>> match_col.names = ['match']
         >>> iris_match = data.cbind(match_col)
         >>> sample = iris_match.split_frame(ratios=[0.05], seed=1)[0]
