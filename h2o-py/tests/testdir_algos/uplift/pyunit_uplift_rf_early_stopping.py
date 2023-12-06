@@ -23,16 +23,17 @@ def uplift_random_forest_early_stopping():
     valid_h2o[response_column] = valid_h2o[response_column].asfactor()
 
     ntrees = 42
+    max_depth = 2
+    min_rows = 10
+    sample_rate = 0.8
 
     uplift_model = H2OUpliftRandomForestEstimator(
         ntrees=ntrees,
-        max_depth=5,
+        max_depth=max_depth,
         treatment_column=treatment_column,
-        uplift_metric="KL",
-        min_rows=10,
+        min_rows=min_rows,
         seed=seed,
-        sample_rate=0.99,
-        auuc_type="gain",
+        sample_rate=sample_rate
     )
 
     uplift_model.train(y=response_column, x=x_names, training_frame=train_h2o, validation_frame=valid_h2o)
@@ -40,15 +41,13 @@ def uplift_random_forest_early_stopping():
 
     uplift_model_es = H2OUpliftRandomForestEstimator(
         ntrees=ntrees,
-        max_depth=5,
+        max_depth=max_depth,
         treatment_column=treatment_column,
-        uplift_metric="KL",
-        min_rows=10,
+        min_rows=min_rows,
         seed=seed,
-        sample_rate=0.99,
-        auuc_type="gain",
+        sample_rate=sample_rate,
         stopping_metric="AUUC",
-        stopping_rounds=4
+        stopping_rounds=2
     )
 
     uplift_model_es.train(y=response_column, x=x_names, training_frame=train_h2o, validation_frame=valid_h2o)

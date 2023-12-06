@@ -4,10 +4,11 @@ library(uplift)
 
 
 test.uplift <- function() {
-    ntrees <- 20
+    ntrees <- 42
+    max_depth <- 2
+    min_rows <- 10
+    sample_rate <- 0.8
     seed <- 42
-    uplift_metric <- "KL"
-    auuc_type <- "qini"
     set.seed(seed)
     x <- c("X1", "X2", "X3", "X4", "X5", "X6")
     y <- "y"
@@ -35,9 +36,10 @@ test.uplift <- function() {
         training_frame = trainh2o,
         validation_frame = testh2o,
         treatment_column = treatment_col,
-        uplift_metric = uplift_metric,
-        auuc_type = auuc_type,
         ntrees = ntrees,
+        max_depth = max_depth,
+        min_rows = min_rows,
+        sample_rate = sample_rate,
         seed = seed)
 
     print(model)
@@ -48,11 +50,12 @@ test.uplift <- function() {
         training_frame = trainh2o,
         validation_frame = testh2o,
         treatment_column = treatment_col,
-        uplift_metric = uplift_metric,
-        auuc_type = auuc_type,
         ntrees = ntrees,
+        max_depth = max_depth,
+        min_rows = min_rows,
+        sample_rate = sample_rate,
         seed = seed,
-        stopping_rounds=5, 
+        stopping_rounds=2, 
         stopping_metric="AUUC", 
         stopping_tolerance=0.1)
 
