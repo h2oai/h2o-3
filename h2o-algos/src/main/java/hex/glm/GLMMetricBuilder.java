@@ -189,7 +189,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
 
   protected void computeAIC(GLMModel gm) {
     if (gm._parms._calc_like && gm._finalScoring) { // uses likelihood which is calculated for the final scoring
-      _aic = -2 * _log_likelihood + 2 * Arrays.stream(gm.beta()).filter(b -> b != 0).count();
+      _aic = 2 * _log_likelihood + 2 * Arrays.stream(gm.beta()).filter(b -> b != 0).count();
     } else { // original calculation for the model build
       _aic = 0;
       switch (_glmf._family) {
