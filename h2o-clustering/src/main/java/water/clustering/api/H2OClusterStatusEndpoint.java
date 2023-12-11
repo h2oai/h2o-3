@@ -1,42 +1,32 @@
 package water.clustering.api;
 
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
 import water.H2O;
 import water.H2ONode;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
+import static water.clustering.api.HttpResponses.*;
 
-public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
-
-    @Override
-    public String getText() {
-        throw new IllegalStateException(String.format("Method getText should not be called on '%s'",
-                getClass().getName()));
-    }
+public class H2OClusterStatusEndpoint implements HttpHandler {
 
     @Override
-    public String getMimeType() {
-        return "application/json";
-    }
-
-    @Override
-    public NanoHTTPD.Response.IStatus getStatus() {
-        throw new IllegalStateException(String.format("Method getMimeType should not be called on '%s'",
-                getClass().getName()));
-    }
-
-    @Override
-    public NanoHTTPD.Response get(RouterNanoHTTPD.UriResource uriResource, Map<String, String> urlParams, NanoHTTPD.IHTTPSession session) {
+    public void handle(HttpExchange httpExchange) throws IOException {
+        if (!GET_METHOD.equals(httpExchange.getRequestMethod())) {
+            newResponseCodeOnlyResponse(httpExchange, HttpURLConnection.HTTP_BAD_METHOD);
+        }
         // H2O cluster grows in time, even when a flat file is used. The H2O.CLOUD property might be updated with new nodes during
         // the clustering process and doesn't necessarily have to contain all the nodes since the very beginning of the clustering process.
         // From this endpoint's point of view, H2O is clustered if and only if the H2O cloud members contain all nodes defined in the
         // flat file.
 
         if (!H2O.isFlatfileEnabled()) {
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NO_CONTENT, getMimeType(), null);
+            newResponseCodeOnlyResponse(httpExchange, HttpURLConnection.HTTP_NO_CONTENT);
+            return;
         }
         final Set<H2ONode> flatFile = H2O.getFlatfile();
         final H2ONode[] cloudMembers = H2O.CLOUD.members();
@@ -45,9 +35,9 @@ public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
 
         if (!clustered) {
             // If there is no cluster, there is no content to report.
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NO_CONTENT, getMimeType(), null);
+            newResponseCodeOnlyResponse(httpExchange, HttpURLConnection.HTTP_NO_CONTENT);
         } else {
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, getMimeType(), nodesListJson());
+            newFixedLengthResponse(httpExchange, HttpURLConnection.HTTP_OK, MIME_TYPE_JSON, nodesListJson());
         }
     }
 
