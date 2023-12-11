@@ -103,6 +103,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "export_checkpoints_dir", 
         "auc_type", 
         "custom_metric_func",
+        "gainslift_bins",
     };
 
 
