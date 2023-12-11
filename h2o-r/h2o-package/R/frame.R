@@ -866,8 +866,15 @@ cut.H2OFrame <- h2o.cut
 #' data <- as.h2o(iris)
 #' match_col <- h2o.match(data$Species, c("setosa", "versicolor", "setosa"))
 #' iris_match <- h2o.cbind(data, match_col)
-#' sample <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)[1]
+#' sample <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)[[1]]
 #' sample
+#' #   Sepal.Length Sepal.Width Petal.Length Petal.Width    Species  C1
+#' #1          5.2         3.5          1.5         0.2     setosa   1
+#' #2          5.0         3.5          1.3         0.3     setosa   1
+#' #3          7.0         3.2          4.7         1.4 versicolor   2
+#' #4          4.9         2.4          3.3         1.0 versicolor   2
+#' #5          5.5         2.4          3.8         1.1 versicolor   2
+#' #6          5.8         2.7          5.1         1.9  virginica NaN
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch=NA_integer_, start_index=1) {

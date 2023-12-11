@@ -72,7 +72,7 @@ test.match <- function() {
     # test doc example 
     match_col <- h2o.match(data$Species, c("setosa", "versicolor", "setosa"))
     iris_match <- h2o.cbind(data, match_col)
-    sample <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)[1]
+    sample <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)[[1]]
     print(sample)
 }
 
