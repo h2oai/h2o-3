@@ -133,6 +133,7 @@ checkRInstallLog R.install.5.log
 # uplift 0.3.5 requires coin installed above
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
   install_version('ROCR', version = '1.0-7'); \
+  install_version('htmlTable', version = '1.13'); \
   install_version('Hmisc', version = '4.3-0'); \
   install_version('uplift', version = '0.3.5'); \
 " 2>&1 | tee R.install.6.log
