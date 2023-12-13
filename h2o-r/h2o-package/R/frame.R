@@ -851,25 +851,35 @@ cut.H2OFrame <- h2o.cut
 #' \code{match} and \code{\%in\%} return values similar to the base R generic
 #' functions.
 #'
-#' @param x a categorical vector from an H2OFrame object with
+#' @param x a vector from an H2OFrame object with
 #'        values to be matched.
-#' @param table an R object to match \code{x} against.
-#' @param nomatch the value to be returned in the case when no match is found.
-#' @param incomparables a vector of calues that cannot be matched. Any value in
-#'        \code{x} matching a value in this vector is assigned the
-#'        \code{nomatch} value.
-#' @return Returns a vector of the positions of (first) matches of its first argument in its second
+#' @param table an R object to match \code{x} against. Duplicates are ignored. The index of the first occurrence 
+#'        will be used.
+#' @param nomatch the value to be returned in the case when no match is found. Numeric value or NaN, default is NaN.
+#' @param start_index  index from which this starts the indexing of the table list, numeric value >=0, default is 1.
+#' @return Returns a new H2OFrame containing a vector where the index of value from the table is returned 
+#'        if the value matches; returns \code{nomatch} value otherwise.
 #' @seealso \code{\link[base]{match}} for base R implementation.
 #' @examples
 #' \dontrun{
 #' h2o.init()
-#' iris_hf <- as.h2o(iris)
-#' h2o.match(iris_hf[, 5], c("setosa", "versicolor"))
+#' data <- as.h2o(iris)
+#' match_col <- h2o.match(data$Species, c("setosa", "versicolor", "setosa"))
+#' iris_match <- h2o.cbind(data, match_col)
+#' sample <- h2o.splitFrame(iris_match, ratios=0.05, seed=1)[[1]]
+#' sample
+#' #   Sepal.Length Sepal.Width Petal.Length Petal.Width    Species  C1
+#' #1          5.2         3.5          1.5         0.2     setosa   1
+#' #2          5.0         3.5          1.3         0.3     setosa   1
+#' #3          7.0         3.2          4.7         1.4 versicolor   2
+#' #4          4.9         2.4          3.3         1.0 versicolor   2
+#' #5          5.5         2.4          3.8         1.1 versicolor   2
+#' #6          5.8         2.7          5.1         1.9  virginica NaN
 #' }
 #' @export
-h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
+h2o.match <- function(x, table, nomatch=NA_integer_, start_index=1) {
   if( !is.H2OFrame(table) && length(table)==1 && base::is.character(table) ) table <- .quote(table)
-  .newExpr("match", chk.H2OFrame(x), table, nomatch, incomparables)
+  .newExpr("match", chk.H2OFrame(x), table, nomatch, start_index)
 }
 
 #' @rdname h2o.match
