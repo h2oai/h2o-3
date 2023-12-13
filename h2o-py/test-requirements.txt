@@ -9,7 +9,8 @@ cython==0.29.34
 twine==1.10.0
 urllib3==1.26.5
 grip==4.4.0
-wheel==0.38.0
+wheel<=0.42.0; python_version < '3.7'
+wheel==0.42.0; python_version >= '3.7'
 numpy<=1.23.5; python_version < '3.8'
 numpy==1.23.5; python_version >= '3.8'
 scipy==1.2.3; python_version == '3.6'
