@@ -180,14 +180,6 @@ Common parameters
 
     - ``AUTO`` (default)
     - ``bernoulli`` -- response column must be 2-class categorical
-    - ``multinomial`` -- response column must be categorical
-    - ``poisson`` -- response column must be numeric
-    - ``gaussian`` -- response column must be numeric
-    - ``gamma`` -- response column must be numeric
-    - ``laplace`` -- response column must be numeric
-    - ``quantile`` -- response column must be numeric
-    - ``huber`` -- response column must be numeric
-    - ``tweedie`` -- response column must be numeric
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
 
@@ -200,6 +192,19 @@ Common parameters
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
+
+-  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
+    
+    - ``AUTO`` (This defaults to ``logloss`` for classification and ``deviance`` for regression)
+    - ``AUUC`` (area under the uplift curve, for UpliftDRF only)
+    - ``qini`` (difference between the Qini AUUC and area under the random uplift curve, for UpliftDRF only)
+    - ``ATE`` (average treatment effect, for UpliftDRF only)
+    - ``ATT`` (average treatment effect on the Treated, for UpliftDRF only)
+    - ``ATC`` (average treatment effect on the Control, for UpliftDRF only)
+   
+-  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). The metric is computed on the validation data (if provided); otherwise, training data is used. 
+
+-  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to ``0.001``.
 
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
    
@@ -216,7 +221,6 @@ Common parameters
 Leaf Node Assignment 
 ~~~~~~~~~~~~~~~~~~~~
 Leaf Node assignment is not currently supported.
-
 
 Interpreting an Uplift DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,7 +247,6 @@ By default, the following output displays:
 -  **AECU table** which contains all computed AECU values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
 -  **Uplift Curve plot** for given metric type (qini, lift, gain)
-
 
 Treatment effect metrics (ATE, ATT, ATC)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -330,7 +333,6 @@ Custom metric example for Uplift DRF
     att = perf.att(train=True)
     print(att)
 
-
 Uplift Curve and Area Under Uplift Curve (AUUC) calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -380,13 +382,11 @@ Qini value is calculated as the difference between the Qini AUUC and area under 
 .. image:: /images/qini_value.png
    :width: 640px
    :height: 480px
-   
 
 Average Excess Cumulative Uplift (AECU)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The Qini value can be generalized for all AUUC metric types. So AECU for Qini metric is the same as Qini value, but the AECU can be also calculated for Gain and Lift metric type. These values are stored in ``aecu_table``.
-
 
 Examples
 ~~~~~~~~
@@ -533,7 +533,6 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     
     # Get AECU values in a table
     print(perf.aecu_table())
-
 
 FAQ
 ~~~
