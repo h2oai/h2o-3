@@ -6,6 +6,7 @@ from tests import pyunit_utils
 from tests.pyunit_utils import CustomMaeFunc, CustomRmseFunc, \
     assert_correct_custom_metric, regression_model, multinomial_model, binomial_model
 from h2o.estimators import H2OXGBoostEstimator
+from h2o.exceptions import H2OResponseError
 
 
 # Custom model metrics fixture
@@ -32,9 +33,12 @@ def test_custom_metric_computation_binomial():
 
 
 def test_custom_metric_computation_together_with_eval_metric():
-    (model, f_test) = binomial_model(H2OXGBoostEstimator, custom_rmse_mm(), {"eval_metric": "error@0.6", "score_eval_metric_only": True})
-    print(model)
-    assert_correct_custom_metric(model, f_test, "rmse", "Binomial on prostate")
+    params = {"eval_metric": "error@0.6"}
+    try:
+        binomial_model(H2OXGBoostEstimator, custom_rmse_mm(), params)
+        raise "Should fail"
+    except H2OResponseError as e:
+        assert "Custom metric is not supported together with eval_metric parameter" in str(e)
 
 
 def test_custom_metric_computation_multinomial():
@@ -48,7 +52,7 @@ __TESTS__ = [
     test_custom_metric_computation_binomial,
     test_custom_metric_computation_regression,
     test_custom_metric_computation_multinomial,
-    # test_custom_metric_computation_together_with_eval_metric
+    test_custom_metric_computation_together_with_eval_metric
 ]
 
 if __name__ == "__main__":
