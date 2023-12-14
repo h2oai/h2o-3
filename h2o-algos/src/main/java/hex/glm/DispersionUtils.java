@@ -179,7 +179,12 @@ public class DispersionUtils {
      * In addition, line search is used to increase the magnitude of the update when the update magnitude is too small
      * (< 1e-3).  
      * 
-     * For details, please see section IV.I, IV.II, and IV.III in document here: 
+     * Every 10th iteration it checks if the optimization doesn't diverge. If it looks like it diverged, it uses a
+     * different likelihood estimation that should be more accurate (combination of Series and Fourier inversion method)
+     * but without gradients. For this reason it will use a Golden section search which doesn't require gradients and
+     * has a linear convergence.
+     * 
+     * For details, please see sections IV.I, IV.II, and IV.III in document here: 
      */
     public static double estimateTweedieDispersionOnly(GLMModel.GLMParameters parms, GLMModel model, Job job,
                                                               double[] beta, DataInfo dinfo) {
