@@ -274,8 +274,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   protected void checkCustomMetricForEarlyStopping() {
-    if (_parms._eval_metric == null) {
+    if (_parms._eval_metric == null && !_parms.hasCustomMetricFunc()) {
       error("_eval_metric", "Evaluation metric needs to be defined in order to use it for early stopping.");
+      super.checkCustomMetricForEarlyStopping();
     }
   }
 

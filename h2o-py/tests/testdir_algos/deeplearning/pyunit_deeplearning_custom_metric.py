@@ -42,6 +42,7 @@ def test_custom_metric_computation_multinomial_autoencoder():
     params = {"autoencoder": True}
     try:
         multinomial_model(H2ODeepLearningEstimator, custom_rmse_mm(), params)
+        raise "Should fail"
     except H2OResponseError as e:
         assert "Custom metric is not supported for Autoencoder." in str(e)
         
