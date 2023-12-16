@@ -351,6 +351,7 @@ def algo_to_classname(algo):
     if algo == "rulefit": return "H2ORuleFitEstimator"
     if algo == "modelselection": return "H2OModelSelectionEstimator"
     if algo == "isotonicregression": return "H2OIsotonicRegressionEstimator"
+    if algo == "adaboost": return "H2OAdaBoostEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 

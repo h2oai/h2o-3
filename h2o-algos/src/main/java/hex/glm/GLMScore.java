@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.CMetricScoringTask;
 import hex.DataInfo;
 import hex.ModelMetrics;
 import water.Job;
@@ -7,6 +8,7 @@ import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
+import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
@@ -15,7 +17,7 @@ import java.util.Arrays;
 /**
  * Created by tomas on 3/15/16.
  */
-public class GLMScore extends MRTask<GLMScore> {
+public class GLMScore extends CMetricScoringTask<GLMScore> {
   final GLMModel _m;
   final Job _j;
   ModelMetrics.MetricBuilder _mb;
@@ -34,7 +36,8 @@ public class GLMScore extends MRTask<GLMScore> {
 
 
 
-  public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions) {
+  public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions, CFuncRef customMetric) {
+    super(customMetric);
     _j = j;
     _m = m;
     _computeMetrics = computeMetrics;
@@ -125,8 +128,10 @@ public class GLMScore extends MRTask<GLMScore> {
       Arrays.fill(ps,0);
     } else {
       scoreRow(r, r.offset, ps);
-      if (_computeMetrics && !r.response_bad)
+      if (_computeMetrics && !r.response_bad) {
         _mb.perRow(ps, res, r.weight, r.offset, _m);
+        customMetricPerRow(ps, res, r.weight, r.offset, _m);
+      }
     }
     if (_generatePredictions) {
       for (int c = 0; c < ncols; c++)  // Output predictions; sized for train only (excludes extra test classes)
@@ -172,12 +177,18 @@ public class GLMScore extends MRTask<GLMScore> {
 
   @Override
   public void reduce(GLMScore bs) {
+    super.reduce(bs);
     if (_mb != null) _mb.reduce(bs._mb);
   }
 
   @Override
   protected void postGlobal() {
-    if (_mb != null) _mb.postGlobal();
+    super.postGlobal();
+    if(_mb != null) {
+      _mb.postGlobal(getComputedCustomMetric());
+      if (null != cFuncRef)
+        _mb._CMetricScoringTask = (CMetricScoringTask) this;
+    }
   }
 }
 

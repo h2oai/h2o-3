@@ -9,6 +9,7 @@
 #'
 #' @return  resulting frame with TF-IDF values.
 #'          Row format: documentID, word, TF, IDF, TF-IDF
+#' @export
 h2o.tf_idf <- function(frame, document_id_col, text_col, preprocess=TRUE, case_sensitive=TRUE) {
     col_indices <- c()
     for (col in c(document_id_col, text_col))

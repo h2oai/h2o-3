@@ -5,29 +5,30 @@ import hex.KeyValue;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.XGBoostModel;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.exceptions.H2OIllegalValueException;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
-public class AutoMLBuildSpecTest extends water.TestUtil {
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class AutoMLBuildSpecTest {
 
     @Rule
     public ExpectedException thrown= ExpectedException.none();
 
     @Rule
     public final TestRule restoreSystemProperties = new RestoreSystemProperties();
-
-    @BeforeClass
-    public static void setup() { stall_till_cloudsize(1); }
 
     private void enableAnyCustomParam() {
         System.setProperty(AutoMLCustomParameters.ALGO_PARAMS_ALL_ENABLED, "true");

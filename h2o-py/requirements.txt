@@ -18,6 +18,9 @@ gssapi
 #pandas
 #scipy
 #sklearn
+#datatable
+#pyarrow
+#polars
 
 # [-plotting]
 #matplotlib

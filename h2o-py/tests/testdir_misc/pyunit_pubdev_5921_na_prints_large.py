@@ -24,11 +24,11 @@ def partial_plot_test():
     gbm_model.train(x=x, y=y, training_frame=data)
 
     # pdp with weight and no NA
-    pdpw = gbm_model.partial_plot(data=test, cols=["Input_miss", "Distance"], server=True, plot=False,
+    pdpw = gbm_model.partial_plot(frame=test, cols=["Input_miss", "Distance"], server=True, plot=False,
                                   weight_column=WC)
 
     # pdp with weight and NA
-    pdpwNA = gbm_model.partial_plot(data=test, cols=["Input_miss", "Distance"], server=True, plot=False,
+    pdpwNA = gbm_model.partial_plot(frame=test, cols=["Input_miss", "Distance"], server=True, plot=False,
                                     weight_column=WC, include_na = True)
     input_miss_list = pyunit_utils.extract_col_value_H2OTwoDimTable(pdpwNA[0], "input_miss")
     assert math.isnan(input_miss_list[-1]), "Expected last element to be nan but is not."

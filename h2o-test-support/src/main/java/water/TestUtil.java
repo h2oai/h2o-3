@@ -14,6 +14,8 @@ import org.junit.runners.model.Statement;
 import water.api.StreamingSchema;
 import water.fvec.*;
 import water.init.NetworkInit;
+import water.junit.Priority;
+import water.junit.rules.RulesPriorities;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
@@ -402,9 +404,9 @@ public class TestUtil extends Iced {
     }
   };
 
-  /* Ignore tests specified in the ignore.tests system property */
+  /* Ignore tests specified in the ignore.tests system property: applied last, if test is ignored, no other rule with be evaluated */
   @Rule
-  transient public TestRule runRule = new TestRule() {
+  transient public TestRule runRule = new @Priority(RulesPriorities.RUN_TEST) TestRule() {
     @Override
     public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
@@ -450,7 +452,6 @@ public class TestUtil extends Iced {
     class TimerStatement extends Statement {
       private final Statement _base;
       private final String _tname;
-      Throwable _ex;
 
       public TimerStatement(Statement base, String tname) {
         _base = base;
@@ -462,11 +463,8 @@ public class TestUtil extends Iced {
         Timer t = new Timer();
         try {
           _base.evaluate();
-        } catch (Throwable ex) {
-          _ex = ex;
-          throw _ex;
         } finally {
-          Log.info("#### TEST " + _tname + " EXECUTION TIME: " + t.toString());
+          Log.info("#### TEST " + _tname + " EXECUTION TIME: " + t);
         }
       }
     }
@@ -909,6 +907,48 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(Key.make(), res, true, p);
 
   }
+
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, 
+                                    ParseSetupTransformer transformer, int[] skippedColumns, boolean force_col_types) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
+
+    Key[] res = {nfs._key};
+
+    // create new parseSetup in order to store our na_string
+    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO, (byte) ',', false,
+            check_header, 0, null, null, null, null, null, null, null));
+    if (skippedColumns != null) {
+      p.setSkippedColumns(skippedColumns);
+      p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
+    }
+    
+    if (force_col_types)  // only useful for parquet parsers here
+      p.setForceColTypes(true);
+
+    // add the na_strings into p.
+    if (na_string != null) {
+      int column_number = p.getColumnTypes().length;
+      int na_length = na_string.length() - 1;
+
+      String[][] na_strings = new String[column_number][na_length + 1];
+
+      for (int index = 0; index < column_number; index++) {
+        na_strings[index][na_length] = na_string;
+      }
+
+      p.setNAStrings(na_strings);
+    }
+
+    if (column_types != null)
+      p.setColumnTypes(column_types);
+
+    if (transformer != null)
+      p = transformer.transformSetup(p);
+
+    return ParseDataset.parse(Key.make(), res, true, p);
+
+  }
+
 
   /**
    * @deprecated use {@link #parseTestFolder(String)} instead

@@ -83,6 +83,8 @@ public abstract class SharedTree<
   private transient SharedTreeDebugParams _debugParms;
 
   public boolean isSupervised(){return true;}
+  
+  public boolean isUplift() {return false;}
 
   public boolean providesVarImp() {
     return isSupervised();
@@ -529,7 +531,7 @@ public abstract class SharedTree<
           _job.update(_parms._ntrees-tid-1); // add remaining trees to progress bar
           break; // If timed out, do the final scoring
         }
-        if (stop_requested()) throw new Job.JobCancelledException();
+        if (stop_requested()) throw new Job.JobCancelledException(_job);
         if (tid == _ntrees - 1 && _coordinator != null) {
           _coordinator.updateParameters();
         }
@@ -551,7 +553,7 @@ public abstract class SharedTree<
   
   protected ScoreKeeper.ProblemType getProblemType() {
     assert isSupervised();
-    return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
+    return ScoreKeeper.ProblemType.forSupervised(isClassifier(), isUplift());
   }
   
   // --------------------------------------------------------------------------
@@ -838,7 +840,6 @@ public abstract class SharedTree<
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
-
       // Score again on validation data
       if( _parms._valid != null) {
         Frame v = new Frame(valid());
@@ -852,6 +853,7 @@ public abstract class SharedTree<
         ModelMetrics mmv = scv.scoreAndMakeModelMetrics(_model, _parms.valid(), v, build_tree_one_node);
         _lastScoredTree = _model._output._ntrees;
         out._validation_metrics = mmv;
+        out._validation_metrics._description = "Validation metrics";
         if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
           out._scored_valid[out._ntrees].fillFrom(mmv);
       }

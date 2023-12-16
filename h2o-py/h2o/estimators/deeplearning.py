@@ -34,7 +34,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
     supervised_learning = True
     _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryDL',
                                       'h2o.model.extensions.VariableImportance',
-                                      'h2o.model.extensions.Fairness'],
+                                      'h2o.model.extensions.Fairness',
+                                      'h2o.model.extensions.Contributions'],
                  'verbose': True}
 
     def __init__(self,
@@ -127,6 +128,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  elastic_averaging_regularization=0.001,  # type: float
                  export_checkpoints_dir=None,  # type: Optional[str]
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 custom_metric_func=None,  # type: Optional[str]
+                 gainslift_bins=-1,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -432,6 +435,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               Defaults to ``None``.
+        :type custom_metric_func: str, optional
+        :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
+               binning.
+               Defaults to ``-1``.
+        :type gainslift_bins: int
         """
         super(H2ODeepLearningEstimator, self).__init__()
         self._parms = {}
@@ -524,6 +534,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         self.elastic_averaging_regularization = elastic_averaging_regularization
         self.export_checkpoints_dir = export_checkpoints_dir
         self.auc_type = auc_type
+        self.custom_metric_func = custom_metric_func
+        self.gainslift_bins = gainslift_bins
 
     @property
     def training_frame(self):
@@ -3218,6 +3230,34 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
+
+    @property
+    def gainslift_bins(self):
+        """
+        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
+
+        Type: ``int``, defaults to ``-1``.
+        """
+        return self._parms.get("gainslift_bins")
+
+    @gainslift_bins.setter
+    def gainslift_bins(self, gainslift_bins):
+        assert_is_type(gainslift_bins, None, int)
+        self._parms["gainslift_bins"] = gainslift_bins
 
 
 

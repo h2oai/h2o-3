@@ -19,6 +19,8 @@ import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
@@ -32,9 +34,43 @@ import static water.H2O.technote;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
-  @Override public ToEigenVec getToEigenVec() {
+public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningModelOutput>
+        implements Model.DeepFeatures, Model.Contributions {
+  @Override
+  public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    if (null == backgroundFrame)
+      throw H2O.unimpl("DeepLearning supports contribution calculation only with a background frame.");
+    Log.info("Starting contributions calculation for "+this._key+"...");
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame adaptedFrame = adaptFrameForScore(frame, false);
+      DKV.put(Scope.track_generic(adaptedFrame)); //use track_generic as a Scope lookup optimization as we know it contains only protected vecs
+      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+      DKV.put(Scope.track_generic(adaptedBgFrame)); //same as above
+      DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(this,
+              adaptedFrame._key,
+              adaptedBgFrame._key,
+              options._outputPerReference,
+              ContributionsOutputFormat.Compact.equals(options._outputFormat)
+                      ? model_info.data_info().coefOriginalColumnIndices(adaptedFrame)
+                      : null,
+              options._outputSpace);
+
+      String[] cols = ContributionsOutputFormat.Compact.equals(options._outputFormat)
+              ? model_info.data_info.coefOriginalNames(adaptedFrame)
+              : model_info.data_info.coefNames();
+      String[] colNames = new String[cols.length + 1]; // +1 for bias term
+
+      System.arraycopy(cols, 0, colNames, 0, colNames.length - 1);
+      colNames[colNames.length - 1] = "BiasTerm";
+      return Scope.untrack(contributions.runAndGetOutput(j, destination_key, colNames));
+    } finally {
+      Log.info("Finished contributions calculation for "+this._key+"...");
+    }
   }
 
   /**
@@ -213,7 +249,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[i] = IcedUtils.deepCopy(cp.scoringInfo[i]);
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
+    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder(), _parms.hasCustomMetricFunc());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output.setNames(dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.typesStr());
     _output._domains = dataInfo._adaptedFrame.domains();
@@ -248,7 +284,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[0].validation = (parms._valid != null);
       scoringInfo[0].time_stamp_ms = System.currentTimeMillis();
       _output.errors = last_scored();
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder(), _parms.hasCustomMetricFunc());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     time_of_start_ms = System.currentTimeMillis();
@@ -387,7 +423,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         Frame preds = null;
         if (needPreds) {
           // allocate predictions since they are needed
-          preds = score(fTrain);
+          preds = score(fTrain, CFuncRef.from(_parms._custom_metric_func));
           mtrain = ModelMetrics.getFromDKV(this, fTrain);
           if (get_params()._distribution == DistributionFamily.huber) {
             Vec absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
@@ -419,7 +455,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           preds = null;
           if (needPreds) {
             // allocate predictions since they are needed
-            preds = score(fValid);
+            preds = score(fValid, CFuncRef.from(_parms._custom_metric_func));
             mvalid = ModelMetrics.getFromDKV(this, fValid);
           } else {
             // no need to allocate predictions
@@ -484,7 +520,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (!get_params()._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder(), _parms.hasCustomMetricFunc());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 
@@ -783,6 +819,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     Frame res = new Frame(destination_key, names, mse.vecs());
     DKV.put(res);
+    
     addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/, CustomMetric.EMPTY));
     return res;
   }
@@ -825,7 +862,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final int n=1;
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
-        if (isCancelled() || job !=null && job.stop_requested()) throw new Job.JobCancelledException();
+        if (isCancelled() || job !=null && job.stop_requested()) throw new Job.JobCancelledException(job);
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
@@ -1750,6 +1787,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (_nfolds > 1) {
           dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
         }
+        if(_custom_metric_func != null) {
+          dl.error("_custom_metric_func", "Custom metric is not supported for Autoencoder.");
+        }
       }
       if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
         dl.error("_categorical_encoding", "Cannot use Enum encoding for categoricals - need numbers!");
@@ -2314,6 +2354,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       default:
         return null;
     }
+  }
+
+  @Override
+  public double score(double[] data) {
+    double[] pred = score0(data, new double[_output.nclasses() + 1], 0);
+    score0PostProcessSupervised(pred, data);
+    return pred[0];
   }
 
 

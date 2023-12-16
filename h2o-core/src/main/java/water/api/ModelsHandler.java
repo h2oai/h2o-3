@@ -204,7 +204,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       s.h  = ((FriedmanPopescusHCollector) model).getFriedmanPopescusH(s.frame._fr, s.variables);
       return s;
     } else {
-      throw H2O.unimpl(String.format("%s does not support feature interactions calculation", model._parms.fullName()));
+      throw H2O.unimpl(String.format("%s does not support Friedman Popescus H calculation", model._parms.fullName()));
     }
   }
 

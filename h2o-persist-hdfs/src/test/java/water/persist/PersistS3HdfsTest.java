@@ -2,11 +2,9 @@ package water.persist;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.s3.S3FileSystem;
-import org.jets3t.service.S3Service;
-import org.jets3t.service.model.S3Object;
+import org.apache.hadoop.fs.s3a.S3AFileSystem;
+import com.amazonaws.services.s3.model.S3Object;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,29 +35,14 @@ public class PersistS3HdfsTest extends TestUtil  {
 
     PersistHdfs hdfsPersist = (PersistHdfs) H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
 
-    String existing = "s3://" + bucket + "/" + key;
+    String existing = "s3a://" + bucket + "/" + key;
     Path p = new Path(existing);
 
-    S3FileSystem fs = (S3FileSystem) FileSystem.get(p.toUri(), PersistHdfs.CONF);
-    // use crazy reflection to get to the actual S3 Service instance
-    S3Service s3Service = (S3Service) getValue(fs, "store", "h", "proxyDescriptor", "fpp", "proxy", "s3Service");
-
-    S3Object s3Object = s3Service.getObject(bucket, key);
+    S3AFileSystem fs = (S3AFileSystem) FileSystem.get(p.toUri(), PersistHdfs.CONF);
+    S3Object s3Object = fs.getAmazonS3ClientForTesting("testPubDev5663").getObject(bucket, key);
+    
     assertNotNull(s3Object); // The object exists
-    assertFalse(fs.exists(p)); // But FS says it doesn't => S3 is broken in Hadoop
-    assertFalse(hdfsPersist.exists(existing)); // Our persist gives the same result
+    assert(fs.exists(p)); // But FS says it exists as well.
+    assert(hdfsPersist.exists(existing)); // Our persist gives the same result
   }
-
-  private Object getValue(Object o, String... fieldNames) {
-    StringBuilder path = new StringBuilder(o.getClass().getName());
-    for (String f : fieldNames) {
-      path.append('.').append(f);
-      Object no = ReflectionUtils.getFieldValue(o, f);
-      if (no == null)
-        throw new IllegalStateException("Invalid path: " + path.toString() + ", object is instance of " + o.getClass());
-      o = no;
-    }
-    return o;
-  }
-
 }

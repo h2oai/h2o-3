@@ -6,42 +6,17 @@ This page houses the most recent major release blog and focused content blogs fo
 Major Release Blogs
 -------------------
 
-H2O Releases 3.40 & 3.42
-~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: /images/blog/rel-3_42.png
+H2O Release 3.44
+~~~~~~~~~~~~~~~~
 
-Our new major releases of H2O are packed with new features and fixes! Some of the major highlights of these releases are the new Decision Tree algorithm, the added ability to grid over Infogram, an upgrade to the version of XGBoost and an improvement to its speed, the completion of the maximum likelihood dispersion parameter and its expansion to the Negative Binomial and the Tweedie families, and many more exciting features!
+.. image:: /images/blog/rel-3-44.png
 
-Decision Tree (Yuliia Syzon)
-''''''''''''''''''''''''''''
+We are excited to announce the release of H2O-3 3.44.0.1! We have added and improved many items. A few of our highlights are the implementation of AdaBoost, Shapley values support, Python 3.10 and 3.11 support, and added custom metric support for Deep Learning, Uplift Distributed Random Forest (DRF), Stacked Ensemble, GLM, and AutoML. Please read on for more details.
 
-We implemented the new `Decision Tree algorithm <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/decision-tree.html>`__ which is a powerful tool for classification and regression tasks. The Decision Tree algorithm creates a tree structure in which each internal node represents a test on one attribute. Each branch emerging from a node represents an outcome of the test, and each leaf node represents a class label or a predicted value. The Decision Tree algorithm follows a recursive process to build the tree structure. This implementation currently only supports numeric features and a binary target variable. 
+AdaBoost (Adam Valenta)
+'''''''''''''''''''''''
 
-Binning for Tree Building
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To handle large datasets efficiently, the Decision Tree algorithm utilizes binning as a preprocessing step at each internal node. Binning involves discretizing continuous features into a finite number of bins. This reduces the computational complexity of finding the best attribute and threshold for each split. The binned features are then used for split point selection during tree construction, allowing for faster computation. The attribute and threshold combination that minimizes the weighted average of the entropies of the resulting subsets is selected as the best split point.
-
-Entropy as a Splitting Rule
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The Decision Tree algorithm employs entropy as the splitting rule to determine the best attribute and threshold for each node. Entropy measures the impurity or disorder within a set of samples. The goal is to find splits that minimize the entropy and create homogenous subsets with respect to the target variable.
-
-The entropy of a set S with respect to a binary target variable can be calculated using the following formula:
-
-.. math::
-    
-    \text{Entropy}(S) = -p_1 \times \log 2(p_1) - p_0 \times \log 2(p_0)
-
-where:
-
-- :math:`p_1` is the proportion of positive (or class 1) samples in :math:`S`
-- :math:`p_0` is the proportion of negative (or class 0) samples in :math:`S`
-
-The attribute and threshold combination that minimizes the weighted average of the entropies of the resulting subsets is selected as the best split point.
-
-Example
-^^^^^^^
+We are proud to introduce `AdaBoost <data-science/adaboost.html>`__, an algorithm known for its effectiveness in improving model performance. AdaBoost is particularly notable for its approach in constructing an ensemble of weak learners (typically decision trees) and sequentially refining them to enhance predictive accuracy. It achieves this by assigning higher weights to misclassified data points in each iteration. This emphasizes the correction of errors and ultimately leads to a more precise and robust predictive model. This adaptability and refinement makes AdaBoost a valuable tool in various domains, allowing it to aid in better predictions and informed decision-making.
 
 .. tabs::
     .. code-tab:: r R
@@ -49,534 +24,240 @@ Example
         library(h2o)
         h2o.init()
 
-        # Import the prostate dataset:
-        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-
-        # Set the target variable:
-        target_variable <- 'CAPSULE'
-        prostate[target_variable] <- as.factor(prostate['CAPSULE'])
-
-        # Split the dataset into train and test:
-        splits <- h2o.splitFrame(data = prostate, ratios = 0.7, seed =1)
-        train <- splits[[1]]
-        test <- splits[[2]]
-
-        # Build and train the model:
-        h2o_dt <- h2o.decision_tree(y = target_variable, training_frame = train, max_depth = 5)
-
-        # Predict on the test data:
-        h2o_pred <- h2o.predict(h2o_dt, test)$predict
-
-    .. code-tab:: python
-
-        import h2o
-        from h2o.estimators import H2ODecisionTreeEstimator
-        h2o.init()
-
-        # Import the prostatedataset:
-        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-
-        # Set the target variable:
-        target_variable = 'CAPSULE'
-        prostate[target_variable] = prostate[target_variable].asfactor()
-
-        # Split the dataset into train and test:
-        train, test = prostate.split(ratios=[.7])
-
-        # Build and train the model:
-        sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex", max_depth=5)
-        sdt_h2o.train(y=target_variable, training_frame=train)
-
-        # Predict on the test data:
-        pred_test = sdt_h2o.predict(test)
-
-GLM AIC and Log Likelihood Implementation (Yuliia Syzon)
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-We have implemented the calculation of `full log likelihood and full Akaike Information Criterion (AIC) <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#likelihood-and-aic>`__ for the following Generalized Linear Models (GLM) families: Gaussian, Binomial, Quasibinomial, Fractional Binomial, Poisson, Negative Binomial, Gamma, Tweedie, and Multinomial.
-
-The log likelihood is computed using specific formulas tailored to each GLM family, while the AIC is calculated using a common formula that utilizes the calculated log likelihood.
-
-To manage the computational intensity of the implementation, we introduced the ``calc_like`` parameter. Setting ``calc_like=True``, you enable the calculation of log likelihood and AIC. This computation is performed during the final scoring phase after the model has been built.
-
-Consider the following:
-
-- For the Gaussian, Gamma, Negative Binomial, and Tweedie families, it is necessary to estimate the dispersion parameter. During initialization, the ``compute_p_values`` and ``remove_collinear_columns`` parameters are automatically set to ``True`` to facilitate the estimation process. For the Gaussian family, the ``dispersion_parameter_method`` parameter is set to ``"pearson"`` and for the Gamma, Negative Binomial, and Tweedie families, the ``dispersion_parameter_method`` is set to ``"ml"``.
-- The log likelihood value is not available in the cross-validation metrics. The AIC, however, is available and is calculated by the original simplified formula independent of the log likelihood.
-
-Example
-^^^^^^^
-
-.. tabs::
-    .. code-tab:: r R
-
-        library(h2o)
-        h2o.init()
-
-        # Import the complete prostate dataset:
-        pros <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate_complete.csv.zip")
-
-        # Set the predict and response values:
-        predict <- c("ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS")
-        response <- "GLEASON"
-
-        # Build and train the model:
-        pros_glm <- h2o.glm(calc_like = TRUE, 
-                            x = predict, 
-                            y = response, 
-                            training_frame = pros, 
-                            family = "gaussian", 
-                            link = "identity", 
-                            alpha = 0.5, 
-                            lambda = 0, 
-                            nfolds = 0)
-
-        # Retrieve the AIC:
-        h2o.aic(pros_glm)
-        [1] 507657.1
-
-    .. code-tab:: python
-
-        import h2o
-        from h2o.estimators import H2OGeneralizedLinearEstimator
-        h2o.init()
-
-        # Import the complete prostate dataset:
-        pros = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate_complete.csv.zip")
-
-        # Set the predict and response values:
-        predict = ["ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
-        response = "GLEASON"
-
-        # Build and train the model:
-        pros_glm = H2OGeneralizedLinearEstimator(calc_like=True, 
-                                                 family="gaussian", 
-                                                 link="identity", 
-                                                 alpha=0.5, 
-                                                 lambda_=0, 
-                                                 nfolds=0)
-        pros_glm.train(x=predict, y=response, training_frame=pros)
-
-        # Retrieve the AIC:
-        pros_glm.aic()
-        507657.118558785
-
-Maximum Likelihood Estimation of Dispersion Parameter Estimation for Negative Binomial GLM (Tomáš Frýda)
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-We implemented `negative binomial regression with dispersion parameter estimation using the maximum likelihood method <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#id2>`__ for Generalized Linear Models (GLM). Regularization is not supported when using dispersion parameter estimation that uses the maximum likelihood method. To use this new feature, set the ``dispersion_parameter_method="ml"`` along with ``family="negativebinomial"`` in the GLM constructor.
-
-.. tabs::
-    .. code-tab:: r R
-
-        library(h2o)
-        h2o.init()
-
-        # Import the complete prostate dataset:
-        pros <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate_complete.csv.zip")
-
-        # Set the predict and response values:
-        predict <- c("ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS")
-        response <- "GLEASON"
-
-        # Build and train the model:
-        pros_glm <- h2o.glm(calc_like = TRUE, 
-                            family = "negativebinomial", 
-                            link = "identity", 
-                            dispersion_parameter_method = "ml", 
-                            alpha = 0.5, 
-                            lambda = 0, 
-                            nfolds = 0, 
-                            x = predict, 
-                            y = response, 
-                            training_frame = pros)
-
-        # Retrieve the estimated dispersion:
-        pros_glm@model$dispersion
-        [1] 34.28341
-
-    .. code-tab:: python
-
-        import h2o
-        from h2o.estimators import H2OGeneralizedLinearEstimator
-        h2o.init()
-
-        # Import the complete prostate dataset:
-        pros = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate_complete.csv.zip")
-
-        # Set the predictor and response values:
-        predict = ["ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
-        response = "GLEASON"
-
-        # Build and train the model:
-        pros_glm = H2OGeneralizedLinearEstimator(calc_like=True, 
-                                                 family="negativebinomial", 
-                                                 link="identity", 
-                                                 dispersion_parameter_method="ml", 
-                                                 alpha=0.5, 
-                                                 lambda_=0, 
-                                                 nfolds=0)
-        pros_glm.train(x=predict, y=response, training_frame=pros)
-
-        # Retrieve the estimated dispersion:
-        pros_glm._model_json["output"]["dispersion"]
-        34.28340576771586
-
-Variance Power and Dispersion Estimation for Tweedie GLM (Tomáš Frýda)
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-We implemented `maximum likelihood estimation for Tweedie variance power <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#tweedie-likelihood-calculation>`__ in GLM. Regularization is not supported when using the maximum likelihood method. To use this new feature, set the ``dispersion_parameter_method="ml"`` along with ``family="tweedie"``, ``fix_dispersion_parameter=True``, and ``fix_tweedie_variance_power=False`` in the GLM constructor. Use ``init_dispersion_parameter`` to specify the dispersion parameter (:math:`\phi`) and ``tweedie_variance_power`` to specify the initial variance power to start the estimation at. 
-
-To estimate both Tweedie variance power and dispersion, set ``dispersion_parameter_method="ml"`` along with ``family="tweedie"``, ``fix_dispersion_parameter=False``, and ``fix_tweedie_variance_power=False`` in the GLM constructor. Again, use ``init_dispersion_parameter`` to specify the dispersion parameter (:math:`\phi`) and ``tweedie_variance_power`` to specify the initial variance power to start the estimation at. 
-
-For datasets containing zeroes, the Tweedie variance power is limited to (1,2). Likelihood of the Tweedie distribution with a variance power close to 1 is multimodal, so the likelihood estimation can end up in a local optimum.
-
-For Tweedie variance power and dispersion estimations, estimation is done using the Nelder-Mead algorithm and has similar limitations to Tweedie variance power. 
-
-If you believe the estimate is a local optimum, you might want to increase the ``dispersion_learning_rate``. This only applies to Tweedie variance power and dispersion estimation.
-
-.. tabs::
-    .. code-tab:: r R
-
-        library(h2o)
-        h2o.init()
-
-        # Import the tweedie 10k rows dataset:
-        train <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p1p2_phi2_5Cols_10KRows.csv")
-
-        # Set the predictors and response:
-        predictors <- c('abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.')
-        response <- 'resp'
-
-        # Build and train the model:
-        model <- h2o.glm(x = predictors, 
-                         y = response, 
-                         training_frame = train, 
-                         family = "tweedie", 
-                         fix_dispersion_parameter = FALSE, 
-                         fix_tweedie_variance_power = FALSE, 
-                         tweedie_variance_power = 1.5, 
-                         lambda = 0, 
-                         compute_p_values = FALSE, 
-                         dispersion_parameter_method = "ml", 
-                         seed = 12345)
-
-        # Retrieve the tweedie variance power and dispersion:
-        print(c(model@params$actual$tweedie_variance_power, model@model$dispersion))
-        [1] 1.19325 2.01910
-
-    .. code-tab:: python
-
-        import h2o
-        from h2o.estimators import H2OGeneralizedLinearEstimator
-        h2o.init()
-
-        # Import the tweedie 10k rows dataset:
-        train = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p1p2_phi2_5Cols_10KRows.csv")
-
-        # Set the predictors and response:
-        response = "resp"
-        predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5."]
-
-        # Buiild and train the model:
-        model = H2OGeneralizedLinearEstimator(family="tweedie", 
-                                              fix_dispersion_parameter=False, 
-                                              fix_tweedie_variance_power=False, 
-                                              tweedie_variance_power=1.5, 
-                                              lambda_=0, 
-                                              compute_p_values=False, 
-                                              dispersion_parameter_method="ml", 
-                                              seed=12345)
-        model.train(x=predictors, y=response, training_frame=train)
-
-        # Retrieve the tweedie variance power and dispersion:
-        print(model.actual_params["tweedie_variance_power"], 
-              model._model_json["output"]["dispersion"])
-        1.1932458137195066 2.019121907711618
-
-
-Regression Influence Diagnostic (Wendy Wong)
-''''''''''''''''''''''''''''''''''''''''''''
-
-We implemented the `Regression Influence Diagnostic <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#regression-influence-diagnostics>`__ (RID) for the Gaussian and Binomial families for GLM. This implementation finds the influence of each data row on the GLM coefficients’ values for the IRLSM solver. RID determines the coefficient change for each predictor when a data row is included and excluded in the dataset used to train the GLM model.
-
-For the Gaussian family, we were able to calculate the exact RID; for the Binomial family, an approximation formula is used to determine the RID.
-
-.. tabs::
-    .. code-tab:: r R
-
-        library(h2o)
-        h2o.init()
-
-        # Import the prostate dataset:
-        data <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-
-        # Set the predictors and response:
-        predictors <- c("AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
+        # Import the prostate dataset into H2O:
+        prostate <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        predictors <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
         response <- "CAPSULE"
+        prostate[response] <- as.factor(prostate[response])
 
         # Build and train the model:
-        model <- h2o.glm(family = 'binomial', lambda = 0, standardize = FALSE, influence = 'dfbetas', x = predictors, y = response, training_frame = data)
+        adaboost_model <- h2o.adaBoost(nlearners=50,
+                                       learn_rate = 0.5,
+                                       weak_learner = "DRF",
+                                       x = predictors,
+                                       y = response,
+                                       training_frame = prostate)
 
-        # Retrieve the regression influence diagnostics:
-        h2o.get_regression_influence_diagnostics(model)
-          AGE RACE DPROS DCAPS  PSA  VOL GLEASON    DFBETA_AGE   DFBETA_RACE
-        1  65    1     2     1  1.4  0.0       6 -0.0001174382 -0.0009049547
-        2  72    1     3     2  6.7  0.0       7 -0.0928260766  0.0317816401
-        3  70    1     1     2  4.9  0.0       6 -0.0213748436  0.0029483818
-        4  76    2     2     1 51.2 20.0       7 -0.1135304595 -0.2036418548
-        5  69    1     1     1 12.3 55.9       6 -0.0026143632  0.0039773947
-        6  71    1     3     2  3.3  0.0       8  0.0132995025 -0.0054052100
-          DFBETA_DPROS DFBETA_DCAPS    DFBETA_PSA  DFBETA_VOL DFBETA_GLEASON
-        1  0.010790957  0.006120907  0.0184646031  0.02454092     0.01117195
-        2 -0.040347326 -0.296607461  0.0744924061  0.05335032    -0.03048897
-        3  0.052788353 -0.106070368  0.0217908983  0.01540781     0.02841157
-        4  0.029693569  0.055365033 -0.1538388553  0.02420237     0.01723884
-        5  0.018810657 -0.002892084  0.0009393545 -0.03371696     0.00905363
-        6  0.007980696  0.057774988 -0.0267402166 -0.01011420     0.03290600
-          DFBETA_Intercept CAPSULE
-        1     -0.015964684       0
-        2      0.158871445       0
-        3      0.013418363       0
-        4      0.114842993       0
-        5     -0.006547774       0
-        6     -0.044006742       1
-
-        [380 rows x 16 columns] 
+        # Generate predictions:
+        h2o.predict(adaboost_model, prostate)
 
     .. code-tab:: python
 
         import h2o
-        from h2o.estimators import H2OGeneralizedLinearEstimator
+        from h2o.estimators import H2OAdaBoostEstimator
         h2o.init()
 
-        # Import the prostate dataset:
-        data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-
-        # Set the predictors and response:
-        predictors = ["AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"]
-        response = "CAPSULE"
+        # Import the prostate dataset into H2O:
+        prostate = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
 
         # Build and train the model:
-        model = H2OGeneralizedLinearEstimator(family="binomial", lambda_=0, standardize=False, influence="dfbetas")
-        model.train(x=predictors, y=response, training_frame=data)
+        adaboost_model = H2OAdaBoostEstimator(nlearners=50,
+                                              learn_rate = 0.8,
+                                              weak_learner = "DRF",
+                                              seed=0xBEEF)
+        adaboost_model.train(y = "CAPSULE", training_frame = prostate)
 
-        # Retrieve the regression influence diagnostics:
-        model.get_regression_influence_diagnostics()
-          AGE    RACE    DPROS    DCAPS    PSA    VOL    GLEASON    DFBETA_AGE    DFBETA_RACE    DFBETA_DPROS    DFBETA_DCAPS    DFBETA_PSA    DFBETA_VOL    DFBETA_GLEASON    DFBETA_Intercept    CAPSULE
-        -----  ------  -------  -------  -----  -----  ---------  ------------  -------------  --------------  --------------  ------------  ------------  ----------------  ------------------  ---------
-           65       1        2        1    1.4    0            6  -0.000117438   -0.000904955       0.010791       0.00612091   0.0184646       0.0245409        0.011172           -0.0159647           0
-           72       1        3        2    6.7    0            7  -0.0928261      0.0317816        -0.0403473     -0.296607     0.0744924       0.0533503       -0.030489            0.158871            0
-           70       1        1        2    4.9    0            6  -0.0213748      0.00294838        0.0527884     -0.10607      0.0217909       0.0154078        0.0284116           0.0134184           0
-           76       2        2        1   51.2   20            7  -0.11353       -0.203642          0.0296936      0.055365    -0.153839        0.0242024        0.0172388           0.114843            0
-           69       1        1        1   12.3   55.9          6  -0.00261436     0.00397739        0.0188107     -0.00289208   0.000939355    -0.033717         0.00905363         -0.00654777          0
-           71       1        3        2    3.3    0            8   0.0132995     -0.00540521        0.0079807      0.057775    -0.0267402      -0.0101142        0.032906           -0.0440067           1
-           68       2        4        2   31.9    0            7  -0.0639637     -0.297407         -0.135148      -0.294917    -0.0527299       0.103072         0.0113896           0.228666            0
-           61       2        4        2   66.7   27.2          7   0.0755647     -0.234867         -0.159723      -0.315108    -0.368596       -0.0791998        0.0838117           0.107002            0
-           69       1        1        1    3.9   24            7  -0.00866078    -0.000259061       0.0472046      0.00322434   0.0317235      -0.0194058       -0.0277221           0.0107889           0
-           68       2        1        2   13      0            6  -0.0120789     -0.0747856         0.0472865     -0.0734461    0.0191023       0.0182469        0.0239776           0.0238229           0
-        [380 rows x 16 columns]
+        # Generate predictions:
+        pred = adaboost_model.predict(prostate)
+        pred
 
-Interaction Column Support in CoxPH MOJO (Wendy Wong)
-'''''''''''''''''''''''''''''''''''''''''''''''''''''
+Shapley support for ensemble models (Tomáš Frýda)
+'''''''''''''''''''''''''''''''''''''''''''''''''
 
-Cox Proportional Hazards (CoxPH) MOJO now supports all interaction columns (i.e. ``enum`` to ``enum``, ``num`` to ``enum``, and ``num`` to ``num`` interactions).
+Stacked Ensembles now supports SHapley Additive exPlanations (SHAP) estimation using the Generalized-DeepSHAP method. This is only supported for base models and metalearner models that support SHAP estimation with a background frame. Support for SHAP with a background frame was added for:
 
-Improved GAM Tutorial (Amin Sedaghat)
-'''''''''''''''''''''''''''''''''''''
+Deep Learning (`DeepSHAP <https://arxiv.org/abs/1705.07874>`__),
+DRF/ Extremely Randomized Trees (XRT) (`Independent TreeSHAP <https://arxiv.org/abs/1905.04610>`__),
+Gradient Boosting Machine (GBM) (`Independent TreeSHAP <https://arxiv.org/abs/1905.04610>`__),
+Generalized Linear Models (GLM), and
+XGBoost (`Independent TreeSHAP <https://arxiv.org/abs/1905.04610>`__).
 
-We improved the Generalized Additive Models (GAM) tutorial to make it more user-friendly by employing cognitive load theory principles. This change allows you to concentrate on a single concept for each instruction which reduces your cognitive strain and will help to improve your comprehension.
+There are two variants of the newly implemented SHAP: baseline SHAP and marginal SHAP (default when calling predict_contributions with a background dataset). Baseline SHAP returns contributions for each point from the background dataset. Marginal SHAP returns the average contribution across the whole background dataset. The calculation of both of these SHAP methods can have big memory requirements because the result of the baseline has number of rows equal to :math:`nrows(frame) \times nrow(background\_frame)`. For marginal SHAP contributions in Stacked Ensembles, we optimized the calculation by going through the whole process (baseline SHAP —> average) several times, so the memory usage is small than :math:`(number of base models + 1) \times nrow(frame) \times nrow(background\_frame)` (unless the frame is very small).
 
-Grid Over Infogram (Tomáš Frýda)
-''''''''''''''''''''''''''''''''
+The new SHAP implementation requires you to choose your references, or background dataset. This can be used for getting new insights as seen in Figure 3 of `Explaining a series of models by propagating Shapley values <https://www.nature.com/articles/s41467-022-31384-3>`__. It can also be used to comply with some regulations that require explanations with regards to some reference.
 
-As a continuation of the Admissible Machine Learning (ML), we implemented a simple way to `train models on features ranked using Infogram <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/admissible.html#inspect-model-fairness>`__. This eliminates the need to specify some threshold value.
-
-After training those models, you need a way to select the best one. To do so, we implemented the calculation of common metrics on the individual intersections. These metrics are then aggregated to form an extended leaderboard. The extended leaderboard can be used for model selection since, in cases like these, you would want to optimize by model performance and model fairness. You can use Pareto front (``h2o.explanation.pareto_front`` / ``h2o.pareto_front``) to do that. This command results in a plot and a subset of the leaderboard frame containing the Pareto front.
-
-.. image:: /images/blog/pareto-front.png
-
-Once you pick a promising model, you can use ``<model_name>.inspect_model_fairness`` / ``h2o.inspect_model_fairness(<model_name>``) to look at those metrics calculated on individual intersections. These include common performance metrics such as AUC, AUCPR, F1, etc., adverse impact ratio on those metrics, ROC, Precision-Recall Curve per intersection, PDP per intersection, and, if available (i.e. the model is a tree-based model), SHAP contributions per intersection. For more details, `refer to the user guide <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/admissible.html#utility-functions>`__.
-
-.. image:: /images/blog/receiver.png
-
-.. image:: /images/blog/pdp.png
-
-.. image:: /images/blog/shap.png
-
-Example
-^^^^^^^
+For example, according to the `Consumer Financial Protection Bureau <https://www.consumerfinance.gov/rules-policy/regulations/1002/interp-9/#9-b-2-Interp-5>`__, for credit denials in the US, the regulatory commentary suggests to “identify the factors for which the applicant’s score fell furthest below the average score for each of those factors achieved by applicants whose total score was at or slightly above the minimum passing score.” This process can be done by using the applicants just above the cutoff to receive the credit product as the background dataset according to Hall et al. in their book Machine Learning for High-Risk Applications.
 
 .. tabs::
     .. code-tab:: r R
 
-        library(h2o)
-        h2o.init()
+        # Import the prostate dataset:
+        pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-        # Import the HDMA dataset:
-        f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
-        col_types <- list(by.col.name = c("high_priced"),
-                          types = c("factor"))
-        df <- h2o.importFile(path = f, col.types = col_types)
+        # Set the factors:
+        pros[, 2] <- as.factor(pros[, 2])
+        pros[, 4] <- as.factor(pros[, 4])
+        pros[, 5] <- as.factor(pros[, 5])
+        pros[, 6] <- as.factor(pros[, 6])
+        pros[, 9] <- as.factor(pros[, 9])
 
-        # Split the data so you can compare the performance
-        # of admissible vs non-admissible models later:
-        splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-        train <- splits[[1]]
-        test <- splits[[2]]
+        # Split the data into training and validation sets:
+        pros_splits <- h2o.splitFrame(data = pros, ratio = 0.8, seed = 1234)
+        train <- pros_splits[[1]]
+        test <- pros_splits[[2]]
 
-        # Set the response column and predictor columns:
-        y <- "high_priced"
-        x <- c("loan_amount",
-               "loan_to_value_ratio",
-               "loan_term",
-               "intro_rate_period",
-               "property_value",
-               "income",
-               "debt_to_income_ratio")
+        # Build a GBM model:
+        model <- h2o.gbm(y = "CAPSULE",
+                         x = 3:9,
+                         training_frame = train,
+                         distribution = "bernoulli",
+                         ntrees = 100,
+                         max_depth = 4,
+                         learn_rate = 0.1,
+                         seed = 1234)
 
-        # Fairness related information:
-        protected_columns <- c("derived_race", "derived_sex")
-        reference <- c("White", "Male")
-        favorable_class <- "0"
-
-        # Train your models:
-        gbm1 <- h2o.gbm(x, y, train)
-        h2o.inspect_model_fairness(gbm1, test, protected_columns, reference, favorable_class)
-
-        # You will receive graphs with accompanying explanations in the terminal.
+        # Plot the SHAP summary plot:
+        h2o.shap_summary_plot(model,
+                              prostate_test,
+                              background_frame=prostate_train[prostate_train$AGE > 70, ])
 
     .. code-tab:: python
 
-        import h2o
-        from h2o.estimators import H2OGradientBoostingEstimator
-        h2o.init()
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
-        # Import the HDMA dataset:
-        f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
-        col_types = {'high_priced': "enum"}
-        df = h2o.import_file(path=f, col_types=col_types)
+        # Import the prostate dataset:
+        pros = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
-        # Split the data so you can compare the performance
-        # of admissible vs non-admissible models later:
-        train, test = df.split_frame(ratios=[0.8], seed=1)
+        # Set the factors:
+        pros["CAPSULE"] = pros["CAPSULE"].asfactor()
 
-        # Set the response column and predictor columns:
-        y = "high_priced"
-        x =  ["loan_amount",
-              "loan_to_value_ratio",
-              "loan_term",
-              "intro_rate_period",
-              "property_value",
-              "income",
-              "debt_to_income_ratio"]
+        # Split the data into training and validation sets:
+        train, test = pros.split_frame(ratios = [.75], seed = 1234)
 
-        # Fairness related information:
-        protected_columns = ["derived_race", "derived_sex"]
-        reference = ["White", "Male"]
-        favorable_class = "0"
+        # Build a GBM model:
+        model = H2OGradientBoostingEstimator(distribution = "bernoulli",
+                                             ntrees = 100,
+                                             max_depth = 4,
+                                             learn_rate = 0.1,
+                                             seed = 1234)
+        model.train(y = "CAPSULE",
+                    x = ["AGE", "RACE", "PSA", "GLEASON"],
+                    training_frame = train)
 
-        # Train your models:
-        gbm1 = H2OGradientBoostingEstimator()
-        gbm1.train(x, y, train)
-        gbm1.inspect_model_fairness(test, protected_columns, reference, favorable_class)
+        # Plot the SHAP summary plot:
+        model.shap_summary_plot(test, background_frame=train[train["AGE"] > 70, :])
 
-        # You will receive graphs with accompanying explanations in the terminal.
-
-Upgrade to XGBoost 1.6 (Adam Valenta)
-'''''''''''''''''''''''''''''''''''''
-
-The transition from XGBoost version 1.2 to 1.6 in the H2O-3 platform marks a major milestone in the evolution of this widely used algorithm. XGBoost, renowned for its efficiency and accuracy in handling structured datasets, has been a go-to choice for many data scientists. With the upgrade to version 1.6, H2O-3 raises the bar even further, providing users with an array of enhanced features and improvements.
-
-One notable highlight of XGBoost 1.6 is its boosted performance, thanks to optimized algorithms and implementation. The upgrade includes various efficiency enhancements, such as improved parallelization strategies, memory management, and algorithmic tweaks. These improvements translate into faster training times and more efficient memory utilization, allowing you to process larger datasets and experiment with complex models more efficiently.
-
-MOJO Support for H2OAssembly (Marek Novotný)
-''''''''''''''''''''''''''''''''''''''''''''
-
-`H2OAssembly <https://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/assembly.html>`__ is part of the H2O-3 API that enables you to form a pipeline of data munging operations. The new version of the class introduces the download_mojo method that converts an H2OAssembly pipeline to the `MOJO2 artifact <https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html#>`__ that is well-known from DriverlessAI. The conversion currently supports the following transformation stages:
-
-- ``H2OColSelect``: selection of columns
-- ``H2OColOp``: unary column operations
-
-    - math functions: ``abs``, ``acos``, ``acosh``, ``asin``, ``asinh``, ``atan``, ``atanh``, ``ceil``, ``cos``, ``cosh``, ``cospi``, ``digamma``, ``exp``, ``expm1``, ``gamma``, ``lgamma``, ``log``, ``log1p``, ``log2``, ``log10``, ``logical_negation``, ``sign``, ``sin``, ``sinh``, ``sinpi``, ``sqrt``, ``tan``, ``tanh``, ``tanpi``, ``trigamma``, ``trunc``, ``round``, ``signif``
-    - conversion functions: ``ascharacter``, ``asfactor``, ``asnumeric``, ``as_date``
-    - string functions: ``lstrip``, ``rstrip``, ``gsub``, ``sub``, ``substring``, ``tolower``, ``toupper``, ``trim``, ``strsplit``, ``countmatches``, ``entropy``, ``nchar``, ``num_valid_substrings``, ``grep``
-    - time functions: ``day``, ``dayOfWeek``, ``hour``, ``minute``, ``second``, ``week``, ``year``
-
-- ``H2OBinaryOp``: binary column operations
-
-    - arithmetic functions: ``__add__``, ``__sub__``, ``__mul__``, ``__div__``, ``__floordiv__``, ``__pow__``, ``__mod__``
-    - comparison functions: ``__le__``, ``__lt__``, ``__ge__``, ``__gt__``, ``__eq__``, ``__ne__``
-    - logical functions: ``__and__``, ``__or__``
-    - string functions: ``strdistance``
-
-Example
-^^^^^^^
-
-.. tabs::
-    .. code-tab:: python
-    
-        from h2o.assembly import *
-        from h2o.transforms.preprocessing import *
-
-        # Load the iris dataset:
-        iris = h2o.load_dataset("iris")
-
-        # Build your assembly:
-        assembly = H2OAssembly(steps=[("col_select",
-                                       H2OColSelect(["Sepal.Length",
-                                       "Petal.Length", "Species"])),
-                                      ("cos_Sepal.Length",
-                                       H2OColOp(op=H2OFrame.cos,
-                                       col="Sepal.Length", inplace=True)),
-                                      ("str_cnt_Species",
-                                       H2OColOp(op=H2OFrame.countmatches,
-                                       col="Species", inplace=False,
-                                       pattern="s"))])
-        result = assembly.fit(iris)
-
-        # Download the MOJO artifact:
-        assembly.download_mojo(file_name="iris_mojo", path='')
-
-GBM Interpretability (Adam Valenta)
-'''''''''''''''''''''''''''''''''''
-
-We brought another insight into H2O’s Gradient Boosting Machines (GBM) algorithm. This enhancement is the ability to `retrieve row-to-tree assignments directly from the algorithm <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm-faq/reproducibility.html#can-i-access-the-row-to-tree-assignments-for-my-model>`__. This addresses the challenge of understanding how individual data points are assigned to specific decision trees within the ensemble. This new feature allows you to gain deeper insights into the decision-making process, thus enabling greater transparency and understanding of GBM models.
-
-GBM Poisson Distribution Deviance (Yuliia Syzon)
-''''''''''''''''''''''''''''''''''''''''''''''''
-
-Wehave updated the deviance calculation formula for the Poisson family in GBM. To ensure accurate and reliable results, we introduced a new formula:
-
-.. math::
-    
-    2 \times w \times (y \times \log \big( \frac{y}{f} \big) - y +f)
-
-which replaces the previously used formula:
-
-.. math::
-    
-    -2 \times w \times (y \times f - \text{exp}(f))
-
-This previous formula, though optimized and maintaining the deviance function behavior, produced incorrect output values. No longer! To validate the correctness of the new formula, we compared it with the deviance calculations in scikit-learn.
-
-End of Support for Python 2.7 and 3.5 (Marek Novotný)
-'''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Support for Python 2.7 and 3.5 have been removed from the project to get rid of vulnerabilities connected with the `future <https://pypi.org/project/future/>`__ package. If you need to use Python 2.7 to 3.5, please contact sales@h2o.ai.
-
-Documentation Improvements (Hannah Tillman)
+Fixed H2O-3 Vulnerabilities (Marek Novotný)
 '''''''''''''''''''''''''''''''''''''''''''
 
-Parameters for all supervised and unsupervised algorithms have been standardized, updated, reordered, and alphabetized to help you more easily find the information you need. Each section has been divvied up into algorithm-specific parameters and common parameters. GBM, DRF, XGBoost, Uplift DRF, Isolation Forest, and Extended Isolation Forest have an additional “shared tree-based algorithm parameters” section. `All GLM family parameters have been centralized <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#shared-glm-family-parameters>`__ to the GLM page with icons showing which GLM family algorithm shares that parameter. `Autoencoder <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html#autoencoder-specific-parameters>`__ for Deep Learning and `HGLM <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#hglm-parameters>`__ for GLM also have their own parameter-specific sections.
+This release contains fixes for more than 30 `CVE <https://www.cve.org/>`__ vulnerabilities in the standalone h2o.jar, Python package, R package, and the `docker image <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__ for Kubernetes. These deployment artifacts don’t contain any critical or high CVE vulnerabilities at the time of writing this article.
 
-The `grid search hyperparameters <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/grid-search.html#supported-grid-search-hyperparameters>`__ have also been updated.
+Categorical feature support for Single Decision Tree (Yuliia Syzon)
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+We added support for categorical columns into the Single Decision Tree. You can now build a binary Single Decision Tree classifier with both numerical and categorical columns!
+
+Categorical values are treated as non-sortable values. When splitting the dataset into nodes, a categorical binning approach is utilized. It's important for you to note that the number of categories shouldn't be excessively large. Ideally, up to 10 categories is optimal for this implementation.
+
+Uplift DRF enhancements (Veronika Maurerova)
+''''''''''''''''''''''''''''''''''''''''''''
+
+There have been several enhancements to the Uplift DRF algorithm.
+
+New treatment effect metrics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`Treatment effect metrics <data-science/upliftdrf.html#treatment-effect-metrics-ate-att-atc>`__ show how the uplift predictions look across the whole dataset (population). Scored data are used to calculate these metrics (``uplift_predict`` column = individual treatment effect).
+
+- Average Treatment Effect (ATE): the average expected uplift prediction (treatment effect) over all records in the dataset.
+- Average Treatment Effect on the Treated (ATT): the average expected uplift prediction (treatment effect) of all records in the dataset belonging to the treatment group.
+- Average Treatment Effect on the Control (ATC): the average expected uplift prediction (treatment effect) of all records in the dataset belonging to the control group.
+
+Custom metric functionality enabled
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can now specify your custom metric if you need a special metric calculation.
+
+.. tabs::
+    .. code-tab:: python
+
+        import h2o
+        from h2o.estimators import H2OUpliftRandomForestEstimator
+        h2o.init()
+
+        # Import the cars dataset into H2O:
+        data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+
+        # Set the predictors, response, and treatment column:
+        predictors = ["f1", "f2", "f3", "f4", "f5", "f6","f7", "f8"]
+        # set the response as a factor
+        response = "conversion"
+        data[response] = data[response].asfactor()
+        # set the treatment as a factor
+        treatment_column = "treatment"
+        data[treatment_column] = data[treatment_column].asfactor()
+
+        # Split the dataset into a train and valid set:
+        train, valid = data.split_frame(ratios=[.8], seed=1234)
+
+        # Define custom metric function
+        # ``pred`` is prediction array of length 3, where:
+        #   - pred[0]  = ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
+        #   - pred[1] = ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
+        #   - pred[2] = ``p_y1_ct0``: probability the response is 1 if the row is from the control group
+        # ``act`` is array with original data where
+        #   - act[0] = target variable
+        #   - act[1] = if the record belongs to the treatment or control group
+        # ``w`` (weight) and ``o`` (offset) are nor supported in Uplift DRF yet
+
+        class CustomAteFunc:
+            def map(self, pred, act, w, o, model):
+                return [pred[0], 1]
+
+            def reduce(self, l, r):
+                return [l[0] + r[0], l[1] + r[1]]
+
+            def metric(self, l):
+                return l[0] / l[1]
+
+        custom_metric = h2o.upload_custom_metric(CustomAteFunc, func_name="ate", func_file="mm_ate.py")
+
+        # Build and train the model:
+        uplift_model = H2OUpliftRandomForestEstimator(ntrees=10,
+                                                      max_depth=5,
+                                                      treatment_column=treatment_column,
+                                                      uplift_metric="KL",
+                                                      min_rows=10,
+                                                      seed=1234,
+                                                      auuc_type="qini"
+                                                      custom_metric_func=custom_metric)
+        uplift_model.train(x=predictors,
+                           y=response,
+                           training_frame=train,
+                           validation_frame=valid)
+
+        # Eval performance:
+        perf = uplift_model.model_performance()
+        custom_att = perf._metric_json["training_custom"]
+        print(custom_att)
+        att = perf.att(train=True)
+        print(att)
+
+MOJO support introduced
+^^^^^^^^^^^^^^^^^^^^^^^
+
+You can import the Uplift DRF model as a MOJO and deploy it to your environment.
+
+Prediction Table renamed
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Due to your feedback, we’ve chosen to rename the prediction table column names to be more precise. We changed ``p_y1_ct1`` to ``p_y1_without_treatment`` and ``p_y1_ct0`` to ``p_y1_with_treatment``.
+
+Make metrics from a new dataset with custom AUUC thresholds
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This new feature enables custom AUUC thresholds to calculate the AUUC metric using the make_metrics method. If you don’t specify custom thresholds, the default ones will be used.
+
+Deep Learning with custom metric
+''''''''''''''''''''''''''''''''
+
+We have implemented `custom metric support for the Deep Learning model <data-science/algo-params/custom_metric_func.html>`__. This option is not available for AutoEncoder Deep Learning models.
 
 Prior Release Blogs
 ~~~~~~~~~~~~~~~~~~~
 
-You can find all prior release blogs `here <https://h2o.ai/blog/category/h2o-release/>`__.
+You can find all prior release blogs `here <https://h2o.ai/blog/?category=products/h2o_3/h2o_release>`__.
 
 General Blogs
 -------------

@@ -163,7 +163,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     protected double _logloss;
     protected AUC2.AUCBuilder _auc;
 
-    public MetricBuilderBinomial() {}
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
 
     public double auc() {return new AUC2(_auc)._auc;}

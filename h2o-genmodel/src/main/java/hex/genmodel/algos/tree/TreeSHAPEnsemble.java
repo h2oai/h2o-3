@@ -32,6 +32,16 @@ public class TreeSHAPEnsemble<R> implements TreeSHAPPredictor<R> {
   }
 
   @Override
+  public double[] calculateInterventionalContributions(R feat, R background, double[] out_contribs, int[] catOffsets, boolean expand) {
+    out_contribs[out_contribs.length - 1] += _initPred;
+
+    for (TreeSHAPPredictor<R> predictor : _predictors) {
+      predictor.calculateInterventionalContributions(feat, background, out_contribs, catOffsets, expand);
+    }
+    return out_contribs;
+  }
+
+  @Override
   public TreeSHAPPredictor.Workspace makeWorkspace() {
     return _wsMakerIndex >= 0 ? _predictors[_wsMakerIndex].makeWorkspace() : null;
   }

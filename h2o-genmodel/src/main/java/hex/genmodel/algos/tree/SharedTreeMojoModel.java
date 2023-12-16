@@ -832,6 +832,10 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
         super(columns, domains, responseColumn);
     }
 
+    protected SharedTreeMojoModel(String[] columns, String[][] domains, String responseColumn, String treatmentColumn) {
+        super(columns, domains, responseColumn, treatmentColumn);
+    }
+
     /**
      * Score all trees and fill in the `preds` array.
      */

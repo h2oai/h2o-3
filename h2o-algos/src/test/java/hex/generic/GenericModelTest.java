@@ -133,7 +133,7 @@ public class GenericModelTest extends TestUtil {
             Scope.track_generic(genericModel);
 
             final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
             assertEquals(2691, genericModelPredictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
@@ -181,14 +181,14 @@ public class GenericModelTest extends TestUtil {
             Scope.track_generic(genericModel);
 
             final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
             assertEquals(2691, genericModelPredictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
             assertTrue(equallyScored);
 
             final Frame originalModelPredictions = model.score(testFrame);
-            Scope.track_generic(originalModelPredictions);
+            Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
@@ -271,7 +271,7 @@ public class GenericModelTest extends TestUtil {
             Scope.track_generic(genericModel);
 
             final Frame genericModelPredictions = genericModel.score(trainingFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
 
             assertTrue(model.testJavaScoring(trainingFrame, genericModelPredictions, 1e-6));
         } finally {
@@ -311,7 +311,7 @@ public class GenericModelTest extends TestUtil {
             Scope.track_generic(genericModel);
 
             final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
             assertEquals(2691, genericModelPredictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
@@ -359,7 +359,7 @@ public class GenericModelTest extends TestUtil {
             Scope.track_generic(genericModel);
 
             final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
             assertEquals(2691, genericModelPredictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
@@ -404,7 +404,7 @@ public class GenericModelTest extends TestUtil {
             Scope.track_generic(genericModel);
 
             final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
             assertEquals(2691, genericModelPredictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
@@ -891,7 +891,7 @@ public class GenericModelTest extends TestUtil {
         Scope.track_generic(genericModel);
 
         final Frame genericModelPredictions = genericModel.score(testFrame);
-        Scope.track_generic(genericModelPredictions);
+        Scope.track(genericModelPredictions);
         assertEquals(testFrame.numRows(), genericModelPredictions.numRows());
 
         final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);

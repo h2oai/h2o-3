@@ -21,10 +21,7 @@ import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.SBPrintStream;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -715,6 +712,37 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             .outputFrame(destination_key, outputNames, null);
   }
 
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    Log.info("Starting contributions calculation for " + this._key + "...");
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame contributions;
+      if (null == backgroundFrame) {
+        contributions = scoreContributions(frame, destination_key, j, options);
+      } else {
+        Frame adaptedFrame = adaptFrameForScore(frame, false);
+        DKV.put(adaptedFrame);
+        Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+        DKV.put(adaptedBgFrame);
+
+        DataInfo di = model_info().dataInfo();
+        assert di != null;
+        final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
+                _output.features() : di.coefNames();
+        final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
+
+
+        contributions = new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options,
+                adaptedFrame, adaptedBgFrame, options._outputPerReference, options._outputSpace)
+                .runAndGetOutput(j, destination_key, outputNames);
+      }
+      return Scope.untrack(contributions);
+    } finally {
+      Log.info("Finished contributions calculation for " + this._key + "...");
+    }
+  }
+  
   @Override
   public UpdateAuxTreeWeightsReport updateAuxTreeWeights(Frame frame, String weightsColumn) {
     if (weightsColumn == null) {
@@ -959,16 +987,37 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   Predictor makePredictor(boolean scoringOnly) {
     return PredictorFactory.makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes(), scoringOnly);
   }
-  @Override
-  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+
+  protected Frame removeSpecialNNonNumericColumns(Frame frame) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
+    // remove non-feature columns
+    adaptFrm.remove(_parms._response_column);
+    adaptFrm.remove(_parms._fold_column);
+    adaptFrm.remove(_parms._weights_column);
+    adaptFrm.remove(_parms._offset_column);
+    // remove non-numeric columns
+    int numCols = adaptFrm.numCols()-1;
+    for (int index=numCols; index>=0; index--) {
+      if (!adaptFrm.vec(index).isNumeric())
+        adaptFrm.remove(index);
+    }
+    return adaptFrm;
+  }
+  
+  @Override
+  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    Frame adaptFrm = removeSpecialNNonNumericColumns(frame);
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
       Vec col = adaptFrm.vec(colId);
       if (col.isBad()) {
         throw new UnsupportedOperationException(
-                "Calculating of H statistics error: row " + adaptFrm.name(colId) + " is missing.");
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is missing.");
+      }
+      if(!col.isNumeric()) {
+        throw new UnsupportedOperationException(
+                "Calculating of H statistics error: column " + adaptFrm.name(colId) + " is not numeric.");
       }
     }
 
