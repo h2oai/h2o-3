@@ -56,50 +56,6 @@ high p-values while those with more contributions will have low p-values.
 """
 )
 examples = dict(
-    alpha="""
->>> import h2o
->>> h2o.init()
->>> from h2o.estimators import H2OANOVAGLMEstimator 
->>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
->>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip", alpha=0.5)
->>> anova_model.train(x=x, y=y, training_frame=train)
->>> anova_model.summary()
-""",
-    balance_classes="""
->>> import h2o
->>> h2o.init()
->>> from h2o.estimators import H2OANOVAGLMEstimator 
->>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
->>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip", balance_classes=False)
->>> anova_model.train(x=x, y=y, training_frame=train)
->>> anova_model.summary()
-""",
-    class_sampling_factors="""
->>> import h2o
->>> h2o.init()
->>> from h2o.estimators import H2OANOVAGLMEstimator 
->>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
->>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",class_sampling_factors=None)
->>> anova_model.train(x=x, y=y, training_frame=train)
->>> anova_model.summary()
-""",
-    compute_p_values="""
->>> import h2o
->>> h2o.init()
->>> from h2o.estimators import H2OANOVAGLMEstimator 
->>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
->>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",compute_p_values=True)
->>> anova_model.train(x=x, y=y, training_frame=train)
->>> anova_model.summary()
-""",
     early_stopping="""
 >>> import h2o
 >>> h2o.init()
