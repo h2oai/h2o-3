@@ -227,7 +227,6 @@ mode=maxr, the model returned is no longer guaranteed to have the best R2 value.
 )
 
 examples = dict(
-
     build_glm_model="""
 >>> import h2o
 >>> from h2o.estimators import H2OModelSelectionEstimator
@@ -251,7 +250,6 @@ examples = dict(
 >>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", build_glm_model=False)
 >>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
-
     influence="""
 >>> import h2o
 >>> from h2o.estimators import H2OModelSelectionEstimator
@@ -275,7 +273,6 @@ examples = dict(
 >>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", influence="dfbetas")
 >>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
-
     multinode_mode="""
 >>> import h2o
 >>> from h2o.estimators import H2OModelSelectionEstimator
@@ -322,7 +319,6 @@ examples = dict(
 >>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", nparallelism=0)
 >>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
-
     p_values_threshold="""
 >>> import h2o
 >>> from h2o.estimators import H2OModelSelectionEstimator
@@ -345,5 +341,86 @@ examples = dict(
 >>> maxrModel.get_predictors_added_per_step()
 >>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", p_values_threshold=0.0)
 >>> bwModel.train(x=predictors, y=response, training_frame=prostate)
-"""
+""",
+    custom_metric_func="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", alpha=0)
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", alpha=0)
+>>> bwModel.train(x=predictors, y=response, training_frame=prostate)
+""",
+    custom_metric_func="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", early_stopping=False)
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> results = maxrModel.result()
+>>> print(results)
+>>> coeff = maxrModel.coef()
+>>> print(coeff)
+>>> coeff3 = maxrModel.coef(3)
+>>> print(coeff3
+>>> coeff_norm = maxrModel.coef_norm()
+>>> print(coeff_norm)
+>>> coeff_norm3 = maxrModel.coef_norm(3)
+>>> print(coeff_norm3)
+>>> maxrModel.get_predictors_added_per_step()
+>>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", early_stopping=False)
+>>> bwModel.train(x=predictors, y=response, training_frame=prostate)
+""",
+    family="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", family="auto")
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> results = maxrModel.result()
+>>> print(results)
+>>> coeff = maxrModel.coef()
+>>> print(coeff)
+>>> coeff3 = maxrModel.coef(3)
+>>> print(coeff3
+>>> coeff_norm = maxrModel.coef_norm()
+>>> print(coeff_norm)
+>>> coeff_norm3 = maxrModel.coef_norm(3)
+>>> print(coeff_norm3)
+>>> maxrModel.get_predictors_added_per_step()
+>>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", family="auto")
+>>> bwModel.train(x=predictors, y=response, training_frame=prostate)
+""",
+    fold_assignment="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", fold_assignment="auto")
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> results = maxrModel.result()
+>>> print(results)
+>>> coeff = maxrModel.coef()
+>>> print(coeff)
+>>> coeff3 = maxrModel.coef(3)
+>>> print(coeff3
+>>> coeff_norm = maxrModel.coef_norm()
+>>> print(coeff_norm)
+>>> coeff_norm3 = maxrModel.coef_norm(3)
+>>> print(coeff_norm3)
+>>> maxrModel.get_predictors_added_per_step()
+>>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", fold_assignment="auto")
+>>> bwModel.train(x=predictors, y=response, training_frame=prostate)
+""",
 )
