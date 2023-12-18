@@ -47,6 +47,12 @@ public interface ModelDescriptor {
    */
   String foldColumn();
 
+
+  /**
+   * @return A {@link String} with the name of the treatment column used. Null of there was no treatment used during training.
+   */
+  String treatmentColumn();
+
   /**
    * Model's category.
    *

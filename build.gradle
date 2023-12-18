@@ -85,7 +85,6 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
-      project(':h2o-jetty-9-ext'),
       project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
@@ -133,7 +132,6 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
-      project(':h2o-jetty-9-ext'),
       project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
@@ -157,7 +155,8 @@ ext {
 
     pythonProjects = [
       project(':h2o-py'),
-      project(':h2o-py-cloud-extensions')
+      project(':h2o-py-cloud-extensions'),
+      project(':h2o-py-mlflow-flavor')
     ]
 
     // The project which need to be run under CI only

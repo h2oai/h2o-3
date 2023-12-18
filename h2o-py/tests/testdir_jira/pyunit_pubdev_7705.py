@@ -15,8 +15,8 @@ def partial_plot_row_index():
     gbm_model.train(x=x, y=y, training_frame=data)
 
     # Generate Partial Dependence for row index -1 and row index 0, they should differ
-    pdp = gbm_model.partial_plot(data=data, cols=['RACE'], plot=False, plot_stddev=False, row_index=-1)
-    pdp0 = gbm_model.partial_plot(data=data, cols=['RACE'], plot=False, plot_stddev=False, row_index=0)
+    pdp = gbm_model.partial_plot(frame=data, cols=['RACE'], plot=False, plot_stddev=False, row_index=-1)
+    pdp0 = gbm_model.partial_plot(frame=data, cols=['RACE'], plot=False, plot_stddev=False, row_index=0)
     assert not(pyunit_utils.equal_two_arrays(pdp[0][1], pdp0[0][1], throw_error=False))
 
 

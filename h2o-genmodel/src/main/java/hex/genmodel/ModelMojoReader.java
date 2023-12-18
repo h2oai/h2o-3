@@ -81,6 +81,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   protected abstract M makeModel(String[] columns, String[][] domains, String responseColumn);
 
+  protected M makeModel(String[] columns, String[][] domains, String responseColumn, String treatmentColumn){
+    return makeModel(columns, domains, responseColumn);
+  }
+
   /**
    * Maximal version of the mojo file current model reader supports. Follows the <code>major.minor</code>
    * format, where <code>minor</code> is a 2-digit number. For example "1.00",
@@ -242,7 +246,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");
-    _model = makeModel(columns, domains, isSupervised ? columns[columns.length - 1] : null);
+    _model = makeModel(columns, domains, isSupervised ? columns[columns.length - 1] : null, (String) readkv("treatment_column"));
     _model._uuid = readkv("uuid");
     _model._algoName = readkv("algo");
     _model._h2oVersion = readkv("h2o_version", "unknown");

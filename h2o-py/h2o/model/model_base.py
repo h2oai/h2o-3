@@ -173,7 +173,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False,
+                              background_frame=None, output_space=False, output_per_reference=False):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
         imported MOJOs).
@@ -202,6 +203,15 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             - If ``top_n<0 && bottom_n<0`` then sort all SHAP values in descending order
             
         :param compare_abs: True to compare absolute values of contributions
+        :param background_frame: Optional frame, that is used as the source of baselines for
+                                 the baseline SHAP (when output_per_reference == True) or for
+                                 the marginal SHAP (when output_per_reference == False).
+        :param output_space: If True, linearly scale the contributions so that they sum up to the prediction.
+                             NOTE: This will result only in approximate SHAP values even if the model supports exact SHAP calculation.
+                             NOTE: This will not have any effect if the estimator doesn't use a link function.
+        :param output_per_reference: If True, return baseline SHAP, i.e., contribution for each data point for each reference from the background_frame.
+                                     If False, return TreeSHAP if no background_frame is provided, or marginal SHAP if background frame is provided.
+                                     Can be used only with background_frame.
         :returns: A new H2OFrame made of feature contributions.
 
         :examples:
@@ -225,9 +235,12 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         >>> m.predict_contributions(fr, top_n=-1)
         >>> # Compute SHAP and pick the top two highest and top two lowest
         >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
+        >>> # Compute Marginal SHAP, this enables looking at the contributions against different baselines, e.g., older people in the following example
+        >>> m.predict_contributions(fr, background_frame=fr[fr["AGE"] > 75, :])
         """
         if has_extension(self, 'Contributions'):
-            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
+            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs,
+                                               background_frame, output_space, output_per_reference)
         err_msg = "This model doesn't support calculation of feature contributions."
         if has_extension(self, 'StandardCoef'):
             err_msg += " When features are independent, you can use the coef() method to get coefficients"
@@ -412,6 +425,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 "Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
                 "was requested.".format(num_weight_matrices, matrix_id))
         return h2o.get_frame(self._model_json["output"]["weights"][matrix_id]["URL"].split("/")[3])
+    
+    
 
     def biases(self, vector_id=0):
         """
@@ -447,6 +462,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     def catoffsets(self):
         """Categorical offsets for one-hot encoding."""
         return self._model_json["output"]["catoffsets"]
+    
+    def default_threshold(self):
+        """Default threshold for binomial classification model."""
+        return self._model_json["output"]["default_threshold"]
 
     def training_model_metrics(self):
         """
@@ -454,19 +473,17 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         return self._model_json["output"]["training_metrics"]._metric_json
     
-    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None, 
-                          auuc_type=None, auuc_nbins=-1):
+    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type="none", 
+                          auuc_type=None, custom_auuc_thresholds=None):
         """
         Generate model metrics for this model on ``test_data``.
 
         :param H2OFrame test_data: Data set for which model metrics shall be computed against. All three of train,
             valid and xval arguments are ignored if ``test_data`` is not ``None``.
-        :param bool train: Report the training metrics for the model.
-        :param bool valid: Report the validation metrics for the model.
-        :param bool xval: Report the cross-validation metrics for the model. If train and valid are ``True``, then it
-            defaults to True.
+        :param bool train: Report the training metrics for the model. Defaults false.
+        :param bool valid: Report the validation metrics for the model. Defaults false.
+        :param bool xval: Report the cross-validation metrics for the model. Defaults false.
         :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when ``test_data`` is not ``None``. One of:
-
             - ``"auto"``
             - ``"none"`` (default)
             - ``"macro_ovr"``
@@ -477,14 +494,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             If type is ``"auto"`` or ``"none"``, AUC and AUCPR are not calculated.
         :param String auuc_type: Change default AUUC type for uplift binomial classification AUUC calculation 
             when ``test_data`` is not None. One of:
-
                 - ``"AUTO"`` (default)
                 - ``"qini"``
                 - ``"lift"``
                 - ``"gain"``
                 
             If type is ``"auto"`` ("qini"), AUUC is calculated. 
-        :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to ``-1``, which means 1000.
+        :param list float: List of custom thresholds to calculate AUUC when ``test_data`` is not None. Defaults None.
         :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
         
@@ -512,11 +528,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                               data={"auc_type": auc_type})
             elif auuc_type is not None:
                 assert_is_type(auuc_type, Enum("AUTO", "qini", "gain", "lift"))
+                assert_is_type(custom_auuc_thresholds, [float], None)
+                if custom_auuc_thresholds is not None and len(custom_auuc_thresholds) == 0:
+                    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the custom_auuc_tresholds are empty.")
+                    return
                 if (self._model_json["treatment_column_name"] is not None) and not(self._model_json["treatment_column_name"] in test_data.names):
                     print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the treatment column in your dataset.")
                     return
+                
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                              data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins})
+                              data={"auuc_type": auuc_type, "custom_auuc_thresholds": custom_auuc_thresholds})
             else:
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
             # FIXME need to do the client-side filtering...  (https://github.com/h2oai/h2o-3/issues/13862)
@@ -1230,15 +1251,15 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             metrics["train"] = output["training_metrics"]
         return metrics
 
-    @deprecated_params({'save_to_file': 'save_plot_path'})
-    def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
+    @deprecated_params({'data': 'frame', 'save_to_file': 'save_plot_path'})
+    def partial_plot(self, frame, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev=True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
                      col_pairs_2dpdp=None, save_plot_path=None, row_index=None, targets=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
 
-        :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
+        :param H2OFrame frame: An H2OFrame object used for scoring and constructing the plot.
         :param cols: Feature(s) for which partial dependence will be calculated.
         :param destination_key: A key reference to the created partial dependence tables in H2O.
         :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable ``add_missing_NA``, the returned length will be nbin+1.
@@ -1256,7 +1277,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using ``result.figure()``).
         """
-        if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
+        if not isinstance(frame, h2o.H2OFrame): raise ValueError("frame must be an instance of H2OFrame.")
         num_1dpdp = 0
         num_2dpdp = 0
         if cols is not None:
@@ -1280,22 +1301,22 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         # Check cols specified exist in frame data
         if cols is not None:
             for xi in cols:
-                if xi not in data.names:
+                if xi not in frame.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % xi)
         if col_pairs_2dpdp is not None:
             for oneP in col_pairs_2dpdp:
-                if oneP[0] not in data.names:
+                if oneP[0] not in frame.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % oneP[0])
-                if oneP[1] not in data.names:
+                if oneP[1] not in frame.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % oneP[1])
                 if oneP[0] is oneP[1]:
                     raise H2OValueError("2D pdp must be with different columns.")
         if isinstance(weight_column, int) and not (weight_column == -1):
             raise H2OValueError("Weight column should be a column name in your data frame.")
         elif isinstance(weight_column, str): # index is a name
-            if weight_column not in data.names:
+            if weight_column not in frame.names:
                 raise H2OValueError("Column %s does not exist in the data frame" % weight_column)
-            weight_column = data.names.index(weight_column)
+            weight_column = frame.names.index(weight_column)
         
         if row_index is not None:
             if not isinstance(row_index, int):
@@ -1313,7 +1334,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         kwargs = {}
         kwargs["cols"] = cols
         kwargs["model_id"] = self.model_id
-        kwargs["frame_id"] = data.frame_id
+        kwargs["frame_id"] = frame.frame_id
         kwargs["nbins"] = nbins
         kwargs["destination_key"] = destination_key
         kwargs["weight_column_index"] = weight_column
@@ -1323,7 +1344,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if targets:
             kwargs["targets"] = targets
 
-        self.__generate_user_splits(user_splits, data, kwargs)
+        self.__generate_user_splits(user_splits, frame, kwargs)
         json = H2OJob(h2o.api("POST /3/PartialDependence/", data=kwargs),  job_type="PartialDependencePlot").poll()
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
@@ -1332,7 +1353,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         # Plot partial dependence plots using matplotlib
         return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, 
-                                             col_pairs_2dpdp, data, nbins,
+                                             col_pairs_2dpdp, frame, nbins,
                                              kwargs["user_cols"], kwargs["num_user_splits"], 
                                              plot_stddev, cols, save_plot_path, row_index, targets, include_na)
 

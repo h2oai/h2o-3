@@ -83,9 +83,11 @@ public class IsotonicRegressionTest extends TestUtil {
             p._response_column = fr.lastVecName();
             p._train = fr._key;
             IsotonicRegression ir = new IsotonicRegression(p);
-            ir.init(true);
-            assertEquals("ERRR on field: _train: Training frame for Isotonic Regression can only have a single feature column, " +
-                    "training frame columns: [\"col_0\", \"col_1\", \"col_2\", \"col_3\"]\n", ir.validationErrors());
+            try (Scope.Safe s = Scope.safe()) { // ensure init(true) is executed in its own scope
+              ir.init(true);
+              assertEquals("ERRR on field: _train: Training frame for Isotonic Regression can only have a single feature column, "+
+                      "training frame columns: [\"col_0\", \"col_1\", \"col_2\", \"col_3\"]\n", ir.validationErrors());
+            }
         } finally {
             Scope.exit();
         }

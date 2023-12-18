@@ -1,7 +1,7 @@
 ``weights_column``
 ------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, AutoML, XGBoost, CoxPH, Stacked Ensembles
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, AutoML, XGBoost, CoxPH, Stacked Ensembles, AdaBoost
 - Hyperparameter: no
 
 Description

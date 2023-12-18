@@ -4,6 +4,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import water.*;
+import water.junit.rules.ScopeTracker;
 import water.rapids.ast.AstFunction;
 import water.rapids.Rapids;
 

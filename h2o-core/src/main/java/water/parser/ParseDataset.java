@@ -11,12 +11,17 @@ import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingSetInt;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.FrameUtils;
+import water.util.Log;
+import water.util.PrettyPrint;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -26,6 +31,7 @@ import static water.parser.DefaultParserProviders.SVMLight_INFO;
 public final class ParseDataset {
   public Job<Frame> _job;
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
+
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
   public static Frame parse(Key okey, Key... keys) {
@@ -404,6 +410,26 @@ public final class ParseDataset {
     }
     job.update(0,"Calculating data summary.");
     logParseResults(fr);
+    if (setup.getForceColTypes())  {
+      String parseType = setup.getParseType().name();
+      String[] originalColumnTypes = "PARQUET".equals(parseType) ? setup.getParquetColumnTypes() 
+              : setup.getOrigColumnTypes();
+      final int[] skippedColumns = setup.getSkippedColumns();
+      String[] newColumnTypes;
+      if (skippedColumns != null) {  // need to remove column types of skipped columns
+        Set<Integer> skippedColIndices = Arrays.stream(skippedColumns).boxed().collect(Collectors.toSet());
+        newColumnTypes = IntStream.range(0, originalColumnTypes.length).filter(x -> !(skippedColIndices.contains(x))).mapToObj(x -> originalColumnTypes[x]).toArray(String[]::new);
+      } else {
+        newColumnTypes = originalColumnTypes;
+      }
+      if (newColumnTypes != null) {
+        if ("PARQUET".equals(parseType)) // force change the column types specified by user 
+          forceChangeColumnTypesParquet(fr, newColumnTypes);
+        else
+          forceChangeColumnTypes(fr, newColumnTypes);
+      }
+    }
+      
     // Release the frame for overwriting
     fr.update(job);
     Frame fr2 = DKV.getGet(fr._key);
@@ -416,6 +442,45 @@ public final class ParseDataset {
         assert DKV.get(k) == null : "Input key " + k + " not deleted during parse";
       }
     return pds;
+  }
+  
+  public static void forceChangeColumnTypesParquet(Frame fr, String[] columnTypes) {
+    int numCols = columnTypes.length;
+    for (int index=0; index<numCols; index++) {
+      switch (columnTypes[index]) {
+        case "INT32":
+        case "INT64":
+          if (!fr.vec(index).isInt() && !fr.vec(index).isBad())
+            fr.replace((index), fr.vec(index).toIntegerVec());
+          break;
+        case "FLOAT":
+        case "DOUBLE":
+          if (fr.vec(index).isInt() && !fr.vec(index).isBad())
+            fr.vec(index).asDouble();
+          break;
+        default: break; // no change for other types
+      }
+    }
+  }
+  
+  private static void forceChangeColumnTypes(Frame fr, String[] columnTypes) {
+    int numCols = columnTypes.length;
+    for (int index=0; index<numCols; index++) {
+      switch (columnTypes[index]) {
+        case "int":
+        case "long": 
+          if (!fr.vec(index).isInt() && !fr.vec(index).isBad())
+            fr.replace((index), fr.vec(index).toIntegerVec()).remove(); 
+          break;
+        case "float":
+        case "double":
+        case "real": 
+          if (fr.vec(index).isInt() && !fr.vec(index).isBad())
+            fr.vec(index).asDouble();
+          break;
+        default: break; // no conversion for other data types.
+      }
+    }
   }
   private static class CreateParse2GlobalCategoricalMaps extends DTask<CreateParse2GlobalCategoricalMaps> {
     private final Key   _parseCatMapsKey;

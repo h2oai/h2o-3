@@ -7,6 +7,7 @@ configurations {
 
 dependencies {
   api project(":h2o-core")
+  compileOnly("org.apache.hadoop:hadoop-common:$defaultHadoopVersion")
   api "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
   api "com.amazonaws:aws-java-sdk-sts:${awsJavaSdkVersion}" // Required by WebIdentityTokenCredentialsProvider from AWS SDK
   api "org.apache.httpcomponents:httpclient:${httpClientVersion}"
@@ -19,6 +20,10 @@ dependencies {
   testRuntimeOnly project(":${defaultWebserverModule}")
   testRuntimeOnly project(":h2o-parquet-parser")
   testImplementation project(":h2o-persist-hdfs")
+  testImplementation "org.apache.hadoop:hadoop-common:$defaultHadoopVersion"
+  testImplementation("org.apache.hadoop:hadoop-mapreduce-client-core:$defaultHadoopVersion") {
+    transitive = false
+  }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

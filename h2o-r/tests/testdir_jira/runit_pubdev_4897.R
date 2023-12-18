@@ -8,7 +8,7 @@ test.pubdev_4897 <- function() {
     model <- h2o.gbm(x = "Var2", y = "Var1", training_frame = data, ntrees = 50)
     pdf("plot")
     dev.control(displaylist="enable")
-    h2o.partialPlot(object = model, data = data, cols = "Var2", plot = TRUE)
+    h2o.partialPlot(object = model, newdata = data, cols = "Var2", plot = TRUE)
     recordedPlot <- recordPlot()
     dev.off()
     unlink("plot")

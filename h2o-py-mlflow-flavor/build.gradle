@@ -1,0 +1,63 @@
+description = "H2O-3 MLFlow Flavor"
+
+dependencies {}
+
+def buildVersion = new H2OBuildVersion(rootDir, version)
+
+ext {
+    PROJECT_VERSION = buildVersion.getProjectVersion()
+    pythonexe = findProperty("pythonExec") ?: "python"
+    pipexe = findProperty("pipExec") ?: "pip"
+    if (System.env.VIRTUAL_ENV) {
+        pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
+        pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
+    }
+    testsPath = file("tests")
+}
+
+task copySrcFiles(type: Copy) {
+    from ("${projectDir}") {
+        include "setup.py"
+        include "setup.cfg"
+        include "h2o_mlflow_flavor/**"
+        include "README.rst"
+    }
+    into "${buildDir}"
+}
+
+task buildDist(type: Exec, dependsOn: [copySrcFiles]) {
+    workingDir buildDir
+    doFirst {
+        file("${buildDir}/tmp").mkdirs()
+        standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o_mlflow_flavor_buildDist.out"))
+    }
+    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
+}
+
+task copyMainDist(type: Copy, dependsOn: [buildDist]) {
+    from ("${buildDir}/main/") {
+        include "dist/**"
+    }
+    into "${buildDir}"
+}
+
+task pythonVersion(type: Exec) {
+    doFirst {
+        println(System.env.VIRTUAL_ENV)
+        println(environment)
+    }
+    commandLine getOsSpecificCommandLine([pythonexe, "--version"])
+}
+
+task cleanBuild(type: Delete) {
+    doFirst {
+        println "Cleaning..."
+    }
+    delete file("build/")
+}
+
+//
+// Define the dependencies
+//
+clean.dependsOn cleanBuild
+build.dependsOn copyMainDist

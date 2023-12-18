@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
+import hex.tree.uplift.UpliftDRFModel;
 import org.apache.log4j.Logger;
 import water.Iced;
 import water.Key;
@@ -154,11 +155,13 @@ public class Score extends CMetricScoringTask<Score> {
     _mb.reduce(t._mb);
   }
 
-  // We need to satsify MB invariant
+  // We need to satisfy MB invariant
   @Override protected void postGlobal() {
     super.postGlobal();
     if(_mb != null) {
       _mb.postGlobal(getComputedCustomMetric());
+      if (null != cFuncRef)
+        _mb._CMetricScoringTask = (CMetricScoringTask) this;
     }
   }
 
