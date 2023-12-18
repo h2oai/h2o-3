@@ -8,12 +8,9 @@ repositories {
 
 dependencies {
     api project(":h2o-logging-impl-classic")
-    api 'org.nanohttpd:nanohttpd:2.3.1'
-    api 'org.nanohttpd:nanohttpd-webserver:2.3.1'
-    api 'org.nanohttpd:nanohttpd-nanolets:2.3.1'
     compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
-    
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
+
+    testImplementation group: 'junit', name: 'junit', version: '4.13.1'
     testImplementation 'com.github.stefanbirkner:system-rules:1.19.0'
     testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
