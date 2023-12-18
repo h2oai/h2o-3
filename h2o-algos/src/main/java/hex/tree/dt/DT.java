@@ -3,7 +3,7 @@ package hex.tree.dt;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.tree.dt.binning.SplitStatistics;
+import hex.tree.dt.binning.BinAccumulatedStatistics;
 import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.mrtasks.GetClassCountsMRTask;
@@ -18,11 +18,10 @@ import water.util.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplit;
+import java.util.stream.Stream;
 
 /**
- * Decision Tree
+ * Single Decision Tree
  */
 public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOutput> {
 
@@ -37,22 +36,19 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     int _nodesCount;
 
     /**
-     * Current number of build leaves.
-     */
-    int _leavesCount;
-
-    /**
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
+     * Shape n x 2.
+     * Values of second dimension: (feature index, threshold) or (-1, decision value).
      * While building the tree nodes are being filled from index 0 iteratively
      */
-    private AbstractCompressedNode[] _tree;
+    private double[][] _tree;
 
     private DTModel _model;
     transient Random _rand;
 
-    //    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
     public final static double EPSILON = 1e-6;
-    public final static double MIN_IMPROVEMENT = 1e-6;
+    public final static double MIN_IMPROVEMENT = 1e-6; // todo - specify to each criterion when there will be more of them
+
     private static final Logger LOG = Logger.getLogger(DT.class);
 
 
@@ -60,9 +56,8 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         super(parameters);
         _min_rows = parameters._min_rows;
         _nodesCount = 0;
-        _leavesCount = 0;
         _tree = null;
-        init(false);
+        init(true);
     }
 
     public DT(boolean startup_once) {
@@ -70,65 +65,68 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     }
 
     /**
-     * Find best split for current node based on the histogram.
+     * Use binning and update features limits for child nodes. todo - use several criteria (strategy)
      *
      * @param histogram - histogram for relevant data
-     * @return split info - holds the best split for current node, null if the split could not be found.
+     * @return split info - holds feature index and threshold, null if the split could not be found.
      */
-    private AbstractSplittingRule findBestSplit(Histogram histogram) {
+    private SplitInfo findBestSplit(Histogram histogram) {
         int featuresNumber = histogram.featuresCount();
-        AbstractSplittingRule currentMinCriterionSplittingRule = null;
-        AbstractSplittingRule minCriterionSplittingRuleForFeature;
+        Pair<Double, Double> currentMinCriterionPair = new Pair<>(-1., Double.MAX_VALUE);
         int bestFeatureIndex = -1;
         for (int featureIndex = 0; featureIndex < featuresNumber; featureIndex++) {
             // skip constant features
             if (histogram.isConstant(featureIndex)) {
                 continue;
             }
-            // find best split for current feature based on the criterion value
-            minCriterionSplittingRuleForFeature = findBestSplitForFeature(histogram, featureIndex);
-            
-            if (minCriterionSplittingRuleForFeature == null) {
+            // iterate all bins
+            Pair<Double, Double> minCriterionForFeature = histogram
+                    .calculateBinsStatisticsForFeature(featureIndex)
+                    .stream()
+                    // todo - consider setting min count of samples in bin instead of filtering splits
+                    .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
+                            && (binStatistics._rightCount >= _min_rows)))
+                    .peek(binStatistics -> Log.debug("counts: " + binStatistics._maxBinValue + " "
+                            + binStatistics._leftCount + " " + binStatistics._rightCount))
+                    // map to pairs (maxBinValue, criterion)
+                    .map(binStatistics -> new Pair<>(
+                            binStatistics._maxBinValue, calculateCriterionOfSplit(binStatistics)))
+                    .min(Comparator.comparing(Pair::_2))
+                    .orElse(null);
+            if (minCriterionForFeature == null) {
                 continue; // split could not be found for this feature
             }
             // update current minimum criteria pair
-            if (currentMinCriterionSplittingRule == null
-                    || minCriterionSplittingRuleForFeature._criterionValue < currentMinCriterionSplittingRule._criterionValue) {
-                currentMinCriterionSplittingRule = minCriterionSplittingRuleForFeature;
+            if (minCriterionForFeature._2() < currentMinCriterionPair._2()) {
+                currentMinCriterionPair = minCriterionForFeature;
                 bestFeatureIndex = featureIndex;
             }
         }
         if (bestFeatureIndex == -1) {
             return null; // no split could be found
         }
-
-        return currentMinCriterionSplittingRule;
+        double threshold = currentMinCriterionPair._1();
+        double criterionValue = currentMinCriterionPair._2();
+        return new SplitInfo(bestFeatureIndex, threshold, criterionValue);
     }
 
-
-    private AbstractSplittingRule findBestSplitForFeature(Histogram histogram, int featureIndex) {
-        return (_train.vec(featureIndex).isNumeric()
-                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex)
-                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex))
-                .stream()
-                // todo - consider setting min count of samples in bin instead of filtering splits
-                .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
-                        && (binStatistics._rightCount >= _min_rows)))
-                .peek(binStatistics -> Log.debug("split: " + binStatistics._splittingRule + ", counts: "
-                        + binStatistics._leftCount + " " + binStatistics._rightCount))
-                // calculate criterion value for the splitting rule and fill the splitting rule with the rest of info
-                .peek(binStatistics -> binStatistics.setCriterionValue(calculateCriterionOfSplit(binStatistics))
-                        .setFeatureIndex(featureIndex))
-                .map(binStatistics -> binStatistics._splittingRule)
-                // get splitting rule with the lowest criterion value
-                .min(Comparator.comparing(AbstractSplittingRule::getCriterionValue))
-                .orElse(null);
+    private Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
+        double a1 = (entropyBinarySplit(leftCount0 * 1.0 / leftCount)
+                * leftCount / (leftCount + rightCount));
+        double a2 = (entropyBinarySplit(rightCount0 * 1.0 / rightCount)
+                * rightCount / (leftCount + rightCount));
+        double value = a1 + a2;
+        return value;
     }
-    
 
+    private double entropyBinarySplit(final double oneClassFrequency) {
+        return -1 * ((oneClassFrequency < Precision.EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
+                + ((1 - oneClassFrequency) < Precision.EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
+    }
 
-    private static double calculateCriterionOfSplit(SplitStatistics binStatistics) {
-        return binStatistics.binaryEntropy();
+    private Double calculateCriterionOfSplit(BinAccumulatedStatistics binStatistics) {
+        return binaryEntropy(binStatistics._leftCount, binStatistics._leftCount0,
+                binStatistics._rightCount, binStatistics._rightCount0);
     }
 
     /**
@@ -171,8 +169,9 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      * @param nodeIndex     node index
      */
     public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
-        _tree[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbability(countsByClass)[0]);
-        _leavesCount++;
+        _tree[nodeIndex][0] = 1; // indicates leaf
+        _tree[nodeIndex][1] = selectDecisionValue(countsByClass);
+        _tree[nodeIndex][2] = calculateProbability(countsByClass)[0]; // for now keep only prob. of class 0. will be improved later
         // nothing to return, node is modified inplace
     }
 
@@ -221,12 +220,12 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
         Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH/*, minNumSamplesInBin - todo consider*/);
 
-        AbstractSplittingRule bestSplittingRule = findBestSplit(histogram);
+        SplitInfo bestSplitInfo = findBestSplit(histogram);
         double criterionForTheParentNode = entropyBinarySplit(1.0 * countsByClass[0] / (countsByClass[0] + countsByClass[1]));
-        // if no split could be found, make a list from current node
+        // if no split could be found, make a leaf from current node
         // if the information gain is low, make a leaf from current node
-        if (bestSplittingRule == null
-                || Math.abs(criterionForTheParentNode - bestSplittingRule._criterionValue) < MIN_IMPROVEMENT) {
+        if (bestSplitInfo == null 
+                || Math.abs(criterionForTheParentNode - bestSplitInfo._criterionValue) < MIN_IMPROVEMENT) {
             // add imaginary left and right children to imitate right tree structure
             // left child
             limitsQueue.add(null);
@@ -235,22 +234,24 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             makeLeafFromNode(countsByClass, nodeIndex);
             return;
         }
-        
-        _tree[nodeIndex] = new CompressedNode(bestSplittingRule);
-        
-        int splitFeatureIndex = bestSplittingRule.getFeatureIndex();
-        DataFeaturesLimits limitsLeft, limitsRight;
-        if(_train.vec(splitFeatureIndex).isNumeric()) {
-            // create left and right limits separated by threshold
-            double threshold = ((NumericSplittingRule) bestSplittingRule).getThreshold();
-            limitsLeft = actualLimits.updateMax(splitFeatureIndex, threshold);
-            limitsRight = actualLimits.updateMin(splitFeatureIndex, threshold);
-        } else {
-            boolean[] mask = ((CategoricalSplittingRule) bestSplittingRule).getMask();
-            limitsLeft = actualLimits.updateMask(splitFeatureIndex, mask);
-            limitsRight = actualLimits.updateMaskExcluded(splitFeatureIndex, mask);
-        }
 
+        // flag that node is not a leaf
+        _tree[nodeIndex][0] = 0;
+        _tree[nodeIndex][1] = bestSplitInfo._splitFeatureIndex;
+        _tree[nodeIndex][2] = bestSplitInfo._threshold;
+
+        DataFeaturesLimits limitsLeft = actualLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
+        DataFeaturesLimits limitsRight = actualLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
+        Log.debug("root: " + Arrays.toString(countClasses(actualLimits)) + ", left: "
+                + Arrays.toString(countClasses(limitsLeft)) + ", right: " + Arrays.toString(countClasses(limitsRight))
+                + ", best feature: " + bestSplitInfo._splitFeatureIndex
+                + ", threshold: " + bestSplitInfo._threshold);
+
+        Log.debug("feature: " + bestSplitInfo._splitFeatureIndex + ", threshold: " + bestSplitInfo._threshold);
+        Log.debug("Left min-max: " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+                " " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
+        Log.debug("Right min-max: " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+                " " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
 
         // store limits for left child
         limitsQueue.add(limitsLeft);
@@ -267,11 +268,9 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     public static DataFeaturesLimits getInitialFeaturesLimits(Frame data) {
         return new DataFeaturesLimits(
                 IntStream.range(0, data.numCols() - 1 /*exclude the last prediction column*/)
-                        .mapToObj(data::vec)
+                        .mapToObj(i -> data.vec(i))
                         // decrease min as the minimum border is always excluded and real min value could be lost
-                        .map(v -> v.isNumeric()
-                                ? new NumericFeatureLimits(v.min() - EPSILON, v.max())
-                                : new CategoricalFeatureLimits(v.cardinality()))
+                        .map(v -> new FeatureLimits(v.min() - EPSILON, v.max()))
                         .collect(Collectors.toList()));
     }
 
@@ -287,6 +286,10 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             }
             if (_train.hasInfs()) {
                 error("_train", "Infs are not supported");
+            }
+            if (IntStream.range(0, _train.numCols() - 1) // ignore prediction column
+                    .mapToObj(index -> _train.vec(index).isCategorical()).anyMatch(i -> i)) {
+                error("_train", "Categorical features are not supported yet");
             }
             if (!_response.isCategorical()) {
                 error("_response", "Only categorical response is supported");
@@ -323,26 +326,31 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         private void buildDT() {
             buildDTIteratively();
             Log.debug("depth: " + _parms._max_depth + ", nodes count: " + _nodesCount);
-            CompressedDT compressedDT = new CompressedDT(_tree, _leavesCount);
+
+            CompressedDT compressedDT = new CompressedDT(_tree);
 
             _model._output._treeKey = compressedDT._key;
             DKV.put(compressedDT);
             _job.update(1);
             _model.update(_job);
+            makeModelMetrics();
+//            System.out.println("Tree: " + compressedDT.toString());
+//            System.out.println("Rules: " + String.join("\n", compressedDT.getListOfRules()));
+            Log.debug("Tree:");
+            Log.debug(Arrays.deepToString(_tree));
         }
 
         /**
          * Build the tree iteratively starting from the root node.
          */
         private void buildDTIteratively() {
-            int treeLength = (int) Math.pow(2, _parms._max_depth + 1) - 1;
-            _tree = new AbstractCompressedNode[treeLength];
+            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1) - 1][3];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));
             // build iteratively each node of the tree (each cell of the array) by picking limits from the queue
             // and storing children's limits to the queue.
             // Tree will not be perfect. Missing nodes are empty elements and their limits in queue are null.
-            for (int nodeIndex = 0; nodeIndex < treeLength; nodeIndex++) {
+            for (int nodeIndex = 0; nodeIndex < _tree.length; nodeIndex++) {
                 buildNextNode(limitsQueue, nodeIndex);
             }
         }
@@ -394,7 +402,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
 
     /**
-     * Count classes within samples satisfying given limits.
+     * Count classes withing samples satisfying given limits.
      *
      * @param featuresLimits limits
      * @return pair (count0, count1)
@@ -402,7 +410,8 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     private int[] countClasses(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
                 // create limits that are always fulfilled
-                ? getInitialFeaturesLimits(_train).toDoubles()
+                ? Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
+                .limit(_train.numCols() - 1 /*exclude the last prediction column*/).toArray(double[][]::new)
                 : featuresLimits.toDoubles(), _nclass);
         task.doAll(_train);
 

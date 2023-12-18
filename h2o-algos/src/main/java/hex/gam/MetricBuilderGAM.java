@@ -156,7 +156,6 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
         Vec weights = f.vec(gamM._parms._weights_column);
         if (resp != null && fractionalbinomial != _glmf._family) {
           gl = new GainsLift(preds.lastVec(), resp, weights);
-          gl._groups = m._parms._gainslift_bins;
           gl.exec(gamM._output._job);
         }
       }

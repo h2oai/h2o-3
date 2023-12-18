@@ -67,7 +67,8 @@ public class Jetty9HelperTest {
 
   @Test
   public void testMakeHttpConfiguration() {
-    HttpConfiguration defaultCfg = Jetty9Helper.makeHttpConfiguration(new ConnectionConfiguration(false));
+    H2OHttpConfiguration defaultCfg = (H2OHttpConfiguration) Jetty9Helper.makeHttpConfiguration(
+            new ConnectionConfiguration(false));
     assertFalse(defaultCfg.getSendServerVersion());
     assertEquals(defaultCfg.getRequestHeaderSize(), 32 * 1024);
     assertEquals(defaultCfg.getResponseHeaderSize(), 32 * 1024);
@@ -81,7 +82,7 @@ public class Jetty9HelperTest {
     when(ccMock.getIdleTimeout()).thenReturn(45);
     when(ccMock.isRelativeRedirectAllowed()).thenReturn(false);
 
-    HttpConfiguration customCfg = Jetty9Helper.makeHttpConfiguration(ccMock);
+    H2OHttpConfiguration customCfg = (H2OHttpConfiguration) Jetty9Helper.makeHttpConfiguration(ccMock);
     assertFalse(customCfg.getSendServerVersion());
     assertEquals(customCfg.getRequestHeaderSize(), 42);
     assertEquals(customCfg.getResponseHeaderSize(), 43);

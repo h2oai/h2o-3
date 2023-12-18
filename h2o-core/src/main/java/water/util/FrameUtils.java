@@ -16,7 +16,10 @@ import water.persist.PersistManager;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -575,7 +578,7 @@ public class FrameUtils {
         os.write(bytes, 0, count);
         int workDone = is._curChkIdx - curChkIdx;
         if (workDone > 0) {
-          if (_j.stop_requested()) throw new Job.JobCancelledException(_j);
+          if (_j.stop_requested()) throw new Job.JobCancelledException();
           _j.update(workDone);
           curChkIdx = is._curChkIdx;
         }
@@ -1333,5 +1336,5 @@ public class FrameUtils {
     }
     return chunks;
   }
-  
+
 }

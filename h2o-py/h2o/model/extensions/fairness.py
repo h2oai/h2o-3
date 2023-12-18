@@ -304,7 +304,7 @@ class Fairness:
         return plt.gcf()
 
     def fair_shap_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1,
-                       save_plot_path_prefix=None, background_frame=None):
+                       save_plot_path_prefix=None):
         """
         SHAP summary plot for one feature with protected groups on y-axis.
 
@@ -320,7 +320,7 @@ class Fairness:
         :param save_plot_path_prefix: A prefix of the path to save the plot via using matplotlib function savefig. 
                                       The suffix of the path will be determined from a column name for which SHAP values
                                       were calculated for.
-        :background_frame: Optional frame, that is used as the source of baselines for the marginal SHAP.
+        
         :return: H2OExplanation object
 
         :examples:
@@ -362,7 +362,6 @@ class Fairness:
         assert_is_type(jitter, float)
         assert_is_type(alpha, float, int)
         assert_is_type(autoscale, bool)
-        assert_is_type(background_frame, None, h2o.H2OFrame)
 
         from h2o.plot import get_matplotlib_pyplot
         plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
@@ -377,10 +376,9 @@ class Fairness:
                 for i in range(len(protected_columns)):
                     filtered_hdf = filtered_hdf[filtered_hdf[protected_columns[i]] == pg[i], :]
                 if filtered_hdf.nrow == 0: continue
-                cont = NumpyFrame(self.predict_contributions(filtered_hdf, output_format="compact", background_frame=background_frame))
+                cont = NumpyFrame(self.predict_contributions(filtered_hdf))
                 vals = NumpyFrame(filtered_hdf)[column]
-                if not np.all(np.isnan(vals)):
-                    maxes.append(np.nanmax(vals))
+                maxes.append(np.nanmax(vals))
                 if len(contr_columns) == 1 and all((c not in cont.columns for c in contr_columns)):
                     contr_columns = [c for c in cont.columns if c.startswith("{}.".format(contr_columns[0]))]
                 for cc in contr_columns:
@@ -392,9 +390,6 @@ class Fairness:
         for contr_column, result in results.items():
             plt.figure(figsize=figsize)
             for i, (pg, contr, vals) in enumerate(result):
-                if not np.any(np.isfinite(vals)) or np.nanmin(vals) == np.nanmax(vals):
-                    plt.scatter(0, i, label=", ".join(pg), alpha=alpha, c="grey")
-                    continue  # constant variable; plotting it can throw StopIteration in some versions of matplotlib
                 indices = np.arange(len(contr))
                 np.random.shuffle(indices)
                 contr = contr[indices]
@@ -416,7 +411,7 @@ class Fairness:
 
     def inspect_model_fairness(self, frame, protected_columns, reference, favorable_class,
                                metrics=("auc", "aucpr", "f1", "p.value", "selectedRatio", "total"), figsize=(16, 9),
-                               render=True, background_frame=None):
+                               render=True):
         """
          Produce plots and dataframes related to a single model fairness.
 
@@ -429,8 +424,6 @@ class Fairness:
         :param metrics: List of metrics to show.
         :param figsize: Figure size; passed directly to Matplotlib
         :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
-        :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
-                                 Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
         :return: H2OExplanation object
 
         :examples:
@@ -461,7 +454,7 @@ class Fairness:
         from h2o.explanation import H2OExplanation
         from h2o.explanation import Description
         from h2o.explanation._explain import NumpyFrame
-        from h2o.explanation._explain import _display, _dont_display, Header, _is_tree_model
+        from h2o.explanation._explain import _display, _dont_display, Header
         from h2o.model.extensions import has_extension
         from h2o.plot import get_matplotlib_pyplot
         from h2o.utils.typechecks import assert_is_type
@@ -473,16 +466,10 @@ class Fairness:
         assert_is_type(metrics, [str], tuple)
         assert_is_type(figsize, tuple, list)
         assert_is_type(render, bool)
-        assert_is_type(background_frame, None, h2o.H2OFrame)
 
         plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
         fair = self.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference,
                                       favorable_class=favorable_class)
-        
-        reference_frame = frame
-        for i, pc in enumerate(protected_columns):
-            reference_frame = reference_frame[reference_frame[pc] == reference[i], :]
-        
         cols_to_show = sorted(
             list(set(metrics).union({"AIR_{}".format(m) for m in metrics}).intersection(fair["overview"].columns)))
         overview = fair["overview"]
@@ -558,14 +545,13 @@ class Fairness:
             result["pdp"]["plots"][col] = display(self.fair_pd_plot(frame, col, protected_columns, figsize=figsize))
 
         # SHAP per group
-        if has_extension(self, "Contributions") and (_is_tree_model(self) or background_frame is not None):
+        if has_extension(self, "Contributions"):
             result["shap"] = H2OExplanation()
             result["shap"]["header"] = display(Header("SHAP for Individual Protected Groups"))
             result["shap"]["description"] = display(Description("fairness_shap"))
             result["shap"]["plots"] = H2OExplanation()
             for col in sorted_features:
                 result["shap"]["plots"][col] = display(
-                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize, background_frame=background_frame))
-
+                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize))
 
         return result

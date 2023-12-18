@@ -4,7 +4,6 @@ options = dict(
         'h2o.model.extensions.StandardCoef',
         'h2o.model.extensions.VariableImportance',
         'h2o.model.extensions.Fairness',
-        'h2o.model.extensions.Contributions',
     ],
 )
 deprecated_params = dict(Lambda='lambda_')

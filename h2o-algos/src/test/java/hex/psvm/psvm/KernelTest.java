@@ -4,7 +4,7 @@ import hex.DataInfo;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import water.junit.rules.ScopeTracker;
+import water.ScopeTracker;
 import water.TestFrameCatalog;
 import water.TestUtil;
 import water.fvec.Chunk;

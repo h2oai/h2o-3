@@ -59,57 +59,36 @@ public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
     static void relevelByFreq(Vec v, Vec weights, int topN) {
         double[] levelWeights = VecUtils.collectDomainWeights(v, weights);
         int[] newDomainOrder = ArrayUtils.seq(0, levelWeights.length); 
-        ArrayUtils.sort(newDomainOrder, levelWeights, 0,-1 );
+        ArrayUtils.sort(newDomainOrder, levelWeights);
         if ((topN != -1) && (topN < newDomainOrder.length - 1)) {
-            newDomainOrder = takeTopNMostFrequentDomain(newDomainOrder, topN);
+            newDomainOrder = takeTopN(newDomainOrder, topN, v.domain().length);
         }
         String[] domain = v.domain();
         String[] newDomain = v.domain().clone();
         for (int i = 0; i < newDomainOrder.length; i++) {
-            newDomain[i] = domain[newDomainOrder[i]];
+            newDomain[i] = domain[newDomainOrder[newDomainOrder.length - i - 1]];
         }
-        // new domain order != mapping of levels
-        new RemapDomain(getMapping(newDomainOrder)).doAll(v);
+        new RemapDomain(newDomainOrder).doAll(v);
         v.setDomain(newDomain);
         DKV.put(v);
     }
 
-    /**
-     * Create mapping from reordered domain list.
-     * @param domainOrder sorted domain by count/weights DESC
-     * @return mapping from the old level to the new level
-     */
-    static int[] getMapping(int[] domainOrder){
-        int[] mapping = new int[domainOrder.length];
-        for (int i = 0; i < domainOrder.length; i++) {
-            mapping[domainOrder[i]] = i;
-        }
-        return mapping;
-    }
-
-    /**
-     * Take the top N domains and sort rest of the indexes ASC 
-     * @param domainOrder domain order already ordered by frequency DESC
-     * @param topN number of top N domains to keep unsorted
-     * @return new domain order where top N domains are untouched and rest of the domains are sorted ASC
-     */
-    static int[] takeTopNMostFrequentDomain(int[] domainOrder, final int topN) {
-        int domainSize = domainOrder.length;
+    static int[] takeTopN(int[] domainOrder, final int topN, final int domainSize) {
         int[] newDomainOrder = new int[domainSize];
         int[] topNidxs = new int[topN];
         for (int i = 0; i < topN; i++) {
-            int topIdx = domainOrder[i];
+            int topIdx = domainOrder[domainOrder.length - i - 1]; 
             topNidxs[i] = topIdx;
-            newDomainOrder[i] = topIdx;
+            newDomainOrder[domainSize - i - 1] = topIdx;
         }
         Arrays.sort(topNidxs);
-        int pos = topN;
+        int pos = domainSize - topN - 1;
         for (int i = 0; i < domainSize; i++) {
             if (Arrays.binarySearch(topNidxs, i) >= 0)
                 continue;
-            newDomainOrder[pos++] = i;
+            newDomainOrder[pos--] = i;
         }
-        assert pos == domainSize;
+        assert pos == -1;
         return newDomainOrder;
     }
 
@@ -126,9 +105,10 @@ public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
                 if (c.isNA(row))
                     continue;
                 int level = (int) c.atd(row);
-                int newLevel = _mapping[level];
+                int newLevel = _mapping.length - _mapping[level] - 1;
                 c.set(row, newLevel);
             }
         }
     }
+
 }

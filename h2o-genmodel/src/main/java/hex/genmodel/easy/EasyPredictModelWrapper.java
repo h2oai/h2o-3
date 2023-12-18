@@ -385,8 +385,6 @@ public class EasyPredictModelWrapper implements Serializable {
         return predictKLime(data);
       case CoxPH:
         return predictCoxPH(data);
-      case BinomialUplift:
-        return predictUpliftBinomial(data);
       case Unknown:
         throw new PredictException("Unknown model category");
       default:
@@ -681,19 +679,6 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
-  /**
-   * Make a prediction on a new data point using Uplift Binomial model.
-   * @param data A new data point. Unknown or missing column name is treated as a NaN or ignored. Column names are case sensitive.
-   * @return The prediction.
-   * @throws PredictException
-   */
-  public UpliftBinomialModelPrediction predictUpliftBinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.BinomialUplift, data, 0);
-    UpliftBinomialModelPrediction p = new UpliftBinomialModelPrediction();
-    p.predictions = preds;
-    return p;
-  }
-  
   /**
    * @deprecated Use {@link #predictTargetEncoding(RowData)} instead.
    */

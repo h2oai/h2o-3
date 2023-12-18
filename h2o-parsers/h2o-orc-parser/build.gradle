@@ -12,10 +12,8 @@ configurations{
 }
 
 dependencies {
-  def hadoopVersion="2.8.4"
-  def hiveExecVersion="1.1.0"
-  hadoopCommonExclude("org.apache.hadoop:hadoop-common:$hadoopVersion")
-  hiveExecExclude("org.apache.hive:hive-exec:$hiveExecVersion"){
+  hadoopCommonExclude("org.apache.hadoop:hadoop-common:${defaultHadoopVersion}")
+  hiveExecExclude("org.apache.hive:hive-exec:$defaultHiveExecVersion"){
       // this dependency need to be excluded manually as Gradle can't find it in maven central
       exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
       exclude group: 'eigenbase', module: 'eigenbase-properties'
@@ -25,13 +23,14 @@ dependencies {
   api(project(":h2o-persist-hdfs")) {
       exclude group: 'ai.h2o', module: 'h2o-core'
       exclude group: 'net.java.dev.jets3t', module: 'jets3t'
-      exclude group: 'org.apache.hadoop'
+      exclude group: 'org.apache.hadoop', module: 'hadoop-client'
+      exclude group: 'org.apache.hadoop', module: 'hadoop-aws'
   }
 
   // Note: What is connection between hive-exec version and hadoop-version and orc version?
   // Note: In this case we are using hive version which is compatible with $defaultHadoopVersion
   // Note: for newest version it should be replaces by hive-orc
-  api("org.apache.hive:hive-exec:$hiveExecVersion") {
+  api("org.apache.hive:hive-exec:$defaultHiveExecVersion") {
       // we can't use transitive=false so we need to exclude the dependencies manually
       configurations.hiveExecExclude.getResolvedConfiguration().getResolvedArtifacts().each {
           if (it.moduleVersion.id.group != "org.apache.hive" && it.moduleVersion.id.module.name != "hive-exec") {
@@ -41,7 +40,7 @@ dependencies {
       exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
   }
   // For compilation we need common
-  api("org.apache.hadoop:hadoop-common:$hadoopVersion") {
+  api("org.apache.hadoop:hadoop-common:$defaultHadoopVersion") {
       // we can't use transitive=false so we need to exclude the dependencies manually
       configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().each {
           if (it.moduleVersion.id.group != "org.apache.hadoop" && it.moduleVersion.id.module.name != "hadoop-common") {
@@ -53,7 +52,7 @@ dependencies {
   testImplementation project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
   // We need correct version of MapRe Hadoop to run JUnits
-  testRuntimeOnly("org.apache.hadoop:hadoop-client:$hadoopVersion") {
+  testRuntimeOnly("org.apache.hadoop:hadoop-client:$defaultHadoopVersion") {
       exclude module: "jasper-runtime"
       exclude module: "jasper-compiler"
       exclude module: "curator-client"

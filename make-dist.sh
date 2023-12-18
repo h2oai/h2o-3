@@ -147,14 +147,12 @@ mkdir gaid
 touch gaid/CRAN
 jar -uf ../Rjar/h2o.jar gaid/CRAN
 rm -rf gaid
-JAR_MD5=`md5sum ../Rjar/h2o.jar | sed -r 's/(.{32}).*/\1/'`
-
 rm -f h2o_${PROJECT_VERSION}.tar.gz
-perl -pi -e "s/CURRENT_R_PACKAGE_MD5_CHECKSUM/${JAR_MD5}/"  h2o/R/connection.R
-R CMD build h2o
+tar cvf h2o_${PROJECT_VERSION}.tar h2o
+gzip h2o_${PROJECT_VERSION}.tar
 rm -fr h2o
 cd ../..
-echo $JAR_MD5 > target/Rjar/h2o.jar.md5
+md5sum target/Rjar/h2o.jar | sed -r 's/(.{32}).*/\1/' > target/Rjar/h2o.jar.md5
 
 # Add Python dist to target.
 mkdir -p target/Python

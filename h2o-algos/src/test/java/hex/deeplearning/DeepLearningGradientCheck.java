@@ -410,8 +410,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       p._distribution = dist;
       int N=1000;
       double eps=1./(10.*N);
-      for (double y : new double[]{dist == DistributionFamily.gamma ? 0.5 : 0, 1}) { //actual - taylored for binomial, but should work for regression too
-        // y has to be positive (>0) for gamma distribution
+      for (double y : new double[]{0,1}) { //actual - taylored for binomial, but should work for regression too
         // scan the range -2..2 in function approximation space (link space)
         for (int i=-5*N; i<5*N; ++i) {
           p._huber_alpha = rng.nextDouble()+0.1;

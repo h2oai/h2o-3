@@ -106,7 +106,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  keep_gam_cols=False,  # type: bool
                  store_knot_locations=False,  # type: bool
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-                 gainslift_bins=-1,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -374,10 +373,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-        :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
-               binning.
-               Defaults to ``-1``.
-        :type gainslift_bins: int
         """
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
         self._parms = {}
@@ -450,7 +445,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self.keep_gam_cols = keep_gam_cols
         self.store_knot_locations = store_knot_locations
         self.auc_type = auc_type
-        self.gainslift_bins = gainslift_bins
 
     @property
     def training_frame(self):
@@ -1449,20 +1443,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
-
-    @property
-    def gainslift_bins(self):
-        """
-        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
-
-        Type: ``int``, defaults to ``-1``.
-        """
-        return self._parms.get("gainslift_bins")
-
-    @gainslift_bins.setter
-    def gainslift_bins(self, gainslift_bins):
-        assert_is_type(gainslift_bins, None, int)
-        self._parms["gainslift_bins"] = gainslift_bins
 
     Lambda = deprecated_property('Lambda', lambda_)
 

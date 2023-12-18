@@ -8,12 +8,6 @@ Modeling In H2O
 Supervised
 ++++++++++
 
-:mod:`H2OAdaBoostEstimator`
----------------------------
-.. autoclass:: h2o.estimators.adaboost.H2OAdaBoostEstimator
-    :show-inheritance:
-    :members:
-
 :mod:`H2OANOVAGLMEstimator`
 ---------------------------
 .. autoclass:: h2o.estimators.anovaglm.H2OANOVAGLMEstimator

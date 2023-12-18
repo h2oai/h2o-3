@@ -23,7 +23,7 @@ def partial_plot_test():
     gbm_model.train(x=x, y=y, training_frame=data)
 
     # Plot Partial Dependence for one feature then for both
-    pdp1 = gbm_model.partial_plot(frame=data, cols=['AGE'], server=True, plot=True)
+    pdp1 = gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True)
     # Manual test
     h2o_mean_response_pdp1 = pdp1[0]["mean_response"]
     h2o_stddev_response_pdp1 = pdp1[0]["stddev_response"]
@@ -34,7 +34,7 @@ def partial_plot_test():
     assert h2o_stddev_response_pdp1 == pdp_manual[1]
     assert h2o_std_error_mean_response_pdp1 == pdp_manual[2]
 
-    pdp2=gbm_model.partial_plot(frame=data, cols=['AGE', 'RACE'], server=True, plot=False)
+    pdp2=gbm_model.partial_plot(data=data, cols=['AGE', 'RACE'], server=True, plot=False)
     # Manual test
     h2o_mean_response_pdp2 = pdp2[0]["mean_response"]
     h2o_stddev_response_pdp2 = pdp2[0]["stddev_response"]
@@ -56,7 +56,7 @@ def partial_plot_test():
     assert h2o_std_error_mean_response_pdp2_race == pdp_manual[2]
 
     # Plot Partial Dependence for one row 
-    pdp_row = gbm_model.partial_plot(frame=data, cols=['AGE'], server=True, plot=True, row_index=1)
+    pdp_row = gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1)
     # Manual test
     h2o_mean_response_pdp_row = pdp_row[0]["mean_response"]
     h2o_stddev_response_pdp_row = pdp_row[0]["stddev_response"]

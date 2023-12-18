@@ -38,7 +38,6 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.udf.CFuncRef;
 import water.util.*;
 
 import java.text.DecimalFormat;
@@ -2272,7 +2271,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if (!_parms._fix_tweedie_variance_power) {
               if (!_parms._fix_dispersion_parameter) {
                 converged = updateTweediePandPhi(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
-                Log.info("GLM Tweedie p and phi estimation: iteration = " + iterCnt + "; p = " + _parms._tweedie_variance_power + "; phi = " + _parms._dispersion_estimated);
+                Log.info("GLM Tweedie p and phi estimation: iteration = " + iterCnt + "; p = " + _parms._tweedie_variance_power + "; phi = " + _parms._init_dispersion_parameter);
               } else {
                 converged = updateTweedieVariancePower(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
                 Log.info("GLM Tweedie variance power estimation: iteration = " + iterCnt + "; p = " + _parms._tweedie_variance_power);
@@ -2455,7 +2454,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private boolean updateTweediePandPhi(int iterCnt, double[] betaCnd, Vec weights, Vec response) {
       final double originalP = _parms._tweedie_variance_power;
-      final double originalPhi = _parms._dispersion_estimated;
+      final double originalPhi = _parms._init_dispersion_parameter;
       final double contractRatio = 0.5;
       final double pMin = 1 + 1e-10;
       final double pZeroMax = 2 - 1e-10;
@@ -3025,7 +3024,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       // Make sure if we set dispersion for Tweedie p and phi estimation even without calculating p values
       if (tweedie.equals(_parms._family) && !_parms._fix_dispersion_parameter && !_parms._fix_tweedie_variance_power) {
-        _model.setDispersion(_parms._dispersion_estimated, true);
+        _model.setDispersion(_parms._init_dispersion_parameter, true);
       }
       if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters...
         double se = _parms._init_dispersion_parameter;
@@ -3337,7 +3336,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
       long t1 = System.currentTimeMillis();
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
-      _model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
+      _model.score(train).delete();
       scorePostProcessing(train, t1);
     }
 
@@ -3356,7 +3355,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Training metrics computed in " + (t2 - t1) + "ms"));
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
-        _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
+        _model.score(valid).delete();
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
         validScore.fillFrom(_model._output._validation_metrics);
@@ -3729,7 +3728,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._output._vif_predictor_names = _model.buildVariableInflationFactors(_train, _dinfo);
       }// build variable inflation factors for numerical predictors
       TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
-              (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
+              (null != _parms._valid), false, _model._output.getModelCategory(), false);
       _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
               scoring_history_early_stop);
       _model._output._varimp = _model._output.calculateVarimp();

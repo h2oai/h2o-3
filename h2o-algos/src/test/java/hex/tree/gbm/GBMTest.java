@@ -3888,8 +3888,8 @@ public class GBMTest extends TestUtil {
 
       // compare training predictions of both models (just compare probs)
       if (preds!=null && preds2!=null) {
-        Scope.track(preds.remove(0));
-        Scope.track(preds2.remove(0));
+        preds.remove(0);
+        preds2.remove(0);
         System.out.println("Compare training predictions of both models (just compare probs)");
         assertIdenticalUpToRelTolerance(preds, preds2, 1e-2);
       }
@@ -3905,18 +3905,23 @@ public class GBMTest extends TestUtil {
       if (fr4!=null) fr4.delete();
       if (fr5!=null) fr5.delete();
       if(model != null){
+        model.deleteCrossValidationModels();
         model.delete();
       }
       if(model2 != null){
+        model2.deleteCrossValidationModels();
         model2.delete();
       }
       if(model3 != null){
+        model3.deleteCrossValidationModels();
         model3.delete();
       }
       if(model4 != null){
+        model4.deleteCrossValidationModels();
         model4.delete();
       }
       if(model5 != null){
+        model5.deleteCrossValidationModels();
         model5.delete();
       }
       Scope.exit();
@@ -4449,53 +4454,6 @@ public class GBMTest extends TestUtil {
         gbm.deleteCrossValidationModels();
         gbm.deleteCrossValidationPreds();
       }
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void testMojoMetrics() throws Exception {
-    GBMModel gbm = null;
-    try {
-      Scope.enter();
-      Frame frame = new TestFrameBuilder()
-              .withName("data")
-              .withColNames("ColA", "ColB", "Response")
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-              .withDataForCol(0, ard(0, 1, 0, 1, 0, 1, 0))
-              .withDataForCol(1, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
-              .withDataForCol(2, ard(1, 0, 1, 1, 1, 0, 1))
-              .build();
-
-      frame = frame.toCategoricalCol(2);
-
-      Frame frameVal = new TestFrameBuilder()
-              .withName("dataVal")
-              .withColNames("ColA", "ColB", "Response")
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-              .withDataForCol(0, ard(0, 1, 1, 1, 0, 0, 1))
-              .withDataForCol(1, ard(Double.NaN, 1, 3, 2, 4, 8, 7))
-              .withDataForCol(2, ard(1, 1, 1, 0, 0, 1, 1))
-              .build();
-
-      frameVal = frameVal.toCategoricalCol(2);
-
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      parms._train = frame._key;
-      parms._valid = frameVal._key;
-      parms._response_column = "Response";
-      parms._ntrees = 1;
-      parms._min_rows = 0.1;
-      parms._distribution = bernoulli;
-
-      gbm = new GBM(parms).trainModel().get();
-      Scope.track_generic(gbm);
-      Frame train_score = gbm.score(frame);
-      Scope.track(train_score);
-      
-      assertTrue(gbm.testJavaScoring(frame, train_score, 1e-15));
-
-    } finally {
       Scope.exit();
     }
   }

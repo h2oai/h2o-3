@@ -300,7 +300,7 @@ Examples
       4.8526636043  0.7153633278  0.0069487980 -0.0584344031  0.0791810013  0.4353149856  0.0126060611  -0.0005196059
 
       # Retrieve the list of coefficients for a subset size of 3:
-      coeff3 <- h2o.coef(allsubsetsModel, 3)
+      coeff3 <- h2o.coeff(allsubsetsModel, 3)
       print(coeff3)
       [[3]]
       Intercept    CAPSULE      DCAPS        PSA
@@ -351,7 +351,7 @@ Examples
 
       # To find out which variables get removed, build a new model with ``mode = "backward``
       # using the above training information:
-      bwModel <- h2o.modelSelection(x = predictors,
+      bwModel = h2o.modelSelection(x = predictors, 
                                    y = response, 
                                    training_frame = prostate, 
                                    seed = 12345, 

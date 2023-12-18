@@ -460,7 +460,8 @@ public class Vec extends Keyed<Vec> {
 //    System.out.println("made vecs " + Arrays.toString(res));
     return res;
   }
-  
+
+
   private static void fillDoubleChunks(Vec v, final Vec[] ds, final double [] values){
     new MRTask(){
       public void map(Chunk c){
@@ -1334,13 +1335,6 @@ public class Vec extends Keyed<Vec> {
    * @return A categorical vector based on the contents of the original vector.
    */
   public Vec toCategoricalVec() {return VecUtils.toCategoricalVec(this);}
-  
-  public Vec toIntegerVec() {return VecUtils.toIntegerVec(this);}
-  
-  public void asDouble() {
-    assert _type==T_NUM;
-    rollupStats()._isInt=false;
-  }
   /**
    * Convenience method for converting to a string vector.
    * @return A string vector based on the contents of the original vector.
@@ -1375,7 +1369,7 @@ public class Vec extends Keyed<Vec> {
     return fs;
   }
 
-  public static void bulk_remove(final Key<Vec>[] keys, final int ncs ) {
+  static void bulk_remove(final Key[] keys, final int ncs ) {
     // Need to mark the Vec as mutating to make sure that no running computations of RollupStats will
     // re-insert the rollups into DKV after they are deleted in bulk_remove(Key, int).
     Futures fs = new Futures();

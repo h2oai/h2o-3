@@ -10,7 +10,6 @@ from io import StringIO
 import h2o
 import numpy as np
 from h2o.exceptions import H2OValueError
-from h2o.model.extensions import has_extension
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, is_decorated_plot_result
 
 
@@ -47,7 +46,7 @@ def _dont_display(object):
     """
     import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if isinstance(object, matplotlib.figure.Figure) or is_decorated_plot_result(object) and (object.figure() is not None):
+    if isinstance(object, matplotlib.figure.Figure):
         plt.close()
     return object
 
@@ -180,10 +179,7 @@ class H2OExplanation(OrderedDict):
     def _ipython_display_(self):
         from IPython.display import display
         for v in self.values():
-            if is_decorated_plot_result(v):
-                display(v.figure())
-            else:
-                display(v)
+            display(v)
 
 
 @contextmanager
@@ -607,8 +603,7 @@ def _uniformize(data, col_name):
     xs = np.linspace(0, 1, 100)
     quantiles = np.nanquantile(col, xs)
     res = np.interp(col, quantiles, xs)
-    if not np.all(np.isnan(res)):
-        res = (res - np.nanmin(res)) / (np.nanmax(res) - np.nanmin(res))
+    res = (res - np.nanmin(res)) / (np.nanmax(res) - np.nanmin(res))
     return res
 
 
@@ -624,8 +619,7 @@ def shap_summary_plot(
         colormap=None,  # type: str
         figsize=(12, 12),  # type: Union[Tuple[float], List[float]]
         jitter=0.35,  # type: float
-        save_plot_path=None, # type: Optional[str]
-        background_frame=None  # type: Optional[h2o.H2OFrame]
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP summary plot.
@@ -648,7 +642,6 @@ def shap_summary_plot(
     :param figsize: figure size; passed directly to matplotlib.
     :param jitter: amount of jitter used to show the point density.
     :param save_plot_path: a path to save the plot via using matplotlib function savefig.
-    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
@@ -700,7 +693,7 @@ def shap_summary_plot(
         random.shuffle(permutation)
 
     with no_progress_block():
-        contributions = NumpyFrame(model.predict_contributions(frame, output_format="compact", background_frame=background_frame))
+        contributions = NumpyFrame(model.predict_contributions(frame))
     frame = NumpyFrame(frame)
     contribution_names = contributions.columns
 
@@ -730,21 +723,13 @@ def shap_summary_plot(
         col_name = top_n_features[i]
         col = contributions[permutation, col_name]
         dens = _density(col)
-        color = (
-            _uniformize(frame, col_name)[permutation]
-            if colorize_factors or not frame.isfactor(col_name)
-            else np.full(frame.nrow, 0.5)
-        )
-
-        if not np.any(np.isfinite(color)) or np.nanmin(color) == np.nanmax(color):
-            plt.scatter(0, i, alpha=alpha, c="grey")
-            continue  # constant variable; plotting it can throw StopIteration in some versions of matplotlib
-
         plt.scatter(
             col,
             i + dens * np.random.uniform(-jitter, jitter, size=len(col)),
             alpha=alpha,
-            c=color,
+            c=_uniformize(frame, col_name)[permutation]
+            if colorize_factors or not frame.isfactor(col_name)
+            else np.full(frame.nrow, 0.5),
             cmap=colormap
         )
         plt.clim(0, 1)
@@ -771,8 +756,7 @@ def shap_explain_row_plot(
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
         contribution_type="both",  # type: str
-        save_plot_path=None,  # type: Optional[str]
-        background_frame=None  # type: Optional[h2o.H2OFrame]
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP local explanation.
@@ -800,7 +784,6 @@ def shap_explain_row_plot(
         
         Used only for ``plot_type="barplot"``.
     :param save_plot_path: a path to save the plot via using matplotlib function savefig.
-    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
@@ -834,7 +817,7 @@ def shap_explain_row_plot(
 
     row = frame[row_index, :]
     with no_progress_block():
-        contributions = NumpyFrame(model.predict_contributions(row, output_format="compact", background_frame=background_frame))
+        contributions = NumpyFrame(model.predict_contributions(row))
     contribution_names = contributions.columns
     prediction = float(contributions.sum(axis=1))
     bias = float(contributions["BiasTerm"])
@@ -2513,8 +2496,7 @@ def learning_curve_plot(
                       'objective': 'objective',
                       'convergence': 'convergence',
                       'negative_log_likelihood': 'negative_log_likelihood',
-                      'sumetaieta02': 'sumetaieta02',
-                      'loglik': 'loglik'}
+                      'sumetaieta02': 'sumetaieta02'}
     inverse_metric_mappping = {v: k for k, v in metric_mapping.items()}
     inverse_metric_mappping["custom"] = "custom, custom_increasing"
 
@@ -3075,8 +3057,7 @@ def explain(
         figsize=(16, 9),  # type: Tuple[float]
         render=True,  # type: bool
         qualitative_colormap="Dark2",  # type: str
-        sequential_colormap="RdYlBu_r",  # type: str
-        background_frame=None  # type: Optional[h2o.H2OFrame]
+        sequential_colormap="RdYlBu_r"  # type: str
 ):
     # type: (...) -> H2OExplanation
     """
@@ -3099,10 +3080,6 @@ def explain(
     :param plot_overrides: overrides for individual model explanations.
     :param figsize: figure size; passed directly to matplotlib.
     :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
-    :param qualitative_colormap: used for setting qualitative colormap, that is passed to individual plots.
-    :param sequential_colormap:  used for setting sequential colormap, that is passed to individual plots.
-    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
-                             Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
     :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
@@ -3262,24 +3239,20 @@ def explain(
                                        figsize=figsize)))
 
     # SHAP Summary
-    if "shap_summary" in explanations and not multinomial_classification:
-        shap_models = tree_models_to_show
-        if background_frame is not None:
-            shap_models = [m for m in models_to_show if has_extension(m, "Contributions")]
-        if len(shap_models) > 0:
-            result["shap_summary"] = H2OExplanation()
-            result["shap_summary"]["header"] = display(Header("SHAP Summary"))
-            result["shap_summary"]["description"] = display(Description("shap_summary"))
-            result["shap_summary"]["plots"] = H2OExplanation()
-            for shap_model in shap_models:
-                result["shap_summary"]["plots"][shap_model.model_id] = display(shap_summary_plot(
-                    shap_model,
-                    **_custom_args(
-                        plot_overrides.get("shap_summary_plot"),
-                        frame=frame,
-                        figsize=figsize,
-                        background_frame=background_frame
-                    )))
+    if len(tree_models_to_show) > 0 and not multinomial_classification \
+            and "shap_summary" in explanations:
+        result["shap_summary"] = H2OExplanation()
+        result["shap_summary"]["header"] = display(Header("SHAP Summary"))
+        result["shap_summary"]["description"] = display(Description("shap_summary"))
+        result["shap_summary"]["plots"] = H2OExplanation()
+        for tree_model in tree_models_to_show:
+            result["shap_summary"]["plots"][tree_model.model_id] = display(shap_summary_plot(
+                tree_model,
+                **_custom_args(
+                    plot_overrides.get("shap_summary_plot"),
+                    frame=frame,
+                    figsize=figsize
+                )))
 
     # PDP
     if "pdp" in explanations:
@@ -3360,7 +3333,6 @@ def explain_row(
         qualitative_colormap="Dark2",  # type: str
         figsize=(16, 9),  # type: Tuple[float]
         render=True,  # type: bool
-        background_frame=None  # type: Optional[h2o.H2OFrame]
 ):
     # type: (...) -> H2OExplanation
     """
@@ -3384,8 +3356,7 @@ def explain_row(
     :param qualitative_colormap: a colormap name.
     :param figsize: figure size; passed directly to matplotlib.
     :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
-    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
-                             Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
+
     :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
@@ -3461,20 +3432,16 @@ def explain_row(
                                                                      plot_overrides.get("leaderboard"),
                                                                      frame=frame)))
 
-    if "shap_explain_row" in explanations and not multinomial_classification:
-        shap_models = tree_models_to_show
-        if background_frame is not None:
-            shap_models = [m for m in models_to_show if has_extension(m, "Contributions")]
-        if len(shap_models) > 0:
-            result["shap_explain_row"] = H2OExplanation()
-            result["shap_explain_row"]["header"] = display(Header("SHAP Explanation"))
-            result["shap_explain_row"]["description"] = display(Description("shap_explain_row"))
-            result["shap_explain_row"]["plots"] = H2OExplanation()
-            for shap_model in shap_models:
-                result["shap_explain_row"]["plots"][shap_model.model_id] = display(shap_explain_row_plot(
-                    shap_model, row_index=row_index,
-                    **_custom_args(plot_overrides.get("shap_explain_row"),
-                                frame=frame, figsize=figsize, background_frame=background_frame)))
+    if len(tree_models_to_show) > 0 and not multinomial_classification and \
+            "shap_explain_row" in explanations:
+        result["shap_explain_row"] = H2OExplanation()
+        result["shap_explain_row"]["header"] = display(Header("SHAP Explanation"))
+        result["shap_explain_row"]["description"] = display(Description("shap_explain_row"))
+        for tree_model in tree_models_to_show:
+            result["shap_explain_row"][tree_model.model_id] = display(shap_explain_row_plot(
+                tree_model, row_index=row_index,
+                **_custom_args(plot_overrides.get("shap_explain_row"),
+                               frame=frame, figsize=figsize)))
 
     if "ice" in explanations and not multiple_models:
         result["ice"] = H2OExplanation()

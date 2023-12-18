@@ -1,11 +1,7 @@
 package hex.tree.uplift;
 
-import hex.Model;
 import hex.ScoreKeeper;
-import hex.genmodel.MojoModel;
-import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.genmodel.easy.RowData;
-import hex.genmodel.easy.prediction.UpliftBinomialModelPrediction;
+import hex.genmodel.utils.ArrayUtils;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,7 +14,8 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import static junit.framework.TestCase.assertTrue;
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 @CloudSize(1)
@@ -69,8 +66,8 @@ public class UpliftDRFTest extends TestUtil {
             assertNotNull(model);
 
             Frame out = model.score(train);
-            Scope.track(out);
-            assertArrayEquals(new String[]{"uplift_predict", "p_y1_with_treatment", "p_y1_without_treatment"}, out.names());
+            Scope.track_generic(out);
+            assertArrayEquals(new String[]{"uplift_predict", "p_y1_ct1", "p_y1_ct0"}, out.names());
             assertEquals(train.numRows(), out.numRows());
 
             assertNull(model._output._varimp); // not supported yet
@@ -83,12 +80,18 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorMissingTreatmentColumn() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
-            train.remove("treatment");
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment_not_default", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "0", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
+            train.toCategoricalCol("treatment_not_default");
             train.toCategoricalCol("conversion");
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
-            p._treatment_column = "treatment";
             p._response_column = "conversion";
 
             UpliftDRF udrf = new UpliftDRF(p);
@@ -102,10 +105,17 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorDoNotSupportMultipleTreatment() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T2", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "1", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
-            p._treatment_column = "treatment2";
+            p._treatment_column = "treatment";
             p._response_column = "conversion";
 
             UpliftDRF udrf = new UpliftDRF(p);
@@ -119,10 +129,17 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorTreatmentMustBeCategorical() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar(0, 1, 0, 1, 1, 0, 0, 0, 1, 0))
+                    .withDataForCol(3, ar("1", "1", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
-            p._treatment_column = "C0";
+            p._treatment_column = "treatment";
             p._response_column = "conversion";
 
             UpliftDRF udrf = new UpliftDRF(p);
@@ -136,11 +153,18 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorDoNotSupportMultinomialResponseColumn() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "2", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
-            p._response_column = "C1";
+            p._response_column = "conversion";
 
             UpliftDRF udrf = new UpliftDRF(p);
             udrf.trainModel().get();
@@ -154,7 +178,14 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorDoNotSupportNfolds() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "1", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -172,7 +203,14 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorDoNotSupportFoldColumn() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "1", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -190,7 +228,14 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorDoNotSupportOffset() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "1", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -208,7 +253,14 @@ public class UpliftDRFTest extends TestUtil {
     public void testBasicTrainErrorDoNotSupportDistribution() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "1", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -221,127 +273,27 @@ public class UpliftDRFTest extends TestUtil {
             Scope.exit();
         }
     }
-    
-    @Test
-    public void testBasicTrainSupportEarlyStoppingAUUC() {
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testBasicTrainErrorDoNotSupportEarlyStopping() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
-            int ntrees = 100;
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("1", "1", "1", "0", "1", "0", "1", "0", "1", "1"))
+                    .build();
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
             p._response_column = "conversion";
-            p._stopping_metric = ScoreKeeper.StoppingMetric.AUUC;
-            p._stopping_rounds = 2;
-            p._ntrees = ntrees;
-            p._score_each_iteration = true;
+            p._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
 
             UpliftDRF udrf = new UpliftDRF(p);
-            UpliftDRFModel model = udrf.trainModel().get();
-            Scope.track_generic(model);
-            assertNotNull(model);
-            assertTrue(model._output._treeStats._num_trees < ntrees);
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testBasicTrainSupportEarlyStoppingATE() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            int ntrees = 100;
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._stopping_metric = ScoreKeeper.StoppingMetric.ATE;
-            p._stopping_rounds = 2;
-            p._ntrees = ntrees;
-            p._score_each_iteration = true;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            UpliftDRFModel model = udrf.trainModel().get();
-            Scope.track_generic(model);
-            assertNotNull(model);
-            assertTrue(model._output._treeStats._num_trees < ntrees);
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testBasicTrainSupportEarlyStoppingATT() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            int ntrees = 100;
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._stopping_metric = ScoreKeeper.StoppingMetric.ATT;
-            p._stopping_rounds = 2;
-            p._ntrees = ntrees;
-            p._score_each_iteration = true;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            UpliftDRFModel model = udrf.trainModel().get();
-            Scope.track_generic(model);
-            assertNotNull(model);
-            assertTrue(model._output._treeStats._num_trees < ntrees);
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testBasicTrainSupportEarlyStoppingATC() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            int ntrees = 100;
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._stopping_metric = ScoreKeeper.StoppingMetric.ATC;
-            p._stopping_rounds = 2;
-            p._ntrees = ntrees;
-            p._score_each_iteration = true;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            UpliftDRFModel model = udrf.trainModel().get();
-            Scope.track_generic(model);
-            assertNotNull(model);
-            assertTrue(model._output._treeStats._num_trees < ntrees);
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testBasicTrainSupportEarlyStoppingQini() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            int ntrees = 100;
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._stopping_metric = ScoreKeeper.StoppingMetric.qini;
-            p._stopping_rounds = 2;
-            p._ntrees = ntrees;
-            p._score_each_iteration = true;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            UpliftDRFModel model = udrf.trainModel().get();
-            Scope.track_generic(model);
-            assertNotNull(model);
-            assertTrue(model._output._treeStats._num_trees < ntrees);
+            udrf.trainModel().get();
         } finally {
             Scope.exit();
         }
@@ -377,7 +329,14 @@ public class UpliftDRFTest extends TestUtil {
     public void testPredictCorrectOutput() {
         try {
             Scope.enter();
-            Frame train = generateFrame();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "Yes"))
+                    .build();
             train.toCategoricalCol("treatment");
             train.toCategoricalCol("conversion");
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
@@ -390,95 +349,11 @@ public class UpliftDRFTest extends TestUtil {
             UpliftDRFModel model = udrf.trainModel().get();
             Scope.track_generic(model);
             Frame preds = model.score(train);
-            Scope.track(preds);
+            Scope.track_generic(preds);
             assertArrayEquals("Prediction frame column names are incorrect.",
-                    preds.names(), new String[]{"uplift_predict", "p_y1_with_treatment", "p_y1_without_treatment"});
+                    preds.names(), new String[]{"uplift_predict", "p_y1_ct1", "p_y1_ct0"});
         } finally {
             Scope.exit();
         }
-    }
-    
-    @Test
-    public void testMojo() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            train.toCategoricalCol("treatment");
-            train.toCategoricalCol("conversion");
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._response_column = "conversion";
-            p._treatment_column = "treatment";
-            p._ntrees = 4;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            UpliftDRFModel model = udrf.trainModel().get();
-            Scope.track_generic(model);
-            Frame preds = model.score(train);
-            Scope.track(preds);
-
-            Model.JavaScoringOptions options = new Model.JavaScoringOptions();
-            options._disable_pojo = true;
-            assertTrue(model.testJavaScoring(train, preds,1e-15, options));
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testEasyPredictMojo() throws Exception {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            train.toCategoricalCol("treatment");
-            train.toCategoricalCol("conversion");
-            Scope.track_generic(train);
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._response_column = "conversion";
-            p._treatment_column = "treatment";
-            p._ntrees = 4;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            UpliftDRFModel model = udrf.trainModel().get();
-            Scope.track_generic(model);
-            MojoModel mojo = model.toMojo();
-            EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(
-                    new EasyPredictModelWrapper.Config()
-                            .setModel(mojo)
-                            .setEnableContributions(false)
-            );
-            Frame featureFr = train.subframe(mojo.features());
-            Scope.track_generic(featureFr);
-            for (int i = 0; i < featureFr.numRows(); i++) {
-                RowData row = new RowData();
-                for (String feat : featureFr.names()) {
-                    if (featureFr.vec(feat).isCategorical()){
-                        String value = featureFr.vec(feat).stringAt(i);
-                        row.put(feat, value);
-                    } else if (!featureFr.vec(feat).isNA(i)) {
-                        double value = featureFr.vec(feat).at(i);
-                        row.put(feat, value);
-                    }
-                }
-                UpliftBinomialModelPrediction pred = wrapper.predictUpliftBinomial(row);
-                assertEquals(pred.predictions.length,3);
-                assertEquals(pred.predictions[0], pred.predictions[1]-pred.predictions[2], 0);
-            }
-        } finally {
-            Scope.exit();
-        }
-    }
-    
-    private Frame generateFrame(){
-        return new TestFrameBuilder()
-                .withColNames("C0", "C1", "treatment", "treatment2", "conversion")
-                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
-                .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
-                .withDataForCol(3, ar("T", "C2", "T", "T", "T", "C2", "C", "C", "C", "C2"))
-                .withDataForCol(4, ar("1", "0", "1", "0", "1", "0", "1", "0", "1", "1"))
-                .build();
     }
 }

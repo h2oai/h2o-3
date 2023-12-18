@@ -364,16 +364,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     @Override public void reduce( AssertNoKey ank ) { _found |= ank._found; }
   }
 
-  public static class JobCancelledException extends RuntimeException {
-
-    public JobCancelledException() {
-      this(null);
-    }
-    
-    public JobCancelledException(Job job) {
-      super("job "+ (job == null ? "" : job._description+" ["+job._key+"] ") +"was cancelled");
-    }
-  }
+  public static class JobCancelledException extends RuntimeException {}
 
   // A simple barrier.  Threads blocking on the job will block on this
   // "barrier" task, which will block until the fjtask runs the onCompletion or

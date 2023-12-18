@@ -17,7 +17,6 @@ import hex.genmodel.algos.pipeline.MojoPipelineReader;
 import hex.genmodel.algos.rulefit.RuleFitMojoReader;
 import hex.genmodel.algos.svm.SvmMojoReader;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoReader;
-import hex.genmodel.algos.upliftdrf.UpliftDrfMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
 import hex.genmodel.algos.klime.KLimeMojoReader;
 
@@ -117,9 +116,6 @@ public class ModelMojoFactory {
 
       case "Isotonic Regression":
         return new IsotonicRegressionMojoReader();
-        
-      case "Uplift Distributed Random Forest":
-        return new UpliftDrfMojoReader();
         
       default:
         // Try to load MOJO reader via service

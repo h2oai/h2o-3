@@ -44,7 +44,6 @@ public class ModelDescriptorBuilder {
         private final double[] _modelClassDistrib;
         private final String _offsetColumn;
         private final String _weightsColumn;
-        private final String _treatmentColumn;
         private final String[][] _domains;
         private final String[][] _origDomains;
         private final String[] _names;
@@ -76,11 +75,6 @@ public class ModelDescriptorBuilder {
                 _weightsColumn = weightsColSpec != null ? weightsColSpec.getColumnName() : null; 
             } else {
                 _weightsColumn = null;
-            }
-            if (modelAttributes != null) {
-                _treatmentColumn = (String) modelAttributes.getParameterValueByName("treatment_column");;
-            } else {
-                _treatmentColumn = null;
             }
         }
 
@@ -117,11 +111,6 @@ public class ModelDescriptorBuilder {
         @Override
         public String foldColumn() {
             return null;
-        }
-
-        @Override
-        public String treatmentColumn() {
-            return _treatmentColumn;
         }
 
         @Override
@@ -258,9 +247,6 @@ public class ModelDescriptorBuilder {
         public String foldColumn() {
             return null;
         }
-
-        @Override
-        public String treatmentColumn() { return null; }
 
         @Override
         public ModelCategory getModelCategory() {

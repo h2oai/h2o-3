@@ -78,7 +78,7 @@ public class LoggerFactory {
         try {
             Class.forName(waterLogClassName);
             return true;
-        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+        } catch (ClassNotFoundException e) {
             return false;
         }
     }

@@ -7,15 +7,6 @@ dependencies {
     api "org.eclipse.jetty:jetty-servlet:${jetty9version}"
     api "org.eclipse.jetty.websocket:websocket-api:${jetty9version}"
     api "org.eclipse.jetty.websocket:websocket-server:${jetty9version}"
-
-    testImplementation "org.eclipse.jetty:jetty-server:${jetty9MainVersion}"
-    testImplementation "org.eclipse.jetty:jetty-servlets:${jetty9MainVersion}"
-    testImplementation "org.eclipse.jetty:jetty-jaas:${jetty9MainVersion}"
-    testImplementation "org.eclipse.jetty:jetty-proxy:${jetty9MainVersion}"
-    testImplementation "org.eclipse.jetty:jetty-servlet:${jetty9MainVersion}"
-    testImplementation "org.eclipse.jetty.websocket:websocket-api:${jetty9MainVersion}"
-    testImplementation "org.eclipse.jetty.websocket:websocket-server:${jetty9MainVersion}"
-    
     testImplementation group: "junit", name: "junit", version: "4.12"
     testImplementation "org.mockito:mockito-core:2.23.0"
 }

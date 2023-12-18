@@ -373,19 +373,6 @@ Metrics
 
 Usage is illustrated in the Examples section.
 
-XGBoost Friedman and Popescu's H statistics
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can calculates the Friedman and Popescu's H statistics to test for the presence of an interaction between specified variables. 
-
-H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
-
-This statistic can only be calculated for numerical variables. Missing values are supported.
-
-Reference implementation: `Python <https://pypi.org/project/sklearn-gbmi/>`__ and `R <https://rdrr.io/cran/gbm/man/interact.gbm.html>`__
-
-You can see how it used in the `Examples section <#examples>`__.
-
 Examples
 ~~~~~~~~
 
@@ -428,10 +415,6 @@ Below is a simple example showing how to build a XGBoost model.
     # Extract feature interactions:
     feature_interactions = h2o.feature_interaction(titanic_xgb)
 
-    # Get Friedman and Popescu's H statistics
-    h <- h2o.h(titanic_xgb, train, c('fair','age'))
-    print(h)
-
 
    .. code-tab:: python
    
@@ -467,10 +450,6 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Extract feature interactions:
     feature_interactions = titanic_xgb.feature_interaction()
-
-    # Get Friedman and Popescu's H statistics
-    h = titanic_xgb.h(train, ['fair','age'])
-    print(h)
 
 Note
 ''''
@@ -527,7 +506,5 @@ References
 - Chen, Tianqi and Guestrin, Carlos Guestrin. "XGBoost: A Scalable Tree Boosting System." Version 3 (2016) `http://arxiv.org/abs/1603.02754 <http://arxiv.org/abs/1603.02754>`__
 
 - Mitchell R, Frank E. (2017) Accelerating the XGBoost algorithm using GPU computing. PeerJ Preprints 5:e2911v1 `https://doi.org/10.7287/peerj.preprints.2911v1 <https://doi.org/10.7287/peerj.preprints.2911v1>`__
-
-`Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.* **2**:916-954. <http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046>`__ 
 
 

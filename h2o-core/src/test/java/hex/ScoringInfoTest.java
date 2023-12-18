@@ -44,7 +44,7 @@ public class ScoringInfoTest {
         scoringInfo.scored_xval._classError = 0.3703;
 
         ScoringInfo[] scoringInfos = new ScoringInfo[]{scoringInfo};
-        TwoDimTable scoringHistoryTable = ScoringInfo.createScoringHistoryTable(scoringInfos, true, true, ModelCategory.Binomial, false, false);
+        TwoDimTable scoringHistoryTable = ScoringInfo.createScoringHistoryTable(scoringInfos, true, true, ModelCategory.Binomial, false);
         assertNotNull(scoringHistoryTable);
 
         IcedWrapper[][] cellValues = scoringHistoryTable.getCellValues();

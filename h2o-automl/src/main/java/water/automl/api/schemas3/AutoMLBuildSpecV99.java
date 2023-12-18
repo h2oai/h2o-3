@@ -86,10 +86,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(direction = API.Direction.INPUT,
             help = "Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).")
     public double huber_alpha;
-    
-    @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
-    public String custom_metric_func;
-    
+
     @API(help = "Reference to custom distribution, format: `language:keyName=funcName`", direction=API.Direction.INOUT)
     public String custom_distribution_func;
   } // class AutoMLBuildControlV99

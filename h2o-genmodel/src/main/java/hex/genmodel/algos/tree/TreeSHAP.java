@@ -10,8 +10,6 @@ import ai.h2o.algos.tree.INode;
 import ai.h2o.algos.tree.INodeStat;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.BitSet;
 
 public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements TreeSHAPPredictor<R> {
 
@@ -255,104 +253,6 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
     return out_contribs;
   }
 
-  @Override
-  public double[] calculateInterventionalContributions(R feat, R background, double[] out_contribs, int[] catOffsets, boolean expand) {
-    interventionalTreeShap(feat, background, out_contribs, nodes[rootNodeId], new BitSet(out_contribs.length), new BitSet(out_contribs.length), catOffsets, expand);
-    return out_contribs;
-  }
-  
-  private double w(int k, int d) {
-    // assume d > k
-    // (k! (d-k-1)! / d!) => 
-    // lets denote a = min(k, d-k-1), b = max(k, d-k-1), then 
-    // (a!b!)/d! => a!/((b+1)(b+2)...(d-1)(d))
-    assert k >= 0;
-    assert d >= k;
-    int a = Math.min(k, d-k-1);
-    int b = Math.max(k, d-k-1);
-    double nom=1, denom=1;
-
-    for (int i = 2; i <= a; i++) {
-      nom *= i;
-    }
-    for (int i = b+1; i <= d; i++) {
-      denom *= i;
-    }
-    
-    return nom/denom;
-  }
-
-  int mapToOutputSpace(int featureIdx, double featureVal, int[] catOffsets, boolean expand) {
-    if (null == catOffsets)
-      return featureIdx;
-    if (expand) {
-      if (catOffsets[featureIdx+1] - catOffsets[featureIdx] == 1) {
-        // Numerical variable
-        return catOffsets[featureIdx];
-      }
-      // Categorical variable
-      if (Double.isNaN(featureVal))
-        return catOffsets[featureIdx+1]-1;
-      return catOffsets[featureIdx] + (int)featureVal;
-    } else {
-      if (catOffsets[catOffsets.length - 1] < featureIdx)
-        return featureIdx - catOffsets[catOffsets.length - 1] + catOffsets.length - 1;
-      int outputIdx = Arrays.binarySearch(catOffsets, featureIdx);
-      if (outputIdx < 0)
-        return -outputIdx - 2;
-      return outputIdx;
-    }
-  }
-
-  /**
-   * If catOffsets == null calculate contributions for one hot encoded feature with an assumption that cardinality can change
-   * @param feat
-   * @param background
-   * @param out_contribs
-   * @param node
-   * @param sX
-   * @param sZ
-   * @param catOffsets
-   */
-  void interventionalTreeShap(R feat, R background, double[] out_contribs, N node, BitSet sX, BitSet sZ, int[] catOffsets, boolean expand) {
-    // Notation here follows [1]. X denotes data point for which we calculate the contribution (feat) and Z denotes the data point from the background distribution.
-    // [1] LABERGE, Gabriel and PEQUIGNOT, Yann, 2022. Understanding Interventional TreeSHAP: How and Why it Works. arXiv:2209.15123.
-
-    if (node.isLeaf()) {    // is leaf
-      final int sXCard = sX.cardinality();
-      final int sZCard = sZ.cardinality();
-      double wPos = sXCard == 0 ? 0 : w(sXCard - 1, sXCard + sZCard);
-      double wNeg = w(sXCard, sXCard + sZCard);
-      for (int i = sX.nextSetBit(0); i >= 0; i = sX.nextSetBit(i + 1)) {
-        out_contribs[i] += wPos * node.getLeafValue();
-      }
-      for (int i = sZ.nextSetBit(0); i >= 0; i = sZ.nextSetBit(i + 1)) {
-        out_contribs[i] -= wNeg * node.getLeafValue();
-      }
-      if (sX.cardinality() == 0) // Bias Term
-        out_contribs[out_contribs.length-1] += node.getLeafValue();
-    } else { // not a leaf node
-      final int nextX = node.next(feat);
-      final int nextZ = node.next(background);
-      final int iN = mapToOutputSpace(node.getSplitIndex(), feat instanceof double[] ? ((double[])feat)[node.getSplitIndex()]: -1, catOffsets, expand);
-      if (nextX == nextZ) {
-        // this feature (iN) is present in both paths (for X and Z) => no change in contributions
-        interventionalTreeShap(feat, background, out_contribs, nodes[nextX], sX, sZ, catOffsets, expand);
-      } else if (sX.get(iN)) { // this feature (iN) was already seen in this path -> go the same way to keep the traversal disjoint
-        interventionalTreeShap(feat, background, out_contribs, nodes[nextX], sX, sZ, catOffsets, expand);
-      } else if (sZ.get(iN)) { // this feature (iN) was already seen in this path -> go the same way to keep the traversal disjoint
-        interventionalTreeShap(feat, background, out_contribs, nodes[nextZ], sX, sZ, catOffsets, expand);
-      } else { // this feature (iN) wasn't seen before go down both ways
-        BitSet newSx = (BitSet) sX.clone();
-        BitSet newSz = (BitSet) sZ.clone();
-        newSx.set(iN);
-        newSz.set(iN);
-        interventionalTreeShap(feat, background, out_contribs, nodes[nextX], newSx, sZ, catOffsets, expand);
-        interventionalTreeShap(feat, background, out_contribs, nodes[nextZ], sX, newSz, catOffsets, expand);
-      }
-    }
-  }
-  
   @Override
   public PathPointer makeWorkspace() {
     int wsSize = getWorkspaceSize();

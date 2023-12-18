@@ -140,12 +140,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Object obj = null;
     criterion = criterion.toLowerCase();
     
-    if ("custom".equals(criterion)){
-      if (null == mm._custom_metric) 
-        return Double.NaN;
-      return mm._custom_metric.value;
-    }
-    
     // Constructing confusion matrix based on criterion
     ConfusionMatrix cm;
     if(mm instanceof ModelMetricsBinomial) {
@@ -179,7 +173,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       }
     }
     if (null == method)
-      throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion + " for model_id: " + mm._modelKey);
+      throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
 
     try {
       return (double) method.invoke(obj);
@@ -423,7 +417,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     // Custom metric holder
     public CustomMetric _customMetric = null;
-    public CMetricScoringTask _CMetricScoringTask = null;
 
     public  double weightedSigma() {
 //      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
@@ -435,7 +428,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       assert(weight == 1 && offset == 0);
       return perRow(ds, yact, m);
     }
-    
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
@@ -450,10 +442,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     }
     
     public void reduceForCV(T mb){
-      if (null != _CMetricScoringTask) {
-        _CMetricScoringTask.reduceCustomMetric(mb._CMetricScoringTask);
-        _customMetric = _CMetricScoringTask.computeCustomMetric();
-      }
       this.reduce(mb);
     }
 

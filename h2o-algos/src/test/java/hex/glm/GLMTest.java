@@ -10,16 +10,14 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMTask.*;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -29,11 +27,10 @@ import java.util.concurrent.ExecutionException;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static org.junit.Assert.*;
-import static water.TestUtil.parseTestFile;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class GLMTest {
+public class GLMTest  extends TestUtil {
+
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
@@ -124,7 +121,7 @@ public class GLMTest {
     testCoeffs(Family.gaussian, "smalldata/glm_test/gaussian_20cols_10000Rows.csv", "C21");
   }
   
-  private void testCoeffs(Family family, String fileName, String responseColumn) {
+  public void testCoeffs(Family family, String fileName, String responseColumn) {
     try {
       Scope.enter();
       Frame train = parseTestFile(fileName);
@@ -1439,10 +1436,11 @@ public class GLMTest {
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test
   public void test_COD_Airlines_SingleLambda() {
+    GLMModel model1 = null;
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
-      Frame fr = Scope.track(parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip")); //  Distance + Origin + Dest + UniqueCarrier
-      String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
@@ -1455,7 +1453,7 @@ public class GLMTest {
       params._lambda_search = true;
       params._nlambdas = 5;
       GLM glm = new GLM( params);
-      GLMModel model1 = Scope.track_generic(glm.trainModel().get());
+      model1 = glm.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
@@ -1467,17 +1465,19 @@ public class GLMTest {
 //      System.out.println( " objective value " + objective);
 //      assertEquals(0.670921, objective,1e-4);
     } finally {
-      Scope.exit();
+      fr.delete();
+      if (model1 != null) model1.delete();
     }
   }
 
 
   @Test
   public void test_COD_Airlines_SingleLambda_CovUpdates() {
+    GLMModel model1 = null;
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
-      Frame fr = Scope.track(parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip")); //  Distance + Origin + Dest + UniqueCarrier
-      String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
@@ -1489,7 +1489,7 @@ public class GLMTest {
       params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       GLM glm = new GLM( params);
-      GLMModel model1 = Scope.track_generic(glm.trainModel().get());
+      model1 = glm.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
@@ -1498,17 +1498,19 @@ public class GLMTest {
 //      System.out.println( " objective value " + objective);
 //      assertEquals(0.670921, objective,1e-2);
     } finally {
-      Scope.exit();
+      fr.delete();
+      if (model1 != null) model1.delete();
     }
   }
 
 
   @Test
   public void test_COD_Airlines_LambdaSearch() {
+    GLMModel model1 = null;
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
-      Frame fr = Scope.track(parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip")); //  Distance + Origin + Dest + UniqueCarrier
-      String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
@@ -1521,7 +1523,7 @@ public class GLMTest {
       params._lambda_search = true;
       params._nlambdas = 5;
       GLM glm = new GLM(params);
-      GLMModel model1 = Scope.track_generic(glm.trainModel().get());
+      model1 = glm.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length - 1];
       double[] beta = sm.beta;
       System.out.println("lambda " + sm.lambda_value);
@@ -1531,17 +1533,19 @@ public class GLMTest {
 //              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
 //      assertEquals(0.65689, objective,1e-4);
     } finally {
-      Scope.exit();
+      fr.delete();
+      if (model1 != null) model1.delete();
     }
   }
 
 
   @Test
   public void test_COD_Airlines_LambdaSearch_CovUpdates() {
+    GLMModel model1 = null;
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
-      Frame fr = Scope.track(parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip")); //  Distance + Origin + Dest + UniqueCarrier
-      String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
@@ -1554,7 +1558,7 @@ public class GLMTest {
       params._lambda_search = true;
       params._nlambdas = 5;
       GLM glm = new GLM( params);
-      GLMModel model1 = Scope.track_generic(glm.trainModel().get());
+      model1 = glm.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
       double [] beta = sm.beta;
       System.out.println("lambda " + sm.lambda_value);
@@ -1564,7 +1568,8 @@ public class GLMTest {
 //              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
 //      assertEquals(0.65689, objective,1e-4);
     } finally {
-      Scope.exit();
+      fr.delete();
+      if (model1 != null) model1.delete();
     }
   }
 
@@ -1697,8 +1702,7 @@ public class GLMTest {
    * @throws ExecutionException
    * @throws InterruptedException
    */
-  @Test 
-  public void testProstate() throws InterruptedException, ExecutionException {
+  @Test public void testProstate() throws InterruptedException, ExecutionException {
     GLMModel model = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
@@ -1803,8 +1807,7 @@ public class GLMTest {
     }
   }
 
-  @Test 
-  public void testQuasibinomial(){
+  @Test public void testQuasibinomial(){
     GLMParameters params = new GLMParameters(Family.quasibinomial);
     GLM glm = new GLM(params);
     params.validate(glm);
@@ -1854,9 +1857,7 @@ public class GLMTest {
       Scope.exit();
     }
   }
-  
-  @Test 
-  public void testSynthetic() throws Exception {
+  @Test public void testSynthetic() throws Exception {
     GLMModel model = null;
     Frame fr = parseTestFile("smalldata/glm_test/glm_test2.csv");
     Frame score = null;
@@ -1936,8 +1937,7 @@ public class GLMTest {
     }
   }
 
-  @Test
-  public void testXval(){
+  @Test public void testXval(){
     GLMModel model = null;
     Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
@@ -1964,8 +1964,7 @@ public class GLMTest {
   /**
    * Test that lambda search gets (almost) the same result as running the model for each lambda separately.
    */
-  @Test 
-  public void testCustomLambdaSearch(){
+  @Test public void testCustomLambdaSearch(){
     Key pros = Key.make("prostate");
     Frame f = parseTestFile(pros, "smalldata/glm_test/prostate_cat_replaced.csv");
 
@@ -2031,6 +2030,9 @@ public class GLMTest {
     f.delete();
   }
 
+
+
+
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
    * Should be able to obtain good model (~100 predictors, ~1 explained deviance) with up to 250 active predictors.
@@ -2039,8 +2041,7 @@ public class GLMTest {
    * Test runs glm with gaussian on arcene dataset and verifies it gets all lambda while limiting maximum actove predictors to reasonably small number.
    * Compares the objective value to expected one.
    */
-  @Test 
-  public void testArcene() throws InterruptedException, ExecutionException{
+  @Test public void testArcene() throws InterruptedException, ExecutionException{
     Key parsed = Key.make("arcene_parsed");
     Key<GLMModel> modelKey = Key.make("arcene_model");
     GLMModel model = null;
@@ -2108,8 +2109,7 @@ public class GLMTest {
   /** Test large GLM POJO model generation.
    *  Make a 10K predictor model, emit, javac, and score with it.
    */
-  @Test 
-  public void testBigPOJO() {
+  @Test public void testBigPOJO() {
     GLMModel model = null;
     Frame fr = parseTestFile(Key.make("arcene_parsed"), "smalldata/glm_test/arcene.csv"), res=null;
     try{
@@ -2135,8 +2135,7 @@ public class GLMTest {
     }
   }
 
-  @Test 
-  public void testAbalone() {
+  @Test public void testAbalone() {
     Scope.enter();
     GLMModel model = null;
     try {
@@ -2176,7 +2175,6 @@ public class GLMTest {
     m.delete();
     fr.delete();
   }
-  
   @Test
   public void testDeviances() {
     for (Family fam : Family.values()) {
@@ -2390,7 +2388,7 @@ public class GLMTest {
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
       FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\n AGE, -.5, .5");
-      betaConstraints = Scope.track(ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey));
+      betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
       glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
       Scope.track_generic(model);

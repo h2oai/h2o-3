@@ -51,7 +51,6 @@ public class AutoMLBuildSpec extends Iced {
     public double tweedie_power = 1.5;
     public double quantile_alpha = 0.5;
     public double huber_alpha = 0.9;
-    public String custom_metric_func;
 
     public boolean keep_cross_validation_predictions = false;
     public boolean keep_cross_validation_models = false;

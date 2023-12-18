@@ -1,6 +1,8 @@
 package hex.tree.dt;
 
-import hex.tree.dt.binning.*;
+import hex.tree.dt.binning.Bin;
+import hex.tree.dt.binning.BinningStrategy;
+import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.mrtasks.CountBinsSamplesCountsMRTask;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
@@ -19,9 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static hex.tree.dt.DT.getInitialFeaturesLimits;
-import static hex.tree.dt.binning.NumericBin.MAX_INDEX;
-import static hex.tree.dt.binning.NumericBin.MIN_INDEX;
-import static hex.tree.dt.mrtasks.CountBinsSamplesCountsMRTask.*;
 import static org.junit.Assert.*;
 
 @CloudSize(1)
@@ -29,9 +28,10 @@ import static org.junit.Assert.*;
 public class BinningTest extends TestUtil {
     
     
-    static void testBinningValidity(Histogram histogram, int numRows) {
+    private void testBinningValidity(Histogram histogram, int numRows) {
+        // min and max values
         for (int i = 0; i < histogram.featuresCount(); i++) {
-            List<AbstractBin> featureBins = histogram.getFeatureBins(i);
+            List<Bin> featureBins = histogram.getFeatureBins(i);
             assertFalse(featureBins.isEmpty());
             // at least first and last bins are not empty
             assertNotEquals(0, featureBins.get(0)._count);
@@ -46,9 +46,9 @@ public class BinningTest extends TestUtil {
         try {
             Scope.enter();
             Frame basicData = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ar("two", "one", "three", "two", "two", "one", "one", "one", "three", "three"))
+                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
                     .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
                     .withColNames("First", "Second", "Prediction")
                     .build();
@@ -69,10 +69,10 @@ public class BinningTest extends TestUtil {
             assertEquals(Arrays.asList(0, 0, 1, 0, 1, 0, 1, 0, 0, 0), 
                     histogram.getFeatureBins(0).stream().map(b -> b._count0).collect(Collectors.toList()));
             // feature 1, count all
-            assertEquals(Arrays.asList(4, 3, 3),
+            assertEquals(Arrays.asList(7, 1, 0, 0, 0, 0, 0, 0, 1, 1),
                     histogram.getFeatureBins(1).stream().map(b -> b._count).collect(Collectors.toList()));
             // feature 1, count 0
-            assertEquals(Arrays.asList(1, 1, 1),
+            assertEquals(Arrays.asList(3, 0, 0, 0, 0, 0, 0, 0, 0, 0),
                     histogram.getFeatureBins(1).stream().map(b -> b._count0).collect(Collectors.toList()));
             
         } finally {
@@ -85,9 +85,9 @@ public class BinningTest extends TestUtil {
         try {
             Scope.enter();
             Frame basicData = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ar("two", "one", "three", "two", "two", "one", "one", "one", "three", "three"))
+                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
                     .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
                     .withColNames("First", "Second", "Prediction")
                     .build();
@@ -95,56 +95,51 @@ public class BinningTest extends TestUtil {
             DataFeaturesLimits dataLimits = getInitialFeaturesLimits(basicData);
             Histogram histogram = new Histogram(basicData, dataLimits, BinningStrategy.EQUAL_WIDTH);
             
-            // extracting bins from the histogram and throwing away calculated values to test the calculation separately
             double[][] binsArray = histogram.getFeatureBins(0).stream()
-                    .map(bin -> new double[]{-1.0, 0, 0, ((NumericBin) bin)._min, ((NumericBin) bin)._max}).toArray(double[][]::new);
+                    .map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
             
-            CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(
-                    0, dataLimits.toDoubles(), binsArray);
-            task.doAll(basicData);
+            CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(0, 
+                    dataLimits.toDoubles(), binsArray).doAll(basicData);
+            
             assertEquals(10, task._bins.length);
                     
-            assert(task._bins[0][NUMERICAL_FLAG] == -1);
-            assert(task._bins[0][MIN_INDEX] < basicData.vec(0).min());
-            assert(task._bins[0][MAX_INDEX] < 1 && task._bins[0][MAX_INDEX] > 0.8);
-            assert(task._bins[0][COUNT] == 1.0);
-            assert(task._bins[0][COUNT_0] == 0.0);
+            assert(task._bins[0][0] < basicData.vec(0).min());
+            assert(task._bins[0][1] < 1 && task._bins[0][1] > 0.8);
+            assert(task._bins[0][2] == 1.0);
+            assert(task._bins[0][3] == 0.0);
 
-            assert(task._bins[1][NUMERICAL_FLAG] == -1);
-            assert(task._bins[1][MIN_INDEX] == task._bins[0][MAX_INDEX]);
-            assert(task._bins[1][MAX_INDEX] < 2);
-            assert(task._bins[1][COUNT] == 1.0);
-            assert(task._bins[1][COUNT_0] == 0.0);
+            assert(task._bins[1][0] == task._bins[0][1]);
+            assert(task._bins[1][1] < 2);
+            assert(task._bins[1][2] == 1.0);
+            assert(task._bins[1][3] == 0.0);
 
-            assert(task._bins[2][NUMERICAL_FLAG] == -1);
-            assert(task._bins[2][MIN_INDEX] == task._bins[1][MAX_INDEX]);
-            assert(task._bins[2][MAX_INDEX] < 3);
-            assert(task._bins[2][COUNT] == 1.0);
-            assert(task._bins[2][COUNT_0] == 1.0);
+            assert(task._bins[2][0] == task._bins[1][1]);
+            assert(task._bins[2][1] < 3);
+            assert(task._bins[2][2] == 1.0);
+            assert(task._bins[2][3] == 1.0);
 
 
-            // extracting bins from the histogram and throwing away calculated values to test the calculation separately
             binsArray = histogram.getFeatureBins(1).stream()
-                    .map(bin -> new double[]{((CategoricalBin) bin)._category, 0, 0}).toArray(double[][]::new);
+                    .map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
 
             task = new CountBinsSamplesCountsMRTask(1, dataLimits.toDoubles(), binsArray).doAll(basicData);
 
-            assertEquals(3, task._bins.length);
+            assertEquals(10, task._bins.length);
 
-            // category
-            assert(task._bins[0][0] == 0);
-            assert(task._bins[0][COUNT] == 4);
-            assert(task._bins[0][COUNT_0] == 1);
+            assert(task._bins[0][0] < basicData.vec(1).min());
+            assert(task._bins[0][1] == 1.69);
+            assert(task._bins[0][2] == 7.0);
+            assert(task._bins[0][3] == 3.0);
 
-            // category
-            assert(task._bins[1][0] == 1);
-            assert(task._bins[1][COUNT] == 3);
-            assert(task._bins[1][COUNT_0] == 1);
+            assert(task._bins[1][0] == task._bins[0][1]);
+            assert(task._bins[1][1] == 2.5);
+            assert(task._bins[1][2] == 1.0);
+            assert(task._bins[1][3] == 0.0);
 
-            // category
-            assert(task._bins[2][0] == 2);
-            assert(task._bins[2][COUNT] == 3);
-            assert(task._bins[2][COUNT_0] == 1);
+            assert(task._bins[2][0] == task._bins[1][1]);
+            assert(task._bins[2][1] == 3.32);
+            assert(task._bins[2][2] == 0.0);
+            assert(task._bins[2][3] == 0.0);
             
         } finally {
             Scope.exit();
@@ -172,9 +167,9 @@ public class BinningTest extends TestUtil {
             // min and max values of features
             for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
                 // check that lower limit is lower than the minimum value
-                assertTrue(prostateData.vec(i).min() > ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._min);
+                assertTrue(prostateData.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
                 assertEquals(prostateData.vec(i).max(),
-                        ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._max,
+                        wholeDataLimits.getFeatureLimits(i)._max,
                         Precision.EPSILON);
             }
 
@@ -195,7 +190,7 @@ public class BinningTest extends TestUtil {
     public void testBinningAirlinesData() {
         try {
             Scope.enter();
-            Frame data = Scope.track(parseTestFile("smalldata/testng/airlines_train.csv"));
+            Frame data = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
             data.replace(0, data.vec(0).toCategoricalVec()).remove();
             // manually put prediction column as the last one
             Vec response = data.remove("IsDepDelayed");
@@ -209,13 +204,11 @@ public class BinningTest extends TestUtil {
             // count of features
             assertEquals(data.numCols() - 1, wholeDataLimits.featuresCount());
 
-            // min and max values of numeric features
-            assertTrue(data.vec(7).min() > ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(7))._min);
-            assertEquals(data.vec(7).max(), ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(7))._max, Precision.EPSILON);
-
-            // num of categories in limits corresponds to the cardinality of the vector
-            for(int i = 0; i < 7; i++) {
-                assertEquals(data.vec(i).cardinality(), wholeDataLimits.getFeatureLimits(i).toDoubles().length);
+            // min and max values of features
+            for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
+                // check that lower limit is lower than the minimum value
+                assertTrue(data.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
+                assertEquals(data.vec(i).max(), wholeDataLimits.getFeatureLimits(i)._max, Precision.EPSILON);
             }
 
             Histogram histogram = new Histogram(data, wholeDataLimits, BinningStrategy.EQUAL_WIDTH);

@@ -64,7 +64,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
   @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
   public String sort_metric;
-  
+
   @API(help="The list of modeling steps effectively used during the AutoML run", direction=API.Direction.OUTPUT)
   public StepDefinitionV99[] modeling_steps;
 

@@ -33,8 +33,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryGLM',
                                       'h2o.model.extensions.StandardCoef',
                                       'h2o.model.extensions.VariableImportance',
-                                      'h2o.model.extensions.Fairness',
-                                      'h2o.model.extensions.Contributions']}
+                                      'h2o.model.extensions.Fairness']}
 
     @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,
@@ -115,7 +114,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  fix_tweedie_variance_power=True,  # type: bool
                  dispersion_learning_rate=0.5,  # type: float
                  influence=None,  # type: Optional[Literal["dfbetas"]]
-                 gainslift_bins=-1,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -412,10 +410,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                excluded in the dataset.
                Defaults to ``None``.
         :type influence: Literal["dfbetas"], optional
-        :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
-               binning.
-               Defaults to ``-1``.
-        :type gainslift_bins: int
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -496,7 +490,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.fix_tweedie_variance_power = fix_tweedie_variance_power
         self.dispersion_learning_rate = dispersion_learning_rate
         self.influence = influence
-        self.gainslift_bins = gainslift_bins
 
     @property
     def training_frame(self):
@@ -2384,20 +2377,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def influence(self, influence):
         assert_is_type(influence, None, Enum("dfbetas"))
         self._parms["influence"] = influence
-
-    @property
-    def gainslift_bins(self):
-        """
-        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
-
-        Type: ``int``, defaults to ``-1``.
-        """
-        return self._parms.get("gainslift_bins")
-
-    @gainslift_bins.setter
-    def gainslift_bins(self, gainslift_bins):
-        assert_is_type(gainslift_bins, None, int)
-        self._parms["gainslift_bins"] = gainslift_bins
 
     Lambda = deprecated_property('Lambda', lambda_)
 

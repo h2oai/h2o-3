@@ -36,13 +36,10 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
-                 score_each_iteration=False,  # type: bool
-                 score_tree_interval=0,  # type: int
                  ntrees=100,  # type: int
                  sample_size=256,  # type: int
                  extension_level=0,  # type: int
                  seed=-1,  # type: int
-                 disable_training_metrics=True,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -61,12 +58,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
-        :param score_each_iteration: Whether to score during each iteration of model training.
-               Defaults to ``False``.
-        :type score_each_iteration: bool
-        :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
-               Defaults to ``0``.
-        :type score_tree_interval: int
         :param ntrees: Number of Extended Isolation Forest trees.
                Defaults to ``100``.
         :type ntrees: int
@@ -80,9 +71,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         :param seed: Seed for pseudo random number generator (if applicable)
                Defaults to ``-1``.
         :type seed: int
-        :param disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
-               Defaults to ``True``.
-        :type disable_training_metrics: bool
         """
         super(H2OExtendedIsolationForestEstimator, self).__init__()
         self._parms = {}
@@ -91,13 +79,10 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         self.ignored_columns = ignored_columns
         self.ignore_const_cols = ignore_const_cols
         self.categorical_encoding = categorical_encoding
-        self.score_each_iteration = score_each_iteration
-        self.score_tree_interval = score_tree_interval
         self.ntrees = ntrees
         self.sample_size = sample_size
         self.extension_level = extension_level
         self.seed = seed
-        self.disable_training_metrics = disable_training_metrics
 
     @property
     def training_frame(self):
@@ -190,34 +175,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
-
-    @property
-    def score_each_iteration(self):
-        """
-        Whether to score during each iteration of model training.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("score_each_iteration")
-
-    @score_each_iteration.setter
-    def score_each_iteration(self, score_each_iteration):
-        assert_is_type(score_each_iteration, None, bool)
-        self._parms["score_each_iteration"] = score_each_iteration
-
-    @property
-    def score_tree_interval(self):
-        """
-        Score the model after every so many trees. Disabled if set to 0.
-
-        Type: ``int``, defaults to ``0``.
-        """
-        return self._parms.get("score_tree_interval")
-
-    @score_tree_interval.setter
-    def score_tree_interval(self, score_tree_interval):
-        assert_is_type(score_tree_interval, None, int)
-        self._parms["score_tree_interval"] = score_tree_interval
 
     @property
     def ntrees(self):
@@ -318,19 +275,5 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
-
-    @property
-    def disable_training_metrics(self):
-        """
-        Disable calculating training metrics (expensive on large datasets)
-
-        Type: ``bool``, defaults to ``True``.
-        """
-        return self._parms.get("disable_training_metrics")
-
-    @disable_training_metrics.setter
-    def disable_training_metrics(self, disable_training_metrics):
-        assert_is_type(disable_training_metrics, None, bool)
-        self._parms["disable_training_metrics"] = disable_training_metrics
 
 

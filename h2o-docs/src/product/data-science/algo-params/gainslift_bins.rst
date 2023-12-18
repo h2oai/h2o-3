@@ -1,7 +1,7 @@
 ``gainslift_bins``
 ------------------
 
-- Available in: Deeplearning, DRF, GAM, GBM, GLM, Naïve-Bayes, Stacked Ensemble, XGBoost
+- Available in: GBM, DRF, Naïve-Bayes, XGBoost
 - Hyperparameter: no
 
 Description

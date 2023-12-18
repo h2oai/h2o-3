@@ -153,7 +153,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
                  sort_metric="AUTO",
-                 custom_metric_func=None,
                  export_checkpoints_dir=None,
                  verbosity="warn",
                  **kwargs):
@@ -289,9 +288,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                 - ``"rmlse"``
                 
             Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
-        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
-               Defaults to ``None``.
-        :type custom_metric_func: str, optional
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
             Available options are ``None`` (live log disabled), ``"debug"``, ``"info"``, ``"warn"`` or ``"error"``.
@@ -336,7 +332,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         self.project_name = project_name
         self.nfolds = nfolds
         self.distribution = distribution
-        self.custom_metric_func = custom_metric_func
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -493,7 +488,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     _huber_alpha = _aml_property('build_control.huber_alpha', types=(numeric,), freezable=True)
     _tweedie_power = _aml_property('build_control.tweedie_power', types=(numeric,), freezable=True)
     _quantile_alpha = _aml_property('build_control.quantile_alpha', types=(numeric,), freezable=True)
-    custom_metric_func = _aml_property('build_control.custom_metric_func', types=(str, None))
     balance_classes = _aml_property('build_control.balance_classes', types=(bool,), freezable=True)
     class_sampling_factors = _aml_property('build_control.class_sampling_factors', types=(None, [numeric]), freezable=True)
     max_after_balance_size = _aml_property('build_control.max_after_balance_size', types=(None, numeric), freezable=True)
@@ -537,7 +531,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     blending_frame = _aml_property('input_spec.blending_frame', set_input=False,
                                    validate_fn=ft.partial(__validate_frame, name='blending_frame'))
     response_column = _aml_property('input_spec.response_column', types=(str,))
-    
+
     #---------------------------------------------------------------------------
     # Basic properties
     #---------------------------------------------------------------------------

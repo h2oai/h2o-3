@@ -10,43 +10,6 @@ from h2o.utils.typechecks import assert_is_type
 
 class H2OBinomialModel(ModelBase):
 
-    def thresholds_and_metric_scores(self, train=False, valid=False, xval=False):
-        """
-        Get the all thresholds and metric scores in a table.
-
-        If all are ``False`` (default), then return the training metric table.
-        If more than one option is set to ``True``, then return a dictionary of tables where
-        the keys are "train", "valid", and "xval".
-
-        :param bool train: If ``True``, return the thresholds and metric scores table for the training data.
-        :param bool valid: If ``True``, return the thresholds and metric scores table value for the validation data.
-        :param bool xval: If ``True``, return the thresholds and metric scores table value for each of the cross-validated splits.
-
-        :returns: The thresholds and metric scores tables for the specified key(s).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-        >>> r = cars[0].runif()
-        >>> train = cars[r > .2]
-        >>> valid = cars[r <=.2] 
-        >>> response_col = "economy_20mpg"
-        >>> distribution = "bernoulli"
-        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
-        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
-        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
-        ...                                    distribution=distribution,
-        ...                                    fold_assignment="Random")
-        >>> gbm.train(y=response_col,
-        ...           x=predictors,
-        ...           validation_frame=valid,
-        ...           training_frame=train)
-        >>> gbm.thresholds_and_metric_scores()# <- Default: return training metric table
-        >>> gbm.thresholds_and_metric_scores(train=True, valid=True, xval=True)
-        """
-        return self._delegate_to_metrics('thresholds_and_metric_scores', train=train, valid=valid, xval=xval)
-
     def F1(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the F1 value for a set of thresholds.

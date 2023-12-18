@@ -1,9 +1,14 @@
 package water.util;
 
+import hex.genmodel.InMemoryMojoReaderBackend;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
-import water.fvec.*;
+import water.fvec.C0DChunk;
+import water.fvec.Chunk;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -179,35 +184,6 @@ public class VecUtils {
     }
   }
 
-  public static Vec toIntegerVec(Vec src) {
-    switch (src.get_type()) {
-      case Vec.T_CAT:
-        return categoricalToInt(src);
-      case Vec.T_STR:
-        return stringToInteger(src);
-      case Vec.T_NUM:
-        return numToInteger(src);
-      default:
-        throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
-                + " given to toNumericVec()");
-    }
-  }
-
-  public static Vec numToInteger(final Vec src) {
-    Vec res = new MRTask() {
-      @Override public void map(Chunk srcV, NewChunk destV) {
-        int cLen = srcV._len;
-        for (int index=0; index<cLen; index++) {
-          if (!srcV.isNA(index))
-            destV.addNum(Math.round(srcV.atd(index)));
-          else
-            destV.addNA();
-        }
-      }
-    }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
-    return res;
-  }
-
   /**
    * Create a new {@link Vec} of numeric values from a string {@link Vec}. Any rows that cannot be
    * converted to a number are set to NA.
@@ -250,38 +226,6 @@ public class VecUtils {
     return res;
   }
 
-  public static Vec stringToInteger(Vec src) {
-    if(!src.isString()) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
-    Vec res = new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if (chk instanceof C0DChunk) { // all NAs
-          for (int i=0; i < chk._len; i++)
-            newChk.addNA();
-        } else {
-          BufferedString tmpStr = new BufferedString();
-          for (int i=0; i < chk._len; i++) {
-            if (!chk.isNA(i)) {
-              tmpStr = chk.atStr(tmpStr, i);
-              switch (tmpStr.getNumericType()) {
-                case BufferedString.NA:
-                  newChk.addNA(); break;
-                case BufferedString.INT:
-                  newChk.addNum(Long.parseLong(tmpStr.toString()),0); break;
-                case BufferedString.REAL:
-                  long temp = Math.round(Double.parseDouble(tmpStr.toString()));
-                  newChk.addNum(temp); break;
-                default:
-                  throw new H2OIllegalValueException("Received unexpected type when parsing a string to a number.", this);
-              }
-            } else newChk.addNA();
-          }
-        }
-      }
-    }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
-    assert res != null;
-    return res;
-  }
-  
   /**
    * Create a new {@link Vec} of numeric values from a categorical {@link Vec}.
    *
@@ -322,7 +266,6 @@ public class VecUtils {
     }
     return newVec;
   }
-  
 
   /**
    * Create a new {@link Vec} of string values from an existing {@link Vec}.

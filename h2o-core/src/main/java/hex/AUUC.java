@@ -10,6 +10,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -58,92 +59,72 @@ public class AUUC extends Iced {
     
     public double[] upliftByType(AUUCType type){
         int idx = getIndexByAUUCType(type);
-        return idx < 0  ? null : _uplift[idx];
+        return _uplift[idx];
     }
 
     public double[] upliftNormalizedByType(AUUCType type){
         int idx = getIndexByAUUCType(type);
-        return idx < 0  ? null : _upliftNormalized[idx];
+        return _upliftNormalized[idx];
     }
     
     public double[] upliftRandomByType(AUUCType type){
         int idx = getIndexByAUUCType(type);
-        return idx < 0  ? null : _upliftRandom[idx];
+        return _upliftRandom[idx];
     }
-
+    
     public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType, int nbins) {
-        this(new AUUCImpl(calculateQuantileThresholds(nbins, probs)).doAll(probs, y, uplift)._bldr, auucType);
+        this(nbins, probs, y, uplift, auucType);
+    }
+    
+    public AUUC(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
+        this(new AUUCImpl(calculateQuantileThresholds(nBins, probs)).doAll(probs, y, uplift)._bldr, auucType);
     }
 
     public AUUC(AUUCBuilder bldr, AUUCType auucType) {
         this(bldr, true, auucType);
     }
 
-    public AUUC(double[] customThresholds, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
-        this(new AUUCImpl(customThresholds).doAll(probs, y, uplift)._bldr, auucType);
-    }
-
-    public AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
+    private AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
         _auucType = auucType;
         _auucTypeIndx = getIndexByAUUCType(_auucType);
         _nBins = bldr._nBins;
-        //assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
-        if (_nBins > 0) {
-            assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
-            _n = bldr._n;
-            _ths = Arrays.copyOf(bldr._thresholds, _nBins);
-            _treatment = Arrays.copyOf(bldr._treatment, _nBins);
-            _control = Arrays.copyOf(bldr._control, _nBins);
-            _yTreatment = Arrays.copyOf(bldr._yTreatment, _nBins);
-            _yControl = Arrays.copyOf(bldr._yControl, _nBins);
-            _frequency = Arrays.copyOf(bldr._frequency, _nBins);
-            _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
-            _uplift = new double[AUUCType.values().length][_nBins];
-            _upliftRandom = new double[AUUCType.values().length][_nBins];
-            _upliftNormalized = new double[AUUCType.values().length][_nBins];
-
-            // Rollup counts
-            long tmpt = 0, tmpc = 0, tmptp = 0, tmpcp = 0, tmpf = 0;
-            for (int i = 0; i < _nBins; i++) {
-                tmpt += _treatment[i];
-                _treatment[i] = tmpt;
-                tmpc += _control[i];
-                _control[i] = tmpc;
-                tmptp += _yTreatment[i];
-                _yTreatment[i] = tmptp;
-                tmpcp += _yControl[i];
-                _yControl[i] = tmpcp;
-                tmpf += _frequencyCumsum[i];
-                _frequencyCumsum[i] = tmpf;
-            }
-
-            // these methods need to be call in this order
-            setUplift();
-            setUpliftRandom();
-            setUpliftNormalized();
-
-            if (trueProbabilities) {
-                _auucs = computeAuucs();
-                _auucsRandom = computeAuucsRandom();
-                _aecu = computeAecu();
-                _auucsNormalized = computeAuucsNormalized();
-                _maxIdx = _auucType.maxCriterionIdx(this);
-            } else {
-                _maxIdx = 0;
-            }
+        assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
+        assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
+        _n = bldr._n;
+        _ths = Arrays.copyOf(bldr._thresholds,_nBins);
+        _treatment = Arrays.copyOf(bldr._treatment,_nBins);
+        _control = Arrays.copyOf(bldr._control,_nBins);
+        _yTreatment = Arrays.copyOf(bldr._yTreatment,_nBins);
+        _yControl = Arrays.copyOf(bldr._yControl,_nBins);
+        _frequency = Arrays.copyOf(bldr._frequency, _nBins);
+        _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
+        _uplift = new double[AUUCType.values().length][_nBins];
+        _upliftRandom = new double[AUUCType.values().length][_nBins];
+        _upliftNormalized = new double[AUUCType.values().length][_nBins];
+        
+        // Rollup counts
+        long tmpt=0, tmpc=0, tmptp=0, tmpcp=0, tmpf=0;
+        for( int i=0; i<_nBins; i++ ) {
+            tmpt += _treatment[i]; _treatment[i] = tmpt;
+            tmpc += _control[i]; _control[i] = tmpc;
+            tmptp += _yTreatment[i]; _yTreatment[i] = tmptp;
+            tmpcp += _yControl[i]; _yControl[i] = tmpcp;
+            tmpf += _frequencyCumsum[i]; _frequencyCumsum[i] = tmpf;
+        }
+        
+        // these methods need to be call in this order
+        setUplift();
+        setUpliftRandom();
+        setUpliftNormalized();
+        
+        if (trueProbabilities) {
+            _auucs = computeAuucs();
+            _auucsRandom = computeAuucsRandom();
+            _aecu = computeAecu();
+            _auucsNormalized = computeAuucsNormalized();
+            _maxIdx = _auucType.maxCriterionIdx(this);
         } else {
-            _maxIdx = -1;
-            _n = 0;
-            _ths = null;
-            _treatment = null;
-            _control = null;
-            _yTreatment = null;
-            _yControl = null;
-            _frequency = null;
-            _frequencyCumsum = null;
-            _uplift = null;
-            _upliftRandom = null;
-            _upliftNormalized = null;
+            _maxIdx = 0;
         }
     }
     
@@ -203,25 +184,6 @@ public class AUUC extends Iced {
         _upliftNormalized = new double[AUUCType.values().length][];
         _upliftRandom = new double[AUUCType.values().length][];
     }
-
-    public AUUC(double[] ths, long[] freq, double[] auuc, double[] auucNorm, double[] auucRand, double[] aecu,
-                AUUCType auucType, double[][] uplift, double[][] upliftNorm, double[][] upliftRand) {
-        _nBins = ths.length;
-        _n = freq[freq.length-1];
-        _ths = ths;
-        _frequencyCumsum = freq;
-        _treatment = _control = _yTreatment = _yControl = _frequency = new long[0];
-        _auucs = auuc;
-        _auucsNormalized = auucNorm;
-        _auucsRandom = auucRand;
-        _aecu = aecu;
-        _maxIdx = -1;
-        _auucType = auucType;
-        _auucTypeIndx = getIndexByAUUCType(_auucType);
-        _uplift = uplift;
-        _upliftNormalized = upliftNorm;
-        _upliftRandom = upliftRand;
-    }
     
     public static double[] calculateQuantileThresholds(int groups, Vec preds) {
         Frame fr = null;
@@ -251,9 +213,7 @@ public class AUUC extends Iced {
             if (qm != null) qm.remove();
             if (fr != null) DKV.remove(fr._key);
         }
-        if(quantiles == null){
-            quantiles = new double[]{0};
-        } else if(Double.isNaN(quantiles[0])){
+        if(Double.isNaN(quantiles[0])){
             quantiles[0] = 0;
         }
         return quantiles;
@@ -267,23 +227,17 @@ public class AUUC extends Iced {
         return computeAuucs(_upliftRandom);
     }
     
-    private double[] computeAuucsNormalized() {
-        return computeAuucs(_upliftNormalized);
-    }
+    private double[] computeAuucsNormalized() {return computeAuucs(_upliftNormalized);}
 
     private double[] computeAuucs(double[][] uplift){
         AUUCType[] auucTypes = AUUCType.VALUES;
         double[] auucs = new double[auucTypes.length];
         for(int i = 0; i < auucTypes.length; i++ ) {
-            if(_n == 0){
-                auucs[i] = Double.NaN;
-            } else {
-                double area = 0;
-                for (int j = 0; j < _nBins; j++) {
-                    area += uplift[i][j] * frequency(j);
-                }
-                auucs[i] = area / (_n + 1);
+            double area = 0;
+            for(int j = 0; j < _nBins; j++) {
+                area += uplift[i][j] * frequency(j);
             }
+            auucs[i] = area/(_n+1);
         }
         return auucs;
     }
@@ -316,31 +270,29 @@ public class AUUC extends Iced {
         return auucNormalized(idx);
     }
 
-    public double auuc (int idx){
-        return _n == 0 ||  idx < 0 ? Double.NaN : _auucs[idx]; 
-    }
+    public double auuc(int idx){ return _auucs[idx]; }
     
     public double auuc(){ return auuc(_auucTypeIndx); }
 
     public double auucRandom(int idx){
-        return _n == 0 ||  idx < 0 ? Double.NaN : _auucsRandom[idx];
+        return _auucsRandom[idx];
     }
 
     public double auucRandom(){ return auucRandom(_auucTypeIndx); }
     
-    public double aecu(int idx) { return _n == 0 || idx < 0 ? Double.NaN : _aecu[idx];}
+    public double aecu(int idx) { return _aecu[idx];}
     
     public double qini(){ return aecuByType(AUUCType.qini);}
 
-    public double auucNormalized(int idx){ return _n == 0 || idx < 0 ? Double.NaN : _auucsNormalized[idx]; }
+    public double auucNormalized(int idx){ return _auucsNormalized[idx]; }
 
     public double auucNormalized(){ return auucNormalized(_auucTypeIndx); }
 
-    public static class AUUCImpl extends MRTask<AUUCImpl> {
+    private static class AUUCImpl extends MRTask<AUUCImpl> {
         final double[] _thresholds;
         AUUCBuilder _bldr;
         
-        public AUUCImpl(double[] thresholds) {
+        AUUCImpl(double[] thresholds) {
             _thresholds = thresholds; 
         }
         
@@ -460,14 +412,19 @@ public class AUUC extends Iced {
          *  @return metric value */
         abstract double exec(long treatment, long control, long yTreatment, long yControl );
         public double exec(AUUC auc, int idx) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
-
+        
         public static final AUUCType[] VALUES = values();
 
-        public static final AUUCType[] VALUES_WITHOUT_AUTO = ArrayUtils.remove(values().clone(), ArrayUtils.find(AUUCType.values(), AUTO));
-
-        public static String nameAuto(){
-            return qini.name();
+        public static AUUCType fromString(String strRepr) {
+            for (AUUCType tc : AUUCType.values()) {
+                if (tc.toString().equalsIgnoreCase(strRepr)) {
+                    return tc;
+                }
+            }
+            return null;
         }
+
+        public double maxCriterion(AUUC auuc) { return exec(auuc, maxCriterionIdx(auuc)); }
 
         /** Convert a criterion into a threshold index that maximizes the criterion
          *  @return Threshold index that maximizes the criterion

@@ -1,7 +1,7 @@
 ``learn_rate``
 ---------------
 
-- Available in: GBM, XGBoost, AdaBoost
+- Available in: GBM, XGBoost
 - Hyperparameter:
 
 Description

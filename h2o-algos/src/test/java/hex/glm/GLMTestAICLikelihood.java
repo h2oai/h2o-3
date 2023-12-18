@@ -61,7 +61,7 @@ public class GLMTestAICLikelihood extends TestUtil {
       }
       assertTrue("Dispersion parameter estimation from model: "+model._parms._dispersion_estimated+".  Manual dispersion estimation: "+dispersion_estimated_manual+" and they are different.", Math.abs(dispersion_estimated_manual-model._parms._dispersion_estimated)<1e-6);
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -99,7 +99,7 @@ public class GLMTestAICLikelihood extends TestUtil {
         logLike +=  w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1));
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -144,7 +144,7 @@ public class GLMTestAICLikelihood extends TestUtil {
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -186,7 +186,7 @@ public class GLMTestAICLikelihood extends TestUtil {
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -225,7 +225,7 @@ public class GLMTestAICLikelihood extends TestUtil {
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -264,7 +264,7 @@ public class GLMTestAICLikelihood extends TestUtil {
                 + log(Gamma.gamma(yr + 1/inv_theta_estimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(1/inv_theta_estimated)));
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -306,7 +306,7 @@ public class GLMTestAICLikelihood extends TestUtil {
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -346,7 +346,7 @@ public class GLMTestAICLikelihood extends TestUtil {
         logLike += log(predictedProbabilityOfActualClass);
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
@@ -378,7 +378,7 @@ public class GLMTestAICLikelihood extends TestUtil {
       // only check that loglikelihood is calculated
       double logLike = ((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood;
       assertNotEquals("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood, 0.0, logLike);
-      double aic = 2*logLike + 2*model._output.rank();
+      double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);

@@ -47,7 +47,6 @@ except ImportError:
 from h2o.backend.server import H2OLocalServer
 from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
-from h2o.utils.threading import local_env
 
 _id_ctr = 0
 
@@ -121,33 +120,22 @@ def temp_ctr():
 
 
 def is_module_available(mod):
-    if local_env(mod+"_disabled"): # fast track if module is explicitly disabled
-        return False
     if mod in sys.modules and sys.modules[mod] is not None:  # fast track + safer in unusual environments 
         return True
         
     import importlib.util
     return importlib.util.find_spec(mod) is not None
 
+
 def can_use_pandas():
     return is_module_available('pandas')
 
 def can_use_datatable():
-    return is_module_available('datatable') and sys.version_info.major == 3 and sys.version_info.minor <= 9
-
-def can_use_polars():
-    return is_module_available('polars') and sys.version_info.major == 3 and sys.version_info.minor > 9
-
-def can_use_pyarrow():
-    if can_use_pandas() and sys.version_info.minor > 9:
-        import pandas
-        return is_module_available('pyarrow') and sys.version_info.major == 3 and sys.version_info.minor > 9 and \
-           sys.version_info.major == 3 and float(pandas.__version__[0]) >= 1
-    else:
-        return False
+    return is_module_available('datatable')
 
 def can_use_numpy():
     return is_module_available('numpy')
+
 
 _url_safe_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
 _url_chars_map = [chr(i) if chr(i) in _url_safe_chars else "%%%02X" % i for i in range(256)]
@@ -157,15 +145,56 @@ def url_encode(s):
     # Note: type cast str(s) will not be needed once all code is made compatible
     return "".join(_url_chars_map[c] for c in bytes_iterator(s))
 
+
 def quote(s):
     return url_encode(s)
+
 
 def clamp(x, xmin, xmax):
     """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
     return max(xmin, min(x, xmax))
 
+
 def _gen_header(cols):
     return ["C" + str(c) for c in range(1, cols + 1, 1)]
+
+
+def _check_lists_of_lists(python_obj):
+    # check we have a lists of flat lists
+    # returns longest length of sublist
+    most_cols = 1
+    for l in python_obj:
+        # All items in the list must be a list!
+        if not isinstance(l, (tuple, list)):
+            raise ValueError("`python_obj` is a mixture of nested lists and other types.")
+        most_cols = max(most_cols, len(l))
+        for ll in l:
+            # in fact, we must have a list of flat lists!
+            if isinstance(ll, (tuple, list)):
+                raise ValueError("`python_obj` is not a list of flat lists!")
+    return most_cols
+
+
+def _handle_python_lists(python_obj, check_header):
+    # convert all inputs to lol
+    if _is_list_of_lists(python_obj):  # do we have a list of lists: [[...], ..., [...]] ?
+        ncols = _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
+    elif isinstance(python_obj, (list, tuple)):  # single list
+        ncols = 1
+        python_obj = [[e] for e in python_obj]
+    else:  # scalar
+        python_obj = [[python_obj]]
+        ncols = 1
+    # create the header
+    if check_header == 1:
+        header = python_obj[0]
+        python_obj = python_obj[1:]
+    else:
+        header = _gen_header(ncols)
+    # shape up the data for csv.DictWriter
+    # data_to_write = [dict(list(zip(header, row))) for row in python_obj]
+    return header, python_obj
+
 
 def stringify_dict(d):
     return stringify_list(["{'key': %s, 'value': %s}" % (_quoted(k), v) for k, v in d.items()])
@@ -211,6 +240,38 @@ def _is_num_list(l):
 
 def _is_list_of_lists(o):
     return any(isinstance(l, (tuple, list)) for l in o)
+
+
+def _handle_numpy_array(python_obj, header):
+    return _handle_python_lists(python_obj.tolist(), header)
+
+
+def _handle_pandas_data_frame(python_obj, header):
+    data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
+    return list(str(c) for c in python_obj.columns), data
+
+
+def _handle_python_dicts(python_obj, check_header):
+    header = list(python_obj.keys()) if python_obj else _gen_header(1)
+    is_valid = all(re.match(r"^[a-zA-Z_][a-zA-Z0-9_.]*$", col) for col in header)  # is this a valid header?
+    if not is_valid:
+        raise ValueError(
+            "Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
+    for k in python_obj:  # check that each value entry is a flat list/tuple or single int, float, or string
+        v = python_obj[k]
+        if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
+            if _is_list_of_lists(v):
+                raise ValueError("Values in the dictionary must be flattened!")
+        elif is_type(v, str, numeric):
+            python_obj[k] = [v]
+        else:
+            raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
+
+    zipper = getattr(itertools, "zip_longest", None) or getattr(itertools, "izip_longest", None) or zip
+    rows = list(map(list, zipper(*list(python_obj.values()))))
+    data_to_write = [dict(list(zip(header, row))) for row in rows]
+    return header, data_to_write
+
 
 def _is_fr(o):
     return o.__class__.__name__ == "H2OFrame"  # hack to avoid circular imports
@@ -362,9 +423,14 @@ locate = _locate
 quoted = _quoted
 is_list = _is_list
 is_fr = _is_fr
+handle_python_dicts = _handle_python_dicts
+handle_pandas_data_frame = _handle_pandas_data_frame
+handle_numpy_array = _handle_numpy_array
 is_list_of_lists = _is_list_of_lists
 is_num_list = _is_num_list
 is_str_list = _is_str_list
+handle_python_lists = _handle_python_lists
+check_lists_of_lists = _check_lists_of_lists
 
 gen_model_file_name = "h2o-genmodel.jar"
 h2o_predictor_class = "hex.genmodel.tools.PredictCsv"

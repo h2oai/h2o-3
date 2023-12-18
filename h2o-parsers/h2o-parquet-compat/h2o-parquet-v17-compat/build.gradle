@@ -16,7 +16,9 @@ dependencies {
   }
   // Parquet support
   api("org.apache.parquet:parquet-hadoop:1.7.0")
-  compileOnly("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}")
+  api("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {
+    transitive = false
+  }
 
   testImplementation project(":h2o-test-support")
   testImplementation project(":h2o-parquet-parser-tests")
@@ -26,7 +28,6 @@ dependencies {
   testImplementation("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
     exclude module: "servlet-api"
   }
-  testImplementation("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

@@ -83,8 +83,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "scale", // array, smoothing parameter for GAM,
             "keep_gam_cols",
             "store_knot_locations",
-            "auc_type",
-            "gainslift_bins",
+            "auc_type"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)

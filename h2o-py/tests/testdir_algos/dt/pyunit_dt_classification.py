@@ -27,7 +27,7 @@ def test_dt_binary_classification():
     print(train_f1, test_f1, train_accuracy, test_accuracy)
 
     assert (1 - train_accuracy) < 3e-1
-    assert (1 - test_accuracy) < 5e-1
+    assert (1 - test_accuracy) < 4e-1
     assert (1 - train_f1) < 3e-1
     assert (1 - train_f1) < 4e-1
 

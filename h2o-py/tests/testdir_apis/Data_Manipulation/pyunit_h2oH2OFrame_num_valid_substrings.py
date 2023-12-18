@@ -27,7 +27,7 @@ def h2o_H2OFrame_num_valid_substrings():
         if 'File not found' in e.args[0]:
             print("Directory is not writable.  h2o.H2OFrame.num_valid_substrings is tested for number of argument "
                   "and argument name only.")
-            allargs = inspect.getfullargspec(h2o.H2OFrame.num_valid_substrings)
+            allargs = inspect.getargspec(h2o.H2OFrame.num_valid_substrings)
             assert len(allargs.args)==2 and allargs.args[1]=='path_to_words', \
                 "h2o.H2OFrame.num_valid_substrings() contains only one argument, path_to_words!"
         else:

@@ -491,7 +491,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
         model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
-        if (stop_requested() && !timeout()) throw new Job.JobCancelledException(_job);
+        if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) {
           LOG.info("Stopping XGBoost training because of timeout");
           break;

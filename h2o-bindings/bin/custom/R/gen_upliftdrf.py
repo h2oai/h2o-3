@@ -1,13 +1,3 @@
-def update_param(name, param):
-    if name == 'stopping_metric':
-        param['values'] = ['AUTO', 'AUUC', 'ATE', 'ATT', 'ATC', 'qini']
-        return param
-    if name == 'distribution':
-        param['values'] = ['AUTO', 'bernoulli']
-        return param
-    return None  # param untouched
-
-
 extensions = dict(
     extra_params=[('verbose', 'FALSE')],
     required_params=['x', 'y', 'training_frame', 'treatment_column'],
@@ -31,6 +21,7 @@ parms$ignored_columns <- args$x_ignore
 parms$response_column <- args$y
 """   
 )
+
 
 
 doc = dict(

@@ -5,22 +5,21 @@ import hex.DataInfo;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import hex.glm.GLMModel.GLMWeightsFun;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parseTestFile;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class GLMBasicTestNegativebinomial {
+public class GLMBasicTestNegativebinomial extends TestUtil {
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   // test and compare mojo/pojo/predict values
   @Test
@@ -48,7 +47,7 @@ public class GLMBasicTestNegativebinomial {
       GLM glm = new GLM( params);
       model = glm.trainModel().get();
       pred = model.score(tfr);
-      Scope.track(pred);
+      Scope.track_generic(pred);
       Scope.track_generic(model);
       Assert.assertTrue(model.testJavaScoring(tfr, pred, 1e-6));
     } finally {

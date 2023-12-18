@@ -358,19 +358,6 @@ Metrics
 
 Usage is illustrated in the Examples section.
 
-GBM Friedman and Popescu's H statistics
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can calculates the Friedman and Popescu's H statistics to test for the presence of an interaction between specified variables. 
-
-H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
-
-This statistic can only be calculated for numerical variables. Missing values are supported.
-
-Reference implementation: `Python <https://pypi.org/project/sklearn-gbmi/>`__ and `R <https://rdrr.io/cran/gbm/man/interact.gbm.html>`__
-
-You can see how it used in the `Examples section <#examples>`__.
-
 Examples
 ~~~~~~~~
 
@@ -407,10 +394,6 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     # Extract feature interactions:
     feature_interactions <- h2o.feature_interaction(pros_gbm)
 
-    # Get Friedman and Popescu's H statistics
-    h <- h2o.h(pros_gbm, prostate, c('DPROS','DCAPS'))
-    print(h) 
-
 
    .. code-tab:: python
    
@@ -440,10 +423,6 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
 
     # Extract feature interactions:
     feature_interactions = pros_gbm.feature_interaction()
-
-    # Get Friedman and Popescu's H statistics
-    h = pros_gbm.h(prostate_train, ['DPROS','DCAPS'])
-    print(h)
 
 
    .. code-tab:: scala
@@ -501,8 +480,6 @@ York, 2001. <http://statweb.stanford.edu/~tibs/ElemStatLearn/>`__
 `Niculescu-Mizil, Alexandru and Caruana, Rich, "Predicting Good Probabilities with Supervised Learning", Ithaca, NY, 2005. <http://www.datascienceassn.org/sites/default/files/Predicting%20good%20probabilities%20with%20supervised%20learning.pdf>`__ 
 
 `Nee, Daniel, "Calibrating Classifier Probabilities", 2014 <http://danielnee.com/tag/platt-scaling>`__
-
-`Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.* **2**:916-954. <http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046>`__ 
 
 FAQ
 ~~~

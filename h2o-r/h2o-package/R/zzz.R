@@ -36,7 +36,8 @@
   if (!rcurl_package_is_installed) {
     if (.Platform$OS.type == "unix") {
       # packageStartupMessage("Checking libcurl version...")
-      if (!nzchar(libcurlVersion()))
+      curl_path <- Sys.which("curl-config")
+      if (!nzchar(curl_path[[1L]]) || system2(curl_path, args = "--version") != 0L)
         stop("libcurl not found. Please install libcurl\n",
              "(version 7.14.0 or higher) from http://curl.haxx.se.\n",
              "On Linux systems you will often have to explicitly install\n",
@@ -48,13 +49,6 @@
   registerS3method("print", "H2OExplanation", "print.H2OExplanation")
   .s3_register("repr", "repr_text", "H2OExplanation")
   .s3_register("repr", "repr_html", "H2OExplanation")
-  
-  # CoxPH
-  .s3_register("survival", "survfit", "H2OCoxPHModel")
-  
-  # H2OFrame
-  .s3_register("stats", "median", "H2OFrame")
-  
   invisible()
 }
 

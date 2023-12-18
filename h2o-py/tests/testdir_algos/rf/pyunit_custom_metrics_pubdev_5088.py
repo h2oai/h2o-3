@@ -20,23 +20,17 @@ def custom_rmse_mm():
 # Test that the custom model metric is computed
 # and compare them with implicit custom metric
 def test_custom_metric_computation_regression():
-    parms = {"ntrees": 3, "max_depth": 5}
-    (model, f_test) = regression_model(H2ORandomForestEstimator, custom_mae_mm(), parms)
-    print(model)
+    (model, f_test) = regression_model(H2ORandomForestEstimator, custom_mae_mm())
     assert_correct_custom_metric(model, f_test, "mae", "Regression on prostate")
 
 
 def test_custom_metric_computation_binomial():
-    parms = {"ntrees": 3, "max_depth": 5}
-    (model, f_test) = binomial_model(H2ORandomForestEstimator, custom_rmse_mm(), parms)
-    print(model)
+    (model, f_test) = binomial_model(H2ORandomForestEstimator, custom_rmse_mm())
     assert_correct_custom_metric(model, f_test, "rmse", "Binomial on prostate")
     
 
 def test_custom_metric_computation_multinomial():
-    parms = {"ntrees": 3, "max_depth": 5}
-    (model, f_test) = multinomial_model(H2ORandomForestEstimator, custom_rmse_mm(), parms)
-    print(model)
+    (model, f_test) = multinomial_model(H2ORandomForestEstimator, custom_rmse_mm())
     assert_correct_custom_metric(model, f_test, "rmse", "Multinomial on iris")
 
 

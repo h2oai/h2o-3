@@ -44,22 +44,17 @@ test.GBM.bernoulli <- function() {
   Log.info("R Confusion Matrix:")
   print(RCM)
   Log.info("H2O Confusion Matrix:")
-  perf <- h2o.performance(prostate.h2o)  
-  print(h2o.confusionMatrix(perf))
+  print(h2o.confusionMatrix(h2o.performance(prostate.h2o)))
   
   R.auc <- gbm.roc.area(prostate.data$CAPSULE,R.preds)
   Log.info(paste("R AUC:", R.auc, "\tH2O AUC:", h2o.auc(h2o.performance(prostate.h2o))))
 
-  # GH-13556
+  # PUBDEV-515
   f0 = log(mean(prostate.data$CAPSULE)/(1-mean(prostate.data$CAPSULE)))
   print(f0)
   print(prostate.h2o@model$init_f)
   expect_equal(prostate.h2o@model$init_f, f0, tolerance=1e-4) ## check the intercept term
 
-  # GH-15889
-  ths_model <- h2o.thresholds_and_metric_scores(prostate.h2o)
-  ths_perf <- h2o.thresholds_and_metric_scores(perf)
-  expect_equal(ths_model, ths_perf)
 }
 
 doTest("GBM Test: prostate.csv with Bernoulli distribution", test.GBM.bernoulli)

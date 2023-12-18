@@ -37,10 +37,6 @@ class ModelMetricsHandler extends Handler {
     public boolean _compare_abs;
     public String _auuc_type;
     public int _auuc_nbins;
-    public double[] _custom_auuc_thresholds;
-    public Frame _background_frame; // Used for B-SHAP
-    public boolean _output_space;  // If true transform SHAP so that they sum to the f(x)-f(b) in the output space (i.e. after applying linkInv func)
-    public boolean _output_per_reference;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -147,7 +143,7 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Specify how to output feature contributions in XGBoost - XGBoost by default outputs contributions for 1-hot encoded features, " +
             "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
     public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
- 
+
     @API(help = "Only for predict_contributions function - sort Shapley values and return top_n highest (optional)", json = false)
     public int top_n;
 
@@ -175,23 +171,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Set default AUUC type for uplift binomial classification. Must be one of: \"AUTO\", \"qini\", \"lift\", \"gain\". Default is \"AUTO\" (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
     public String auuc_type;
 
-    @API(help = "Custom AUUC thresholds (for uplift binomial classification).",
-            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
-    public double[] custom_auuc_thresholds;
-
     @API(help = "Set number of bins to calculate AUUC. Must be -1 or higher than 0. Default is -1 which means 1000 (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
     public int auuc_nbins;
 
-
-    @API(help = "Specify background frame used as a reference for calculating SHAP.", json = false)
-    public KeyV3.FrameKeyV3 background_frame;
-
-    @API(help = "If true, transform contributions so that they sum up to the difference in the output space (applicable iff contributions are in link space). Note that this transformation is an approximation and the contributions won't be exact SHAP values.", json = false)
-    public boolean output_space;
-    
-    @API(help = "If true, return contributions against each background sample (aka reference), i.e. phi(feature, x, bg), otherwise return contributions averaged over the background sample (phi(feature, x) = E_{bg} phi(feature, x, bg))")
-    public boolean output_per_reference;
-    
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
     public ModelMetricsBaseV3[] model_metrics;
@@ -201,7 +183,6 @@ class ModelMetricsHandler extends Handler {
       mml._model = (this.model == null || this.model.key() == null ? null : this.model.key().get());
       mml._frame = (this.frame == null || this.frame.key() == null ? null : this.frame.key().get());
       mml._predictions_name = (null == this.predictions_frame || null == this.predictions_frame.key() ? null : this.predictions_frame.key().toString());
-      mml._background_frame = (this.background_frame == null || this.background_frame.key() == null ? null : this.background_frame.key().get());
       mml._reconstruction_error = this.reconstruction_error;
       mml._reconstruction_error_per_feature = this.reconstruction_error_per_feature;
       mml._deep_features_hidden_layer = this.deep_features_hidden_layer;
@@ -218,11 +199,7 @@ class ModelMetricsHandler extends Handler {
       mml._compare_abs = this.compare_abs;
       mml._auuc_type = this.auuc_type;
       mml._auuc_nbins = this.auuc_nbins;
-      mml._custom_metric_func = this.custom_metric_func;
-      mml._custom_auuc_thresholds = this.custom_auuc_thresholds;
-      mml._output_space = this.output_space;
-      mml._output_per_reference = output_per_reference;
-              
+
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ )
@@ -240,7 +217,6 @@ class ModelMetricsHandler extends Handler {
       this.frame = (mml._frame == null ? null : new KeyV3.FrameKeyV3(mml._frame._key));
       this.predictions_frame = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.<Frame>make(mml._predictions_name)));
       this.deviances_frame = (mml._deviances_name == null ? null : new KeyV3.FrameKeyV3(Key.<Frame>make(mml._deviances_name)));
-      this.background_frame = (mml._background_frame == null ? null: new KeyV3.FrameKeyV3(mml._background_frame._key));
       this.reconstruction_error = mml._reconstruction_error;
       this.reconstruction_error_per_feature = mml._reconstruction_error_per_feature;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
@@ -257,9 +233,6 @@ class ModelMetricsHandler extends Handler {
       this.compare_abs = mml._compare_abs;
       this.auuc_type = mml._auuc_type;
       this.auuc_nbins = mml._auuc_nbins;
-      this.custom_auuc_thresholds = mml._custom_auuc_thresholds;
-      this.output_space = mml._output_space;
-      this.output_per_reference = mml._output_per_reference;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
@@ -332,8 +305,10 @@ class ModelMetricsHandler extends Handler {
       parms._model._parms._auc_type = MultinomialAucType.valueOf(s.auc_type.toUpperCase());
     }
     AUUC.AUUCType auucType = parms._model._parms._auuc_type;
+    int auucNbins = parms._model._parms._auuc_nbins;
     if(s.auuc_type != null){
       parms._model._parms._auuc_type = AUUC.AUUCType.valueOf(s.auuc_type);
+      parms._model._parms._auuc_nbins = s.auuc_nbins;
     }
     parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
@@ -349,6 +324,7 @@ class ModelMetricsHandler extends Handler {
     // set original auc type back
     parms._model._parms._auc_type = at;
     parms._model._parms._auuc_type = auucType;
+    parms._model._parms._auuc_nbins = auucNbins;
     return mm;
   }
 
@@ -396,10 +372,6 @@ class ModelMetricsHandler extends Handler {
             level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
     public int auuc_nbins;
 
-    @API(help = "Custom AUUC thresholds (for uplift binomial classification).", 
-            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
-    public double[] custom_auuc_thresholds;
-
     @API(help="Model Metrics.", direction=API.Direction.OUTPUT)
     public ModelMetricsBaseV3 model_metrics;
   }
@@ -432,10 +404,6 @@ class ModelMetricsHandler extends Handler {
      treatment = treatmentFrame.anyVec();
       if(s.auuc_type == null) s.auuc_type = AUUC.AUUCType.AUTO;
       if(s.auuc_nbins < -1 || s.auuc_nbins == 0) throw new H2OIllegalArgumentException("auuc_bins", "make", "The value has to be -1 or higher than 0.");
-      if(s.custom_auuc_thresholds != null) {
-        if (s.custom_auuc_thresholds.length == 0)
-          throw new H2OIllegalArgumentException("custom_auuc_thresholds", "make", "The length of the array has to be higher than 0.");
-      }
     }
 
     if (s.domain ==null) {
@@ -446,7 +414,7 @@ class ModelMetricsHandler extends Handler {
       s.model_metrics = new ModelMetricsRegressionV3().fillFromImpl(mm);
     } else if (s.domain.length==2) {
       if (treatment != null) {
-        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain, s.auuc_type, s.auuc_nbins, s.custom_auuc_thresholds);
+        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain, s.auuc_type, s.auuc_nbins);
         s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
       } else {
         if (pred.numCols()!=1) {
@@ -512,9 +480,6 @@ class ModelMetricsHandler extends Handler {
     long workAmount = parms._frame.anyVec().nChunks();
     if (s.predict_contributions) {
       workAmount = parms._frame.anyVec().length();
-      if (null != parms._background_frame) {
-        workAmount = ((Model.Contributions)parms._model).scoreContributionsWorkEstimate(parms._frame, parms._background_frame, s.output_per_reference);
-      }
       if (null == parms._predictions_name)
         parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
     } else if (s.row_to_tree_assignment) {
@@ -542,12 +507,8 @@ class ModelMetricsHandler extends Handler {
           options.setOutputFormat(outputFormat)
                   .setTopN(parms._top_n)
                   .setBottomN(parms._bottom_n)
-                  .setCompareAbs(parms._compare_abs)
-                  .setOutputSpace(parms._output_space)
-                  .setOutputPerReference(parms._output_per_reference);
-              
-          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options,
-                  parms._background_frame);
+                  .setCompareAbs(parms._compare_abs);
+          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
         } else if (s.row_to_tree_assignment) {
           Model.RowToTreeAssignment mc = getModelRowToTreeAssignmentObject(parms);
           mc.rowToTreeAssignment(parms._frame, Key.make(parms._predictions_name), j);
@@ -670,10 +631,7 @@ class ModelMetricsHandler extends Handler {
           parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
         Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ? 
                 Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
-        Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions()
-                .setOutputFormat(outputFormat)
-                .setOutputSpace(parms._output_space)
-                .setOutputPerReference(parms._output_per_reference);
+        Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
         predictions = mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), null, options);
       } else if(s.row_to_tree_assignment) {
         Model.RowToTreeAssignment mc = getModelRowToTreeAssignmentObject(parms);

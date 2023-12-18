@@ -72,16 +72,15 @@ public class ModelBuilderTest {
       // the frame looks ideal (it has as many chunks as desired)
       assertEquals(nChunks, mb.desiredChunks(train, true));
 
-      try (Scope.Safe s = Scope.safe()) { // wrap init in a fresh scope as training frame is protected that scope.
-        // expensive init - should include rebalance
-        mb.init(true);
-        // check that dataset was rebalanced
-        long[] espc = mb.train().anyVec().espc();
-        assertEquals(nChunks + 1, espc.length);
-        assertEquals(nRows, espc[nChunks]);
-        for (int i = 0; i < espc.length; i++)
-          assertEquals(i * 1000, espc[i]);
-      }
+      // expensive init - should include rebalance
+      mb.init(true);
+
+      // check that dataset was rebalanced
+      long[] espc = mb.train().anyVec().espc();
+      assertEquals(nChunks + 1, espc.length);
+      assertEquals(nRows, espc[nChunks]);
+      for (int i = 0; i < espc.length; i++)
+        assertEquals(i * 1000, espc[i]);
     } finally {
       Scope.exit();
     }
@@ -127,14 +126,12 @@ public class ModelBuilderTest {
       final int desiredChunks = mb.desiredChunks(train, false);
       assertTrue(desiredChunks > 4 * H2O.NUMCPUS);
 
-      try (Scope.Safe s = Scope.safe()) { // wrap init in a fresh scope as training frame is protected that scope.
-        // expensive init - should include rebalance
-        mb.init(true);
-        // check that dataset was rebalanced
-        final int rebalancedChunks = mb.train().anyVec().nonEmptyChunks();
-        assertEquals(desiredChunks, rebalancedChunks);
-      }
+      // expensive init - should include rebalance
+      mb.init(true);
 
+      // check that dataset was rebalanced
+      final int rebalancedChunks = mb.train().anyVec().nonEmptyChunks();
+      assertEquals(desiredChunks, rebalancedChunks);
     } finally {
       Scope.exit();
     }

@@ -32,12 +32,12 @@ def partial_plot_test_with_user_splits():
                           67.63157894736842, 69.52631578947368, 71.42105263157895, 73.3157894736842,
                           75.21052631578948, 77.10526315789474]
     user_splits['RACE'] = ["Black", "White"]
-    pdpUserSplit2D = gbm_model.partial_plot(frame=data,server=True, plot=True, user_splits=user_splits, 
+    pdpUserSplit2D = gbm_model.partial_plot(data=data,server=True, plot=True, user_splits=user_splits, 
                                             col_pairs_2dpdp=[['AGE', 'PSA'], ['AGE', 'RACE']], save_to_file=filename)  
-    pdpUserSplit1D2D = gbm_model.partial_plot(frame=data, cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=True, 
+    pdpUserSplit1D2D = gbm_model.partial_plot(data=data, cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=True, 
                                               user_splits=user_splits, 
                                               col_pairs_2dpdp=[['AGE', 'PSA'], ['AGE', 'RACE']], save_to_file=filename)
-    pdpUserSplit1D = gbm_model.partial_plot(frame=data,cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=True, 
+    pdpUserSplit1D = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=True, 
                                             user_splits=user_splits, save_to_file=filename)
     if os.path.isfile(filename):
         os.remove(filename)

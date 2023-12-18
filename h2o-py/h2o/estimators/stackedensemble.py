@@ -63,8 +63,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     algo = "stackedensemble"
     supervised_learning = True
-    _options_ = {'model_extensions': ['h2o.model.extensions.Fairness',
-                                      'h2o.model.extensions.Contributions']}
+    _options_ = {'model_extensions': ['h2o.model.extensions.Fairness']}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -82,13 +81,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  max_runtime_secs=0.0,  # type: float
                  weights_column=None,  # type: Optional[str]
                  offset_column=None,  # type: Optional[str]
-                 custom_metric_func=None,  # type: Optional[str]
                  seed=-1,  # type: int
                  score_training_samples=10000,  # type: int
                  keep_levelone_frame=False,  # type: bool
                  export_checkpoints_dir=None,  # type: Optional[str]
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-                 gainslift_bins=-1,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -154,9 +151,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                function.
                Defaults to ``None``.
         :type offset_column: str, optional
-        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
-               Defaults to ``None``.
-        :type custom_metric_func: str, optional
         :param seed: Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based
                random number)
                Defaults to ``-1``.
@@ -174,10 +168,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-        :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
-               binning.
-               Defaults to ``-1``.
-        :type gainslift_bins: int
         """
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
@@ -196,13 +186,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self.max_runtime_secs = max_runtime_secs
         self.weights_column = weights_column
         self.offset_column = offset_column
-        self.custom_metric_func = custom_metric_func
         self.seed = seed
         self.score_training_samples = score_training_samples
         self.keep_levelone_frame = keep_levelone_frame
         self.export_checkpoints_dir = export_checkpoints_dir
         self.auc_type = auc_type
-        self.gainslift_bins = gainslift_bins
         self._parms["_rest_version"] = 99
 
     @property
@@ -727,20 +715,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms["offset_column"] = offset_column
 
     @property
-    def custom_metric_func(self):
-        """
-        Reference to custom evaluation function, format: `language:keyName=funcName`
-
-        Type: ``str``.
-        """
-        return self._parms.get("custom_metric_func")
-
-    @custom_metric_func.setter
-    def custom_metric_func(self, custom_metric_func):
-        assert_is_type(custom_metric_func, None, str)
-        self._parms["custom_metric_func"] = custom_metric_func
-
-    @property
     def seed(self):
         """
         Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
@@ -910,20 +884,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
-
-    @property
-    def gainslift_bins(self):
-        """
-        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
-
-        Type: ``int``, defaults to ``-1``.
-        """
-        return self._parms.get("gainslift_bins")
-
-    @gainslift_bins.setter
-    def gainslift_bins(self, gainslift_bins):
-        assert_is_type(gainslift_bins, None, int)
-        self._parms["gainslift_bins"] = gainslift_bins
 
 
     def metalearner(self):

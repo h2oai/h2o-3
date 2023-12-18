@@ -581,7 +581,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
 
   public TwoDimTable createScoringHistoryTable() {
     if (0 == _models.values().size()) {
-      return ScoringInfo.createScoringHistoryTable(_scoring_infos, false, false, ModelCategory.Binomial, false, false);
+      return ScoringInfo.createScoringHistoryTable(_scoring_infos, false, false, ModelCategory.Binomial, false);
     }
 
     Key<Model> k = null;
@@ -595,11 +595,11 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
 
     if (null == m) {
       Log.warn("Cannot create grid scoring history table; Model has been removed: " + k);
-      return ScoringInfo.createScoringHistoryTable(_scoring_infos, false, false, ModelCategory.Binomial, false, false);
+      return ScoringInfo.createScoringHistoryTable(_scoring_infos, false, false, ModelCategory.Binomial, false);
     }
 
     ScoringInfo scoring_info = _scoring_infos != null && _scoring_infos.length > 0 ? _scoring_infos[0] : null;
-    return ScoringInfo.createScoringHistoryTable(_scoring_infos, (scoring_info != null ? scoring_info.validation : false), (scoring_info != null ? scoring_info.cross_validation: false), m._output.getModelCategory(), (scoring_info != null ? scoring_info.is_autoencoder : false), m._parms.hasCustomMetricFunc());
+    return ScoringInfo.createScoringHistoryTable(_scoring_infos, (scoring_info != null ? scoring_info.validation : false), (scoring_info != null ? scoring_info.cross_validation: false), m._output.getModelCategory(), (scoring_info != null ? scoring_info.is_autoencoder : false));
   }
 
   /**

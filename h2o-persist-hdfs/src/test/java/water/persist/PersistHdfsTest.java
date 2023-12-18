@@ -23,10 +23,8 @@ import static junit.framework.TestCase.*;
 public class PersistHdfsTest extends TestUtil {
 
   @Parameterized.Parameters(name = "{index}: scheme={0}")
-  public static Object[] schemes() { 
-    return new Object[] { 
-      // "s3n", - s3n is not supported by hadoop-aws 3.0+
-      "s3a" };
+  public static Object[] schemes() {
+    return new Object[] { "s3n", "s3a" };
   }
 
   @Parameterized.Parameter
