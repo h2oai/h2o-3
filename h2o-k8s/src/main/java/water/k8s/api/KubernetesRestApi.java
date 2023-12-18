@@ -1,10 +1,10 @@
 package water.k8s.api;
 
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
+import com.sun.net.httpserver.HttpServer;
 import water.k8s.probe.KubernetesLeaderNodeProbeHandler;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * This class represents a tiny (memory, cpu, dependencies) self-contained API only for Kubernetes,
@@ -16,7 +16,7 @@ import java.io.IOException;
  * on a distinct port is spawned.
  * <p>
  */
-public class KubernetesRestApi extends RouterNanoHTTPD implements AutoCloseable {
+public class KubernetesRestApi implements AutoCloseable {
 
     /**
      * Default port to bind to / listen on.
@@ -24,6 +24,7 @@ public class KubernetesRestApi extends RouterNanoHTTPD implements AutoCloseable 
     private static final int DEFAULT_PORT = 8080;
     public static final String KUBERNETES_REST_API_PORT_KEY = "H2O_KUBERNETES_API_PORT";
 
+    private final HttpServer server;
 
     /**
      * Creates, but not starts Kubernetes REST API. To start the REST API, please use
@@ -32,8 +33,9 @@ public class KubernetesRestApi extends RouterNanoHTTPD implements AutoCloseable 
      * The REST API is bound to a default port of 8080, unless specified otherwise by H2O_KUBERNETES_API_PORT environment
      * variable.
      */
-    public KubernetesRestApi() {
-        super(getPort());
+    public KubernetesRestApi() throws IOException {
+        int port = getPort();
+        server = HttpServer.create(new InetSocketAddress(port), 0);
         addMappings();
     }
 
@@ -51,27 +53,17 @@ public class KubernetesRestApi extends RouterNanoHTTPD implements AutoCloseable 
         }
     }
 
-    @Override
     public void addMappings() {
-        super.addMappings();
-        addRoute("/kubernetes/isLeaderNode", KubernetesLeaderNodeProbeHandler.class);
+        server.createContext("/kubernetes/isLeaderNode", new KubernetesLeaderNodeProbeHandler());
     }
 
     @Override
     public void close() {
-        stop();
+        server.stop(0);
     }
 
-    @Override
     public void start() throws IOException {
-        // Make sure the API is never ran as daemon. Scope of the K8S API = H2O's lifetime
-        start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-    }
-
-    @Override
-    public void start(int timeout) throws IOException {
-        // Make sure the API is never ran as daemon. Scope of the K8S API = H2O's lifetime
-        super.start(timeout, false);
+        server.start();
     }
 
 }
