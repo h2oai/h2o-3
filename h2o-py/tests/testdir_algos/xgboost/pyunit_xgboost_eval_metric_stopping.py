@@ -1,7 +1,7 @@
 import sys
 
 sys.path.insert(1, "../../../")
-import h2o
+from h2o import upload_custom_metric
 from tests import pyunit_utils
 from tests.pyunit_utils import dataset_prostate
 from h2o.estimators.xgboost import H2OXGBoostEstimator
@@ -9,7 +9,7 @@ from tests.pyunit_utils import CustomMaeFunc
 
 
 def custom_mae_mm():
-    return h2o.upload_custom_metric(CustomMaeFunc, func_name="mae-custom", func_file="mm_mae.py")
+    return upload_custom_metric(CustomMaeFunc, func_name="mae-custom", func_file="mm_mae.py")
 
 
 def assert_same_scoring_history(model_actual, model_expected, metric_name1, metric_name2, msg=None):
