@@ -70,10 +70,10 @@ public class DRFModelValidatingListener implements H2OListenerExtension {
         assert data.length == 2;
         Model<?, ?, ?> model = (Model<?, ?, ?>) data[0];
         Model.Parameters parms = (Model.Parameters) data[1];
-        if (!parms._is_cv_model && model instanceof DRFModel) {
+        if (!parms._is_cv_model && model instanceof DRFModel && TestUtil.CURRENT_TEST_DESCRIPTION != null) {
             if (
                 // we only check pure DRF tests, we don't want to introduce issues to tests that are just using DRF (eg. RuleFit)
-                    TestUtil.CURRENT_TEST_DESCRIPTION.getTestClass().getPackage().getName().startsWith(DRF_TEST_PACKAGE) &&
+                TestUtil.CURRENT_TEST_DESCRIPTION.getTestClass().getPackage().getName().startsWith(DRF_TEST_PACKAGE) &&
                             // active only for single node clouds to avoid slow downs (h2o-algos always runs single and multinode)
                             H2O.CLOUD.size() == 1
             ) {
