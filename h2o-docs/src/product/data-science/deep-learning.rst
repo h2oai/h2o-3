@@ -47,6 +47,8 @@ Algorithm-specific parameters
 
 -  **col_major**: Specify whether to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of back propagation. This option defaults to ``False`` (disabled).
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
+
 -  **diagnostics**: Specify whether to compute the variable importances for input features (using the Gedeon method). For large networks, enabling this option can reduce speed. This option defaults to ``True`` (enabled).
 
 -  **elastic_averaging**: Specify whether to enable elastic averaging between computing nodes, which can improve distributed model convergence. This option defaults to ``False`` (disabled).
