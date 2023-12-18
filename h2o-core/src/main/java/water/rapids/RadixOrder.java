@@ -53,7 +53,9 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     // it when aligning two keys in Merge()
     int keySize = ArrayUtils.sum(_bytesUsed);
     // 256MB is the DKV limit.  / 2 because we fit o and x together in one OXBatch.
-    int batchSize = 256*OPTIMAL_BATCHSIZE / Math.max(keySize, 8) / 2 ; // larger, requires more memory with less remote row fetch and vice versa for smaller
+//    int batchSize = 256*OPTIMAL_BATCHSIZE / Math.max(keySize, 8) / 2 ; // larger, requires more memory with less remote row fetch and vice versa for smaller
+    int batchSize = OPTIMAL_BATCHSIZE / Math.max(keySize, 8) / 2;
+    Log.info("Using batch size "+batchSize+" for an estimated keySize="+keySize+"B.");
     // go through all node memory and reduce batchSize if needed
     long minMem = Long.MAX_VALUE; // memory size of nodes with smallest memory
     for (H2ONode h2o : H2O.CLOUD._memary) {
@@ -64,12 +66,14 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     // at some point, a MSB worth of compare columns will be stored at any one node.  Make sure we have enough memory
     // for that.
     long minSortMemory = _whichCols.length*Math.max(_DF.numRows(), batchSize)*8*MEM_MULTIPLIER;
+    Log.info("This sorting requires at minimum "+minSortMemory+"B");
     if (minMem < minSortMemory) // if not enough, just throw an error and get out
       throw new RuntimeException("The minimum memory per node needed is too small to accommodate the sorting/merging " +
               "operation.  Make sure the smallest node has at least "+minSortMemory+" bytes of memory.");
     // an array of size batchsize by numCols will be created for each sorted chunk in the end.  Memory is in bytes
     long dataSetMemoryPerRow = 8*((long) _DF.numCols())*MEM_MULTIPLIER; // 8 to translate 64 bits into 8 bytes, MEM_MULTIPLIER to scale up
     long batchMemory = Math.max((long) batchSize*dataSetMemoryPerRow, minSortMemory); // memory needed to store one chunk of dataset frame
+    Log.info("Memory required for each batch="+batchMemory+"B");
     if (batchMemory > minMem) {  // batchsize is too big for node with smallest memory, reduce it
       batchSize = (int) Math.floor(minMem/dataSetMemoryPerRow);
       if (batchSize == 0)
