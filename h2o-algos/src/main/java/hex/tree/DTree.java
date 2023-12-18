@@ -126,6 +126,7 @@ public class DTree extends Iced {
     _leaves = tree._leaves;
     _len = tree._len;
     _depth = tree._depth;
+    _checkConstraintConsistency = tree._checkConstraintConsistency;
   }
 
   public final Node root() { return _ns[0]; }
