@@ -583,6 +583,12 @@ Step 2: Compile and Run the MOJO
   VOL: 0.7123169431687857,
   GLEASON: 6.625024806196047
 
+Using Your Own Input File
+'''''''''''''''''''''''''
+
+You can provide the MOJO with your own input file. The MOJO will generate predictions in a CSV file for the data stored in the input dataset. 
+
+
 Viewing a MOJO Model
 ~~~~~~~~~~~~~~~~~~~~
 
