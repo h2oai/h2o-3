@@ -2,6 +2,34 @@
 
 ## H2O
 
+### 3.44.0.3 - 12/20/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/3/index.html</a>
+
+#### Bug Fix
+- [[#15958]](https://github.com/h2oai/h2o-3/issues/15958) - Fixed maximum likelihood dispersion estimation for GLM tweedie family producing the wrong result for a specific dataset.
+- [[#15936]](https://github.com/h2oai/h2o-3/issues/15936) - Added data frame transformations using polars since datatable cannot be installed on Python 3.10+. 
+- [[#15894]](https://github.com/h2oai/h2o-3/issues/15894) - Ensured that the functions that are supposed to be exported in the R package are exported.
+- [[#15891]](https://github.com/h2oai/h2o-3/issues/15891) - Corrected sign in AIC calculation to fix problem with tweedie dispersion parameter estimation, AIC, and loglikelihood.
+- [[#15887]](https://github.com/h2oai/h2o-3/issues/15887) - Allowed Python H2OFrame constructor to accept an existing H2OFrame.
+- [[#6725]](https://github.com/h2oai/h2o-3/issues/6725) - Fixed LoggerFactory slf4j related regression. 
+
+#### Improvement
+- [[#15937]](https://github.com/h2oai/h2o-3/issues/15937) - Exposed `gainslift_bins` parameter for Deep Learning, GAM, GLM, and Stacked Ensemble algorithms.
+- [[#15916]](https://github.com/h2oai/h2o-3/issues/15916) - Sped up computation of Friedman-Popescu’s H statistic.
+
+#### New Feature
+- [[#15927]](https://github.com/h2oai/h2o-3/issues/15927) - Added anomaly score metric to be used as a `sort_by` metric when sorting grid model performances for Isolation Forest with grid search.
+- [[#15780]](https://github.com/h2oai/h2o-3/issues/15780) - Added `weak_learner_params` parameter for AdaBoost.
+- [[#15779]](https://github.com/h2oai/h2o-3/issues/15779) - Added `weak_learner="deep_learning"` option for AdaBoost.
+- [[#7118]](https://github.com/h2oai/h2o-3/issues/7118) - Implemented scoring and scoring history for Extended Isolation Forest by adding `score_each_iteration` and `score_tree_interval`. 
+
+#### Docs
+- [[#15817]](https://github.com/h2oai/h2o-3/issues/15817) - Improved default threshold API and documentation for binomial classification.
+
+#### Security
+- [[#15754]](https://github.com/h2oai/h2o-3/issues/15754) - Addressed CVE-2022-21230 by replacing nanohttpd.
+
 ### 3.44.0.2 - 11/8/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index.html</a>
