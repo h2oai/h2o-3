@@ -17,11 +17,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/3/index
 #### Improvement
 - [[#15937]](https://github.com/h2oai/h2o-3/issues/15937) - Exposed `gainslift_bins` parameter for Deep Learning, GAM, GLM, and Stacked Ensemble algorithms.
 - [[#15916]](https://github.com/h2oai/h2o-3/issues/15916) - Sped up computation of Friedman-Popescu’s H statistic.
-- [[#15779]](https://github.com/h2oai/h2o-3/issues/15779) - Added `weak_learner="deep_learning"` option for AdaBoost.
 
 #### New Feature
 - [[#15927]](https://github.com/h2oai/h2o-3/issues/15927) - Added anomaly score metric to be used as a `sort_by` metric when sorting grid model performances for Isolation Forest with grid search.
 - [[#15780]](https://github.com/h2oai/h2o-3/issues/15780) - Added `weak_learner_params` parameter for AdaBoost.
+- [[#15779]](https://github.com/h2oai/h2o-3/issues/15779) - Added `weak_learner="deep_learning"` option for AdaBoost.
 - [[#7118]](https://github.com/h2oai/h2o-3/issues/7118) - Implemented scoring and scoring history for Extended Isolation Forest by adding `score_each_iteration` and `score_tree_interval`. 
 
 #### Docs
