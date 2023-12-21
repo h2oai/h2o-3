@@ -169,7 +169,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 [100, "ext"]: [
                     'train_time_min': 65,
-                    'train_time_max': 73
+                    'train_time_max': 75
                 ],
                 [100, "gpu"]: [
                     'train_time_min': 22,
@@ -193,7 +193,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'cox2': [
                 [10, "cpu"]: [
                     'train_time_min': 800,
-                    'train_time_max': 916
+                    'train_time_max': 960
                 ]
             ],
             'cox2-20m': [
@@ -203,7 +203,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 [10, "ext"]: [
                     'train_time_min': 176,
-                    'train_time_max': 186
+                    'train_time_max': 199
                 ]
             ]
         ],
@@ -237,13 +237,13 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'airlines-10m': [
                 100: [
                     'train_time_min': 61,
-                    'train_time_max': 71
+                    'train_time_max': 75
                 ]
             ],
             'higgs': [
                 100: [
                     'train_time_min': 111,
-                    'train_time_max': 129
+                    'train_time_max': 133
                 ]
             ]
         ],
