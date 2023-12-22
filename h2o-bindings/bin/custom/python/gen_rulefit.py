@@ -84,4 +84,18 @@ examples = dict(
 >>> print(rfit.rule_importance())
 >>> rfit.predict(test)
 """,
+    max_num_rules="""
+>>> import h2o
+>>> h2o.init()
+>>> from h2o.estimators import H2ORuleFitEstimator
+>>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+>>> df = h2o.import_file(path=f, col_types={'pclass': "enum", 'survived': "enum"})
+>>> train, test = df.split_frame(ratios=[0.8], seed=1)
+>>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
+>>> y = "survived"
+>>> rfit = H2ORuleFitEstimator(max_rule_length=10,max_num_rules=100, max_num_rules=-1, seed=1)
+>>> rfit.train(training_frame=train, x=x, y=y)
+>>> print(rfit.rule_importance())
+>>> rfit.predict(test)
+""",
 )
