@@ -97,5 +97,5 @@ examples = dict(
 >>> rfit.train(training_frame=train, x=x, y=y)
 >>> print(rfit.rule_importance())
 >>> rfit.predict(test)
-""",
+"""
 )
