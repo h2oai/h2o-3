@@ -1,6 +1,10 @@
 # H2O
 
-[![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+For any question not answered in this file or in [H2O-3 Documentation](https://docs.h2o.ai/h2o/latest-stable/h2o-docs), please use:
+
+[![Ask on GitHub](https://img.shields.io/github/discussions/h2oai/h2o-3.svg?logo=github&label=Discussions%20Q%26A&color=FFE600)](https://github.com/h2oai/h2o-3/discussions/categories/q-a)
+[![Ask on StackOverflow](https://img.shields.io/stackexchange/stackoverflow/t/h2o?logo=stackoverflow&label=H2O%20on%20StackOverflow&color=f7a664)](http://stackoverflow.com/questions/tagged/h2o)
+[![Ask on Gitter](https://img.shields.io/gitter/room/h2oai/h2o-3?logo=gitter&logoColor=red&label=H2O%20chatroom&color=b5b5b5)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular [algorithms](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science.html) such as Generalized Linear Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests, Deep Neural Networks, Stacked Ensembles, Naive Bayes, Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic machine learning algorithm ([H2O AutoML](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html)). 
 

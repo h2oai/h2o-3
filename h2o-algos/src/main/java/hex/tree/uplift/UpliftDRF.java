@@ -1,6 +1,8 @@
 package hex.tree.uplift;
 
 import hex.*;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.upliftdrf.UpliftDrfMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import org.apache.log4j.Logger;
@@ -50,7 +52,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
     @Override
     public boolean haveMojo() {
-        return false;
+        return true;
     }
 
     @Override
@@ -110,8 +112,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             error("_treatment_column", "The treatment column has to be defined.");
         if (_parms._custom_distribution_func != null)
             error("_custom_distribution_func", "The custom distribution is not yet supported for Uplift DRF.");
-        if (_parms._custom_metric_func != null)
-            error("_custom_metric_func", "The custom metric is not yet supported for Uplift DRF.");
         if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO)
             error("_stopping_metric", "The early stopping is not yet supported for Uplift DRF.");
         if (_parms._stopping_rounds != 0)
@@ -404,6 +404,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
         colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
         colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+        colHeaders.add("Training ATE"); colTypes.add("double"); colFormat.add("%d");
+        colHeaders.add("Training ATT"); colTypes.add("double"); colFormat.add("%d");
+        colHeaders.add("Training ATC"); colTypes.add("double"); colFormat.add("%d");
         colHeaders.add("Training AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Training AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
@@ -413,6 +416,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         }
 
         if (_output._validation_metrics != null) {
+            colHeaders.add("Validation ATE"); colTypes.add("double"); colFormat.add("%d");
+            colHeaders.add("Validation ATT"); colTypes.add("double"); colFormat.add("%d");
+            colHeaders.add("Validation ATC"); colTypes.add("double"); colFormat.add("%d");
             colHeaders.add("Validation AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
             colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
             colHeaders.add("Validation AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
@@ -443,6 +449,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             table.set(row, col++, PrettyPrint.msecs(_training_time_ms[i] - job.start_time(), true));
             table.set(row, col++, i);
             ScoreKeeper st = _scored_train[i];
+            table.set(row, col++, st._ate);
+            table.set(row, col++, st._att);
+            table.set(row, col++, st._atc);
             table.set(row, col++, st._auuc_nbins);
             table.set(row, col++, st._AUUC);
             table.set(row, col++, st._auuc_normalized);
@@ -451,6 +460,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
             if (_output._validation_metrics != null) {
                 st = _scored_valid[i];
+                table.set(row, col++, st._ate);
+                table.set(row, col++, st._att);
+                table.set(row, col++, st._atc);
                 table.set(row, col++, st._auuc_nbins);
                 table.set(row, col++, st._AUUC);
                 table.set(row, col++, st._auuc_normalized);
@@ -460,6 +472,15 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             row++;
         }
         return table;
+    }
+
+    @Override
+    protected void addCustomInfo(UpliftDRFModel.UpliftDRFOutput out) {
+        if(out._validation_metrics != null){
+            out._defaultAuucThresholds = ((ModelMetricsBinomialUplift)out._validation_metrics)._auuc._ths;
+        } else {
+            out._defaultAuucThresholds = ((ModelMetricsBinomialUplift)out._training_metrics)._auuc._ths;
+        }
     }
 
     @Override

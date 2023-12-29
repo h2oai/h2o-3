@@ -55,6 +55,8 @@ test.uplift <- function() {
         min_rows = 10,
         nbins = 100,
         seed = seed) 
+      
+    print(model)  
         
     # test model metrics
     print("Test model metrics")
@@ -119,6 +121,24 @@ test.uplift <- function() {
     expect_equal(auuc_norm, expected_values_auuc_norm_qini[i], tolerance=tol)
     expect_equal(auuc_gain_norm, expected_values_auuc_norm_gain[i], tolerance=tol)
     expect_equal(auuc_lift_norm, expected_values_auuc_norm_lift[i], tolerance=tol)
+      
+    model_ate <- h2o.ate(model, train=TRUE, valid=TRUE)
+    print(model_ate)
+    perf_ate <- h2o.ate(perf)
+    print(perf_ate)
+    expect_equal(model_ate[["train"]], perf_ate, tolerance=tol)
+      
+    model_att <- h2o.att(model, train=TRUE, valid=TRUE)
+    print(model_att)  
+    perf_att <- h2o.att(perf)
+    print(perf_att)
+    expect_equal(model_att[["train"]], perf_att, tolerance=tol)
+
+    model_atc <- h2o.atc(model, train=TRUE, valid=TRUE)
+    print(model_atc)  
+    perf_atc <- h2o.atc(perf)
+    print(perf_atc)
+    expect_equal(model_atc[["train"]], perf_atc, tolerance=tol)
 
     plot(perf)
     plot(perf, normalize=TRUE)  

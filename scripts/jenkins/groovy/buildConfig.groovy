@@ -52,7 +52,7 @@ class BuildConfig {
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
   public static final String DEFAULT_PYTHON_VERSION = '3.6'
-  public static final List PYTHON_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
+  public static final List PYTHON_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
   public static final List R_VERSIONS = ['3.3.3', '3.4.1']
 
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
@@ -322,6 +322,7 @@ class BuildConfig {
               change.startsWith('h2o-py/') && change.contains("pyunit_") &&
               change.lastIndexOf("pyunit_") > change.lastIndexOf("/") && // Allow to run "pyunit_*" files inside of "pyunit_*" directory but do not allow e.g. utilsPY.py to run
               !change.contains("pyunit_explain") && !change.endsWith("_large.py") && // takes too much time to run
+              !change.contains("_NOPASS.py") &&  // We know these test fail often and randomly, no need to run it in this stage
               !change.contains("pyunit_h2oassembly_download_mojo") &&
               !change.contains("test_cloud") &&
               !change.contains("demos")

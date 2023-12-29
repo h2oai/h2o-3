@@ -3,7 +3,6 @@ package water.clustering;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.clustering.api.AssistedClusteringRestApi;
-import water.clustering.api.GracefulAsyncRunner;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.EmbeddedConfigProvider;
 import water.util.Log;
@@ -45,7 +44,6 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
         Log.info("Starting assisted clustering REST API services");
         try {
             final AssistedClusteringRestApi assistedClusteringRestApi = new AssistedClusteringRestApi(flatFileCallback);
-            assistedClusteringRestApi.setAsyncRunner(new GracefulAsyncRunner());
             assistedClusteringRestApi.start();
             Log.info("Assisted clustering REST API services successfully started.");
             return Optional.of(assistedClusteringRestApi);

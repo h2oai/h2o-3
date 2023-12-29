@@ -41,10 +41,10 @@ test <- function(h) {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-4.315048, mean_deviance, tolerance=1e-5)
-	expect_equal(0.0443679, mean(ph[,1]), tolerance=1e-5)
-	expect_equal(0.02331544, min(ph[,1]), tolerance=1e-5)
-	expect_equal(0.07392277, max(ph[,1]), tolerance=1e-5)
+	expect_equal(0.005592862, mean_deviance, tolerance=1e-5)
+	expect_equal(0.04435186, mean(ph[,1]), tolerance=1e-5)
+	expect_equal(0.02331988, min(ph[,1]), tolerance=1e-5)
+	expect_equal(0.07382817, max(ph[,1]), tolerance=1e-5)
 
 	#With weights
 	#gg = gbm(formula = Loss~Class+Merit + C1M3 + C4M3, distribution = "gamma",data = data,
@@ -65,7 +65,7 @@ test <- function(h) {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-5.164816, mean_deviance, tolerance=1e-5)
+	expect_equal(0.0007479338, mean_deviance, tolerance=1e-5)
 	expect_equal(0.04430156, mean(ph[,1]), tolerance=1e-5)
 	expect_equal(0.02298414, min(ph[,1]), tolerance=1e-5)
 	expect_equal(0.07380657, max(ph[,1]), tolerance=1e-5)

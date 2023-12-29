@@ -130,7 +130,7 @@ public class ScoringInfo extends Iced<ScoringInfo> {
    * @param isAutoencoder is the model or are the models autoencoders?
    * @return
    */
-  public static TwoDimTable createScoringHistoryTable(ScoringInfo[] scoringInfos, boolean hasValidation, boolean hasCrossValidation, ModelCategory modelCategory, boolean isAutoencoder) {
+  public static TwoDimTable createScoringHistoryTable(ScoringInfo[] scoringInfos, boolean hasValidation, boolean hasCrossValidation, ModelCategory modelCategory, boolean isAutoencoder, boolean hasCustomMetric) {
     boolean hasEpochs = (scoringInfos instanceof HasEpochs[]);
     boolean hasSamples = (scoringInfos instanceof HasSamples[]);
     boolean hasIterations = (scoringInfos instanceof HasIterations[]) || (scoringInfos != null &&
@@ -172,6 +172,9 @@ public class ScoringInfo extends Iced<ScoringInfo> {
     if(modelCategory == ModelCategory.AutoEncoder) {
       colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
     }
+    if (hasCustomMetric) {
+      colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if (hasValidation) {
       colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (modelCategory == ModelCategory.Regression) {
@@ -197,6 +200,9 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       }
       if(modelCategory == ModelCategory.AutoEncoder) {
         colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (hasCustomMetric) {
+        colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
       }
     } // (hasValidation)
     if (hasCrossValidation) {
@@ -225,8 +231,10 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       if(modelCategory == ModelCategory.AutoEncoder) {
         colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
       }
+      if (hasCustomMetric) {
+        colHeaders.add("Cross-Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
+      }
     } // (hasCrossValidation)
-
 
     final int rows = scoringInfos == null ? 0 : scoringInfos.length;
     String[] s = new String[0];
@@ -287,6 +295,9 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       if (isAutoencoder) {
         table.set(row, col++, si.scored_train != null ? si.scored_train._mse : Double.NaN);
       }
+      if (hasCustomMetric) {
+        table.set(row, col++, si.scored_train != null ? si.scored_train._custom_metric : Double.NaN);
+      }
       if (hasValidation) {
         table.set(row, col++, si.scored_valid != null ? si.scored_valid._rmse : Double.NaN);
         if (modelCategory == ModelCategory.Regression) {
@@ -312,6 +323,9 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         }
         if (isAutoencoder) {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._mse : Double.NaN);
+        }
+        if (hasCustomMetric) {
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._custom_metric : Double.NaN);
         }
       } // hasValidation
       if (hasCrossValidation) {
@@ -339,6 +353,9 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         }
         if (isAutoencoder) {
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._mse : Double.NaN);
+        }
+        if (hasCustomMetric) {
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._custom_metric : Double.NaN);
         }
       } // hasCrossValidation
       row++;

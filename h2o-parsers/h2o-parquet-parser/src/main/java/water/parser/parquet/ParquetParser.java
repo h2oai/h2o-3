@@ -125,6 +125,16 @@ public class ParquetParser extends Parser {
     checkCompatibility(metadata);
     return toInitialSetup(metadata.getFileMetaData().getSchema(), metadataBytes);
   }
+  
+  public static String[] extractColumnTypes(ParquetMetadata metadata) {
+    MessageType messageType = metadata.getFileMetaData().getSchema();
+    int colNum = messageType.getFieldCount();
+    String[] parquetColNames = new String[colNum];
+    for (int index=0; index<colNum; index++) {
+      parquetColNames[index] = messageType.getType(index).asPrimitiveType().getPrimitiveTypeName().name();
+    }
+    return parquetColNames;
+  }
 
   private static ParquetParseSetup toInitialSetup(MessageType parquetSchema, byte[] metadataBytes) {
     byte[] roughTypes = roughGuessTypes(parquetSchema);
@@ -201,13 +211,15 @@ public class ParquetParser extends Parser {
 
   public static class ParquetParseSetup extends ParseSetup {
     transient byte[] parquetMetadata;
-
     public ParquetParseSetup() { super(); }
     public ParquetParseSetup(String[] columnNames, byte[] ctypes, String[][] data, byte[] parquetMetadata) {
       super(ParquetParserProvider.PARQUET_INFO, (byte) '|', true, ParseSetup.HAS_HEADER,
               columnNames.length, columnNames, ctypes,
               new String[columnNames.length][] /* domains */, null /* NA strings */, data);
       this.parquetMetadata = parquetMetadata;
+      if (getForceColTypes() && parquetMetadata != null) {
+        this.parquetColumnTypes = extractColumnTypes(VecParquetReader.readFooter(parquetMetadata));
+      }
     }
   }
 
@@ -311,5 +323,4 @@ public class ParquetParser extends Parser {
     }
     return firstBlockMeta;
   }
-
 }

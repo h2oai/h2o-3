@@ -47,6 +47,7 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
+#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param uplift_metric Divergence metric used to find best split when building an uplift tree. Must be one of: "AUTO", "KL",
 #'        "Euclidean", "ChiSquared". Defaults to AUTO.
 #' @param auuc_type Metric used to calculate Area Under Uplift Curve. Must be one of: "AUTO", "qini", "lift", "gain". Defaults to
@@ -82,6 +83,7 @@ h2o.upliftRandomForest <- function(x,
                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                    distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                    check_constant_response = TRUE,
+                                   custom_metric_func = NULL,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
                                    auuc_nbins = -1,
@@ -155,6 +157,8 @@ h2o.upliftRandomForest <- function(x,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   if (!missing(uplift_metric))
     parms$uplift_metric <- uplift_metric
   if (!missing(auuc_type))
@@ -196,6 +200,7 @@ h2o.upliftRandomForest <- function(x,
                                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                                    distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                                    check_constant_response = TRUE,
+                                                   custom_metric_func = NULL,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
                                                    auuc_nbins = -1,
@@ -273,6 +278,8 @@ h2o.upliftRandomForest <- function(x,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   if (!missing(uplift_metric))
     parms$uplift_metric <- uplift_metric
   if (!missing(auuc_type))

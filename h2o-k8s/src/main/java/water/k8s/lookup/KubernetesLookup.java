@@ -1,7 +1,5 @@
 package water.k8s.lookup;
 
-import water.k8s.lookup.LookupConstraint;
-
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;

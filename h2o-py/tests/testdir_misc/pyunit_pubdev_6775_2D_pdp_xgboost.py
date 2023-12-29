@@ -20,9 +20,9 @@ def partial_plot_test_with_no_user_splits_no_1DPDP():
     gbm_model.train(x=x, y=y, training_frame=data)
 
     # pdp without weight or NA
-    pdp2dOnly = gbm_model.partial_plot(data=data, server=True, plot=False, 
+    pdp2dOnly = gbm_model.partial_plot(frame=data, server=True, plot=False, 
         col_pairs_2dpdp=[['AGE', 'PSA'],['AGE', 'RACE']])
-    pdp1D2D = gbm_model.partial_plot(data=data, cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=False,
+    pdp1D2D = gbm_model.partial_plot(frame=data, cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=False,
                                               col_pairs_2dpdp=[['AGE', 'PSA'], ['AGE', 'RACE']])
     # compare results 2D pdp 
     pyunit_utils.assert_H2OTwoDimTable_equal_upto(pdp2dOnly[0], pdp1D2D[3],

@@ -33,8 +33,8 @@ generate_dataset<-function(f1R, numRows, numCols, pow, phi, mu) {
   #   resp[rowIndex] <- tweedie::rtweedie(1,xi=pow,mu[rowIndex], phi, power=pow)
   # }
   resp <- tweedie::rtweedie(numRows, xi=pow, mu, phi, power=pow)
-  f1h2o <- as.h2o.data.frame(f1R)
-  resph2o <- as.h2o.data.frame(as.data.frame(resp))
+  f1h2o <- as.h2o(f1R)
+  resph2o <- as.h2o(as.data.frame(resp))
   finalFrame <- h2o.cbind(f1h2o, resph2o)
   return(finalFrame)
 }

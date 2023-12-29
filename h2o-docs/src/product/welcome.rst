@@ -26,7 +26,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 -  **Languages**: R and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
    -  R version 3 or later
-   -  Python 3.6.x, 3.7.x, 3.8.x 
+   -  Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 
@@ -69,9 +69,9 @@ Additional Requirements
 
   Refer to the :ref:`on-hadoop` section for detailed information.
 
--  **Conda 2.7, 3.5, or 3.6 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
+-  **Conda 3.6+ repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
 
--  **Spark**: Version 3.3, 3.2, 3.1, 3.0, 2.4, or 2.3. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
+-  **Spark**: Version 3.4, 3.3, 3.2, 3.1, 3.0, 2.4, or 2.3. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
 New Users
@@ -471,6 +471,9 @@ Supported Versions
 -  CDH 6.1
 -  CDH 6.2
 -  CDH 6.3
+-  CDP 7.0
+-  CDP 7.1
+-  CDP 7.2
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
@@ -485,6 +488,7 @@ Supported Versions
 -  MapR 6.0
 -  MapR 6.1
 -  IOP 4.2
+-  EMR 6.10
 
 **Important Points to Remember**:
 

@@ -16,15 +16,15 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toMap;
 /**
  * Created by tomasnykodym on 8/27/14.
  */
-public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> implements Model.Contributions{
 
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
@@ -178,6 +178,112 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return H2O.ARGS.nthreads; // VIF is relatively lightweight, on small data run all concurrently
     }
     return 2; // same strategy as in CV of "big data" - run 2 models concurrently
+  }
+
+  class GLMContributionsWithBackground extends ContributionsWithBackgroundFrameTask<GLMContributionsWithBackground> {
+    double[] _betas;
+    DataInfo _dinfo;
+    boolean _compact;
+    boolean _outputSpace;
+
+    GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Key<Frame> frameKey, Key<Frame> backgroundFrameKey, boolean perReference, boolean compact, boolean outputSpace) {
+      super(frameKey, backgroundFrameKey, perReference);
+      _dinfo = dinfo;
+      _betas = betas;
+      _compact = compact;
+      _outputSpace = outputSpace;
+    }
+
+    @Override
+    public void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs) {
+      DataInfo.Row row = _dinfo.newDenseRow();
+      DataInfo.Row bgRow = _dinfo.newDenseRow();
+      int idx;
+      double[] result = MemoryManager.malloc8d(ncs.length - 1); // used only when output_format == compact
+      double transformationRatio = 1; // used for transforming to output space 
+      for (int j = 0; j < cs[0]._len; j++) {
+        _dinfo.extractDenseRow(cs, j, row);
+
+        for (int k = 0; k < bgCs[0]._len; k++) {
+          _dinfo.extractDenseRow(bgCs, k, bgRow);
+          Arrays.fill(result, 0);
+          double biasTerm = (_dinfo._intercept ? _betas[_betas.length - 1] : 0);
+          for (int i = 0; i < _betas.length - (_dinfo._intercept ? 1 : 0); i++) {
+            idx = _compact ? _dinfo.coefOriginalColumnIndices()[i] : i;
+            result[idx] += _betas[i] * (row.get(i) - bgRow.get(i));
+            biasTerm += _betas[i] * bgRow.get(i);
+          }
+
+          if (_outputSpace) {
+            final double linkSpaceX = Arrays.stream(result).sum()+biasTerm;
+            final double linkSpaceBg = biasTerm;
+            final double outSpaceX = _parms.linkInv(linkSpaceX);
+            final double outSpaceBg = _parms.linkInv(linkSpaceBg);
+            transformationRatio = Math.abs(linkSpaceX - linkSpaceBg) < 1e-6 ? 0 : (outSpaceX - outSpaceBg) / (linkSpaceX - linkSpaceBg);
+            biasTerm = outSpaceBg;
+          }
+
+          for (int i = 0; i < result.length; i++) {
+            ncs[i].addNum(result[i] * transformationRatio);
+          }
+          ncs[ncs.length - 1].addNum(biasTerm);
+        }
+      }
+    }
+  }
+
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    assert GLMParameters.GLMType.glm.equals(_parms._glmType);
+
+    if (ContributionsOutputFormat.Compact.equals(options._outputFormat)) {
+      if (_parms._interactions != null && _parms._interactions.length > 0) {
+        throw H2O.unimpl("SHAP for GLM with interactions is not supported");
+      }
+    }
+
+    List<Frame> tmpFrames = new ArrayList<>();
+    Frame adaptedFrame = null;
+    Frame adaptedBgFrame = null;
+    if (null == backgroundFrame)
+      throw H2O.unimpl("GLM supports contribution calculation only with a background frame.");
+    Log.info("Starting contributions calculation for " + this._key + "...");
+    try {
+      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      DKV.put(adaptedBgFrame);
+      DKV.put(adaptedFrame);
+      DataInfo dinfo = _output._dinfo.clone();
+      dinfo._adaptedFrame = adaptedFrame;
+      GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(dinfo,
+              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame._key, adaptedBgFrame._key,
+              options._outputPerReference, ContributionsOutputFormat.Compact.equals(options._outputFormat), options._outputSpace);
+      String[] colNames = new String[ContributionsOutputFormat.Compact.equals(options._outputFormat)
+              ? dinfo.coefOriginalNames().length + 1 // +1 for bias term
+              : beta().length + (_output._dinfo._intercept ? 0 : 1)];
+      System.arraycopy(ContributionsOutputFormat.Compact.equals(options._outputFormat)
+              ? Arrays.stream(dinfo.coefOriginalNames()).map(name -> {
+        if (!dinfo._useAllFactorLevels && name.contains(".") && frame.find(name) == -1) {
+          // We can have binary vars encoded as single variable + some contribution in intercept; we need to convert
+          // the name of the encoded variable to the original variable name (e.g., sex.female -> sex)
+          for (int i = 0; i < name.length(); i++) {
+            name = name.substring(0, name.lastIndexOf("."));
+            if (frame.find(name) >= 0)
+              return name;
+          }
+        }
+        return name;
+      }).toArray(String[]::new)
+              : _output._coefficient_names, 0, colNames, 0, colNames.length - 1);
+      colNames[colNames.length - 1] = "BiasTerm";
+      return contributions.runAndGetOutput(j, destination_key, colNames);
+    } finally {
+      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
+      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
+      Log.info("Finished contributions calculation for " + this._key + "...");
+    }
+
   }
 
   public static class RegularizationPath extends Iced {
@@ -723,7 +829,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                         yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
                 ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
       }  else if (Family.tweedie.equals(_family) && DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
-        return -TweedieEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
+        return -TweedieEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _dispersion_estimated);
       }  else
         return .5 * deviance(yr,ym);
     }
@@ -767,7 +873,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return w * invPhiEst * log(w * yr * invPhiEst / prediction) - w * yr * invPhiEst / prediction 
                   - log(yr) - Gamma.logGamma(w * invPhiEst);
         case tweedie:
-          return -TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _init_dispersion_parameter);
+          return -TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _dispersion_estimated);
         case multinomial:
           // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
           double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);
@@ -932,6 +1038,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void updateTweedieParams(double tweedieVariancePower, double tweedieLinkPower, double dispersion){
       _tweedie_variance_power = tweedieVariancePower;
       _tweedie_link_power = tweedieLinkPower;
+      _dispersion_estimated = dispersion;
       _init_dispersion_parameter = dispersion;
     }
   } // GLMParameters
@@ -2087,6 +2194,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
   @Override protected boolean needsPostProcess() { return false; /* pred[0] is already set by score0 */ }
 
+  @Override
+  public double score(double[] data) {
+    double[] pred = score0(data, new double[_output.nclasses() + 1], 0);
+    return pred[0];
+  }
+  
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,
                                              CodeGeneratorPipeline fileCtx,
@@ -2202,7 +2315,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return sb;
   }
 
-  private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j, boolean computeMetrics){
+  private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j, boolean computeMetrics, CFuncRef customMetric){
     int responseId = adaptFrm.find(_output.responseName());
     if(responseId > -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
       adaptFrm = new Frame(adaptFrm.names(),adaptFrm.vecs());
@@ -2212,7 +2325,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final boolean detectedComputeMetrics = computeMetrics && (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad());
     String [] domain = _output.nclasses()<=1 ? null : !detectedComputeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    return new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics, generatePredictions);
+    return new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics, generatePredictions, customMetric);
   }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
@@ -2227,7 +2340,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
-    GLMScore gs = makeScoringTask(adaptFrm,true,j, computeMetrics);
+    GLMScore gs = makeScoringTask(adaptFrm,true,j, computeMetrics, customMetricFunc);
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     gs.doAll(names.length,Vec.T_NUM,gs._dinfo._adaptedFrame);
     ModelMetrics.MetricBuilder<?> mb = null;
@@ -2252,7 +2365,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    */
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    GLMScore gs = makeScoringTask(adaptFrm,false,null, true);// doAll(names.length,Vec.T_NUM,adaptFrm);
+    GLMScore gs = makeScoringTask(adaptFrm,false,null, true, CFuncRef.from(_parms._custom_metric_func));// doAll(names.length,Vec.T_NUM,adaptFrm);
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     return gs.doAll(gs._dinfo._adaptedFrame)._mb;
   }

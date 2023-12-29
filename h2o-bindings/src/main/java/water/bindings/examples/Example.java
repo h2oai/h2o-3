@@ -111,6 +111,7 @@ public class Example {
                                                                   null,
                                                                   null,
                                                                   (byte)'\\',
+                                                                false,
                                                                 null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
@@ -129,6 +130,7 @@ public class Example {
                                                    parseSetupBody.columnNames,
                                                    parseSetupBody.columnTypes,
                                                    parseSetupBody.skippedColumns,
+                                                   parseSetupBody.forceColTypes,
                                                    null, // domains
                                                    parseSetupBody.naStrings,
                                                    parseSetupBody.chunkSize,
@@ -181,7 +183,8 @@ public class Example {
                                                                               null,
                                                                               false, false, -1, null,
                                                                               false, false, false, false, null,
-                                                                              false, false, false, null, -1, -1, false, false, -1, false, null, null, null, -1, null).execute().body();
+                                                                              false, false, false, null,  -1, -1, false, false, -1, false, null, null, null, null, -1, null, false, false, null).execute().body();
+
             System.out.println("predictions: " + predictions);
 
         }

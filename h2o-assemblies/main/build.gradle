@@ -9,7 +9,6 @@ apply from: '../standalone_assembly.gradle'
 dependencies {
     api project(":h2o-app")
     api project(":h2o-logging-impl-log4j2")
-    runtimeOnly project(":${defaultExtWebserverModule}")
     api project(":h2o-web")
     api project(":h2o-avro-parser")
     api project(":h2o-persist-gcs")
@@ -17,20 +16,72 @@ dependencies {
     api project(":h2o-persist-http")
     api project(":h2o-persist-hdfs")
     api project(":h2o-ext-krbstandalone")
-    if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
-        api project(":h2o-orc-parser")
-    }
     api project(":h2o-parquet-parser")
+    api("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
+        transitive = false
+    }
     api project(":h2o-k8s-int")
+
+    api "org.apache.hadoop:hadoop-hdfs-client:${defaultHadoopVersion}"
+    implementation("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
+        transitive = false
+    }
+    api("org.apache.hadoop:hadoop-common:${defaultHadoopVersion}") {
+        exclude group: "com.sun.jersey"
+        exclude group: "javax.servlet"
+        exclude group: "org.apache.avro"
+        exclude group: "org.apache.curator"
+        exclude group: "org.apache.zookeeper"
+        exclude group: "org.eclipse.jetty"
+    }
+
+    // Upgrade dependencies of h2o-jetty-9
+    api "org.eclipse.jetty:jetty-server:${jetty9MainVersion}"
+    api "org.eclipse.jetty:jetty-servlets:${jetty9MainVersion}"
+    api "org.eclipse.jetty:jetty-jaas:${jetty9MainVersion}"
+    api "org.eclipse.jetty:jetty-proxy:${jetty9MainVersion}"
+    api "org.eclipse.jetty:jetty-servlet:${jetty9MainVersion}"
+    api "org.eclipse.jetty.websocket:websocket-api:${jetty9MainVersion}"
+    api "org.eclipse.jetty.websocket:websocket-server:${jetty9MainVersion}"
+    
+    // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
+    implementation('org.apache.hive.shims:hive-shims-common:2.3.9')
+    {
+        exclude group: "org.apache.thrift", module: "libthrift"
+    }
+
+    // Upgrade dependencies coming from Hadoop to address vulnerabilities 
+    api "org.apache.commons:commons-compress:1.24.0"
+    api "com.google.protobuf:protobuf-java:3.21.7"
 
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
         }
+        api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
+            because 'Fixes CVE-2020-29582'
+            because 'Fixes CVE-2022-24329'
+        }
+        api('org.codehaus.jettison:jettison:1.5.4') {
+            because 'Fixes CVE-2023-1436'
+            because 'Fixes CVE-2022-45693'
+            because 'Fixes CVE-2022-45685'
+            because 'Fixes CVE-2022-40150'
+            because 'Fixes CVE-2022-40149'
+        }
         api('com.google.guava:guava:32.0.1-jre') {
             because 'Fixes CVE-2023-2976'
             because 'Fixes CVE-2020-8908'
             because 'Fixes CVE-2018-10237'
+        }
+        api('com.squareup.okio:okio:3.5.0') {
+            because 'Fixes CVE-2023-3635'
+        }
+        api('org.xerial.snappy:snappy-java:1.1.10.5') {
+            because 'Fixes CVE-2023-34455'
+            because 'Fixes CVE-2023-34454'
+            because 'Fixes CVE-2023-34453'
+            because 'Fixes CVE-2023-43642'
         }
     }
 }
@@ -50,6 +101,17 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
+    
+  // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
+  // Excluding other classes of org.apache.hive.shims:hive-shims-common.
+  exclude 'org/apache/hadoop/hive/thrift/**/*.*'
+  exclude 'org/apache/hadoop/hive/io/**/*.*'
+  exclude 'org/apache/hadoop/hive/upgrade/**/*.*'
+  exclude 'org/apache/hadoop/hive/shims/Utils.*'
+  exclude 'org/apache/hadoop/hive/shims/CombineHiveKey.*'
+  exclude 'org/apache/hadoop/hive/shims/*Shims*.*'
+  exclude 'org/apache/hadoop/hive/shims/HiveHarFileSystem.*'
+    
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
     attributes 'Add-Opens': 'java.base/java.lang java.base/java.util java.base/java.lang.reflect'
