@@ -136,7 +136,7 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], cold_start=False)
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], bs=[0,2,3,1]) #Doesnt run#
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
@@ -158,7 +158,7 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], early_stopping=True)
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
@@ -180,7 +180,7 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], early_stopping=True)
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
@@ -202,11 +202,11 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], early_stopping=True)
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
-    ignore_const_cols="""
+    interaction_pairs="""
 >>> import h2o
 >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 >>> h2o.init()
@@ -224,7 +224,8 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], ignore_const_cols=True)
+>>> interaction_pairs = [("start","stop")]
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], interaction_pairs=interaction_pairs)#does not run#
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
@@ -246,7 +247,8 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], early_stopping=True)
+>>> interactions = ['start','stop']
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key],interactions=interactions)#does not run#
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
@@ -312,7 +314,7 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], early_stopping=True)
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
@@ -334,7 +336,29 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], nlambdas=-1)
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
+>>> h2o_model.train(x=x, y=y, training_frame=train)
+>>> h2o_model.coef()
+""",
+    remove_collinear_columns="""
+>>> import h2o
+>>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+>>> h2o.init()
+>>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+>>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+>>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+>>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+>>> knots3 = [-1.999675688, -0.979893796, 0.007573327,1.011437347, 1.999611676]
+>>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+>>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+>>> h2o_data["C1"] = h2o_data["C1"].asfactor()
+>>> h2o_data["C2"] = h2o_data["C2"].asfactor()
+>>> h2o_data["C11"] = h2o_data["C11"].asfactor()
+>>> train, test = h2o_data.split_frame(ratios = [.8])
+>>> y = "C11"
+>>> x = ["C1","C2"]
+>>> numKnots = [5,5,5]
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], remove_collinear_columns=False)
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
@@ -422,7 +446,7 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], standardize_tp_gam_cols)
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], standardize_tp_gam_cols=False)
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
