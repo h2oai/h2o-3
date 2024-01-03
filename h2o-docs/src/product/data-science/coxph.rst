@@ -69,7 +69,7 @@ Common parameters
   
     **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
-- `use_all_factor_levels <algo-params/coxph.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. This option defaults to ``True`` (enabled).
+- `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. This option defaults to ``True`` (enabled).
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified  ``weights_column`` must be included in the specified ``training_frame``. 
    

@@ -112,13 +112,16 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public final Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
   public final Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
+  
+  public double custom() { return _custom_metric == null ? Double.NaN : _custom_metric.value; }
+  public double custom_increasing() { return _custom_metric == null ? Double.NaN : _custom_metric.value; }  // same as custom but informs stopping criteria that higher is better
 
   public double mse() { return _MSE; }
   public double rmse() { return Math.sqrt(_MSE);}
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
-
+  
   public static ModelMetrics defaultModelMetrics(Model model) {
     return model._output._cross_validation_metrics != null ? model._output._cross_validation_metrics
         : model._output._validation_metrics != null ? model._output._validation_metrics
@@ -141,9 +144,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     criterion = criterion.toLowerCase();
     
     if ("custom".equals(criterion)){
-      if (null == mm._custom_metric) 
-        return Double.NaN;
-      return mm._custom_metric.value;
+      return mm.custom();
     }
     
     // Constructing confusion matrix based on criterion
@@ -275,6 +276,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     if (m!=null) {
       for (Method meth : m.getClass().getMethods()) {
         if (excluded.contains(meth.getName())) continue;
+        if ("custom".equals(meth.getName()) &&  m._custom_metric == null) continue;
         try {
           double c = (double) meth.invoke(m);
           res.add(meth.getName().toLowerCase());
