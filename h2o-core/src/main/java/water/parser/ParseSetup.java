@@ -43,6 +43,8 @@ public class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
   int[] _parse_columns_indices; // store column indices to be parsed into the final file
   byte[] _nonDataLineMarkers;
+  boolean _force_col_types = false; // at end of parsing, change column type to users specified ones
+  String[] _orig_column_types;  // copy over the original column type setup before translating to byte[]
 
   String[] _synthetic_column_names; // Columns with constant values to be added to parsed Frame
   String[][] _synthetic_column_values; // For each imported file contains array of values for each synthetic column
@@ -64,6 +66,7 @@ public class ParseSetup extends Iced {
 
   public int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
+  public String[] parquetColumnTypes;  // internal parameters only
 
   public ParseSetup(ParseSetup ps) {
     this(ps._parse_type,
@@ -91,6 +94,14 @@ public class ParseSetup extends Iced {
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
                     int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers, byte escapeChar) {
+    this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, 
+            chunkSize, decrypt_tool, skipped_columns, nonDataLineMarkers, escapeChar, false);
+  }
+
+  public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
+                    byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
+                    int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers,
+                    byte escapeChar, boolean force_col_types) {
     _parse_type = parse_type;
     _separator = sep;
     _nonDataLineMarkers = nonDataLineMarkers;
@@ -107,6 +118,7 @@ public class ParseSetup extends Iced {
     _decrypt_tool = decrypt_tool;
     _skipped_columns = skipped_columns;
     _escapechar = escapeChar;
+    _force_col_types = force_col_types;
     setParseColumnIndices(ncols, _skipped_columns);
   }
 
@@ -135,6 +147,10 @@ public class ParseSetup extends Iced {
     _synthetic_column_type = synthetic_column_type;
   }
 
+  public void setParquetColumnTypes(String[] columnTypes) {
+    parquetColumnTypes = columnTypes.clone();
+  }
+
   /**
    * Create a ParseSetup with parameters from the client.
    *
@@ -156,7 +172,9 @@ public class ParseSetup extends Iced {
         ps.chunk_size,
         ps.decrypt_tool != null ? ps.decrypt_tool.key() : null, ps.skipped_columns,
         ps.custom_non_data_line_markers != null ? ps.custom_non_data_line_markers.getBytes() : null,
-        ps.escapechar);
+        ps.escapechar, ps.force_col_types);
+    this._force_col_types = ps.force_col_types;
+    this._orig_column_types = this._force_col_types ? (ps.column_types == null ? null : ps.column_types.clone()) : null;
   }
 
   /**
@@ -233,6 +251,14 @@ public class ParseSetup extends Iced {
       types[i] = Vec.TYPE_STR[_column_types[i]];
     return types;
   }
+  public String[] getOrigColumnTypes() {
+    return _orig_column_types;
+  }
+  
+  public boolean getForceColTypes() {
+    return _force_col_types;
+  }
+  
   public byte[] getColumnTypes() { return _column_types; }
 
   public static byte[] strToColumnTypes(String[] strs) {
@@ -265,7 +291,7 @@ public class ParseSetup extends Iced {
    * Should be override in subclasses. */
   protected Parser parser(Key jobKey) {
     ParserProvider pp = ParserService.INSTANCE.getByInfo(_parse_type);
-    if (pp != null) {
+    if (pp != null) { // fill up parquet setup here
       return pp.createParser(this, jobKey);
     }
 
@@ -301,6 +327,10 @@ public class ParseSetup extends Iced {
 
   public final DecryptionTool getDecryptionTool() {
     return DecryptionTool.get(_decrypt_tool);
+  }
+  
+  public final String[] getParquetColumnTypes() {
+    return parquetColumnTypes;
   }
 
   public final ParserInfo.ParseMethod parseMethod(int nfiles, Vec v) {
@@ -835,6 +865,16 @@ public class ParseSetup extends Iced {
 
   public ParseSetup setColumnTypes(byte[] column_types) {
     this._column_types = column_types;
+    return this;
+  }
+  
+  public ParseSetup setOrigColumnTypes(String[] col_types) {
+    this._orig_column_types = col_types;
+    return this;
+  }
+  
+  public ParseSetup setForceColTypes(boolean force_col_types) {
+    this._force_col_types = force_col_types;
     return this;
   }
 

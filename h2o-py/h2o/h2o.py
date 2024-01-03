@@ -24,7 +24,7 @@ from .estimators.xgboost import H2OXGBoostEstimator
 from .estimators.infogram import H2OInfogram
 from .estimators.deeplearning import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
 from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
-from .exceptions import H2OConnectionError, H2OValueError
+from .exceptions import H2OConnectionError, H2OValueError, H2ODependencyWarning
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -38,6 +38,7 @@ from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundN
 
 # enable h2o deprecation warnings by default to ensure that users get notified in interactive mode, without being too annoying
 warnings.filterwarnings("once", category=H2ODeprecationWarning)
+warnings.filterwarnings("once", category=H2ODependencyWarning)
 # An IPython deprecation warning is triggered after h2o.init(). Remove this once the deprecation has been resolved
 # warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
 
@@ -136,7 +137,7 @@ def connection():
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, 
-         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
+         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, verbose = True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -179,6 +180,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
+    :param verbose: Set to False to disable printing connection status and info messages.
 
 
     :examples:
@@ -267,7 +269,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
-                                     auth=auth, proxy=proxy, cookies=cookies, verbose=True,
+                                     auth=auth, proxy=proxy, cookies=cookies, verbose=verbose,
                                      msgs=("Checking whether there is an H2O instance running at {url}",
                                            "connected.", "not found."),
                                      strict_version_check=svc)
@@ -286,13 +288,13 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
                                   max_log_file_size=max_log_file_size, port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
-                                  bind_to_localhost=bind_to_localhost)
+                                  bind_to_localhost=bind_to_localhost,verbose=verbose)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
-                                     cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=True,
+                                     cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=verbose,
                                      strict_version_check=svc)
     h2oconn.cluster.timezone = "UTC"
-    h2oconn.cluster.show_status()
-
+    if verbose:
+        h2oconn.cluster.show_status()
 
 def resume(recovery_dir=None):
     """
@@ -337,7 +339,7 @@ def _import_multi(paths, pattern):
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, skipped_columns=None, quotechar=None, escapechar=None):
+                na_strings=None, skipped_columns=None, force_col_types=False, quotechar=None, escapechar=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -378,6 +380,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param force_col_types: If True, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Defaults to False.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
     :param escapechar: (Optional) One ASCII character used to escape other characters.
 
@@ -406,11 +409,11 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     if path.startswith("~"):
         path = os.path.expanduser(path)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
-                                    quotechar, escapechar)
+                                    force_col_types, quotechar, escapechar)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
+                na_strings=None, pattern=None, skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None,
                 partition_by=None, quotechar=None, escapechar=None):
     """
     Import files into an H2O cluster. The default behavior is to pass-through to the parse phase automatically.
@@ -460,6 +463,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
         directory.  
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
+    :param force_col_types:  If true, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Defaults to false."
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
     :param escapechar: (Optional) One ASCII character used to escape other characters.
@@ -496,7 +500,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                                        skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
 
 
 def load_grid(grid_file_path, load_params_references=False):
@@ -738,8 +742,8 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
-                column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None, quotechar=None, escapechar=None):
+                column_types=None, na_strings=None, skipped_columns=None, force_col_types=False, 
+                custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -786,6 +790,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param force_col_types:  If True, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Defaults to False.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param partition_by: A list of columns the dataset has been partitioned by. None by default.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
@@ -830,7 +835,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames],
+    kwargs = {"check_header": header, 
+              "source_frames": [quoted(frame_id) for frame_id in raw_frames],
               "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
@@ -840,6 +846,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
 
     if custom_non_data_line_markers is not None:
         kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers
+        
     if partition_by is not None:
         kwargs["partition_by"] = partition_by
 
@@ -946,6 +953,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
     j["column_types"] = list(map(quoted, j["column_types"]))
+    j["force_col_types"] = force_col_types
     return j
 
 
@@ -1029,9 +1037,16 @@ def deep_copy(data, xid):
     assert_satisfies(xid, xid != data.frame_id)
     check_frame_id(xid)
     duplicate = data.apply(lambda x: x)
-    duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(None)
-    duplicate._ex._cache._id = xid
-    duplicate._ex._children = None
+    assign(duplicate, xid)
+    return duplicate
+
+def shallow_copy(data, xid):
+    assert_is_type(data, H2OFrame)
+    assert_is_type(xid, None, str)
+    duplicate = H2OFrame._expr(expr=ExprNode("cols_py", data, slice(data.ncols)))
+    if xid is not None:
+        assert_satisfies(xid, xid != data.frame_id)
+        assign(duplicate, xid)
     return duplicate
 
 
@@ -1975,7 +1990,7 @@ def load_dataset(relative_path):
 
 
 def make_metrics(predicted, actual, domain=None, distribution=None, weights=None, treatment=None, auc_type="NONE",
-                 auuc_type="AUTO", auuc_nbins=-1):
+                 auuc_type="AUTO", auuc_nbins=-1, custom_auuc_thresholds=None):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
@@ -2005,7 +2020,10 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
                - AUTO (default, uses qini)
                
     :param auuc_nbins: For uplift binomial classification you have to specify number of bins to be used 
-           for calculation the AUUC. Default is -1, which means 1000.
+            for calculation the AUUC. Default is -1, which means 1000.
+    :param custom_auuc_thresholds For uplift binomial classification you can specify exact thresholds to 
+            calculate AUUC. Default is NONE. If the thresholds are not defined, auuc_nbins will be used to calculate,
+            the new thresholds from the predicted data.   
     :examples:
 
     >>> fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
@@ -2041,6 +2059,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     assert_is_type(distribution, str, None)
     assert_satisfies(actual.ncol, actual.ncol == 1)
     assert_is_type(auc_type, str)
+    assert_is_type(custom_auuc_thresholds, [float], None)
     allowed_auc_types = ["MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "AUTO", "NONE"]
     assert auc_type in allowed_auc_types, "auc_type should be "+(" ".join([str(type) for type in allowed_auc_types]))
     if domain is None and any(actual.isfactor()):
@@ -2049,12 +2068,16 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     if weights is not None:
         params["weights_frame"] = weights.frame_id
     if treatment is not None:
+        assert treatment.ncol == 1, "`treatment` frame should have exactly 1 column"
         params["treatment_frame"] = treatment.frame_id
         allowed_auuc_types = ["qini", "lift", "gain", "AUTO"]
         assert auuc_type in allowed_auuc_types, "auuc_type should be "+(" ".join([str(type) for type in allowed_auuc_types]))
         params["auuc_type"] = auuc_type
         assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."  
         params["auuc_nbins"] = auuc_nbins
+        if custom_auuc_thresholds is not None:
+            assert len(custom_auuc_thresholds) > 0, "custom_auuc_thresholds size should be higher than 0."
+            params["custom_auuc_thresholds"] = custom_auuc_thresholds
     params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)

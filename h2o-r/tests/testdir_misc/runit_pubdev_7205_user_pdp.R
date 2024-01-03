@@ -20,7 +20,7 @@ testpdpUserSplits <- function() {
                       x = 1:4,
                       y = 6,
                       training_frame = iris.hex)
-  pdps <- h2o.partialPlot(object=iris.gbm, data=iris.hex, cols=c("Sepal.Width", "Petal.Length", "Petal.Width"), 
+  pdps <- h2o.partialPlot(object=iris.gbm, newdata=iris.hex, cols=c("Sepal.Width", "Petal.Length", "Petal.Width"), 
   user_splits=list(c("Sepal.Width","0","1"), c("Petal.Length","1","2"),c("Petal.Width", "3","4","5")))
   petalW <- pdps[[3]]$Petal.Width
   expect_true(checkEqualsNumeric(petalW, c(3,4,5)))

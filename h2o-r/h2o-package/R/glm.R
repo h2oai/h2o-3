@@ -154,6 +154,7 @@
 #'        Defaults to 0.5.
 #' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the
 #'        dataset. Must be one of: "dfbetas".
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -274,7 +275,8 @@ h2o.glm <- function(x,
                     generate_variable_inflation_factors = FALSE,
                     fix_tweedie_variance_power = TRUE,
                     dispersion_learning_rate = 0.5,
-                    influence = c("dfbetas"))
+                    influence = c("dfbetas"),
+                    gainslift_bins = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -455,6 +457,8 @@ h2o.glm <- function(x,
     parms$dispersion_learning_rate <- dispersion_learning_rate
   if (!missing(influence))
     parms$influence <- influence
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -558,6 +562,7 @@ h2o.glm <- function(x,
                                     fix_tweedie_variance_power = TRUE,
                                     dispersion_learning_rate = 0.5,
                                     influence = c("dfbetas"),
+                                    gainslift_bins = -1,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -743,6 +748,8 @@ h2o.glm <- function(x,
     parms$dispersion_learning_rate <- dispersion_learning_rate
   if (!missing(influence))
     parms$influence <- influence
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

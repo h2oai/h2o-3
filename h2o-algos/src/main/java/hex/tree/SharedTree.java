@@ -838,7 +838,6 @@ public abstract class SharedTree<
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
-
       // Score again on validation data
       if( _parms._valid != null) {
         Frame v = new Frame(valid());
@@ -852,6 +851,7 @@ public abstract class SharedTree<
         ModelMetrics mmv = scv.scoreAndMakeModelMetrics(_model, _parms.valid(), v, build_tree_one_node);
         _lastScoredTree = _model._output._ntrees;
         out._validation_metrics = mmv;
+        out._validation_metrics._description = "Validation metrics";
         if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
           out._scored_valid[out._ntrees].fillFrom(mmv);
       }

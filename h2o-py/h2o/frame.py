@@ -9,27 +9,26 @@ import csv
 import datetime
 import functools
 from io import StringIO
+import itertools
 import os
-import sys
+import re
 import tempfile
-import traceback
 from types import FunctionType
 import warnings
 
 import h2o
 from h2o.base import Keyed
-from h2o.display import H2ODisplay, H2ODisplayWrapper, H2OItemsDisplay, H2OTableDisplay, display, in_ipy, in_zep, repr_def
-from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
+from h2o.display import H2ODisplay, H2ODisplayWrapper, H2OItemsDisplay, H2OTableDisplay, display, repr_def
+from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning, H2ODependencyWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
 from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.config import get_config_value
 from h2o.utils.metaclass import deprecated_fn
-from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
-                                    _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
-                                    can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized, 
-                                    check_frame_id, can_use_polars, can_use_pyarrow)
+from h2o.utils.shared_utils import(gen_header, is_list, is_list_of_lists, is_str_list, py_tmp_key, quoted,
+                                   can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized,
+                                   check_frame_id, can_use_datatable, can_use_polars, can_use_pyarrow)
 from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
@@ -60,6 +59,7 @@ class H2OFrame(Keyed, H2ODisplay):
         - A Pandas dataframe, or a Numpy ndarray: create a matching H2OFrame.
         - A Scipy sparse matrix: create a matching sparse H2OFrame.
 
+    :param str destination_frame: (internal) name of the target DKV key in the H2O backend.
     :param int header: if ``python_obj`` is a list of lists, this parameter can be used to indicate whether the
         first row of the data represents headers. The value of -1 means the first row is data, +1 means the first
         row is the headers, 0 (default) allows H2O to guess whether the first row contains data or headers.
@@ -71,7 +71,6 @@ class H2OFrame(Keyed, H2ODisplay):
         types for only few columns, and let H2O choose the types of the rest.
     :param na_strings: List of strings in the input data that should be interpreted as missing values. This could
         be given on a per-column basis, either as a list-of-lists, or as a dictionary {column name: list of nas}.
-    :param str destination_frame: (internal) name of the target DKV key in the H2O backend.
     :param str separator: (deprecated)
 
     :example:
@@ -90,11 +89,11 @@ class H2OFrame(Keyed, H2ODisplay):
     # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
-                 column_names=None, column_types=None, na_strings=None, skipped_columns=None):
+                 column_names=None, column_types=None, na_strings=None, skipped_columns=None, force_col_types=False):
     
         coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                     "categorical", "factor", "enum", "time")
-        assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
+        assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse, H2OFrame)
         assert_is_type(destination_frame, None, str)
         assert_is_type(header, -1, 0, 1)
         assert_is_type(separator, I(str, lambda s: len(s) == 1))
@@ -103,12 +102,23 @@ class H2OFrame(Keyed, H2ODisplay):
         assert_is_type(na_strings, None, [str], [[str]], {str: [str]})
         check_frame_id(destination_frame)
 
-        self._ex = ExprNode()
-        self._ex._children = None
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
-        if python_obj is not None:
-            self._upload_python_object(python_obj, destination_frame, header, separator,
-                                       column_names, column_types, na_strings, skipped_columns)
+        if isinstance(python_obj, H2OFrame):
+            sc = h2o.h2o.shallow_copy(python_obj, destination_frame)
+            if skipped_columns:
+                sc = sc.drop(skipped_columns)
+            if column_names:
+                sc.set_names(column_names)
+            if destination_frame is not None and destination_frame != sc.key:
+                h2o.assign(sc, destination_frame)
+            self._ex = sc._ex
+            
+        else:    
+            self._ex = ExprNode()
+            self._ex._children = None
+            if python_obj is not None:
+                self._upload_python_object(python_obj, destination_frame, header, separator,
+                                           column_names, column_types, na_strings, skipped_columns, force_col_types)
 
     @staticmethod
     def _expr(expr, cache=None):
@@ -120,7 +130,7 @@ class H2OFrame(Keyed, H2ODisplay):
         return fr
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
-                              column_names=None, column_types=None, na_strings=None, skipped_columns=None):
+                              column_names=None, column_types=None, na_strings=None, skipped_columns=None, force_col_types=False):
         assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         if is_type(python_obj, scipy_sparse):
             self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
@@ -148,7 +158,8 @@ class H2OFrame(Keyed, H2ODisplay):
         else:
             csv_writer.writerows(data_to_write)
         tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings, skipped_columns)
+        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings,
+                           skipped_columns, force_col_types)
         os.remove(tmp_path)  # delete the tmp file
 
     def _upload_sparse_matrix(self, matrix, destination_frame=None):
@@ -159,7 +170,7 @@ class H2OFrame(Keyed, H2ODisplay):
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".svmlight")
         out = os.fdopen(tmp_handle, 'wt', **H2OFrame.__fdopen_kwargs)
         if destination_frame is None:
-            destination_frame = _py_tmp_key(h2o.connection().session_id)
+            destination_frame = py_tmp_key(h2o.connection().session_id)
 
         # sp.find(matrix) returns (row indices, column indices, values) of the non-zero elements of A. Unfortunately
         # there is no guarantee that those elements are returned in the correct order, so need to sort
@@ -440,27 +451,28 @@ class H2OFrame(Keyed, H2ODisplay):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
+                      skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None,
+                      quotechar=None, escapechar=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. https://github.com/h2oai/h2o-3/issues/12573
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                    skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None,
-                      quotechar=None, escapechar=None):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, 
+                      skipped_columns=None, force_col_types=False, quotechar=None, escapechar=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
         self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns,
-                    quotechar=quotechar, escapechar=escapechar)
+                    force_col_types, quotechar=quotechar, escapechar=escapechar)
         return self
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
+               na_strings=None, skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
                escapechar=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                                skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self._parse_raw(setup)
 
     def _parse_raw(self, setup):
@@ -475,6 +487,7 @@ class H2OFrame(Keyed, H2ODisplay):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
+             "force_col_types": False,
              "custom_non_data_line_markers": None,
              "partition_by": None,
              "single_quotes": None,
@@ -487,7 +500,7 @@ class H2OFrame(Keyed, H2ODisplay):
         p.update({k: v for k, v in setup.items() if k in p})
 
         # Extract only 'name' from each src in the array of srcs
-        p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
+        p['source_frames'] = [quoted(src['name']) for src in setup['source_frames']]
 
         H2OJob(h2o.api("POST /3/Parse", data=p), "Parse").poll()
         # Need to return a Frame here for nearly all callers
@@ -703,7 +716,7 @@ class H2OFrame(Keyed, H2ODisplay):
         return _binop(self, "^", rhs)
 
     def __contains__(self, lhs):
-        return all((t == self).any() for t in lhs) if _is_list(lhs) else (lhs == self).any()
+        return all((t == self).any() for t in lhs) if is_list(lhs) else (lhs == self).any()
 
     # rops
     def __rmod__(self, lhs):
@@ -1929,15 +1942,15 @@ class H2OFrame(Keyed, H2ODisplay):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True, header=True, multi_thread=False):
+    def as_data_frame(self, use_pandas=True, header=True):
         """
         Obtain the dataset as a python-local object.
 
         :param bool use_pandas: If True (default) then return the H2OFrame as a pandas DataFrame (requires that the
             ``pandas`` library was installed). If False, then return the contents of the H2OFrame as plain nested
-            list, in a row-wise order.
-        :param bool multi_thread: if True and if use_pandas is True, will use polars to speedup the conversion from
-             H2O frame to pandas frame that uses multi-thread.
+            list, in a row-wise order.  The conversion to pandas frame will use multi-thread whenever
+            possible with the right python modules (datatable or polars and pyarrow) installed.  Otherwise, single
+            thread operation will be used in the conversion.  
         :param bool header: If True (default), then column names will be appended as the first row in list
 
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
@@ -1956,27 +1969,40 @@ class H2OFrame(Keyed, H2ODisplay):
         """ 
         if can_use_pandas() and use_pandas:
             import pandas
-            if multi_thread:
-                if can_use_polars() and can_use_pyarrow():
-                    try:
-                        tmpdir = tempfile.mkdtemp()
-                        fileName = os.path.join(tmpdir, "h2oframe2Convert.csv")
-                        h2o.export_file(self, fileName)
-                        import polars as pl
-                        dt_frame = pl.read_csv(fileName)
-                        return dt_frame.to_pandas()
-                    finally:
-                        os.remove(fileName)
-                        os.rmdir(tmpdir)
-                elif not(can_use_polars()) or not(can_use_pyarrow()):
-                    warnings("multi_thread mode can only be used when you have polars "
-                             "and pyarrow modules installed.")                   
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
+            if (can_use_datatable()) or (can_use_polars() and can_use_pyarrow()): # can use multi-thread
+                with tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv") as exportFile:
+                    h2o.export_file(self, exportFile.name, force=True)
+                    if can_use_datatable(): # use datatable for multi-thread by default
+                        return self.convert_with_datatable(exportFile.name)
+                    elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
+                        return self.convert_with_polars(exportFile.name)
+            warnings.warn("converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
+                          " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
+                          "(for Python 3.10 or above).", H2ODependencyWarning)
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
+                
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
         return frame
+    
+    def convert_with_polars(selfself, fileName):
+        import polars as pl
+        dt_frame = pl.read_csv(fileName, null_values = "")
+        return dt_frame.to_pandas()
+    
+    def convert_with_datatable(self, fileName):
+        import datatable as dt
+        frameTypes = self.types
+        validFrameTypes = {}
+        for key, value in frameTypes.items():
+            if value.startswith('int'):
+                validFrameTypes[key] = dt.int64
+            elif value.startswith("real"):
+                validFrameTypes[key] = dt.float64
+        dt_frame = dt.fread(fileName, na_strings=[""], columns=validFrameTypes)
+        return dt_frame.to_pandas()
 
     def save_to_hive(self, jdbc_url, table_name, format="csv", table_path=None, tmp_path=None):
         """
@@ -2153,7 +2179,7 @@ class H2OFrame(Keyed, H2ODisplay):
         new_ncols = -1
         if isinstance(item, list):
             new_ncols = len(item)
-            if _is_str_list(item):
+            if is_str_list(item):
                 new_types = {k: self.types[k] for k in item}
                 new_names = item
             else:
@@ -5171,3 +5197,71 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):
     ftemp = temp[newNames]
     ctemp = pd.concat([ftemp, zeroFrame], axis=1)
     return ctemp
+    
+    
+### Module-scope utility functions ###
+    
+def _handle_python_lists(python_obj, check_header):
+    # convert all inputs to lol
+    if is_list_of_lists(python_obj):  # do we have a list of lists: [[...], ..., [...]] ?
+        ncols = _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
+    elif isinstance(python_obj, (list, tuple)):  # single list
+        ncols = 1
+        python_obj = [[e] for e in python_obj]
+    else:  # scalar
+        python_obj = [[python_obj]]
+        ncols = 1
+    # create the header
+    if check_header == 1:
+        header = python_obj[0]
+        python_obj = python_obj[1:]
+    else:
+        header = gen_header(ncols)
+    # shape up the data for csv.DictWriter
+    # data_to_write = [dict(list(zip(header, row))) for row in python_obj]
+    return header, python_obj
+
+
+def _handle_python_dicts(python_obj, check_header):
+    header = list(python_obj.keys()) if python_obj else gen_header(1)
+    is_valid = all(re.match(r"^[a-zA-Z_][a-zA-Z0-9_.]*$", col) for col in header)  # is this a valid header?
+    if not is_valid:
+        raise ValueError(
+            "Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
+    for k in python_obj:  # check that each value entry is a flat list/tuple or single int, float, or string
+        v = python_obj[k]
+        if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
+            if is_list_of_lists(v):
+                raise ValueError("Values in the dictionary must be flattened!")
+        elif is_type(v, str, numeric):
+            python_obj[k] = [v]
+        else:
+            raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
+
+    zipper = getattr(itertools, "zip_longest", None) or getattr(itertools, "izip_longest", None) or zip
+    rows = list(map(list, zipper(*list(python_obj.values()))))
+    data_to_write = [dict(list(zip(header, row))) for row in rows]
+    return header, data_to_write
+
+def _handle_numpy_array(python_obj, header):
+    return _handle_python_lists(python_obj.tolist(), header)
+
+def _handle_pandas_data_frame(python_obj, header):
+    data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
+    return list(str(c) for c in python_obj.columns), data
+
+def _check_lists_of_lists(python_obj):
+    # check we have a lists of flat lists
+    # returns longest length of sublist
+    most_cols = 1
+    for l in python_obj:
+        # All items in the list must be a list!
+        if not isinstance(l, (tuple, list)):
+            raise ValueError("`python_obj` is a mixture of nested lists and other types.")
+        most_cols = max(most_cols, len(l))
+        for ll in l:
+            # in fact, we must have a list of flat lists!
+            if isinstance(ll, (tuple, list)):
+                raise ValueError("`python_obj` is not a list of flat lists!")
+    return most_cols
+

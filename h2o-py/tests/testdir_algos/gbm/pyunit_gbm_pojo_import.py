@@ -30,8 +30,8 @@ def prostate_pojo_import():
     assert_frame_equal(preds_original.as_data_frame(), preds_imported.as_data_frame())
 
     # 2. check we can get PDPs
-    pdp_original = model.partial_plot(data=prostate, cols=['AGE'], server=True, plot=False)
-    pdp_imported = model_imported.partial_plot(data=prostate, cols=['AGE'], server=True, plot=False)
+    pdp_original = model.partial_plot(frame=prostate, cols=['AGE'], server=True, plot=False)
+    pdp_imported = model_imported.partial_plot(frame=prostate, cols=['AGE'], server=True, plot=False)
     assert_frame_equal(pdp_original[0].as_data_frame(), pdp_imported[0].as_data_frame())
 
 

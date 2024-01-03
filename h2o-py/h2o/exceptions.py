@@ -166,3 +166,6 @@ class H2ODeprecationWarning(DeprecationWarning):
     Identifies deprecations in the h2o package.
     """
     pass
+
+class H2ODependencyWarning(Warning):
+    pass

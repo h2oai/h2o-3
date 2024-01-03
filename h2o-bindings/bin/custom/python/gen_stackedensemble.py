@@ -3,6 +3,7 @@ rest_api_version = 99
 options = dict(
     model_extensions=[
         'h2o.model.extensions.Fairness',
+        "h2o.model.extensions.Contributions",
     ],
 )
 

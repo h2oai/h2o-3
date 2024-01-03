@@ -9,7 +9,7 @@ test.pdp.save <- function() {
     model <- h2o.gbm(x=cols, y = "CAPSULE", training_frame = data)
 
     temp_filename_no_extension <- tempfile(pattern = "pdp", tmpdir = tempdir(), fileext = "")
-    plot <- h2o.partialPlot(object = model, data = data, save_to = temp_filename_no_extension)
+    plot <- h2o.partialPlot(object = model, newdata = data, save_to = temp_filename_no_extension)
     expect_false(is.null(plot))
 
     check_file <- function(feature){
