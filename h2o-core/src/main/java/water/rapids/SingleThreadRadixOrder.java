@@ -85,7 +85,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     // the size of the last batch (could be batchSize, too if happens to be
     // exact multiple of batchSize)
     int lastSize = (int) (numRows - (nbatch-1)*_batchSize);
-    Log.info("Running SingleThreadRadixOrder with "+(nbatch-1)+ "batches of "+_batchSize+" rows and a last batch of "+lastSize+" rows.");
+    Log.info("Running SingleThreadRadixOrder with "+(nbatch-1)+ " batches of "+_batchSize+" rows and a last batch of "+lastSize+" rows.");
     _o = new long[nbatch][];
     _x = new byte[nbatch][];
     int b;
@@ -132,6 +132,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // at most batchSize remaining.  No need to actually put the number of rows left in here
       int sourceBatchRemaining = _batchSize - oxOffset[fromNode];
       while (numRowsToCopy > 0) {   // No need for class now, as this is a bit different to the other batch copier. Two isn't too bad.
+        Log.info(numRowsToCopy+" rows remain to copy");
         int thisCopy = Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
         System.arraycopy(ox[fromNode]._o, oxOffset[fromNode],          _o[targetBatch], targetOffset,          thisCopy);
         System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, thisCopy*_keySize);
