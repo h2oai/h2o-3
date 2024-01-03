@@ -85,11 +85,12 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     // the size of the last batch (could be batchSize, too if happens to be
     // exact multiple of batchSize)
     int lastSize = (int) (numRows - (nbatch-1)*_batchSize);
+    Log.info("Running SingleThreadRadixOrder with "+(nbatch-1)+ "batches of "+_batchSize+" rows and a last batch of "+lastSize+" rows.");
     _o = new long[nbatch][];
     _x = new byte[nbatch][];
     int b;
     for (b = 0; b < nbatch-1; b++) {
-      _o[b] = MemoryManager.malloc8(_batchSize);          // TO DO?: use MemoryManager.malloc8()
+      _o[b] = MemoryManager.malloc8(_batchSize);
       _x[b] = MemoryManager.malloc1(_batchSize * _keySize);
     }
     _o[b] = MemoryManager.malloc8(lastSize);

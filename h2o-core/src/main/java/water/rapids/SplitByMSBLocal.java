@@ -61,11 +61,11 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       }
     }
     _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message, number of rows having values with current MSB
-    if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
+//    if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
       Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
               + " " + Arrays.toString(MSBhist) + ")");
-    }
+//    }
     // shared between threads on the same node, all mappers write into distinct
     // locations (no conflicts, no need to atomic updates, etc.)
     Log.info("Allocating _o and _x buckets on this node with known size up front ... ");
@@ -258,10 +258,16 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
     // TODO: send nChunks * 256.  Currently we do nNodes * 256.  Or avoid DKV
     // altogether if possible.
-
-    Log.info("Starting SendSplitMSB on this node (keySize is " + _keySize + " as [");
-    for( int bs : _bytesUsed ) Log.debug(" "+bs);
-    Log.debug(" ]) ...");
+    
+    Log.info("Starting SendSplitMSB on node "+H2O.SELF);
+    int ll = Log.INFO;
+    if (Log.isLoggingFor(ll)) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("(keySize is ").append(_keySize).append(" as [");
+      for( int bs : _bytesUsed ) sb.append(" ").append(bs);
+      sb.append(" ]) ...");
+      Log.log(ll, sb);
+    }
 
     long t0 = System.nanoTime();
     Futures myfs = new Futures(); // Private Futures instead of _fs, so can block early and get timing results
@@ -275,9 +281,14 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     myfs.blockForPending();
     double timeTaken = (System.nanoTime() - t0) / 1e9;
     long bytes = _numRowsOnThisNode*( 8/*_o*/ + _keySize) + 64;
-    Log.debug("took : " + timeTaken+" seconds.");
-    Log.debug("  DKV.put " + PrettyPrint.bytes(bytes) + " @ " +
-                       String.format("%.3f", bytes / timeTaken / (1024*1024*1024)) + " GByte/sec  [10Gbit = 1.25GByte/sec]");
+    if (Log.isLoggingFor(ll)) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("tooks : ").append(timeTaken).append(" seconds.");
+      sb.append(" DKV.put ").append(PrettyPrint.bytes(bytes)).append(" @ ")
+              .append(String.format("%.3f", bytes / timeTaken / (1024 * 1024 * 1024)))
+              .append(" GByte/sec  [10Gbit = 1.25GByte/sec]");
+      Log.log(ll, sb);
+    }
   }
 
   class SendOne extends H2O.H2OCountedCompleter<SendOne> {
