@@ -132,7 +132,6 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // at most batchSize remaining.  No need to actually put the number of rows left in here
       int sourceBatchRemaining = _batchSize - oxOffset[fromNode];
       while (numRowsToCopy > 0) {   // No need for class now, as this is a bit different to the other batch copier. Two isn't too bad.
-        Log.info(numRowsToCopy+" rows remain to copy");
         int thisCopy = Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
         System.arraycopy(ox[fromNode]._o, oxOffset[fromNode],          _o[targetBatch], targetOffset,          thisCopy);
         System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, thisCopy*_keySize);
@@ -149,7 +148,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
             // if the last chunksworth fills a batchsize exactly, the getGet above will have returned null.
             // TODO: Check will Cliff that a known fetch of a non-existent key is ok e.g. won't cause a delay/block? If ok, leave as good check.
             int numNonZero = 0; for (int tmp : MSBnodeHeader[fromNode]._MSBnodeChunkCounts) if (tmp>0) numNonZero++;
-            assert oxBatchNum[fromNode]==numNonZero : "expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode];
+            assert oxBatchNum[fromNode]==numNonZero : "Thread"+Thread.currentThread().getName()+": expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode];
             assert ArrayUtils.sum(MSBnodeHeader[fromNode]._MSBnodeChunkCounts) % _batchSize == 0;
           }
           oxOffset[fromNode] = 0;
