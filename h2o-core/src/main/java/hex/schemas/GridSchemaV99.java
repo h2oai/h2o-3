@@ -115,11 +115,6 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
       if (!possibleMetrics.contains(sort_by.toLowerCase())) {
         throw new H2OIllegalArgumentException("Invalid argument for sort_by specified. Must be one of: " + Arrays.toString(possibleMetrics.toArray(new String[0])));
       }
-      if (sort_by.toLowerCase().equals("custom") || sort_by.toLowerCase().equals("custom_increasing")) {
-        Object cmf = grid.getHyperParams().get("custom_metric_func");
-        if (cmf instanceof Object[] && ((Object[]) cmf).length > 1)
-            throw new H2OIllegalArgumentException("Invalid argument for sort_by specified. Using multiple definitions of custom metric.");
-      }
     }
 
     // Are we sorting by model metrics?

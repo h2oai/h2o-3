@@ -13,10 +13,6 @@ def custom_mae_mm():
     return h2o.upload_custom_metric(CustomMaeFunc, func_name="mae", func_file="mm_mae.py")
 
 
-def custom_rmse_mm():
-    return h2o.upload_custom_metric(CustomRmseRegressionFunc, func_name="rmse", func_file="mm_rmse.py")
-
-
 def custom_nrmse_mm():
     return h2o.upload_custom_metric(CustomNegativeRmseRegressionFunc, func_name="nrmse", func_file="mm_nrmse.py")
 
@@ -27,11 +23,11 @@ def grid_custom_metric():
     ntrees_opts = [1, 3, 5, 10]
     hyper_parameters = OrderedDict()
     hyper_parameters["ntrees"] = ntrees_opts
-    hyper_parameters["custom_metric_func"] = custom_mae_mm()
     hyper_parameters["stopping_metric"] = "custom"
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
 
-    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters,
+    gs = H2OGridSearch(H2OGradientBoostingEstimator(custom_metric_func=custom_mae_mm()),
+                       hyper_params=hyper_parameters,
                        parallelism=1)
     gs.train(y=3, training_frame=train, nfolds=3)
 
@@ -50,11 +46,11 @@ def grid_custom_increasing_metric():
     ntrees_opts = [1, 3, 5, 10]
     hyper_parameters = OrderedDict()
     hyper_parameters["ntrees"] = ntrees_opts
-    hyper_parameters["custom_metric_func"] = custom_nrmse_mm()
     hyper_parameters["stopping_metric"] = "custom_increasing"
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
 
-    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters,
+    gs = H2OGridSearch(H2OGradientBoostingEstimator(custom_metric_func=custom_nrmse_mm()),
+                       hyper_params=hyper_parameters,
                        parallelism=1)
     gs.train(y=3, training_frame=train, nfolds=3)
 
@@ -64,66 +60,11 @@ def grid_custom_increasing_metric():
     print(gs.get_grid(sort_by="mae"))
 
     # Should be ok - just one definition of custom metric
-    # Note that grid search is not smart about metrics (e.g. aucpr will be interpreted as loss) so it's needed to 
-    # specify decreasing=True
     print(gs.get_grid(sort_by="custom_increasing", decreasing=True))
 
 
-def grid_custom_metrics():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    # Run GBM Grid Search using Cross Validation with parallelization enabled
-    ntrees_opts = [1, 3, 5, 10]
-    hyper_parameters = OrderedDict()
-    hyper_parameters["ntrees"] = ntrees_opts
-    hyper_parameters["custom_metric_func"] = [custom_mae_mm(), custom_rmse_mm()]
-    hyper_parameters["stopping_metric"] = "custom"
-    print("GBM grid with the following hyper_parameters:", hyper_parameters)
-
-    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters,
-                       parallelism=1)
-    gs.train(y=3, training_frame=train,
-             nfolds=3)
-
-    assert len(gs.models) == 8
-    print(gs.get_grid(sort_by="rmse"))
-
-    print(gs.get_grid(sort_by="mae"))
-
-    try:
-        print(gs.get_grid(sort_by="custom"))
-        assert False, "Using multiple definitions of custom metric, can't sort"
-    except h2o.exceptions.H2OResponseError as e:
-        pass
-
-
-def grid_custom_metrics_parallel():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    # Run GBM Grid Search using Cross Validation with parallelization enabled
-    ntrees_opts = [1, 3, 5, 10]
-    hyper_parameters = OrderedDict()
-    hyper_parameters["ntrees"] = ntrees_opts
-    hyper_parameters["custom_metric_func"] = [custom_mae_mm(), custom_rmse_mm()]
-    hyper_parameters["stopping_metric"] = "custom"
-    print("GBM grid with the following hyper_parameters:", hyper_parameters)
-
-    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters,
-                       parallelism=4)
-    gs.train(y=3, training_frame=train,
-             nfolds=3)
-
-    assert len(gs.models) == 8
-    print(gs.get_grid(sort_by="rmse"))
-
-    print(gs.get_grid(sort_by="mae"))
-
-    try:
-        print(gs.get_grid(sort_by="custom"))
-        assert False, "Using multiple definitions of custom metric, can't sort"
-    except h2o.exceptions.H2OResponseError as e:
-        pass
-
-
 if __name__ == "__main__":
-    pyunit_utils.run_tests([grid_custom_increasing_metric, grid_custom_metrics, grid_custom_metric, grid_custom_metrics_parallel])
+    pyunit_utils.run_tests([grid_custom_metric, grid_custom_increasing_metric])
 else:
     grid_custom_metric()
+    grid_custom_increasing_metric()

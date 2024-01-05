@@ -183,7 +183,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   /*
    * Custom metric
    */
-  @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
   public String custom_metric_func;
 
   /*

@@ -773,7 +773,6 @@ Deep Learning Hyperparameters
 - ``class_sampling_factors``
 - ``classification_stop`` 
 - ``col_major`` 
-- ``custom_metric_func``
 - ``elastic_averaging`` 
 - ``elastic_averaging_moving_rate`` 
 - ``elastic_averaging_regularization`` 
@@ -825,7 +824,6 @@ DRF Hyperparameters
 
 - ``balance_classes``
 - ``class_sampling_factors``
-- ``custom_metric_func``
 - ``max_after_balance_size``
 - ``seed``
 
@@ -833,7 +831,6 @@ GLM Hyperparameters
 '''''''''''''''''''
 
 - ``alpha``
-- ``custom_metric_func``
 - ``dispersion_learning_rate``
 - ``init_dispersion_parameter``
 - ``lambda``
@@ -867,7 +864,6 @@ GAM Hyperparameters
 - ``alpha``
 - ``balance_classes``
 - ``bs``
-- ``custom_metric_func``
 - ``gam_columns``
 - ``lambda``
 - ``missing_values_handling``
@@ -886,7 +882,6 @@ GBM Hyperparameters
 
 - ``balance_classes``
 - ``class_sampling_factors``
-- ``custom_metric_func``
 - ``max_after_balance_size``
 - ``seed``
 
@@ -909,7 +904,6 @@ Rulefit Hyperparameters
 Stacked Ensemble Hyperparameters
 ''''''''''''''''''''''''''''''''
 
-- ``custom_metric_func``
 - ``seed``
 
 SVM Hyperparameters
