@@ -955,15 +955,13 @@ public class DTree extends Iced {
     
     private boolean isLeftChild(){
       int[] parentNids = ((DecidedNode) _tree.node(pid()))._nids;
-      int index = ArrayUtils.indexOf(ArrayUtils.toIntegers(parentNids, 0, 2), _nid);
-      return index == 0;
+      return parentNids[0] == _nid;
     }
     
     public double parentPred(){
       Split parentSplit = ((DecidedNode) _tree.node(pid()))._split;
       return isLeftChild() ? parentSplit._tree_p0 : parentSplit._tree_p1;
     }
-    
   }
 
   public final static class LeafNode extends Node {

@@ -4008,6 +4008,58 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test public void testMonotoneConstraintsBernoulliCheck() {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      String colName = "SegSumT";
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.bernoulli;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue(colName, 1)};
+      parms._ntrees = 3;
+
+      System.setProperty("sys.ai.h2o.tree.constraintConsistencyCheck", "true");
+      GBMModel model = Scope.track_generic(new GBM(parms).trainModel().get());
+      Scope.track_generic(model);
+
+      String[] uniqueValues = Scope.track(train.vec(colName).toCategoricalVec()).domain();
+      Vec unchangedPreds = Scope.track(model.score(train)).anyVec();
+      Vec lastPreds = null;
+      for (String valueStr : uniqueValues) {
+        final double value = Double.parseDouble(valueStr);
+
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i = 0; i < c._len; i++)
+              c.set(i, value);
+          }
+        }.doAll(train.vec(colName));
+        assertEquals(value, train.vec(colName).min(), 0);
+        assertEquals(value, train.vec(colName).max(), 0);
+
+        Vec currentPreds = Scope.track(model.score(train)).anyVec();
+        if (lastPreds != null)
+          for (int i = 0; i < lastPreds.length(); i++) {
+            assertTrue("value=" + value + ", id=" + i, lastPreds.at(i) <= currentPreds.at(i));
+            System.out.println("value=" + value + ", id="+ i +" "+lastPreds.at(i) +" <= "+currentPreds.at(i)+" - "+unchangedPreds.at(i));
+          }
+        lastPreds = currentPreds;
+      }
+    } finally {
+      Scope.exit();
+      System.clearProperty("sys.ai.h2o.tree.constraintConsistencyCheck");
+    }
+  }
+
   @Test
   public void testMonotoneConstraintsProstate() {
     checkMonotoneConstraintsProstate(DistributionFamily.gaussian);
