@@ -18,7 +18,7 @@ def class_extensions():
 
     def predict_rules(self, frame, rule_ids):
         """
-        Evaluates validity of the given rules on the given data. 
+        Evaluates validity of the given rules on the given data.
 
         :param frame: H2OFrame on which rule validity is to be evaluated
         :param rule_ids: string array of rule ids to be evaluated against the frame
