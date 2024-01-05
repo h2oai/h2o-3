@@ -46,7 +46,7 @@ for python_version in "${array[@]}"; do
     export CC="clang"  # needed to avoid SegFault during install
     ./configure
     make
-    make altinstall
+    make install
     popd
   else
     DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev python${pkg_suffix}-setuptools
