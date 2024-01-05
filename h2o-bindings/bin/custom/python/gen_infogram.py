@@ -21,7 +21,7 @@ def class_extensions():
         
     def plot(self, train=True, valid=False, xval=False, figsize=(10, 10), title="Infogram", legend_on=False, server=False):
         """
-        Plot the infogram.  By default, it will plot the infogram calculated from training dataset.  
+        Plot the infogram.  By default, it will plot the infogram calculated from training dataset. 
         Note that the frame rel_cmi_frame contains the following columns:
         - 0: predictor names
         - 1: admissible 
