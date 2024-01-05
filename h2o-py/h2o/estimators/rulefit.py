@@ -217,7 +217,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         >>> train, test = df.split_frame(ratios=[0.8], seed=1)
         >>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
         >>> y = "survived"
-        >>> rfit = H2ORuleFitEstimator(max_rule_length=10,max_num_rules=100, algorithm="auto", seed=1)
+        >>> rfit = H2ORuleFitEstimator(max_rule_length=10, max_num_rules=100, algorithm="auto", seed=1)
         >>> rfit.train(training_frame=train, x=x, y=y)
         >>> print(rfit.rule_importance())
         >>> rfit.predict(test)
@@ -275,7 +275,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         >>> train, test = df.split_frame(ratios=[0.8], seed=1)
         >>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
         >>> y = "survived"
-        >>> rfit = H2ORuleFitEstimator(max_rule_length=10,max_num_rules=100, max_num_rules=-1, seed=1)
+        >>> rfit = H2ORuleFitEstimator(max_rule_length=10, max_num_rules=100, max_num_rules=-1, seed=1)
         >>> rfit.train(training_frame=train, x=x, y=y)
         >>> print(rfit.rule_importance())
         >>> rfit.predict(test)
@@ -411,7 +411,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         >>> train, test = df.split_frame(ratios=[0.8], seed=1)
         >>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
         >>> y = "survived"
-        >>> rfit = H2ORuleFitEstimator(max_rule_length=10,max_num_rules=100, max_categorical_levels=10, seed=1)
+        >>> rfit = H2ORuleFitEstimator(max_rule_length=10, max_num_rules=100, max_categorical_levels=10, seed=1)
         >>> rfit.train(training_frame=train, x=x, y=y)
         >>> print(rfit.rule_importance())
         >>> rfit.predict(test)
