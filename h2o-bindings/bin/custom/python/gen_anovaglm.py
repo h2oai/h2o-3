@@ -13,6 +13,7 @@ def class_extensions():
     def result(self):
         """
         Get result frame that contains information about the model building process like for modelselection and anovaglm.
+
         :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
@@ -61,9 +62,9 @@ examples = dict(
 >>> h2o.init()
 >>> from h2o.estimators import H2OANOVAGLMEstimator 
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
+>>> x = ['AGE', 'VOL', 'DCAPS']
 >>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",highest_interaction_term=2)
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip", highest_interaction_term=2)
 >>> anova_model.train(x=x, y=y, training_frame=train)
 >>> anova_model.summary()
 """,
@@ -72,9 +73,9 @@ examples = dict(
 >>> h2o.init()
 >>> from h2o.estimators import H2OANOVAGLMEstimator 
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
+>>> x = ['AGE', 'VOL', 'DCAPS']
 >>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",link="family_default")
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip", link="family_default")
 >>> anova_model.train(x=x, y=y, training_frame=train)
 >>> anova_model.summary()
 """,
@@ -83,9 +84,9 @@ examples = dict(
 >>> h2o.init()
 >>> from h2o.estimators import H2OANOVAGLMEstimator 
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
+>>> x = ['AGE', 'VOL', 'DCAPS']
 >>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",nparallelism=4)
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip", nparallelism=4)
 >>> anova_model.train(x=x, y=y, training_frame=train)
 >>> anova_model.summary()
 """,
@@ -94,9 +95,9 @@ examples = dict(
 >>> h2o.init()
 >>> from h2o.estimators import H2OANOVAGLMEstimator 
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
+>>> x = ['AGE', 'VOL', 'DCAPS']
 >>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",prior=0.0)
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip", prior=0.0)
 >>> anova_model.train(x=x, y=y, training_frame=train)
 >>> anova_model.summary()  
 """,
@@ -105,9 +106,9 @@ examples = dict(
 >>> h2o.init()
 >>> from h2o.estimators import H2OANOVAGLMEstimator 
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
+>>> x = ['AGE', 'VOL', 'DCAPS']
 >>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",save_transformed_framekeys=False)  
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip", save_transformed_framekeys=False)  
 >>> anova_model.train(x=x, y=y, training_frame=train)
 >>> anova_model.summary()
 """,
@@ -116,9 +117,9 @@ examples = dict(
 >>> h2o.init()
 >>> from h2o.estimators import H2OANOVAGLMEstimator 
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
+>>> x = ['AGE', 'VOL', 'DCAPS']
 >>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",tweedie_link_power=1.0)
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip", tweedie_link_power=1.0)
 >>> anova_model.train(x=x, y=y, training_frame=train)
 >>> anova_model.summary() 
 """,
@@ -127,9 +128,9 @@ examples = dict(
 >>> h2o.init()
 >>> from h2o.estimators import H2OANOVAGLMEstimator 
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
->>> x = ['AGE','VOL','DCAPS']
+>>> x = ['AGE', 'VOL', 'DCAPS']
 >>> y = 'CAPSULE'
->>> anova_model = H2OANOVAGLMEstimator(family='binomial',lambda_=0,missing_values_handling="skip",tweedie_variance_power=0.0)
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip", tweedie_variance_power=0.0)
 >>> anova_model.train(x=x, y=y, training_frame=train)
 >>> anova_model.summary() 
 """
