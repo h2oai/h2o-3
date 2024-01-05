@@ -175,17 +175,16 @@ def stringify_dict_as_map(d):
     return "{%s}" % ",".join(["%s: %s" % (_quoted(k), stringify_object(v, stringify_dict_as_map)) for k, v in d.items()])
 
 
-def stringify_list(arr, dict_function=stringify_dict):
-    return "[%s]" % ",".join(stringify_object(item, dict_function) for item in arr)
+def stringify_list(arr):
+    return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else _str(item)
+                             for item in arr)
 
 
 def stringify_object(o, dict_function=stringify_dict):
     if isinstance(o, dict):
         return dict_function(o)
     elif isinstance(o, list):
-        return stringify_list(o, dict_function)
-    elif isinstance(o, str):
-        return _quoted(o)
+        return stringify_list(o)
     else:
         return _str(o)
 
