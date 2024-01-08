@@ -274,9 +274,12 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     excluded.add("remove");
     excluded.add("nobs");
     if (m!=null) {
+      if (null == m._custom_metric) {  // hide custom metrics when not available
+        excluded.add("custom");
+        excluded.add("custom_increasing");
+      }
       for (Method meth : m.getClass().getMethods()) {
         if (excluded.contains(meth.getName())) continue;
-        if ("custom".equals(meth.getName()) &&  m._custom_metric == null) continue;
         try {
           double c = (double) meth.invoke(m);
           res.add(meth.getName().toLowerCase());
