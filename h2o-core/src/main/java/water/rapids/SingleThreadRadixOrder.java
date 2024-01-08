@@ -85,7 +85,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     // the size of the last batch (could be batchSize, too if happens to be
     // exact multiple of batchSize)
     int lastSize = (int) (numRows - (nbatch-1)*_batchSize);
-    Log.info("Running SingleThreadRadixOrder with "+(nbatch-1)+ " batches of "+_batchSize+" rows and a last batch of "+lastSize+" rows.");
+    Log.info("Running SingleThreadRadixOrder (MSB="+_MSBvalue+") with "+(nbatch-1)+ " batches of "+_batchSize+" rows and a last batch of "+lastSize+" rows.");
     _o = new long[nbatch][];
     _x = new byte[nbatch][];
     int b;
@@ -148,7 +148,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
             // if the last chunksworth fills a batchsize exactly, the getGet above will have returned null.
             // TODO: Check will Cliff that a known fetch of a non-existent key is ok e.g. won't cause a delay/block? If ok, leave as good check.
             int numNonZero = 0; for (int tmp : MSBnodeHeader[fromNode]._MSBnodeChunkCounts) if (tmp>0) numNonZero++;
-            assert oxBatchNum[fromNode]==numNonZero : "Thread "+Thread.currentThread().getName()+": expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode];
+            if (oxBatchNum[fromNode] != numNonZero) {
+              Log.err("MSB "+_MSBvalue+" [Thread "+Thread.currentThread().getName()+"]: expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode]);
+              return;
+            }
+            assert oxBatchNum[fromNode]==numNonZero : "MSB "+_MSBvalue+" [Thread "+Thread.currentThread().getName()+"]: expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode];
             assert ArrayUtils.sum(MSBnodeHeader[fromNode]._MSBnodeChunkCounts) % _batchSize == 0;
           }
           oxOffset[fromNode] = 0;
