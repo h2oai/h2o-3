@@ -517,7 +517,7 @@ public class Merge {
   
   private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps, int[] ascending, 
                                         long mergeId) {
-    Log.info("Creating "+(isLeft ? "left" : "right")+" index ...");
+    Log.info("Creating "+(isLeft ? "left" : "right")+" index for frame "+fr._key+" (mergeId="+mergeId+")");
     long t0 = System.nanoTime();
     RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending, mergeId);
     H2O.submitTask(idxTask);    // each of those launches an MRTask
