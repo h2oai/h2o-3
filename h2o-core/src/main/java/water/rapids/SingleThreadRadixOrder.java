@@ -142,7 +142,6 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
         if (sourceBatchRemaining == 0) {
           // fetch the next batch :
           k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode], _mergeId);
-          Log.info("oxBatchNum="+Arrays.toString(oxBatchNum));
           Log.info("SingleThreadRadixOrder (MSB="+_MSBvalue+"): chunk "+c+", oxBatchNum="+Arrays.toString(oxBatchNum));
           assert k.home();
           ox[fromNode] = DKV.getGet(k);
@@ -155,7 +154,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 //              Log.err("MSB "+_MSBvalue+" [Thread "+Thread.currentThread().getName()+"]: expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode]);
 //              return;
 //            }
-            assert oxBatchNum[fromNode]==numNonZero : "SingleThreadRadixOrder (MSB="+_MSBvalue+"): expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode];
+            assert oxBatchNum[fromNode]==numNonZero : "SingleThreadRadixOrder (MSB="+_MSBvalue+"): expected "+numNonZero+" non zeros on chunk "+c+", node "+fromNode+", but got "+oxBatchNum[fromNode];
             assert ArrayUtils.sum(MSBnodeHeader[fromNode]._MSBnodeChunkCounts) % _batchSize == 0;
           }
           oxOffset[fromNode] = 0;
