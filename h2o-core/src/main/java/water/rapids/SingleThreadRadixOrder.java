@@ -133,6 +133,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       int sourceBatchRemaining = _batchSize - oxOffset[fromNode];
       while (numRowsToCopy > 0) {   // No need for class now, as this is a bit different to the other batch copier. Two isn't too bad.
         int thisCopy = Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
+        Log.info("SingleThreadRadixOrder (MSB="+_MSBvalue+"): chunk "+c+", numRowsToCopy="+numRowsToCopy+", sourceBatchRemaining="+sourceBatchRemaining+", thisCopy="+thisCopy);
         System.arraycopy(ox[fromNode]._o, oxOffset[fromNode],          _o[targetBatch], targetOffset,          thisCopy);
         System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, thisCopy*_keySize);
         numRowsToCopy -= thisCopy;
@@ -141,6 +142,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
         if (sourceBatchRemaining == 0) {
           // fetch the next batch :
           k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode], _mergeId);
+          Log.info("oxBatchNum="+Arrays.toString(oxBatchNum));
+          Log.info("SingleThreadRadixOrder (MSB="+_MSBvalue+"): chunk "+c+", oxBatchNum="+Arrays.toString(oxBatchNum));
           assert k.home();
           ox[fromNode] = DKV.getGet(k);
           DKV.remove(k);
@@ -152,7 +155,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 //              Log.err("MSB "+_MSBvalue+" [Thread "+Thread.currentThread().getName()+"]: expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode]);
 //              return;
 //            }
-            assert oxBatchNum[fromNode]==numNonZero : "MSB "+_MSBvalue+" [Thread "+Thread.currentThread().getName()+"]: expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode];
+            assert oxBatchNum[fromNode]==numNonZero : "SingleThreadRadixOrder (MSB="+_MSBvalue+"): expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode];
             assert ArrayUtils.sum(MSBnodeHeader[fromNode]._MSBnodeChunkCounts) % _batchSize == 0;
           }
           oxOffset[fromNode] = 0;
