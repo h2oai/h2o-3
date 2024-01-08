@@ -33,8 +33,12 @@ cd R-${R_VERSION}
             --with-tk-config=/usr/lib/tkConfig.sh --with-tcl-config=/usr/lib/tclConfig.sh
 make
 make install
+
+# R4.0 uses just lib R3.5 uses lib64
 mkdir -p ${R_VERSION_HOME}/lib/R/library || true
+mkdir -p ${R_VERSION_HOME}/lib64/R/library || true
 chmod a+w -R ${R_VERSION_HOME}/lib/R/library
+chmod a+w -R ${R_VERSION_HOME}/lib64/R/library
 
 # Cleanup
 cd ../..
