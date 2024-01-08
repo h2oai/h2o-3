@@ -276,7 +276,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       // "I'll send you a long vector of _o and _x (batched if very long) along with where the boundaries are."
       // "You don't need to know the chunk numbers of these boundaries, because you know the node of each chunk from your local Vec header"
       if(_o[msb] == null) continue;
-      myfs.add(H2O.submitTask(new SendOne(msb,myfs)));
+      myfs.add(H2O.submitTask(new SendOne(msb, myfs)));
     }
     myfs.blockForPending();
     double timeTaken = (System.nanoTime() - t0) / 1e9;
@@ -322,6 +322,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           j++;
         }
       }
+      Log.info("SendOne: creating MSBNodeHeader("+Arrays.toString(msbNodeChunkCounts)+")");
       MSBNodeHeader msbh = new MSBNodeHeader(msbNodeChunkCounts);
       // Need dontCache==true, so data does not remain both locally and on remote.
       // Use private Futures so can block independent of MRTask Futures.
