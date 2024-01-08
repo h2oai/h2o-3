@@ -133,7 +133,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       int sourceBatchRemaining = _batchSize - oxOffset[fromNode];
       while (numRowsToCopy > 0) {   // No need for class now, as this is a bit different to the other batch copier. Two isn't too bad.
         int thisCopy = Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
-        Log.info("SingleThreadRadixOrder (MSB="+_MSBvalue+"): chunk "+c+", numRowsToCopy="+numRowsToCopy+", sourceBatchRemaining="+sourceBatchRemaining+", thisCopy="+thisCopy);
+        if (_MSBvalue == 1 && sourceBatchRemaining < 5*numRowsToCopy) Log.info("SingleThreadRadixOrder (MSB="+_MSBvalue+"): chunk "+c+", numRowsToCopy="+numRowsToCopy+", sourceBatchRemaining="+sourceBatchRemaining+", thisCopy="+thisCopy);
         System.arraycopy(ox[fromNode]._o, oxOffset[fromNode],          _o[targetBatch], targetOffset,          thisCopy);
         System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, thisCopy*_keySize);
         numRowsToCopy -= thisCopy;
