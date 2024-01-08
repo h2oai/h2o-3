@@ -322,7 +322,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           j++;
         }
       }
-      Log.info("SendOne: creating MSBNodeHeader("+Arrays.toString(msbNodeChunkCounts)+")");
+      Log.info("SendOne (MSB="+_msb+"): creating MSBNodeHeader("+Arrays.toString(msbNodeChunkCounts)+")");
       MSBNodeHeader msbh = new MSBNodeHeader(msbNodeChunkCounts);
       // Need dontCache==true, so data does not remain both locally and on remote.
       // Use private Futures so can block independent of MRTask Futures.
