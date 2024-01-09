@@ -111,6 +111,8 @@ Algorithm-specific parameters
 
 -  **score_training_samples**: Specify the number of training set samples for scoring. The value must be :math:`\geq` 0. To use all training samples, enter ``0``. This option defaults to ``10000``.
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
+
 Common parameters
 '''''''''''''''''
 

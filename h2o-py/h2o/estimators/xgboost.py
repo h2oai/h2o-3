@@ -58,6 +58,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  quiet_mode=True,  # type: bool
                  checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  export_checkpoints_dir=None,  # type: Optional[str]
+                 custom_metric_func=None,  # type: Optional[str]
                  ntrees=50,  # type: int
                  max_depth=6,  # type: int
                  min_rows=1.0,  # type: float
@@ -200,6 +201,9 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param export_checkpoints_dir: Automatically export generated models to this directory.
                Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
+        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               Defaults to ``None``.
+        :type custom_metric_func: str, optional
         :param ntrees: (same as n_estimators) Number of trees.
                Defaults to ``50``.
         :type ntrees: int
@@ -379,6 +383,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.quiet_mode = quiet_mode
         self.checkpoint = checkpoint
         self.export_checkpoints_dir = export_checkpoints_dir
+        self.custom_metric_func = custom_metric_func
         self.ntrees = ntrees
         self.max_depth = max_depth
         self.min_rows = min_rows
@@ -1207,6 +1212,20 @@ class H2OXGBoostEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
     @property
     def ntrees(self):

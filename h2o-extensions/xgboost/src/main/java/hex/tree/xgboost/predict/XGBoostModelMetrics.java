@@ -8,6 +8,7 @@ import hex.tree.xgboost.task.XGBoostScoreTask;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 
 import java.util.Arrays;
 
@@ -28,7 +29,8 @@ public class XGBoostModelMetrics {
         Frame data,
         Frame originalData,
         boolean isTrain,
-        XGBoostModel model
+        XGBoostModel model,
+        CFuncRef customMetricFunc
     ) {
         _output = output;
         _data = data;
@@ -36,7 +38,7 @@ public class XGBoostModelMetrics {
         _model = model;
 
         _task = new XGBoostScoreTask(
-            _output, _data.find(_model._parms._weights_column), isTrain, _model
+            _output, _data.find(_model._parms._weights_column), isTrain, _model, customMetricFunc
         );
     }
 

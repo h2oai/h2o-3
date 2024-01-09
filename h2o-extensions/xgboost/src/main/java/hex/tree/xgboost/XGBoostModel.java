@@ -21,6 +21,7 @@ import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.*;
 
 import java.util.*;
@@ -599,20 +600,28 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
     LOG.debug("Making metrics: " + description);
-    return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
+    return new XGBoostModelMetrics(_output, data, originalData, isTrain, this, CFuncRef.from(_parms._custom_metric_func)).compute();
   }
 
   final void doScoring(Frame train, Frame trainOrig, CustomMetric trainCustomMetric,
                        Frame valid, Frame validOrig, CustomMetric validCustomMetric) {
     ModelMetrics mm = makeMetrics(train, trainOrig, true, "Metrics reported on training frame");
     _output._training_metrics = mm;
-    _output._scored_train[_output._ntrees].fillFrom(mm, trainCustomMetric);
+    if (trainCustomMetric == null) {
+      _output._scored_train[_output._ntrees].fillFrom(mm, mm._custom_metric);
+    } else {
+      _output._scored_train[_output._ntrees].fillFrom(mm, trainCustomMetric);
+    }
     addModelMetrics(mm);
     // Optional validation part
     if (valid != null) {
       mm = makeMetrics(valid, validOrig, false, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
-      _output._scored_valid[_output._ntrees].fillFrom(mm, validCustomMetric);
+      if (validCustomMetric == null) {
+        _output._scored_valid[_output._ntrees].fillFrom(mm, mm._custom_metric);
+      } else {
+        _output._scored_valid[_output._ntrees].fillFrom(mm, validCustomMetric);
+      }
       addModelMetrics(mm);
     }
   }
