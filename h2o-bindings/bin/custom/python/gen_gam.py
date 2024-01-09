@@ -136,7 +136,7 @@ examples = dict(
 >>> y = "C11"
 >>> x = ["C1","C2"]
 >>> numKnots = [5,5,5]
->>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], bs=[0,2,3,1]) #Doesnt run#
+>>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"], scale=[1,1,1],num_knots=numKnots,knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key], bs=[0,2,3,1])
 >>> h2o_model.train(x=x, y=y, training_frame=train)
 >>> h2o_model.coef()
 """,
