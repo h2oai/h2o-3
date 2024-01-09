@@ -140,7 +140,7 @@ Examples
 		prostate[target_variable] = prostate[target_variable].asfactor()
 
 		# Split the dataset into train and test:
-		train, test = prostate.split(ratios=[.7])
+		train, test = prostate.split_frame(ratios=[.7])
 
 		# Build and train the model:
 		sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex", max_depth=5)
