@@ -39,6 +39,8 @@ Algorithm-specific parameters
 
 -  **colsample_bynode**: Specify the column subsampling rate per tree node. This method samples without replacement. Note that it is multiplicative with ``col_sample_rate`` and ``col_sample_rate_per_tree``, so setting all parameters to ``0.8``, for example, results in 51% of columns being considered at any given node to split. This value defaults to ``1.0`` and can be a value from 0.0 to 1.0.
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: (Applicable only if ``eval_metric`` is not set) Specify a custom evaluation function.
+
 - **eval_metric**: Specify the `evaluation metric <https://xgboost.readthedocs.io/en/stable/parameter.html#learning-task-parameters>`__ that will be passed to the native XGBoost backend. To use ``eval_metric`` for early stopping, you need to specify ``stopping_metric="custom"``. This option defaults to ``"None"``. 
 
 -  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: ``"auto"`` (default), ``"dense"``, and ``"sparse"``. Note that for ``dmatrix_type="sparse"``, NAs and 0 are treated equally.
