@@ -15,11 +15,13 @@ RUN \
         libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libx11-xcb-dev libxcb1 libxcomposite1 libxcomposite-dev \
         libxcursor1 libxcursor-dev libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
         ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils libblas-dev liblapack-dev \
-        chromium-browser \
-        libkrb5-dev \
-        nodejs && \
+        libgbm1 libkrb5-dev nodejs && \
     apt-get clean && \
-    rm -rf /var/cache/apt/*
+    rm -rf /var/cache/apt/* && \
+    wget "https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2F1244635%2Fchrome-linux.zip?alt=media" -O chrome-linux.zip && \
+    unzip chrome-linux.zip -d /opt/ && \
+    rm chrome-linux.zip && \
+    ln -s /opt/chrome-linux/chrome /usr/bin/chromium-browser
 
 ENV CHROME_BIN=/usr/bin/chromium-browser
 
