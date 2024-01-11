@@ -1065,7 +1065,7 @@ h2o.predict_contributions <- predict_contributions.H2OModel
 #'          8         0         1         1
 #'          9         1         0         0
 #' 
-#' Where 1 in the tree_{number} cols means row is used in the tree and 0 means that row is not used.
+#' Where 1 in the tree_\{number\} cols means row is used in the tree and 0 means that row is not used.
 #' The structure of the output depends on sample_rate or sample_size parameter setup.
 #'
 #' Note: Multinomial classification generate tree for each category, each tree use the same sample of the data.

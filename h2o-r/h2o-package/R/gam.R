@@ -16,7 +16,7 @@
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
 #' @param gam_columns Arrays of predictor column names for gam for smoothers using single or multiple predictors like
-#'        {{'c1'},{'c2','c3'},{'c4'},...}
+#'        \{\{'c1'\},\{'c2','c3'\},\{'c4'\},...\}
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.

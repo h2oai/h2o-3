@@ -146,7 +146,6 @@ def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None, delta=1e-
     m2 = metric._metric_json[metric_name2]
     m1 = float(m1) if m1 != "NaN" else 0
     m2 = float(m2) if m2 != "NaN" else 0
-    print("{} == {}".format(m1, m2))
     assert abs(m1-m2) <= delta, "{}: {} != {}".format(msg, m1, m2)
 
 

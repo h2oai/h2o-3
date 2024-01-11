@@ -1,9 +1,6 @@
 package hex.tree.xgboost.task;
 
-import hex.ModelMetrics;
-import hex.ModelMetricsBinomial;
-import hex.ModelMetricsMultinomial;
-import hex.ModelMetricsRegression;
+import hex.*;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
 import hex.tree.xgboost.predict.XGBoostBigScorePredict;
@@ -12,8 +9,9 @@ import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
+import water.udf.CFuncRef;
 
-public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to score model metrics
+public class XGBoostScoreTask extends CMetricScoringTask<XGBoostScoreTask> { // used to score model metrics
 
     private final XGBoostOutput _output;
     private final int _weightsChunkId;
@@ -29,8 +27,10 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
         final XGBoostOutput output,
         final int weightsChunkId,
         final boolean isTrain,
-        final XGBoostModel model
+        final XGBoostModel model,
+        CFuncRef customMetricFunc
     ) {
+        super(customMetricFunc);
         _output = output;
         _weightsChunkId = weightsChunkId;
         _model = model;
@@ -58,6 +58,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
 
     @Override
     protected void setupLocal() {
+        super.setupLocal();
         _predict = _model.setupBigScorePredict(_isTrain);
     }
 
@@ -79,6 +80,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
                 yact[0] = (float) responseChunk.atd(j);
                 double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
                 _metricBuilder.perRow(currentPred, yact, weight, 0, _model);
+                customMetricPerRow(currentPred, yact, weight, 0, _model);
             }
             for (int i = 0; i < cs[0]._len; ++i) {
                 ncs[0].addNum(preds[i][0]);
@@ -99,6 +101,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
                 double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
                 yact[0] = (float) responseChunk.atd(i);
                 _metricBuilder.perRow(row, yact, weight, 0, _model);
+                customMetricPerRow(row, yact, weight, 0, _model);
             }
         } else {
             float[] yact = new float[1];
@@ -114,6 +117,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
                 yact[0] = (float) responseChunk.atd(i);
                 double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
                 _metricBuilder.perRow(row, yact, weight, 0, _model);
+                customMetricPerRow(row, yact, weight, 0, _model);
             }
         }
     }
@@ -124,4 +128,12 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
         _metricBuilder.reduce(mrt._metricBuilder);
     }
 
+    @Override protected void postGlobal() {
+        super.postGlobal();
+        if(_metricBuilder != null) {
+            _metricBuilder.postGlobal(getComputedCustomMetric());
+            if (null != cFuncRef)
+                _metricBuilder._CMetricScoringTask = this;
+        }
+    }
 }

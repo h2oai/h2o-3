@@ -263,11 +263,20 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_tree_method", "exact is not supported in distributed environment, set build_tree_one_node to true to use exact");
 
     CalibrationHelper.initCalibration(this, _parms, expensive);
+
+    if (_parms.hasCustomMetricFunc() && _parms._eval_metric != null) {
+      error("custom_metric_func", "Custom metric is not supported together with eval_metric parameter. Please use only one of them.");
+    }
+
+    if (_parms._score_eval_metric_only && _parms._eval_metric == null) {
+      warn("score_eval_metric_only", "score_eval_metric_only is set but eval_metric parameter is not defined");
+    }
   }
 
   protected void checkCustomMetricForEarlyStopping() {
-    if (_parms._eval_metric == null) {
+    if (_parms._eval_metric == null && !_parms.hasCustomMetricFunc()) {
       error("_eval_metric", "Evaluation metric needs to be defined in order to use it for early stopping.");
+      super.checkCustomMetricForEarlyStopping();
     }
   }
 

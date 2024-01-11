@@ -3252,5 +3252,32 @@ public class XGBoostTest extends TestUtil {
     }
     
   }
+
+  @Test
+  public void testWarnEvalMetricOnlyWithouEvalMetric() {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = parseAndTrackTestFile("./smalldata/logreg/prostate_train.csv");
+      train.toCategoricalCol(response);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 1;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._score_eval_metric_only = true;
+
+      ModelBuilder job =  new hex.tree.xgboost.XGBoost(parms);
+
+      XGBoostModel xgboost = (XGBoostModel) job.trainModel().get();
+      Scope.track_generic(xgboost);
+      assertNotNull(xgboost);
+      assertTrue("Parameter is not validate", job.validationWarnings().contains("score_eval_metric_only is set but eval_metric parameter is not defined"));
+      System.out.println(job.validationWarnings());
+    }
+    finally {
+      Scope.exit();
+    }
+  }
   
 }

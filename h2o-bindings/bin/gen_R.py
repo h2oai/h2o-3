@@ -284,6 +284,8 @@ def get_help(param, indent=0):
     phelp = param.get('help')
     if not phelp:
         return
+    # fix braces so that CRAN doesn't complain
+    phelp = phelp.replace("{", "\{").replace("}", "\}")
     if ptype == 'boolean':
         phelp = "\code{Logical}. " + phelp
     if pvalues:
