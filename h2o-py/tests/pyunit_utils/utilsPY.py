@@ -4739,3 +4739,6 @@ def prepare_data():
     y = 'Y'
 
     return df, x, y
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
