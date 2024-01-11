@@ -54,17 +54,5 @@ examples = dict(
     >>> sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex", max_depth=5, min_rows=10)
     >>> sdt_h2o.train(y=target_variable, training_frame=train)
     >>> pred_test = sdt_h2o.predict(test)
-    """,
-    seed="""
-    >>> import h2o
-    >>> from h2o.estimators import H2ODecisionTreeEstimator
-    >>> h2o.init()
-    >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-    >>> target_variable = 'CAPSULE'
-    >>> prostate[target_variable] = prostate[target_variable].asfactor()
-    >>> train, test = prostate.split_frame(ratios=[0.7])
-    >>> sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex", max_depth=5, categorical_encoding="auto", seed=42)
-    >>> sdt_h2o.train(y=target_variable, training_frame=train)
-    >>> pred_test = sdt_h2o.predict(test)
     """
 )
