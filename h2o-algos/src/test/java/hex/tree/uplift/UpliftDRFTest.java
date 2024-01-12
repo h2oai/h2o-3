@@ -346,6 +346,29 @@ public class UpliftDRFTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    @Test
+    public void testBasicTrainSupportCV() {
+        try {
+            Scope.enter();
+            Frame train = generateFrame();
+            int ntrees = 100;
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._treatment_column = "treatment";
+            p._response_column = "conversion";
+            p._ntrees = ntrees;
+            p._score_each_iteration = true;
+            p._nfolds = 3;
+
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+        } finally {
+            Scope.exit();
+        }
+    }
     
     @Test
     public void testMaxDepthZero() {

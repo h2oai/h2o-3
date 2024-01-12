@@ -625,7 +625,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Step 2: Make 2*N binary weight vectors
       final Vec[] weights = cv_makeWeights(N, foldAssignment);
-
+      
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
 
