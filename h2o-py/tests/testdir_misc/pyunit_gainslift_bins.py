@@ -5,6 +5,7 @@ import h2o
 import pandas as pd
 from tests import pyunit_utils
 from h2o.estimators import *
+from h2o.utils.threading import local_context
 
 eps = 1e-10
 
@@ -22,18 +23,19 @@ def fast_estimator(estimator, **kwargs):
 
 
 def ks_score(mod, data, y):
-    from scipy.stats import ks_2samp
+    with local_context(datatable_disabled=True, polars_disabled=True): # conversion h2o frame to pandas using single thread as before
+      from scipy.stats import ks_2samp
 
-    df = pd.DataFrame()
-    df["label"] = data[y].as_data_frame().iloc[:, 0]
-    df["probs"] = mod.predict(data)["p1"].as_data_frame().iloc[:, 0]
+      df = pd.DataFrame()
+      df["label"] = data[y].as_data_frame().iloc[:, 0]
+      df["probs"] = mod.predict(data)["p1"].as_data_frame().iloc[:, 0]
 
-    label_0 = df[df["label"] == 0]
-    label_1 = df[df["label"] == 1]
+      label_0 = df[df["label"] == 0]
+      label_1 = df[df["label"] == 1]
 
-    ks = ks_2samp(label_0["probs"], label_1["probs"])
+      ks = ks_2samp(label_0["probs"], label_1["probs"])
 
-    return ks.statistic
+      return ks.statistic
 
 
 def get_ks(model, data):

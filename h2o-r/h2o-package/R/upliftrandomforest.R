@@ -32,7 +32,7 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
-#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
+#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt\{p\} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -2.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.632.
 #' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree

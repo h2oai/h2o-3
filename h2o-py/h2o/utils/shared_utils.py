@@ -135,6 +135,12 @@ def can_use_pandas():
 def can_use_datatable():
     return is_module_available('datatable') and sys.version_info.major == 3 and sys.version_info.minor <= 9
 
+def can_install_datatable():
+    return sys.version_info.major == 3 and sys.version_info.minor <= 9
+
+def can_install_polars():
+    return sys.version_info.major == 3 and sys.version_info.minor > 9
+
 def can_use_polars():
     return is_module_available('polars') and sys.version_info.major == 3 and sys.version_info.minor > 9
 

@@ -2,7 +2,8 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-from h2o.utils.shared_utils import (can_use_datatable, can_use_polars, can_use_pyarrow)
+from h2o.utils.shared_utils import (can_use_datatable, can_use_polars, can_use_pyarrow, can_install_datatable, 
+                                    can_install_polars)
 import time
 from h2o.utils.threading import local_context
 
@@ -50,18 +51,25 @@ def test_polars_datatable_2_pandas():
     file1 = "bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv"
     original_converted_frame1 = single_thread_pandas_conversion(file1)  # need to run conversion in single thread
 
-    with local_context(polars_disabled=True):   # run with datatable
-        if can_use_datatable():
+    if can_install_datatable():
+        if not(can_use_datatable()):
+            pyunit_utils.install("datatable")
+        with local_context(polars_disabled=True):   # run with datatable
             print("test data frame conversion using datatable.")
             test_frame_conversion(file1, original_converted_frame1, "datatable")
-        else:
-            print("datatable is not available.  Skipping tests using datatable.")
 
-    with local_context(datatable_disabled=True):
-        if can_use_polars() and can_use_pyarrow():
+    else:
+        print("datatable is not available.  Skipping tests using datatable.")
+
+    if can_install_polars():
+        if not(can_use_polars()):
+            pyunit_utils.install("polars")
+        if not(can_use_pyarrow()):
+            pyunit_utils.install("pyarrow")
+        with local_context(datatable_disabled=True):
             print("test data frame conversion using polars and pyarrow.")
             test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
-        else:
+    else:
             print("polars, pyarrow are not available.  Skipping tests using polars and pyarrow")
 
 if __name__ == "__main__":

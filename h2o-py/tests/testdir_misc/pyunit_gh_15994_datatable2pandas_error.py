@@ -2,13 +2,14 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-from h2o.utils.shared_utils import (can_use_polars, can_use_pyarrow, can_install_polars)
+from h2o.utils.shared_utils import (can_use_datatable, can_install_datatable)
 import pandas as pd
 from h2o.utils.threading import local_context
 
-# polars/pyarrows have problems before with this dataset.  Checking here to make sure it works.
+
+# datatable have problems before with this dataset.  Checking here to make sure it works.
 def test_frame_conversion(h2oFrame, original_pandas_frame):
-    print("h2o frame to pandas frame conversion using polars and pyarrow")
+    print("h2o frame to pandas frame conversion using datatable")
     new_pandas_frame = h2oFrame.as_data_frame()
     # compare two frames column types                
     new_types = new_pandas_frame.dtypes
@@ -31,21 +32,21 @@ def test_frame_conversion(h2oFrame, original_pandas_frame):
             diff = (new_pandas_frame[colNames[ind]] - original_pandas_frame[colNames[ind]]).abs()
             assert diff.max() < 1e-10
             
-def test_polars_pyarrow():
-    if not(can_install_polars()):
-        print("polars and pyarrow are not available to test.  Skipping tests using polars and pyarrow.")
-    else:
-        if not(can_use_polars()):
-            pyunit_utils.install("polars")
-        if not(can_use_pyarrow()):
-            pyunit_utils.install("pyarrow")
-
+            
+def test_datatable():
+    if can_install_datatable():
+        if not(can_use_datatable()):
+            pyunit_utils.install("datatable")
+        
         with local_context(datatable_disabled=True, polars_disabled=True):
             h2oframe = genFrame()
             print("converting h2o frame to pandas frame using single thread:")
             original_pandas = h2oframe.as_data_frame()
-        with local_context(datatable_disabled=True):
+        with local_context(polars_disabled=True):
             test_frame_conversion(h2oframe, original_pandas)  
+    else:
+        print("datatable are not available to test.  Skipping tests using datatable.")
+
 
 def genFrame():
     python_lists = [["ls 1029551"], ["no 983196"], ["true 689851"], ["437594"], ["no,ls 113569"], ["no,true 70607"]]
@@ -53,7 +54,8 @@ def genFrame():
     col_types=['enum']
     return h2o.H2OFrame(python_obj=python_lists, column_names=col_names, column_types=col_types)
 
+
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_polars_pyarrow)
+    pyunit_utils.standalone_test(test_datatable)
 else:
-    test_polars_pyarrow()
+    test_datatable()
