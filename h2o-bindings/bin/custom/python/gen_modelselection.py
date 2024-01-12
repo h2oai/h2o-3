@@ -42,6 +42,21 @@ def class_extensions():
     
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
+
+        :examples:
+        
+        >>> import h2o
+        >>> from h2o.estimators import H2OModelSelectionEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+        >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+        >>> response = "GLEASON"
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr")
+        >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+        >>> results = maxrModel.result()
+        >>> print(results)
+        >>> coeff_norm = maxrModel.coef_norm()
+        >>> print(coeff_norm)
         """
         model_ids = self._model_json["output"]["best_model_ids"]
         if not(self.actual_params["build_glm_model"]) and self.actual_params["mode"]=="maxrsweep":
@@ -95,6 +110,21 @@ def class_extensions():
         
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
+
+        :examples:
+        
+        >>> import h2o
+        >>> from h2o.estimators import H2OModelSelectionEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+        >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+        >>> response = "GLEASON"
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr")
+        >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+        >>> results = maxrModel.result()
+        >>> print(results)
+        >>> coeff = maxrModel.coef()
+        >>> print(coeff)
         """
         if not self.actual_params["build_glm_model"] and self.actual_params["mode"]=="maxrsweep":
             coef_names = self._model_json["output"]["coefficient_names"]
@@ -148,6 +178,7 @@ def class_extensions():
     def result(self):
         """
         Get result frame that contains information about the model building process like for modelselection and anovaglm.
+
         :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
@@ -240,15 +271,6 @@ examples = dict(
 >>> print(results)
 >>> coeff = maxrModel.coef()
 >>> print(coeff)
->>> coeff3 = maxrModel.coef(3)
->>> print(coeff3)
->>> coeff_norm = maxrModel.coef_norm()
->>> print(coeff_norm)
->>> coeff_norm3 = maxrModel.coef_norm(3)
->>> print(coeff_norm3)
->>> maxrModel.get_predictors_added_per_step()
->>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", build_glm_model=False)
->>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
     influence="""
 >>> import h2o
@@ -263,15 +285,6 @@ examples = dict(
 >>> print(results)
 >>> coeff = maxrModel.coef()
 >>> print(coeff)
->>> coeff3 = maxrModel.coef(3)
->>> print(coeff3)
->>> coeff_norm = maxrModel.coef_norm()
->>> print(coeff_norm)
->>> coeff_norm3 = maxrModel.coef_norm(3)
->>> print(coeff_norm3)
->>> maxrModel.get_predictors_added_per_step()
->>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", influence="dfbetas")
->>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
     multinode_mode="""
 >>> import h2o
@@ -286,15 +299,6 @@ examples = dict(
 >>> print(results)
 >>> coeff = maxrModel.coef()
 >>> print(coeff)
->>> coeff3 = maxrModel.coef(3)
->>> print(coeff3)
->>> coeff_norm = maxrModel.coef_norm()
->>> print(coeff_norm)
->>> coeff_norm3 = maxrModel.coef_norm(3)
->>> print(coeff_norm3)
->>> maxrModel.get_predictors_added_per_step()
->>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", multinode_mode=False)
->>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
     nparallelism="""
 >>> import h2o
@@ -309,15 +313,6 @@ examples = dict(
 >>> print(results)
 >>> coeff = maxrModel.coef()
 >>> print(coeff)
->>> coeff3 = maxrModel.coef(3)
->>> print(coeff3)
->>> coeff_norm = maxrModel.coef_norm()
->>> print(coeff_norm)
->>> coeff_norm3 = maxrModel.coef_norm(3)
->>> print(coeff_norm3)
->>> maxrModel.get_predictors_added_per_step()
->>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", nparallelism=0)
->>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
     p_values_threshold="""
 >>> import h2o
@@ -332,15 +327,6 @@ examples = dict(
 >>> print(results)
 >>> coeff = maxrModel.coef()
 >>> print(coeff)
->>> coeff3 = maxrModel.coef(3)
->>> print(coeff3)
->>> coeff_norm = maxrModel.coef_norm()
->>> print(coeff_norm)
->>> coeff_norm3 = maxrModel.coef_norm(3)
->>> print(coeff_norm3)
->>> maxrModel.get_predictors_added_per_step()
->>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", p_values_threshold=0.0)
->>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
     custom_metric_func="""
 >>> import h2o
@@ -355,15 +341,6 @@ examples = dict(
 >>> print(results)
 >>> coeff = maxrModel.coef()
 >>> print(coeff)
->>> coeff3 = maxrModel.coef(3)
->>> print(coeff3)
->>> coeff_norm = maxrModel.coef_norm()
->>> print(coeff_norm)
->>> coeff_norm3 = maxrModel.coef_norm(3)
->>> print(coeff_norm3)
->>> maxrModel.get_predictors_added_per_step()
->>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", early_stopping=False)
->>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
     obj_reg="""
 >>> import h2o
@@ -378,14 +355,19 @@ examples = dict(
 >>> print(results)
 >>> coeff = maxrModel.coef()
 >>> print(coeff)
->>> coeff3 = maxrModel.coef(3)
->>> print(coeff3)
->>> coeff_norm = maxrModel.coef_norm()
->>> print(coeff_norm)
->>> coeff_norm3 = maxrModel.coef_norm(3)
->>> print(coeff_norm3)
->>> maxrModel.get_predictors_added_per_step()
->>> bwModel = H2OModelSelectionEstimator(max_predictor_number=3,  seed=12345, mode="backward", obj_reg=-1.0)
->>> bwModel.train(x=predictors, y=response, training_frame=prostate)
 """,
+    mode="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr")
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> results = maxrModel.result()
+>>> print(results)
+>>> coeff = maxrModel.coef()
+>>> print(coeff)
+"""
 )
