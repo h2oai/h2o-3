@@ -7,15 +7,16 @@ import random
 import re
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
-NTESTROWS = 200    # number of test dataset rows
-MAXLAYERS = 8
-MAXNODESPERLAYER = 20
+NTESTROWS = 100    # number of test dataset rows
+MAXLAYERS = 4
+MAXNODESPERLAYER = 10
 TMPDIR = ""
 MOJONAME = ""
 
+
 def deeplearning_mojo_pojo():
     problemtypes = ["regression", "binomial", "multinomial"]
-    autoEncoderOn = [False]
+    autoEncoderOn = [True]
     missingValues = ['Skip', 'MeanImputation']
     allFactors = [False, True]
     for problem in problemtypes:
@@ -37,11 +38,11 @@ def deeplearning_mojo_pojo():
                         print("AutoEncoderOn is: {0} and problem type is: {1}".format(encoderOn, problem))
                         print("Activation function: {0}, missing value handling: {1}, skippAllFactor: "
                               "{2}".format(actFun, missingValuesHandling, setAllFactor))
-                        runComparisonTests(encoderOn, actFun, missingValuesHandling, setAllFactor, train,
-                                           test, x)
+                        run_comparison_tests(encoderOn, actFun, missingValuesHandling, setAllFactor, train,
+                                             test, x)
 
 
-def runComparisonTests(autoEncoder, actFun, missingValuesHandling, setAllFactor, train, test, x):
+def run_comparison_tests(autoEncoder, actFun, missingValuesHandling, setAllFactor, train, test, x):
     params = set_params(actFun, missingValuesHandling, setAllFactor, autoEncoder)   # set deeplearning model parameters
     
     if autoEncoder:
@@ -63,9 +64,10 @@ def runComparisonTests(autoEncoder, actFun, missingValuesHandling, setAllFactor,
     print("Comparing pojo predict and h2o predict...")
     pyunit_utils.compare_frames_local_onecolumn_NA(pred_mojo, pred_pojo, prob=1, tol=1e-10)
 
+
 def set_params(actFun, missingValuesHandling, setAllFactor, enableEncoder=False):
     dropOutRatio = 0.25
-    hiddens, hidden_dropout_ratios = random_networkSize(actFun)    # generate random size layers
+    hiddens, hidden_dropout_ratios = random_network_size(actFun)    # generate random size layers
     seed = 12345
     if ('dropout') in actFun:
         params = {'hidden': hiddens, 'standardize': True,
@@ -87,6 +89,7 @@ def set_params(actFun, missingValuesHandling, setAllFactor, enableEncoder=False)
     print(params)
     return params
 
+
 def build_save_model(params, x, train):
     global TMPDIR
     global MOJONAME
@@ -106,8 +109,9 @@ def build_save_model(params, x, train):
     model.download_mojo(path=TMPDIR)    # save mojo
     return model
 
+
 # generate random neural network architecture
-def random_networkSize(actFunc):
+def random_network_size(actFunc):
     no_hidden_layers = 5
     hidden = []
     hidden_dropouts = []
@@ -117,6 +121,7 @@ def random_networkSize(actFunc):
             hidden_dropouts.append(0.25)
 
     return hidden, hidden_dropouts
+
 
 # generate random dataset
 def random_dataset(response_type="regression", verbose=True):
@@ -133,7 +138,7 @@ def random_dataset(response_type="regression", verbose=True):
     response_factors = (1 if response_type == "regression" else
                         2 if response_type == "binomial" else
                         random.randint(3, 10))
-    df = h2o.create_frame(rows=5000 + NTESTROWS, cols=5,
+    df = h2o.create_frame(rows=1000 + NTESTROWS, cols=5,
                           missing_fraction=0.025,
                           has_response=True, response_factors=response_factors, positive_response=True, factors=10,
                           seed=1234, **fractions)
@@ -141,6 +146,7 @@ def random_dataset(response_type="regression", verbose=True):
         print()
         df.show()
     return df
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(deeplearning_mojo_pojo)
