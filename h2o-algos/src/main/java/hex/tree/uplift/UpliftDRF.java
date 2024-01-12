@@ -97,11 +97,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         if (hasOffsetCol())
             error("_offset_column", "Offsets are not yet supported for Uplift DRF.");
         if (hasWeightCol())
-            error("_weight_column", "Weights are not yet supported for Uplift DRF.");
-        if (hasFoldCol())
-            error("_fold_column", "Cross-validation is not yet supported for Uplift DRF.");
-        if (_parms._nfolds > 0)
-            error("_nfolds", "Cross-validation is not yet supported for Uplift DRF.");
+            if(!_parms._weights_column.equals("__internal_cv_weights__")) {
+                error("_weight_column", "Weights are not yet supported for Uplift DRF.");
+            }
         if (_nclass == 1)
             error("_distribution", "UpliftDRF currently support binomial classification problems only.");
         if (_nclass > 2 || _parms._distribution.equals(DistributionFamily.multinomial)) 
