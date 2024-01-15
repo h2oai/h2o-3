@@ -146,14 +146,12 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
           assert k.home();
           ox[fromNode] = DKV.getGet(k);
           DKV.remove(k);
+          Log.info("SingleThreadRadixOrder (MSB="+_MSBvalue+"): chunk "+c+", "+oxBatchNum[fromNode]+" non zeros");
           if (ox[fromNode] == null) {
             // if the last chunksworth fills a batchsize exactly, the getGet above will have returned null.
             // TODO: Check will Cliff that a known fetch of a non-existent key is ok e.g. won't cause a delay/block? If ok, leave as good check.
             int numNonZero = 0; for (int tmp : MSBnodeHeader[fromNode]._MSBnodeChunkCounts) if (tmp>0) numNonZero++;
-//            if (oxBatchNum[fromNode] != numNonZero) {
-//              Log.err("MSB "+_MSBvalue+" [Thread "+Thread.currentThread().getName()+"]: expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode]);
-//              return;
-//            }
+            Log.info("SingleThreadRadixOrder (MSB="+_MSBvalue+"): chunk "+c+", expected "+numNonZero+" non zeros on node "+fromNode+", but got "+oxBatchNum[fromNode]);
 //            assert oxBatchNum[fromNode]==numNonZero : "SingleThreadRadixOrder (MSB="+_MSBvalue+"): expected "+numNonZero+" non zeros on chunk "+c+", node "+fromNode+", but got "+oxBatchNum[fromNode];
             assert ArrayUtils.sum(MSBnodeHeader[fromNode]._MSBnodeChunkCounts) % _batchSize == 0;
           }
