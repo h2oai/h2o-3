@@ -82,7 +82,7 @@ compareH2ORGLM <-
         family = "gamma",
         lambda = 0,
         nfolds = 0,
-        dispersion_factor_method = "ml",
+        dispersion_parameter_method = "ml",
         compute_p_values = TRUE
       )
     print("Comparing H2O and R GLM model coefficients....")
