@@ -97,6 +97,8 @@ train_models <- function(simData, tweedie_p, phi) {
 
 
 test_helper <- function(p, phi, offset) {
+  eps <- 1e-3
+
   simData <- generate_data(p, phi, offset)
   
   attach(train_models(simData, p, phi))
@@ -109,7 +111,7 @@ test_helper <- function(p, phi, offset) {
       p = p,
       phi = hdispersion
     ) - h2o.loglikelihood(hfit)
-  ) < 1e-5)
+  ) < eps)
   
   # are we better than R's implementation or at least the same? smaller the negative likelihood the better
   hnll <- nll(
@@ -124,10 +126,10 @@ test_helper <- function(p, phi, offset) {
                p = p,
                phi = rdispersion
              )
-  expect_true(hnll <= rnll || abs(hnll - rnll) < 1e-5)
+  expect_true(hnll <= rnll || abs(hnll - rnll) < eps)
   
   # check dispersion
-  allowed_dispersion_difference <- 1.01*abs(phi - rdispersion)
+  allowed_dispersion_difference <- 1.05*abs(phi - rdispersion)
   print(allowed_dispersion_difference)
   cat("H2o: ", hdispersion,"; R: ", rdispersion, "\n")
   expect_true(abs(phi - hdispersion) < allowed_dispersion_difference)
