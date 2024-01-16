@@ -113,6 +113,9 @@ test_helper <- function(p, phi, offset) {
     ) - h2o.loglikelihood(hfit)
   ) < eps)
   
+  cat("Difference in negative log-likelihood calculation between R and H2O: ", 
+      abs(nll(simData, mu = hmu, p = p, phi = hdispersion) - h2o.loglikelihood(hfit)), "\n", sep="")
+  
   # are we better than R's implementation or at least the same? smaller the negative likelihood the better
   hnll <- nll(
                 simData,
@@ -127,11 +130,18 @@ test_helper <- function(p, phi, offset) {
                phi = rdispersion
              )
   expect_true(hnll <= rnll || abs(hnll - rnll) < eps)
+  cat("H2O negative log-likelihood: ", hnll, "\n", "R negative log-likelihood: ", rnll, "\n",
+      "H2O is better: ", hnll < rnll, "\n",
+      "H2O and R are roughly similar: ", abs(hnll - rnll) < eps, "\n", sep=""
+  )
   
   # check dispersion
-  allowed_dispersion_difference <- 1.05*abs(phi - rdispersion)
-  print(allowed_dispersion_difference)
-  cat("H2o: ", hdispersion,"; R: ", rdispersion, "\n")
+  allowed_dispersion_difference <- 1.01*abs(phi - rdispersion)
+  cat("Dispersion tolerance: ", allowed_dispersion_difference, "\n", sep="")
+  cat("H2O Dispersion Estimation: ", hdispersion, "\nR Dispersion Estimation: ", rdispersion, "\n",
+      "H2O is as close as R or closer to the true dispersion: ", abs(phi - hdispersion) < allowed_dispersion_difference,
+       "\n", sep=""
+  )
   expect_true(abs(phi - hdispersion) < allowed_dispersion_difference)
 }
 
