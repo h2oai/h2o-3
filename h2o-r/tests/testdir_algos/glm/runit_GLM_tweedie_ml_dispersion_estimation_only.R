@@ -67,7 +67,12 @@ train_models <- function(simData, tweedie_p, phi) {
       weights = weight,
       offset = offset_col
     )
+  cat("\n\nRfit:\n")
+  print(coef(rfit))
   
+  cat("\nH2Ofit:\n")
+  print(hfit@model$coefficients_table)
+  cat("\n\n")
   rdispersion <- summary(rfit)$dispersion # not a MLE
   
   if (tweedie_p > 1.4 && tweedie_p < 1.75 && !(phi == 1000 && tweedie_p == 1.7)) {  # R's implementation can take very long time to finish for some other values
