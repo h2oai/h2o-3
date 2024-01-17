@@ -53,6 +53,7 @@
 #' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth (0 for unlimited). Defaults to 6.
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
@@ -164,6 +165,7 @@ h2o.xgboost <- function(x,
                         quiet_mode = TRUE,
                         checkpoint = NULL,
                         export_checkpoints_dir = NULL,
+                        custom_metric_func = NULL,
                         ntrees = 50,
                         max_depth = 6,
                         min_rows = 1,
@@ -283,6 +285,8 @@ h2o.xgboost <- function(x,
     parms$checkpoint <- checkpoint
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -407,6 +411,7 @@ h2o.xgboost <- function(x,
                                         quiet_mode = TRUE,
                                         checkpoint = NULL,
                                         export_checkpoints_dir = NULL,
+                                        custom_metric_func = NULL,
                                         ntrees = 50,
                                         max_depth = 6,
                                         min_rows = 1,
@@ -530,6 +535,8 @@ h2o.xgboost <- function(x,
     parms$checkpoint <- checkpoint
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))

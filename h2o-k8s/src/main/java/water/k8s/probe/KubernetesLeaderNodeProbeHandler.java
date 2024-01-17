@@ -1,40 +1,36 @@
 package water.k8s.probe;
 
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import water.k8s.H2OCluster;
 
-import java.util.Map;
+import java.io.IOException;
 
+import static java.net.HttpURLConnection.*;
 
-public class KubernetesLeaderNodeProbeHandler extends RouterNanoHTTPD.DefaultHandler {
+public class KubernetesLeaderNodeProbeHandler implements HttpHandler {
 
-    @Override
-    public String getText() {
-        throw new IllegalStateException(String.format("Method getText should not be called on '%s'",
-                getClass().getName()));
-    }
+    public static final String MIME_TYPE_TEXT_PLAIN = "text/plain";
+    public static final String GET_METHOD = "GET";
 
     @Override
-    public String getMimeType() {
-        return "text/plain";
-    }
-
-    @Override
-    public NanoHTTPD.Response.IStatus getStatus() {
-        throw new IllegalStateException(String.format("Method getMimeType should not be called on '%s'",
-                getClass().getName()));
-    }
-
-    @Override
-    public NanoHTTPD.Response get(RouterNanoHTTPD.UriResource uriResource, Map<String, String> urlParams, NanoHTTPD.IHTTPSession session) {
+    public void handle(HttpExchange httpExchange) throws IOException {
+        if (!GET_METHOD.equals(httpExchange.getRequestMethod())) {
+            httpResponseWithoutBody(httpExchange, HTTP_BAD_METHOD);
+        }
         // All nodes report ready state until the clustering process is finished. Since then, only the leader node is ready.
         final H2OCluster.H2ONodeInfo self = H2OCluster.getCurrentNodeInfo();
         if (self == null || self.isLeader() || !H2OCluster.isClustered()) {
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, getMimeType(), null);
+            httpResponseWithoutBody(httpExchange, HTTP_OK);
         } else {
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, getMimeType(), null);
+            httpResponseWithoutBody(httpExchange, HTTP_NOT_FOUND);
         }
+    }
+
+    private static void httpResponseWithoutBody(HttpExchange httpExchange, int httpResponseCode) throws IOException {
+        httpExchange.getResponseHeaders().set("Content-Type", MIME_TYPE_TEXT_PLAIN);
+        httpExchange.sendResponseHeaders(httpResponseCode, -1);
+        httpExchange.close();
     }
 
 }

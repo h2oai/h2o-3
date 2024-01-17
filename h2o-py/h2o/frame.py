@@ -19,7 +19,7 @@ import warnings
 import h2o
 from h2o.base import Keyed
 from h2o.display import H2ODisplay, H2ODisplayWrapper, H2OItemsDisplay, H2OTableDisplay, display, repr_def
-from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
+from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning, H2ODependencyWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
@@ -27,8 +27,8 @@ from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGUR
 from h2o.utils.config import get_config_value
 from h2o.utils.metaclass import deprecated_fn
 from h2o.utils.shared_utils import(gen_header, is_list, is_list_of_lists, is_str_list, py_tmp_key, quoted,
-                                   can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized, 
-                                   check_frame_id, can_use_datatable)
+                                   can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized,
+                                   check_frame_id, can_use_datatable, can_use_polars, can_use_pyarrow)
 from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
@@ -1845,7 +1845,7 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         if is_type(item, list, tuple, set):
             if self.ncols == 1 and (self.type(0) == 'str' or self.type(0) == 'enum'):
-                return self.match(item)
+                return self.match(item, nomatch=0)
             else:
                 return functools.reduce(H2OFrame.__or__, (self == i for i in item))
         else:
@@ -1942,15 +1942,15 @@ class H2OFrame(Keyed, H2ODisplay):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True, header=True, multi_thread=False):
+    def as_data_frame(self, use_pandas=True, header=True):
         """
         Obtain the dataset as a python-local object.
 
         :param bool use_pandas: If True (default) then return the H2OFrame as a pandas DataFrame (requires that the
             ``pandas`` library was installed). If False, then return the contents of the H2OFrame as plain nested
-            list, in a row-wise order.
-        :param bool multi_thread: if True and if use_pandas is True, will use datatable to speedup the conversion from
-             H2O frame to pandas frame that uses multi-thread.
+            list, in a row-wise order.  The conversion to pandas frame will use multi-thread whenever
+            possible with the right python modules (datatable or polars and pyarrow) installed.  Otherwise, single
+            thread operation will be used in the conversion.  
         :param bool header: If True (default), then column names will be appended as the first row in list
 
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
@@ -1969,35 +1969,40 @@ class H2OFrame(Keyed, H2ODisplay):
         """ 
         if can_use_pandas() and use_pandas:
             import pandas
-            if multi_thread:
-                if can_use_datatable():
-                    try:
-                        tmpdir = tempfile.mkdtemp()
-                        fileName = os.path.join(tmpdir, "h2oframe2Convert.csv")
-                        h2o.export_file(self, fileName)
-                        #h2o.download_csv(self, fileName)
-                        import datatable as dt
-                        frameTypes = self.types
-                        validFrameTypes = {}
-                        for key, value in frameTypes.items():
-                            if value.startswith('int'):
-                                validFrameTypes[key] = dt.int64
-                            elif value.startswith("real"):
-                                validFrameTypes[key] = dt.float64
-                        dt_frame = dt.fread(fileName, na_strings=[""], columns=validFrameTypes)
-                        return dt_frame.to_pandas()
-                    finally:
-                        os.remove(fileName)
-                        os.rmdir(tmpdir)
-                elif not(can_use_datatable()):
-                    warnings.warn("multi_thread mode can only be used when you have datatable "
-                             "installed.  Defaults to single-thread operation.")                   
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
+            if (can_use_datatable()) or (can_use_polars() and can_use_pyarrow()): # can use multi-thread
+                with tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv") as exportFile:
+                    h2o.export_file(self, exportFile.name, force=True)
+                    if can_use_datatable(): # use datatable for multi-thread by default
+                        return self.convert_with_datatable(exportFile.name)
+                    elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
+                        return self.convert_with_polars(exportFile.name)
+            warnings.warn("converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
+                          " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
+                          "(for Python 3.10 or above).", H2ODependencyWarning)
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
+                
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
         return frame
+    
+    def convert_with_polars(selfself, fileName):
+        import polars as pl
+        dt_frame = pl.read_csv(fileName, null_values = "")
+        return dt_frame.to_pandas()
+    
+    def convert_with_datatable(self, fileName):
+        import datatable as dt
+        frameTypes = self.types
+        validFrameTypes = {}
+        for key, value in frameTypes.items():
+            if value.startswith('int'):
+                validFrameTypes[key] = dt.int64
+            elif value.startswith("real"):
+                validFrameTypes[key] = dt.float64
+        dt_frame = dt.fread(fileName, na_strings=[""], columns=validFrameTypes)
+        return dt_frame.to_pandas()
 
     def save_to_hive(self, jdbc_url, table_name, format="csv", table_path=None, tmp_path=None):
         """
@@ -4653,26 +4658,42 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         return H2OFrame._expr(expr=ExprNode('h2o.random_stratified_split', self, test_frac, seed))
 
-    def match(self, table, nomatch=0):
+    def match(self, table, nomatch=float("nan"), start_index=1):
         """
-        Make a vector of the positions of (first) matches of its first argument in its second.
+        Makes a vector where an index of value from the table is returned if the value matches; 
+        returns ``nomatch`` value otherwise.
 
-        Only applicable to single-column categorical/string frames.
-
-        :param List table: the list of items to match against
-        :param int nomatch: value that should be returned when there is no match.
-        :returns: a new H2OFrame containing for each cell from the source frame the index where
-            the pattern ``table`` first occurs within that cell.
+        :param List table: The list of items to match against. Duplicates are ignored. The index of the first 
+            occurrence will be used.
+        :param int nomatch: Value that should be returned when there is no match. Numeric value or ``nan``. 
+        :param int start_index: Index from which this starts the indexing of the table list, numeric value >=0 
+            (default is ``1``).
+        :returns: A new H2OFrame containing a vector where the index of value from the table is returned if the value 
+            matches; returns ``nomatch`` value otherwise. 
 
         :examples:
 
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
-        >>> matchFrame = iris["C5"].match(['Iris-versicolor'])
-        >>> matchFrame
-        >>> matchFrame = iris["C5"].match(['Iris-setosa'])
-        >>> matchFrame
+        >>> data = h2o.import_file("h2o://iris")
+        >>> match_col = data["class"].match(['Iris-setosa', 'Iris-versicolor'])
+        >>> match_col.names = ['match']
+        >>> iris_match = data.cbind(match_col)
+        >>> sample = iris_match.split_frame(ratios=[0.05], seed=1)[0]
+        >>> sample
+          sepal_len    sepal_wid    petal_len    petal_wid  class              match
+        -----------  -----------  -----------  -----------  ---------------  -------
+                5.2          3.5          1.5          0.2  Iris-setosa            1
+                5            3.5          1.3          0.3  Iris-setosa            1
+                7            3.2          4.7          1.4  Iris-versicolor        2
+                4.9          2.4          3.3          1    Iris-versicolor        2
+                5.5          2.4          3.8          1.1  Iris-versicolor        2
+                5.8          2.7          5.1          1.9  Iris-virginica       nan
+                6.3          2.9          5.6          1.8  Iris-virginica       nan
+                5.8          2.8          5.1          2.4  Iris-virginica       nan
+                7.7          2.6          6.9          2.3  Iris-virginica       nan
+                6.3          2.7          4.9          1.8  Iris-virginica       nan
+        [12 rows x 6 columns]
         """
-        return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, None))
+        return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, start_index))
 
     def cut(self, breaks, labels=None, include_lowest=False, right=True, dig_lab=3):
         """

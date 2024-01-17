@@ -66,7 +66,7 @@
 #'        Defaults to -1 (time-based random number).
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 #'        Defaults to FALSE.
-#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
+#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt\{p\} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -1.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.632.
 #' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree

@@ -309,7 +309,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public GridSortBy getDefaultGridSortBy() {
     if (! isSupervised())
       return null;
-    else if (_output.nclasses() > 1)
+    else if (_output.hasTreatment()){
+      return GridSortBy.AUUC;
+    } else if (_output.nclasses() > 1)
       return GridSortBy.LOGLOSS;
     else
       return GridSortBy.RESDEV;
@@ -319,6 +321,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public static final GridSortBy LOGLOSS = new GridSortBy("logloss", false);
     public static final GridSortBy RESDEV = new GridSortBy("residual_deviance", false);
     public static final GridSortBy R2 = new GridSortBy("r2", true);
+    public static final GridSortBy AUUC = new GridSortBy("auuc", false);
 
     public final String _name;
     public final boolean _decreasing;

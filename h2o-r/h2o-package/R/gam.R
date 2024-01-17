@@ -16,7 +16,7 @@
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
 #' @param gam_columns Arrays of predictor column names for gam for smoothers using single or multiple predictors like
-#'        {{'c1'},{'c2','c3'},{'c4'},...}
+#'        \{\{'c1'\},\{'c2','c3'\},\{'c4'\},...\}
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
@@ -140,6 +140,7 @@
 #'        knots_for_gam.  Default to false. Defaults to FALSE.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -220,7 +221,8 @@ h2o.gam <- function(x,
                     scale = NULL,
                     keep_gam_cols = FALSE,
                     store_knot_locations = FALSE,
-                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
+                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                    gainslift_bins = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -382,6 +384,8 @@ h2o.gam <- function(x,
     parms$store_knot_locations <- store_knot_locations
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -477,6 +481,7 @@ h2o.gam <- function(x,
                                     keep_gam_cols = FALSE,
                                     store_knot_locations = FALSE,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                    gainslift_bins = -1,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -643,6 +648,8 @@ h2o.gam <- function(x,
     parms$store_knot_locations <- store_knot_locations
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

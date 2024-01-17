@@ -38,7 +38,10 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "treatment_column",
                 "uplift_metric",
                 "auuc_type",
-                "auuc_nbins"
+                "auuc_nbins",
+                "stopping_rounds",
+                "stopping_metric",
+                "stopping_tolerance"
         };
 
         // Input fields
@@ -53,7 +56,7 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"})
         public String treatment_column;
 
-        @API(help = "Divergence metric used to find best split when building an uplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"})
+        @API(help = "Divergence metric used to find best split when building an uplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"}, gridable = true)
         public UpliftDRFParameters.UpliftMetricType uplift_metric;
 
         @API(help = "Metric used to calculate Area Under Uplift Curve.", level = API.Level.secondary, values = { "AUTO", "qini", "lift", "gain"})

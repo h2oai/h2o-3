@@ -94,7 +94,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "generate_variable_inflation_factors",
             "fix_tweedie_variance_power",
             "dispersion_learning_rate",
-            "influence"
+            "influence",
+            "gainslift_bins",
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)

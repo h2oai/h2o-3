@@ -52,6 +52,7 @@
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -125,7 +126,8 @@ h2o.stackedEnsemble <- function(x,
                                 score_training_samples = 10000,
                                 keep_levelone_frame = FALSE,
                                 export_checkpoints_dir = NULL,
-                                auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
+                                auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                gainslift_bins = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=is.null(blending_frame))
@@ -201,6 +203,8 @@ h2o.stackedEnsemble <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if (!missing(metalearner_params))
       parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))
@@ -235,6 +239,7 @@ h2o.stackedEnsemble <- function(x,
                                                 keep_levelone_frame = FALSE,
                                                 export_checkpoints_dir = NULL,
                                                 auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                                gainslift_bins = -1,
                                                 segment_columns = NULL,
                                                 segment_models_id = NULL,
                                                 parallelism = 1)
@@ -315,6 +320,8 @@ h2o.stackedEnsemble <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if (!missing(metalearner_params))
       parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))

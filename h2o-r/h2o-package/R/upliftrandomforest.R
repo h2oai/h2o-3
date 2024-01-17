@@ -32,7 +32,7 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
-#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
+#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt\{p\} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -2.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.632.
 #' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
@@ -42,8 +42,7 @@
 #'        "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
-#'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
+#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli". Defaults to AUTO.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
@@ -53,6 +52,13 @@
 #' @param auuc_type Metric used to calculate Area Under Uplift Curve. Must be one of: "AUTO", "qini", "lift", "gain". Defaults to
 #'        AUTO.
 #' @param auuc_nbins Number of bins to calculate Area Under Uplift Curve. Defaults to -1.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "AUUC", "ATE", "ATT", "ATC", "qini". Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
+#'        much) Defaults to 0.001.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -81,12 +87,15 @@ h2o.upliftRandomForest <- function(x,
                                    col_sample_rate_per_tree = 1,
                                    histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust"),
                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                   distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                                   distribution = c("AUTO", "bernoulli"),
                                    check_constant_response = TRUE,
                                    custom_metric_func = NULL,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
                                    auuc_nbins = -1,
+                                   stopping_rounds = 0,
+                                   stopping_metric = c("AUTO", "AUUC", "ATE", "ATT", "ATC", "qini"),
+                                   stopping_tolerance = 0.001,
                                    verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -165,6 +174,12 @@ h2o.upliftRandomForest <- function(x,
     parms$auuc_type <- auuc_type
   if (!missing(auuc_nbins))
     parms$auuc_nbins <- auuc_nbins
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
 
   if (!missing(distribution)) {
     warning("The only bernoulli distribution is supported for Uplift Random Forest.")
@@ -198,12 +213,15 @@ h2o.upliftRandomForest <- function(x,
                                                    col_sample_rate_per_tree = 1,
                                                    histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust"),
                                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                                   distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                                                   distribution = c("AUTO", "bernoulli"),
                                                    check_constant_response = TRUE,
                                                    custom_metric_func = NULL,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
                                                    auuc_nbins = -1,
+                                                   stopping_rounds = 0,
+                                                   stopping_metric = c("AUTO", "AUUC", "ATE", "ATT", "ATC", "qini"),
+                                                   stopping_tolerance = 0.001,
                                                    segment_columns = NULL,
                                                    segment_models_id = NULL,
                                                    parallelism = 1)
@@ -286,6 +304,12 @@ h2o.upliftRandomForest <- function(x,
     parms$auuc_type <- auuc_type
   if (!missing(auuc_nbins))
     parms$auuc_nbins <- auuc_nbins
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
 
   if (!missing(distribution)) {
     warning("The only bernoulli distribution is supported for Uplift Random Forest.")
