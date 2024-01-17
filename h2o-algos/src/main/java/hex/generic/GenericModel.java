@@ -2,12 +2,14 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.*;
+import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
+import hex.glm.GLMModel;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.*;
 import water.fvec.*;
@@ -78,6 +80,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             throw new IllegalStateException("Unreachable MOJO file: " + mojoBytes._key, e);
         }
     }
+    private Iced getParamByName(String name) {
+        return Arrays.stream(this._parms._modelParameters)
+                .filter(p -> Objects.equals(p.name, name)).findAny().get().actual_value;
+    }
 
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -131,6 +137,48 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             return predictScoreMojoImpl(fr, destination_key, j, computeMetrics);
         } else
             return super.predictScoreImpl(fr, adaptFrm, destination_key, j, computeMetrics, customMetricFunc);
+//            return super.predictScoreImpl(fr, adaptFrm, destination_key, j, true, customMetricFunc);
+    }
+
+
+    @Override
+    public double aic(double likelihood) {
+        // calculate negative loglikelihood specifically  for GLM
+        if (!_algoName.equals("glm")) {
+            return 0;
+        } else {
+            double aic = -2 * likelihood + 2 * Arrays.stream(((GlmMojoModel) this.genModel()).getBeta()).filter(b -> b != 0).count();
+            System.out.println("Bettas for AIC: " + Arrays.stream(((GlmMojoModel) this.genModel()).getBeta()).filter(b -> b != 0).count());
+            System.out.println(Arrays.toString(((GlmMojoModel) this.genModel()).getBeta()));
+            System.out.println("Gen AIC: " + aic);
+            return aic;
+        }
+    }
+
+    @Override
+    public double likelihood(double w, double y, double[] f) {
+        // calculate negative loglikelihood specifically  for GLM
+        if (w == 0 || !_algoName.equals("glm")) {
+            return 0;
+        } else {
+            // create GLM parameters instance
+            GLMModel.GLMParameters glmParameters = new GLMModel.GLMParameters(
+                    GLMModel.GLMParameters.Family.valueOf(getParamByName("family").toString()),
+                    GLMModel.GLMParameters.Link.valueOf(getParamByName("link").toString()),
+                    Arrays.stream(getParamByName("lambda").toString().trim().replaceAll("\\[", "")
+                                    .replaceAll("\\]", "").split(",\\s*"))
+                            .mapToDouble(Double::parseDouble).toArray(),
+                    Arrays.stream(getParamByName("alpha").toString().trim().replaceAll("\\[", "")
+                                    .replaceAll("\\]", "").split(",\\s*"))
+                            .mapToDouble(Double::parseDouble).toArray(),
+                    Double.parseDouble(getParamByName("tweedie_variance_power").toString()),
+                    Double.parseDouble(getParamByName("tweedie_link_power").toString()),
+                    null,
+                    Double.parseDouble(getParamByName("theta").toString())
+            );
+            // time-consuming calculation for the final scoring for GLM model
+            return glmParameters.likelihood(w, y, f);
+        }
     }
 
     PredictScoreResult predictScoreMojoImpl(Frame fr, String destination_key, Job<?> j, boolean computeMetrics) {

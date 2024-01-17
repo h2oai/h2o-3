@@ -23,6 +23,10 @@ abstract class GlmMojoModelBase extends MojoModel {
     super(columns, domains, responseColumn);
   }
 
+  public double[] getBeta() {
+    return _beta;
+  }
+
   void init() {
     _versionSupportOffset = _mojo_version >= 1.1;
   }
