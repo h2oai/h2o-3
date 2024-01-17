@@ -18,6 +18,12 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
   public double logloss;
 
+  @API(help="The negative logarithmic likelihood for this scoring run.", direction=API.Direction.OUTPUT)
+  public double loglikelihood;
+
+  @API(help="The AIC for this scoring run.", direction=API.Direction.OUTPUT)
+  public double AIC;
+
   @API(help="The AUC for this scoring run.", direction=API.Direction.OUTPUT)
   public double AUC;
 

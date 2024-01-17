@@ -14,7 +14,7 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
                                  double sigma, AUC2 auc, double logloss, double resDev, double nullDev,
                                  double aic, long nDof, long rDof, GainsLift gainsLift,
                                  CustomMetric customMetric, double loglikelihood) {
-    super(model, frame, nobs, mse, domain, sigma, auc, logloss, gainsLift, customMetric);
+    super(model, frame, nobs, mse, domain, sigma, auc, logloss, loglikelihood, aic, gainsLift, customMetric);
     _resDev = resDev;
     _nullDev = nullDev;
     _AIC = aic;

@@ -19,15 +19,19 @@ import java.util.Optional;
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
   public final double _logloss;
+  public final double _loglikelihood;
+  public final double _aic;
   public double _mean_per_class_error;
   public final GainsLift _gainsLift;
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
-                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
+                              double sigma, AUC2 auc, double logloss, double loglikelihood, double aic, GainsLift gainsLift,
                               CustomMetric customMetric) {
     super(model, frame,  nobs, mse, domain, sigma, customMetric);
     _auc = auc;
     _logloss = logloss;
+    _loglikelihood = loglikelihood;
+    _aic = aic;
     _gainsLift = gainsLift;
     _mean_per_class_error = cm() == null ? Double.NaN : cm().mean_per_class_error();
   }
@@ -49,6 +53,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       sb.append(" pr_auc: " + (float)_auc.pr_auc() + "\n");
     }
     sb.append(" logloss: " + (float)_logloss + "\n");
+    sb.append(" loglikelihood: " + (float)_loglikelihood + "\n");
+    sb.append(" AIC: " + (float)_aic + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
     sb.append(" default threshold: " + (_auc == null ? 0.5 : (float)_auc.defaultThreshold()) + "\n");
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
@@ -57,6 +63,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   }
 
   public double logloss() { return _logloss; }
+  public double loglikelihood() { return _loglikelihood; }
+  public double aic() { return _aic; }
   public double mean_per_class_error() { return _mean_per_class_error; }
   @Override public AUC2 auc_obj() { return _auc; }
   @Override public ConfusionMatrix cm() {
@@ -161,6 +169,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
     protected double _logloss;
+    protected double _loglikelihood;
     protected AUC2.AUCBuilder _auc;
 
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
@@ -256,6 +265,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     private ModelMetrics makeModelMetrics(Model m, Frame f, GainsLift gl) {
       double mse = Double.NaN;
+      double loglikelihood = Double.NaN;
+      double aic = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
       final AUC2 auc;
@@ -267,7 +278,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       } else {
         auc = new AUC2();
       }
-      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, _customMetric);
+      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, loglikelihood, aic, gl, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
