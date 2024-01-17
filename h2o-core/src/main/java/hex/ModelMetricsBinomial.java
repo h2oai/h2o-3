@@ -206,6 +206,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         // Compute log loss
         _logloss += w * MathUtils.logloss(err);
       }
+
+      if(m.getClass().toString().contains("Generic")) {
+        _loglikelihood += m.likelihood(w, yact[0], ds);
+        System.out.println("_logloss: " + _logloss);
+        System.out.println("_loglikelihood: " + _loglikelihood);
+      }
+
       _count++;
       _wcount += w;
       assert !Double.isNaN(_sumsqe);
@@ -216,6 +223,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     @Override public void reduce( T mb ) {
       super.reduce(mb); // sumseq, count
       _logloss += mb._logloss;
+      _loglikelihood += mb._loglikelihood;
       _auc.reduce(mb._auc);
     }
 
@@ -274,6 +282,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         sigma = weightedSigma();
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
+        if(m.getClass().toString().contains("Generic")) {
+          loglikelihood = -1 * _loglikelihood ; // get likelihood from negative loglikelihood
+          aic = m.aic(loglikelihood);
+        }
         auc = new AUC2(_auc);
       } else {
         auc = new AUC2();
