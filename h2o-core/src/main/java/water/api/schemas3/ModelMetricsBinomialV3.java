@@ -57,6 +57,8 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
 //    sigma = modelMetrics._sigma;
     r2 = modelMetrics.r2();
     logloss = modelMetrics._logloss;
+    loglikelihood = modelMetrics._loglikelihood;
+    AIC = modelMetrics._aic;
     mean_per_class_error = modelMetrics._mean_per_class_error;
 
 
