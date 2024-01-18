@@ -341,7 +341,8 @@ def generate_and_import_combined_pojo():
             assert_frame_equal(pojo_weather_cwd_preds.as_data_frame(), expected.as_data_frame())
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(generate_and_import_combined_pojo)
-else:
-    generate_and_import_combined_pojo()
+pyunit_utils.standalone_test(
+    generate_and_import_combined_pojo, 
+    {"jvm_custom_args": ["-Dsys.ai.h2o.pojo.import.enabled=true", ]}
+)
+

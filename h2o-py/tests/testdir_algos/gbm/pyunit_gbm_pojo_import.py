@@ -35,7 +35,4 @@ def prostate_pojo_import():
     assert_frame_equal(pdp_original[0].as_data_frame(), pdp_imported[0].as_data_frame())
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(prostate_pojo_import)
-else:
-    prostate_pojo_import()
+pyunit_utils.standalone_test(prostate_pojo_import, {"jvm_custom_args": ["-Dsys.ai.h2o.pojo.import.enabled=true", ]})
