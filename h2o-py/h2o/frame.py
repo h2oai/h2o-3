@@ -1966,7 +1966,7 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> df = airlines.as_data_frame()
         >>> df
-        """ 
+        """
         if can_use_pandas() and use_pandas:
             import pandas
             if (can_use_datatable()) or (can_use_polars() and can_use_pyarrow()): # can use multi-thread
@@ -1987,7 +1987,8 @@ class H2OFrame(Keyed, H2ODisplay):
             frame.pop(0)
         return frame
     
-    def convert_with_polars(selfself, fileName):
+    
+    def convert_with_polars(self, fileName):
         import polars as pl
         dt_frame = pl.read_csv(fileName, null_values = "")
         return dt_frame.to_pandas()
