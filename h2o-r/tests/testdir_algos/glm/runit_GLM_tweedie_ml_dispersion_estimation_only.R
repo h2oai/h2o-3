@@ -7,6 +7,7 @@ library(tweedie)
 
 
 generate_data <- function(tweedie_p, phi, offset) {
+  set.seed(12345)
   molsp <- 1000
   x <- seq(1, 10, 1)
   yd <- exp(1 + 1.015 * x)
@@ -57,8 +58,11 @@ train_models <- function(simData, tweedie_p, phi) {
     lambda = 0,
     compute_p_values = T,
     solver = "IRLSM",
-    calc_like = T
+    calc_like = T,
+    dispersion_epsilon = 1e-5,
+    seed = 12345
   )
+  set.seed(12345)
   rfit <-
     glm(
       yr ~ xt,
