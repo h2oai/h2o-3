@@ -1007,7 +1007,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", obj_reg=-1.0)
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr",
+        ...                                        obj_reg=-1.0)
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1154,7 +1157,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", early_stopping=False)
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr",
+        ...                                        early_stopping=False)
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1183,7 +1189,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", nparallelism=0)
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr",
+        ...                                        nparallelism=0)
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1244,7 +1253,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr")
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr")
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1276,7 +1287,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", build_glm_model=False)
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr",
+        ...                                        build_glm_model=False)
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1306,7 +1320,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", p_values_threshold=0.0)
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr",
+        ...                                        p_values_threshold=0.0)
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1335,7 +1352,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", influence="dfbetas")
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr",
+        ...                                        influence="dfbetas")
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1365,7 +1385,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr", multinode_mode=False)
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr",
+        ...                                        multinode_mode=False)
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1432,7 +1455,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr")
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr")
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
@@ -1500,7 +1525,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345, mode="maxr")
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        ...                                        seed=12345,
+        ...                                        mode="maxr")
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> results = maxrModel.result()
         >>> print(results)
