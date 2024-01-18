@@ -72,7 +72,6 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "max_after_balance_size",
             "max_confusion_matrix_size",
             "max_runtime_secs",
-            "custom_metric_func",
             "num_knots",  // array: number of knots for each predictor
             "spline_orders",  // order of I-splines
             "knot_ids", // string array storing frame keys that contains knot location

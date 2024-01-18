@@ -13,6 +13,34 @@ class CustomMaeFunc:
         return l[0] / l[1]
 
 
+class CustomRmseRegressionFunc:
+    def map(self, pred, act, w, o, model):
+        err = act[0] - pred[0]
+        return [err * err, 1]
+
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
+
+    def metric(self, l):
+        # Use Java API directly
+        import java.lang.Math as math
+        return math.sqrt(l[0] / l[1])
+
+
+class CustomNegativeRmseRegressionFunc:  # used to test custom_increasing
+    def map(self, pred, act, w, o, model):
+        err = act[0] - pred[0]
+        return [err * err, 1]
+
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
+
+    def metric(self, l):
+        # Use Java API directly
+        import java.lang.Math as math
+        return -math.sqrt(l[0] / l[1])
+    
+    
 class CustomRmseFunc:
     def map(self, pred, act, w, o, model):
         idx = int(act[0])
