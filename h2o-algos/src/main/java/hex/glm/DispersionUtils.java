@@ -141,12 +141,15 @@ public class DispersionUtils {
 
         double midLoPhi = sortedPhis.get(counter - 2);
         double midLoLLH = sortedLLHs.get(counter - 2);
-        if (midLoPhi > upperBound) {
+        double midHiPhi = lowPhi + d;
+        double midHiLLH = getTweedieLogLikelihood(parms, dinfo, midHiPhi, mu);
+        if (midLoPhi > midHiPhi) {
             midLoPhi = hiPhi - d;
             midLoLLH = getTweedieLogLikelihood(parms, dinfo, midLoPhi, mu);
         }
-        double midHiPhi = lowPhi + d;
-        double midHiLLH = getTweedieLogLikelihood(parms, dinfo, midHiPhi, mu);
+        assert lowerBound <= midLoPhi;
+        assert midLoPhi <= midHiPhi;
+        assert midHiPhi <= upperBound;
         for (; counter < iterationsLeft; counter++) {
             Log.info("Tweedie golden-section search[iter=" + counter + ", phis=(" + lowPhi + ", " + midLoPhi +
                     ", " + midHiPhi + ", " + hiPhi + "), likelihoods=(" +
