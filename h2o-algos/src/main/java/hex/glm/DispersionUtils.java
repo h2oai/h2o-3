@@ -213,6 +213,7 @@ public class DispersionUtils {
         logLikelihoodSanityChecks.add(bestLogLikelihoodFromSanityCheck);
         dispersionsSanityChecks.add(dispersionCurr);
         for (int index = 0; index < parms._max_iterations_dispersion; index++) {
+            Log.info("Tweedie dispersion ML estimation [iter="+index+", phi="+dispersionCurr+"]");
             tDispersion.updateDispersionP(dispersionCurr);
             DispersionTask.ComputeMaxSumSeriesTsk computeTask = new DispersionTask.ComputeMaxSumSeriesTsk(tDispersion,
                     parms, true);

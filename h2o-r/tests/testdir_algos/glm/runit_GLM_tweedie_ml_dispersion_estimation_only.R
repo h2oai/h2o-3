@@ -41,14 +41,14 @@ nll <- function(simData, mu, phi, p) {
 train_models <- function(simData, tweedie_p, phi) {
   simDataH2O <- as.h2o(simData)
   simData <- as.data.frame(simData)
-  
+  offset <- simData[1, "offset_col"]
   hfit <- h2o.glm(
     training_frame = simDataH2O,
     x = 'xt',
     y = 'yr',
     weights_column = 'weight',
     offset_column = "offset_col",
-    model_id = 'simDatatest',
+    model_id = paste0("TweedieDispersionMLE_p", tweedie_p,"_phi", phi, "_offset", offset),
     family = "tweedie",
     link = "tweedie",
     tweedie_link_power = 0,
