@@ -2052,6 +2052,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     excluded.add("cm");
     excluded.add("auc_obj");
     excluded.add("aucpr");
+    if (null == _parms._custom_metric_func) {  // hide custom metrics when not available
+      excluded.add("custom");
+      excluded.add("custom_increasing");
+    }
     List<Method> methods = new ArrayList<>();
     {
       Model m = DKV.getGet(cvmodels[0]);
