@@ -191,14 +191,28 @@ public class DispersionUtils {
      */
     public static double estimateTweedieDispersionOnly(GLMModel.GLMParameters parms, GLMModel model, Job job,
                                                               double[] beta, DataInfo dinfo) {
-        long currTime = System.currentTimeMillis();
-        long modelBuiltTime = currTime - model._output._start_time;
-        long timeLeft = parms._max_runtime_secs > 0 ? (long) (parms._max_runtime_secs * 1000 - modelBuiltTime)
-                : Long.MAX_VALUE;
-        TweedieMLDispersionOnly tDispersion = new TweedieMLDispersionOnly(parms.train(), parms, model, beta, dinfo);
+
         DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
                 1, Vec.T_NUM, dinfo._adaptedFrame);
         Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
+        List<Double> logLikelihoodSanityChecks = new ArrayList<>();
+        List<Double> dispersionsSanityChecks = new ArrayList<>();
+        logLikelihoodSanityChecks.add(getTweedieLogLikelihood(parms, dinfo, parms._init_dispersion_parameter, mu));
+        dispersionsSanityChecks.add(parms._init_dispersion_parameter);
+        final double dispersion = goldenRatioDispersionSearch(parms, dinfo, mu,logLikelihoodSanityChecks, dispersionsSanityChecks, job);
+        Log.info("Tweedie dispersion estimate = "+dispersion);
+        return dispersion;
+        
+        /*
+        // FIXME: The Newton's method seems not to be reproducible on jenkins (runit_GLM_tweedie_ml_dispersion_estimation_only.R)
+      
+        long timeLeft = parms._max_runtime_secs > 0 ? (long) (parms._max_runtime_secs * 1000 - modelBuiltTime)
+            : Long.MAX_VALUE;  
+        long currTime = System.currentTimeMillis();
+
+        long modelBuiltTime = currTime - model._output._start_time;
+ 
+        TweedieMLDispersionOnly tDispersion = new TweedieMLDispersionOnly(parms.train(), parms, model, beta, dinfo);
 
         double dispersionCurr = tDispersion._dispersionParameter;   // initial value of dispersion parameter
         double dispersionNew;
@@ -303,6 +317,8 @@ public class DispersionUtils {
         }
         else
             return dispersionCurr;
+            
+         */
     }
 
     static class NegativeBinomialGradientAndHessian extends MRTask<NegativeBinomialGradientAndHessian> {
