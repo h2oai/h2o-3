@@ -16,7 +16,7 @@ public class ModelMetricsMultinomialGeneric extends ModelMetricsMultinomial {
                                         TwoDimTable confusion_matrix, TwoDimTable hit_ratio_table, double logloss, CustomMetric customMetric,
                                         double mean_per_class_error, double r2, TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, 
                                         MultinomialAucType type, final String description) {
-    super(model, frame, nobs, mse, domain, sigma, null, null, logloss, null, customMetric);
+    super(model, frame, nobs, mse, domain, sigma, null, null, logloss, 0, 0, null, customMetric);
     _confusion_matrix_table = confusion_matrix; 
     _hit_ratio_table = hit_ratio_table;
     _auc = new MultinomialAUC(multinomial_auc_table, multinomial_aucpr_table, domain, type);
