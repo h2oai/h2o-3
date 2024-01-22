@@ -108,7 +108,6 @@
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param nparallelism number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability Defaults to
 #'        0.
 #' @param max_predictor_number Maximum number of predictors to be considered when building GLM models.  Defaults to 1. Defaults to 1.
@@ -190,7 +189,6 @@ h2o.modelSelection <- function(x,
                                class_sampling_factors = NULL,
                                max_after_balance_size = 5.0,
                                max_runtime_secs = 0,
-                               custom_metric_func = NULL,
                                nparallelism = 0,
                                max_predictor_number = 1,
                                min_predictor_number = 1,
@@ -315,8 +313,6 @@ h2o.modelSelection <- function(x,
     parms$max_after_balance_size <- max_after_balance_size
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
-  if (!missing(custom_metric_func))
-    parms$custom_metric_func <- custom_metric_func
   if (!missing(nparallelism))
     parms$nparallelism <- nparallelism
   if (!missing(max_predictor_number))
@@ -387,7 +383,6 @@ h2o.modelSelection <- function(x,
                                                class_sampling_factors = NULL,
                                                max_after_balance_size = 5.0,
                                                max_runtime_secs = 0,
-                                               custom_metric_func = NULL,
                                                nparallelism = 0,
                                                max_predictor_number = 1,
                                                min_predictor_number = 1,
@@ -517,8 +512,6 @@ h2o.modelSelection <- function(x,
     parms$max_after_balance_size <- max_after_balance_size
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
-  if (!missing(custom_metric_func))
-    parms$custom_metric_func <- custom_metric_func
   if (!missing(nparallelism))
     parms$nparallelism <- nparallelism
   if (!missing(max_predictor_number))
