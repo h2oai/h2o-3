@@ -199,7 +199,7 @@ public class DispersionUtils {
         List<Double> dispersionsSanityChecks = new ArrayList<>();
         logLikelihoodSanityChecks.add(getTweedieLogLikelihood(parms, dinfo, parms._init_dispersion_parameter, mu));
         dispersionsSanityChecks.add(parms._init_dispersion_parameter);
-        final double dispersion = goldenRatioDispersionSearch(parms, dinfo, mu,logLikelihoodSanityChecks, dispersionsSanityChecks, job);
+        final double dispersion = goldenRatioDispersionSearch(parms, dinfo, mu, logLikelihoodSanityChecks, dispersionsSanityChecks, job);
         Log.info("Tweedie dispersion estimate = "+dispersion);
         return dispersion;
         
