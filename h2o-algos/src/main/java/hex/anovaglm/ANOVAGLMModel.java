@@ -84,7 +84,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     public int _nfolds = 0; // disable cross-validation
     public Key<Frame> _plug_values = null;
     public boolean _save_transformed_framekeys = false; // for debugging, save the transformed predictors/interaction
-    public int _nparallelism = 4;
+    public int _nparallelism = H2O.NUMCPUS;
 
     @Override
     public String algoName() {

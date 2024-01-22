@@ -64,7 +64,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
                  max_runtime_secs=0.0,  # type: float
                  save_transformed_framekeys=False,  # type: bool
                  highest_interaction_term=0,  # type: int
-                 nparallelism=4,  # type: int
                  type=0,  # type: int
                  ):
         """
@@ -201,9 +200,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
                only, 3 for three columns and so on...  Default to 2.
                Defaults to ``0``.
         :type highest_interaction_term: int
-        :param nparallelism: Number of models to build in parallel.  Default to 4.  Adjust according to your system.
-               Defaults to ``4``.
-        :type nparallelism: int
         :param type: Refer to the SS type 1, 2, 3, or 4.  We are currently only supporting 3
                Defaults to ``0``.
         :type type: int
@@ -245,7 +241,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         self.max_runtime_secs = max_runtime_secs
         self.save_transformed_framekeys = save_transformed_framekeys
         self.highest_interaction_term = highest_interaction_term
-        self.nparallelism = nparallelism
         self.type = type
         self._parms["_rest_version"] = 3
 
@@ -744,20 +739,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
     def highest_interaction_term(self, highest_interaction_term):
         assert_is_type(highest_interaction_term, None, int)
         self._parms["highest_interaction_term"] = highest_interaction_term
-
-    @property
-    def nparallelism(self):
-        """
-        Number of models to build in parallel.  Default to 4.  Adjust according to your system.
-
-        Type: ``int``, defaults to ``4``.
-        """
-        return self._parms.get("nparallelism")
-
-    @nparallelism.setter
-    def nparallelism(self, nparallelism):
-        assert_is_type(nparallelism, None, int)
-        self._parms["nparallelism"] = nparallelism
 
     @property
     def type(self):

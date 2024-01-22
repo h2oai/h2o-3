@@ -77,7 +77,6 @@
 #' @param save_transformed_framekeys \code{Logical}. true to save the keys of transformed predictors and interaction column. Defaults to FALSE.
 #' @param highest_interaction_term Limit the number of interaction terms, if 2 means interaction between 2 columns only, 3 for three columns and
 #'        so on...  Default to 2. Defaults to 0.
-#' @param nparallelism Number of models to build in parallel.  Default to 4.  Adjust according to your system. Defaults to 4.
 #' @param type Refer to the SS type 1, 2, 3, or 4.  We are currently only supporting 3 Defaults to 0.
 #' @examples
 #' \dontrun{
@@ -126,7 +125,6 @@ h2o.anovaglm <- function(x,
                          max_runtime_secs = 0,
                          save_transformed_framekeys = FALSE,
                          highest_interaction_term = 0,
-                         nparallelism = 4,
                          type = 0)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -213,8 +211,6 @@ h2o.anovaglm <- function(x,
     parms$save_transformed_framekeys <- save_transformed_framekeys
   if (!missing(highest_interaction_term))
     parms$highest_interaction_term <- highest_interaction_term
-  if (!missing(nparallelism))
-    parms$nparallelism <- nparallelism
   if (!missing(type))
     parms$type <- type
 
@@ -256,7 +252,6 @@ h2o.anovaglm <- function(x,
                                          max_runtime_secs = 0,
                                          save_transformed_framekeys = FALSE,
                                          highest_interaction_term = 0,
-                                         nparallelism = 4,
                                          type = 0,
                                          segment_columns = NULL,
                                          segment_models_id = NULL,
@@ -348,8 +343,6 @@ h2o.anovaglm <- function(x,
     parms$save_transformed_framekeys <- save_transformed_framekeys
   if (!missing(highest_interaction_term))
     parms$highest_interaction_term <- highest_interaction_term
-  if (!missing(nparallelism))
-    parms$nparallelism <- nparallelism
   if (!missing(type))
     parms$type <- type
 

@@ -47,7 +47,6 @@ public class ANOVAGLMV3 extends ModelBuilderSchema<ANOVAGLM, ANOVAGLMV3, ANOVAGL
             "max_runtime_secs",
             "save_transformed_framekeys",
             "highest_interaction_term",
-            "nparallelism",
             "type" // GLM SS Type, only support 3 right now
     };
 
@@ -157,8 +156,5 @@ public class ANOVAGLMV3 extends ModelBuilderSchema<ANOVAGLM, ANOVAGLMV3, ANOVAGL
 
     @API(help="true to save the keys of transformed predictors and interaction column.")
     public boolean save_transformed_framekeys;
-
-    @API(help="Number of models to build in parallel.  Default to 4.  Adjust according to your system.")
-    public int nparallelism;
   }
 }
