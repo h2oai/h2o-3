@@ -64,8 +64,6 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "max_after_balance_size",
                 "max_confusion_matrix_size",
                 "max_runtime_secs",
-                "custom_metric_func",
-                "nparallelism",
                 "max_predictor_number",  // denote maximum number of predictors to build models for
                 "min_predictor_number",
                 "mode", // naive, maxr, maxrsweep, backward
@@ -278,10 +276,6 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "models starting with all predictors to be included.  Defaults to 1.",
                 level = API.Level.secondary, direction = API.Direction.INPUT)
         public int min_predictor_number;
-
-        @API(help = "number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability",
-                level = API.Level.secondary, gridable = true)
-        public int nparallelism;
 
         @API(help = "For mode='backward' only.  If specified, will stop the model building process when all coefficients" +
                 "p-values drop below this threshold ", level = API.Level.expert)

@@ -73,7 +73,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public Key<Frame> _plug_values = null;
         public int _max_predictor_number = 1;
         public int _min_predictor_number = 1;
-        public int _nparallelism = 0;
+        public int _nparallelism = H2O.NUMCPUS;   // adaptive to the system it is run on.
         public double _p_values_threshold = 0;
         public double _tweedie_variance_power;
         public double _tweedie_link_power;

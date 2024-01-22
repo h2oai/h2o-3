@@ -167,12 +167,6 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                         _numPredictors + ")in the dataset.");
         }
         
-        if (_parms._nparallelism < 0) 
-            error("nparallelism", "must be >= 0.");
-        
-        if (_parms._nparallelism == 0)
-            _parms._nparallelism = H2O.NUMCPUS;
-        
         if (maxrsweep.equals(_parms._mode))
             warn("validation_frame", " is not used in choosing the best k subset for ModelSelection" +
                     " models with maxrsweep.");
