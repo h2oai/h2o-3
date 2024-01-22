@@ -2,7 +2,7 @@ package hex.genmodel.algos.glm;
 
 import hex.genmodel.MojoModel;
 
-abstract class GlmMojoModelBase extends MojoModel {
+public abstract class GlmMojoModelBase extends MojoModel {
 
   boolean _useAllFactorLevels;
 

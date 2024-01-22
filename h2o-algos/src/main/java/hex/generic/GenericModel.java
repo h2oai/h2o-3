@@ -2,7 +2,7 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.*;
-import hex.genmodel.algos.glm.GlmMojoModel;
+import hex.genmodel.algos.glm.GlmMojoModelBase;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
@@ -147,11 +147,8 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         if (!_algoName.equals("glm")) {
             return 0;
         } else {
-            double aic = -2 * likelihood + 2 * Arrays.stream(((GlmMojoModel) this.genModel()).getBeta()).filter(b -> b != 0).count();
-            System.out.println("Bettas for AIC: " + Arrays.stream(((GlmMojoModel) this.genModel()).getBeta()).filter(b -> b != 0).count());
-            System.out.println(Arrays.toString(((GlmMojoModel) this.genModel()).getBeta()));
-            System.out.println("Gen AIC: " + aic);
-            return aic;
+            long betasCount = Arrays.stream(((GlmMojoModelBase) this.genModel()).getBeta()).filter(b -> b != 0).count();
+            return -2 * likelihood + 2 * betasCount;
         }
     }
 
