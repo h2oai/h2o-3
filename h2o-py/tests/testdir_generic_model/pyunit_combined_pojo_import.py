@@ -2,7 +2,7 @@ import h2o
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGeneralizedLinearEstimator
 from tests import pyunit_utils
 import os
-import sys
+import unittest
 from pandas.testing import assert_frame_equal
 
 
@@ -282,67 +282,65 @@ def make_pojo_embeddable(pojo_path):
     return "".join(pojo_lines)
 
 
-def generate_and_import_combined_pojo():
-    if sys.version_info[0] < 3:  # Python 2
-        print("This example needs Python 3.x+")
-        return
+class TestCombinedPojoImport(unittest.TestCase):
+    def test(self):
+        try:
+            h2o.init(strict_version_check=False, jvm_custom_args=["-Dsys.ai.h2o.pojo.import.enabled=true", ])
+            weather_orig = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/weather.csv"))
+            weather = weather_orig  # working copy
+        
+            features = list(set(weather.names) - {"Date", "RainTomorrow", "Sunshine"})
+            features.sort()
+            response = "RISK_MM"
+        
+            glm_model = H2OGeneralizedLinearEstimator()
+            glm_model.train(x=features, y=response, training_frame=weather)
+            glm_preds = glm_model.predict(weather)
+        
+            gbm_model = H2OGradientBoostingEstimator(ntrees=5)
+            gbm_model.train(x=features, y=response, training_frame=weather)
+            gbm_preds = gbm_model.predict(weather)
+        
+            # Drop columns that we will calculate in POJO manually (we will recreate them in POJO to be the exact same)
+            weather = weather.drop("ChangeTemp")
+            weather = weather.drop("ChangeTempDir")
+        
+            (combined_pojo_name, combined_pojo_path) = generate_combined_pojo(glm_model, gbm_model)
+            print("Combined POJO was stored in: " + combined_pojo_path)
+        
+            # Note: when using upload_mojo - always specify model_id=<POJO class name>
+            pojo_model = h2o.upload_mojo(combined_pojo_path, model_id=combined_pojo_name)
+        
+            # Testing begins
+        
+            # Sanity test - test parameterization that delegates to GLM
+            weather["Bias"] = 1  # behave like GLM
+            pojo_glm_preds = pojo_model.predict(weather)
+            assert_frame_equal(pojo_glm_preds.as_data_frame(), glm_preds.as_data_frame())
+        
+            # Sanity test - test parameterization that delegates to GBM
+            weather["Bias"] = 0  # behave like GBM
+            pojo_gbm_preds = pojo_model.predict(weather)
+            assert_frame_equal(pojo_gbm_preds.as_data_frame(), gbm_preds.as_data_frame())
+        
+            # Test per-segment specific behavior, segments are defined by ChangeWindDirect
+            weather["Bias"] = float("NaN")
+            for change_wind_dir in weather["ChangeWindDirect"].levels()[0]:
+                weather_cwd = weather[weather["ChangeWindDirect"] == change_wind_dir]
+                weather_orig_cwd = weather_orig[weather_orig["ChangeWindDirect"] == change_wind_dir]
+                pojo_weather_cwd_preds = pojo_model.predict(weather_cwd)
+                if change_wind_dir == "c" or change_wind_dir == "l":
+                    expected = glm_model.predict(weather_orig_cwd) * 2
+                    assert_frame_equal(pojo_weather_cwd_preds.as_data_frame(), expected.as_data_frame())
+                elif change_wind_dir == "n":
+                    expected = (glm_model.predict(weather_orig_cwd) + gbm_model.predict(weather_orig_cwd)) / 2
+                    assert_frame_equal(pojo_weather_cwd_preds.as_data_frame(), expected.as_data_frame())
+                elif change_wind_dir == "s":
+                    expected = gbm_model.predict(weather_orig_cwd)
+                    assert_frame_equal(pojo_weather_cwd_preds.as_data_frame(), expected.as_data_frame())
+        finally:
+            h2o.cluster().shutdown()
 
-    weather_orig = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/weather.csv"))
-    weather = weather_orig  # working copy
 
-    features = list(set(weather.names) - {"Date", "RainTomorrow", "Sunshine"})
-    features.sort()
-    response = "RISK_MM"
-
-    glm_model = H2OGeneralizedLinearEstimator()
-    glm_model.train(x=features, y=response, training_frame=weather)
-    glm_preds = glm_model.predict(weather)
-
-    gbm_model = H2OGradientBoostingEstimator(ntrees=5)
-    gbm_model.train(x=features, y=response, training_frame=weather)
-    gbm_preds = gbm_model.predict(weather)
-
-    # Drop columns that we will calculate in POJO manually (we will recreate them in POJO to be the exact same)
-    weather = weather.drop("ChangeTemp")
-    weather = weather.drop("ChangeTempDir")
-
-    (combined_pojo_name, combined_pojo_path) = generate_combined_pojo(glm_model, gbm_model)
-    print("Combined POJO was stored in: " + combined_pojo_path)
-
-    # Note: when using upload_mojo - always specify model_id=<POJO class name>
-    pojo_model = h2o.upload_mojo(combined_pojo_path, model_id=combined_pojo_name)
-
-    # Testing begins
-
-    # Sanity test - test parameterization that delegates to GLM
-    weather["Bias"] = 1  # behave like GLM
-    pojo_glm_preds = pojo_model.predict(weather)
-    assert_frame_equal(pojo_glm_preds.as_data_frame(), glm_preds.as_data_frame())
-
-    # Sanity test - test parameterization that delegates to GBM
-    weather["Bias"] = 0  # behave like GBM
-    pojo_gbm_preds = pojo_model.predict(weather)
-    assert_frame_equal(pojo_gbm_preds.as_data_frame(), gbm_preds.as_data_frame())
-
-    # Test per-segment specific behavior, segments are defined by ChangeWindDirect
-    weather["Bias"] = float("NaN")
-    for change_wind_dir in weather["ChangeWindDirect"].levels()[0]:
-        weather_cwd = weather[weather["ChangeWindDirect"] == change_wind_dir]
-        weather_orig_cwd = weather_orig[weather_orig["ChangeWindDirect"] == change_wind_dir]
-        pojo_weather_cwd_preds = pojo_model.predict(weather_cwd)
-        if change_wind_dir == "c" or change_wind_dir == "l":
-            expected = glm_model.predict(weather_orig_cwd) * 2
-            assert_frame_equal(pojo_weather_cwd_preds.as_data_frame(), expected.as_data_frame())
-        elif change_wind_dir == "n":
-            expected = (glm_model.predict(weather_orig_cwd) + gbm_model.predict(weather_orig_cwd)) / 2
-            assert_frame_equal(pojo_weather_cwd_preds.as_data_frame(), expected.as_data_frame())
-        elif change_wind_dir == "s":
-            expected = gbm_model.predict(weather_orig_cwd)
-            assert_frame_equal(pojo_weather_cwd_preds.as_data_frame(), expected.as_data_frame())
-
-
-pyunit_utils.standalone_test(
-    generate_and_import_combined_pojo, 
-    {"jvm_custom_args": ["-Dsys.ai.h2o.pojo.import.enabled=true", ]}
-)
-
+suite = unittest.TestLoader().loadTestsFromTestCase(TestCombinedPojoImport)
+unittest.TextTestRunner().run(suite)
