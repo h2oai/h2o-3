@@ -1,19 +1,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
-library(uplift)
 
 check.uplift.grid <- function() {
-    data <- sim_pte(n = 2000, p = 6, rho = 0, sigma = sqrt(2), beta.den = 4)
+    x <- c("feature_1", "feature_2", "feature_3", "feature_4", "feature_5", "feature_6")
+    y <- "outcome"
+    treat <- "treatment"
+    
+    data <- h2o.importFile(path=locate("smalldata/uplift/upliftml_train.csv"), 
+                           col.types=list(by.col.name=c(treat, y), types=c("factor", "factor")))
     print(summary(data))
-    
-    data$treat <- ifelse(data$treat == 1, 1, 0)
-    data$treat <- as.factor(data$treat)
-    data$y <- as.factor(data$y)
-    data <- as.h2o(data)
-    
-    x <- c("X1", "X2", "X3", "X4", "X5", "X6")
-    y <- "y"
-    treat <- "treat"
 
     pretty.list <- function(ll) {
         str <- lapply(ll, function(x) { paste0("(", paste(x, collapse = ","), ")", sep = "") })

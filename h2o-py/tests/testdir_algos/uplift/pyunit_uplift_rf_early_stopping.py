@@ -33,7 +33,8 @@ def uplift_random_forest_early_stopping():
         treatment_column=treatment_column,
         min_rows=min_rows,
         seed=seed,
-        sample_rate=sample_rate
+        sample_rate=sample_rate,
+        score_each_iteration=True
     )
 
     uplift_model.train(y=response_column, x=x_names, training_frame=train_h2o, validation_frame=valid_h2o)
@@ -47,7 +48,8 @@ def uplift_random_forest_early_stopping():
         seed=seed,
         sample_rate=sample_rate,
         stopping_metric="AUUC",
-        stopping_rounds=2
+        stopping_rounds=2,
+        score_each_iteration=True
     )
 
     uplift_model_es.train(y=response_column, x=x_names, training_frame=train_h2o, validation_frame=valid_h2o)

@@ -38,6 +38,7 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._seed = 0xDECAF;
+            p._ntrees = 3;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -62,6 +63,7 @@ public class UpliftDRFTest extends TestUtil {
             p._response_column = "conversion";
             p._seed = 0xDECAF;
             p._nbins = 10;
+            p._ntrees = 3;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -227,7 +229,7 @@ public class UpliftDRFTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = generateFrame();
-            int ntrees = 100;
+            int ntrees = 42;
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -252,7 +254,7 @@ public class UpliftDRFTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = generateFrame();
-            int ntrees = 100;
+            int ntrees = 42;
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -277,7 +279,7 @@ public class UpliftDRFTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = generateFrame();
-            int ntrees = 100;
+            int ntrees = 42;
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -302,7 +304,7 @@ public class UpliftDRFTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = generateFrame();
-            int ntrees = 100;
+            int ntrees = 42;
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -327,7 +329,7 @@ public class UpliftDRFTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = generateFrame();
-            int ntrees = 100;
+            int ntrees = 42;
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -363,6 +365,7 @@ public class UpliftDRFTest extends TestUtil {
             p._ntrees = 100;
             p._max_depth = 0;
             p._score_each_iteration = true;
+            p._ntrees = 3;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
