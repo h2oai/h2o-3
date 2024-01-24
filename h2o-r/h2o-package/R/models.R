@@ -812,7 +812,9 @@ h2o.transform_frame <- function(model, fr) {
 #' h2o.init()
 #'
 #' # Import the prostate dataset:
-#' prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+#' prostate <- h2o.importFile(
+#'    "http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv"
+#' )
 #'
 #' # Set the predictors & response:
 #' predictors <- c("AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
