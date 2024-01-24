@@ -506,10 +506,13 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     if verbose:
         cmd_str = " ".join(cmd)
         print("java cmd:\t%s" % cmd_str)
-               
 
+    stdout = subprocess.DEVNULL
+    if verbose:
+        stdout = None
+        
     # invoke the command
-    subprocess.check_call(cmd, shell=False)
+    subprocess.check_call(cmd, shell=False, stdout=stdout)
 
     # load predictions in form of a dict
     with open(output_csv_path) as csv_file:
