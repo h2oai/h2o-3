@@ -95,8 +95,9 @@ examples = dict(
 >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
 ...                                    lambda_=0,
 ...                                    missing_values_handling="skip",
-...                                    save_transformed_framekeys=False)  
+...                                    save_transformed_framekeys=True)  
 >>> anova_model.train(x=x, y=y, training_frame=train)
->>> anova_model.summary()
+>>> transformFrame = h2o.get_frame(anova_model._model_json['output']['transformed_columns_key']['name'])
+>>> print(transformFrame)
 """
 )
