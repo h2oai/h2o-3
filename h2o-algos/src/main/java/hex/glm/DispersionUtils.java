@@ -77,7 +77,8 @@ public class DispersionUtils {
                 false,
                 false,
                 false,
-                false)
+                false,
+                true)
                 .compute(mu,
                         dinfo._adaptedFrame.vec(parms._response_column),
                         parms._weights_column == null
@@ -191,7 +192,15 @@ public class DispersionUtils {
      */
     public static double estimateTweedieDispersionOnly(GLMModel.GLMParameters parms, GLMModel model, Job job,
                                                               double[] beta, DataInfo dinfo) {
-
+        if (parms._tweedie_variance_power >= 2 && 
+            dinfo._adaptedFrame.vec(parms._response_column).min() <= 0) {
+            Log.warn("Response contains zeros or negative values but "+
+                    "Tweedie variance power does not support zeros. "+
+                    "Instances with response <= 0 will be skipped.");
+            model.addWarning("Response contains zeros or negative values but "+
+                    "Tweedie variance power does not support zeros. "+
+                    "Instances with response <= 0 will be skipped.");
+        }
         DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
                 1, Vec.T_NUM, dinfo._adaptedFrame);
         Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);

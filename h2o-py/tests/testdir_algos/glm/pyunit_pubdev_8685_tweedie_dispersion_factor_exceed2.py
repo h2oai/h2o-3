@@ -10,9 +10,6 @@ def test_tweedie_dispersion_factor():
     training_data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/tweedie_p3_phi1_10KRows.csv"))
     Y = 'x'
     x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
-    
-    # With Tweedie variance power >= 2, Tweedie distribution has no mass or density on 0 -> log likelihood would be -Inf
-    training_data = training_data[training_data[Y] > 0]
 
     model_pearson = H2OGeneralizedLinearEstimator(family='tweedie', lambda_=0, compute_p_values=True,
                                                   tweedie_variance_power=3,
@@ -30,19 +27,15 @@ def test_tweedie_dispersion_factor():
                                               init_dispersion_parameter=1.5, dispersion_parameter_method="ml")
     model_ml2.train(training_frame=training_data, x=x, y=Y)
 
-    model_pearson2 = H2OGeneralizedLinearEstimator(family='tweedie', lambda_=0, compute_p_values=True,
-                                                  tweedie_variance_power=3,
-                                                  dispersion_parameter_method="pearson")
-    model_pearson2.train(training_frame=training_data, x=x, y=Y)
     true_dispersion_factor = 1.0
 
     dispersion_parameter_estimated = model_ml._model_json["output"]["dispersion"]
     dispersion_parameter_estimated2 = model_ml2._model_json["output"]["dispersion"]
     dispersion_parameter_estimated_pearson = model_pearson._model_json["output"]["dispersion"]
-    dispersion_parameter_estimated_pearson2 = model_pearson._model_json["output"]["dispersion"]
+
     print("True dispersion parameter {0}.  Estimated ml dispersion parameter {1}.  Estimated pearson dispersion "
-          "parameter {2} and without the data with y==0 {3}.".format(true_dispersion_factor, dispersion_parameter_estimated,
-                                  dispersion_parameter_estimated_pearson, dispersion_parameter_estimated_pearson2))
+          "parameter {2}".format(true_dispersion_factor, dispersion_parameter_estimated,
+                                  dispersion_parameter_estimated_pearson))
     # make sure the ml estimates are closer to the true dispersion value than the dispersion value from pearson
     assert abs(true_dispersion_factor - dispersion_parameter_estimated) <= abs(
         dispersion_parameter_estimated_pearson - true_dispersion_factor), \
