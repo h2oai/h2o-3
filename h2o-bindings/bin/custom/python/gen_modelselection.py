@@ -121,7 +121,7 @@ def class_extensions():
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=5,
         ...                                        seed=12345,
         ...                                        mode="maxr")
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
@@ -295,23 +295,6 @@ examples = dict(
 >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
 >>> glm_rid = maxrModel.get_regression_influence_diagnostics()
 >>> print(glm_rid)
-""",
-    nparallelism="""
->>> import h2o
->>> from h2o.estimators import H2OModelSelectionEstimator
->>> h2o.init()
->>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
->>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
->>> response = "GLEASON"
->>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
-...                                        seed=12345,
-...                                        mode="maxr",
-...                                        nparallelism=0)
->>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
->>> results = maxrModel.result()
->>> print(results)
->>> coeff = maxrModel.coef()
->>> print(coeff)
 """,
     p_values_threshold="""
 >>> import h2o

@@ -1144,24 +1144,6 @@ class H2OModelSelectionEstimator(H2OEstimator):
         number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability
 
         Type: ``int``, defaults to ``0``.
-
-        :examples:
-
-        >>> import h2o
-        >>> from h2o.estimators import H2OModelSelectionEstimator
-        >>> h2o.init()
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
-        >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
-        >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
-        ...                                        seed=12345,
-        ...                                        mode="maxr",
-        ...                                        nparallelism=0)
-        >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
-        >>> results = maxrModel.result()
-        >>> print(results)
-        >>> coeff = maxrModel.coef()
-        >>> print(coeff)
         """
         return self._parms.get("nparallelism")
 
@@ -1467,7 +1449,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
         >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
         >>> response = "GLEASON"
-        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=7,
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=5,
         ...                                        seed=12345,
         ...                                        mode="maxr")
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
