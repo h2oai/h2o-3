@@ -1324,6 +1324,7 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_gbm_binomial_pojo() throws Exception {
         try {
             Scope.enter();
+            System.setProperty("sys.ai.h2o.pojo.import.enabled", "true");
             // Create new GBM model
             final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
@@ -1356,6 +1357,7 @@ public class GenericModelTest extends TestUtil {
 
             assertFrameEquals(scoredOriginal, scoredGeneric, 0);
         } finally {
+            System.clearProperty("sys.ai.h2o.pojo.import.enabled");
             Scope.exit();
         }
     }
