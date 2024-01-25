@@ -388,7 +388,7 @@ gen_model_file_name = "h2o-genmodel.jar"
 h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
 
 
-def   mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, 
+def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, 
                         verbose=False, setInvNumNA=False, predict_contributions=False, predict_calibrated=False):
     """
     MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
