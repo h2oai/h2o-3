@@ -727,6 +727,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk, 
                          String[] interactions, double theta){
+      this(f,l,lambda,alpha,twVar,twLnk,interactions, theta, Double.NaN);
+    }
+
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk,
+                         String[] interactions, double theta, double dispersion_estimated){
       this._lambda = lambda;
       this._alpha = alpha;
       this._tweedie_variance_power = twVar;
@@ -736,7 +741,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = l;
       this._theta=theta;
       this._invTheta = 1.0/theta;
-      this._dispersion_estimated = _init_dispersion_parameter;
+      this._dispersion_estimated = Double.isNaN(dispersion_estimated) ? _init_dispersion_parameter : dispersion_estimated;
     }
 
     public final double variance(double mu){
