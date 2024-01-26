@@ -209,8 +209,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
       if(m.getClass().toString().contains("Generic")) {
         _loglikelihood += m.likelihood(w, yact[0], ds);
-        System.out.println("_logloss: " + _logloss);
-        System.out.println("_loglikelihood: " + _loglikelihood);
       }
 
       _count++;
