@@ -151,10 +151,11 @@ class MetricsBase(h2o_meta(H2ODisplay)):
                     "Null deviance: {}".format(self.null_deviance()),
                     "Residual deviance: {}".format(self.residual_deviance()),
                 ])
-        if is_type(self.aic(), numeric) and self.aic() != 0:
-            items.append("AIC: {}".format(self.aic()))
-        if is_type(self.loglikelihood(), numeric) and self.loglikelihood() != 0:
-            items.append("Loglikelihood: {}".format(self.loglikelihood()))
+                if is_type(self.aic(), numeric) and self.aic() != 0:
+                    items.append("AIC: {}".format(self.aic()))
+                if is_type(self.loglikelihood(), numeric) and self.loglikelihood() != 0:
+                    items.append("Loglikelihood: {}".format(self.loglikelihood()))
+                    
         items.extend(self._str_items_custom())
         return items
     
