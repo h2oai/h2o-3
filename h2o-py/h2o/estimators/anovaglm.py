@@ -387,21 +387,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         Tweedie variance power
 
         Type: ``float``, defaults to ``0.0``.
-
-        :examples:
-
-        >>> import h2o
-        >>> h2o.init()
-        >>> from h2o.estimators import H2OANOVAGLMEstimator 
-        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
-        >>> x = ['AGE', 'VOL', 'DCAPS']
-        >>> y = 'CAPSULE'
-        >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
-        ...                                    lambda_=0,
-        ...                                    missing_values_handling="skip",
-        ...                                    tweedie_variance_power=0.0)
-        >>> anova_model.train(x=x, y=y, training_frame=train)
-        >>> anova_model.summary() 
         """
         return self._parms.get("tweedie_variance_power")
 
@@ -416,21 +401,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         Tweedie link power
 
         Type: ``float``, defaults to ``1.0``.
-
-        :examples:
-
-        >>> import h2o
-        >>> h2o.init()
-        >>> from h2o.estimators import H2OANOVAGLMEstimator 
-        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
-        >>> x = ['AGE', 'VOL', 'DCAPS']
-        >>> y = 'CAPSULE'
-        >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
-        ...                                    lambda_=0,
-        ...                                    missing_values_handling="skip",
-        ...                                    tweedie_link_power=1.0)
-        >>> anova_model.train(x=x, y=y, training_frame=train)
-        >>> anova_model.summary() 
         """
         return self._parms.get("tweedie_link_power")
 
@@ -590,21 +560,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         of response does not reflect reality.
 
         Type: ``float``, defaults to ``0.0``.
-
-        :examples:
-
-        >>> import h2o
-        >>> h2o.init()
-        >>> from h2o.estimators import H2OANOVAGLMEstimator 
-        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
-        >>> x = ['AGE', 'VOL', 'DCAPS']
-        >>> y = 'CAPSULE'
-        >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
-        ...                                    lambda_=0,
-        ...                                    missing_values_handling="skip",
-        ...                                    prior=0.0)
-        >>> anova_model.train(x=x, y=y, training_frame=train)
-        >>> anova_model.summary()  
         """
         return self._parms.get("prior")
 
@@ -794,9 +749,10 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
         ...                                    lambda_=0,
         ...                                    missing_values_handling="skip",
-        ...                                    save_transformed_framekeys=False)  
+        ...                                    save_transformed_framekeys=True)  
         >>> anova_model.train(x=x, y=y, training_frame=train)
-        >>> anova_model.summary()
+        >>> transformFrame = h2o.get_frame(anova_model._model_json['output']['transformed_columns_key']['name'])
+        >>> print(transformFrame)
         """
         return self._parms.get("save_transformed_framekeys")
 
@@ -841,21 +797,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         Number of models to build in parallel.  Default to 4.  Adjust according to your system.
 
         Type: ``int``, defaults to ``4``.
-
-        :examples:
-
-        >>> import h2o
-        >>> h2o.init()
-        >>> from h2o.estimators import H2OANOVAGLMEstimator 
-        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
-        >>> x = ['AGE', 'VOL', 'DCAPS']
-        >>> y = 'CAPSULE'
-        >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
-        ...                                    lambda_=0,
-        ...                                    missing_values_handling="skip",
-        ...                                    nparallelism=4)
-        >>> anova_model.train(x=x, y=y, training_frame=train)
-        >>> anova_model.summary()
         """
         return self._parms.get("nparallelism")
 
