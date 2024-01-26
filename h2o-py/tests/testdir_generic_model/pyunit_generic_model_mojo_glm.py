@@ -17,9 +17,9 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     # GLM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     glm = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, 
-                                        compute_p_values=family == "gaussian", 
-                                        remove_collinear_columns=family == "gaussian") # alpha = 1, lambda_ = 1, bad values, use default
-    glm.train(x = x, y = y, training_frame=airlines, validation_frame=airlines, )
+                                        compute_p_values=(family == "gaussian"), 
+                                        remove_collinear_columns=(family == "gaussian")) # alpha = 1, lambda_ = 1, bad values, use default
+    glm.train(x=x, y=y, training_frame=airlines, validation_frame=airlines,)
     with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (original_output, _):
         glm.show()
     print(original_output.getvalue())
@@ -51,8 +51,9 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
 
     if family != 'ordinal':  # loglikelihood calculation not available for ordinal family yet
-        glm_calc_like = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, calc_like=True, 
-                                                      compute_p_values=True, remove_collinear_columns=True)
+        glm_calc_like = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, calc_like=True,
+                                                      compute_p_values=(family == "gaussian"),
+                                                      remove_collinear_columns=(family == "gaussian"))
         glm_calc_like.train(x=x, y=y, training_frame=airlines, validation_frame=airlines)
         
         print("glm training metrics:")
