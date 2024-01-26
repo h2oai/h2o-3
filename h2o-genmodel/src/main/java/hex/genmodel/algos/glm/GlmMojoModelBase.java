@@ -18,6 +18,8 @@ public abstract class GlmMojoModelBase extends MojoModel {
 
   String _family;
   boolean _versionSupportOffset;
+  
+  double _dispersion_estimated;
 
   GlmMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -25,6 +27,10 @@ public abstract class GlmMojoModelBase extends MojoModel {
 
   public double[] getBeta() {
     return _beta;
+  }
+  
+  public double getDispersionEstimated() {
+    return _dispersion_estimated;
   }
 
   void init() {
