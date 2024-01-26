@@ -11,6 +11,7 @@ import water.rapids.ast.params.*;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.util.IcedDouble;
 import water.util.IcedHashMap;
 import water.util.MathUtils;
 
@@ -171,14 +172,14 @@ public class AstMatch extends AstPrimitive {
     double[] _sortedValues;
     double _noMatch;
     int _startIndex;
-    IcedHashMap<Double, Integer> _mapping;
-    IcedHashMap<Double, Integer> _matchesIndexes;
+    IcedHashMap<IcedDouble, Integer> _mapping;
+    IcedHashMap<IcedDouble, Integer> _matchesIndexes;
 
     NumMatchTask(double[] values, double noMatch, int startIndex) {
       _mapping = new IcedHashMap<>();
       for (int i = 0; i < values.length; i++) {
         double value = values[i];
-        if (!_mapping.containsKey(value)) _mapping.put(values[i], i);
+        if (!_mapping.containsKey(new IcedDouble(value))) _mapping.put(new IcedDouble(values[i]), i);
       }
       _sortedValues = values.clone();
       Arrays.sort(_sortedValues);
@@ -209,16 +210,17 @@ public class AstMatch extends AstPrimitive {
     return match >= 0 ? applyStartIndex(mapping.get(s), startIndex) : noMatch;
   }
 
-  private static double in(Map<Double, Integer> matchesIndexes, double[] sortedMatches, IcedHashMap<Double, Integer> mapping, double d, double noMatch, int startIndex) {
-    Integer mapResult = matchesIndexes.get(d);
+  private static double in(Map<IcedDouble, Integer> matchesIndexes, double[] sortedMatches, IcedHashMap<IcedDouble, Integer> mapping, double d, double noMatch, int startIndex) {
+    IcedDouble id = new IcedDouble(d);
+    Integer mapResult = matchesIndexes.get(id);
     int match;
     if (mapResult == null){
       match = binarySearchDoublesUlp(sortedMatches, 0, sortedMatches.length, d);
-      matchesIndexes.put(d, match);
+      matchesIndexes.put(id, match);
     } else {
       match = mapResult;
     }
-    return match >= 0 ? applyStartIndex(mapping.get(d), startIndex) : noMatch;
+    return match >= 0 ? applyStartIndex(mapping.get(id).doubleValue(), startIndex) : noMatch;
   }
   
   private static double applyStartIndex(double value, int startIndex) {
