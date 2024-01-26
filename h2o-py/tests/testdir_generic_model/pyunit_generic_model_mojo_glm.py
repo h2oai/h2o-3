@@ -16,7 +16,9 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
 
     # GLM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
-    glm = H2OGeneralizedLinearEstimator(nfolds = 2, family = family, max_iterations=2) # alpha = 1, lambda_ = 1, bad values, use default
+    glm = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, 
+                                        compute_p_values=family == "gaussian", 
+                                        remove_collinear_columns=family == "gaussian") # alpha = 1, lambda_ = 1, bad values, use default
     glm.train(x = x, y = y, training_frame=airlines, validation_frame=airlines, )
     with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (original_output, _):
         glm.show()
@@ -48,20 +50,22 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     generic_mojo_filename = generic_mojo_model_from_file.download_mojo(path=generic_mojo_filename)
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
 
-    glm_calc_like = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, calc_like=True)
-    glm_calc_like.train(x=x, y=y, training_frame=airlines, validation_frame=airlines)
-    
-    print("glm training metrics:")
-    print(glm._model_json["output"]["training_metrics"])
-    print("glm calc like training metrics:")
-    print(glm_calc_like._model_json["output"]["training_metrics"])
-    print("metrics:")
-    print(metrics)
-    
-    assert math.isclose(glm_calc_like._model_json["output"]["training_metrics"]._metric_json["AIC"], 
-                        metrics._metric_json["AIC"], rel_tol=1e-3), "The numbers are not close enough."
-    assert math.isclose(-glm_calc_like._model_json["output"]["training_metrics"]._metric_json["loglikelihood"], 
-                        metrics._metric_json["loglikelihood"], rel_tol=1e-3), "The numbers are not close enough."
+    if family != 'ordinal':  # loglikelihood calculation not available for ordinal family yet
+        glm_calc_like = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, calc_like=True, 
+                                                      compute_p_values=True, remove_collinear_columns=True)
+        glm_calc_like.train(x=x, y=y, training_frame=airlines, validation_frame=airlines)
+        
+        print("glm training metrics:")
+        print(glm._model_json["output"]["training_metrics"])
+        print("glm calc like training metrics:")
+        print(glm_calc_like._model_json["output"]["training_metrics"])
+        print("metrics:")
+        print(metrics)
+        
+        assert math.isclose(glm_calc_like._model_json["output"]["training_metrics"]._metric_json["AIC"], 
+                            metrics._metric_json["AIC"], rel_tol=1e-3), "The numbers are not close enough."
+        assert math.isclose(-glm_calc_like._model_json["output"]["training_metrics"]._metric_json["loglikelihood"], 
+                            metrics._metric_json["loglikelihood"], rel_tol=1e-3), "The numbers are not close enough."
 
 
 def mojo_model_test_binomial():
@@ -69,25 +73,25 @@ def mojo_model_test_binomial():
          'ModelMetricsBinomialGLMGeneric: generic', 'binomial')
 
 
-# def mojo_model_test_regression():
-#     test(["Origin", "Dest"], "Distance", compare_output, 'GLM Model: summary', 'ModelMetricsRegressionGLM: glm',
-#          'ModelMetricsRegressionGLMGeneric: generic', 'gaussian')
-# 
-# 
-# def mojo_model_test_multinomial():
-#     test(["Origin", "Distance"], "Dest", compare_output, 'GLM Model: summary', 'ModelMetricsMultinomialGLM: glm',
-#          'ModelMetricsMultinomialGLMGeneric: generic', 'multinomial')
-# 
-# 
-# def mojo_model_test_ordinal():
-#     test(["Origin", "Distance", "IsDepDelayed"], "fDayOfWeek", compare_output, 'GLM Model: summary',
-#          'ModelMetricsOrdinalGLM: glm',
-#          'ModelMetricsOrdinalGLMGeneric: generic', 'ordinal')
+def mojo_model_test_regression():
+    test(["Origin", "Dest"], "Distance", compare_output, 'GLM Model: summary', 'ModelMetricsRegressionGLM: glm',
+         'ModelMetricsRegressionGLMGeneric: generic', 'gaussian')
+
+
+def mojo_model_test_multinomial():
+    test(["Origin", "Distance"], "Dest", compare_output, 'GLM Model: summary', 'ModelMetricsMultinomialGLM: glm',
+         'ModelMetricsMultinomialGLMGeneric: generic', 'multinomial')
+
+
+def mojo_model_test_ordinal():
+    test(["Origin", "Distance", "IsDepDelayed"], "fDayOfWeek", compare_output, 'GLM Model: summary',
+         'ModelMetricsOrdinalGLM: glm',
+         'ModelMetricsOrdinalGLMGeneric: generic', 'ordinal')
 
 
 pyunit_utils.run_tests([
     mojo_model_test_binomial,
-    # mojo_model_test_multinomial,
-    # mojo_model_test_regression,
-    # mojo_model_test_ordinal
+    mojo_model_test_multinomial,
+    mojo_model_test_regression,
+    mojo_model_test_ordinal
 ])
