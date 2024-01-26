@@ -44,6 +44,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
      */
     private final String _algoName; 
     private final GenModelSource<?> _genModelSource;
+    private GLMModel.GLMParameters _glmParameters;
 
     /**
      * Full constructor
@@ -57,6 +58,26 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
         if (mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
             _parms._modelParameters = GenericModelParameters.convertParameters(mojoModel._modelAttributes.getModelParameters());
+        }
+        _glmParameters = null;
+        if(_algoName.toLowerCase().contains("glm")) {
+            GlmMojoModelBase glmModel = (GlmMojoModelBase) mojoModel;
+            // create GLM parameters instance
+            _glmParameters = new GLMModel.GLMParameters(
+                    GLMModel.GLMParameters.Family.valueOf(getParamByName("family").toString()),
+                    GLMModel.GLMParameters.Link.valueOf(getParamByName("link").toString()),
+                    Arrays.stream(getParamByName("lambda").toString().trim().replaceAll("\\[", "")
+                                    .replaceAll("\\]", "").split(",\\s*"))
+                            .mapToDouble(Double::parseDouble).toArray(),
+                    Arrays.stream(getParamByName("alpha").toString().trim().replaceAll("\\[", "")
+                                    .replaceAll("\\]", "").split(",\\s*"))
+                            .mapToDouble(Double::parseDouble).toArray(),
+                    Double.parseDouble(getParamByName("tweedie_variance_power").toString()),
+                    Double.parseDouble(getParamByName("tweedie_link_power").toString()),
+                    null,
+                    Double.parseDouble(getParamByName("theta").toString()), 
+                    glmModel.getDispersionEstimated()
+            );
         }
     }
 
@@ -79,10 +100,6 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         } catch (IOException e) {
             throw new IllegalStateException("Unreachable MOJO file: " + mojoBytes._key, e);
         }
-    }
-    private Iced getParamByName(String name) {
-        return Arrays.stream(this._parms._modelParameters)
-                .filter(p -> Objects.equals(p.name, name)).findAny().get().actual_value;
     }
 
     @Override
@@ -140,6 +157,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 //            return super.predictScoreImpl(fr, adaptFrm, destination_key, j, true, customMetricFunc);
     }
 
+    private Iced getParamByName(String name) {
+        return Arrays.stream(this._parms._modelParameters)
+                .filter(p -> Objects.equals(p.name, name)).findAny().get().actual_value;
+    }
 
     @Override
     public double aic(double likelihood) {
@@ -158,23 +179,8 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         if (w == 0 || !_algoName.equals("glm")) {
             return 0;
         } else {
-            // create GLM parameters instance
-            GLMModel.GLMParameters glmParameters = new GLMModel.GLMParameters(
-                    GLMModel.GLMParameters.Family.valueOf(getParamByName("family").toString()),
-                    GLMModel.GLMParameters.Link.valueOf(getParamByName("link").toString()),
-                    Arrays.stream(getParamByName("lambda").toString().trim().replaceAll("\\[", "")
-                                    .replaceAll("\\]", "").split(",\\s*"))
-                            .mapToDouble(Double::parseDouble).toArray(),
-                    Arrays.stream(getParamByName("alpha").toString().trim().replaceAll("\\[", "")
-                                    .replaceAll("\\]", "").split(",\\s*"))
-                            .mapToDouble(Double::parseDouble).toArray(),
-                    Double.parseDouble(getParamByName("tweedie_variance_power").toString()),
-                    Double.parseDouble(getParamByName("tweedie_link_power").toString()),
-                    null,
-                    Double.parseDouble(getParamByName("theta").toString())
-            );
             // time-consuming calculation for the final scoring for GLM model
-            return glmParameters.likelihood(w, y, f);
+            return _glmParameters.likelihood(w, y, f);
         }
     }
 
