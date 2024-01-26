@@ -34,7 +34,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
   public ModelMetricsRegressionCoxPH(Model model, Frame frame, long nobs, double mse, double sigma, double mae,
                                      double rmsle, double meanResidualDeviance, CustomMetric customMetric,
                                      double concordance, long concordant, long discordant, long tied_y) {
-    super(model, frame, nobs, mse, sigma, mae, rmsle, meanResidualDeviance, customMetric);
+    super(model, frame, nobs, mse, sigma, mae, rmsle, meanResidualDeviance, customMetric, 0, 0);
     
     this._concordance = concordance;
     this._concordant = concordant;
