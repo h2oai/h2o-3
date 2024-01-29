@@ -9,13 +9,17 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import ai.h2o.targetencoding.TargetEncoderPreprocessor;
+import ai.h2o.targetencoding.pipeline.transformers.TargetEncoderFeatureTransformer;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelPreprocessor;
+import hex.pipeline.DataTransformer;
+import hex.pipeline.transformers.KFoldColumnGenerator;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
 
@@ -200,6 +204,39 @@ public class TargetEncoding implements PreprocessingStep {
     TargetEncoderModel getTEModel() {
         return _teModel;
     }
+    
+    @Override
+    public DataTransformer[] pipelineTransformers() {
+      List<DataTransformer> dts = new ArrayList<>();
+      TargetEncoderParameters teParams = (TargetEncoderParameters) getDefaultParams().clone();
+      Frame train = _aml.getTrainingFrame();
+      Set<String> teColumns = selectColumnsToEncode(train, teParams);
+      if (teColumns.isEmpty()) return new DataTransformer[0];
+      
+      String[] keep = teParams.getNonPredictors();
+      teParams._ignored_columns = Arrays.stream(train.names())
+              .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
+              .toArray(String[]::new);
+      if (_aml.isCVEnabled()) {
+        dts.add(new KFoldColumnGenerator()
+                .id("add_fold_column")
+                .description("If cross-validation is enabled, generates (if needed) a fold column used by Target Encoder and for the final estimator"));
+        teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      }
+      dts.add(new TargetEncoderFeatureTransformer(teParams)
+              .id("default_TE")
+              .description("Applies Target Encoding to selected categorical features"));
+      return dts.toArray(new DataTransformer[0]);
+    }
+
+    @Override
+    public Map<String, Object[]> pipelineTransformersHyperParams() {
+        Map<String, Object[]> hp = new HashMap<>();
+        hp.put("default_TE._enabled", new Boolean[] {Boolean.TRUE, Boolean.FALSE});
+        hp.put("default_TE._keep_original_categorical_columns", new Boolean[] {Boolean.TRUE, Boolean.FALSE});
+        hp.put("default_TE._blending", new Boolean[] {Boolean.TRUE, Boolean.FALSE});
+        return hp;
+    }
 
     private static void register(Frame fr, String keyPrefix, boolean force) {
         Key<Frame> key = fr._key;
@@ -210,10 +247,10 @@ public class TargetEncoding implements PreprocessingStep {
     }
 
     public static Vec createFoldColumn(Frame fr,
-                                        FoldAssignmentScheme fold_assignment,
-                                        int nfolds,
-                                        String responseColumn,
-                                        long seed) {
+                                       FoldAssignmentScheme fold_assignment,
+                                       int nfolds,
+                                       String responseColumn,
+                                       long seed) {
         Vec foldColumn;
         switch (fold_assignment) {
             default:

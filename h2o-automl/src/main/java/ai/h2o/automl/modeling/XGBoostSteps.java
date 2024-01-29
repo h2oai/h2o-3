@@ -201,7 +201,8 @@ public class XGBoostSteps extends ModelingSteps {
                     XGBoostParameters.Booster.gbtree,
                     XGBoostParameters.Booster.dart
             });
-
+//            searchParams.put("_booster$weights", new Integer[] {2, 1});
+            
             searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
             searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
 
