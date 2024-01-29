@@ -373,11 +373,20 @@ public class TwoDimTable extends Iced {
    return sb.toString();
   }
   public Frame asFrame(Key frameKey) {
+    return asFrame(frameKey, false);
+  }
+  
+  public Frame asFrame(Key frameKey, boolean withRowHeaders) {
     String[] colNames = new String[getColDim()];
     System.arraycopy(getColHeaders(), 0, colNames, 0, getColDim());
 
+    int colOffset = 0;
+    if (withRowHeaders) {
+      colNames = ArrayUtils.append(new String[]{"_"}, colNames);
+      colOffset++;
+    }
     Vec[] vecs = new Vec[colNames.length];
-    vecs[0] = Vec.makeVec(getRowHeaders(), Vec.newKey());
+    if (withRowHeaders) vecs[0] = Vec.makeVec(getRowHeaders(), Vec.newKey());
 
     for (int j = 0; j < this.getColDim(); j++) {
       switch (getColTypes()[j]){
@@ -386,7 +395,7 @@ public class TwoDimTable extends Iced {
           for (int i = 0; i < getRowDim(); i++) {
             strRow[i] = (String) get(i, j);
           }
-          vecs[j] = Vec.makeVec(strRow, Vec.newKey());
+          vecs[j+colOffset] = Vec.makeVec(strRow, Vec.newKey());
           break;
         case "int":
         case "long":
@@ -394,7 +403,7 @@ public class TwoDimTable extends Iced {
           for (int i = 0; i < getRowDim(); i++) {
             longRow[i] = ((Number) get(i, j)).longValue();
           }
-          vecs[j] = Vec.makeVec(longRow, Vec.newKey());
+          vecs[j+colOffset] = Vec.makeVec(longRow, Vec.newKey());
           break;
         case "float":
         case "double":
@@ -402,7 +411,7 @@ public class TwoDimTable extends Iced {
           for (int i = 0; i < getRowDim(); i++) {
             dblRow[i] = (double) get(i, j);
           }
-          vecs[j] = Vec.makeVec(dblRow, Vec.newKey());
+          vecs[j+colOffset] = Vec.makeVec(dblRow, Vec.newKey());
           break;
       }
     }

@@ -226,7 +226,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   
   private PipelineContext newContext() {
     return new PipelineContext(_parms, new CompositeFrameTracker(
-            new FrameTracker() {
+            new FrameTracker() { // propagates training cancellation requests as early as possible
               @Override
               public void apply(Frame transformed, Frame original, FrameType type, PipelineContext context, DataTransformer transformer) {
                 if (stop_requested()) throw new Job.JobCancelledException(_job);
@@ -234,13 +234,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
             },
             new ConsistentKeyTracker(),
             new ScopeTracker()
-//            new PipelineContext.FrameTracker() {
-//              @Override
-//              public void apply(Frame transformed, Frame frame, FrameType type, PipelineContext context, DataTransformer transformer) {
-//                if (transformed == null || frame == transformed) return;
-//                track(transformed, context._params._is_cv_model);
-//              }
-//            }
     ));
   }
   
