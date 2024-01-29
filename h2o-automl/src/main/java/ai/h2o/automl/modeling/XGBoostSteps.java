@@ -9,6 +9,7 @@ import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.grid.SequentialWalker;
+import hex.grid.SimpleParametersBuilderFactory;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.Job;
@@ -368,7 +369,7 @@ public class XGBoostSteps extends ModelingSteps {
                             new SequentialWalker<>(
                                     params,
                                     hyperParams,
-                                    new GridSearch.SimpleParametersBuilderFactory<>(),
+                                    new SimpleParametersBuilderFactory<>(),
                                     new SequentialSearchCriteria(StoppingCriteria.create()
                                             .maxRuntimeSecs((int)maxRuntimeSecs)
                                             .stoppingMetric(params._stopping_metric)
