@@ -741,4 +741,3 @@ class H2OKMeansEstimator(H2OEstimator):
         assert_is_type(cluster_size_constraints, None, [int])
         self._parms["cluster_size_constraints"] = cluster_size_constraints
 
-

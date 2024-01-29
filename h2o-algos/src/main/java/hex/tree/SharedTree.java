@@ -1197,7 +1197,7 @@ public abstract class SharedTree<
     return _parms._parallel_main_model_building;
   }
   
-  @Override public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
+  @Override protected void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     if (!cv_initStoppingParameters())
       return; // No exciting changes to stopping conditions

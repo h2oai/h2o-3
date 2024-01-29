@@ -906,4 +906,3 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
 
-

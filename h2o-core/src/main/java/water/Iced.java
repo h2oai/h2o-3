@@ -87,8 +87,13 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
   @Override final public int frozenType() { return icer().frozenType(); }
   /** Clone, without the annoying exception */
   @Override public final D clone() {
-    try { return (D)super.clone(); }
+    try { return cloneImpl(); }
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
+  }
+  
+  /** override this if the class requires custom cloning logic */
+  protected D cloneImpl() throws CloneNotSupportedException {
+    return (D)super.clone();
   }
 
   /** Copy over cloned instance 'src' over 'this', field by field. */

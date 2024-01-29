@@ -1054,7 +1054,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     def transform_frame(self, fr):
         """
         GLRM performs A=X*Y during training.  When a new dataset is given, GLRM will perform Anew = Xnew*Y.  When
@@ -1062,3 +1061,4 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         :return: an H2OFrame that contains Xnew.
         """
         return H2OFrame._expr(expr=ExprNode("transform", ASTId(self.key), ASTId(fr.key)))._frame(fill_cache=True)
+

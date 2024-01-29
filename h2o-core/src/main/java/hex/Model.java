@@ -13,6 +13,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.grid.Grid;
 import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
 import water.*;
@@ -345,7 +346,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters {
+  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable, Checksumable {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
 
@@ -616,6 +617,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     
     public boolean hasCustomMetricFunc() { return _custom_metric_func != null; }
 
+    @Override
     public long checksum() {
       return checksum(null);
     }
@@ -630,66 +632,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @return checksum A 64-bit long representing the checksum of the {@link Parameters} object
      */
     public long checksum(final Set<String> ignoredFields) {
-      long xs = 0x600DL;
-      int count = 0;
-      Field[] fields = Weaver.getWovenFields(this.getClass());
-      Arrays.sort(fields, Comparator.comparing(Field::getName));
-      for (Field f : fields) {
-        if (ignoredFields != null && ignoredFields.contains(f.getName())) {
-          // Do not include ignored fields in the final hash
-          continue;
-        }
-        final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
-        Class<?> c = f.getType();
-        if (c.isArray()) {
-          try {
-            f.setAccessible(true);
-            if (f.get(this) != null) {
-              if (c.getComponentType() == Integer.TYPE){
-                int[] arr = (int[]) f.get(this);
-                xs = xs * P  + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Float.TYPE) {
-                float[] arr = (float[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Double.TYPE) {
-                double[] arr = (double[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Long.TYPE){
-                long[] arr = (long[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Boolean.TYPE){
-                boolean[] arr = (boolean[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else {
-                Object[] arr = (Object[]) f.get(this);
-                xs = xs * P + (long) Arrays.deepHashCode(arr);
-              } //else lead to ClassCastException
-            } else {
-              xs = xs * P;
-            }
-          } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-          } catch (ClassCastException t) {
-            throw H2O.fail("Failed to calculate checksum for the parameter object", t); //no support yet for int[][] etc.
-          }
-        } else {
-          try {
-            f.setAccessible(true);
-            Object value = f.get(this);
-            if (value instanceof Enum) {
-              // use string hashcode for enums, otherwise the checksum would be different each run
-              xs = xs * P + (long)(value.toString().hashCode());
-            } else if (value != null) {
-              xs = xs * P + (long)(value.hashCode());
-            } else {
-              xs = xs * P + P;
-            }
-          } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-          }
-        }
-        count++;
-      }
+      long xs = Checksum.checksum(this, ignoredFields);
       xs ^= (train() == null ? 43 : train().checksum()) * (valid() == null ? 17 : valid().checksum());
       return xs;
     }
@@ -808,6 +751,62 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public DistributionFamily getDistributionFamily() {
       return _distribution;
     }
+
+    @Override
+    public boolean hasParameter(String name) {
+      try {
+        getParameter(name);
+        return true;
+      } catch (Exception e) {
+        return false;
+      }
+    }
+
+    @Override
+    public Object getParameter(String name) {
+      return PojoUtils.getFieldValue(this, name);
+    }
+
+    @Override
+    public void setParameter(String name, Object value) {
+      PojoUtils.setField(this, name, value);
+    }
+    
+    @Override
+    public boolean isParameterSetToDefault(String name) {
+      Object val = getParameter(name);
+      Object defaultVal = getParameterDefaultValue(name);
+      return Objects.deepEquals(val, defaultVal);
+    }
+
+    @Override
+    public Object getParameterDefaultValue(String name) {
+      return getDefaults().getParameter(name);
+    }
+
+    @Override
+    public boolean isParameterAssignable(String name) {
+      return "_seed".equals(name) || isParameterSetToDefault(name);
+    }
+
+    /** private use only to avoid this getting mutated. */
+    private transient Parameters _defaults;
+
+    /** private use only to avoid this getting mutated. */
+    private Parameters getDefaults() {
+      if (_defaults == null) {
+        _defaults = ModelBuilder.makeParameters(algoName());
+      }
+      return _defaults;
+    }
+
+    /**
+     * callback called during grid search if it failed building a model with current parameters.
+     * When this is called, the failure instance is already extended with the last failure details/params.
+     * @param searchFailure
+     * @param grid
+     */
+    public void addSearchFailureDetails(Grid.SearchFailure searchFailure, Grid grid) {}
   }
 
   public ModelMetrics addModelMetrics(final ModelMetrics mm) {
@@ -1684,7 +1683,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                            String[] names, String[][] domains, final AdaptFrameParameters parms,
                                            final boolean expensive, final boolean computeMetrics,
                                            final InteractionBuilder interactionBldr, final ToEigenVec tev,
-                                           final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
+                                           final Map<Key, String> toDelete, final boolean catEncoded)
           throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
@@ -1722,7 +1721,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // As soon as the test frame contains at least one original pre-encoding predictor,
         // then we consider the frame as valid for predictions, and we'll later fill missing columns with NA
         Set<String> required = new HashSet<>(Arrays.asList(origNames));
-        required.removeAll(Arrays.asList(response, weights, fold, treatment));
+        required.removeAll(Arrays.asList(parms.getNonPredictors()));
         for (String name : test.names()) {
           if (required.contains(name)) {
             match = true;
@@ -1907,7 +1906,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public Frame transform(Frame fr) {
-    throw new UnsupportedOperationException("this model doesn't support constant frame results");
+    throw new UnsupportedOperationException("this model doesn't support frame transformation");
   }
 
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
@@ -1986,8 +1985,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     try (Scope.Safe s = Scope.safe(fr)) {
       // Adapt frame, clean up the previous score warning messages
       _warningsP = new String[0];
-      computeMetrics = computeMetrics &&
-              (!_output.hasResponse() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad()));
+      computeMetrics = computeMetrics && canComputeMetricsForFrame(fr);
       Frame adaptFr = adaptFrameForScore(fr, computeMetrics);
 
       // Predict & Score
@@ -2074,6 +2072,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }.doAll(Vec.T_NUM, predictions).outputFrame(Key.<Frame>make(outputName), new String[]{"deviance"}, null);
+  }
+
+  protected boolean canComputeMetricsForFrame(Frame fr) {
+    return !isSupervised() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad());
   }
 
   protected String[] makeScoringNames(){
@@ -2206,16 +2208,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return MetricBuilder
    */
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
+    final boolean computeMetrics = canComputeMetricsForFrame(adaptFrm);
     // Build up the names & domains.
-    //String[] names = makeScoringNames();
-    String[][] domains = new String[1][];
-    Vec response = adaptFrm.lastVec();
-    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : response.domain();
-    if (_parms._distribution == DistributionFamily.quasibinomial) {
-      domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
-    }
-
+    String[] names = makeScoringNames();
+    String[][] domains = makeScoringDomains(adaptFrm, computeMetrics, names);
     // Score the dataset, building the class distribution & predictions
     BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null, CFuncRef.from(_parms._custom_metric_func)).doAll(adaptFrm);
     return bs._mb;
@@ -2239,7 +2235,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                     boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
       super(customMetricFunc);
       _j = j;
-      _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
+      _domain = domain; 
+      _npredcols = ncols; 
+      _mean = mean; 
+      _computeMetrics = computeMetrics; 
+      _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
       _hasWeights = testHasWeights;
@@ -2420,7 +2420,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       deleteCrossValidationPreds();
       deleteCrossValidationModels();
     }
-    cleanUp(_toDelete);
+    cleanUp(_toDelete == null ? null : _toDelete.keySet());
     return super.remove_impl(fs, cascade);
   }
 
