@@ -207,7 +207,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         _logloss += w * MathUtils.logloss(err);
       }
 
-      if(m.getClass().toString().contains("Generic")) {
+      if(m != null && m.getClass().toString().contains("Generic")) {
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
 
@@ -280,7 +280,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         sigma = weightedSigma();
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
-        if(m.getClass().toString().contains("Generic")) {
+        if(m != null && m.getClass().toString().contains("Generic")) {
           loglikelihood = -1 * _loglikelihood ; // get likelihood from negative loglikelihood
           aic = m.aic(loglikelihood);
         }

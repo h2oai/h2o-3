@@ -158,7 +158,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
         }
       }
 
-      if(m.getClass().toString().contains("Generic")) {
+      if(m != null && m.getClass().toString().contains("Generic")) {
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
       
@@ -212,7 +212,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       } else {
         meanResDeviance = Double.NaN;
       }
-      if(m.getClass().toString().contains("Generic")) {
+      if(m != null && m.getClass().toString().contains("Generic")) {
         loglikelihood = -1 * _loglikelihood ; // get likelihood from negative loglikelihood
         aic = m.aic(loglikelihood);
       }
