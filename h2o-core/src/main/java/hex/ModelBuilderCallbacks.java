@@ -21,6 +21,7 @@ public abstract class ModelBuilderCallbacks<SELF extends ModelBuilderCallbacks> 
   private static final HandledException HANDLED = new HandledException();
   
   public void wrapCompute(ModelBuilder builder, Runnable compute) { compute.run(); }
+  
   /**
    * Callback for successfully finished model builds
    *
@@ -36,7 +37,14 @@ public abstract class ModelBuilderCallbacks<SELF extends ModelBuilderCallbacks> 
    * @param parameters An instance of Model.Parameters used in the attempt to build the model
    */
   public void onModelFailure(Key<Model> modelKey, Throwable cause, Model.Parameters parameters) {}
-  
+
+  /**
+   * subclasses may want to call this before processing exceptions on model failure.
+   * @param cause
+   * @return true if the exception is considered as having already been handled and can be ignored.
+   *         false otherwise: in this case the exception is automatically marked as handled for future checks, 
+   *                          but current code is supposed to handle it immediately.
+   */
   protected boolean checkExceptionHandled(Throwable cause) {
     if (ArrayUtils.contains(cause.getSuppressed(), HANDLED)) return true;
     cause.addSuppressed(HANDLED);

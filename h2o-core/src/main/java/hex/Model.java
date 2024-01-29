@@ -13,7 +13,6 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
-import hex.grid.Grid;
 import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
 import water.*;
@@ -799,14 +798,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       return _defaults;
     }
-
-    /**
-     * callback called during grid search if it failed building a model with current parameters.
-     * When this is called, the failure instance is already extended with the last failure details/params.
-     * @param searchFailure
-     * @param grid
-     */
-    public void addSearchFailureDetails(Grid.SearchFailure searchFailure, Grid grid) {}
   }
 
   public ModelMetrics addModelMetrics(final ModelMetrics mm) {
