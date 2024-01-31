@@ -1643,8 +1643,14 @@ public class DTree extends Iced {
 
     double nCT1 = numhiTreat[0];
     double nCT0 = numhiContr[0];
-    double prY1CT1 = resphiTreat[0]/nCT1;
-    double prY1CT0 = resphiContr[0]/nCT0;
+    double nCT1Y1hi = resphiTreat[0];
+    double nCT0Y1hi = resphiContr[0];
+    // no response in treatment or control group -> can't split
+    if(nCT1 == 0 || nCT0 == 0 || nCT1Y1hi == 0 || nCT0Y1hi == 0){
+      return null;
+    }
+    double prY1CT1 = nCT1Y1hi/nCT1;
+    double prY1CT0 = nCT0Y1hi/nCT0;
     double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0);
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
@@ -1665,27 +1671,29 @@ public class DTree extends Iced {
       double prRY1CT1 = (respTreatNA + 1) / (numTreatNA + 2);
       double prRY1CT0 = (respContrNA + 1) / (numContrNA + 2);
       bestUpliftGain = upliftMetric.value(prY1CT1All, prY1CT0All, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1All, prCT0All, prLCT1, prLCT0);
-      bestNLCT1 = nLCT1;
-      bestNLCT0 = nLCT0;
-      bestNRCT1 = nRCT1;
-      bestNRCT0 = nRCT0;
-      bestPrLY1CT1 = prLY1CT1;
-      bestPrLY1CT0 = prLY1CT0;
-      bestPrRY1CT1 = prRY1CT1;
-      bestPrRY1CT0 = prRY1CT0;
-      double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
-      double seNA = wYYNA - wYNA * wYNA / wNA;
-      if (seNA < 0) seNA = 0;
-      best_seL = seNonNA;
-      best_seR = seNA;
-      nasplit = DHistogram.NASplitDir.NAvsREST;
-      seBefore = seAll;
-      nLeft = whi[0]; //all non-NAs
-      predLeft = wYhi[0];
-      nRight = wNA;
-      predRight = wYNA;
-      tree_p0 = predLeft / nLeft;
-      tree_p1 = predRight / nRight;
+      if (bestUpliftGain != Double.POSITIVE_INFINITY) {
+        bestNLCT1 = nLCT1;
+        bestNLCT0 = nLCT0;
+        bestNRCT1 = nRCT1;
+        bestNRCT0 = nRCT0;
+        bestPrLY1CT1 = prLY1CT1;
+        bestPrLY1CT0 = prLY1CT0;
+        bestPrRY1CT1 = prRY1CT1;
+        bestPrRY1CT0 = prRY1CT0;
+        double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
+        double seNA = wYYNA - wYNA * wYNA / wNA;
+        if (seNA < 0) seNA = 0;
+        best_seL = seNonNA;
+        best_seR = seNA;
+        nasplit = DHistogram.NASplitDir.NAvsREST;
+        seBefore = seAll;
+        nLeft = whi[0]; //all non-NAs
+        predLeft = wYhi[0];
+        nRight = wNA;
+        predRight = wYNA;
+        tree_p0 = predLeft / nLeft;
+        tree_p1 = predRight / nRight;
+      }
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
@@ -1729,7 +1737,7 @@ public class DTree extends Iced {
         double prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
         double prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + 2);
         double upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
-        if (upliftGain > bestUpliftGain) {
+        if (upliftGain != Double.POSITIVE_INFINITY && upliftGain > bestUpliftGain) {
           double tmpPredLeft =  wYlo[b] / wlo[b];
           double tmpPredRight =  wYhi[b] / whi[b];
           best_seL = selo;
@@ -1775,7 +1783,7 @@ public class DTree extends Iced {
           double prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
           double prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + 2);
           double upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
-          if (upliftGain > bestUpliftGain) {
+          if (upliftGain != Double.POSITIVE_INFINITY && upliftGain > bestUpliftGain) {
             if((wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
               double tmpPredLeft = (wYlo[b] + wYNA) / (wlo[b] + wNA);
               double tmpPredRight = wYhi[b] / whi[b];
@@ -1825,7 +1833,7 @@ public class DTree extends Iced {
           double prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + numTreatNA + 2);
           double prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + numContrNA + 2);
           double upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
-          if (upliftGain > bestUpliftGain) {
+          if (upliftGain != Double.POSITIVE_INFINITY &&  upliftGain > bestUpliftGain) {
             if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
               double tmpPredLeft = wYlo[b] / wlo[b];
               double tmpPredRight = (wYhi[b] + wYNA) / (whi[b] + wNA);
@@ -1839,6 +1847,7 @@ public class DTree extends Iced {
               nasplit = DHistogram.NASplitDir.NARight;
               tree_p0 = tmpPredLeft;
               tree_p1 = tmpPredRight;
+              bestUpliftGain = upliftGain;
               bestNLCT1 = nLCT1;
               bestNLCT0 = nLCT0;
               bestNRCT1 = nRCT1;
