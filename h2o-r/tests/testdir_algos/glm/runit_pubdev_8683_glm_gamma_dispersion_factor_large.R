@@ -57,13 +57,15 @@ compareH2ORGLM <-
            tolerance = 2e-4) {
     print("Define formula for R")
     formula <- (df[, "resp"] ~ .)
-    rmodel <- glm(
-      formula = formula,
-      data = df[, x],
-      family = tweedie(var.power = vpower, link.power =
-                         lpower),
-      na.action = na.omit
-    )
+    rmodel <- tryCatch({
+        glm(
+          formula = formula,
+          data = df[, x],
+          family = tweedie(var.power = vpower, link.power =
+                             lpower),
+          na.action = na.omit
+        )
+    }, error = function(e) NULL)
     h2omodel <-
       h2o.glm(
         x = x,
@@ -94,12 +96,19 @@ compareH2ORGLM <-
       h2omodel@model$dispersion,
       sep = ":"
     ))
-    print(paste(
-      "R model dispersion estimate",
-      summary(rmodel)$dispersion,
-      sep = ":"
-    ))
+    if (!is.null(rmodel)) {
+        print(paste(
+          "R model dispersion estimate",
+          summary(rmodel)$dispersion,
+          sep = ":"
+        ))
+    }
     h2oDiff = abs(h2omodel@model$dispersion - truedisp)
+    if (is.null(rmodel)) {
+        cat("R model did not converge!\n",
+            "H2O dispersion estimate  - truedisp = ", h2oDiff, sep="")
+        return()
+    }
     rDiff = abs(summary(rmodel)$dispersion - truedisp)
     if (rDiff < h2oDiff) {
       val = (h2oDiff - rDiff)/truedisp
@@ -121,6 +130,10 @@ compareH2ORGLM <-
 compareCoeffs <- function(rmodel, h2omodel, tolerance, x) {
   print("H2O GLM model....")
   print(h2omodel)
+  if (is.null(rmodel)) {
+    print("R model did not converge")
+    return()
+  }
   print("R GLM model....")
   print(summary(rmodel))
   h2oCoeff <- h2omodel@model$coefficients
