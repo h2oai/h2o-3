@@ -1238,7 +1238,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
         >>> result = maxrModel.result()
         >>> # get the GLM model with the best performance for a fixed predictor size:
-        >>> one_model = h2o.get_model(result["model_id"][ind,0])
+        >>> one_model = h2o.get_model(result["model_id"][1, 0])
         >>> predict = one_model.predict(prostate)
         >>> # print a version of the predict frame:
         >>> print(predict)
