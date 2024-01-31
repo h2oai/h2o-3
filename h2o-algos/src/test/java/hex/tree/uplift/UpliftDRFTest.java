@@ -1,5 +1,6 @@
 package hex.tree.uplift;
 
+import hex.AUUC;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.MojoModel;
@@ -17,6 +18,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.TwoDimTable;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
@@ -467,6 +469,34 @@ public class UpliftDRFTest extends TestUtil {
                 assertEquals(pred.predictions.length,3);
                 assertEquals(pred.predictions[0], pred.predictions[1]-pred.predictions[2], 0);
             }
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testVariableImportance(){
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/uplift/criteo_uplift_13k.csv"));
+            train.toCategoricalCol("treatment");
+            train.toCategoricalCol("conversion");
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._ignored_columns = new String[]{"visit", "exposure"};
+            p._treatment_column = "treatment";
+            p._response_column = "conversion";
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p._auuc_type = AUUC.AUUCType.gain;
+            p._score_each_iteration = true;
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+            TwoDimTable vi = model._output.getVariableImportances();
+            assertTrue(vi != null);
+            //assertArrayEquals(vi.getRowHeaders(), new String[]{"f0", "f1", "f2", "f3", "f4", "f5"});
         } finally {
             Scope.exit();
         }

@@ -204,7 +204,8 @@ public class DTree extends Iced {
     final double _tree_p0, _tree_p1;
     final double _p0Treat, _p0Contr, _p1Treat, _p1Contr; // uplift predictions
     final double _n0Treat, _n0Contr, _n1Treat, _n1Contr;
-    final double _upliftBefore;
+    final double _upliftGainBefore;
+    final double _upliftGain;
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1) {
       assert nasplit != DHistogram.NASplitDir.None;
@@ -220,12 +221,13 @@ public class DTree extends Iced {
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
       _p0Treat = _p0Contr = _p1Treat = _p1Contr = 0;
       _n0Treat = _n0Contr = _n1Treat = _n1Contr = 0;
-      _upliftBefore = 0;
+      _upliftGainBefore = 0;
+      _upliftGain = 0;
       
     }
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1,
-                 double p0Treat, double p0Contr, double p1Treat, double p1Contr, double n0Treat, double n0Contr, double n1Treat, double n1Contr, double upliftBefore) {
+                 double p0Treat, double p0Contr, double p1Treat, double p1Contr, double n0Treat, double n0Contr, double n1Treat, double n1Contr, double upliftGainBefore, double upliftGain) {
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
       // FIXME: Disabled for testing PUBDEV-6495:
@@ -238,13 +240,14 @@ public class DTree extends Iced {
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
       _p0Treat = p0Treat; _p0Contr = p0Contr; _p1Treat = p1Treat; _p1Contr = p1Contr;
       _n0Treat = n0Treat; _n0Contr = n0Contr; _n1Treat = n1Treat; _n1Contr = n1Contr;
-      _upliftBefore = 0;
+      _upliftGainBefore = upliftGainBefore;
+      _upliftGain = upliftGain;
     }
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
 
-    public final double preSplitUplift() { return _upliftBefore; }
-    public final double uplift() { return (_p0Treat - _p0Contr) + (_p1Treat - _p1Contr); }
+    public final double preSplitUpliftGain() { return _upliftGainBefore; }
+    public final double upliftGain() { return _upliftGain; }
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
     public final DHistogram.NASplitDir naSplitDir() { return _nasplit; }
@@ -1690,21 +1693,21 @@ public class DTree extends Iced {
     double prY1CT1 = nCT1Y1hi/nCT1;
     double prY1CT0 = nCT0Y1hi/nCT0;
     double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0);
-    double upliftBefore = bestUpliftGain;
+    double upliftGainBefore = bestUpliftGain;
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
       double prCT1All = (nCT1 + numTreatNA + 1)/(nCT0 + numContrNA + nCT1 + numTreatNA + 2);
       double prCT0All = 1-prCT1All;
-      double prY1CT1All = (resphiTreat[0] + respTreatNA) / (nCT1 + numTreatNA);
-      double prY1CT0All = (resphiContr[0] + respContrNA) / (nCT0 + numContrNA);
+      double prY1CT1All = (nCT1Y1hi + respTreatNA) / (nCT1 + numTreatNA);
+      double prY1CT0All = (nCT0Y1hi + respContrNA) / (nCT0 + numContrNA);
       double prLCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
       double prLCT0 = 1 - prLCT1;
       double prL = prLCT1 * prCT1All + prLCT0 * prCT0All;
       double prR = 1 - prL;
-      double nLCT1 = numhiTreat[0];
-      double nLCT0 = numhiContr[0];
-      double prLY1CT1 = (resphiTreat[0] + 1) / (numhiTreat[0] + 2);
-      double prLY1CT0 = (resphiContr[0] + 1) / (numhiContr[0] + 2);
+      double nLCT1 = nCT1Y1hi;
+      double nLCT0 = nCT0Y1hi;
+      double prLY1CT1 = (nCT1Y1hi + 1) / (numhiTreat[0] + 2);
+      double prLY1CT0 = (nCT0Y1hi + 1) / (numhiContr[0] + 2);
       double nRCT1 = numTreatNA;
       double nRCT0 = numContrNA;
       double prRY1CT1 = (respTreatNA + 1) / (numTreatNA + 2);
@@ -1947,7 +1950,7 @@ public class DTree extends Iced {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
     }
 
-    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1, bestPrLY1CT1, bestPrLY1CT0, bestPrRY1CT1, bestPrRY1CT0, bestNLCT1, bestNLCT0, bestNRCT1, bestNRCT0, upliftBefore);
+    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1, bestPrLY1CT1, bestPrLY1CT0, bestPrRY1CT1, bestPrRY1CT0, bestNLCT1, bestNLCT0, bestNRCT1, bestNRCT0, upliftGainBefore, bestUpliftGain);
     if (LOG.isTraceEnabled()) LOG.trace("splitting on " + hs._name + ": " + split);
     return split;
   }

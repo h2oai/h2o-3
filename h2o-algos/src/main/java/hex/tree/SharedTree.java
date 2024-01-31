@@ -704,7 +704,9 @@ public abstract class SharedTree<
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
           float improvement;
           if(_st.isUplift()){
-            improvement = (float) (s.preSplitUplift() - s.uplift());
+            // gain after split should be higher, gain can be negative
+            improvement = (float) Math.abs(s.upliftGain() - s.preSplitUpliftGain());
+            assert (improvement >= 0);
           } else {
             improvement = (float) (s.pre_split_se() - s.se());
             assert (improvement >= 0);
