@@ -702,8 +702,13 @@ public abstract class SharedTree<
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
-          float improvement = (float) (s.pre_split_se() - s.se());
-          assert (improvement >= 0);
+          float improvement;
+          if(_st.isUplift()){
+            improvement = (float) (s.preSplitUplift() - s.uplift());
+          } else {
+            improvement = (float) (s.pre_split_se() - s.se());
+            assert (improvement >= 0);
+          }
           AtomicUtils.FloatArray.add(_improvPerVar, s.col(), improvement);
         }
       }
