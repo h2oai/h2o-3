@@ -1,6 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues = TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
-library(uplift)
 
 
 test.uplift <- function() {
@@ -10,36 +9,27 @@ test.uplift <- function() {
     sample_rate <- 0.8
     seed <- 42
     set.seed(seed)
-    x <- c("X1", "X2", "X3", "X4", "X5", "X6")
-    y <- "y"
-    treatment_col <- "treat"
+    x <- c("feature_1", "feature_2", "feature_3", "feature_4", "feature_5", "feature_6")
+    y <- "outcome"
+    treatment_col <- "treatment"
 
     # Test data preparation for each implementation
-    train <- sim_pte(n = 2000, p = 6, rho = 0, sigma = sqrt(2), beta.den = 4)
-    train$treat <- ifelse(train$treat == 1, 1, 0)
-    test <- sim_pte(n = 1000, p = 6, rho = 0, sigma = sqrt(2), beta.den = 4)
-    test$treat <- ifelse(test$treat == 1, 1, 0)
-
-    trainh2o <- train
-    trainh2o$treat <- as.factor(train$treat)
-    trainh2o$y <- as.factor(train$y)
-    trainh2o <- as.h2o(trainh2o)
-
-    testh2o <- test
-    testh2o$treat <- as.factor(test$treat)
-    testh2o$y <- as.factor(test$y)
-    testh2o <- as.h2o(testh2o)
+    train <- h2o.importFile(path=locate("smalldata/uplift/upliftml_train.csv"), 
+                            col.types=list(by.col.name=c(treatment_col, y), types=c("factor", "factor")))
+    test <- h2o.importFile(path=locate("smalldata/uplift/upliftml_test.csv"), 
+                           col.types=list(by.col.name=c(treatment_col, y), types=c("factor", "factor")))
     
     model <- h2o.upliftRandomForest(
         x = x,
         y = y,
-        training_frame = trainh2o,
-        validation_frame = testh2o,
+        training_frame = train,
+        validation_frame = test,
         treatment_column = treatment_col,
         ntrees = ntrees,
         max_depth = max_depth,
         min_rows = min_rows,
         sample_rate = sample_rate,
+        score_each_iteration=TRUE,
         seed = seed)
 
     print(model)
@@ -47,8 +37,8 @@ test.uplift <- function() {
     model_es <- h2o.upliftRandomForest(
         x = x,
         y = y,
-        training_frame = trainh2o,
-        validation_frame = testh2o,
+        training_frame = train,
+        validation_frame = test,
         treatment_column = treatment_col,
         ntrees = ntrees,
         max_depth = max_depth,
@@ -57,6 +47,7 @@ test.uplift <- function() {
         seed = seed,
         stopping_rounds=2, 
         stopping_metric="AUUC", 
+        score_each_iteration=TRUE,
         stopping_tolerance=0.1)
 
     print(model_es)
