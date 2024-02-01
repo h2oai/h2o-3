@@ -29,7 +29,7 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
 
     _model._beta = readkv("beta");
     _model._family = readkv("family");
-    _model._dispersion_estimated = readkv("dispersion_estimated");
+    _model._dispersion_estimated = readkv("dispersion_estimated", 1);
 
     if (_model instanceof GlmMojoModel) {
       GlmMojoModel m = (GlmMojoModel) _model;
