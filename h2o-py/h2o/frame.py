@@ -1845,7 +1845,7 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         if is_type(item, list, tuple, set):
             if self.ncols == 1 and (self.type(0) == 'str' or self.type(0) == 'enum'):
-                return self.match(item, nomatch=0)
+                return self.match(item, nomatch=0) > 0
             else:
                 return functools.reduce(H2OFrame.__or__, (self == i for i in item))
         else:
