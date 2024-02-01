@@ -42,6 +42,23 @@ def class_extensions():
     
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
+
+        :examples:
+        
+        >>> import h2o
+        >>> from h2o.estimators import H2OModelSelectionEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+        >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+        >>> response = "GLEASON"
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=5,
+        ...                                        seed=12345,
+        ...                                        mode="maxr")
+        >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+        >>> coeff_norm = maxrModel.coef_norm()
+        >>> print(coeff_norm)
+        >>> coeff_norm_3 = maxrModel.coef_norm(predictor_size=3) # print coefficient norm with 3 predictors
+        >>> print(coeff_norm_3)
         """
         model_ids = self._model_json["output"]["best_model_ids"]
         if not(self.actual_params["build_glm_model"]) and self.actual_params["mode"]=="maxrsweep":
@@ -95,6 +112,23 @@ def class_extensions():
         
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
+
+        :examples:
+        
+        >>> import h2o
+        >>> from h2o.estimators import H2OModelSelectionEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+        >>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+        >>> response = "GLEASON"
+        >>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=5,
+        ...                                        seed=12345,
+        ...                                        mode="maxr")
+        >>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+        >>> coeff = maxrModel.coef()
+        >>> print(coeff)
+        >>> coeff_3 = maxrModel.coef(predictor_size=3)
+        >>> print(coeff_3)
         """
         if not self.actual_params["build_glm_model"] and self.actual_params["mode"]=="maxrsweep":
             coef_names = self._model_json["output"]["coefficient_names"]
@@ -148,6 +182,7 @@ def class_extensions():
     def result(self):
         """
         Get result frame that contains information about the model building process like for modelselection and anovaglm.
+
         :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
@@ -223,5 +258,71 @@ doc = dict(
 H2O ModelSelection is used to build the best model with one predictor, two predictors, ... up to max_predictor_number 
 specified in the algorithm parameters when mode=allsubsets.  The best model is the one with the highest R2 value.  When
 mode=maxr, the model returned is no longer guaranteed to have the best R2 value.
+"""
+)
+
+examples = dict(
+    build_glm_model="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=5,
+...                                        seed=12345,
+...                                        mode="maxrsweep",
+...                                        build_glm_model=True)
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> result = maxrModel.result()
+>>> # get the GLM model with the best performance for a fixed predictor size:
+>>> one_model = h2o.get_model(result["model_id"][1, 0])
+>>> predict = one_model.predict(prostate)
+>>> # print a version of the predict frame:
+>>> print(predict)
+""",
+    influence="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=5,
+...                                        seed=12345,
+...                                        mode="maxr",
+...                                        influence="dfbetas")
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> glm_rid = maxrModel.get_regression_influence_diagnostics()
+>>> print(glm_rid)
+""",
+    p_values_threshold="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> backwardModel = H2OModelSelectionEstimator(min_predictor_number=2,
+...                                            seed=12345,
+...                                            mode="backward",
+...                                            p_values_threshold=0.001)
+>>> backwardModel.train(x=predictors, y=response, training_frame=prostate)
+>>> result = backwardModel.result()
+>>> print(result)
+""",
+    mode="""
+>>> import h2o
+>>> from h2o.estimators import H2OModelSelectionEstimator
+>>> h2o.init()
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+>>> predictors = ["AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS"]
+>>> response = "GLEASON"
+>>> maxrModel = H2OModelSelectionEstimator(max_predictor_number=5,
+...                                        seed=12345,
+...                                        mode="maxr")
+>>> maxrModel.train(x=predictors, y=response, training_frame=prostate)
+>>> results = maxrModel.result()
+>>> print(results)
 """
 )
