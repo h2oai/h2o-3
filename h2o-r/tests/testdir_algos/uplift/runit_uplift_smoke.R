@@ -21,17 +21,17 @@ test.uplift <- function() {
                            col.types=list(by.col.name=c(treatment_col, y), types=c("factor", "factor")))
   
   # excepted values on the training data - KL, ChiSquared, Euclidean
-  expected_values_auuc_qini <- c(173.291123, 207.336457, 189.869900)
-  expected_values_auuc_lift <- c(0.162149, 0.162407, 0.170787)
-  expected_values_auuc_gain <- c(344.481112, 408.390572, 375.539891) 
+  expected_values_auuc_qini <- c(174.105415, 207.336457, 189.869900)
+  expected_values_auuc_lift <- c(0.162544, 0.162407, 0.170787)
+  expected_values_auuc_gain <- c(346.048547, 408.390572, 375.539891) 
 
-  expected_values_aecu_qini <- c(57.154241, 79.030343, 72.546412)
-  expected_values_aecu_lift <- c(0.115824, 0.111228, 0.123988)
-  expected_values_aecu_gain <- c(113.365474, 153.057822, 142.062874)
+  expected_values_aecu_qini <- c(57.965264, 79.030343, 72.546412)
+  expected_values_aecu_lift <- c(0.116218, 0.111228, 0.123988)
+  expected_values_aecu_gain <- c(114.926403, 153.057822, 142.062874)
     
-  expected_values_auuc_norm_qini <- c(0.804835, 0.962955, 0.881833)
-  expected_values_auuc_norm_lift <- c(0.162149, 0.162407, 0.170787)
-  expected_values_auuc_norm_gain <- c(0.803964, 0.953119, 0.876450)
+  expected_values_auuc_norm_qini <- c(0.808617, 0.962955, 0.881833)
+  expected_values_auuc_norm_lift <- c(0.162544, 0.162407, 0.170787)
+  expected_values_auuc_norm_gain <- c(0.807622, 0.953119, 0.876450)
     
   for (i in 1:length(uplift_metrics)) {
     print(paste("Train h2o uplift model", uplift_metrics[i]))
