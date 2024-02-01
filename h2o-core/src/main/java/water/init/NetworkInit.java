@@ -46,10 +46,13 @@ public class NetworkInit {
       try {
         return HostnameGuesser.findInetAddressForSelf(H2O.ARGS.ip, H2O.ARGS.network);
       } catch (HostnameGuesser.HostnameGuessingException e) {
-        if (e.getCause() != null)
+        if (e.getCause() != null) {
           Log.err(e.getCause());
-        else
+          e.getCause().printStackTrace();
+        } else {
           Log.err(e.getMessage());
+          System.err.println(e.getMessage());
+        }
         H2O.clusterInitializationFailed();
       }
     }
@@ -117,7 +120,7 @@ public class NetworkInit {
 
       } catch (IOException e) {
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
-        if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
+        if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); ohwell.printStackTrace();}
         if( _tcpSocket != null ) try { _tcpSocket.close(); } catch( IOException ie ) { }
         apiSocket = null;
         _tcpSocket = null;
@@ -130,7 +133,9 @@ public class NetworkInit {
       // Try next available port to bound
       H2O.API_PORT += (H2O.ARGS.port_offset == 1) ? 2 : 1;
       if (H2O.API_PORT > (1<<16)) {
-        Log.err("Cannot find free port for " + H2O.SELF_ADDRESS + " from baseport = " + H2O.ARGS.baseport);
+        String msg = "Cannot find free port for " + H2O.SELF_ADDRESS + " from baseport = " + H2O.ARGS.baseport;
+        Log.err(msg);
+        System.err.println(msg);
         H2O.exit(-1);
       }
     }
@@ -156,8 +161,11 @@ public class NetworkInit {
           embeddedConfigFlatfile = ec.fetchFlatfile();
         }
         catch (Exception e) {
-          Log.err("Failed to get embedded config flatfile");
+          String msg = "Failed to get embedded config flatfile";
+          Log.err(msg);
           Log.err(e);
+          System.err.println(msg);
+          e.printStackTrace();
           H2O.exit(1);
         }
       }
@@ -283,6 +291,7 @@ public class NetworkInit {
       addr = InetAddress.getByName(ip);
     } catch (UnknownHostException e) {
       Log.err(e);
+      e.printStackTrace();
       H2O.exit(-1);
     }
     return addr;
@@ -319,7 +328,7 @@ public class NetworkInit {
           // awake from sleep.
           if( H2O.CLOUD_MULTICAST_SOCKET != null )
             try { H2O.CLOUD_MULTICAST_SOCKET.close(); }
-            catch( Exception e2 ) { Log.err("Got",e2); }
+            catch( Exception e2 ) { Log.err("Got",e2); System.err.println("Got"); e.printStackTrace();}
             finally { H2O.CLOUD_MULTICAST_SOCKET = null; }
         }
       }
