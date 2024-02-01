@@ -167,6 +167,8 @@ try {
                                     sh """
                                         cd ${env.BUILD_NUMBER_DIR}
                                         echo "Process release tags"
+                                        git config --global user.name "h2o-ops"
+                                        git config --global user.email "h2o-ops@h2o.ai"
                                         git tag -d jenkins-rel-latest-stable
                                         git push origin :refs/tags/jenkins-rel-latest-stable
                                         git tag -a jenkins-rel-latest-stable -f -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
