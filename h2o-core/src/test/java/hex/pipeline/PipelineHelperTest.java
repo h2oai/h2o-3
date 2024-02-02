@@ -21,6 +21,7 @@ import static hex.pipeline.PipelineHelper.reassign;
 import static hex.pipeline.PipelineHelper.reassignInplace;
 import static org.junit.Assert.*;
 import static water.TestUtil.ard;
+import static water.TestUtil.assertFrameEquals;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -45,7 +46,7 @@ public class PipelineHelperTest {
     @Override
     protected void after() {
       assertNotNull(DKV.get(refKey));
-      assertSame(DKV.getGet(refKey), refFrame);
+      assertFrameEquals(DKV.getGet(refKey), refFrame, 0); // only comparing frame content as in multinode, can't guarantee that these will be the same objects 
       for (Key<Vec> k : refFrame.keys()) assertNotNull(DKV.get(k));
     }
     

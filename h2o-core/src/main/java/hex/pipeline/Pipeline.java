@@ -96,7 +96,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
         TransformerChain chain = newChain(context);
         setTrain(context.getTrain());
         setValid(context.getValid());
-        Scope.track(train(), valid()); //chain preparation may have provided extended/modified train/valid frames.
+        Scope.track(train(), valid()); //chain preparation may have provided extended/modified train/valid frames, so better track the current ones.
         output._transformers = _parms._transformers.clone();
         if (_parms._estimatorParams == null) return;
         try (Scope.Safe inner = Scope.safe(train(), valid())) {
