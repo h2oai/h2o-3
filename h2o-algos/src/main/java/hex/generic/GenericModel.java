@@ -165,7 +165,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     public double aic(double likelihood) {
         // calculate negative loglikelihood specifically  for GLM
         if (!_algoName.equals("glm")) {
-            return 0;
+            return Double.NaN;
         } else {
             long betasCount = Arrays.stream(((GlmMojoModelBase) this.genModel()).getBeta()).filter(b -> b != 0).count();
             return -2 * likelihood + 2 * betasCount;
@@ -174,8 +174,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     @Override
     public double likelihood(double w, double y, double[] f) {
-        // calculate negative loglikelihood specifically  for GLM
-        if (w == 0 || !_algoName.equals("glm")) {
+        // calculate negative loglikelihood specifically for GLM
+        if(!_algoName.equals("glm")) {
+            return Double.NaN;
+        } else if (w == 0) {
             return 0;
         } else {
             // time-consuming calculation for the final scoring for GLM model
