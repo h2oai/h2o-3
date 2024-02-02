@@ -17,3 +17,12 @@ extensions = dict(
 }
 """
 )
+
+doc = dict(
+    preamble="""
+Build a pipeline model given a list of transformers and a final model.
+
+Currently R model pipelines, as produced by AutoML for example, 
+are only available as read-only models that can not be constructed and trained directly by the end-user.  
+""",
+)
