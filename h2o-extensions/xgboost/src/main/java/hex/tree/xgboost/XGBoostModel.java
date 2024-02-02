@@ -67,6 +67,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public enum Backend {
       auto, gpu, cpu
     }
+    public enum FeatureSelector {
+      cyclic, shuffle, random, greedy, thrifty
+    }
 
     // H2O GBM options
     public boolean _quiet_mode = true;
@@ -140,6 +143,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _skip_drop = 0;
     public int[] _gpu_id; // which GPU to use
     public Backend _backend = Backend.auto;
+
+    // GBLiner specific (booster == gblinear)
+    // lambda, alpha support also for gbtree
+    public FeatureSelector _feature_selector = FeatureSelector.cyclic;
+    public int _top_k;
 
     public String _eval_metric;
     public boolean _score_eval_metric_only;
@@ -377,6 +385,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("rate_drop", p._rate_drop);
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
+    }
+    if (p._booster == XGBoostParameters.Booster.gblinear) {
+      params.put("feature_selector", p._feature_selector.toString());
+      params.put("top_k", p._top_k);
     }
     XGBoostParameters.Backend actualBackend = getActualBackend(p, true);
     XGBoostParameters.TreeMethod actualTreeMethod = getActualTreeMethod(p);
