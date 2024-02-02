@@ -154,7 +154,6 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             return predictScoreMojoImpl(fr, destination_key, j, computeMetrics);
         } else
             return super.predictScoreImpl(fr, adaptFrm, destination_key, j, computeMetrics, customMetricFunc);
-//            return super.predictScoreImpl(fr, adaptFrm, destination_key, j, true, customMetricFunc);
     }
 
     private Iced getParamByName(String name) {
