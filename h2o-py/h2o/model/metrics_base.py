@@ -155,7 +155,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
             
         if is_type(self.aic(), numeric) and not math.isnan(self.aic()) and self.aic() != 0:
             items.append("AIC: {}".format(self.aic()))
-        if is_type(self.loglikelihood(), numeric) and not math.isnan(self.aic()) and self.loglikelihood() != 0:
+        if is_type(self.loglikelihood(), numeric) and not math.isnan(self.loglikelihood()) and self.loglikelihood() != 0:
             items.append("Loglikelihood: {}".format(self.loglikelihood()))       
             
         items.extend(self._str_items_custom())
