@@ -24,7 +24,7 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
   @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
   public double logloss;
 
-  @API(help="The negative logarithmic likelihood for this scoring run.", direction=API.Direction.OUTPUT)
+  @API(help="The logarithmic likelihood for this scoring run.", direction=API.Direction.OUTPUT)
   public double loglikelihood;
 
   @API(help="The AIC for this scoring run.", direction=API.Direction.OUTPUT)

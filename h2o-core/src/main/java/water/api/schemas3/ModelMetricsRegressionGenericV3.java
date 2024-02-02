@@ -14,7 +14,7 @@ public class ModelMetricsRegressionGenericV3<I extends ModelMetricsRegressionGen
   @API(help="The root mean squared log error for this scoring run.", direction=API.Direction.OUTPUT)
   public double rmsle;
 
-  @API(help="The negative logarithmic likelihood for this scoring run.", direction=API.Direction.OUTPUT)
+  @API(help="The logarithmic likelihood for this scoring run.", direction=API.Direction.OUTPUT)
   public double loglikelihood;
 
   @API(help="The AIC for this scoring run.", direction=API.Direction.OUTPUT)
