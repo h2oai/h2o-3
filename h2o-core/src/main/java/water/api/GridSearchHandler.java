@@ -67,7 +67,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     Recovery<Grid> recovery = getRecovery(gss);
     Job<Grid> gsJob = GridSearch.resumeGridSearch(
         jobKey, grid,
-        new APIModelParametersBuilderFactory<MP, P>(),
+        new SchemaModelParametersBuilderFactory<MP, P>(),
         recovery
     ); 
     gss.hyper_parameters = null;
@@ -138,7 +138,7 @@ public class GridSearchHandler<G extends Grid<MP>,
         destKey,
         params,
         sortedMap,
-        new APIModelParametersBuilderFactory<MP, P>(),
+        new SchemaModelParametersBuilderFactory<MP, P>(),
         (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl(),
         recovery,
         GridSearch.getParallelismLevel(gss.parallelism)
@@ -204,7 +204,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
   }
 
-  public static class APIModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
+  public static class SchemaModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory<MP> {
 
     @Override
@@ -214,7 +214,7 @@ public class GridSearchHandler<G extends Grid<MP>,
 
     @Override
     public PojoUtils.FieldNaming getFieldNamingStrategy() {
-      return PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES;
+      return ModelParametersFromSchemaBuilder.NAMING;
     }
   }
 
@@ -229,6 +229,8 @@ public class GridSearchHandler<G extends Grid<MP>,
    */
   public static class ModelParametersFromSchemaBuilder<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory.ModelParametersBuilder<MP> {
+    
+    private final static PojoUtils.FieldNaming NAMING = PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES;
 
     final private MP params;
     final private PS paramsSchema;
@@ -242,7 +244,7 @@ public class GridSearchHandler<G extends Grid<MP>,
 
     @Override
     public boolean isAssignable(String name) {
-      return params.isParameterAssignable(name);
+      return params.isParameterAssignable(NAMING.toDest(name));
     }
 
     public ModelParametersFromSchemaBuilder<MP, PS> set(String name, Object value) {
@@ -262,7 +264,7 @@ public class GridSearchHandler<G extends Grid<MP>,
 
     public MP build() {
       PojoUtils
-          .copyProperties(params, paramsSchema, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, null,
+          .copyProperties(params, paramsSchema, NAMING, null,
                           fields.toArray(new String[fields.size()]));
       // FIXME: handle these train/valid fields in different way
       // See: ModelParametersSchemaV3#fillImpl
