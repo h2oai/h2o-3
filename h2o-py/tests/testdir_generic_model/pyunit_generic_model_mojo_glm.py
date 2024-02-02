@@ -37,7 +37,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
 
     airlines_metrics_dataset = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     predictions = generic_mojo_model_from_file.predict(airlines_metrics_dataset)
-    metrics = generic_mojo_model_from_file.model_performance(airlines_metrics_dataset) # just loglikelihood (multiplied -1)
+    metrics = generic_mojo_model_from_file.model_performance(airlines_metrics_dataset)
     assert predictions is not None
     assert predictions.nrows == 24421
     assert generic_mojo_model_from_file._model_json["output"]["model_summary"] is not None
@@ -54,7 +54,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
         glm_calc_like = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, calc_like=True,
                                                       compute_p_values=(family == "gaussian"),
                                                       remove_collinear_columns=(family == "gaussian"))
-        glm_calc_like.train(x=x, y=y, training_frame=airlines, validation_frame=airlines)
+        glm_calc_like.train(x=x, y=y, training_frame=airlines_metrics_dataset, validation_frame=airlines_metrics_dataset)
         
         print("glm training metrics:")
         print(glm._model_json["output"]["training_metrics"])
