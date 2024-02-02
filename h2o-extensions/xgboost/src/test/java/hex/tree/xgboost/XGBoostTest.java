@@ -3279,5 +3279,32 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testGBLinear() {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = parseAndTrackTestFile("./smalldata/logreg/prostate_train.csv");
+      train.toCategoricalCol(response);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 50;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._booster = XGBoostModel.XGBoostParameters.Booster.gblinear;
+      parms._top_k = 2;
+      parms._feature_selector = XGBoostModel.XGBoostParameters.FeatureSelector.random;
+
+      ModelBuilder job =  new hex.tree.xgboost.XGBoost(parms);
+
+      XGBoostModel xgboost = (XGBoostModel) job.trainModel().get();
+      Scope.track_generic(xgboost);
+      assertNotNull(xgboost);
+    }
+    finally {
+      Scope.exit();
+    }
+  }
   
 }
