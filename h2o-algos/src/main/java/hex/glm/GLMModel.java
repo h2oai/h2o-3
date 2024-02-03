@@ -1036,10 +1036,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     
     @Override
-    public void addSearchFailureDetails(Grid.SearchFailure searchFailure, Grid grid) {
-      super.addSearchFailureDetails(searchFailure, grid);
+    public void addSearchWarnings(Grid.SearchFailure searchFailure, Grid grid) {
+      super.addSearchWarnings(searchFailure, grid);
       if (ArrayUtils.contains(grid.getHyperNames(), "alpha")) {
-        // maybe we should find a way to raise this warning at the very beginning of grid search, similar to validation ini ModelBuilder#init().
+        // maybe we should find a way to raise this warning at the very beginning of grid search, similar to validation in ModelBuilder#init().
         searchFailure.addWarning("Adding alpha array to hyperparameter runs slower with gridsearch. "+
                 "This is due to the fact that the algo has to run initialization for every alpha value. "+
                 "Setting the alpha array as a model parameter will skip the initialization and run faster overall.");

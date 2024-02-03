@@ -806,7 +806,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @param searchFailure
      * @param grid
      */
-    public void addSearchFailureDetails(Grid.SearchFailure searchFailure, Grid grid) {}
+    public void addSearchWarnings(Grid.SearchFailure searchFailure, Grid grid) {}
   }
 
   public ModelMetrics addModelMetrics(final ModelMetrics mm) {

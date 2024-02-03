@@ -313,7 +313,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
         _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
-      if (params != null) params.addSearchFailureDetails(searchFailure, this);
+      if (params != null) params.addSearchWarnings(searchFailure, this);
   }
 
   static boolean isJobCanceled(final Throwable t) {
@@ -406,6 +406,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     final Collection<SearchFailure> values = _failures.values();
     // Original failures should be left intact. Also avoid mutability from outer space.
     final SearchFailure searchFailure = new SearchFailure(_params != null ? _params.getClass() : null);
+    if (_params != null) _params.addSearchWarnings(searchFailure, this);
 
     for (SearchFailure f : values) {
       searchFailure.appendFailedModelParameters(f._failed_params, f._failed_raw_params, f._failure_details,
