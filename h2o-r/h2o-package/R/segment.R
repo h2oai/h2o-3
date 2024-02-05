@@ -1,8 +1,8 @@
-#'
-#' H2O Segmented-Data Bulk Model Training
-#'
-#' Provides a set of functions to train a group of models on different
-#' segments (subpopulations) of the training set. 
+#
+# H2O Segmented-Data Bulk Model Training
+#
+# Provides a set of functions to train a group of models on different
+# segments (subpopulations) of the training set. 
 
 #--------------------------------------------
 # Segmented-data bulk model training function

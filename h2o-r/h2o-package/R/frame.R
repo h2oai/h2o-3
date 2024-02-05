@@ -34,6 +34,7 @@
 #`             the first N (typically 10) rows and all cols of the frame
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 #` E$types  <- the H2O column types
+NULL
 
 # since we only import data.table via requireNamespace this is required for data.table calls to
 # stop pretending to being data.frame and start behaving as data.table

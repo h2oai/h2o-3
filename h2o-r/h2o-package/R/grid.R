@@ -1,8 +1,8 @@
-#'
-#' H2O Grid Support
-#'
-#' Provides a set of functions to launch a grid search and get
-#' its results.
+#
+# H2O Grid Support
+#
+# Provides a set of functions to launch a grid search and get
+# its results.
 
 #-------------------------------------
 # Grid-related functions start here :)
