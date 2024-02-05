@@ -5,6 +5,7 @@ import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
+import water.exceptions.H2OFileAccessDeniedException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BinaryFormatExporter;
 import water.parser.BufferedString;
@@ -14,7 +15,6 @@ import water.util.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
@@ -1590,6 +1590,9 @@ public class Frame extends Lockable<Frame> {
                            String compression, CSVStreamParams csvParms) {
     boolean forceSingle = nParts == 1;
     // Validate input
+    if (H2O.getPM().isFileAccessDenied(path)) {
+      throw new H2OFileAccessDeniedException("File " + path + " access denied");
+    }
     if (forceSingle) {
       boolean fileExists = H2O.getPM().exists(path);
       if (overwrite && fileExists) {
@@ -1613,6 +1616,9 @@ public class Frame extends Lockable<Frame> {
 
   public static Job exportParquet(Frame fr, String path, boolean overwrite, String compression, boolean writeChecksum) {
     // Validate input
+    if (H2O.getPM().isFileAccessDenied(path)) {
+      throw new H2OFileAccessDeniedException("File " + path + " access denied");
+    }
     if (! H2O.getPM().isEmptyDirectoryAllNodes(path)) {
       throw new H2OIllegalArgumentException(path, "exportFrame", "Cannot use path " + path +
               " to store part files! The target needs to be either an existing empty directory or not exist yet.");

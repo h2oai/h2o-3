@@ -16,6 +16,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -839,6 +840,21 @@ public class PersistManager {
     } else {
       return I[Value.ICE];
     }
+  }
+
+  /**
+   * Returns true when path matches file_deny_glob input argument
+   *
+   * @param path path to a file
+   * @return boolean
+   */
+  public boolean isFileAccessDenied(String path) {
+    File f = new File(FileUtils.getURI(path));
+    return isFileAccessDenied(f.toPath());
+  }
+
+  public boolean isFileAccessDenied(Path path) {
+    return H2O.ARGS.file_deny_glob.matches(path.normalize());
   }
 
   /**

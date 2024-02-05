@@ -6,6 +6,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 import water.*;
+import water.exceptions.H2OFileAccessDeniedException;
 import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.NFSFileVec;
 import water.util.FileIntegrityChecker;
@@ -124,6 +125,9 @@ public final class PersistNFS extends Persist {
   @Override
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     File f = new File(FileUtils.getURI(path));
+    if (H2O.ARGS.file_deny_glob.matches(f.toPath().normalize())) {
+      throw new H2OFileAccessDeniedException("File " + path + " access denied");
+    }
     if( !f.exists() ) throw new H2ONotFoundArgumentException("File " + path + " does not exist");
     FileIntegrityChecker.check(f).syncDirectory(files,keys,fails,dels);
   }
