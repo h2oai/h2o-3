@@ -361,7 +361,7 @@ public class ModelingStepsExecutorTest {
             GBMModel.GBMOutput output = new GBMModel.GBMOutput(new GBM(parms));
             Model res = new GBMModel(_job._result, parms, output);
             Frame fr = aml().getTrainingFrame();
-            output._training_metrics = new ModelMetricsRegression(res, fr, 1, 1, 1, 1, 1, 1, null);
+            output._training_metrics = new ModelMetricsRegression(res, fr, 1, 1, 1, 1, 1, 1, null, 0, 0);
             DKV.put(_job._result, res);
         }
     }
