@@ -2066,17 +2066,33 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   protected boolean canComputeMetricsForFrame(Frame fr) {
-    return !isSupervised() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad());
+    return !_output.hasResponse() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad());
   }
 
   protected String[] makeScoringNames(){
     return makeScoringNames(_output);
   }
 
+
+  /**
+   * ???: something fishy here! 
+   *      I suspect a bug not discovered yet, as there is a surprising similarity with the implementation taking a `names` parameter,
+   *      but usages are only very slightly different and only one version is overridden by algos, which means that one may be incorrect in some cases.
+   */
+  protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics) {
+    String[][] domains = new String[1][];
+    Vec response = adaptFrm.lastVec();
+    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : response.domain();
+    if (_parms._distribution == DistributionFamily.quasibinomial) {
+      domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
+    }
+    return domains;
+  }
+
   protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
     String[][] domains = new String[names.length][];
     Vec response = adaptFrm.lastVec();
-    domains[0] = names.length == 1 || _output.hasTreatment() ? null : ! computeMetrics ? _output._domains[_output._domains.length - 1] : response.domain();
+    domains[0] = names.length == 1 || _output.hasTreatment() ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : response.domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
       domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
     }
@@ -2201,8 +2217,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
     final boolean computeMetrics = canComputeMetricsForFrame(adaptFrm);
     // Build up the names & domains.
-    String[] names = makeScoringNames();
-    String[][] domains = makeScoringDomains(adaptFrm, computeMetrics, names);
+//    String[] names = makeScoringNames();
+    String[][] domains = makeScoringDomains(adaptFrm, computeMetrics);
     // Score the dataset, building the class distribution & predictions
     BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null, CFuncRef.from(_parms._custom_metric_func)).doAll(adaptFrm);
     return bs._mb;
