@@ -706,11 +706,10 @@ public abstract class SharedTree<
           if(_st.isUplift()){
             // gain after split should be higher, gain can be negative
             improvement = (float) Math.abs(s.upliftGain() - s.preSplitUpliftGain());
-            assert (improvement >= 0);
           } else {
             improvement = (float) (s.pre_split_se() - s.se());
-            assert (improvement >= 0);
           }
+          assert (improvement >= 0);
           AtomicUtils.FloatArray.add(_improvPerVar, s.col(), improvement);
         }
       }
