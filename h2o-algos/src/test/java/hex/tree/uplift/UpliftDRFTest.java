@@ -487,7 +487,7 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._seed = 0xDECAF;
-            p._ntrees = 100;
+            p._ntrees = 10;
             p._auuc_type = AUUC.AUUCType.gain;
             p._score_each_iteration = true;
             UpliftDRF udrf = new UpliftDRF(p);
@@ -496,7 +496,6 @@ public class UpliftDRFTest extends TestUtil {
             assertNotNull(model);
             TwoDimTable vi = model._output.getVariableImportances();
             assertTrue(vi != null);
-            //assertArrayEquals(vi.getRowHeaders(), new String[]{"f0", "f1", "f2", "f3", "f4", "f5"});
         } finally {
             Scope.exit();
         }

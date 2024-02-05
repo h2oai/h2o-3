@@ -247,6 +247,7 @@ By default, the following output displays:
 -  **AECU table** which contains all computed AECU values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
 -  **Uplift Curve plot** for given metric type (qini, lift, gain)
+-  **Variable Importance** calculated based on Uplift Gain Improvement 
 
 Treatment effect metrics (ATE, ATT, ATC)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -393,7 +394,14 @@ Partial dependence plot (PDP)
 
 A partial dependence plot gives a graphical depiction of the marginal effect of a variable on the response. The effect of a variable is measured in change in the mean response. 
 
-You can plot the partial plot for the whole dataset. However, plotting for treatment and control groups separately could provide better insight into model interpretability. See the Example section below. 
+You can plot the partial plot for the whole dataset. However, plotting for treatment and control groups separately could provide better insight into model interpretability. See the Example section below.
+
+Variable Importance
+~~~~~~~~~~~~~~~~~~~
+
+The Variable Importance is calculated based on Uplift Gain improvement. After every split the local split improvement is calculated as difference between Uplift Gain before split and Uplift Gain after split. 
+
+The Uplift Gain is calculated based on selected `uplift_metric <algo-params/uplift_metric.html>`__. The higher Uplift Gain the better.
 
 Examples
 ~~~~~~~~
@@ -434,6 +442,10 @@ Below is a simple example showing how to build an Uplift Random Forest model and
                                            min_rows=10,
                                            seed=1234,
                                            auuc_type="qini")
+    # Variable importance
+    varimp <- h2o.varimp(uplift.model)
+    print(varimp)                                       
+                                           
     # Eval performance:
     perf <- h2o.performance(uplift.model)
 
@@ -516,6 +528,10 @@ Below is a simple example showing how to build an Uplift Random Forest model and
                        y=response, 
                        training_frame=train, 
                        validation_frame=valid)
+                       
+    # Variable Importance
+    varimp = uplift_model.varimp()
+    print(varimp)
 
     # Eval performance:
     perf = uplift_model.model_performance()
