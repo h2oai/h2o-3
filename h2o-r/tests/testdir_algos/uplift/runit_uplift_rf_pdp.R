@@ -57,4 +57,4 @@ test.uplift.pdp <- function() {
     expect_true(length(pdp_ct) == cols.len)
 }
 
-doTest("Uplift Distributed Random Forest Test: Test H2O DRF Uplift", test.uplift.pdp)
+doTest("Uplift Distributed Random Forest Test: Test H2O DRF Uplift PDP", test.uplift.pdp)
