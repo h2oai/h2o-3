@@ -18,7 +18,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     glm = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, 
                                         compute_p_values=(family == "gaussian"), 
-                                        remove_collinear_columns=(family == "gaussian")) # alpha = 1, lambda_ = 1, bad values, use default
+                                        remove_collinear_columns=(family == "gaussian"), seed=12345) # alpha = 1, lambda_ = 1, bad values, use default
     glm.train(x=x, y=y, training_frame=airlines, validation_frame=airlines,)
     with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (original_output, _):
         glm.show()
@@ -53,7 +53,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     if family != 'ordinal':  # loglikelihood calculation not available for ordinal family yet
         glm_calc_like = H2OGeneralizedLinearEstimator(nfolds=2, family=family, max_iterations=2, calc_like=True,
                                                       compute_p_values=(family == "gaussian"),
-                                                      remove_collinear_columns=(family == "gaussian"))
+                                                      remove_collinear_columns=(family == "gaussian"), seed=12345)
         glm_calc_like.train(x=x, y=y, training_frame=airlines_metrics_dataset, validation_frame=airlines_metrics_dataset)
         
         print("glm training metrics:")
@@ -64,9 +64,9 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
         print(metrics)
         
         assert math.isclose(glm_calc_like._model_json["output"]["training_metrics"]._metric_json["AIC"], 
-                            metrics._metric_json["AIC"], rel_tol=1e-3), "The numbers are not close enough."
+                            metrics._metric_json["AIC"], rel_tol=1e-6), "The numbers are not close enough."
         assert math.isclose(-glm_calc_like._model_json["output"]["training_metrics"]._metric_json["loglikelihood"], 
-                            metrics._metric_json["loglikelihood"], rel_tol=1e-3), "The numbers are not close enough."
+                            metrics._metric_json["loglikelihood"], rel_tol=1e-6), "The numbers are not close enough."
 
 
 def mojo_model_test_binomial():
