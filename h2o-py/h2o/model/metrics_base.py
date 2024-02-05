@@ -153,9 +153,9 @@ class MetricsBase(h2o_meta(H2ODisplay)):
                     "Residual deviance: {}".format(self.residual_deviance()),
                 ])
             
-        if is_type(self.aic(), numeric) and not math.isnan(self.aic()) and self.aic() != 0:
+        if (m_is_binomial or m_is_regression or m_is_multinomial) and is_type(self.aic(), numeric) and not math.isnan(self.aic()) and self.aic() != 0:
             items.append("AIC: {}".format(self.aic()))
-        if is_type(self.loglikelihood(), numeric) and not math.isnan(self.loglikelihood()) and self.loglikelihood() != 0:
+        if (m_is_binomial or m_is_regression or m_is_multinomial) and is_type(self.loglikelihood(), numeric) and not math.isnan(self.loglikelihood()) and self.loglikelihood() != 0:
             items.append("Loglikelihood: {}".format(self.loglikelihood()))       
             
         items.extend(self._str_items_custom())
