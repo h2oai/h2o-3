@@ -325,7 +325,8 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         ...                validation_frame = valid)
         >>> pros_glm.aic()
         """
-        return self._metric_json['AIC']
+        if self._algo == 'glm':
+            return self._metric_json['AIC']
 
     def loglikelihood(self):
         """The log likelihood for this set of metrics.
@@ -348,7 +349,8 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         ...                validation_frame = valid)
         >>> pros_glm.loglikelihood()
         """
-        return self._metric_json['loglikelihood']
+        if self._algo == 'glm':
+            return self._metric_json['loglikelihood']
 
     def gini(self):
         """Gini coefficient.
