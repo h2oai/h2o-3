@@ -1,6 +1,7 @@
 package ai.h2o.targetencoding;
 
 
+import ai.h2o.targetencoding.pipeline.transformers.TargetEncoderFeatureTransformerTest;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -21,7 +22,7 @@ import org.junit.runners.Suite;
         TargetEncoderBroadcastJoinTest.class,
         TargetEncodingImmutabilityTest.class,
         TargetEncoderMojoIntegrationTest.class,
-        TargetEncoderPreprocessorTest.class,
+        TargetEncoderFeatureTransformerTest.class,
         TargetEncoderTest.class,
         TargetEncoderMojoWriterTest.class,
         TargetEncoderRGSTest.class

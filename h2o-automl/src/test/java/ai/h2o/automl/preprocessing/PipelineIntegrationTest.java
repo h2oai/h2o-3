@@ -42,16 +42,14 @@ public class PipelineIntegrationTest {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(20); // sth big enough to test all algos+grids with TE
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(42);
       autoMLBuildSpec.build_control.nfolds = 3;
-      autoMLBuildSpec.build_models.preprocessing = new PreprocessingStepDefinition[] {
-              new PreprocessingStepDefinition(PreprocessingStepDefinition.Type.TargetEncoding)
+      autoMLBuildSpec.build_models.preprocessing = new PipelineStepDefinition[] {
+              new PipelineStepDefinition(PipelineStepDefinition.Type.TargetEncoding)
       };
-      autoMLBuildSpec.build_models._pipelineEnabled = true;
 
       AutoML aml = AutoML.startAutoML(autoMLBuildSpec); Scope.track_generic(aml);
       aml.get();
       System.out.println(aml.leaderboard().toTwoDimTable());
       for (Model m : aml.leaderboard().getModels()) {
-        assertNull(m._parms._preprocessors);
         if (m instanceof StackedEnsembleModel) {
           assertFalse(m.haveMojo()); // all SEs should have at least one Pipeline model as a base model which doesn't support MOJO
           assertFalse(m.havePojo());
@@ -83,10 +81,9 @@ public class PipelineIntegrationTest {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(12); // sth big enough to have some grid
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(42);
       autoMLBuildSpec.build_control.nfolds = 3;
-      autoMLBuildSpec.build_models.preprocessing = new PreprocessingStepDefinition[] {
-              new PreprocessingStepDefinition(PreprocessingStepDefinition.Type.TargetEncoding)
+      autoMLBuildSpec.build_models.preprocessing = new PipelineStepDefinition[] {
+              new PipelineStepDefinition(PipelineStepDefinition.Type.TargetEncoding)
       };
-      autoMLBuildSpec.build_models._pipelineEnabled = true;
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
               new StepDefinition(Algo.GLM.name()),
               new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),
@@ -98,7 +95,6 @@ public class PipelineIntegrationTest {
       aml.get();
       System.out.println(aml.leaderboard().toTwoDimTable());
       for (Model m : aml.leaderboard().getModels()) {
-        assertNull(m._parms._preprocessors);
         if (m instanceof StackedEnsembleModel) {
           assertFalse(m.haveMojo()); // all SEs should have at least one Pipeline model as a base model which doesn't support MOJO
           assertFalse(m.havePojo());
@@ -129,10 +125,9 @@ public class PipelineIntegrationTest {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(12); // sth big enough to have some grid
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(42);
       autoMLBuildSpec.build_control.nfolds = 0;
-      autoMLBuildSpec.build_models.preprocessing = new PreprocessingStepDefinition[] {
-              new PreprocessingStepDefinition(PreprocessingStepDefinition.Type.TargetEncoding)
+      autoMLBuildSpec.build_models.preprocessing = new PipelineStepDefinition[] {
+              new PipelineStepDefinition(PipelineStepDefinition.Type.TargetEncoding)
       };
-      autoMLBuildSpec.build_models._pipelineEnabled = true;
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
               new StepDefinition(Algo.GLM.name()),
               new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),
@@ -144,7 +139,6 @@ public class PipelineIntegrationTest {
       aml.get();
       System.out.println(aml.leaderboard().toTwoDimTable());
       for (Model m : aml.leaderboard().getModels()) {
-        assertNull(m._parms._preprocessors);
         if (m instanceof StackedEnsembleModel) {
           assertFalse(m.haveMojo()); // all SEs should have at least one Pipeline model as a base model which doesn't support MOJO
           assertFalse(m.havePojo());

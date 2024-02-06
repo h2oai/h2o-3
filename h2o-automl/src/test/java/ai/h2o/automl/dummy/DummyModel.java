@@ -1,9 +1,6 @@
 package ai.h2o.automl.dummy;
 
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelMetrics;
-import hex.ModelMetricsBinomial;
+import hex.*;
 import org.junit.Ignore;
 import water.Key;
 import water.util.IcedHashMap;

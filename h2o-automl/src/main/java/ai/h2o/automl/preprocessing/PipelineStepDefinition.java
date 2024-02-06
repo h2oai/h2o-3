@@ -1,10 +1,9 @@
 package ai.h2o.automl.preprocessing;
 
 import ai.h2o.automl.AutoML;
-import hex.pipeline.DataTransformer;
 import water.Iced;
 
-public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinition> {
+public class PipelineStepDefinition extends Iced<PipelineStepDefinition> {
     
     public enum Type {
         TargetEncoding
@@ -12,13 +11,13 @@ public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinitio
 
     Type _type;
 
-    public PreprocessingStepDefinition() { /* for reflection */ }
+    public PipelineStepDefinition() { /* for reflection */ }
 
-    public PreprocessingStepDefinition(Type type) { 
+    public PipelineStepDefinition(Type type) { 
         _type = type;
     }
 
-    public PreprocessingStep newPreprocessingStep(AutoML aml) {
+    public PipelineStep newPipelineStep(AutoML aml) {
         switch (_type) {
             case TargetEncoding:
                 return new TargetEncoding(aml);

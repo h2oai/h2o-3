@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.dummy.DummyBuilder;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.dummy.DummyStepsProvider;
+import ai.h2o.automl.dummy.DummyStepsProvider.DummyGridStep;
 import ai.h2o.automl.dummy.DummyStepsProvider.DummyModelStep;
 import hex.Model;
 import hex.ScoreKeeper;
@@ -212,24 +213,7 @@ public class ModelingStepTest {
         }
     }
 
-    private static class DummyGridStep extends ModelingStep.GridStep<DummyModel> {
 
-        public DummyGridStep(IAlgo algo, String id, AutoML autoML) {
-            super(TestingModelSteps.NAME, algo, id, autoML);
-        }
-
-        @Override
-        public Model.Parameters prepareModelParameters() {
-            return new DummyModel.DummyModelParameters();
-        }
-
-        @Override
-        public Map<String, Object[]> prepareSearchParameters() {
-            Map<String, Object[]> searchParams = new HashMap<>();
-            searchParams.put("_tag", new String[] {"one", "two", "three"});
-            return searchParams;
-        }
-    }
 
     private static class DummySelectionStep extends ModelingStep.SelectionStep<DummyModel> {
         boolean _useSearch;

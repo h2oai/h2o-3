@@ -1,13 +1,17 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
-import ai.h2o.automl.preprocessing.PreprocessingConfig;
-import ai.h2o.automl.preprocessing.TargetEncoding;
+import ai.h2o.targetencoding.pipeline.transformers.TargetEncoderFeatureTransformer;
+import hex.Model;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.pipeline.DataTransformer;
+import water.Key;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class DeepLearningStepsProvider
@@ -22,14 +26,17 @@ public class DeepLearningStepsProvider
             public DeepLearningModelStep(String id, AutoML autoML) {
                 super(NAME, Algo.DeepLearning, id, autoML);
             }
-            
-            @Override
-            protected PreprocessingConfig getPreprocessingConfig() {
-                //TE useless for DNN
-                PreprocessingConfig config = super.getPreprocessingConfig();
-                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, aml().isCVEnabled());
-                return config;
-            }
+
+          @Override
+          protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
+            return super.applyPipeline(resultKey, params, hyperParams);
+          }
+
+          @Override
+          protected void filterPipelineTransformers(List<DataTransformer> transformers, Map<String, Object[]> transformerHyperParams) {
+              // legacy behavior: TE was not applied for deep learning as it is not useful for this algo.
+              removeTransformersType(TargetEncoderFeatureTransformer.class, transformers, transformerHyperParams);
+          }
         }
 
         static abstract class DeepLearningGridStep extends ModelingStep.GridStep<DeepLearningModel> {
@@ -46,14 +53,6 @@ public class DeepLearningStepsProvider
                 return params;
             }
             
-            @Override
-            protected PreprocessingConfig getPreprocessingConfig() {
-                //TE useless for DNN
-                PreprocessingConfig config = super.getPreprocessingConfig();
-                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, aml().isCVEnabled());
-                return config;
-            }
-
             public Map<String, Object[]> prepareSearchParameters() {
                 Map<String, Object[]> searchParams = new HashMap<>();
                 searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
