@@ -2,10 +2,7 @@ package hex.pipeline;
 
 import hex.Model;
 import hex.ModelBuilder;
-import hex.pipeline.DataTransformerTest.AddDummyCVColumnTransformer;
-import hex.pipeline.DataTransformerTest.AddRandomColumnTransformer;
-import hex.pipeline.DataTransformerTest.FrameCheckerAsTransformer;
-import hex.pipeline.DataTransformerTest.FrameTrackerAsTransformer;
+import hex.pipeline.DataTransformerTest.*;
 import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import org.junit.Rule;
@@ -56,6 +53,7 @@ public class PipelineTest {
     PipelineParameters pparams = new PipelineParameters();
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams._transformers = new DataTransformer[] {
+            new MultiplyNumericColumnTransformer("two", 5).id("mult_5"),
             new AddRandomColumnTransformer("foo").id("add_foo"),
             new AddRandomColumnTransformer("bar").id("add_bar"),
             tracker.id("tracker")
@@ -67,6 +65,9 @@ public class PipelineTest {
             .withDataForCol(1, ard(3, 2, 1))
             .withDataForCol(2, ar("yes", "no", "yes"))
             .build());
+    
+    Vec notMult = fr.vec(1).makeCopy();
+    Vec mult = fr.vec(1).makeZero(); mult.set(0, 3*5); mult.set(1, 2*5); mult.set(2, 1*5); // a 5-mult vec of column "two" hand-made for test assertions.
 
     pparams._train = fr._key;
 
@@ -78,9 +79,10 @@ public class PipelineTest {
     assertNotNull(output);
     assertNull(output._estimator);
     assertNotNull(output._transformers);
-    assertEquals(3, output._transformers.length);
+    assertEquals(4, output._transformers.length);
     assertEquals(0, tracker.transformations.size());
     checkFrameState(fr);
+    assertVecEquals(notMult, fr.vec(1), 0);
 
     Frame scored = Scope.track(pmodel.score(fr));
     assertNotNull(scored);
@@ -89,6 +91,8 @@ public class PipelineTest {
     assertArrayEquals(new String[] {"one", "two", "target", "foo", "bar"}, scored.names());
     checkFrameState(fr);
     checkFrameState(scored);
+    assertVecEquals(notMult, fr.vec(1), 0);
+    assertVecEquals(mult, scored.vec(1), 0);
 
     Frame rescored = Scope.track(pmodel.score(fr));
     TestUtil.printOutFrameAsTable(rescored);
@@ -97,6 +101,8 @@ public class PipelineTest {
     assertFrameEquals(scored, rescored, 1.6);
     checkFrameState(fr);
     checkFrameState(rescored);
+    assertVecEquals(notMult, fr.vec(1), 0);
+    assertVecEquals(mult, rescored.vec(1), 0);
 
     Frame transformed = Scope.track(pmodel.transform(fr));
     TestUtil.printOutFrameAsTable(transformed);
@@ -105,6 +111,8 @@ public class PipelineTest {
     assertFrameEquals(scored, transformed, 1.6);
     checkFrameState(fr);
     checkFrameState(transformed);
+    assertVecEquals(notMult, fr.vec(1), 0);
+    assertVecEquals(mult, transformed.vec(1), 0);
   }
 
   @Test

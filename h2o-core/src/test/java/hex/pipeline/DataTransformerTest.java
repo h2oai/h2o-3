@@ -3,10 +3,9 @@ package hex.pipeline;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Key;
+import water.MRTask;
 import water.Scope;
-import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.runner.CloudSize;
@@ -41,6 +40,35 @@ public class DataTransformerTest {
       assertArrayEquals(new String[]{"one", "two", "target", "foo"}, transformed.names());
     } finally {
       Scope.exit();
+    }
+  }
+  
+  public static class MultiplyNumericColumnTransformer extends DataTransformer<MultiplyNumericColumnTransformer> {
+    
+    private final String colName;
+    
+    private final int multiplier;
+
+    public MultiplyNumericColumnTransformer(String colName, int multiplier) {
+      this.colName = colName;
+      this.multiplier = multiplier;
+    }
+
+    @Override
+    protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+      Frame tr = new Frame(fr);
+      final int colIdx = tr.find(colName);
+      Vec col = tr.vec(colIdx);
+      assert col.isNumeric();
+      Vec multCol = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          for (int i = 0; i < cs[0]._len; i++)
+            ncs[0].addNum(multiplier * (cs[0].atd(i)));
+        }
+      }.doAll(Vec.T_NUM, new Frame(col)).outputFrame().vec(0);
+      tr.replace(colIdx, multCol);
+      return tr;
     }
   }
   
