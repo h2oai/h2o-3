@@ -7,7 +7,7 @@ import water.api.Schema;
 
 import static ai.h2o.automl.preprocessing.PipelineStepDefinition.*;
 
-public final class PreprocessingStepDefinitionV99 extends Schema<PipelineStepDefinition, PreprocessingStepDefinitionV99> {
+public final class PipelineStepDefinitionV99 extends Schema<PipelineStepDefinition, PipelineStepDefinitionV99> {
 
   public static final class TypeProvider extends EnumValuesProvider<Type> {
     public TypeProvider() {
