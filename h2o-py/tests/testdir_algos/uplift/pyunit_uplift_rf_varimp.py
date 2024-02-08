@@ -43,7 +43,8 @@ def varimp_uplift_drf():
     print(varimp)
     assert varimp is not None, "Variable importance should not be None."
     assert len(varimp) == len(x_names), "Size of varimp result should be the same as size of input variables."
-
+    uplift_model.varimp_plot(server=True)
+    
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(varimp_uplift_drf)

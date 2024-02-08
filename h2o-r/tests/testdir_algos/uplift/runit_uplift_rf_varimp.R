@@ -37,6 +37,7 @@ test.uplift.varimp <- function() {
     varimp.size <- length(varimp[[1]])
     expect_true(varimp.size > 0)
     expect_equal(varimp.size, length(x)) 
+    h2o.varimp_plot(model)
 }
 
 doTest("Uplift Distributed Random Forest Test: Test H2O UpliftDRF varimp", test.uplift.varimp)
