@@ -77,7 +77,7 @@ public class UpliftDRFTest extends TestUtil {
             assertArrayEquals(new String[]{"uplift_predict", "p_y1_with_treatment", "p_y1_without_treatment"}, out.names());
             assertEquals(train.numRows(), out.numRows());
 
-            assertNull(model._output._varimp); // not supported yet
+            assertNotNull(model._output._varimp); // not supported yet
         } finally {
             Scope.exit();
         }
