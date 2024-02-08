@@ -1937,7 +1937,7 @@ def _get_treatment(model):
     :param model: H2O Model
     :returns: treatment column name
     """
-    treat = model.actual_params["treatment_column"]
+    treat = model.actual_params.get("treatment_column")
     return treat
 
 
