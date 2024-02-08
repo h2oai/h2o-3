@@ -230,10 +230,6 @@ case_insensitive_match_arg <- function(arg, choices) {
         }
         x <<- single_model@allparameters$x
         y <<- single_model@allparameters$y
-        treatment <- single_model@allparameters$treatment_column
-        if(treatment){
-            stop("Uplift models currently cannot be used with explain function.")
-        }
         if (is.null(newdata)) {
           is_classification <<- NA
           is_multinomial_classification <<- NA
@@ -246,7 +242,10 @@ case_insensitive_match_arg <- function(arg, choices) {
       .self
     },
     get_model = function(model_id) {
-      return(memoised_models$get_model(model_id))
+      model <- memoised_models$get_model(model_id)
+      if (!is.null(model@allparameters$treatment_column))
+        stop("Uplift models have not supported in explain yet.")
+      return(model)
     }
   )
 )
