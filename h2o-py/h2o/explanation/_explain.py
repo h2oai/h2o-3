@@ -3048,14 +3048,15 @@ def _process_models_input(
         models_with_varimp = [model for model in models if _has_varimp(model)]
     tree_models_to_show = _get_tree_models(models, 1 if is_aml else float("inf"))
     y = _get_xy(models_to_show[0])[1]
-    is_uplift = _get_treatment(models_to_show[0]) is not None
+    if any(_get_treatment(x) is not None for x in models_to_show):
+        raise ValueError("Uplift models currently cannot be used with explain function.")
     classification = frame[y].isfactor()[0]
     multinomial_classification = classification and frame[y].nlevels()[0] > 2
     targets = [None]
     if multinomial_classification:
         targets = [[t] for t in frame[y].levels()[0]]
     return is_aml, models_to_show, classification, multinomial_classification, \
-           multiple_models, targets, tree_models_to_show, models_with_varimp, is_uplift
+           multiple_models, targets, tree_models_to_show, models_with_varimp
 
 
 def _custom_args(user_specified, **kwargs):
@@ -3146,12 +3147,7 @@ def explain(
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     (is_aml, models_to_show, classification, multinomial_classification, multiple_models, targets,
-     tree_models_to_show, models_with_varimp, is_uplift) = _process_models_input(models, frame)
-
-    if is_uplift:
-        raise ValueError(
-            "Uplift models currently cannot be used with explain function."
-        )
+     tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
 
     if top_n_features < 0:
         top_n_features = float("inf")
@@ -3433,12 +3429,7 @@ def explain_row(
     >>> aml.leader.explain_row(test, row_index=0)
     """
     (is_aml, models_to_show, _, multinomial_classification, multiple_models,
-     targets, tree_models_to_show, models_with_varimp, is_uplift) = _process_models_input(models, frame)
-
-    if is_uplift:
-        raise ValueError(
-            "Uplift models currently cannot be used with explain function."
-        )
+     targets, tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
 
     if columns is not None and isinstance(columns, list):
         columns_of_interest = [frame.columns[col] if isinstance(col, int) else col for col in columns]

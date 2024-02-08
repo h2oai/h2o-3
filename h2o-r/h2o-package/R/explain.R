@@ -210,7 +210,6 @@ case_insensitive_match_arg <- function(arg, choices) {
              "is_multinomial_classification",
              "x",
              "y",
-             "treatment",
              "model",
              "memoised_models"),
   methods = list(
@@ -231,7 +230,10 @@ case_insensitive_match_arg <- function(arg, choices) {
         }
         x <<- single_model@allparameters$x
         y <<- single_model@allparameters$y
-        treatment <<- single_model@allparameters$treatment_column
+        treatment <- single_model@allparameters$treatment_column
+        if(treatment){
+            stop("Uplift models currently cannot be used with explain function.")
+        }
         if (is.null(newdata)) {
           is_classification <<- NA
           is_multinomial_classification <<- NA
@@ -316,7 +318,6 @@ case_insensitive_match_arg <- function(arg, choices) {
         object$model_ids <- head(object$model_ids, n = min(top_n_from_AutoML, length(object$model_ids)))
       }
     }
-
     return(object)
   }
 
@@ -3695,9 +3696,6 @@ h2o.explain <- function(object,
                         background_frame = NULL) {
   .check_for_ggplot2()
   models_info <- .process_models_or_automl(object, newdata)
-  if (models_info$treatment) {
-    stop("Uplift models currently cannot be used with explain function.")
-  }
   multiple_models <- length(models_info$model_ids) > 1
   result <- list()
 
