@@ -40,7 +40,7 @@ def class_extensions():
         
     def get_knot_locations(self, gam_column=None):
         """
-        Retrieve gam columns knot locations if store_knot_location parameter is enabled.  If a gam column name is 
+        Retrieve gam columns knot locations if store_knot_locations parameter is enabled.  If a gam column name is 
         specified, the know loations corresponding to that gam column is returned.  Otherwise, all knot locations are
         returned for all gam columns.  The order of the gam columns are specified in gam_knot_column_names of the 
         model output.
@@ -61,7 +61,7 @@ def class_extensions():
 
     def get_gam_knot_column_names(self):
         """
-        Retrieve gam column names corresponding to the knot locations that will be returned if store_knot_location
+        Retrieve gam column names corresponding to the knot locations that will be returned if store_knot_locations
         parameter is enabled.  
      
         :return: gam column names whose knot locations are stored in the knot_locations.
