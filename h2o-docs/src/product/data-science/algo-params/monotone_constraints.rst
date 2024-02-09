@@ -11,6 +11,8 @@ A mapping that represents monotonic constraints. Use +1 to enforce an increasing
 
 **Note**: In GBM and XGBoost, this option can only be used when the distribution is ``gaussian``, ``bernoulli``, ``tweedie``. In GBM also ``quantile`` distribution is supported.
 
+You can enable monotone constraints consistency check using the system property: ``sys.ai.h2o.tree.constraintConsistencyCheck=true``. It checks the parent prediction is in interval of the children predictions. It is disabled by default.
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
