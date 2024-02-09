@@ -456,7 +456,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     * @return the final pipeline parameters that will be used to build the models in this step.
     */
     protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
-      if (aml().getPipelineParams() == null) return null;
+      if (aml().getPipelineParams() == null) return params;
       PipelineParameters pparams = (PipelineParameters) aml().getPipelineParams().clone();
       List<DataTransformer> transformers = Arrays.asList(pparams._transformers);
       Map<String, Object[]> transformersHyperParams = new HashMap<>(aml().getPipelineHyperParams());
