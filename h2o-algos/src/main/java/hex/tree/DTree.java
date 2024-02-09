@@ -1542,7 +1542,11 @@ public class DTree extends Iced {
     // unordered predictor, i.e. categorical predictor).
     double[]   vals =   hs._vals;
     final int vals_dim = hs._vals_dim;
-    double[] valsUplift = hs._valsUplift;
+    double[] valsUplift = hs._valsUplift;   
+    // 0 treatment group nominator (number of rows where treatment=1)
+    // 1 treatment group denominator (number of rows where response=1 AND treatment=1)
+    // 2 control group nominator (number of rows where treatment=0)
+    // 3 control group denominator (number of rows where response=1 AND treatment=0)
     final int valsUpliftDim = 4;
     int idxs[] = null;          // and a reverse index mapping
 
@@ -1578,10 +1582,10 @@ public class DTree extends Iced {
     double   wlo[] = MemoryManager.malloc8d(nbins+1);
     double  wYlo[] = MemoryManager.malloc8d(nbins+1);
     double wYYlo[] = MemoryManager.malloc8d(nbins+1);
-    double[]  numloTreat = MemoryManager.malloc8d(nbins + 1);
-    double[]  resploTreat = MemoryManager.malloc8d(nbins + 1);
-    double[] numloContr = MemoryManager.malloc8d(nbins + 1);
-    double[]  resploContr = MemoryManager.malloc8d(nbins + 1);
+    double[]  numloTreat = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows where treatment=1
+    double[]  resploTreat = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows  where response=1 AND treatment=1
+    double[] numloContr = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows where treatment=0
+    double[]  resploContr = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows where response=1 AND treatment=0
 
     for( int b = 1; b <= nbins; b++ ) {
       int id = vals_dim * (b - 1);
@@ -1625,10 +1629,10 @@ public class DTree extends Iced {
     double   whi[] = MemoryManager.malloc8d(nbins+1);
     double  wYhi[] = MemoryManager.malloc8d(nbins+1);
     double wYYhi[] = MemoryManager.malloc8d(nbins+1);
-    double[] numhiTreat = MemoryManager.malloc8d(nbins+1);
-    double[] resphiTreat = MemoryManager.malloc8d(nbins+1);
-    double[] numhiContr = MemoryManager.malloc8d(nbins+1);
-    double[] resphiContr = MemoryManager.malloc8d(nbins+1);
+    double[] numhiTreat = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where treatment=1
+    double[] resphiTreat = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where response=1 AND treatment=1
+    double[] numhiContr = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where treatment=0
+    double[] resphiContr = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where response=1 AND treatment=0
     
     for( int b = nbins-1; b >= 0; b-- ) {
       int id = vals_dim * b;
@@ -1665,7 +1669,7 @@ public class DTree extends Iced {
     double nRight = 0;
     double predLeft = 0;
     double predRight = 0;
-    double tree_p0 = 0;
+    double tree_p0 = 0; 
     double tree_p1 = 0;
 
     double  numTreatNA = hs.numTreatmentNA();
@@ -1673,27 +1677,30 @@ public class DTree extends Iced {
     double  numContrNA = hs.numControlNA();
     double  respContrNA = hs.respControlNA();
 
-    double bestNLCT1 = 0;
-    double bestNLCT0 = 0;
-    double bestNRCT1 = 0;
-    double bestNRCT0 = 0;
-    double bestPrLY1CT1 = 0;
-    double bestPrLY1CT0 = 0;
-    double bestPrRY1CT1 = 0;
-    double bestPrRY1CT0 = 0;
+    // after find the best split:
+    double bestNLCT1 = 0; // number of rows where treatment=1 in the left child
+    double bestNLCT0 = 0; // number of rows where treatment=0 in the left child
+    double bestNRCT1 = 0; // number of rows where treatment=1 in the right child
+    double bestNRCT0 = 0; // number of rows where treatment=0 in the right child
+    double bestPrLY1CT1 = 0; // probability treatment=1 AND response=1 in the left child
+    double bestPrLY1CT0 = 0; // probability treatment=0 AND response=1 in the left child
+    double bestPrRY1CT1 = 0; // probability treatment=1 AND response=1 in the right child
+    double bestPrRY1CT0 = 0; // probability treatment=0 AND response=1 in the right child
 
-    double nCT1 = numhiTreat[0];
-    double nCT0 = numhiContr[0];
-    double nCT1Y1hi = resphiTreat[0];
-    double nCT0Y1hi = resphiContr[0];
+    double nCT1 = numhiTreat[0]; // number of rows where treatment=1 before split
+    double nCT0 = numhiContr[0]; // number of rows where treatment=0 before split
+    double nCT1Y1hi = resphiTreat[0]; // number of rows where treatment=1 and response=1 before split
+    double nCT0Y1hi = resphiContr[0]; // number of rows where treatment=0 and response=1 before split
+    
     // no response in treatment or control group -> can't split
     if(nCT1 == 0 || nCT0 == 0 || nCT1Y1hi == 0 || nCT0Y1hi == 0){
       return null;
     }
-    double prY1CT1 = nCT1Y1hi/nCT1;
-    double prY1CT0 = nCT0Y1hi/nCT0;
-    double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0);
-    double upliftGainBefore = bestUpliftGain;
+    double prY1CT1 = nCT1Y1hi/nCT1; // probability treatment=1 AND response=1 before split
+    double prY1CT0 = nCT0Y1hi/nCT0; // probability treatment=0 AND response=1 before split
+    double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0); 
+    double upliftGainBefore = bestUpliftGain; // uplift gain before split
+    
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
       double prCT1All = (nCT1 + numTreatNA + 1)/(nCT0 + numContrNA + nCT1 + numTreatNA + 2);
