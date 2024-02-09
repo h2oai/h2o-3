@@ -1930,6 +1930,17 @@ def _get_xy(model):
     return x, y
 
 
+def _get_treatment(model):
+    # type: (h2o.model.ModelBase) ->  str
+    """
+    Get treatment column.
+    :param model: H2O Model
+    :returns: treatment column name
+    """
+    treat = model.actual_params.get("treatment_column")
+    return treat
+
+
 def _consolidate_varimps(model):
     # type (h2o.model.ModelBase) -> Dict
     """
@@ -3037,6 +3048,8 @@ def _process_models_input(
         models_with_varimp = [model for model in models if _has_varimp(model)]
     tree_models_to_show = _get_tree_models(models, 1 if is_aml else float("inf"))
     y = _get_xy(models_to_show[0])[1]
+    if any(_get_treatment(x) is not None for x in models_to_show):
+        raise ValueError("Uplift models currently cannot be used with explain function.")
     classification = frame[y].isfactor()[0]
     multinomial_classification = classification and frame[y].nlevels()[0] > 2
     targets = [None]
