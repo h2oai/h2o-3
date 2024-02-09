@@ -93,9 +93,6 @@ public class PartialDependence extends Lockable<PartialDependence> {
     if (!m._output.isSupervised()) {
       throw new IllegalArgumentException("Partial dependence plots are only implemented for supervised models");
     }
-    if (m._output._hasTreatment) {
-      throw new IllegalArgumentException("Partial dependence plots are not implemented for uplift models");
-    }
     int nclasses = m._output.nclasses();
     if(nclasses <= 2 && _targets != null){
       throw new IllegalArgumentException("Targets parameter is available only for multinomial classification.");

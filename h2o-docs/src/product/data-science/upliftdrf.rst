@@ -388,6 +388,13 @@ Average Excess Cumulative Uplift (AECU)
 
 The Qini value can be generalized for all AUUC metric types. So AECU for Qini metric is the same as Qini value, but the AECU can be also calculated for Gain and Lift metric type. These values are stored in ``aecu_table``.
 
+Partial dependence plot (PDP)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A partial dependence plot gives a graphical depiction of the marginal effect of a variable on the response. The effect of a variable is measured in change in the mean response. 
+
+You can plot the partial plot for the whole dataset. However, plotting for treatment and control groups separately could provide better insight into model interpretability. See the Example section below. 
+
 Examples
 ~~~~~~~~
 
@@ -463,6 +470,18 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     # Get all AECU values in a table
     print(h2o.aecu_table(perf))
     
+    # Plot Partial dependence for valid data
+    h2o.partialPlot(uplift.model, valid, c("f3"))
+        
+    mask <- test[, "treatment"] == 1
+        
+    # Partial dependence plot for treatment group valid data   
+    valid.tr <- valid[mask, ]
+    h2o.partialPlot(uplift.model, valid.tr, c("f3"))
+    
+    # Partial dependence plot for control group valid data    
+    valid.ct <- test[!mask, ]
+    h2o.partialPlot(model, valid.ct, c("f3"))
     
    .. code-tab:: python
    
@@ -533,6 +552,19 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     
     # Get AECU values in a table
     print(perf.aecu_table())
+    
+    # Partial dependence plot for valid data
+    uplift_model.partial_plot(valid_h2o, cols=["f1"])
+        
+    mask = valid_h2o[treatment_column] == 1
+        
+    # Partial dependence plot for treatment group valid data
+    treatment_valid_h2o = valid[mask, :]
+    uplift_model.partial_plot(treatment_valid_h2o, cols=["f1"])
+    
+    # Partial dependence plot for control group valid data
+    control_valid_h2o = valid[~mask, :]
+    uplift_model.partial_plot(control_valid_h2o, cols=["f1"])
 
 FAQ
 ~~~
