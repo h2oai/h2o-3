@@ -20,7 +20,6 @@ public final class PipelineHelper {
     copy._key = key;
     copy.write_lock(job);
     copy.update(job);
-//    copy.unlock(job);
     return copy;
   }
   
@@ -33,8 +32,5 @@ public final class PipelineHelper {
     if (fr.getKey() != null) DKV.remove(fr.getKey());
     fr._key = key;
     DKV.put(fr);
-//    fr.write_lock(job);
-//    fr.update(job);
-//    fr.unlock(job);
   }
 }

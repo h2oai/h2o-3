@@ -869,7 +869,7 @@ setClass("H2OSegmentModels", slots = c(segment_models_id = "character"))
 
 setClass("H2ODataTransformer", slots = c(id = "character", description = "character"))
 setClass("H2OPipeline", contains="H2OModel",
-         slots=c(
+         slots = c(
              transformers = "list",
              estimator_model = "H2OModel"
          ))
