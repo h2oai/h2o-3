@@ -5,7 +5,7 @@ extensions = dict(
     validate_required_params="",
     set_required_params="",
     module="""
-.h2o.fill_pipeline<- function(model, parameters, allparams) {
+.h2o.fill_pipeline <- function(model, parameters, allparams) {
   if (!is.null(model$estimator)) {
     model$estimator_model <- h2o.getModel(model$estimator$name)
   } else {
