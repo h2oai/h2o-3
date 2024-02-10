@@ -22,6 +22,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     glm.train(x=x, y=y, training_frame=airlines, validation_frame=airlines,)
     with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (original_output, _):
         glm.show()
+    print("***************  GLM model metrics")
     print(original_output.getvalue())
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = glm.download_mojo(original_model_filename)
@@ -30,6 +31,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     assert generic_mojo_model_from_file is not None
     with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (generic_output, _):
         generic_mojo_model_from_file.show()
+    print("*************** GLM generic model metrics")
     print(generic_output.getvalue())
     compare_params(glm, generic_mojo_model_from_file)
 
@@ -72,16 +74,18 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
 def mojo_model_test_binomial():
     test(["Origin", "Dest"], "IsDepDelayed", compare_output, 'GLM Model: summary', 'ModelMetricsBinomialGLM: glm',
          'ModelMetricsBinomialGLMGeneric: generic', 'binomial')
+    print("completed binomial tests.")
 
 
 def mojo_model_test_regression():
     test(["Origin", "Dest"], "Distance", compare_output, 'GLM Model: summary', 'ModelMetricsRegressionGLM: glm',
          'ModelMetricsRegressionGLMGeneric: generic', 'gaussian')
-
+    print("completed Gaussian tests.")
 
 def mojo_model_test_multinomial():
     test(["Origin", "Distance"], "Dest", compare_output, 'GLM Model: summary', 'ModelMetricsMultinomialGLM: glm',
          'ModelMetricsMultinomialGLMGeneric: generic', 'multinomial')
+    print("completed Multinomial tests.")
 
 
 def mojo_model_test_ordinal():

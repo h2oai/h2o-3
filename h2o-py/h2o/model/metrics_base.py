@@ -153,10 +153,11 @@ class MetricsBase(h2o_meta(H2ODisplay)):
                     "Residual deviance: {}".format(self.residual_deviance()),
                 ])
             
-        if (m_is_binomial or m_is_regression or m_is_multinomial or m_is_glm) and is_type(self.aic(), numeric) and not math.isnan(self.aic()) and self.aic() != 0:
-            items.append("AIC: {}".format(self.aic()))
-        if (m_is_binomial or m_is_regression or m_is_multinomial or m_is_glm) and is_type(self.loglikelihood(), numeric) and not math.isnan(self.loglikelihood()) and self.loglikelihood() != 0:
-            items.append("Loglikelihood: {}".format(self.loglikelihood()))       
+        if m_is_glm:
+            if is_type(self.aic(), numeric) and not math.isnan(self.aic()) and self.aic() != 0:
+                items.append("AIC: {}".format(self.aic()))
+            if is_type(self.loglikelihood(), numeric) and not math.isnan(self.loglikelihood()) and self.loglikelihood() != 0:
+                items.append("Loglikelihood: {}".format(self.loglikelihood()))       
             
         items.extend(self._str_items_custom())
         return items
@@ -325,8 +326,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         ...                validation_frame = valid)
         >>> pros_glm.aic()
         """
-        if self._algo == 'glm':
-            return self._metric_json['AIC']
+        return self._metric_json['AIC']
 
     def loglikelihood(self):
         """The log likelihood for this set of metrics.
@@ -349,8 +349,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         ...                validation_frame = valid)
         >>> pros_glm.loglikelihood()
         """
-        if self._algo == 'glm':
-            return self._metric_json['loglikelihood']
+        return self._metric_json['loglikelihood']
 
     def gini(self):
         """Gini coefficient.
