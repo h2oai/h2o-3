@@ -143,6 +143,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     // ds[0] has the prediction and ds[1,..,N] is ignored
     @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, 1, 0, m);}
     @Override public double[] perRow(double ds[], float[] yact, double w, double o,  Model m) {
+      boolean score4Generic = m != null && m.getClass().toString().contains("Generic");
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
       if(w == 0 || Double.isNaN(w)) return ds;
@@ -163,7 +164,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
         }
       }
 
-      if(m != null && m.getClass().toString().contains("Generic")) {
+      if(score4Generic) { // only perform for generic model, will increase run time for training if performs
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
       

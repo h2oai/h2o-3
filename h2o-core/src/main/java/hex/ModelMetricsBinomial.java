@@ -192,6 +192,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       if(w == 0 || Double.isNaN(w)) return ds;
       int iact = (int)yact[0];
       boolean quasibinomial = (m!=null && m._parms._distribution == DistributionFamily.quasibinomial);
+      boolean score4Generic = m != null && m.getClass().toString().contains("Generic");
       if (quasibinomial) {
         if (yact[0] != 0)
           iact = _domain[0].equals(String.valueOf((int) yact[0])) ? 0 : 1;  // actual response index needed for confusion matrix, AUC, etc.
@@ -213,7 +214,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         _logloss += w * MathUtils.logloss(err);
       }
 
-      if(m != null && m.getClass().toString().contains("Generic")) {
+      if(score4Generic) { // only perform for generic model, will increase run time for training if performs
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
 
