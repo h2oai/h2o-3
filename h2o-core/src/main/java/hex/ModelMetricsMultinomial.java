@@ -36,6 +36,13 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     _auc = auc;
   }
 
+  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma,
+                                 ConfusionMatrix cm, float[] hr, double logloss, MultinomialAUC auc, 
+                                 CustomMetric customMetric) {
+    this(model, frame, nobs, mse, domain, sigma, cm, hr, logloss, Double.NaN, Double.NaN, auc, customMetric);
+    
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

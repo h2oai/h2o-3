@@ -37,6 +37,11 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     _AIC = aic;
   }
 
+  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae,double rmsle,
+                                double meanResidualDeviance, CustomMetric customMetric) {
+    this(model, frame, nobs, mse, sigma, mae, rmsle, meanResidualDeviance, customMetric, Double.NaN, Double.NaN);
+  }
+
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
 

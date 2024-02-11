@@ -10,7 +10,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -34,6 +33,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     _aic = aic;
     _gainsLift = gainsLift;
     _mean_per_class_error = cm() == null ? Double.NaN : cm().mean_per_class_error();
+  }
+
+  public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
+                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
+                              CustomMetric customMetric) {
+    this(model, frame, nobs, mse, domain, sigma, auc, logloss, Double.NaN, Double.NaN, 
+            gainsLift, customMetric);
   }
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {
