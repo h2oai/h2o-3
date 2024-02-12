@@ -1381,7 +1381,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public double likelihood(double w, double y, double[] f) {
-    return 0.0; // place holder.  This function is overridden in GLM.
+    return Double.NaN; // placeholder.  This function is overridden in GLM and GenericModel.
+  }
+
+  public double aic(double likelihood) {
+    return Double.NaN; // placeholder.  This function is overridden in GenericModel.
   }
 
   public ScoringInfo[] scoring_history() { return scoringInfo; }

@@ -10,20 +10,17 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression implements
   public final long _residualDegressOfFreedom;
   public final double _resDev;
   public final double _nullDev;
-  public final double _AIC;
-  public final double _loglikelihood;
+
 
   public ModelMetricsRegressionGLM(Model model, Frame frame, long nobs, double mse, double sigma,
                                    double mae, double rmsle, double resDev, double meanResDev,
                                    double nullDev, double aic, long nDof, long rDof,
                                    CustomMetric customMetric, double loglikelihood) {
-    super(model, frame, nobs, mse, sigma, mae, rmsle, meanResDev, customMetric);
+    super(model, frame, nobs, mse, sigma, mae, rmsle, meanResDev, customMetric, loglikelihood, aic);
     _resDev = resDev;
     _nullDev = nullDev;
-    _AIC = aic;
     _nullDegressOfFreedom = nDof;
     _residualDegressOfFreedom = rDof;
-    _loglikelihood = loglikelihood;
   }
 
   @Override

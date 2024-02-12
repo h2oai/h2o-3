@@ -17,6 +17,16 @@ public class ModelMetricsMultinomialGLMGeneric extends ModelMetricsMultinomialGe
   public ModelMetricsMultinomialGLMGeneric(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma,
                                            TwoDimTable confusion_matrix, TwoDimTable hit_ratio_table, double logloss, CustomMetric customMetric,
                                            double mean_per_class_error, long nullDegreesOfFreedom, long residualDegreesOfFreedom,
+                                           double resDev, double nullDev, TwoDimTable coefficients_table, double r2,
+                                           TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, MultinomialAucType type,
+                                           final String description) {
+    this(model, frame, nobs, mse,  domain, sigma, confusion_matrix, hit_ratio_table, logloss, customMetric, 
+            mean_per_class_error, nullDegreesOfFreedom, residualDegreesOfFreedom, resDev, nullDev, Double.NaN, 
+            coefficients_table, r2, multinomial_auc_table, multinomial_aucpr_table, type, description, Double.NaN);
+  }
+  public ModelMetricsMultinomialGLMGeneric(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma,
+                                           TwoDimTable confusion_matrix, TwoDimTable hit_ratio_table, double logloss, CustomMetric customMetric,
+                                           double mean_per_class_error, long nullDegreesOfFreedom, long residualDegreesOfFreedom,
                                            double resDev, double nullDev, double aic, TwoDimTable coefficients_table, double r2,
                                            TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, MultinomialAucType type, 
                                            final String description, double loglikelihood) {

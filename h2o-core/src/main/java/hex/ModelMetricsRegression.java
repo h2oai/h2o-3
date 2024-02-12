@@ -13,21 +13,33 @@ import water.util.MathUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public final double _mean_residual_deviance;
+  public final double _AIC;
+  public final double _loglikelihood;
   /**
    * @return {@link #mean_residual_deviance()} for all algos except GLM, for which it means "total residual deviance".
    **/
   public double residual_deviance() { return _mean_residual_deviance; }
+  public double loglikelihood() { return _loglikelihood; }
+  public double aic() { return _AIC; }
   @SuppressWarnings("unused")
   public double mean_residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_absolute_error;
   public double mae() { return _mean_absolute_error; }
   public final double _root_mean_squared_log_error;
   public double rmsle() { return _root_mean_squared_log_error; }
-  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae,double rmsle, double meanResidualDeviance, CustomMetric customMetric) {
+  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae,double rmsle, 
+                                double meanResidualDeviance, CustomMetric customMetric, double loglikelihood, double aic) {
     super(model, frame, nobs, mse, null, sigma, customMetric);
     _mean_residual_deviance = meanResidualDeviance;
     _mean_absolute_error = mae;
     _root_mean_squared_log_error = rmsle;
+    _loglikelihood = loglikelihood;
+    _AIC = aic;
+  }
+
+  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae,double rmsle,
+                                double meanResidualDeviance, CustomMetric customMetric) {
+    this(model, frame, nobs, mse, sigma, mae, rmsle, meanResidualDeviance, customMetric, Double.NaN, Double.NaN);
   }
 
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
@@ -51,6 +63,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     }
     sb.append(" mean absolute error: " + (float)_mean_absolute_error + "\n");
     sb.append(" root mean squared log error: " + (float)_root_mean_squared_log_error + "\n");
+    sb.append(" loglikelihood: " + (float)_loglikelihood + "\n");
+    sb.append(" AIC: " + (float)_AIC + "\n");
     return sb.toString();
   }
 
@@ -117,6 +131,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     Distribution _dist;
     double _abserror;
     double _rmslerror;
+    protected double _loglikelihood;
     public MetricBuilderRegression() {
       super(1,null); //this will make _work = new float[2];
     }
@@ -128,6 +143,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     // ds[0] has the prediction and ds[1,..,N] is ignored
     @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, 1, 0, m);}
     @Override public double[] perRow(double ds[], float[] yact, double w, double o,  Model m) {
+      boolean score4Generic = m != null && m.getClass().toString().contains("Generic");
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
       if(w == 0 || Double.isNaN(w)) return ds;
@@ -147,6 +163,10 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
           _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
         }
       }
+
+      if(score4Generic) { // only perform for generic model, will increase run time for training if performs
+        _loglikelihood += m.likelihood(w, yact[0], ds);
+      }
       
       _count++;
       _wcount += w;
@@ -160,6 +180,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _sumdeviance += mb._sumdeviance;
       _abserror += mb._abserror;
       _rmslerror += mb._rmslerror;
+      _loglikelihood += mb._loglikelihood;
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
@@ -173,6 +194,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       double mse = _sumsqe / _wcount;
       double mae = _abserror/_wcount; //Mean Absolute Error
       double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
+      double loglikelihood = Double.NaN;
+      double aic = Double.NaN;
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
       if (m != null && m.isDistributionHuber()){
@@ -195,7 +218,12 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       } else {
         meanResDeviance = Double.NaN;
       }
-      ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
+      if(m != null && m.getClass().toString().contains("Generic")) {
+        loglikelihood = -1 * _loglikelihood ; // get likelihood from negative loglikelihood
+        aic = m.aic(loglikelihood);
+      }
+      ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, 
+              meanResDeviance, _customMetric, loglikelihood, aic);
       return mm;
     }
   }

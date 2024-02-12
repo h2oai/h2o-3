@@ -2,12 +2,14 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.*;
+import hex.genmodel.algos.glm.GlmMojoModelBase;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
+import hex.glm.GLMModel;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.*;
 import water.fvec.*;
@@ -42,6 +44,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
      */
     private final String _algoName; 
     private final GenModelSource<?> _genModelSource;
+    private GLMModel.GLMParameters _glmParameters;
 
     /**
      * Full constructor
@@ -55,6 +58,26 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
         if (mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
             _parms._modelParameters = GenericModelParameters.convertParameters(mojoModel._modelAttributes.getModelParameters());
+        }
+        _glmParameters = null;
+        if(_algoName.toLowerCase().contains("glm")) {
+            GlmMojoModelBase glmModel = (GlmMojoModelBase) mojoModel;
+            // create GLM parameters instance
+            _glmParameters = new GLMModel.GLMParameters(
+                    GLMModel.GLMParameters.Family.valueOf(getParamByName("family").toString()),
+                    GLMModel.GLMParameters.Link.valueOf(getParamByName("link").toString()),
+                    Arrays.stream(getParamByName("lambda").toString().trim().replaceAll("\\[", "")
+                                    .replaceAll("\\]", "").split(",\\s*"))
+                            .mapToDouble(Double::parseDouble).toArray(),
+                    Arrays.stream(getParamByName("alpha").toString().trim().replaceAll("\\[", "")
+                                    .replaceAll("\\]", "").split(",\\s*"))
+                            .mapToDouble(Double::parseDouble).toArray(),
+                    Double.parseDouble(getParamByName("tweedie_variance_power").toString()),
+                    Double.parseDouble(getParamByName("tweedie_link_power").toString()),
+                    null,
+                    Double.parseDouble(getParamByName("theta").toString()), 
+                    glmModel.getDispersionEstimated()
+            );
         }
     }
 
@@ -131,6 +154,35 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             return predictScoreMojoImpl(fr, destination_key, j, computeMetrics);
         } else
             return super.predictScoreImpl(fr, adaptFrm, destination_key, j, computeMetrics, customMetricFunc);
+    }
+
+    private Iced getParamByName(String name) {
+        return Arrays.stream(this._parms._modelParameters)
+                .filter(p -> Objects.equals(p.name, name)).findAny().get().actual_value;
+    }
+
+    @Override
+    public double aic(double likelihood) {
+        // calculate negative loglikelihood specifically  for GLM
+        if (!_algoName.equals("glm")) {
+            return Double.NaN;
+        } else {
+            long betasCount = Arrays.stream(((GlmMojoModelBase) this.genModel()).getBeta()).filter(b -> b != 0).count();
+            return -2 * likelihood + 2 * betasCount;
+        }
+    }
+
+    @Override
+    public double likelihood(double w, double y, double[] f) {
+        // calculate negative loglikelihood specifically for GLM
+        if(!_algoName.equals("glm")) {
+            return Double.NaN;
+        } else if (w == 0) {
+            return 0;
+        } else {
+            // time-consuming calculation for the final scoring for GLM model
+            return _glmParameters.likelihood(w, y, f);
+        }
     }
 
     PredictScoreResult predictScoreMojoImpl(Frame fr, String destination_key, Job<?> j, boolean computeMetrics) {
