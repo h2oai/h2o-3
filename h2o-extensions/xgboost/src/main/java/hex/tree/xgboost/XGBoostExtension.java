@@ -28,6 +28,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
                   + "  - CUDA 8.0\n"
                   + "XGboost (minimal version) needs: \n"
                   + "  - GCC 4.7+\n"
+                  + "Apple silicon is not supported yet\n"
                   + "For more details, run in debug mode: `java -Dlog4j.configuration=file:///tmp/log4j.properties -jar h2o.jar`\n";
 
   // XGBoost initialization sequence was called flag
