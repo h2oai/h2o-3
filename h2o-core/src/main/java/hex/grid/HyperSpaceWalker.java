@@ -1,23 +1,21 @@
 package hex.grid;
 
-import hex.Model;
-import hex.ModelParametersBuilderFactory;
-import hex.ScoreKeeper;
-import hex.ScoringInfo;
+import hex.*;
+import hex.ModelParametersBuilderFactory.ModelParametersBuilder;
 import hex.grid.HyperSpaceSearchCriteria.CartesianSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.Strategy;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
-import water.util.PojoUtils;
+import water.util.RandomUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
-
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
+
+  String SUBSPACES = "subspaces";
 
   interface HyperSpaceIterator<MP extends Model.Parameters> {
     /**
@@ -148,8 +146,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      */
     final protected C _search_criteria;
 
-    public static final String SUBSPACES = "subspaces";
-    
     /**
      * Search criteria for the hyperparameter search including directives for how to search and
      * when to stop the search.
@@ -174,14 +170,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      */
     final MP _params;
 
-    final MP _defaultParams;
-
     /**
      * Hyper space description - in this case only dimension and possible values.
      */
     final protected Map<String, Object[]> _hyperParams;
 
-    long model_number = 0l;   // denote model number
+    long model_number = 0;   // denote model number
     /**
      * Cached names of used hyper parameters.
      */
@@ -232,24 +226,23 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                       ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                       C search_criteria) {
       _params = params;
-      _hyperParams = hyperParams;
+      _hyperParams = processHyperParams(hyperParams);
       _paramsBuilderFactory = paramsBuilderFactory;
-      _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
+      _hyperParamNames = _hyperParams.keySet().toArray(new String[0]);
       _hyperParamSubspaces = extractSubspaces();
       _hyperParamNamesSubspace = extractSubspaceNames();
       _hyperParams.remove(SUBSPACES);
       _search_criteria = search_criteria;
       _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
-      
-      // Sanity check the hyperParams map, and check it against the params object
-      try {
-        _defaultParams = (MP) params.getClass().newInstance();
-      } catch (Exception e) {
-        throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to get the default values.");
-      }
-      validateParams(_hyperParams, false);
-      Arrays.stream(_hyperParamSubspaces).forEach(subspace -> validateParams(subspace, true));
+
+      validateHyperParams(_hyperParams, false);
+      Arrays.stream(_hyperParamSubspaces).forEach(subspace -> validateHyperParams(subspace, true));
     } // BaseWalker()
+    
+    /** can be used by walkers to extract some specific hyper params */
+    protected Map<String, Object[]> processHyperParams(Map<String, Object[]> hyperParams) {
+      return hyperParams;
+    }
     
     @Override
     public String[] getHyperParamNames() {
@@ -292,15 +285,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     }
     
     protected MP getModelParams(MP params, Object[] hyperParams, String[] hyperParamNames) {
-      ModelParametersBuilderFactory.ModelParametersBuilder<MP>
-              paramsBuilder = _paramsBuilderFactory.get(params);
+      ModelParametersBuilder<MP>
+              paramsBuilder = _paramsBuilderFactory.get((MP) params.clone());
       for (int i = 0; i < hyperParamNames.length; i++) {
         String paramName = hyperParamNames[i];
         Object paramValue = hyperParams[i];
-        if (paramName.equals("valid")) {  // change paramValue to key<Frame> for validation_frame
-          paramName = "validation_frame";   // @#$, paramsSchema is still using validation_frame and training_frame
-        }
-
         paramsBuilder.set(paramName, paramValue);
       }
       return paramsBuilder.build();
@@ -352,53 +341,25 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return Arrays.deepHashCode(hashMe);
     }
 
-    private void validateParams(Map<String, Object[]> params, boolean isSubspace) {
+    private void validateHyperParams(Map<String, Object[]> hyperParams, boolean isSubspace) {
       // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
       // parameter value is set to be default.  Otherwise, an exception will be thrown.
-      for (String key : params.keySet()) {
+      ModelParametersBuilder paramsBuilder = _paramsBuilderFactory.get((MP)_params.clone());
+      
+      for (Map.Entry<String, Object[]> e : hyperParams.entrySet()) {
         // Throw if the user passed an empty value list:
-        Object[] values = params.get(key);
-        if (0 == values.length)
-          throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + key);
+        if (e.getValue() == null || e.getValue().length == 0)
+          throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + e.getKey());
 
-        if ("seed".equals(key) || "_seed".equals(key)) continue;  // initialized to the wall clock
-
-        if (isSubspace && _hyperParams.containsKey(key)) {
-          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in " +
+        if (isSubspace && _hyperParams.containsKey(e.getKey())) {
+          throw new H2OIllegalArgumentException("Grid search model parameter '" + e.getKey() + "' is set in " +
                   "both the subspaces and in the hyperparameters map.  This is ambiguous; set it in one place" +
                   " or the other, not both.");
         }
-        
-        validateParamVals(key);
-        // Ugh.  Java callers, like the JUnits or Sparkling Water users, use a leading _.  REST users don't.
-      }
-    }
-    
-    private void validateParamVals(String key) {
-      String prefix = (key.startsWith("_") ? "" : "_");
-
-      // Throw if params has a non-default value which is not in the hyperParams map
-      Object defaultVal = PojoUtils.getFieldValue(_defaultParams, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
-      Object actualVal = PojoUtils.getFieldValue(_params, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
-
-      if (defaultVal != null && actualVal != null) {
-        // both are not set to null
-        if (defaultVal.getClass().isArray() &&
-                // array
-                !PojoUtils.arraysEquals(defaultVal, actualVal)) {
-          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
-        } // array
-        if (!defaultVal.getClass().isArray() &&
-                // ! array
-                !defaultVal.equals(actualVal)) {
-          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
-        } // ! array
-      } // both are set: defaultVal != null && actualVal != null
-
-      // defaultVal is null but actualVal is not, raise exception
-      if (defaultVal == null && !(actualVal == null)) {
-        // only actual is set
-        throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+        if (!paramsBuilder.isAssignable(e.getKey())) {
+          throw new H2OIllegalArgumentException("Grid search model parameter '"+e.getKey()+"' is invalid or set both in the model parameters and in the hyperparameters map. "+
+                  "This is ambiguous; set it in one place or the other, not both.");
+        }
       }
     }
   }
@@ -442,10 +403,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           if (_currentHyperparamIndices != null) {
             // Fill array of hyper-values
             Object[] hypers = hypers(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices);
-            // Get clone of parameters
-            MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
-            MP params = getModelParams(commonModelParams, hypers, _currentHyperParamNames);
+            MP params = getModelParams(_params, hypers, _currentHyperParamNames);
 
             return params;
           } else {
@@ -460,9 +419,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             int[] hyperParamIndicesCopy = new int[_currentHyperparamIndices.length];
             System.arraycopy(_currentHyperparamIndices, 0, hyperParamIndicesCopy, 0, _currentHyperparamIndices.length);
             if (nextModelIndices(hyperParamIndicesCopy) == null) {
-              if(_currentSubspace == _hyperParamSubspaces.length - 1) {
-                return false;  
-              }
+              return _currentSubspace != _hyperParamSubspaces.length-1;
             }
           }
           
@@ -471,7 +428,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override
         public void onModelFailure(Model failedModel, Consumer<Object[]> withFailedModelHyperParams) {
-          // FIXME: when using parallel grid search, there's no good reason to think that the current hyperparam indices where the ones used for the failed model
+          // FIXME: when using parallel grid search, there's no good reason to think that the current hyperparam indices were the ones used for the failed model
           withFailedModelHyperParams.accept(hypers(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices));
         }
 
@@ -511,10 +468,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
   class RandomDiscreteValueWalker<MP extends Model.Parameters>
           extends BaseWalker<MP, RandomDiscreteValueSearchCriteria> {
 
+    public static final String WEIGHTS_SUFFIX = "$weights";
     // Used by HyperSpaceIterator.nextModelIndices to ensure that the space is explored enough before giving up
     private static final double MIN_NUMBER_OF_SAMPLES = 1e4;
     private Random _random;
     private boolean _set_model_seed_from_search_seed;  // true if model parameter seed is set to default value and false otherwise
+    
+    private Map<String, Integer[]> _weights;
 
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParams,
@@ -522,15 +482,39 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                                      RandomDiscreteValueSearchCriteria search_criteria) {
       super(params, hyperParams, paramsBuilderFactory, search_criteria);
 
-      // seed the models using the search seed if it is the only one specified
-      long defaultSeed = _defaultParams._seed;
+      // seed the models using the search seed iff it is the only one specified
+      long defaultSeed = (long)_params.getParameterDefaultValue("_seed");
       long actualSeed = _params._seed;
       long gridSeed = search_criteria.seed();
       _set_model_seed_from_search_seed = defaultSeed == actualSeed && defaultSeed != gridSeed;
-      _random = gridSeed == defaultSeed ? new Random() : new Random(gridSeed);
+      _random = RandomUtils.getRNG(gridSeed != defaultSeed ? gridSeed : System.nanoTime());
     }
 
-    /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
+    @Override
+    protected Map<String, Object[]> processHyperParams(Map<String, Object[]> hyperParams) {
+//      _weights = new HashMap<>();
+//      return collectWeights(hyperParams, _weights);
+      return hyperParams;
+    }
+
+/*
+    private Map<String, Object[]> collectWeights(Map<String, Object[]> hyperParams, Map<String, Integer[]> weights) {
+      Map<String, Object[]> hp = new HashMap<>();
+      for (Map.Entry<String, Object[]> e : hyperParams.entrySet()) {
+        String name = e.getKey();
+        if (name.equals(SUBSPACES)) {
+        } else if (name.endsWith(WEIGHTS_SUFFIX)) {
+          _weights.put(name.substring(0, name.length()-WEIGHTS_SUFFIX.length()), (Integer[])e.getValue());
+        } else {
+          _weights
+        }
+      }
+      
+    }
+*/
+
+
+      /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
     @Override
     public boolean stopEarly(Model model, ScoringInfo[] sk) {
       return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
@@ -574,10 +558,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
             // Fill array of hyper-values
             Object[] hypers = hypers(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices);
-            // Get clone of parameters
-            MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
-            MP params = getModelParams(commonModelParams, hypers, _currentHyperParamNames);
+            MP params = getModelParams(_params, hypers, _currentHyperParamNames);
 
             // add max_runtime_secs in search criteria into params if applicable
             if (_search_criteria != null && _search_criteria.strategy() == Strategy.RandomDiscrete) {
