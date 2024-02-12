@@ -294,10 +294,6 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.secondary)
     public KeyValueV3[] monotone_constraints;
     
-    @API(help = "Temporary flag to disable pipeline usage when preprocessing is enabled.", 
-            level = API.Level.expert)
-    public boolean pipelineEnabled;
-
     @Override
     public AutoMLBuildSpec.AutoMLBuildModels fillImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
       super.fillImpl(impl, new String[]{"algo_parameters"});

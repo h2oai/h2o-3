@@ -88,8 +88,8 @@ public class DummyStepsProvider implements ModelingStepsProvider<DummyStepsProvi
 
         @Override
         public Model.Parameters prepareModelParameters() {
-                                                           return new DummyModel.DummyModelParameters();
-                                                                                                        }
+            return new DummyModel.DummyModelParameters();
+        }
 
         @Override
         public Map<String, Object[]> prepareSearchParameters() {
