@@ -76,11 +76,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
     @Override public boolean scoreZeroTrees() { return false; }
 
-    @Override
-    public boolean providesVarImp() {
-        return false; // Currently disabled as it is not straightforward how to attribute contribution of a split 
-    }
-
     /** Initialize the ModelBuilder, validating all arguments and preparing the
      *  training frame.  This call is expected to be overridden in the subclasses
      *  and each subclass will start with "super.init();".  This call is made

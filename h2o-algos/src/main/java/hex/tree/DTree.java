@@ -204,6 +204,8 @@ public class DTree extends Iced {
     final double _tree_p0, _tree_p1;
     final double _p0Treat, _p0Contr, _p1Treat, _p1Contr; // uplift predictions
     final double _n0Treat, _n0Contr, _n1Treat, _n1Contr;
+    final double _upliftGainBefore;
+    final double _upliftGain;
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1) {
       assert nasplit != DHistogram.NASplitDir.None;
@@ -219,10 +221,13 @@ public class DTree extends Iced {
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
       _p0Treat = _p0Contr = _p1Treat = _p1Contr = 0;
       _n0Treat = _n0Contr = _n1Treat = _n1Contr = 0;
+      _upliftGainBefore = 0;
+      _upliftGain = 0;
+      
     }
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1,
-                 double p0Treat, double p0Contr, double p1Treat, double p1Contr, double n0Treat, double n0Contr, double n1Treat, double n1Contr) {
+                 double p0Treat, double p0Contr, double p1Treat, double p1Contr, double n0Treat, double n0Contr, double n1Treat, double n1Contr, double upliftGainBefore, double upliftGain) {
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
       // FIXME: Disabled for testing PUBDEV-6495:
@@ -235,9 +240,14 @@ public class DTree extends Iced {
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
       _p0Treat = p0Treat; _p0Contr = p0Contr; _p1Treat = p1Treat; _p1Contr = p1Contr;
       _n0Treat = n0Treat; _n0Contr = n0Contr; _n1Treat = n1Treat; _n1Contr = n1Contr;
+      _upliftGainBefore = upliftGainBefore;
+      _upliftGain = upliftGain;
     }
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
+
+    public final double preSplitUpliftGain() { return _upliftGainBefore; }
+    public final double upliftGain() { return _upliftGain; }
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
     public final DHistogram.NASplitDir naSplitDir() { return _nasplit; }
@@ -1532,7 +1542,11 @@ public class DTree extends Iced {
     // unordered predictor, i.e. categorical predictor).
     double[]   vals =   hs._vals;
     final int vals_dim = hs._vals_dim;
-    double[] valsUplift = hs._valsUplift;
+    double[] valsUplift = hs._valsUplift;   
+    // 0 treatment group nominator (number of rows where treatment=1)
+    // 1 treatment group denominator (number of rows where response=1 AND treatment=1)
+    // 2 control group nominator (number of rows where treatment=0)
+    // 3 control group denominator (number of rows where response=1 AND treatment=0)
     final int valsUpliftDim = 4;
     int idxs[] = null;          // and a reverse index mapping
 
@@ -1568,10 +1582,10 @@ public class DTree extends Iced {
     double   wlo[] = MemoryManager.malloc8d(nbins+1);
     double  wYlo[] = MemoryManager.malloc8d(nbins+1);
     double wYYlo[] = MemoryManager.malloc8d(nbins+1);
-    double[]  numloTreat = MemoryManager.malloc8d(nbins + 1);
-    double[]  resploTreat = MemoryManager.malloc8d(nbins + 1);
-    double[] numloContr = MemoryManager.malloc8d(nbins + 1);
-    double[]  resploContr = MemoryManager.malloc8d(nbins + 1);
+    double[]  numloTreat = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows where treatment=1
+    double[]  resploTreat = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows  where response=1 AND treatment=1
+    double[] numloContr = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows where treatment=0
+    double[]  resploContr = MemoryManager.malloc8d(nbins + 1); // cumulative sums of rows where response=1 AND treatment=0
 
     for( int b = 1; b <= nbins; b++ ) {
       int id = vals_dim * (b - 1);
@@ -1615,10 +1629,10 @@ public class DTree extends Iced {
     double   whi[] = MemoryManager.malloc8d(nbins+1);
     double  wYhi[] = MemoryManager.malloc8d(nbins+1);
     double wYYhi[] = MemoryManager.malloc8d(nbins+1);
-    double[] numhiTreat = MemoryManager.malloc8d(nbins+1);
-    double[] resphiTreat = MemoryManager.malloc8d(nbins+1);
-    double[] numhiContr = MemoryManager.malloc8d(nbins+1);
-    double[] resphiContr = MemoryManager.malloc8d(nbins+1);
+    double[] numhiTreat = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where treatment=1
+    double[] resphiTreat = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where response=1 AND treatment=1
+    double[] numhiContr = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where treatment=0
+    double[] resphiContr = MemoryManager.malloc8d(nbins+1); // cumulative sums of rows where response=1 AND treatment=0
     
     for( int b = nbins-1; b >= 0; b-- ) {
       int id = vals_dim * b;
@@ -1655,7 +1669,7 @@ public class DTree extends Iced {
     double nRight = 0;
     double predLeft = 0;
     double predRight = 0;
-    double tree_p0 = 0;
+    double tree_p0 = 0; 
     double tree_p1 = 0;
 
     double  numTreatNA = hs.numTreatmentNA();
@@ -1663,40 +1677,44 @@ public class DTree extends Iced {
     double  numContrNA = hs.numControlNA();
     double  respContrNA = hs.respControlNA();
 
-    double bestNLCT1 = 0;
-    double bestNLCT0 = 0;
-    double bestNRCT1 = 0;
-    double bestNRCT0 = 0;
-    double bestPrLY1CT1 = 0;
-    double bestPrLY1CT0 = 0;
-    double bestPrRY1CT1 = 0;
-    double bestPrRY1CT0 = 0;
+    // after find the best split:
+    double bestNLCT1 = 0; // number of rows where treatment=1 in the left child
+    double bestNLCT0 = 0; // number of rows where treatment=0 in the left child
+    double bestNRCT1 = 0; // number of rows where treatment=1 in the right child
+    double bestNRCT0 = 0; // number of rows where treatment=0 in the right child
+    double bestPrLY1CT1 = 0; // probability treatment=1 AND response=1 in the left child
+    double bestPrLY1CT0 = 0; // probability treatment=0 AND response=1 in the left child
+    double bestPrRY1CT1 = 0; // probability treatment=1 AND response=1 in the right child
+    double bestPrRY1CT0 = 0; // probability treatment=0 AND response=1 in the right child
 
-    double nCT1 = numhiTreat[0];
-    double nCT0 = numhiContr[0];
-    double nCT1Y1hi = resphiTreat[0];
-    double nCT0Y1hi = resphiContr[0];
+    double nCT1 = numhiTreat[0]; // number of rows where treatment=1 before split
+    double nCT0 = numhiContr[0]; // number of rows where treatment=0 before split
+    double nCT1Y1hi = resphiTreat[0]; // number of rows where treatment=1 and response=1 before split
+    double nCT0Y1hi = resphiContr[0]; // number of rows where treatment=0 and response=1 before split
+    
     // no response in treatment or control group -> can't split
     if(nCT1 == 0 || nCT0 == 0 || nCT1Y1hi == 0 || nCT0Y1hi == 0){
       return null;
     }
-    double prY1CT1 = nCT1Y1hi/nCT1;
-    double prY1CT0 = nCT0Y1hi/nCT0;
-    double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0);
+    double prY1CT1 = nCT1Y1hi/nCT1; // probability treatment=1 AND response=1 before split
+    double prY1CT0 = nCT0Y1hi/nCT0; // probability treatment=0 AND response=1 before split
+    double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0); 
+    double upliftGainBefore = bestUpliftGain; // uplift gain before split
+    
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
       double prCT1All = (nCT1 + numTreatNA + 1)/(nCT0 + numContrNA + nCT1 + numTreatNA + 2);
       double prCT0All = 1-prCT1All;
-      double prY1CT1All = (resphiTreat[0] + respTreatNA) / (nCT1 + numTreatNA);
-      double prY1CT0All = (resphiContr[0] + respContrNA) / (nCT0 + numContrNA);
+      double prY1CT1All = (nCT1Y1hi + respTreatNA) / (nCT1 + numTreatNA);
+      double prY1CT0All = (nCT0Y1hi + respContrNA) / (nCT0 + numContrNA);
       double prLCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
       double prLCT0 = 1 - prLCT1;
       double prL = prLCT1 * prCT1All + prLCT0 * prCT0All;
       double prR = 1 - prL;
-      double nLCT1 = numhiTreat[0];
-      double nLCT0 = numhiContr[0];
-      double prLY1CT1 = (resphiTreat[0] + 1) / (numhiTreat[0] + 2);
-      double prLY1CT0 = (resphiContr[0] + 1) / (numhiContr[0] + 2);
+      double nLCT1 = nCT1Y1hi;
+      double nLCT0 = nCT0Y1hi;
+      double prLY1CT1 = (nCT1Y1hi + 1) / (numhiTreat[0] + 2);
+      double prLY1CT0 = (nCT0Y1hi + 1) / (numhiContr[0] + 2);
       double nRCT1 = numTreatNA;
       double nRCT0 = numContrNA;
       double prRY1CT1 = (respTreatNA + 1) / (numTreatNA + 2);
@@ -1939,7 +1957,7 @@ public class DTree extends Iced {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
     }
 
-    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1, bestPrLY1CT1, bestPrLY1CT0, bestPrRY1CT1, bestPrRY1CT0, bestNLCT1, bestNLCT0, bestNRCT1, bestNRCT0);
+    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1, bestPrLY1CT1, bestPrLY1CT0, bestPrRY1CT1, bestPrRY1CT0, bestNLCT1, bestNLCT0, bestNRCT1, bestNRCT0, upliftGainBefore, bestUpliftGain);
     if (LOG.isTraceEnabled()) LOG.trace("splitting on " + hs._name + ": " + split);
     return split;
   }
