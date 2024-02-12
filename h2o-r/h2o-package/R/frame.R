@@ -2902,6 +2902,13 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use, method="Pearson"){
   if (is.null(method) || is.na(method)) {
     stop("Correlation method must be specified.")
   }
+
+  # Check for categorical columns in x and y
+  x_categorical <- any(h2o.isfactor(x))
+  y_categorical <- any(h2o.isfactor(y))
+
+  if ((x_categorical && length(unique(h2o.levels(x))) > 2) || (y_categorical && length(unique(h2o.levels(y))) > 2)) {
+    warning("Column x or y contains more than 2 levels. Only numerical and categorical columns are supported.")
   
   # Eager, mostly to match prior semantics but no real reason it need to be
   expr <- .newExpr("cor",x,y,.quote(use), .quote(method))
