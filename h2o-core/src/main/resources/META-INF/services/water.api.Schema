@@ -1,4 +1,5 @@
 hex.schemas.ClusteringModelBuilderSchema
+hex.schemas.DataTransformerV3
 hex.schemas.GridSchemaV99
 hex.schemas.GridSearchSchema
 hex.schemas.HyperSpaceSearchCriteriaV99
@@ -6,6 +7,10 @@ hex.schemas.HyperSpaceSearchCriteriaV99$CartesianSearchCriteriaV99
 hex.schemas.HyperSpaceSearchCriteriaV99$RandomDiscreteValueSearchCriteriaV99
 hex.schemas.HyperSpaceSearchCriteriaV99$SequentialSearchCriteriaV99
 hex.schemas.ModelBuilderSchema
+hex.schemas.PipelineV3
+hex.schemas.PipelineModelV3
+hex.schemas.PipelineV3$PipelineParametersV3
+hex.schemas.PipelineModelV3$PipelineModelOutputV3
 hex.schemas.QuantileV3
 hex.schemas.QuantileV3$QuantileParametersV3
 water.api.ModelBuildersHandler$ModelIdV3

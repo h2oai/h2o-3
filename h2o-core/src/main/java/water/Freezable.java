@@ -111,5 +111,5 @@ public interface Freezable<T extends Freezable> extends Cloneable {
   T reloadFromBytes(byte [] ary);
   /** Make clone public, but without the annoying exception.
    *  @return Returns this object cloned. */
-  public T clone();
+  T clone();
 }

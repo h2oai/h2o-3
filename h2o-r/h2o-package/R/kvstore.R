@@ -239,7 +239,7 @@ h2o.getModel <- function(model_id) {
           names(model$random_coefficients) <- model$random_coefficients_table[,1]
         }
       } else { # with AnovaGLM
-        coefLen =  length(model$coefficients_table)
+        coefLen <- length(model$coefficients_table)
         model$coefficients <- vector("list", coefLen)
         for (index in 1:coefLen) {
           model$coefficients[[index]] <- model$coefficients_table[[index]]

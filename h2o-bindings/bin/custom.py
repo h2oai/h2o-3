@@ -25,8 +25,9 @@ def get_customizations_for(language, algo, property=None, default=None):
         tokens = property.split('.')
         value = customizations
         for token in tokens:
-            value = value.get(token)
-            if value is None:
+            if token in value:
+                value = value.get(token)
+            else:        
                 return default
         return value
     else:

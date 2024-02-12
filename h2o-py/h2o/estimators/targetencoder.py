@@ -452,3 +452,4 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
         output = h2o.api("GET /3/TargetEncoderTransform", data=params)
         return h2o.get_frame(output["name"])
+

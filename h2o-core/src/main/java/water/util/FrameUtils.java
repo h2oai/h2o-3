@@ -1091,12 +1091,12 @@ public class FrameUtils {
     }
   }
 
-  static public void cleanUp(IcedHashMap<Key, String> toDelete) {
+  public static void cleanUp(Collection<Key> toDelete) {
     if (toDelete == null) {
       return;
     }
     Futures fs = new Futures();
-    for (Key k : toDelete.keySet()) {
+    for (Key k : toDelete) {
       Keyed.remove(k, fs, true);
     }
     fs.blockForPending();

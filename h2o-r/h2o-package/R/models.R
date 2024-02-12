@@ -683,6 +683,17 @@ setMethod("h2o.transform", signature("H2OWordEmbeddingModel"), function(model, w
 })
 
 
+#'
+#' Transform the given data frame using the model if the latter supports transformations.
+#' 
+#' @param model A trained model representing the transformation strategy (currently supported algorithms are `glrm` and `pipeline`).
+#' @param data An H2OFrame on which the transformation is applied.
+#' @return an H2OFrame object representing the transformed data.
+#' @export
+setMethod("h2o.transform", signature("H2OModel"), function(model, data) {
+    if (!model@algorithm %in% c("glrm", "pipeline")) stop("h2o.transform is not available for this type of model.")
+    return(.newExpr("transform", model@model_id, h2o.getId(data)))
+}) 
 
 #'
 #' @rdname predict.H2OModel
