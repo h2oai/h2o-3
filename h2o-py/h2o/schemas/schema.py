@@ -11,11 +11,6 @@ import h2o
 from h2o.exceptions import H2OConnectionError, H2OServerError
 
 
-def define_classes_from_schema(classes, connection):
-    for cls in classes:
-        cls.define_from_schema(connection)
-
-
 class H2OSchema(object):
 
     _ignored_schema_keys_ = {"__meta", "_exclude_fields", "__schema"}

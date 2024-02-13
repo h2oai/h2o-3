@@ -242,7 +242,10 @@ case_insensitive_match_arg <- function(arg, choices) {
       .self
     },
     get_model = function(model_id) {
-      return(memoised_models$get_model(model_id))
+      model <- memoised_models$get_model(model_id)
+      if (!is.null(model@allparameters$treatment_column))
+        stop("Uplift models have not supported in explain yet.")
+      return(model)
     }
   )
 )
@@ -314,7 +317,6 @@ case_insensitive_match_arg <- function(arg, choices) {
         object$model_ids <- head(object$model_ids, n = min(top_n_from_AutoML, length(object$model_ids)))
       }
     }
-
     return(object)
   }
 

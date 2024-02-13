@@ -36,7 +36,9 @@ def metric_json_check():
                                     u'nobs',
                                     u'mean_residual_deviance',
                                     u'custom_metric_name',
-                                    u'custom_metric_value']
+                                    u'custom_metric_value',
+                                    u'loglikelihood', 
+                                    u'AIC']
     reg_metric_diff = list(set(reg_metric_json_keys_have) - set(reg_metric_json_keys_desired))
     assert not reg_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) regression " \
                                 "metric json. The difference is {2}".format(reg_metric_json_keys_have,
@@ -72,7 +74,9 @@ def metric_json_check():
                                     u'residual_deviance',
                                     u'mean_residual_deviance',
                                     u'custom_metric_name',
-                                    u'custom_metric_value']
+                                    u'custom_metric_value',
+                                    u'loglikelihood', 
+                                    u'AIC']
     reg_metric_diff = list(set(reg_metric_json_keys_have) - set(reg_metric_json_keys_desired))
     assert not reg_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) glm-regression " \
                                 "metric json. The difference is {2}".format(reg_metric_json_keys_have,
@@ -111,7 +115,9 @@ def metric_json_check():
                                     u'domain',
                                     u'custom_metric_name',
                                     u'custom_metric_value',
-                                    u'pr_auc']
+                                    u'pr_auc',
+                                    u'loglikelihood', 
+                                    u'AIC']
     bin_metric_diff = list(set(bin_metric_json_keys_have) - set(bin_metric_json_keys_desired))
     assert not bin_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) binomial " \
                                 "metric json. The difference is {2}".format(bin_metric_json_keys_have,
@@ -154,7 +160,9 @@ def metric_json_check():
                                     u'domain',
                                     u'custom_metric_name',
                                     u'custom_metric_value',
-                                    u'pr_auc']
+                                    u'pr_auc',
+                                    u'loglikelihood', 
+                                    u'AIC']
     bin_metric_diff = list(set(bin_metric_json_keys_have) - set(bin_metric_json_keys_desired))
     assert not bin_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) glm-binomial " \
                                 "metric json. The difference is {2}".format(bin_metric_json_keys_have,
@@ -194,7 +202,9 @@ def metric_json_check():
                                     u'duration_in_ms',
                                     u'frame_checksum',
                                     u'custom_metric_name',
-                                    u'custom_metric_value']
+                                    u'custom_metric_value',
+                                    u'loglikelihood', 
+                                    u'AIC']
     mul_metric_diff = list(set(mul_metric_json_keys_have) - set(mul_metric_json_keys_desired))
     assert not mul_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) multinomial " \
                                 "metric json. The difference is {2}".format(mul_metric_json_keys_have,

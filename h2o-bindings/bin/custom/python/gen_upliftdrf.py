@@ -1,3 +1,11 @@
+options = dict(
+    verbose=True,
+    model_extensions=[
+        'h2o.model.extensions.VariableImportance',
+    ],
+)
+
+
 def update_param(name, param):
     if name == 'stopping_metric':
         param['values'] = ['AUTO', 'AUUC', 'ATE', 'ATT', 'ATC', 'qini']

@@ -139,7 +139,7 @@ public class TypeMap {
   // new code: leader sets  string->ID mapping
   // printing: id -> string
   // deserial: id -> string -> Icer -> Iced (slow path)
-  // deserial: id           -> Icer -> Iced (fath path)
+  // deserial: id           -> Icer -> Iced (fast path)
   // lookup  : id -> string (on leader)
   //
 

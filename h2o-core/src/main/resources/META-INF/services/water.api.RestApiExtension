@@ -1,2 +1,3 @@
 water.api.RegisterV3Api
 water.api.RegisterV4Api
+hex.pipeline.PipelineAlgoRegistration

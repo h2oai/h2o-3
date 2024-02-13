@@ -96,10 +96,12 @@ __all__ = [s for s in dir()
 def _init_():
     from .display import ReplHook, in_py_repl
     from .backend.connection import register_session_hook
+    from .schemas import register_schemas
     if in_py_repl():
         replhook = ReplHook()
         register_session_hook('open', replhook.__enter__)
         register_session_hook('close', replhook.__exit__)
+    register_schemas()
     
     
 _init_()

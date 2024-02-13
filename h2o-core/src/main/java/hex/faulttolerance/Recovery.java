@@ -244,7 +244,7 @@ public class Recovery<T extends Keyed> {
             Grid grid = Grid.importBinary(recoveryFile(resultKey), true);
             GridSearch.resumeGridSearch(
                 jobKey, grid,
-                new GridSearchHandler.DefaultModelParametersBuilderFactory(),
+                new GridSearchHandler.SchemaModelParametersBuilderFactory(),
                 (Recovery<Grid>) this
             );
         } else {

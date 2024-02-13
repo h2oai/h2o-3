@@ -702,7 +702,13 @@ public abstract class SharedTree<
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
-          float improvement = (float) (s.pre_split_se() - s.se());
+          float improvement;
+          if(_st.isUplift()){
+            // gain after split should be higher, gain can be negative
+            improvement = (float) Math.abs(s.upliftGain() - s.preSplitUpliftGain());
+          } else {
+            improvement = (float) (s.pre_split_se() - s.se());
+          }
           assert (improvement >= 0);
           AtomicUtils.FloatArray.add(_improvPerVar, s.col(), improvement);
         }
@@ -1197,7 +1203,7 @@ public abstract class SharedTree<
     return _parms._parallel_main_model_building;
   }
   
-  @Override public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
+  @Override protected void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     if (!cv_initStoppingParameters())
       return; // No exciting changes to stopping conditions

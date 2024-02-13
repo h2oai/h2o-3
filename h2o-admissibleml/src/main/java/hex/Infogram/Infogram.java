@@ -1,6 +1,9 @@
 package hex.Infogram;
 
 import hex.*;
+import hex.Infogram.InfogramModel.InfogramModelOutput;
+import hex.Infogram.InfogramModel.InfogramParameters;
+import hex.ModelMetrics.MetricBuilder;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -18,8 +21,8 @@ import static hex.gam.MatrixFrameUtils.GamUtils.keepFrameKeys;
 import static water.util.ArrayUtils.sort;
 import static water.util.ArrayUtils.sum;
 
-public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infogram.InfogramModel.InfogramParameters,
-        hex.Infogram.InfogramModel.InfogramModelOutput> {
+public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, InfogramParameters,
+        InfogramModelOutput> {
   static final double NORMALIZE_ADMISSIBLE_INDEX = 1.0/Math.sqrt(2.0);
   boolean _buildCore;       // true to find core predictors, false to find admissible predictors
   String[] _topKPredictors; // contain the names of top predictors to consider for infogram
@@ -45,14 +48,14 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
   Model.Parameters.FoldAssignmentScheme _foldAssignmentOrig = null;
   String _foldColumnOrig = null;
   
-  public Infogram(boolean startup_once) { super(new hex.Infogram.InfogramModel.InfogramParameters(), startup_once);}
+  public Infogram(boolean startup_once) { super(new InfogramParameters(), startup_once);}
 
-  public Infogram(hex.Infogram.InfogramModel.InfogramParameters parms) {
+  public Infogram(InfogramParameters parms) {
     super(parms);
     init(false);
   }
 
-  public Infogram(hex.Infogram.InfogramModel.InfogramParameters parms, Key<hex.Infogram.InfogramModel> key) {
+  public Infogram(InfogramParameters parms, Key<hex.Infogram.InfogramModel> key) {
     super(parms, key);
     init(false);
   }
@@ -71,18 +74,23 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
    * This is called before cross-validation is carried out
    */
   @Override
-  public void computeCrossValidation() {
+  protected void cv_init() {
+    super.cv_init();
     info("cross-validation", "cross-validation infogram information is stored in frame with key" +
             " labeled as admissible_score_key_cv and the admissible features in admissible_features_cv.");
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(Infogram.this);
     }
-    super.computeCrossValidation();
+  }
+
+  @Override
+  protected MetricBuilder makeCVMetricBuilder(ModelBuilder<InfogramModel, InfogramParameters, InfogramModelOutput> cvModelBuilder, Futures fs) {
+    return null;   //infogram does not support scoring
   }
 
   // find the best alpha/lambda values used to build the main model moving forward by looking at the devianceValid
   @Override
-  public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
+  protected void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
     int nBuilders = cvModelBuilders.length;
     double[][] cmiRaw = new double[nBuilders][];
     List<List<String>> columns = new ArrayList<>();
@@ -103,7 +111,12 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
     }
     _cvDone = true;  // cv is done and we are going to build main model next
   }
-  
+
+  @Override
+  protected void cv_mainModelScores(int N, MetricBuilder[] mbs, ModelBuilder<InfogramModel, InfogramParameters, InfogramModelOutput>[] cvModelBuilders) {
+    //infogram does not support scoring
+  }
+
   public void calculateMeanInfogramInfo(double[][] cmiRaw, List<List<String>> columns,
                                         long[] nObs) {
     int nFolds = cmiRaw.length;
@@ -304,7 +317,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       try {
         boolean validPresent = _parms.valid() != null;
         prepareModelTrainingFrame(); // generate training frame with predictors and sensitive features (if specified)
-        InfogramModel model = new hex.Infogram.InfogramModel(dest(), _parms, new hex.Infogram.InfogramModel.InfogramModelOutput(Infogram.this));
+        InfogramModel model = new hex.Infogram.InfogramModel(dest(), _parms, new InfogramModelOutput(Infogram.this));
         _model = model.delete_and_lock(_job);
         _model._output._start_time = System.currentTimeMillis();
         _cmiRaw = new double[_numModels];
@@ -359,7 +372,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
      * relevance >= relevance_threshold.  Derive _admissible_index as distance from point with cmi = 1 and 
      * relevance = 1.  In addition, all arrays are sorted on _admissible_index.
      */
-    private void copyCMIRelevance(InfogramModel.InfogramModelOutput modelOutput) {
+    private void copyCMIRelevance(InfogramModelOutput modelOutput) {
       modelOutput._cmi_raw = new double[_cmi.length];
       System.arraycopy(_cmiRaw, 0, modelOutput._cmi_raw, 0, modelOutput._cmi_raw.length);
       modelOutput._admissible_index = new double[_cmi.length];
@@ -375,7 +388,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
               modelOutput._admissible_index, modelOutput._admissible, modelOutput._all_predictor_names);
     }
 
-    public void copyCMIRelevanceValid(InfogramModel.InfogramModelOutput modelOutput) {
+    public void copyCMIRelevanceValid(InfogramModelOutput modelOutput) {
       modelOutput._cmi_raw_valid = new double[_cmiValid.length];
       System.arraycopy(_cmiRawValid, 0, modelOutput._cmi_raw_valid, 0, modelOutput._cmi_raw_valid.length);
       modelOutput._admissible_index_valid = new double[_cmiValid.length];

@@ -21,16 +21,16 @@ import java.util.regex.Pattern;
 public class PojoUtils {
   public enum FieldNaming {
     CONSISTENT {
-      @Override String toDest(String origin) { return origin; }
-      @Override String toOrigin(String dest) { return dest; }
+      @Override public String toDest(String origin) { return origin; }
+      @Override public String toOrigin(String dest) { return dest; }
     },
     DEST_HAS_UNDERSCORES {
-      @Override String toDest(String origin) { return "_" + origin; }
-      @Override String toOrigin(String dest) { return dest.substring(1); }
+      @Override public String toDest(String origin) { return "_" + origin; }
+      @Override public String toOrigin(String dest) { return dest.substring(1); }
     },
     ORIGIN_HAS_UNDERSCORES {
-      @Override String toDest(String origin) { return origin.substring(1); }
-      @Override String toOrigin(String dest) { return "_" + dest; }
+      @Override public String toDest(String origin) { return origin.substring(1); }
+      @Override public String toOrigin(String dest) { return "_" + dest; }
     };
 
     /**
@@ -38,14 +38,14 @@ public class PojoUtils {
      * @param origin name of origin argument
      * @return  return a name of destination argument.
      */
-    abstract String toDest(String origin);
+    public abstract String toDest(String origin);
 
     /**
      * Return name of origin parameter derived from name of origin parameter.
      * @param dest  name of destination argument.
      * @return  return a name of origin argument.
      */
-    abstract String toOrigin(String dest);
+    public abstract String toOrigin(String dest);
   }
 
 
@@ -625,16 +625,28 @@ public class PojoUtils {
    * @throws java.lang.IllegalArgumentException  when o is <code>null</code>, or field is not found,
    * or field cannot be read.
    */
-  public static Object getFieldValue(Object o, String name, FieldNaming fieldNaming) {
+  public static Object getFieldValue(Object o, String name) {
+    return getFieldValue(o, name, false);
+  }
+  
+  public static Object getFieldValue(Object o, String name, boolean anyVisibility) {
     if (o == null) throw new IllegalArgumentException("Cannot get the field from null object!");
-    String destName = fieldNaming.toDest(name);
     try {
-      Field f = PojoUtils.getFieldEvenInherited(o, destName); // failing with fields declared in superclasses
+      Field f = PojoUtils.getFieldEvenInherited(o, name); // failing with fields declared in superclasses
+      if (anyVisibility) f.setAccessible(true);
       return f.get(o);
     } catch (NoSuchFieldException e) {
-      throw new IllegalArgumentException("Field not found: '" + name + "/" + destName + "' on object " + o);
+      throw new IllegalArgumentException("Field not found: '"+name+"' on object " + o);
     } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException("Cannot get value of the field: '" + name + "/" + destName + "' on object " + o);
+      throw new IllegalArgumentException("Cannot get value of the field: '"+name+"' on object " + o);
+    }
+  }
+  public static Object getFieldValue(Object o, String name, FieldNaming fieldNaming) {
+    String dest = fieldNaming.toDest(name);
+    try {
+      return getFieldValue(o, dest);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(e.getMessage().replace("'"+dest+"'", "'"+name+"/"+dest+"'"));
     }
   }
 
@@ -714,32 +726,6 @@ public class PojoUtils {
       } // else not a nested object
     } // for all fields in the map
     return o;
-  }
-
-  /**
-   * Helper for Arrays.equals().
-   */
-  public static boolean arraysEquals(Object a, Object b) {
-    if (a == null || ! a.getClass().isArray())
-      throw new H2OIllegalArgumentException("a", "arraysEquals", a);
-    if (b == null || ! b.getClass().isArray())
-      throw new H2OIllegalArgumentException("b", "arraysEquals", b);
-    if (a.getClass().getComponentType() != b.getClass().getComponentType())
-      throw new H2OIllegalArgumentException("Can't compare arrays of different types: " + a.getClass().getComponentType() + " and: " + b.getClass().getComponentType());
-
-    if (a.getClass().getComponentType() == boolean.class) return Arrays.equals((boolean[])a, (boolean[])b);
-    if (a.getClass().getComponentType() == Boolean.class) return Arrays.equals((Boolean[])a, (Boolean[])b);
-
-    if (a.getClass().getComponentType() == char.class) return Arrays.equals((char[])a, (char[])b);
-    if (a.getClass().getComponentType() == short.class) return Arrays.equals((short[])a, (short[])b);
-    if (a.getClass().getComponentType() == Short.class) return Arrays.equals((Short[])a, (Short[])b);
-    if (a.getClass().getComponentType() == int.class)     return Arrays.equals((int[])a, (int[])b);
-    if (a.getClass().getComponentType() == Integer.class) return Arrays.equals((Integer[])a, (Integer[])b);
-    if (a.getClass().getComponentType() == float.class)   return Arrays.equals((float[])a, (float[])b);
-    if (a.getClass().getComponentType() == Float.class)   return Arrays.equals((Float[])a, (Float[])b);
-    if (a.getClass().getComponentType() == double.class)  return Arrays.equals((double[])a, (double[])b);
-    if (a.getClass().getComponentType() == Double.class)  return Arrays.equals((Double[])a, (Double[])b);
-    return Arrays.deepEquals((Object[])a, (Object[])b);
   }
 
   public static String toJavaDoubleArray(double[] array) {

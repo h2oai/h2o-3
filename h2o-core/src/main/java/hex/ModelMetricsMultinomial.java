@@ -18,16 +18,29 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final float[] _hit_ratios;         // Hit ratios
   public final ConfusionMatrix _cm;
   public final double _logloss;
+  public final double _loglikelihood;
+  public final double _aic;
   public double _mean_per_class_error;
   public MultinomialAUC _auc;
   
-  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, MultinomialAUC auc, CustomMetric customMetric) {
+  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, 
+                                 ConfusionMatrix cm, float[] hr, double logloss, double loglikelihood, double aic, 
+                                 MultinomialAUC auc, CustomMetric customMetric) {
     super(model, frame, nobs, mse, domain, sigma, customMetric);
     _cm = cm;
     _hit_ratios = hr;
     _logloss = logloss;
+    _loglikelihood = loglikelihood;
+    _aic = aic;
     _mean_per_class_error = cm==null || cm.tooLarge() ? Double.NaN : cm.mean_per_class_error();
     _auc = auc;
+  }
+
+  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma,
+                                 ConfusionMatrix cm, float[] hr, double logloss, MultinomialAUC auc, 
+                                 CustomMetric customMetric) {
+    this(model, frame, nobs, mse, domain, sigma, cm, hr, logloss, Double.NaN, Double.NaN, auc, customMetric);
+    
   }
 
   @Override
@@ -35,6 +48,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
     sb.append(" logloss: " + (float)_logloss + "\n");
+    sb.append(" loglikelihood: " + (float)_loglikelihood + "\n");
+    sb.append(" AIC: " + (float)_aic + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
     sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
     sb.append(" AUC: "+auc()+ "\n");
@@ -59,6 +74,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
 
   public double logloss() { return _logloss; }
+  public double loglikelihood() { return _loglikelihood; }
+  public double aic() { return _aic; }
   public double mean_per_class_error() { return _mean_per_class_error; }
   @Override public ConfusionMatrix cm() { return _cm; }
   @Override public float[] hr() { return _hit_ratios; }
@@ -235,6 +252,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     double[/*K*/] _hits;            // the number of hits for hitratio, length: K
     int _K;               // TODO: Let user set K
     double _logloss;
+    protected double _loglikelihood;
     boolean _calculateAuc;
     AUC2.AUCBuilder[/*nclasses*/][/*nclasses*/] _ovoAucs;
     AUC2.AUCBuilder[/*nclasses*/] _ovrAucs;
@@ -276,6 +294,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       if(ArrayUtils.hasNaNs(ds)) return ds;
       if(w == 0 || Double.isNaN(w)) return ds;
       final int iact = (int)yact[0];
+      boolean score4Generic = m != null && m.getClass().toString().contains("Generic");
       _count++;
       _wcount += w;
       _wY += w*iact;
@@ -301,6 +320,11 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       // compute multinomial pairwise AUCs
       if(_calculateAuc) {
         calculateAucsPerRow(ds, iact, w);
+      }
+
+
+      if(score4Generic) { // only perform for generic model, will increase run time for training if perform
+        _loglikelihood += m.likelihood(w, yact[0], ds);
       }
       return ds;                // Flow coding
     }
@@ -335,6 +359,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       ArrayUtils.add(_cm, mb._cm);
       _hits = ArrayUtils.add(_hits, mb._hits);
       _logloss += mb._logloss;
+      _loglikelihood += mb._loglikelihood;
       if(_calculateAuc) {
         for (int i = 0; i < _ovoAucs.length; i++) {
           _ovrAucs[i].reduce(mb._ovrAucs[i]);
@@ -350,6 +375,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       double mse = Double.NaN;
       double logloss = Double.NaN;
+      double loglikelihood = Double.NaN;
+      double aic = Double.NaN;
       float[] hr = new float[_K];
       ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
       double sigma = weightedSigma();
@@ -360,10 +387,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         }
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
+        if(m != null && m.getClass().toString().contains("Generic")) {
+          loglikelihood = -1 * _loglikelihood ; // get likelihood from negative loglikelihood
+          aic = m.aic(loglikelihood);
+        }
       }
       MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, _aucType);
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,
-                                                               hr, logloss, auc, _customMetric);
+                                                               hr, logloss, loglikelihood, aic, auc, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }

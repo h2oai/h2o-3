@@ -1,5 +1,6 @@
 package hex.tree.uplift;
 
+import hex.AUUC;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.MojoModel;
@@ -17,6 +18,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.TwoDimTable;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
@@ -75,7 +77,7 @@ public class UpliftDRFTest extends TestUtil {
             assertArrayEquals(new String[]{"uplift_predict", "p_y1_with_treatment", "p_y1_without_treatment"}, out.names());
             assertEquals(train.numRows(), out.numRows());
 
-            assertNull(model._output._varimp); // not supported yet
+            assertNotNull(model._output._varimp);
         } finally {
             Scope.exit();
         }
@@ -467,6 +469,33 @@ public class UpliftDRFTest extends TestUtil {
                 assertEquals(pred.predictions.length,3);
                 assertEquals(pred.predictions[0], pred.predictions[1]-pred.predictions[2], 0);
             }
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testVariableImportance(){
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/uplift/criteo_uplift_13k.csv"));
+            train.toCategoricalCol("treatment");
+            train.toCategoricalCol("conversion");
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._ignored_columns = new String[]{"visit", "exposure"};
+            p._treatment_column = "treatment";
+            p._response_column = "conversion";
+            p._seed = 0xDECAF;
+            p._ntrees = 10;
+            p._auuc_type = AUUC.AUUCType.gain;
+            p._score_each_iteration = true;
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+            TwoDimTable vi = model._output.getVariableImportances();
+            assertTrue(vi != null);
         } finally {
             Scope.exit();
         }

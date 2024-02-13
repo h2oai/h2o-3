@@ -22,6 +22,8 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
 
     algo = "upliftdrf"
     supervised_learning = True
+    _options_ = {'model_extensions': ['h2o.model.extensions.VariableImportance'],
+                 'verbose': True}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -665,5 +667,4 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def stopping_tolerance(self, stopping_tolerance):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
-
 

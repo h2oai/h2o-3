@@ -860,7 +860,6 @@ class H2OInfogram(H2OEstimator):
         assert_is_type(top_n_features, None, int)
         self._parms["top_n_features"] = top_n_features
 
-
     def _extract_x_from_model(self):
         """
         extract admissible features from an Infogram model.
@@ -1190,3 +1189,4 @@ class H2OInfogram(H2OEstimator):
         if protected_columns is None or len(protected_columns) == 0:
             return make_leaderboard(models, leaderboard_frame=test_frame)
         return disparate_analysis(models, test_frame, protected_columns, reference, favorable_class)
+

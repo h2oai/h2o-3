@@ -7,6 +7,7 @@ import hex.deeplearning.DeepLearningModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
+import hex.grid.Grid;
 import hex.util.EffectiveParametersUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -727,6 +728,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk, 
                          String[] interactions, double theta){
+      this(f,l,lambda,alpha,twVar,twLnk,interactions, theta, Double.NaN);
+    }
+
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk,
+                         String[] interactions, double theta, double dispersion_estimated){
       this._lambda = lambda;
       this._alpha = alpha;
       this._tweedie_variance_power = twVar;
@@ -736,7 +742,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = l;
       this._theta=theta;
       this._invTheta = 1.0/theta;
-      this._dispersion_estimated = _init_dispersion_parameter;
+      this._dispersion_estimated = Double.isNaN(dispersion_estimated) ? _init_dispersion_parameter : dispersion_estimated;
     }
 
     public final double variance(double mu){
@@ -1027,6 +1033,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     @Override
     public DistributionFamily getDistributionFamily() {
       return familyToDistribution(_family);
+    }
+    
+    @Override
+    public void addSearchWarnings(Grid.SearchFailure searchFailure, Grid grid) {
+      super.addSearchWarnings(searchFailure, grid);
+      if (ArrayUtils.contains(grid.getHyperNames(), "alpha")) {
+        // maybe we should find a way to raise this warning at the very beginning of grid search, similar to validation in ModelBuilder#init().
+        searchFailure.addWarning("Adding alpha array to hyperparameter runs slower with gridsearch. "+
+                "This is due to the fact that the algo has to run initialization for every alpha value. "+
+                "Setting the alpha array as a model parameter will skip the initialization and run faster overall.");
+      }
     }
     
     public void updateTweedieParams(double tweedieVariancePower, double tweedieLinkPower, double dispersion){

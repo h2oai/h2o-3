@@ -2239,4 +2239,3 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         assert_is_type(auto_rebalance, None, bool)
         self._parms["auto_rebalance"] = auto_rebalance
 
-

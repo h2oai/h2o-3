@@ -1502,3 +1502,4 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
             raise H2OValueError("Knot locations are not available.  Please re-run with store_knot_locations=True")
 
         return self._model_json['output']['gam_knot_column_names']
+
