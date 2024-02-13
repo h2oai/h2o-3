@@ -51,7 +51,7 @@ dependencies {
     api "com.google.oauth-client:google-oauth-client:1.33.3"
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.15.2') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.16.1') {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
             because 'Fixes CVE-2023-35116'
