@@ -146,6 +146,12 @@ class H2OFrame(Keyed, H2ODisplay):
         if not column_names:
             column_names = col_header
 
+        if skipped_columns:
+            column_names = [column_name for column_name in column_names[:len(column_names)-len(skipped_columns)]]
+
+        if not column_names:
+            raise H2OValueError("skipped_columns cannot contain all columns")
+
         # create a temporary file that will be written to
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
         tmp_file = os.fdopen(tmp_handle, 'w', **H2OFrame.__fdopen_kwargs)
