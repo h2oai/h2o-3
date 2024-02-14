@@ -373,7 +373,7 @@ getAndInstallFromCRAN shinyjs 2.0.0
 getAndInstallFromCRAN usethis 2.0.1
 getAndInstallFromCRAN tidyr 1.1.4
 getAndInstallFromCRAN viridis 0.6.2
-getAndInstallFromCRAN pkgdown 1.3.0
+getAndInstallFromCRAN pkgdown 1.5.1
 getAndInstallFromCRAN waldo 0.3.1
 getAndInstallFromCRAN manipulateWidget 0.11.1
 getAndInstallFromCRAN plotly 4.10.0
