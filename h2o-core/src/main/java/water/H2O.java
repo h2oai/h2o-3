@@ -2554,7 +2554,6 @@ final public class H2O {
   // Die horribly
   public static void die(String s) {
     Log.fatal(s);
-    System.err.println(s);
     H2O.exit(-1);
   }
 
