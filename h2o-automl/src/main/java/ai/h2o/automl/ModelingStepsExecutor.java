@@ -106,6 +106,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 }
             } catch (Exception e) {
                 resultState.addState(new StepResultState(step.getGlobalId(), e));
+                Log.err(e);
             } finally {
                 step.onDone(job);
             }

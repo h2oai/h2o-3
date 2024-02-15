@@ -293,6 +293,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.",
             level = API.Level.secondary)
     public KeyValueV3[] monotone_constraints;
+    
+    @API(help = "Temporary flag to disable pipeline usage when preprocessing is enabled.", 
+            level = API.Level.expert)
+    public boolean pipelineEnabled;
 
     @Override
     public AutoMLBuildSpec.AutoMLBuildModels fillImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
