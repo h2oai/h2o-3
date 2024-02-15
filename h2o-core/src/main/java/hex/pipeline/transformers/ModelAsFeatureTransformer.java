@@ -141,7 +141,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   @Override
   protected S cloneImpl() throws CloneNotSupportedException {
     ModelAsFeatureTransformer<S, M, MP> clone = super.cloneImpl();
-    clone._params = (MP) _params.clone();
+    clone._params = _params == null ? null : (MP) _params.clone();
     return (S) clone;
   }
 }

@@ -1,6 +1,7 @@
 package hex.pipeline;
 
 import hex.pipeline.PipelineModel.PipelineParameters;
+import water.Iced;
 import water.fvec.Frame;
 
 /**
@@ -8,7 +9,7 @@ import water.fvec.Frame;
  * and providing useful information, especially to help some transformers 
  * to configure themselves/initialize during the {@link DataTransformer#prepare(PipelineContext)} phase.
  */
-public class PipelineContext implements Cloneable {
+public class PipelineContext extends Iced {
 
   public final PipelineParameters _params;
   

@@ -12,7 +12,7 @@ import static hex.pipeline.PipelineHelper.reassignInplace;
  * A {@link FrameTracker} ensuring that all transformed frames in the pipeline are named consistently}, 
  * facilitating debugging and obtaining the origin of frames in the DKV.
  */
-public class ConsistentKeyTracker implements FrameTracker {
+public class ConsistentKeyTracker extends AbstractFrameTracker<ConsistentKeyTracker> {
 
   private static final String SEP = "@@"; // anything that doesn't contain Key.MAGIC_CHAR
   private static final KeyGen DEFAULT_FRAME_KEY_GEN = new KeyGen.PatternKeyGen("{0}"+SEP+"{1}_trf_by_{2}_{rstr}");

@@ -54,7 +54,7 @@ public abstract class DelegateTransformer<S extends DelegateTransformer, T exten
   @Override
   protected S cloneImpl() throws CloneNotSupportedException {
     S clone = super.cloneImpl();
-    clone._transformer = (T)_transformer.clone();
+    clone._transformer = _transformer == null ? null : (T)_transformer.clone();
     return clone;
   }
 }
