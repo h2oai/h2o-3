@@ -7,6 +7,7 @@ import water.*;
 import water.KeyGen.PatternKeyGen;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
+import water.util.IcedHashMap;
 
 import java.util.Map;
 
@@ -18,7 +19,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   
   private final int _model_type;
   
-  private final transient Map<Long, Key<M>> _modelsCache = new NonBlockingHashMap<>();
+  private final IcedHashMap<Long, Key<M>> _modelsCache = new IcedHashMap<>();
 
   protected ModelAsFeatureTransformer() {
     this(null);
