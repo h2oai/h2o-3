@@ -323,13 +323,12 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       K key = entry.getKey();
       V value = entry.getValue();
 
-      KeyType keyType = getKeyType(key);
-      assert keyType == KeyType.String: "JSON format supports only String keys";
+      assert key != null;
       ValueType valueType = getValueType(value);
       ArrayType arrayType = getArrayType(value);
 
       if (first) { first = false; } else {ab.put1(',').put1(' '); }
-      String name = (String) key;
+      String name = key.toString();
       switch (arrayType) {
         case None:
           switch (valueType) {
