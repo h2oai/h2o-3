@@ -372,6 +372,16 @@ class H2OLocalServer(object):
                 raise H2OServerError("Server wasn't able to start in %f seconds." % elapsed_time)
             time.sleep(0.2)
 
+        security_warning_message = ""
+        if os.stat(self._stdout).st_size > 0:
+            stdout_file = open(self._stdout, encoding='utf-8')
+            for line in stdout_file:
+                if re.search("SECURITY_WARNING", line):
+                    security_warning_message += line + "\n"
+            stdout_file.close()
+        if security_warning_message:
+            warn("\nServer process startup raise a security warning:\n" + str(security_warning_message))
+
     @staticmethod
     def _check_java(java, verbose):
         jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
