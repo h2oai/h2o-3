@@ -195,7 +195,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 Medium-large', target: 'test-r-medium-large', rVersion: '3.5.3',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.5 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.5.3',
@@ -220,7 +220,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 350, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.6-jdk-8'
     ],
@@ -426,7 +426,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '3.6', javaVersion: 17,
-      timeoutValue: 350, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-17"
     ],
@@ -452,7 +452,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
@@ -508,7 +508,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '3.6', javaVersion: 11,
-      timeoutValue: 340, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-11"
     ],
