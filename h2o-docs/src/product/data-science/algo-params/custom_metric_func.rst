@@ -11,6 +11,53 @@ Description
 
 Use this option to specify a custom evaluation function. A custom metric function can be used to produce adhoc scoring metrics if actuals are presented.
 
+To calculate metric, the Map-Reduce approach is used. A dataset is broken into multiple chunks and operations are performed on each row of each chunk in the `map` function, combined in `reduce` function and the final value of the metric is returned in the `metric` function.
+
+The map function defines action that needs to be performed on each row of the data.  In particular, here is a description of each variable:
+    - `pred`: a double array storing the model prediction output.  For regresion problems prediction value is stored in `pred[0]`, for classification problems prediction value for class `i` is stored in `pred[i]`. 
+    - `act`: double array containing the actual response value of the dataset.  Again, the actual response value is stored in `act[0]`;
+    - `w`: weight applied to each row of the metric if present, otherwise, it will defaults to 1.0;
+    - `o`: refers to offset applied to each row of the metric if applicable.  Defaults to 0.0;
+
+The reduce function combine the results from two chunks. It will keep reducing two chunks until only one result is generated. If we have four chunks, chunk0, chunk1, chunk2 and chunk3 and this is just one possible sequence of combination:  `reduce` will work on chunk0 and chunk1 to generate the result of chunk0_1, reduce will work on chunk2 and chunk3 to generate the result of chunk2_3.  Then, the `reduce` will work on chunk0_1, chunk2_3 and get the final result.  The variables are:
+    - `l`: is a double array with `l[0]` containing the accumulated custom metric of one chunk and `l[1]` contains the number of rows that are used in the accumulation;
+    - `r`: is a double array with `r[0]` containing the accumulated custom metric of another chunk and `r[1]` contains the number of rows that are used in the accumulation;
+
+Example how to implement custom metric from math formula to Map-Reduce approach:
+
+.. math::
+
+    RMSE =  \sqrt{\frac{\sum_{i=0}^{N} \Arrowvert y(i) - \hat{y}(i) \Arrowvert ^2}{N}}
+
+    where:
+    - N is number of data points
+    - y(i) is i-th measurement
+    - \hat{y}(i) is prediction of the i-th measurement
+    
+.. code-block::
+
+class CustomRmseFunc:
+    def map(self, pred, act, w, o, model):
+        # we expect binomial classification problem here
+        # pred[0] = final predicition -> 0 or 1
+        # pred[1] = prediction probability for 1st class
+        # pred[2] = prediction probability for 2nd class
+        # len(pred) -> 3
+        # act[0] = actual value y(i) -> 0 or 1
+        y = int(act[0]) # 0 or 1
+        y_pred_idx = y + 1 # 1 or 2
+        y_hat = pred[y_pred_idx] # value between 0-1
+        err = 1 - y_hat
+        return [err * err, 1]
+
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
+
+    def metric(self, l):
+        # Use Java API directly
+        import java.lang.Math as math
+        return math.sqrt(l[0] / l[1])
+
 **Note**: This option is only supported in the Python client.
 
 **Note**: In Deeplearning, custom metric is not supported for Auto-encoder option.
