@@ -89,6 +89,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         _output = new GenericModelOutput(ModelDescriptorBuilder.makeDescriptor(pojoModel));
     }
 
+    @Override
+    public boolean isGeneric() {
+        return true;
+    }
+
     static ModelBehavior[] defaultModelBehaviors(String algoName) {
         return DEFAULT_MODEL_BEHAVIORS.get(algoName);
     }
