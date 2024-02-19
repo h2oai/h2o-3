@@ -72,7 +72,12 @@ public class StackedEnsembleStepsProvider
                 return config;
             }
 
-            @Override
+          @Override
+          protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
+              return params; // no pipeline in SE, base models handle the transformations when making predictions.
+          }
+
+          @Override
             @SuppressWarnings("unchecked")
             public boolean canRun() {
                 Key<Model>[] keys = getBaseModels();
@@ -122,13 +127,18 @@ public class StackedEnsembleStepsProvider
             protected abstract Key<Model>[] getBaseModels();
 
             protected String getModelType(Key<Model> key) {
+              ModelingStep step = aml().session().getModelingStep(key);
+//              if (step != null) {  // fixme: commenting out this for now, as it interprets XRT as a DRF (which it is) and breaks legacy tests. We might want to reconsider this distinction as XRT is often very similar to DRF and doesn't bring much diversity to SEs, and the best_of SEs currently almost always have these 2.
+//                return step.getAlgo().name();
+//              } else { // dirty case
                 String keyStr = key.toString();
-                return keyStr.substring(0, keyStr.indexOf('_'));
+                int lookupStart = keyStr.startsWith(PIPELINE_KEY_PREFIX) ? PIPELINE_KEY_PREFIX.length() : 0;
+                return keyStr.substring(lookupStart, keyStr.indexOf('_', lookupStart));
+//              }
             }
 
             protected boolean isStackedEnsemble(Key<Model> key) {
-                ModelingStep step = aml().session().getModelingStep(key);
-                return step != null && step.getAlgo() == Algo.StackedEnsemble;
+                return Algo.StackedEnsemble.name().equals(getModelType(key));
             }
 
             @Override

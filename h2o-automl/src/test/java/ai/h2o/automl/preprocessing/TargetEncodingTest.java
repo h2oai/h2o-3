@@ -11,14 +11,12 @@ import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsembleModel;
 import hex.glm.GLMModel;
+import hex.pipeline.PipelineModel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Key;
-import water.Keyed;
-import water.Scope;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -246,4 +244,5 @@ public class TargetEncodingTest {
             Scope.exit();
         }
     }
+    
 }

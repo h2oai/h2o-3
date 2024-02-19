@@ -5,12 +5,12 @@ import hex.faulttolerance.Recovery;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.KeyGen.PatternKeyGen;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OGridException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
-import water.util.PojoUtils;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -101,6 +101,10 @@ public final class GridSearch<MP extends Model.Parameters> {
       _gridSearch = new GridSearch<>(destKey, hyperSpaceWalker);
     }
     
+    public Key<Grid> dest() {
+      return _gridSearch._result;
+    }
+    
     public Builder<MP> withParallelism(int parallelism) {
       _gridSearch._parallelism = parallelism;
       return this;
@@ -136,6 +140,9 @@ public final class GridSearch<MP extends Model.Parameters> {
   private int _maxConsecutiveFailures = Integer.MAX_VALUE;  // for now, disabled by default
 
   private final Key<Grid> _result;
+  
+  private final KeyGen _modelKeyGen = new PatternKeyGen("{0}_model_{1}");
+  
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
@@ -398,7 +405,6 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @param grid grid object to save results; grid already locked
    */
   private void gridSearch(Grid<MP> grid) {
-    final String protoModelKey = grid._key + "_model_";
     // Get iterator to traverse hyper space
     HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
     // Number of traversed model parameters
@@ -421,7 +427,7 @@ public final class GridSearch<MP extends Model.Parameters> {
           scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
           //// build the model!
-          model = buildModel(params, grid, ++counter, protoModelKey);
+          model = buildModel(params, grid, ++counter);
           if (model != null) {
             model.fillScoringInfo(scoringInfo);
             grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
@@ -546,10 +552,9 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @param params parameters for a new model
    * @param grid   grid object holding created models
    * @param paramsIdx  index of generated model parameter
-   * @param protoModelKey  prototype of model key
    * @return return a new model if it does not exist
    */
-  private Model buildModel(final MP params, Grid<MP> grid, int paramsIdx, String protoModelKey) {
+  private Model buildModel(final MP params, Grid<MP> grid, int paramsIdx) {
     // Make sure that the model is not yet built (can be case of duplicated hyper parameters).
     // We first look in the grid _models cache, then we look in the DKV.
     // FIXME: get checksum here since model builder will modify instance of params!!!
@@ -578,7 +583,7 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     // Modify model key to have nice version with counter
     // Note: Cannot create it before checking the cache since checksum would differ for each model
-    Key<Model> result = Key.make(protoModelKey + paramsIdx);
+    Key<Model> result = _modelKeyGen.make(grid._key, paramsIdx);
     // Build a new model
     assert grid.getModel(params) == null;
     Model m = ModelBuilder.trainModelNested(_job, result, params, null);
@@ -634,7 +639,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     if (fr == null || fr._key == null) {
       throw new IllegalArgumentException("The frame being grid-searched over must have a Key");
     }
-    return Key.make("Grid_" + modelName + "_" + fr._key.toString() + H2O.calcNextUniqueModelId(""));
+    return Key.make("Grid_" + modelName + "_" + fr._key + H2O.calcNextUniqueModelId(""));
   }
 
   /**
@@ -841,58 +846,6 @@ public final class GridSearch<MP extends Model.Parameters> {
         recovery,
         grid.getParallelism()
     );
-  }
-  
-  /**
-   * The factory is producing a parameters builder which uses reflection to setup field values.
-   *
-   * @param <MP> type of model parameters object
-   */
-  public static class SimpleParametersBuilderFactory<MP extends Model.Parameters>
-          implements ModelParametersBuilderFactory<MP> {
-
-    @Override
-    public ModelParametersBuilder<MP> get(MP initialParams) {
-      return new SimpleParamsBuilder<>(initialParams);
-    }
-
-    @Override
-    public PojoUtils.FieldNaming getFieldNamingStrategy() {
-      return PojoUtils.FieldNaming.CONSISTENT;
-    }
-
-    /**
-     * The builder modifies initial model parameters directly by reflection.
-     *
-     * Usage:
-     * <pre>{@code
-     *   GBMModel.GBMParameters params =
-     *     new SimpleParamsBuilder(initialParams)
-     *      .set("_ntrees", 30).set("_learn_rate", 0.01).build()
-     * }</pre>
-     *
-     * @param <MP> type of model parameters object
-     */
-    public static class SimpleParamsBuilder<MP extends Model.Parameters>
-            implements ModelParametersBuilder<MP> {
-
-      final private MP params;
-
-      public SimpleParamsBuilder(MP initialParams) {
-        params = initialParams;
-      }
-
-      @Override
-      public ModelParametersBuilder<MP> set(String name, Object value) {
-        PojoUtils.setField(params, name, value, PojoUtils.FieldNaming.CONSISTENT);
-        return this;
-      }
-
-      @Override
-      public MP build() {
-        return params;
-      }
-    }
   }
 
   /**

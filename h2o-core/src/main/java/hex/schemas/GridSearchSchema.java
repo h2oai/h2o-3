@@ -15,7 +15,7 @@ import water.util.IcedHashMap;
 
 import java.util.*;
 
-import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
+import static hex.grid.HyperSpaceWalker.SUBSPACES;
 import static water.api.API.Direction.INOUT;
 import static water.api.API.Direction.INPUT;
 

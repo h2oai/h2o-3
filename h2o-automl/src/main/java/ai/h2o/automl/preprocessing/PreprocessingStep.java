@@ -1,7 +1,9 @@
 package ai.h2o.automl.preprocessing;
 
-import ai.h2o.automl.ModelingStep;
 import hex.Model;
+import hex.pipeline.DataTransformer;
+
+import java.util.Map;
 
 public interface PreprocessingStep<T> {
 
@@ -33,5 +35,9 @@ public interface PreprocessingStep<T> {
      * Completely remove from the system
      */
     void remove();
+    
+    DataTransformer[] pipelineTransformers();
+    
+    Map<String, Object[]> pipelineTransformersHyperParams();
     
 }
