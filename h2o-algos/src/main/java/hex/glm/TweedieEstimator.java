@@ -48,6 +48,7 @@ public class TweedieEstimator extends MRTask<TweedieEstimator> {
     private final boolean _needDp;
     private final boolean _needDpDp;
     private final boolean _forceInversion;
+    private final boolean _skipZerosIfVarPowerGT2;
     public long _skippedRows;
     public long _totalRows;
     
@@ -63,15 +64,20 @@ public class TweedieEstimator extends MRTask<TweedieEstimator> {
     public LikelihoodEstimator _method;
 
     TweedieEstimator(double variancePower, double dispersion) {
-        this(variancePower, dispersion, false, false, false, false);
+        this(variancePower, dispersion, false, false, false, false, false);
     }
 
     TweedieEstimator(double variancePower, double dispersion, boolean forceInversion) {
-        this(variancePower, dispersion, false, false, false, forceInversion);
+        this(variancePower, dispersion, false, false, false, forceInversion, false);
     }
 
-    TweedieEstimator(double variancePower, double dispersion,
-                     boolean useSaddlepointApprox, boolean needDp, boolean needDpDp, boolean forceInversion) {
+    TweedieEstimator(double variancePower, double dispersion, boolean useSaddlepointApprox, boolean needDp,
+                     boolean needDpDp, boolean forceInversion) {
+        this(variancePower, dispersion, useSaddlepointApprox, needDp, needDpDp, forceInversion, false);
+    }
+    
+    TweedieEstimator(double variancePower, double dispersion, boolean useSaddlepointApprox, boolean needDp,
+                     boolean needDpDp, boolean forceInversion, boolean skipZerosIfVarPowerGT2) {
         assert variancePower >= 1 : "Tweedie variance power has to be greater than 1!";
         assert (forceInversion || useSaddlepointApprox) && !(needDp || needDpDp) || !forceInversion || !useSaddlepointApprox;
         _p = variancePower;
@@ -102,6 +108,7 @@ public class TweedieEstimator extends MRTask<TweedieEstimator> {
         _needDp = needDp;
         _needDpDp = needDpDp;
         _forceInversion = forceInversion; // useful when bracketing close to p=2
+        _skipZerosIfVarPowerGT2 = skipZerosIfVarPowerGT2;
     }
 
 
@@ -163,7 +170,6 @@ public class TweedieEstimator extends MRTask<TweedieEstimator> {
 
 
     private void accumulate(double llh, double grad, double hess) {
-        //if (Double.isFinite(llh)) //&& llh <= 0)
         _loglikelihood += llh;
         if (Double.isFinite(grad))
             _llhDp += grad;
@@ -174,7 +180,7 @@ public class TweedieEstimator extends MRTask<TweedieEstimator> {
     private double logLikelihood(double y, double mu, double w, boolean accumulate) {
         if (w == 0) return 0;
         if (_p >= 2 && y <= 0) {
-            if (accumulate) accumulate(Double.NEGATIVE_INFINITY, 0, 0);
+            if (accumulate && !_skipZerosIfVarPowerGT2) accumulate(Double.NEGATIVE_INFINITY, 0, 0);
             return Double.NEGATIVE_INFINITY;
         }
         double[] llh_llhDp_llhDpDp = MemoryManager.malloc8d(3);
@@ -278,7 +284,7 @@ public class TweedieEstimator extends MRTask<TweedieEstimator> {
     }
 
     public TweedieEstimator compute(Vec mu, Vec y, Vec weights) {
-        if (_p >= 2 && y.min() <= 0) {
+        if (_p >= 2 && y.min() <= 0 && !_skipZerosIfVarPowerGT2) {
             _loglikelihood = Double.NEGATIVE_INFINITY;
             _llhDp = 0;
             _llhDpDp = 0;

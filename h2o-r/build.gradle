@@ -252,7 +252,6 @@ setProperties.dependsOn gitbranch, getRVersion, pdflatex
 cpH2OAppJar.dependsOn setProperties
 setPackageFiles.dependsOn cpH2OAppJar
 buildPackageDocumentation.dependsOn setPackageFiles
-genPDF.dependsOn setPackageFiles
 genPDF.dependsOn buildPackageDocumentation
 cpPDF.dependsOn genPDF
 cpMainPKG.dependsOn cpPDF

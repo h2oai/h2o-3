@@ -34,16 +34,31 @@ for python_version in "${array[@]}"; do
   if [[ ${major} == "2" ]] ; then pkg_suffix="" ; else pkg_suffix=${major} ; fi
 
   apt-get update
-
-  DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev python${pkg_suffix}-setuptools
-  if [[ ${major} -ge 3 && ${minor} -ge 7 ]]; then
-      DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version}-distutils
+  if [[ ${python_version} == "3.6" ]]
+  then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential checkinstall libreadline-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev clang
+    pushd /usr/src
+    wget -nv https://www.python.org/ftp/python/3.6.15/Python-3.6.15.tar.xz
+    echo "bc04aa6c2a1a172a35012abd668538cd Python-3.6.15.tar.xz" > Python-3.6.15.tar.xz.md5
+    md5sum -c Python-3.6.15.tar.xz.md5 || exit 1  # unexpected checksum
+    tar xf Python-3.6.15.tar.xz
+    cd Python-3.6.15
+    export CC="clang"  # needed to avoid SegFault during install
+    ./configure
+    make
+    make install
+    popd
+  else
+    DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev python${pkg_suffix}-setuptools
+    if [[ ${major} -ge 3 && ${minor} -ge 7 ]]; then
+        DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version}-distutils
+    fi
   fi
   apt-get clean
   rm -rf /var/cache/apt/*
 
   echo "###### Installing pip for Python ${python_version} ######"
-  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]]
+  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]] || [[ ${python_version} == "3.6" ]]
   then
     curl https://bootstrap.pypa.io/pip/${python_version}/get-pip.py --output get-pip.py
     python${python_version} get-pip.py

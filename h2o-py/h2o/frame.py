@@ -1966,16 +1966,20 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> df = airlines.as_data_frame()
         >>> df
-        """ 
+        """
         if can_use_pandas() and use_pandas:
             import pandas
             if (can_use_datatable()) or (can_use_polars() and can_use_pyarrow()): # can use multi-thread
-                with tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv") as exportFile:
+                exportFile = tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv", delete=False)
+                try:
+                    exportFile.close()  # needed for Windows
                     h2o.export_file(self, exportFile.name, force=True)
                     if can_use_datatable(): # use datatable for multi-thread by default
                         return self.convert_with_datatable(exportFile.name)
                     elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
                         return self.convert_with_polars(exportFile.name)
+                finally:
+                    os.unlink(exportFile.name)
             warnings.warn("converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
                           "(for Python 3.10 or above).", H2ODependencyWarning)
@@ -1987,7 +1991,8 @@ class H2OFrame(Keyed, H2ODisplay):
             frame.pop(0)
         return frame
     
-    def convert_with_polars(selfself, fileName):
+    
+    def convert_with_polars(self, fileName):
         import polars as pl
         dt_frame = pl.read_csv(fileName, null_values = "")
         return dt_frame.to_pandas()

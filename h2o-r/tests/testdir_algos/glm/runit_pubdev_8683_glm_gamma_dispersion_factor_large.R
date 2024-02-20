@@ -28,8 +28,8 @@ test_glm_gammas <- function() {
 
 generate_dataset<-function(f1R, numRows, numCols, pow, phi, mu) {
   resp <- tweedie::rtweedie(numRows, xi=pow, mu, phi, power=pow)
-  f1h2o <- as.h2o.data.frame(f1R)
-  resph2o <- as.h2o.data.frame(as.data.frame(resp))
+  f1h2o <- as.h2o(f1R)
+  resph2o <- as.h2o(as.data.frame(resp))
   finalFrame <- h2o.cbind(f1h2o, resph2o)
   return(finalFrame)
 }
@@ -57,13 +57,15 @@ compareH2ORGLM <-
            tolerance = 2e-4) {
     print("Define formula for R")
     formula <- (df[, "resp"] ~ .)
-    rmodel <- glm(
-      formula = formula,
-      data = df[, x],
-      family = tweedie(var.power = vpower, link.power =
-                         lpower),
-      na.action = na.omit
-    )
+    rmodel <- tryCatch({
+        glm(
+          formula = formula,
+          data = df[, x],
+          family = tweedie(var.power = vpower, link.power =
+                             lpower),
+          na.action = na.omit
+        )
+    }, error = function(e) NULL)
     h2omodel <-
       h2o.glm(
         x = x,
@@ -82,7 +84,7 @@ compareH2ORGLM <-
         family = "gamma",
         lambda = 0,
         nfolds = 0,
-        dispersion_factor_method = "ml",
+        dispersion_parameter_method = "ml",
         compute_p_values = TRUE
       )
     print("Comparing H2O and R GLM model coefficients....")
@@ -94,12 +96,19 @@ compareH2ORGLM <-
       h2omodel@model$dispersion,
       sep = ":"
     ))
-    print(paste(
-      "R model dispersion estimate",
-      summary(rmodel)$dispersion,
-      sep = ":"
-    ))
+    if (!is.null(rmodel)) {
+        print(paste(
+          "R model dispersion estimate",
+          summary(rmodel)$dispersion,
+          sep = ":"
+        ))
+    }
     h2oDiff = abs(h2omodel@model$dispersion - truedisp)
+    if (is.null(rmodel)) {
+        cat("R model did not converge!\n",
+            "H2O dispersion estimate  - truedisp = ", h2oDiff, sep="")
+        return()
+    }
     rDiff = abs(summary(rmodel)$dispersion - truedisp)
     if (rDiff < h2oDiff) {
       val = (h2oDiff - rDiff)/truedisp
@@ -121,6 +130,10 @@ compareH2ORGLM <-
 compareCoeffs <- function(rmodel, h2omodel, tolerance, x) {
   print("H2O GLM model....")
   print(h2omodel)
+  if (is.null(rmodel)) {
+    print("R model did not converge")
+    return()
+  }
   print("R GLM model....")
   print(summary(rmodel))
   h2oCoeff <- h2omodel@model$coefficients

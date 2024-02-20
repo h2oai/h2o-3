@@ -1,9 +1,10 @@
-#'
-#' H2O Package Constants
-#'
-#' The API endpoints for interacting with H2O via REST are named here.
-#'
-#' Additionally, environment variables for the H2O package are named here.
+#
+# H2O Package Constants
+#
+# The API endpoints for interacting with H2O via REST are named here.
+#
+# Additionally, environment variables for the H2O package are named here.
+
 
 #' Endpoint Version
 .h2o.__REST_API_VERSION <- 3L

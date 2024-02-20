@@ -28,10 +28,17 @@ rm R-${R_VERSION}.tar.gz
 
 # Configure and make
 cd R-${R_VERSION}
-./configure --prefix=${R_VERSION_HOME} --with-x=no
+# some graphic packages require tcltk so it needs to be configured here
+./configure --prefix=${R_VERSION_HOME} --with-x=no --enable-R-shlib=yes --with-tcltk=yes \
+            --with-tk-config=/usr/lib/tkConfig.sh --with-tcl-config=/usr/lib/tclConfig.sh
 make
 make install
+
+# R4.0 uses just lib R3.5 uses lib64
+mkdir -p ${R_VERSION_HOME}/lib/R/library || true
+mkdir -p ${R_VERSION_HOME}/lib64/R/library || true
 chmod a+w -R ${R_VERSION_HOME}/lib/R/library
+chmod a+w -R ${R_VERSION_HOME}/lib64/R/library
 
 # Cleanup
 cd ../..
@@ -58,103 +65,328 @@ chmod a+x /usr/bin/activate_R_${R_VERSION}
 echo "Activating R ${R_VERSION}"
 activate_R_${R_VERSION}
 
+
+function header() {
+  set +x
+  echo
+  echo $*
+  echo $* | sed -e 's/./=/g'
+  set -x
+}
+
 function checkRInstallLog() {
   log_file=$1
-  if grep -E '(packages .* are not available)|(installation of package .* had non-zero exit status)' $log_file; then
+  if grep -E '(packages .* are not available)|(installation of package .* had non-zero exit status|ERROR: dependenc.*not available for package)' $log_file; then
     echo "Errors detected in R package installation."
     exit 1
   fi
 }
 
+function getAndInstall() {
+  NAME="$2"
+  VERSION="$3"
+  if isAlreadyPresent "$NAME" "$VERSION" ; then
+    echo ":: " Package $NAME with version $VERSION or above is already present. Skipping installation.
+  else
+    header Downloading $2
+    wget "$1" -O "$2.tar.gz" || return 1
+    header Installing $2
+    /usr/local/R/current/bin/R CMD INSTALL  "$2.tar.gz"  2>&1 | tee "$2.log"
+    checkRInstallLog "$2.log"
+    rm  "$2.tar.gz" "$2.log"
+    isAlreadyPresent "$NAME" "$VERSION" || exit 1  # make sure it's installed
+  fi
+}
+
+function isAlreadyPresent(){
+  NAME="$1"
+  VERSION="$2"
+  /usr/local/R/current/bin/R -q -e "if (require('$NAME') &&\
+   utils::compareVersion('$VERSION', as.character(packageVersion('$NAME'))) <= 0) q('no', 0) else q('no', 1)" &> /dev/null
+}
+
+
+function getAndInstallFromCRAN(){
+  set +x
+  NAME="$1"
+  VERSION="$2"
+  getAndInstall "https://cran.r-project.org/src/contrib/Archive/${NAME}/${NAME}_${VERSION}.tar.gz" "$NAME" "$VERSION" || \
+  getAndInstall "https://cran.r-project.org/src/contrib/${NAME}_${VERSION}.tar.gz" "$NAME" "$VERSION" || exit 1
+  set -x
+}
+
+# How to get dependencies?
+#=========================
+# Since we can't rely on `versions` package to get older packages (Microsoft's CRAN (MRAN) is discontinued), we have to
+# install the packages in some other way. What I did was opened the dev-r-3.3.3-jdk-8 and got the installed packages by
+# using the following:
+#
+########################################################################################################################
+# # Get packages and freeze them
+# write.csv(installed.packages(), "pkgs.csv")
+########################################################################################################################
+#
+# Now that I got the packages, their versions and their dependencies, I am able to topologically sort them to ensure
+# I won't try to install a package that has is missing some dependencies. Then I install it from CRAN using the above
+# defined shell function `getAndInstallFromCRAN`.
+#
+# To make it repeatable I created the following script in R that uses `igraph` package for creating the graph representing
+# packages and its dependencies that are then topologically sorted and printed out so it can be easily copy-pasted here.
+# Some packages may never reach CRAN and those should be added to the exclude_pkgs vector (like the `isofor` package)
+# and then installed separately.
+#
+########################################################################################################################
+# exclude_pkgs <- c("isofor")
+#
+# # Load them, sort them topologically and generate the code to install them
+# pkgs <- read.csv("/Users/tomasfryda/tmp/jenkins_logs/pkgs.csv")
+# pkgs <- pkgs[pkgs$Priority != "base" | is.na(pkgs$Priority),]
+# rownames(pkgs) <- pkgs$Package
+#
+# library(igraph)
+#
+# i2n <- setNames(pkgs$Package, seq_len(nrow(pkgs)))
+# n2i <- setNames(names(i2n), i2n)
+#
+# g <- make_empty_graph(directed = TRUE)
+# g <- add_vertices(g, nrow(pkgs), label = i2n)
+#
+# for (n in i2n) {
+#   deps <- paste0(pkgs[n, "Depends"], ", ", pkgs[n, "Imports"])
+#   cat(n, "->", deps, "\n")
+#   if (is.na(deps))
+#     next
+#   deps <- strsplit(deps, ",\\s*", perl = TRUE)[[1]]
+#   for (d in deps) {
+#     print(d)
+#     d <- strsplit(d, "\\s+", perl = TRUE)[[1]][[1]]
+#     print(d)
+#     if (d %in% i2n) {
+#       g <- add_edges(g, c(n2i[[n]], n2i[[d]]))
+#     }
+#   }
+# }
+#
+# ts <- topo_sort(g, mode = "in")
+# ts <- ts[!ts %in% n2i[exclude_pkgs]]
+# cat(paste("getAndInstallFromCRAN", i2n[ts], pkgs[i2n[ts], "Version"]), sep = "\n")
+########################################################################################################################
+
+
 # Install dependencies
 echo "Installing dependencies for R ${R_VERSION}"
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
-  install.packages(c( \
-  'versions' \
-  )) \
-" 2>&1 | tee R.install.0.log
-checkRInstallLog R.install.0.log
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(versions);\
-  install.versions(c('usethis'), c('2.0.1'));
-" 2>&1 | tee R.install.00.log
-checkRInstallLog R.install.00.log
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(versions);\
-  install.packages(c( \
-  'devtools' \
-  )) \
-" 2>&1 | tee R.install.1.log
-checkRInstallLog R.install.1.log
-# Install dependency proxy for e1071 and dependency robustbase for fpc in version suited for R 3.3.3
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
-  install_version('rgl', version = '0.100.54'); \
-  install_version('proxy', version = '0.4-20'); \
-  install_version('robustbase', version = '0.93-7'); \
-" 2>&1 | tee R.install.2.log
-checkRInstallLog R.install.2.log
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
-  install.packages(c( \
-    'dplyr', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
-    'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
-    'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'plot3Drgl',  \
-    'IRdisplay', 'plotly' \
-  )) \
-" 2>&1 | tee R.install.3.log
-checkRInstallLog R.install.3.log
-# Latest XGBoost (from source) does not compile; see https://github.com/h2oai/h2o-3/issues/7830
-#/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
-#  install.packages(c('xgboost'), type='source') \
-#" 2>&1 | tee R.install.2.log
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
-  install_version('xgboost', version = '1.0.0.2', build = TRUE); \
-" 2>&1 | tee R.install.4.log
-checkRInstallLog R.install.4.log
-# RCUrl 1.95-4.12 is the last to support R 3.3
-# survival 2.44-1.1 is the last to support R 3.3
-# slam 0.1-40 is the last to support R 3.3
-# latticeExtra (dependency of Hmisc) 0.6-28 is the last to support R 3.3
-# caTools (dependency of ROCR) requires R 3.6.0 in latest version
-# text2vec requires R 3.6.0 in latest version
-# mvtnorm (dependency of coin)
-# coin (dependency of uplift, 1.0 is the last to support R 3.3)
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
-  install_version('RCurl', version = '1.95-4.12'); \
-  install_version('survival', version = '2.44-1.1'); \
-  install_version('slam', version = '0.1-40'); \
-  install_version('latticeExtra', version = '0.6-28'); \
-  install_version('caTools', version = '1.17.1.4'); \
-  install_version('text2vec', version = '0.5.0'); \
-  install_version('mvtnorm', version = '1.0'); \
-  install_version('coin', version = '1.0'); \
-" 2>&1 | tee R.install.5.log
-checkRInstallLog R.install.5.log
-# install packages that need special deps installed above
-# ROCR 1.0-7 is the last to support R 3.5 and below
-# Hmisc 4.3-0 is the last to support survival 2.44
-# uplift 0.3.5 requires coin installed above
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
-  install_version('ROCR', version = '1.0-7'); \
-  install_version('Hmisc', version = '4.3-0'); \
-  install_version('uplift', version = '0.3.5'); \
-" 2>&1 | tee R.install.6.log
-checkRInstallLog R.install.6.log
+getAndInstallFromCRAN abind 1.4-5
+getAndInstallFromCRAN acepack 1.4.1
+getAndInstallFromCRAN AUC 0.3.0
+getAndInstallFromCRAN backports 1.3.0
+getAndInstallFromCRAN base64enc 0.1-3
+getAndInstallFromCRAN bit 4.0.4
+getAndInstallFromCRAN bitops 1.0-7
+getAndInstallFromCRAN boot 1.3-18
+getAndInstallFromCRAN brew 1.0-6
+getAndInstallFromCRAN brio 1.1.2
+getAndInstallFromCRAN clipr 0.7.1
+getAndInstallFromCRAN cluster 2.0.5
+getAndInstallFromCRAN codetools 0.2-15
+getAndInstallFromCRAN colorspace 2.0-2
+getAndInstallFromCRAN commonmark 1.7
+getAndInstallFromCRAN cpp11 0.4.1
+getAndInstallFromCRAN crayon 1.4.2
+getAndInstallFromCRAN curl 4.3.2
+getAndInstallFromCRAN data.table 1.14.2
+getAndInstallFromCRAN DEoptimR 1.0-9
+getAndInstallFromCRAN digest 0.6.28
+getAndInstallFromCRAN diptest 0.76-0
+getAndInstallFromCRAN evaluate 0.14
+getAndInstallFromCRAN fansi 0.5.0
+getAndInstallFromCRAN farver 2.1.0
+getAndInstallFromCRAN fastmap 1.1.0
+getAndInstallFromCRAN foreign 0.8-67
+getAndInstallFromCRAN formatR 1.11
+getAndInstallFromCRAN Formula 1.2-4
+getAndInstallFromCRAN fs 1.5.0
+getAndInstallFromCRAN futile.options 1.0.1
+getAndInstallFromCRAN generics 0.1.1
+getAndInstallFromCRAN getopt 1.20.3
+getAndInstallFromCRAN gitcreds 0.1.1
+getAndInstallFromCRAN glue 1.5.0
+getAndInstallFromCRAN gtable 0.3.0
+getAndInstallFromCRAN gtools 3.9.2
+getAndInstallFromCRAN HDtweedie 1.1
+getAndInstallFromCRAN highlight 0.5.0
+getAndInstallFromCRAN ini 0.3.1
+getAndInstallFromCRAN isoband 0.2.5
+getAndInstallFromCRAN iterators 1.0.13
+getAndInstallFromCRAN jsonlite 1.7.2
+getAndInstallFromCRAN kernlab 0.9-29
+getAndInstallFromCRAN KernSmooth 2.23-15
+getAndInstallFromCRAN labeling 0.4.2
+getAndInstallFromCRAN lattice 0.20-34
+getAndInstallFromCRAN lazyeval 0.2.2
+getAndInstallFromCRAN LiblineaR 1.94-2
+getAndInstallFromCRAN magrittr 2.0.1
+getAndInstallFromCRAN MASS 7.3-45
+getAndInstallFromCRAN mclust 5.4.8
+getAndInstallFromCRAN mime 0.12
+getAndInstallFromCRAN misc3d 0.9-1
+getAndInstallFromCRAN mlbench 2.1-3
+getAndInstallFromCRAN MLmetrics 1.0.0
+getAndInstallFromCRAN modeltools 0.2-23
+getAndInstallFromCRAN mvtnorm 1.0-0
+getAndInstallFromCRAN nnet 7.3-12
+getAndInstallFromCRAN packrat 0.7.0
+getAndInstallFromCRAN pixmap 0.4-12
+getAndInstallFromCRAN pkgconfig 2.0.3
+getAndInstallFromCRAN praise 1.0.0
+getAndInstallFromCRAN prettyunits 1.1.1
+getAndInstallFromCRAN proxy 0.4-20
+getAndInstallFromCRAN ps 1.6.0
+getAndInstallFromCRAN R.methodsS3 1.8.1
+getAndInstallFromCRAN R6 2.5.1
+getAndInstallFromCRAN randomForest 4.6-14
+getAndInstallFromCRAN rappdirs 0.3.3
+getAndInstallFromCRAN RColorBrewer 1.1-2
+getAndInstallFromCRAN Rcpp 1.0.12
+getAndInstallFromCRAN RcppParallel 5.1.4
+getAndInstallFromCRAN remotes 2.4.1
+getAndInstallFromCRAN rlang 1.0.0
+getAndInstallFromCRAN rpart 4.1-10
+getAndInstallFromCRAN rprojroot 2.0.2
+getAndInstallFromCRAN rstudioapi 0.13
+getAndInstallFromCRAN RUnit 0.4.32
+getAndInstallFromCRAN slam 0.1-40
+getAndInstallFromCRAN sourcetools 0.1.7
+getAndInstallFromCRAN SparseM 1.81
+getAndInstallFromCRAN sparsepp 1.22
+getAndInstallFromCRAN spatial 7.3-11
+getAndInstallFromCRAN statmod 1.4.36
+getAndInstallFromCRAN stringi 1.7.5
+getAndInstallFromCRAN svd 0.5
+getAndInstallFromCRAN sys 3.4
+getAndInstallFromCRAN systemfonts 0.2.3
+getAndInstallFromCRAN tweedie 2.3.5
+getAndInstallFromCRAN utf8 1.2.2
+getAndInstallFromCRAN uuid 1.0-3
+getAndInstallFromCRAN versions 0.3
+getAndInstallFromCRAN viridisLite 0.4.0
+getAndInstallFromCRAN whisker 0.4
+getAndInstallFromCRAN withr 2.4.2
+getAndInstallFromCRAN xfun 0.28
+getAndInstallFromCRAN xml2 1.3.2
+getAndInstallFromCRAN xtable 1.8-4
+getAndInstallFromCRAN yaml 2.2.1
+getAndInstallFromCRAN zip 2.2.0
+getAndInstallFromCRAN checkmate 2.0.0
+getAndInstallFromCRAN bit64 4.0.5
+getAndInstallFromCRAN caTools 1.17.1.4
+getAndInstallFromCRAN RCurl 1.95-4.12
+getAndInstallFromCRAN munsell 0.5.0
+getAndInstallFromCRAN diffobj 0.3.5
+getAndInstallFromCRAN robustbase 0.93-7
+getAndInstallFromCRAN lambda.r 1.2.4
+getAndInstallFromCRAN optparse 1.7.1
+getAndInstallFromCRAN cli 3.1.0
+getAndInstallFromCRAN gridExtra 2.3
+getAndInstallFromCRAN foreach 1.5.1
+getAndInstallFromCRAN Matrix 1.2-8
+getAndInstallFromCRAN nlme 3.1-131
+getAndInstallFromCRAN sp 1.4-5
+getAndInstallFromCRAN class 7.3-14
+getAndInstallFromCRAN prabclus 2.3-2
+getAndInstallFromCRAN plot3D 1.4
+getAndInstallFromCRAN flexmix 2.3-17
+getAndInstallFromCRAN R.oo 1.24.0
+getAndInstallFromCRAN processx 3.5.2
+getAndInstallFromCRAN latticeExtra 0.6-28
+getAndInstallFromCRAN RcppArmadillo 0.10.7.3.0
+getAndInstallFromCRAN cachem 1.0.6
+getAndInstallFromCRAN ellipsis 0.3.2
+getAndInstallFromCRAN htmltools 0.5.2
+getAndInstallFromCRAN later 1.3.0
+getAndInstallFromCRAN lifecycle 1.0.1
+getAndInstallFromCRAN purrr 0.3.4
+getAndInstallFromCRAN desc 1.4.0
+getAndInstallFromCRAN stringr 1.4.0
+getAndInstallFromCRAN askpass 1.1
+getAndInstallFromCRAN highr 0.9
+getAndInstallFromCRAN tinytex 0.35
+getAndInstallFromCRAN rversions 2.1.1
+getAndInstallFromCRAN gplots 3.1.1
+getAndInstallFromCRAN futile.logger 1.4.3
+getAndInstallFromCRAN sessioninfo 1.2.1
+getAndInstallFromCRAN glmnet 2.0-2
+getAndInstallFromCRAN irlba 2.3.3
+getAndInstallFromCRAN survival 2.44-1.1
+getAndInstallFromCRAN xgboost 1.0.0.2
+getAndInstallFromCRAN mgcv 1.8-17
+getAndInstallFromCRAN ade4 1.7-18
+getAndInstallFromCRAN e1071 1.7-9
+getAndInstallFromCRAN flexclust 1.4-0
+getAndInstallFromCRAN fpc 2.2-9
+getAndInstallFromCRAN R.utils 2.11.0
+getAndInstallFromCRAN callr 3.7.0
+getAndInstallFromCRAN xopen 1.0.0
+getAndInstallFromCRAN memoise 2.0.0
+getAndInstallFromCRAN vctrs 0.3.8
+getAndInstallFromCRAN crosstalk 1.2.0
+getAndInstallFromCRAN fontawesome 0.2.2
+getAndInstallFromCRAN htmlwidgets 1.5.4
+getAndInstallFromCRAN jquerylib 0.1.4
+getAndInstallFromCRAN sass 0.4.0
+getAndInstallFromCRAN promises 1.2.0.1
+getAndInstallFromCRAN scales 1.1.1
+getAndInstallFromCRAN pkgload 1.2.3
+getAndInstallFromCRAN openssl 1.4.5
+getAndInstallFromCRAN knitr 1.36
+getAndInstallFromCRAN ROCR 1.0-7
+getAndInstallFromCRAN text2vec 0.5.0
+getAndInstallFromCRAN coin 1.0-0
+getAndInstallFromCRAN gbm 2.1.3
+getAndInstallFromCRAN penalized 0.9-51
+getAndInstallFromCRAN RItools 0.1-17
+getAndInstallFromCRAN pkgbuild 1.2.0
+getAndInstallFromCRAN webshot 0.5.2
+getAndInstallFromCRAN pillar 1.6.4
+getAndInstallFromCRAN tidyselect 1.1.1
+getAndInstallFromCRAN bslib 0.3.1
+getAndInstallFromCRAN httpuv 1.6.3
+getAndInstallFromCRAN credentials 1.3.0
+getAndInstallFromCRAN httr 1.4.2
+getAndInstallFromCRAN rsconnect 0.8.24
+getAndInstallFromCRAN htmlTable 2.3.0
+getAndInstallFromCRAN rmarkdown 2.11
+getAndInstallFromCRAN roxygen2 7.2.2
+getAndInstallFromCRAN tables 0.9.6
+getAndInstallFromCRAN rcmdcheck 1.4.0
+getAndInstallFromCRAN repr 1.1.3
+getAndInstallFromCRAN tibble 3.1.6
+getAndInstallFromCRAN shiny 1.7.1
+getAndInstallFromCRAN gert 1.3.0
+getAndInstallFromCRAN gh 1.3.0
+getAndInstallFromCRAN uplift 0.3.5
+getAndInstallFromCRAN IRdisplay 1.0
+getAndInstallFromCRAN dplyr 1.0.7
+getAndInstallFromCRAN ggplot2 3.3.5
+getAndInstallFromCRAN rematch2 2.1.2
+getAndInstallFromCRAN miniUI 0.1.1.1
+getAndInstallFromCRAN shinyjs 2.0.0
+getAndInstallFromCRAN usethis 2.0.1
+getAndInstallFromCRAN tidyr 1.1.4
+getAndInstallFromCRAN viridis 0.6.2
+getAndInstallFromCRAN pkgdown 1.5.1
+getAndInstallFromCRAN waldo 0.3.1
+getAndInstallFromCRAN manipulateWidget 0.11.1
+getAndInstallFromCRAN plotly 4.10.0
+getAndInstallFromCRAN Hmisc 4.3-0
+getAndInstallFromCRAN testthat 3.1.0
+getAndInstallFromCRAN rgl 0.100.54
+getAndInstallFromCRAN devtools 2.4.2
+getAndInstallFromCRAN plot3Drgl 1.0.2
 
 # dependecies from GitHub
-# The R_REMOTES_UPGRADE=never disables automatic upgrade of dependencies.
-# mainly because of systemfonts that is not supported in newer versions by R 3.3
-# is also a dependency of pkgdown which would try otherwise to upgrade it to a version
-# which doesn't support R < 3.6
 R_REMOTES_UPGRADE=never
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
-  install_version('systemfonts', version = '0.2.3'); \
-  install_version('glmnet', version = '2.0-2'); \
-  install_version('gbm', version = '2.1.3'); \
-  install_version('MLmetrics', version = '1.0.0'); \
-  install_version('pkgdown', version = '1.3.0'); \
   install_github('Zelazny7/isofor') \
 " 2>&1 | tee R.install.7.log
 checkRInstallLog R.install.7.log
 rm R.install.*.log
-# install LiblineaR from S3
-wget -q -O /LiblineaR_1.94-2.tar.gz https://cran.r-project.org/src/contrib/Archive/LiblineaR/LiblineaR_1.94-2.tar.gz
-/usr/local/R/current/bin/R CMD INSTALL /LiblineaR_1.94-2.tar.gz
-rm /LiblineaR_1.94-2.tar.gz

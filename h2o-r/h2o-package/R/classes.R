@@ -8,6 +8,7 @@
 #` will typically never have to reason with these objects directly, as there are
 #` S3 accessor methods provided for creating new objects.
 #`
+NULL 
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Class Definitions
