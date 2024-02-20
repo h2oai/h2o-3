@@ -1974,15 +1974,17 @@ class H2OFrame(Keyed, H2ODisplay):
                 try:
                     exportFile.close()  # needed for Windows
                     h2o.export_file(self, exportFile.name, force=True)
-                    if can_use_datatable(): # use datatable for multi-thread by default
+                    if can_use_datatable():  # use datatable for multi-thread by default
                         return self.convert_with_datatable(exportFile.name)
                     elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
                         return self.convert_with_polars(exportFile.name)
                 finally:
                     os.unlink(exportFile.name)
-            warnings.warn("converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
+            warnings.warn("Converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
-                          "(for Python 3.10 or above).", H2ODependencyWarning)
+                          "(for Python 3.10 or above) and activate it using:\n\n"+
+                          "with h2o.utils.threading.local_context(polars_enabled=True, datatable_enabled=True):\n"
+                          "    pandas_df = h2o_df.as_data_frame()\n", H2ODependencyWarning)
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
                 
         from h2o.utils.csv.readers import reader
