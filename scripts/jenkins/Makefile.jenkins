@@ -104,6 +104,7 @@ test-py-persist-s3: lookup-persist-s3-tests
 
 test-logger-initialize-properly:
 	-java -jar build/h2o.jar -ip 127.0.0.1 -web_ip 10.20.30.40 > out.txt 2>&1
+	grep "ERROR" out.txt | wc -l
 	if [[ $$(grep "ERROR" out.txt | wc -l) == "       2" ]]; then \
 		echo "All good";  \
 		exit 0;  \
