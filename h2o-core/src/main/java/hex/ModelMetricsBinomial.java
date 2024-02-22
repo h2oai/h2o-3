@@ -213,7 +213,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         _logloss += w * MathUtils.logloss(err);
       }
 
-      if(m.isGeneric()) { // only perform for generic model, will increase run time for training if performs
+      if(m != null && m.isGeneric()) { // only perform for generic model, will increase run time for training if performs
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
 

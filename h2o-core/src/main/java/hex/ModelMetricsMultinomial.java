@@ -322,7 +322,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       }
 
 
-      if(m.isGeneric()) { // only perform for generic model, will increase run time for training if perform
+      if(m != null && m.isGeneric()) { // only perform for generic model, will increase run time for training if perform
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
       return ds;                // Flow coding

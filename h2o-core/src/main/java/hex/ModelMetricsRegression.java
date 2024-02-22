@@ -163,7 +163,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
         }
       }
 
-      if(m.isGeneric()) { // only perform for generic model, will increase run time for training if performs
+      if(m != null && m.isGeneric()) { // only perform for generic model, will increase run time for training if performs
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
       
