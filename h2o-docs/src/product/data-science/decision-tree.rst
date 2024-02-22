@@ -15,7 +15,7 @@ All parameters are optional unless specified as *required*.
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum depth of the final decision tree. The final depth can be less than the definied ``max_depth`` if another stopped criteria is met first. This value defaults to ``20``. 
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum depth of the final decision tree. The final depth can be less than the definied ``max_depth`` if another stopped criteria is met first. This value defaults to ``20``.
 
 -  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf. This value defaults to ``10``.
 
@@ -140,7 +140,7 @@ Examples
 		prostate[target_variable] = prostate[target_variable].asfactor()
 
 		# Split the dataset into train and test:
-		train, test = prostate.split(ratios=[.7])
+		train, test = prostate.split_frame(ratios=[.7])
 
 		# Build and train the model:
 		sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex", max_depth=5)
