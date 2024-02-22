@@ -60,6 +60,10 @@ def call(final pipelineContext) {
     [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'LOGGER initialized properly', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
 
