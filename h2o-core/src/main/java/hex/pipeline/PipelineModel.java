@@ -16,6 +16,7 @@ import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -87,7 +88,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   private Frame doScore(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     if (fr == null) return null;
     try (Scope.Safe s = Scope.safe(fr)) {
-      PipelineContext context = newContext(fr);
+      PipelineContext context = newContext(fr, j);
       Frame result = newChain().transform(fr, FrameType.Test, context, new UnaryCompleter<Frame>() {
         @Override
         public Frame apply(Frame frame, PipelineContext context) {
@@ -117,7 +118,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   public Frame transform(Frame fr) {
     if (fr == null) return null;
     try (Scope.Safe s = Scope.safe(fr)) {
-      PipelineContext context = newContext(fr);
+      PipelineContext context = newContext(fr, null);
       Frame result = newChain().transform(fr, FrameType.Test, context, new UnaryCompleter<Frame>() {
         @Override
         public Frame apply(Frame frame, PipelineContext context) {
@@ -135,19 +136,22 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     return new TransformerChain(_output._transformers);
   }
   
-  private PipelineContext newContext(Frame fr) {
-    return new PipelineContext(_parms, new CompositeFrameTracker(
-            new ConsistentKeyTracker(fr),
-            new ScopeTracker()
-    ));
+  private PipelineContext newContext(Frame fr, Job job) {
+    return new PipelineContext(
+            _parms, 
+            new CompositeFrameTracker(
+              new ConsistentKeyTracker(fr),
+              new ScopeTracker()
+            ),
+            job);
   }
 
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     if (cascade) {
       if (_output._transformers != null) {
-        for (DataTransformer dt : _output._transformers) {
-          dt.cleanup(fs);
+        for (DataTransformer dt : _output.getTransformers()) {
+          if (dt != null) dt.cleanup(fs);
         }
       }
       if (_output._estimator != null) {
@@ -198,7 +202,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     // this doesn't have to work for all type of transformers, but for example for those wrapping a model (see ModelAsFeatureTransformer) and for the final estimator.
     // as soon as we can do this, then we will be able to train pipelines in grids like any other model.
     
-    public DataTransformer[] _transformers;
+    public Key<DataTransformer>[] _transformers;
     public Model.Parameters _estimatorParams;
     public KeyGen _estimatorKeyGen = new PatternKeyGen("{0}_estimator"); 
 
@@ -278,7 +282,8 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
           try {
             int idx = Integer.parseInt(id);
             assert idx >=0 && idx < _transformers.length;
-            return new String[]{_transformers[idx].id(), tokens[1]};
+            assert _transformers[idx].get() != null;
+            return new String[]{_transformers[idx].get().id(), tokens[1]};
           } catch(NumberFormatException nfe) {
             if (getTransformer(id) != null) return new String[] {id, tokens[1]};
             throw new IllegalArgumentException("Unknown pipeline transformer: "+tok0);
@@ -289,9 +294,24 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       }
     }
     
+    public DataTransformer[] getTransformers() {
+      if (_transformers == null) return null;
+      for (Key<DataTransformer> key : _transformers) {
+        DKV.prefetch(key);
+      }
+      return Arrays.stream(_transformers).map(Key::get).toArray(DataTransformer[]::new);
+    }
+    
+    public void setTransformers(DataTransformer... transformers) {
+      _transformers = Arrays.stream(transformers)
+              .map(DataTransformer::init)
+              .map(DataTransformer::getKey)
+              .toArray(Key[]::new);
+    }
+    
     private DataTransformer getTransformer(String id) {
       if (_transformers == null) return null;
-      return Stream.of(_transformers).filter(t -> t.id().equals(id)).findFirst().orElse(null);
+      return Stream.of(getTransformers()).filter(t -> t.id().equals(id)).findFirst().orElse(null);
     }
 
     @Override
@@ -316,7 +336,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   
   public static class PipelineOutput extends Model.Output {
     
-    DataTransformer[] _transformers;
+    Key<DataTransformer>[] _transformers;
     Key<Model> _estimator;
 
     public PipelineOutput(ModelBuilder b) {
@@ -324,7 +344,11 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     }
     
     public DataTransformer[] getTransformers() {
-      return _transformers == null ? null : _transformers.clone();
+      if (_transformers == null) return null;
+      for (Key<DataTransformer> key : _transformers) {
+        DKV.prefetch(key);
+      }
+      return Arrays.stream(_transformers).map(Key::get).toArray(DataTransformer[]::new);
     }
     
     public Model getEstimatorModel() {

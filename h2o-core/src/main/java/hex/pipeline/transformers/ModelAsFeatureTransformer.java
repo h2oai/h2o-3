@@ -6,12 +6,19 @@ import hex.pipeline.PipelineContext;
 import water.*;
 import water.KeyGen.PatternKeyGen;
 import water.fvec.Frame;
-import water.nbhm.NonBlockingHashMap;
 import water.util.IcedHashMap;
 
-import java.util.Map;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M extends Model<M, MP, ?>, MP extends Model.Parameters> extends FeatureTransformer<S> {
+public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer<S, M, MP>, M extends Model<M, MP, ?>, MP extends Model.Parameters> extends FeatureTransformer<S> {
+  
+  private static final Set<String> IGNORED_FIELDS_FOR_CHECKSUM = new HashSet<String>(Arrays.asList(
+          "_modelsCache"
+  ));
   
   protected MP _params;
   private Key<M> _modelKey;
@@ -121,15 +128,6 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   }
 
   @Override
-  protected void doCleanup(Futures fs) {
-    Keyed.removeQuietly(_modelKey);
-    for (Key k : _modelsCache.values()) {
-      Keyed.removeQuietly(k);
-    }
-    _modelsCache.clear();
-  }
-
-  @Override
   protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     validateTransform();
     return fr == null ? null : getModel().transform(fr);
@@ -144,5 +142,24 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
     ModelAsFeatureTransformer<S, M, MP> clone = super.cloneImpl();
     clone._params = _params == null ? null : (MP) _params.clone();
     return (S) clone;
+  }
+
+  @Override
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    if (cascade) {
+      Keyed.removeQuietly(_modelKey);
+      for (Key k : _modelsCache.values()) {
+        Keyed.removeQuietly(k);
+      }
+      _modelsCache.clear();
+    }
+    return super.remove_impl(fs, cascade);
+  }
+
+  @Override
+  protected Set<String> ignoredFieldsForChecksum() {
+    Set<String> ignored = new HashSet<>(super.ignoredFieldsForChecksum());
+    ignored.addAll(IGNORED_FIELDS_FOR_CHECKSUM);
+    return ignored;
   }
 }

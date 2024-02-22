@@ -2,6 +2,7 @@ package hex.pipeline;
 
 import hex.pipeline.DataTransformer.FrameType;
 import hex.pipeline.DataTransformerTest.AddRandomColumnTransformer;
+import hex.pipeline.DataTransformerTest.FailingAssertionTransformer;
 import hex.pipeline.DataTransformerTest.FrameTrackerAsTransformer;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class TransformerChainTest {
     try {
       Scope.enter();
       final Frame fr = Scope.track(dummyFrame());
-      FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer().id("tracker");
+      FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10).id("tracker");
       DataTransformer[] dts = new DataTransformer[] {
               tracker,
               new FrameCheckerAsTransformer(f -> {
@@ -57,11 +58,12 @@ public class TransformerChainTest {
               new RenameFrameTransformer("dumdum").id("rename_dumdum"),
               tracker,
       };
-      TransformerChain chain = new TransformerChain(dts);
+      TransformerChain chain = Scope.track_generic(new TransformerChain(dts).init());
+      chain.prepare(null);
       Frame transformed = chain.transform(fr);
       assertEquals("dumdum", transformed.getKey().toString());
       assertArrayEquals(ArrayUtils.append(fr.names(), new String[]{"foo", "bar"}), transformed.names());
-      assertEquals(4, tracker.transformations.size());
+      assertEquals(4, tracker.size());
     } finally {
       Scope.exit();
     }
@@ -75,17 +77,11 @@ public class TransformerChainTest {
       final Frame fr = Scope.track(dummyFrame());
       DataTransformer[] dts = new DataTransformer[] {
               new AddRandomColumnTransformer("foo").id("add_foo"),
-              new DataTransformer() {
-                @Override
-                protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
-                  assert false: "expected";
-                  return fr;
-                }
-              },
+              new FailingAssertionTransformer().id("failing_assertion"),
               new AddRandomColumnTransformer("bar").id("add_bar"),
               new RenameFrameTransformer("dumdum").id("rename_dumdum"),
       };
-      TransformerChain chain = new TransformerChain(dts);
+      TransformerChain chain = Scope.track_generic(new TransformerChain(dts).init());
       AssertionError err = assertThrows(AssertionError.class, () -> chain.transform(fr));
       assertEquals("expected", err.getMessage());
     } finally {
@@ -127,9 +123,9 @@ public class TransformerChainTest {
               break;
           }
         }
-      });
+      }, null);
       
-      TransformerChain chain = new TransformerChain(dts);
+      TransformerChain chain = Scope.track_generic(new TransformerChain(dts).init());
       Frame transformed = chain.transform(fr);
       assertEquals("dumdum", transformed.getKey().toString());
       assertArrayEquals(ArrayUtils.append(fr.names(), new String[]{"foo", "bar"}), transformed.names());
@@ -149,7 +145,7 @@ public class TransformerChainTest {
               new AddRandomColumnTransformer("bar").id("add_bar"),
               new RenameFrameTransformer("dumdum").id("rename_dumdum"),
       };
-      TransformerChain chain = new TransformerChain(dts);
+      TransformerChain chain = Scope.track_generic(new TransformerChain(dts).init());
       
       Frame tr1 = chain.transform(fr1);
       assertEquals("dumdum", tr1.getKey().toString());
@@ -181,7 +177,7 @@ public class TransformerChainTest {
               new AddRandomColumnTransformer("bar").id("add_bar"),
               new RenameFrameTransformer("dumdum").id("rename_dumdum"),
       };
-      TransformerChain chain = new TransformerChain(dts);
+      TransformerChain chain = Scope.track_generic(new TransformerChain(dts).init());
       TransformerChain.Completer<Pair<Long, Long>> dim = new TransformerChain.UnaryCompleter<Pair<Long, Long>>() {
         @Override
         public Pair<Long, Long> apply(Frame frame, PipelineContext context) {
@@ -208,7 +204,7 @@ public class TransformerChainTest {
               new AddRandomColumnTransformer("bar").id("add_bar"),
               new RenameFrameTransformer("dumdum").id("rename_dumdum"),
       };
-      TransformerChain chain = new TransformerChain(dts);
+      TransformerChain chain = Scope.track_generic(new TransformerChain(dts).init());
 
       Frame[] transformed = chain.transform(
               new Frame[] {fr1, fr1, fr2},

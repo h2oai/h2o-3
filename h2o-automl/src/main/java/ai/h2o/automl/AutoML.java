@@ -407,7 +407,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       _pipelineParams = null;
       _pipelineHyperParams = null;
     } else {
-      _pipelineParams._transformers = transformers.toArray(new DataTransformer[0]);
+      _pipelineParams.setTransformers(transformers.toArray(new DataTransformer[0]));
       _pipelineHyperParams = hyperParams;
     }
     

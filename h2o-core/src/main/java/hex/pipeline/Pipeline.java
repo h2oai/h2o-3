@@ -40,8 +40,11 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   public void init(boolean expensive) {
     if (expensive) {
       earlyValidateParams();
-      if (_parms._transformers == null) _parms._transformers = new DataTransformer[0];
-      _parms._transformers = Arrays.stream(_parms._transformers).filter(DataTransformer::enabled).toArray(DataTransformer[]::new);
+      if (_parms._transformers == null) _parms._transformers = new Key[0];
+      _parms._transformers = Arrays.stream(_parms.getTransformers())
+              .filter(DataTransformer::enabled)
+              .map(DataTransformer::getKey)
+              .toArray(Key[]::new);
     }
     super.init(expensive);
   }
@@ -202,7 +205,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
   
   private PipelineContext newCVContext(PipelineContext context, Model.Parameters cvParams) {
-    PipelineContext cvContext = new PipelineContext(context._params, context._tracker);
+    PipelineContext cvContext = new PipelineContext(context._params, context._tracker, _job);
     PipelineParameters pparams = cvContext._params;
     pparams._is_cv_model = cvParams._is_cv_model;
     pparams._cv_fold = cvParams._cv_fold;
@@ -223,11 +226,15 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
   
   private PipelineContext newContext() {
-    return new PipelineContext(_parms, new CompositeFrameTracker(
-            new CancellationTracker(this),
-            new ConsistentKeyTracker(),
-            new ScopeTracker()
-    ));
+    return new PipelineContext(
+            _parms, 
+            new CompositeFrameTracker(
+              new CancellationTracker(this),
+              new ConsistentKeyTracker(),
+              new ScopeTracker()
+            ),
+            _job
+    );
   }
 
   static class CancellationTracker extends AbstractFrameTracker<CancellationTracker> {
@@ -247,7 +254,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
 
   private TransformerChain newChain(PipelineContext context) {
-    TransformerChain chain = new TransformerChain(_parms._transformers);
+    TransformerChain chain = new TransformerChain(_parms._transformers);//.init();
     chain.prepare(context);
     return chain;
   }

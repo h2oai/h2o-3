@@ -458,10 +458,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
       if (aml().getPipelineParams() == null) return params;
       PipelineParameters pparams = (PipelineParameters) aml().getPipelineParams().clone();
-      List<DataTransformer> transformers = Arrays.asList(pparams._transformers);
+      List<DataTransformer> transformers = Arrays.asList(pparams.getTransformers());
       Map<String, Object[]> transformersHyperParams = new HashMap<>(aml().getPipelineHyperParams());
       filterPipelineTransformers(transformers, transformersHyperParams);
-      pparams._transformers = transformers.toArray(transformers.toArray(new DataTransformer[0]));
+      pparams.setTransformers(transformers.toArray(new DataTransformer[0]));
       if (pparams._transformers.length == 0) return params;
       setCommonModelBuilderParams(pparams);
       pparams._seed = params._seed;

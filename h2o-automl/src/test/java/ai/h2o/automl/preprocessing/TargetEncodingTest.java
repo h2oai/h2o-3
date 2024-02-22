@@ -207,7 +207,7 @@ public class TargetEncodingTest {
                   assertEquals(1, p._output.getTransformers().length); // TE disabled for DL, but keeping the fold column generator for CV consistency with other models when building SE.
                 } else {
                   assertEquals(2, p._input_parms._transformers.length);
-                  if (p._input_parms._transformers[1].enabled()) {
+                  if (p._input_parms._transformers[1].get().enabled()) {
                     assertEquals(2, p._output.getTransformers().length);
                   } else {
                     assertEquals(1, p._output.getTransformers().length);

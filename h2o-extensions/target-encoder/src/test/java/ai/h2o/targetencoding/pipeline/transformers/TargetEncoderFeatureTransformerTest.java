@@ -176,7 +176,7 @@ public class TargetEncoderFeatureTransformerTest {
 
         PipelineModel.PipelineParameters pparams = new PipelineModel.PipelineParameters();
         TargetEncoderFeatureTransformer teTrans = new TargetEncoderFeatureTransformer(teParams);
-        pparams._transformers = aro(teTrans);
+        pparams.setTransformers(teTrans);
         pparams._estimatorParams = eparams;
         pparams._seed = 987;
         pparams._train = train._key;

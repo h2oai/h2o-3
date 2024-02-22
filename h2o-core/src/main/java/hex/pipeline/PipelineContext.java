@@ -2,6 +2,8 @@ package hex.pipeline;
 
 import hex.pipeline.PipelineModel.PipelineParameters;
 import water.Iced;
+import water.Job;
+import water.Key;
 import water.fvec.Frame;
 
 /**
@@ -10,6 +12,8 @@ import water.fvec.Frame;
  * to configure themselves/initialize during the {@link DataTransformer#prepare(PipelineContext)} phase.
  */
 public class PipelineContext extends Iced {
+  
+  public final Key<Job> _jobKey;
 
   public final PipelineParameters _params;
   
@@ -17,13 +21,19 @@ public class PipelineContext extends Iced {
   
   private Frame _train;
   private Frame _valid;
-  
+
+
   public PipelineContext(PipelineParameters params) {
-    this(params, null);
+    this(params, null, null);
   }
   
-  public PipelineContext(PipelineParameters params, FrameTracker tracker) {
+  public PipelineContext(PipelineParameters params, Job job) {
+    this(params, null, job);
+  }
+  
+  public PipelineContext(PipelineParameters params, FrameTracker tracker, Job job) {
     assert params != null;
+    _jobKey = job == null ? null : job._key;
     _params = (PipelineParameters) params.clone(); // cloning this here as those _params can be mutated during transformers' preparation.
     _tracker = tracker;
   }

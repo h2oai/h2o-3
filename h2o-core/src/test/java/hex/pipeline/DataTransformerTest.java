@@ -2,6 +2,7 @@ package hex.pipeline;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.Iced;
 import water.Key;
 import water.MRTask;
 import water.Scope;
@@ -10,10 +11,13 @@ import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.*;
@@ -155,7 +159,7 @@ public class DataTransformerTest {
     
     static final Logger logger = LoggerFactory.getLogger(FrameTrackerAsTransformer.class);
     
-    public static class Transformation {
+    public static class Transformation extends Iced<Transformation> {
       final String frameId;
       final FrameType type;
       final boolean is_cv;
@@ -177,11 +181,10 @@ public class DataTransformerTest {
       }
     }
     
-    transient List<Transformation> transformations = new ArrayList<>();
-
-    @Override
-    protected void doPrepare(PipelineContext context) {
-      transformations.clear();
+    private Transformation[] transformations;
+    
+    public FrameTrackerAsTransformer(int maxSize) {
+      transformations = new Transformation[maxSize];
     }
 
     @Override
@@ -189,19 +192,31 @@ public class DataTransformerTest {
       if (fr == null) return null;
       logger.info(fr.getKey()+": columns="+Arrays.toString(fr.names()));
       boolean is_cv = context != null && context._params._is_cv_model;
-      transformations.add(new Transformation(fr.getKey().toString(), type, is_cv));
+      transformations[size()] = new Transformation(fr.getKey().toString(), type, is_cv);
       return fr;
     }
+    
+    public int size() {
+      for (int i = 0; i < transformations.length; i++) {
+        if (transformations[i] == null) return i;
+      }
+      return -1;
+    }
+    
+    public Transformation[] getTransformations() {
+      return Arrays.copyOf(transformations, size());
+    }
+    
   }
   
   @FunctionalInterface 
-  interface FrameChecker {
+  interface FrameChecker extends Serializable {
     void check(Frame fr);
   }
   
   public static class FrameCheckerAsTransformer extends DataTransformer<FrameTrackerAsTransformer> {
 
-    final transient FrameChecker checker;
+    FrameChecker checker;
 
     public FrameCheckerAsTransformer(FrameChecker checker) {
       this.checker = checker;
@@ -213,4 +228,13 @@ public class DataTransformerTest {
       return fr;
     }
   }
+  
+  public static class FailingAssertionTransformer extends DataTransformer<FailingAssertionTransformer> {
+    @Override
+    protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+      assert false: "expected";
+      return fr;
+    }
+  }
+
 }
