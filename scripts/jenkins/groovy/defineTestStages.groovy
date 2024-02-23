@@ -61,10 +61,6 @@ def call(final pipelineContext) {
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
-    [
-      stageName: 'LOGGER initialized properly', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ]
   ]
 
   def SMOKE_PR_STAGES = [
@@ -77,6 +73,10 @@ def call(final pipelineContext) {
   // Stages executed after each push to PR branch.
   // for Python, mainly test with latest supported version
   def PR_STAGES = [
+    [
+      stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
     [
       stageName: 'Py3.7 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.7', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
