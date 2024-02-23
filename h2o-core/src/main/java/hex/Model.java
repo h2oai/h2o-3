@@ -278,6 +278,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
+  
+  public boolean isGeneric() {
+    return false;
+  }
 
   public boolean havePojo() {
     if (_parms._preprocessors != null) return false; // TE processor not included to current POJO (see PUBDEV-8508 for potential fix)
