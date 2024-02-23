@@ -283,7 +283,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
             int idx = Integer.parseInt(id);
             assert idx >=0 && idx < _transformers.length;
             assert _transformers[idx].get() != null;
-            return new String[]{_transformers[idx].get().id(), tokens[1]};
+            return new String[]{_transformers[idx].get().name(), tokens[1]};
           } catch(NumberFormatException nfe) {
             if (getTransformer(id) != null) return new String[] {id, tokens[1]};
             throw new IllegalArgumentException("Unknown pipeline transformer: "+tok0);
@@ -311,7 +311,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     
     private DataTransformer getTransformer(String id) {
       if (_transformers == null) return null;
-      return Stream.of(getTransformers()).filter(t -> t.id().equals(id)).findFirst().orElse(null);
+      return Stream.of(getTransformers()).filter(t -> t.name().equals(id)).findFirst().orElse(null);
     }
 
     @Override

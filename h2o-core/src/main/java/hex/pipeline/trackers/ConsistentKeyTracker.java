@@ -58,7 +58,7 @@ public class ConsistentKeyTracker extends AbstractFrameTracker<ConsistentKeyTrac
 
     if (transformed != original) {
       String baseName = frName.contains(SEP) ? frName.substring(0, frName.lastIndexOf(SEP)) : frName;
-      reassignInplace(transformed, _frameKeyGen.make(baseName, type, transformer.id()));
+      reassignInplace(transformed, _frameKeyGen.make(baseName, type, transformer.name()));
     }
   }
 }

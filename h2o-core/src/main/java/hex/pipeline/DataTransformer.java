@@ -6,7 +6,6 @@ import water.*;
 import water.fvec.Frame;
 import water.util.Checksum;
 import water.util.IcedLong;
-import water.util.Log;
 import water.util.PojoUtils;
 
 import java.util.Arrays;
@@ -27,7 +26,7 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
   ));
 
   public boolean _enabled = true;  // flag allowing to enable/disable transformers dynamically esp. in pipelines (can be used as a pipeline hyperparam in grids).
-  private String _id;
+  private String _name;
   private String _description;
   private Key _refCountKey;
   private KeyGen _keyGen;
@@ -36,24 +35,24 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
     this(null);
   }
   
-  public DataTransformer(String id) {
-    this(id, null);
+  public DataTransformer(String name) {
+    this(name, null);
   }
 
-  public DataTransformer(String id, String description) {
+  public DataTransformer(String name, String description) {
     super(null);
-    _id = id == null ? getClass().getSimpleName().toLowerCase()+Key.rand() : id;
+    _name = name == null ? getClass().getSimpleName().toLowerCase()+Key.rand() : name;
     _description = description == null ? getClass().getSimpleName().toLowerCase() : description;
   }
   
   @SuppressWarnings("unchecked")
-  public SELF id(String id) {
-    _id = id;
+  public SELF name(String name) {
+    _name = name;
     return (SELF) this;
   }
   
-  public String id() {
-    return _id;
+  public String name() {
+    return _name;
   }
 
   @SuppressWarnings("unchecked")
@@ -73,16 +72,16 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
   }
   
   public SELF init() {
-    assert _id != null;
+    assert _name != null;
     if (_keyGen == null) {
        _keyGen = new KeyGen.PatternKeyGen("{0}_{n}");
     }
     if (_key == null) {
-      _key = _keyGen.make(_id);
+      _key = _keyGen.make(_name);
       DKV.put(this);
     }
     if (_refCountKey == null) {
-      _refCountKey = Key.make(_id + "_refCount");
+      _refCountKey = Key.make(_name+ "_refCount");
       DKV.put(_refCountKey, new IcedLong(0));
     }
     return (SELF) this;
@@ -245,7 +244,7 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
   @Override
   protected SELF cloneImpl() throws CloneNotSupportedException {
     SELF clone = super.cloneImpl();
-    if (_keyGen != null) clone._key = _keyGen.make(_id);
+    if (_keyGen != null) clone._key = _keyGen.make(_name);
     return clone;
   }
 

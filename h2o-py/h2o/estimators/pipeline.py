@@ -6,6 +6,7 @@
 #
 
 import h2o
+from h2o.base import Keyed
 from h2o.display import H2ODisplay, repr_def
 from h2o.expr import ASTId, ExprNode
 from h2o.schemas import H2OSchema, register_schema_handler
@@ -36,9 +37,15 @@ class H2OPipeline(H2OEstimator):
         self._parms = {}
         self._id = self._parms['model_id'] = model_id
 
+    @staticmethod
+    def get_transformer(id):
+        assert_is_type(id, str)
+        return h2o.api("GET /3/Pipeline/DataTransformer/%s" % id)
+
     @property
     def transformers(self):
-        return self._model_json['output']['transformers']
+        trs_json = self._model_json['output']['transformers']
+        return None if (trs_json is None) else [H2OPipeline.get_transformer(k['name']) for k in trs_json]
 
     @property
     def estimator_model(self):
@@ -53,17 +60,22 @@ class H2OPipeline(H2OEstimator):
         return H2OFrame._expr(expr=ExprNode("transform", ASTId(self.key), ASTId(fr.key)))._frame(fill_cache=True)
 
 
-class H2ODataTransformer(H2ODisplay):
+class H2ODataTransformer(Keyed, H2ODisplay):
     @classmethod
     def make(cls, kvs):
         dt = H2ODataTransformer(**{k: v for k, v in kvs if k not in H2OSchema._ignored_schema_keys_})
         dt._json = kvs
         return dt
 
-    def __init__(self, id=None, description=None):
+    def __init__(self, key=None, name=None, description=None):
         self._json = None
-        self.id = id
-        self.description = description
+        self._id = key['name']
+        self._name = name
+        self._description = description
+
+    @property
+    def key(self):
+        return self._id
 
     def _repr_(self):
         return repr(self._json)

@@ -61,6 +61,7 @@ water.api.schemas3.KeyV3$JobKeyV3
 water.api.schemas3.KeyV3$ModelKeyV3
 water.api.schemas3.KeyV3$PartialDependenceKeyV3
 water.api.schemas3.KeyV3$DecryptionToolKeyV3
+water.api.schemas3.KeyV3$DataTransformerKeyV3
 water.api.schemas3.KillMinus3V3
 water.api.schemas3.LogAndEchoV3
 water.api.schemas3.LogsV3

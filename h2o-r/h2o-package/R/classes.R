@@ -868,7 +868,9 @@ setClass("H2OSegmentModelsFuture", slots = c(job_key = "character", segment_mode
 #' @export
 setClass("H2OSegmentModels", slots = c(segment_models_id = "character"))
 
-setClass("H2ODataTransformer", slots = c(id = "character", description = "character"))
+setClass("H2ODataTransformer", slots = c(id = "character", name = "character", description = "character"))
+setMethod("h2o.keyof", signature("H2ODataTransformer"), function(object) object@id)
+
 setClass("H2OPipeline", contains="H2OModel",
          slots = c(
              transformers = "list",

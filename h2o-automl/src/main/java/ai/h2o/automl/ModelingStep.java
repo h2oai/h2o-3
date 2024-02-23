@@ -9,7 +9,6 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
-import ai.h2o.targetencoding.pipeline.transformers.TargetEncoderFeatureTransformer;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -31,14 +30,12 @@ import water.*;
 import water.KeyGen.ConstantKeyGen;
 import water.KeyGen.PatternKeyGen;
 import water.exceptions.H2OIllegalArgumentException;
-import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -441,9 +438,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected final void removeTransformersType(Class<? extends DataTransformer> toRemove, List<DataTransformer> transformers, Map<String, Object[]> transformerHyperParams) {
       List<String> teIds = transformers.stream()
               .filter(toRemove::isInstance)
-              .map(DataTransformer::id)
+              .map(DataTransformer::name)
               .collect(Collectors.toList());
-      transformers.removeIf(dt -> teIds.contains(dt.id()));
+      transformers.removeIf(dt -> teIds.contains(dt.name()));
       transformerHyperParams.keySet().removeIf(k -> teIds.contains(k.split("\\.", 2)[0]));
     }
 

@@ -27,7 +27,7 @@ public class PipelineModelV3 extends ModelSchemaV3<
   public static final class PipelineModelOutputV3 extends ModelOutputSchemaV3<PipelineOutput, PipelineModelOutputV3> {
 
     @API(help="Sequence of transformers applied to input data.", direction = API.Direction.OUTPUT)
-    public DataTransformerV3[] transformers;
+    public KeyV3.DataTransformerKeyV3[] transformers;
 
     @API(help="Estimator model trained and/or applied after transformations.", direction = API.Direction.OUTPUT)
     public KeyV3.ModelKeyV3 estimator;

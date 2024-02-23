@@ -11,8 +11,6 @@ import water.util.IcedHashMap;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer<S, M, MP>, M extends Model<M, MP, ?>, MP extends Model.Parameters> extends FeatureTransformer<S> {
   
@@ -96,7 +94,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer<S, M,
     excludeColumns(_params.getNonPredictors());
     Key<M> km = lookupModel(_params);
     if (km == null || (_modelKey != null && !km.equals(_modelKey))) {
-      if (_modelKey == null) _modelKey = _modelKeyGen.make(id());
+      if (_modelKey == null) _modelKey = _modelKeyGen.make(name());
       ModelBuilder<M, MP, ?> mb = ModelBuilder.make(_params, _modelKey);
       mb.trainModel().get();
       _modelsCache.put(_params.checksum(), _modelKey);

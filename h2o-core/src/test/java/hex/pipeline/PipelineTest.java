@@ -55,10 +55,10 @@ public class PipelineTest {
     PipelineParameters pparams = new PipelineParameters();
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            new MultiplyNumericColumnTransformer("two", 5).id("mult_5"),
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"),
-            tracker.id("tracker")
+            new MultiplyNumericColumnTransformer("two", 5).name("mult_5"),
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"),
+            tracker.name("tracker")
     );
     final Frame fr = Scope.track(new TestFrameBuilder()
             .withColNames("one", "two", "target")
@@ -122,9 +122,9 @@ public class PipelineTest {
     PipelineParameters pparams = new PipelineParameters();
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"), 
-            tracker.id("tracker")
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"), 
+            tracker.name("tracker")
     );
     DummyModelParameters eparams = new DummyModelParameters();
     eparams._makeModel = true;
@@ -180,10 +180,10 @@ public class PipelineTest {
     pparams._nfolds = nfolds;
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"),
-            new AddDummyCVColumnTransformer("cv_fold", Vec.T_CAT).id("add_cv_fold"),
-            tracker.id("track")
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"),
+            new AddDummyCVColumnTransformer("cv_fold", Vec.T_CAT).name("add_cv_fold"),
+            tracker.name("track")
     );
     DummyModelParameters eparams = new DummyModelParameters();
     eparams._makeModel = true;
@@ -253,9 +253,9 @@ public class PipelineTest {
     pparams._nfolds = nfolds;
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"),
-            tracker.id("track")
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"),
+            tracker.name("track")
     );
     DummyModelParameters eparams = new DummyModelParameters();
     eparams._makeModel = true;
@@ -304,9 +304,9 @@ public class PipelineTest {
     PipelineParameters pparams = new PipelineParameters();
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"),
-            tracker.id("tracker")
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"),
+            tracker.name("tracker")
     );
     DummyModelParameters eparams = new DummyModelParameters();
     eparams._makeModel = true;
@@ -363,10 +363,10 @@ public class PipelineTest {
     pparams._nfolds = nfolds;
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"),
-            new AddDummyCVColumnTransformer("cv_fold").id("add_cv_fold"),
-            tracker.id("track")
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"),
+            new AddDummyCVColumnTransformer("cv_fold").name("add_cv_fold"),
+            tracker.name("track")
     );
     DummyModelParameters eparams = new DummyModelParameters();
     eparams._makeModel = true;
@@ -410,9 +410,9 @@ public class PipelineTest {
     PipelineParameters pparams = new PipelineParameters();
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"),
-            tracker.id("tracker")
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"),
+            tracker.name("tracker")
     );
     DummyModelParameters eparams = new DummyModelParameters();
     eparams._makeModel = true;
@@ -461,11 +461,11 @@ public class PipelineTest {
     });
     FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
     pparams.setTransformers(
-            checker.id("check_frame_not_encoded"),
-            new AddRandomColumnTransformer("foo").id("add_foo"),
-            new AddRandomColumnTransformer("bar").id("add_bar"),
-            new AddDummyCVColumnTransformer("cv_fold").id("add_cv_fold"),
-            tracker.id("tracker")
+            checker.name("check_frame_not_encoded"),
+            new AddRandomColumnTransformer("foo").name("add_foo"),
+            new AddRandomColumnTransformer("bar").name("add_bar"),
+            new AddDummyCVColumnTransformer("cv_fold").name("add_cv_fold"),
+            tracker.name("tracker")
     );
     DummyModelParameters eparams = new DummyModelParameters();
     eparams._makeModel = true;
