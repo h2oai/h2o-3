@@ -120,7 +120,7 @@ def temp_ctr():
 
 
 def is_module_available(mod):
-    if local_env(mod+"_disabled"): # fast track if module is explicitly disabled
+    if local_env(mod+"_disabled"):  # fast track if module is explicitly disabled
         return False
     if mod in sys.modules and sys.modules[mod] is not None:  # fast track + safer in unusual environments 
         return True
@@ -128,20 +128,30 @@ def is_module_available(mod):
     import importlib.util
     return importlib.util.find_spec(mod) is not None
 
+
+def is_module_enabled(mod):
+    return local_env(mod+"_enabled") and is_module_available(mod)
+
+
 def can_use_pandas():
     return is_module_available('pandas')
 
+
 def can_use_datatable():
-    return is_module_available('datatable') and sys.version_info.major == 3 and sys.version_info.minor <= 9
+    return is_module_enabled('datatable') and sys.version_info.major == 3 and sys.version_info.minor <= 9
+
 
 def can_install_datatable():
     return sys.version_info.major == 3 and sys.version_info.minor <= 9
 
+
 def can_install_polars():
     return sys.version_info.major == 3 and sys.version_info.minor > 9
 
+
 def can_use_polars():
-    return is_module_available('polars') and sys.version_info.major == 3 and sys.version_info.minor > 9
+    return is_module_enabled('polars') and sys.version_info.major == 3 and sys.version_info.minor > 9
+
 
 def can_use_pyarrow():
     if can_use_pandas() and sys.version_info.minor > 9:
@@ -151,8 +161,10 @@ def can_use_pyarrow():
     else:
         return False
 
+
 def can_use_numpy():
     return is_module_available('numpy')
+
 
 _url_safe_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
 _url_chars_map = [chr(i) if chr(i) in _url_safe_chars else "%%%02X" % i for i in range(256)]

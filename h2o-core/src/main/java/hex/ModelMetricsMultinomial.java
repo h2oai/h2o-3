@@ -294,7 +294,6 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       if(ArrayUtils.hasNaNs(ds)) return ds;
       if(w == 0 || Double.isNaN(w)) return ds;
       final int iact = (int)yact[0];
-      boolean score4Generic = m != null && m.getClass().toString().contains("Generic");
       _count++;
       _wcount += w;
       _wY += w*iact;
@@ -323,7 +322,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       }
 
 
-      if(score4Generic) { // only perform for generic model, will increase run time for training if perform
+      if(m != null && m.isGeneric()) { // only perform for generic model, will increase run time for training if perform
         _loglikelihood += m.likelihood(w, yact[0], ds);
       }
       return ds;                // Flow coding

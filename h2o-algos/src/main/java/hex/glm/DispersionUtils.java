@@ -77,7 +77,8 @@ public class DispersionUtils {
                 false,
                 false,
                 false,
-                false)
+                false,
+                true)
                 .compute(mu,
                         dinfo._adaptedFrame.vec(parms._response_column),
                         parms._weights_column == null
@@ -141,12 +142,15 @@ public class DispersionUtils {
 
         double midLoPhi = sortedPhis.get(counter - 2);
         double midLoLLH = sortedLLHs.get(counter - 2);
-        if (midLoPhi > upperBound) {
+        double midHiPhi = lowPhi + d;
+        double midHiLLH = getTweedieLogLikelihood(parms, dinfo, midHiPhi, mu);
+        if (midLoPhi > midHiPhi) {
             midLoPhi = hiPhi - d;
             midLoLLH = getTweedieLogLikelihood(parms, dinfo, midLoPhi, mu);
         }
-        double midHiPhi = lowPhi + d;
-        double midHiLLH = getTweedieLogLikelihood(parms, dinfo, midHiPhi, mu);
+        assert lowerBound <= midLoPhi;
+        assert midLoPhi <= midHiPhi;
+        assert midHiPhi <= upperBound;
         for (; counter < iterationsLeft; counter++) {
             Log.info("Tweedie golden-section search[iter=" + counter + ", phis=(" + lowPhi + ", " + midLoPhi +
                     ", " + midHiPhi + ", " + hiPhi + "), likelihoods=(" +
@@ -188,14 +192,36 @@ public class DispersionUtils {
      */
     public static double estimateTweedieDispersionOnly(GLMModel.GLMParameters parms, GLMModel model, Job job,
                                                               double[] beta, DataInfo dinfo) {
-        long currTime = System.currentTimeMillis();
-        long modelBuiltTime = currTime - model._output._start_time;
-        long timeLeft = parms._max_runtime_secs > 0 ? (long) (parms._max_runtime_secs * 1000 - modelBuiltTime)
-                : Long.MAX_VALUE;
-        TweedieMLDispersionOnly tDispersion = new TweedieMLDispersionOnly(parms.train(), parms, model, beta, dinfo);
+        if (parms._tweedie_variance_power >= 2 && 
+            dinfo._adaptedFrame.vec(parms._response_column).min() <= 0) {
+            Log.warn("Response contains zeros or negative values but "+
+                    "Tweedie variance power does not support zeros. "+
+                    "Instances with response <= 0 will be skipped.");
+            model.addWarning("Response contains zeros or negative values but "+
+                    "Tweedie variance power does not support zeros. "+
+                    "Instances with response <= 0 will be skipped.");
+        }
         DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
                 1, Vec.T_NUM, dinfo._adaptedFrame);
         Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
+        List<Double> logLikelihoodSanityChecks = new ArrayList<>();
+        List<Double> dispersionsSanityChecks = new ArrayList<>();
+        logLikelihoodSanityChecks.add(getTweedieLogLikelihood(parms, dinfo, parms._init_dispersion_parameter, mu));
+        dispersionsSanityChecks.add(parms._init_dispersion_parameter);
+        final double dispersion = goldenRatioDispersionSearch(parms, dinfo, mu, logLikelihoodSanityChecks, dispersionsSanityChecks, job);
+        Log.info("Tweedie dispersion estimate = "+dispersion);
+        return dispersion;
+        
+        /*
+        // FIXME: The Newton's method seems not to be reproducible on jenkins (runit_GLM_tweedie_ml_dispersion_estimation_only.R)
+      
+        long timeLeft = parms._max_runtime_secs > 0 ? (long) (parms._max_runtime_secs * 1000 - modelBuiltTime)
+            : Long.MAX_VALUE;  
+        long currTime = System.currentTimeMillis();
+
+        long modelBuiltTime = currTime - model._output._start_time;
+ 
+        TweedieMLDispersionOnly tDispersion = new TweedieMLDispersionOnly(parms.train(), parms, model, beta, dinfo);
 
         double dispersionCurr = tDispersion._dispersionParameter;   // initial value of dispersion parameter
         double dispersionNew;
@@ -210,6 +236,7 @@ public class DispersionUtils {
         logLikelihoodSanityChecks.add(bestLogLikelihoodFromSanityCheck);
         dispersionsSanityChecks.add(dispersionCurr);
         for (int index = 0; index < parms._max_iterations_dispersion; index++) {
+            Log.info("Tweedie dispersion ML estimation [iter="+index+", phi="+dispersionCurr+"]");
             tDispersion.updateDispersionP(dispersionCurr);
             DispersionTask.ComputeMaxSumSeriesTsk computeTask = new DispersionTask.ComputeMaxSumSeriesTsk(tDispersion,
                     parms, true);
@@ -299,6 +326,8 @@ public class DispersionUtils {
         }
         else
             return dispersionCurr;
+            
+         */
     }
 
     static class NegativeBinomialGradientAndHessian extends MRTask<NegativeBinomialGradientAndHessian> {

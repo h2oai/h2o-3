@@ -4,6 +4,16 @@ FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base:${FROM_VERSION}
 ARG R_VERSION
 ENV R_VERSION=${R_VERSION}
 
+# Old R versions (at least 3.3 and 3.4) are written in a way that is not compilable. This is likely due to the change in 
+# gcc-10 (GCC now defaults to -fno-common. As a result, global variable accesses are more efficient on various targets.
+# In C, global variables with multiple tentative definitions now result in linker errors. With -fcommon such definitions
+# are silently merged during linking.). I tried using -fcommon but without much luck so due to the time constrain I
+# decided to use gcc-9 instead.
+RUN apt-get update && apt-get install -y gcc-9 gfortran-9 g++-9 tcl-dev tk-dev && apt-get clean && apt-get autoremove -y && \
+    rm -rf /var/cache/apt/*  &&\
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 99 --slave /usr/bin/g++ g++ /usr/bin/g++-9 \
+    --slave /usr/bin/gcov gcov /usr/bin/gcov-9 && update-alternatives --install /usr/bin/gfortran f95 /usr/bin/gfortran-9 99
+
 COPY scripts/install_R_version /tmp/
 RUN \
     chmod +x /tmp/install_R_version && \

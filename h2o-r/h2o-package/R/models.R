@@ -1,10 +1,9 @@
-#'
-#' H2O Model Related Functions
-#'
+#
+# H2O Model Related Functions
+#
 #' @importFrom graphics strwidth par legend polygon arrows points grid
 #' @importFrom grDevices dev.copy dev.off png rainbow adjustcolor
 #' @include classes.R
-
 NULL
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -824,7 +823,9 @@ h2o.transform_frame <- function(model, fr) {
 #' h2o.init()
 #'
 #' # Import the prostate dataset:
-#' prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+#' prostate <- h2o.importFile(
+#'    "http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv"
+#' )
 #'
 #' # Set the predictors & response:
 #' predictors <- c("AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
@@ -882,7 +883,7 @@ h2o.transform_frame <- function(model, fr) {
 #'
 #' # Retrieve the results to view the best predictor subsets:
 #' h2o.result(sweepModel)
-#' '}
+#' }
 #'
 #' @export
 h2o.result <- function(model) {

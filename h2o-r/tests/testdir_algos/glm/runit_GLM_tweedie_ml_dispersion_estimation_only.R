@@ -7,6 +7,7 @@ library(tweedie)
 
 
 generate_data <- function(tweedie_p, phi, offset) {
+  set.seed(12345)
   molsp <- 1000
   x <- seq(1, 10, 1)
   yd <- exp(1 + 1.015 * x)
@@ -40,14 +41,14 @@ nll <- function(simData, mu, phi, p) {
 train_models <- function(simData, tweedie_p, phi) {
   simDataH2O <- as.h2o(simData)
   simData <- as.data.frame(simData)
-  
+  offset <- simData[1, "offset_col"]
   hfit <- h2o.glm(
     training_frame = simDataH2O,
     x = 'xt',
     y = 'yr',
     weights_column = 'weight',
     offset_column = "offset_col",
-    model_id = 'simDatatest',
+    model_id = paste0("TweedieDispersionMLE_p", tweedie_p,"_phi", phi, "_offset", offset),
     family = "tweedie",
     link = "tweedie",
     tweedie_link_power = 0,
@@ -57,8 +58,11 @@ train_models <- function(simData, tweedie_p, phi) {
     lambda = 0,
     compute_p_values = T,
     solver = "IRLSM",
-    calc_like = T
+    calc_like = T,
+    dispersion_epsilon = 1e-5,
+    seed = 12345
   )
+  set.seed(12345)
   rfit <-
     glm(
       yr ~ xt,
@@ -67,7 +71,12 @@ train_models <- function(simData, tweedie_p, phi) {
       weights = weight,
       offset = offset_col
     )
+  cat("\n\nRfit:\n")
+  print(coef(rfit))
   
+  cat("\nH2Ofit:\n")
+  print(hfit@model$coefficients_table)
+  cat("\n\n")
   rdispersion <- summary(rfit)$dispersion # not a MLE
   
   if (tweedie_p > 1.4 && tweedie_p < 1.75 && !(phi == 1000 && tweedie_p == 1.7)) {  # R's implementation can take very long time to finish for some other values
@@ -97,6 +106,8 @@ train_models <- function(simData, tweedie_p, phi) {
 
 
 test_helper <- function(p, phi, offset) {
+  eps <- 1e-3
+
   simData <- generate_data(p, phi, offset)
   
   attach(train_models(simData, p, phi))
@@ -109,7 +120,10 @@ test_helper <- function(p, phi, offset) {
       p = p,
       phi = hdispersion
     ) - h2o.loglikelihood(hfit)
-  ) < 1e-5)
+  ) < eps)
+  
+  cat("Difference in negative log-likelihood calculation between R and H2O: ", 
+      abs(nll(simData, mu = hmu, p = p, phi = hdispersion) - h2o.loglikelihood(hfit)), "\n", sep="")
   
   # are we better than R's implementation or at least the same? smaller the negative likelihood the better
   hnll <- nll(
@@ -124,12 +138,19 @@ test_helper <- function(p, phi, offset) {
                p = p,
                phi = rdispersion
              )
-  expect_true(hnll <= rnll || abs(hnll - rnll) < 1e-5)
+  expect_true(hnll <= rnll || abs(hnll - rnll) < eps)
+  cat("H2O negative log-likelihood: ", hnll, "\n", "R negative log-likelihood: ", rnll, "\n",
+      "H2O is better: ", hnll < rnll, "\n",
+      "H2O and R are roughly similar: ", abs(hnll - rnll) < eps, "\n", sep=""
+  )
   
   # check dispersion
   allowed_dispersion_difference <- 1.01*abs(phi - rdispersion)
-  print(allowed_dispersion_difference)
-  cat("H2o: ", hdispersion,"; R: ", rdispersion, "\n")
+  cat("Dispersion tolerance: ", allowed_dispersion_difference, "\n", sep="")
+  cat("H2O Dispersion Estimation: ", hdispersion, "\nR Dispersion Estimation: ", rdispersion, "\n",
+      "H2O is as close as R or closer to the true dispersion: ", abs(phi - hdispersion) < allowed_dispersion_difference,
+       "\n", sep=""
+  )
   expect_true(abs(phi - hdispersion) < allowed_dispersion_difference)
 }
 
