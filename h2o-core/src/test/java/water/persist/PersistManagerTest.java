@@ -171,9 +171,16 @@ public class PersistManagerTest extends TestUtil {
         ), result);
     }
 
-    @Test(expected = H2OFileAccessDeniedException.class)
+    @Test
     public void testImportFileMatchingDenyList() {
-        persistManager.importFiles("/etc/hosts", null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>());
+        Exception actual = null;
+        try {
+            persistManager.importFiles("/etc/hosts", null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>());
+        } catch (Exception e) {
+            actual = e;
+        }
+        assertNotNull(actual);
+        assertTrue(actual instanceof H2OFileAccessDeniedException);
     }
 
 }
