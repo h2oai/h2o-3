@@ -1719,7 +1719,7 @@ Below is a simple example showing how to build a Generalized Linear model.
 
     prostate_glm = H2OGeneralizedLinearEstimator(family= "binomial", 
                                               lambda_ = 0, 
-                                              compute_p_values = True
+                                              compute_p_values = True,
                                               generate_scoring_history = True)
     prostate_glm.train(predictors, response_col, training_frame= prostate)
     
