@@ -2,10 +2,7 @@ package hex.pipeline;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.Iced;
-import water.Key;
-import water.MRTask;
-import water.Scope;
+import water.*;
 import water.fvec.*;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
@@ -181,10 +178,57 @@ public class DataTransformerTest {
       }
     }
     
-    private Transformation[] transformations;
+    public static class Transformations extends Lockable<Transformations> {
+      
+      Transformation[] transformations;
+
+      public Transformations(Key<Transformations> key) {
+        super(key);
+        transformations = new Transformation[0];
+      }
+      
+      public void add(Transformation t) {
+        new AddTransformation(t).invoke(getKey());
+      }
+      
+      public int size() {
+        return transformations.length;
+      }
+
+      @Override
+      public String toString() {
+        final StringBuilder sb = new StringBuilder("Transformations{");
+        sb.append("transformations=").append(Arrays.toString(transformations));
+        sb.append('}');
+        return sb.toString();
+      }
+      
+      private static class AddTransformation extends TAtomic<Transformations> {
+        
+        private final Transformation transformation;
+
+        public AddTransformation(Transformation transformation) {
+          this.transformation = transformation;
+        }
+
+        @Override
+        protected Transformations atomic(Transformations old) {
+          old.transformations = ArrayUtils.append(old.transformations, transformation);
+          return old;
+        }
+      }
+    }
     
-    public FrameTrackerAsTransformer(int maxSize) {
-      transformations = new Transformation[maxSize];
+    private final Key<Transformations> transformationsKey;
+    
+    public FrameTrackerAsTransformer() {
+      transformationsKey = Key.make();
+      Transformations transformations = new Transformations(transformationsKey);
+      DKV.put(transformations);
+    }
+    
+    public Transformations getTransformations() {
+      return transformationsKey.get();
     }
 
     @Override
@@ -192,21 +236,15 @@ public class DataTransformerTest {
       if (fr == null) return null;
       logger.info(fr.getKey()+": columns="+Arrays.toString(fr.names()));
       boolean is_cv = context != null && context._params._is_cv_model;
-      transformations[size()] = new Transformation(fr.getKey().toString(), type, is_cv);
+      transformationsKey.get().add(new Transformation(fr.getKey().toString(), type, is_cv));
       return fr;
     }
-    
-    public int size() {
-      for (int i = 0; i < transformations.length; i++) {
-        if (transformations[i] == null) return i;
-      }
-      return -1;
+
+    @Override
+    protected Futures remove_impl(Futures fs, boolean cascade) {
+      Keyed.remove(transformationsKey, fs, cascade);
+      return super.remove_impl(fs, cascade);
     }
-    
-    public Transformation[] getTransformations() {
-      return Arrays.copyOf(transformations, size());
-    }
-    
   }
   
   @FunctionalInterface 

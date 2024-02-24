@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.pipeline.DataTransformerTest.*;
 import hex.pipeline.DataTransformerTest.FrameTrackerAsTransformer.Transformation;
+import hex.pipeline.DataTransformerTest.FrameTrackerAsTransformer.Transformations;
 import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import org.junit.Rule;
@@ -53,7 +54,7 @@ public class PipelineTest {
   @Test
   public void test_simple_transformation_pipeline() {
     PipelineParameters pparams = new PipelineParameters();
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             new MultiplyNumericColumnTransformer("two", 5).name("mult_5"),
             new AddRandomColumnTransformer("foo").name("add_foo"),
@@ -82,14 +83,14 @@ public class PipelineTest {
     assertNull(output._estimator);
     assertNotNull(output._transformers);
     assertEquals(4, output._transformers.length);
-    assertEquals(0, tracker.size());
+    assertEquals(0, tracker.getTransformations().size());
     checkFrameState(fr);
     assertVecEquals(notMult, fr.vec(1), 0);
 
     Frame scored = Scope.track(pmodel.score(fr));
     assertNotNull(scored);
     TestUtil.printOutFrameAsTable(scored);
-    assertEquals(1, tracker.size());
+    assertEquals(1, tracker.getTransformations().size());
     assertArrayEquals(new String[] {"one", "two", "target", "foo", "bar"}, scored.names());
     checkFrameState(fr);
     checkFrameState(scored);
@@ -98,7 +99,7 @@ public class PipelineTest {
 
     Frame rescored = Scope.track(pmodel.score(fr));
     TestUtil.printOutFrameAsTable(rescored);
-    assertEquals(2, tracker.size());
+    assertEquals(2, tracker.getTransformations().size());
     assertNotSame(scored, rescored);
     assertFrameEquals(scored, rescored, 1.6);
     checkFrameState(fr);
@@ -108,7 +109,7 @@ public class PipelineTest {
 
     Frame transformed = Scope.track(pmodel.transform(fr));
     TestUtil.printOutFrameAsTable(transformed);
-    assertEquals(3, tracker.size());
+    assertEquals(3, tracker.getTransformations().size());
     assertNotSame(scored, transformed);
     assertFrameEquals(scored, transformed, 1.6);
     checkFrameState(fr);
@@ -120,7 +121,7 @@ public class PipelineTest {
   @Test
   public void test_simple_classification_pipeline() {
     PipelineParameters pparams = new PipelineParameters();
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             new AddRandomColumnTransformer("foo").name("add_foo"),
             new AddRandomColumnTransformer("bar").name("add_bar"), 
@@ -151,18 +152,18 @@ public class PipelineTest {
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
       
-    assertEquals(1, tracker.size());
+    assertEquals(1, tracker.getTransformations().size());
     checkFrameState(fr);
       
     Frame predictions = Scope.track(pmodel.score(fr));
-    assertEquals(2, tracker.size());
+    assertEquals(2, tracker.getTransformations().size());
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
     checkFrameState(fr);
     checkFrameState(predictions);
     
     Frame transformed = Scope.track(pmodel.transform(fr));
-    assertEquals(3, tracker.size());
+    assertEquals(3, tracker.getTransformations().size());
     assertNotNull(transformed);
     TestUtil.printOutFrameAsTable(transformed);
     assertArrayEquals(
@@ -178,7 +179,7 @@ public class PipelineTest {
     int nfolds = 3;
     PipelineParameters pparams = new PipelineParameters();
     pparams._nfolds = nfolds;
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             new AddRandomColumnTransformer("foo").name("add_foo"),
             new AddRandomColumnTransformer("bar").name("add_bar"),
@@ -213,16 +214,16 @@ public class PipelineTest {
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
 
-    Transformation[] transformations = tracker.getTransformations();
+    Transformations transformations = tracker.getTransformations();
     System.out.println(transformations);
-    assertEquals(2*nfolds+1, tracker.size()); // nfolds * 2 [train+valid] + 1 [final model, train only]
-    assertNotEquals(fr.getKey().toString(), transformations[0].frameId); // training frame for final model transformed first
-    assertTrue(transformations[0].frameId.startsWith(fr.getKey().toString()+"@@Training_trf_by_add_bar")); 
-    assertEquals(DataTransformer.FrameType.Training, transformations[0].type);
-    assertFalse(transformations[0].is_cv);
-    assertEquals(nfolds*2, Stream.of(transformations).filter(t -> t.is_cv).count());
-    assertEquals(nfolds, Stream.of(transformations).filter(t -> t.is_cv && t.type == DataTransformer.FrameType.Training).count());
-    assertEquals(nfolds, Stream.of(transformations).filter(t -> t.is_cv && t.type == DataTransformer.FrameType.Validation).count());
+    assertEquals(2*nfolds+1, tracker.getTransformations().size()); // nfolds * 2 [train+valid] + 1 [final model, train only]
+    assertNotEquals(fr.getKey().toString(), transformations.transformations[0].frameId); // training frame for final model transformed first
+    assertTrue(transformations.transformations[0].frameId.startsWith(fr.getKey().toString()+"@@Training_trf_by_add_bar")); 
+    assertEquals(DataTransformer.FrameType.Training, transformations.transformations[0].type);
+    assertFalse(transformations.transformations[0].is_cv);
+    assertEquals(nfolds*2, Stream.of(transformations.transformations).filter(t -> t.is_cv).count());
+    assertEquals(nfolds, Stream.of(transformations.transformations).filter(t -> t.is_cv && t.type == DataTransformer.FrameType.Training).count());
+    assertEquals(nfolds, Stream.of(transformations.transformations).filter(t -> t.is_cv && t.type == DataTransformer.FrameType.Validation).count());
     assertEquals(nfolds, emodel._output._cross_validation_models.length);
     for (int i=0; i<nfolds; i++) {
       DummyModel cvModel = (DummyModel) emodel._output._cross_validation_models[i].get();
@@ -251,7 +252,7 @@ public class PipelineTest {
     int nfolds = 3;
     PipelineParameters pparams = new PipelineParameters();
     pparams._nfolds = nfolds;
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             new AddRandomColumnTransformer("foo").name("add_foo"),
             new AddRandomColumnTransformer("bar").name("add_bar"),
@@ -283,13 +284,13 @@ public class PipelineTest {
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
 
-    Transformation[] transformations = tracker.getTransformations();
+    Transformations transformations = tracker.getTransformations();
     System.out.println(transformations);
-    assertEquals(1, tracker.size()); // only one transformation, once and for all, as no transformer is CV-sensitive
-    assertNotEquals(fr.getKey().toString(), transformations[0].frameId); 
-    assertTrue(transformations[0].frameId.startsWith(fr.getKey().toString()+"@@Training_trf_by_add_bar")); 
-    assertEquals(DataTransformer.FrameType.Training, transformations[0].type);
-    assertFalse(transformations[0].is_cv);
+    assertEquals(1, tracker.getTransformations().size()); // only one transformation, once and for all, as no transformer is CV-sensitive
+    assertNotEquals(fr.getKey().toString(), transformations.transformations[0].frameId); 
+    assertTrue(transformations.transformations[0].frameId.startsWith(fr.getKey().toString()+"@@Training_trf_by_add_bar")); 
+    assertEquals(DataTransformer.FrameType.Training, transformations.transformations[0].type);
+    assertFalse(transformations.transformations[0].is_cv);
     checkFrameState(fr);
 
     Frame predictions = Scope.track(pmodel.score(fr));
@@ -302,7 +303,7 @@ public class PipelineTest {
   @Test
   public void test_simple_regression_pipeline() {
     PipelineParameters pparams = new PipelineParameters();
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             new AddRandomColumnTransformer("foo").name("add_foo"),
             new AddRandomColumnTransformer("bar").name("add_bar"),
@@ -333,20 +334,20 @@ public class PipelineTest {
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
 
-    assertEquals(1, tracker.size());
+    assertEquals(1, tracker.getTransformations().size());
     checkFrameState(fr);
 
     Frame predictions = Scope.track(pmodel.score(fr));
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
-    assertEquals(2, tracker.size());
+    assertEquals(2, tracker.getTransformations().size());
     checkFrameState(fr);
     checkFrameState(predictions);
     
     Frame transformed = Scope.track(pmodel.transform(fr));
     assertNotNull(transformed);
     TestUtil.printOutFrameAsTable(transformed);
-    assertEquals(3, tracker.size());
+    assertEquals(3, tracker.getTransformations().size());
     assertArrayEquals(
             Arrays.stream(emodel._output._names).sorted().toArray(), //model reorders input columns to obtain this output
             Arrays.stream(transformed.names()).sorted().toArray()
@@ -361,7 +362,7 @@ public class PipelineTest {
     int nfolds = 3;
     PipelineParameters pparams = new PipelineParameters();
     pparams._nfolds = nfolds;
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             new AddRandomColumnTransformer("foo").name("add_foo"),
             new AddRandomColumnTransformer("bar").name("add_bar"),
@@ -393,9 +394,9 @@ public class PipelineTest {
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
 
-    Transformation[] transformations = tracker.getTransformations();
-    System.out.println(Arrays.toString(transformations));
-    assertEquals(2*nfolds+1, transformations.length); // nfolds * 2 [train+valid] + 1 [final model, train only]
+    Transformations transformations = tracker.getTransformations();
+    System.out.println(transformations);
+    assertEquals(2*nfolds+1, transformations.size()); // nfolds * 2 [train+valid] + 1 [final model, train only]
     checkFrameState(fr);
 
     Frame predictions = Scope.track(pmodel.score(fr));
@@ -408,7 +409,7 @@ public class PipelineTest {
   @Test
   public void test_categorical_features_are_not_modified_before_transformations() {
     PipelineParameters pparams = new PipelineParameters();
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             new AddRandomColumnTransformer("foo").name("add_foo"),
             new AddRandomColumnTransformer("bar").name("add_bar"),
@@ -459,7 +460,7 @@ public class PipelineTest {
         assertArrayEquals(unencodedDomains, fr.domains());
       }
     });
-    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10);
+    FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
     pparams.setTransformers(
             checker.name("check_frame_not_encoded"),
             new AddRandomColumnTransformer("foo").name("add_foo"),

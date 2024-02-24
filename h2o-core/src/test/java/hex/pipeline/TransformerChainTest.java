@@ -36,7 +36,7 @@ public class TransformerChainTest {
     try {
       Scope.enter();
       final Frame fr = Scope.track(dummyFrame());
-      FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer(10).name("tracker");
+      FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer().name("tracker");
       DataTransformer[] dts = new DataTransformer[] {
               tracker,
               new FrameCheckerAsTransformer(f -> {
@@ -63,7 +63,7 @@ public class TransformerChainTest {
       Frame transformed = chain.transform(fr);
       assertEquals("dumdum", transformed.getKey().toString());
       assertArrayEquals(ArrayUtils.append(fr.names(), new String[]{"foo", "bar"}), transformed.names());
-      assertEquals(4, tracker.size());
+      assertEquals(4, tracker.getTransformations().size());
     } finally {
       Scope.exit();
     }
