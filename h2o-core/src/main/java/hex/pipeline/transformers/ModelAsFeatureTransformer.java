@@ -169,8 +169,8 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer<S, M,
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     if (cascade) {
-      Keyed.removeQuietly(_modelKey);
-      Keyed.removeQuietly(_modelsCacheKey);
+      Keyed.removeQuietly(_modelKey); _modelKey = null;
+      Keyed.removeQuietly(_modelsCacheKey); _modelsCacheKey = null;
     }
     return super.remove_impl(fs, cascade);
   }

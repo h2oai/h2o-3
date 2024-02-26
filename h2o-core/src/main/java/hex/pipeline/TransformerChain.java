@@ -84,6 +84,13 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
     _transformers = transformers.clone();
   }
 
+  @Override
+  public TransformerChain init() {
+    super.init();
+    Arrays.stream(getTransformers()).forEach(DataTransformer::init);
+    return this;
+  }
+
   private DataTransformer[] getTransformers() {
     for (Key<DataTransformer> key : _transformers) {
       DKV.prefetch(key);

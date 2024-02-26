@@ -253,7 +253,10 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
 
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
-    if (_refCountKey != null) DKV.remove(_refCountKey);
+    if (_refCountKey != null) {
+      DKV.remove(_refCountKey);
+      _refCountKey = null;
+    }
     return super.remove_impl(fs, cascade);
   }
 
