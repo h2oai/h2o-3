@@ -348,9 +348,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable, Checksumable {
+  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable<Parameters>, Checksumable {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
+
+    static final Set<String> IGNORED_FIELDS_PARAM_HASH = new HashSet<>(Arrays.asList(
+            "_export_checkpoints_dir",
+            "_max_runtime_secs"        // It is often modified during training on purpose (e.g. grid search)
+    ));
+
 
     /** The short name, used in making Keys.  e.g. "GBM" */
     abstract public String algoName();
@@ -619,7 +625,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override
     public long checksum() {
-      return checksum(null);
+      return checksum(IGNORED_FIELDS_PARAM_HASH);
     }
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
@@ -787,6 +793,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override
     public boolean isParameterAssignable(String name) {
       return "_seed".equals(name) || isParameterSetToDefault(name);
+    }
+
+    @Override
+    public Parameters freshCopy() {
+      return clone();
     }
 
     /** private use only to avoid this getting mutated. */

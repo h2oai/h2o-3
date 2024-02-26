@@ -41,10 +41,13 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     if (expensive) {
       earlyValidateParams();
       if (_parms._transformers == null) _parms._transformers = new Key[0];
-      _parms._transformers = Arrays.stream(_parms.getTransformers())
+      DataTransformer[] transformers = _parms.getTransformers();
+      _parms._transformers = Arrays.stream(transformers)
               .filter(DataTransformer::enabled)
+              .map(DataTransformer::init)
               .map(DataTransformer::getKey)
               .toArray(Key[]::new);
+      Arrays.stream(transformers).filter(t -> !t.enabled()).forEach(DataTransformer::cleanup);
     }
     super.init(expensive);
   }

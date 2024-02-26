@@ -37,6 +37,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static hex.pipeline.PipelineModel.ESTIMATOR_PARAM;
+
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
  */
@@ -68,7 +70,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         assert hyperParams.size() > 0;
         assert searchCriteria != null;
         GridSearch.Builder builder = makeGridBuilder(resultKey, baseParams, hyperParams, searchCriteria);
-        aml().trackKeys(builder.dest());
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+builder.dest()+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         return builder.start();
@@ -102,7 +103,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                                                                                Map<String, Object[]> hyperParams,
                                                                                HyperSpaceSearchCriteria searchCriteria) {
       Model.Parameters finalParams = applyPipeline(resultKey, baseParams, hyperParams);
-      if (finalParams instanceof PipelineParameters) resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
+      if (finalParams instanceof PipelineParameters) {
+        resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
+        aml().trackKeys(((PipelineParameters)finalParams)._transformers);
+      }
+      aml().trackKeys(resultKey);
       return GridSearch.create(
                       resultKey,
                       HyperSpaceWalker.BaseWalker.WalkerFactory.create(
@@ -454,11 +459,17 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     */
     protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
       if (aml().getPipelineParams() == null) return params;
-      PipelineParameters pparams = (PipelineParameters) aml().getPipelineParams().clone();
-      List<DataTransformer> transformers = Arrays.asList(pparams.getTransformers());
+      PipelineParameters pparams = aml().getPipelineParams().freshCopy();
+      List<DataTransformer> transformers = new ArrayList<>(Arrays.asList(pparams.getTransformers())); // need to convert to ArrayList as `filterPipelineTransformers` may remove items below
       Map<String, Object[]> transformersHyperParams = new HashMap<>(aml().getPipelineHyperParams());
       filterPipelineTransformers(transformers, transformersHyperParams);
+      Key[] defaultTransformersKeys = pparams._transformers;
       pparams.setTransformers(transformers.toArray(new DataTransformer[0]));
+      if (defaultTransformersKeys.length != pparams._transformers.length) {
+        for (Key k : defaultTransformersKeys) {
+          if (!ArrayUtils.contains(pparams._transformers, k)) ((DataTransformer)k.get()).cleanup();
+        }
+      }
       if (pparams._transformers.length == 0) return params;
       setCommonModelBuilderParams(pparams);
       pparams._seed = params._seed;
@@ -471,7 +482,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
       if (hyperParams != null) {
         Map<String, Object[]> pipelineHyperParams = new HashMap<>();
         for (Map.Entry<String, Object[]> e : hyperParams.entrySet()) {
-          pipelineHyperParams.put("estimator."+e.getKey(), e.getValue());
+          pipelineHyperParams.put(ESTIMATOR_PARAM+"."+e.getKey(), e.getValue());
         }
         hyperParams.clear();
         hyperParams.putAll(pipelineHyperParams);

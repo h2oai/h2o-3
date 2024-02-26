@@ -81,12 +81,12 @@ public class TargetEncodingTest {
           spec.build_control.nfolds = 0; //disabling CV on AutoML
         });
         
-        Model m = Scope.<Model>track_generic(aml.leaderboard().getLeader());
+        Model m = aml.leaderboard().getLeader();
         DataTransformer[] transformers = ((PipelineModel) m)._output.getTransformers();
         assertNotNull(transformers);
         assertEquals(1, transformers.length);
         TargetEncoderFeatureTransformer teTrans = (TargetEncoderFeatureTransformer)transformers[0];
-        TargetEncoderParameters teParams = Scope.track_generic(teTrans.getModel())._parms;
+        TargetEncoderParameters teParams = teTrans.getModel()._parms;
         assertNull(teParams._fold_column);
         assertEquals(DataLeakageHandlingStrategy.None, teParams._data_leakage_handling);
         assertFalse(teParams._keep_original_categorical_columns);
@@ -104,7 +104,7 @@ public class TargetEncodingTest {
         assertNotNull(transformers);
         assertEquals(1, transformers.length);
         TargetEncoderFeatureTransformer teTrans = (TargetEncoderFeatureTransformer)transformers[0];
-        TargetEncoderParameters teParams = Scope.track_generic(teTrans.getModel())._parms;
+        TargetEncoderParameters teParams = teTrans.getModel()._parms;
         assertNull(teParams._fold_column);
         assertEquals(DataLeakageHandlingStrategy.None, teParams._data_leakage_handling);
 
@@ -126,7 +126,7 @@ public class TargetEncodingTest {
         assertNotNull(transformers);
         assertEquals(2, transformers.length); //with CV enabled and no fold column, an additional transformer is added to generate the latter, 
         TargetEncoderFeatureTransformer teTrans = (TargetEncoderFeatureTransformer)transformers[1];
-        TargetEncoderParameters teParams = Scope.track_generic(teTrans.getModel())._parms;
+        TargetEncoderParameters teParams = teTrans.getModel()._parms;
         assertNotNull(teParams._fold_column);
         assertEquals("__fold__target", teParams._fold_column);
         assertTrue(teParams._fold_column.endsWith("target"));
@@ -157,7 +157,7 @@ public class TargetEncodingTest {
         assertNotNull(transformers);
         assertEquals(2, transformers.length); //with CV enabled and no fold column, an additional transformer is added to generate the latter, 
         TargetEncoderFeatureTransformer teTrans = (TargetEncoderFeatureTransformer)transformers[1];
-        TargetEncoderParameters teParams = Scope.track_generic(teTrans.getModel())._parms;
+        TargetEncoderParameters teParams = teTrans.getModel()._parms;
         assertNotNull(teParams._fold_column);
         assertEquals(foldc, teParams._fold_column);
         assertEquals(DataLeakageHandlingStrategy.KFold, teParams._data_leakage_handling);
@@ -192,6 +192,7 @@ public class TargetEncodingTest {
         autoMLBuildSpec.build_models.preprocessing = new PipelineStepDefinition[] {
                 new PipelineStepDefinition(PipelineStepDefinition.Type.TargetEncoding)
         };
+//        autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning);
 
         AutoML aml = AutoML.startAutoML(autoMLBuildSpec); Scope.track_generic(aml);
         aml.get();
@@ -207,8 +208,9 @@ public class TargetEncodingTest {
                   assertEquals(1, p._output.getTransformers().length); // TE disabled for DL, but keeping the fold column generator for CV consistency with other models when building SE.
                 } else {
                   assertEquals(2, p._input_parms._transformers.length);
-                  if (p._input_parms._transformers[1].get().enabled()) {
+                  if (p._input_parms._transformers[1].get() != null) {
                     assertEquals(2, p._output.getTransformers().length);
+                    assertTrue(p._output.getTransformers()[1].enabled());
                   } else {
                     assertEquals(1, p._output.getTransformers().length);
                     assertTrue(p._key.toString().contains("_grid_"));  // TE can be disabled during grid search as an hyperparam.

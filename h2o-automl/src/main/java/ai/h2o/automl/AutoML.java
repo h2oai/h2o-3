@@ -409,6 +409,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else {
       _pipelineParams.setTransformers(transformers.toArray(new DataTransformer[0]));
       _pipelineHyperParams = hyperParams;
+      trackKeys(transformers.stream().map(DataTransformer::getKey).toArray(Key[]::new));
     }
     
     //TODO: given that a transformer can reference a model (e.g. TE), 

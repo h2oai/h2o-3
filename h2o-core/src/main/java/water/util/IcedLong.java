@@ -1,9 +1,6 @@
 package water.util;
 
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.TAtomic;
+import water.*;
 
 public class IcedLong extends Iced {
   public long _val;
@@ -18,6 +15,10 @@ public class IcedLong extends Iced {
 
   public static IcedLong valueOf(long value) {
     return new IcedLong(value);
+  }
+  
+  public static long get(Key key) {
+    return ((IcedLong) DKV.getGet(key))._val;
   }
 
   public static long incrementAndGet(Key key) {

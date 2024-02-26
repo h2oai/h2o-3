@@ -4,6 +4,7 @@ import hex.Parameterizable;
 import hex.pipeline.TransformerChain.Completer;
 import water.*;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.Checksum;
 import water.util.IcedLong;
 import water.util.PojoUtils;
@@ -13,7 +14,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extends Lockable<SELF> implements Parameterizable {
+public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extends Lockable<SELF> implements Parameterizable<SELF> {
   
   public enum FrameType {
     Training,
@@ -22,7 +23,7 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
   }
   
   private static final Set<String> IGNORED_FIELDS_FOR_CHECKSUM = new HashSet<String>(Arrays.asList(
-          "refCount"
+          "_key"
   ));
 
   public boolean _enabled = true;  // flag allowing to enable/disable transformers dynamically esp. in pipelines (can be used as a pipeline hyperparam in grids).
@@ -76,13 +77,13 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
     if (_keyGen == null) {
        _keyGen = new KeyGen.PatternKeyGen("{0}_{n}");
     }
-    if (_key == null) {
-      _key = _keyGen.make(_name);
-      DKV.put(this);
-    }
     if (_refCountKey == null) {
       _refCountKey = Key.make(_name+ "_refCount");
       DKV.put(_refCountKey, new IcedLong(0));
+    }
+    if (_key == null || _key.get() == null) {
+      _key = _keyGen.make(_name);
+      DKV.put(this);
     }
     return (SELF) this;
   }
@@ -164,7 +165,6 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
         doPrepare(context);
       }
     }
-    if (_refCountKey != null) IcedLong.incrementAndGet(_refCountKey);
   }
 
   /**
@@ -185,6 +185,7 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
 
   public final void cleanup(Futures futures) {
     if (_refCountKey == null || IcedLong.decrementAndGet(_refCountKey) <= 0) doCleanup(futures);
+    if (_key != null) DKV.remove(_key);
   }
   protected void doCleanup(Futures futures) {
     remove(futures);
@@ -242,10 +243,12 @@ public abstract class DataTransformer<SELF extends DataTransformer<SELF>> extend
   protected abstract Frame doTransform(Frame fr, FrameType type, PipelineContext context);
 
   @Override
-  protected SELF cloneImpl() throws CloneNotSupportedException {
-    SELF clone = super.cloneImpl();
-    if (_keyGen != null) clone._key = _keyGen.make(_name);
-    return clone;
+  public SELF freshCopy() {
+    SELF copy = clone();
+    copy._key = _keyGen.make(_name);
+    DKV.put(copy);
+    IcedLong.incrementAndGet(_refCountKey);
+    return copy;
   }
 
   @Override

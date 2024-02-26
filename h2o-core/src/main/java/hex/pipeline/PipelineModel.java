@@ -14,7 +14,6 @@ import water.*;
 import water.KeyGen.PatternKeyGen;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
-import water.util.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,6 +29,7 @@ import java.util.stream.Stream;
  */
 public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineParameters, PipelineModel.PipelineOutput> {
 
+  public static final String ESTIMATOR_PARAM = "estimator";
   private static final KeyGen TRANSFORM_KEY_GEN = new PatternKeyGen("{0}_trf_by_{1}");
 
   public PipelineModel(Key<PipelineModel> selfKey, PipelineParameters parms, PipelineOutput output) {
@@ -231,7 +231,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       String[] tokens = parseParameterName(name);
       if (tokens.length > 1) {
         String tok0 = tokens[0];
-        if ("estimator".equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.getParameter(tokens[1]);
+        if (ESTIMATOR_PARAM.equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.getParameter(tokens[1]);
         DataTransformer dt = getTransformer(tok0);
         return dt == null ? null : dt.getParameter(tokens[1]);
       }
@@ -243,7 +243,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       String[] tokens = parseParameterName(name);
       if (tokens.length > 1) {
         String tok0 = tokens[0];
-        if ("estimator".equals(tok0)) {
+        if (ESTIMATOR_PARAM.equals(tok0)) {
           _estimatorParams.setParameter(tokens[1], value);
           return;
         }
@@ -259,7 +259,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       String[] tokens = parseParameterName(name);
       if (tokens.length > 1) {
         String tok0 = tokens[0];
-        if ("estimator".equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.isParameterAssignable(tokens[1]);
+        if (ESTIMATOR_PARAM.equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.isParameterAssignable(tokens[1]);
         DataTransformer dt = getTransformer(tok0);
         // for now allow transformers hyper params on non-defaults
         return dt != null && dt.hasParameter(tokens[1]); 
@@ -273,7 +273,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       String[] tokens = name.split("\\.", 2);
       if (tokens.length == 1) return tokens;
       String tok0 = StringUtils.stripStart(tokens[0], "_");
-      if ("estimator".equals(tok0) || getTransformer(tok0) != null) {
+      if (ESTIMATOR_PARAM.equals(tok0) || getTransformer(tok0) != null) {
         return new String[]{tok0, tokens[1]} ;
       } else {
         Matcher m = TRANSFORMER_PAT.matcher(tok0);
@@ -303,6 +303,10 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     }
     
     public void setTransformers(DataTransformer... transformers) {
+      if (transformers == null) {
+        _transformers = null;
+        return;
+      }
       _transformers = Arrays.stream(transformers)
               .map(DataTransformer::init)
               .map(DataTransformer::getKey)
@@ -315,9 +319,22 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     }
 
     @Override
+    public PipelineParameters freshCopy() {
+      PipelineParameters copy = (PipelineParameters) super.freshCopy();
+      DataTransformer[] dts = getTransformers();
+      copy._transformers = dts == null 
+              ? null 
+              : Arrays.stream(dts)
+                      .map(DataTransformer::freshCopy)
+                      .map(DataTransformer::getKey)
+                      .toArray(Key[]::new);
+      return copy;
+    }
+    
+    @Override
     protected Parameters cloneImpl() throws CloneNotSupportedException {
       PipelineParameters clone = (PipelineParameters) super.cloneImpl();
-      clone._transformers = _transformers == null ? null : ArrayUtils.deepClone(_transformers);
+      clone._transformers = _transformers == null ? null : _transformers.clone();
       clone._estimatorParams = _estimatorParams == null ? null : _estimatorParams.clone();
       return clone;
     }
@@ -325,19 +342,16 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     @Override
     public long checksum(Set<String> ignoredFields) {
       Set<String> ignored = ignoredFields == null ? new HashSet<>() : new HashSet<>(ignoredFields);
-      ignored.add("_transformers");
-//      ignored.add("_estimatorParams");
-      long xs = super.checksum(ignoredFields);
-//      xs ^= (_transformers == null ? 47 : _transformers.checksum());
-//      xs ^= (_estimatorParams == null ? 47 : _estimatorParams.checksum());
+      ignored.add("_estimatorKeyGen");
+      long xs = super.checksum(ignored);
       return xs;
     }
   }
   
   public static class PipelineOutput extends Model.Output {
     
-    Key<DataTransformer>[] _transformers;
-    Key<Model> _estimator;
+    public Key<DataTransformer>[] _transformers;
+    public Key<Model> _estimator;
 
     public PipelineOutput(ModelBuilder b) {
       super(b);

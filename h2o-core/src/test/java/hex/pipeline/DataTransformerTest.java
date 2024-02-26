@@ -178,7 +178,7 @@ public class DataTransformerTest {
       }
     }
     
-    public static class Transformations extends Lockable<Transformations> {
+    public static class Transformations extends Keyed<Transformations> {
       
       Transformation[] transformations;
 
@@ -223,8 +223,7 @@ public class DataTransformerTest {
     
     public FrameTrackerAsTransformer() {
       transformationsKey = Key.make();
-      Transformations transformations = new Transformations(transformationsKey);
-      DKV.put(transformations);
+      DKV.put(new Transformations(transformationsKey));
     }
     
     public Transformations getTransformations() {

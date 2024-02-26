@@ -2,6 +2,7 @@ package water;
 
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -110,6 +111,16 @@ public abstract class KeyGen extends Iced<KeyGen> {
           return c.apply(cmd, str);
       }
       throw new IllegalArgumentException("Invalid command: "+cmd);
+    }
+
+    @Override
+    public String toString() {
+      final StringBuilder sb = new StringBuilder("PatternKeyGen{");
+      sb.append(", pattern='").append(pattern).append('\'');
+      sb.append(", commands=").append(Arrays.toString(commands));
+      sb.append(", count=").append(count);
+      sb.append('}');
+      return sb.toString();
     }
   }
 }

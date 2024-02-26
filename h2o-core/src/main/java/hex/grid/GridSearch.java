@@ -279,7 +279,7 @@ public final class GridSearch<MP extends Model.Parameters> {
       try {
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
-        onModel(grid, finishedModel._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
+        onModel(grid, finishedModel._input_parms.checksum(), finishedModel._key);
 
         _job.update(1);
         grid.update(_job);
@@ -351,7 +351,7 @@ public final class GridSearch<MP extends Model.Parameters> {
       while (params == null) {
         if (hyperSpaceIterator.hasNext()) {
           params = hyperSpaceIterator.nextModelParameters();
-          final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
+          final Key modelKey = grid.getModelKey(params.checksum());
           if (modelKey != null) {
             params = null;
           }
@@ -378,7 +378,7 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     while (startModels.size() < _parallelism && iterator.hasNext()) {
       final MP nextModelParameters = iterator.nextModelParameters();
-      final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
+      final long checksum = nextModelParameters.checksum();
       if (grid.getModelKey(checksum) == null) {
         startModels.add(ModelBuilder.make(nextModelParameters));
       }
@@ -439,7 +439,7 @@ public final class GridSearch<MP extends Model.Parameters> {
           
           if (Job.isCancelledException(e)) {
             assert model == null;
-            final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
+            final long checksum = params.checksum();
             final Key<Model>[] modelKeys = findModelsByChecksum(checksum);
             if (modelKeys.length == 1) {
               Keyed.removeQuietly(modelKeys[0]);
@@ -532,11 +532,6 @@ public final class GridSearch<MP extends Model.Parameters> {
     grid.exportBinary(checkpointsDir, false);
   }
 
-  static final Set<String> IGNORED_FIELDS_PARAM_HASH = new HashSet<>(Arrays.asList(
-          "_export_checkpoints_dir",
-          "_max_runtime_secs"        // We are modifying ourselves in Grid Search code
-  ));
-
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
    *
@@ -560,8 +555,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     // FIXME: get checksum here since model builder will modify instance of params!!!
 
     // Grid search might be continued over the very exact hyperspace, but with autoexporting disabled. 
-    // To prevent 
-    final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
+    final long checksum = params.checksum();
     Key<Model> key = grid.getModelKey(checksum);
     if (key != null) {
       if (DKV.get(key) == null) {
@@ -587,7 +581,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     // Build a new model
     assert grid.getModel(params) == null;
     Model m = ModelBuilder.trainModelNested(_job, result, params, null);
-    assert checksum == m._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH) : 
+    assert checksum == m._input_parms.checksum() : 
         "Model checksum different from original params";
     onModel(grid, checksum, result);
     return m;
@@ -604,7 +598,7 @@ public final class GridSearch<MP extends Model.Parameters> {
         if ((m == null) || (m._parms == null))
           return false;
         try {
-          return m._parms.checksum(IGNORED_FIELDS_PARAM_HASH) == checksum;
+          return m._parms.checksum() == checksum;
         } catch (H2OConcurrentModificationException e) {
           // We are inspecting model parameters that doesn't belong to us - they might be modified (or deleted) while
           // checksum is being calculated: we skip them (see PUBDEV-5286)

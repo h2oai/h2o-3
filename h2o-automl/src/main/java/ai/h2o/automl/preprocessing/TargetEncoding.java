@@ -102,14 +102,15 @@ public class TargetEncoding implements PipelineStep {
         dts.add(new KFoldColumnGenerator()
                 .name("add_fold_column")
                 .description("If cross-validation is enabled, generates (if needed) a fold column used by Target Encoder and for the final estimator")
-                .init()
+//                .init()
         );
         teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
       }
       dts.add(new TargetEncoderFeatureTransformer(teParams)
               .name("default_TE")
               .description("Applies Target Encoding to selected categorical features")
-              .init()
+              .enableCache()
+//              .init()
       );
       return dts.toArray(new DataTransformer[0]);
     }
