@@ -226,7 +226,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 Core JUnit', target: 'test-junit-core-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 360, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.6-jdk-8'
     ],
