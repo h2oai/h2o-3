@@ -1,7 +1,6 @@
 package ai.h2o.automl.preprocessing;
 
 import ai.h2o.automl.AutoML;
-import hex.pipeline.DataTransformer;
 import water.Iced;
 
 public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinition> {
