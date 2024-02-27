@@ -17,7 +17,7 @@ try {
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
-                env.PYTHON_VERSION = '3.6'
+                env.PYTHON_VERSION = '3.7'
                 env.R_VERSION = '3.4.1'
 
                 sh 'printenv | sort'
