@@ -17,8 +17,11 @@ import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
-import hex.grid.*;
+import hex.grid.Grid;
+import hex.grid.GridSearch;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.HyperSpaceWalker;
 import hex.leaderboard.Leaderboard;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -69,7 +72,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 HyperSpaceWalker.BaseWalker.WalkerFactory.create(
                         baseParams, 
                         hyperParams,
-                        new SimpleParametersBuilderFactory<>(), 
+                        new GridSearch.SimpleParametersBuilderFactory<>(), 
                         searchCriteria
                 ))
                 .withParallelism(GridSearch.SEQUENTIAL_MODEL_BUILDING)
