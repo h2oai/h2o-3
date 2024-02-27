@@ -71,9 +71,9 @@ public class TypeMap {
 
   };
   // Class name -> ID mapping
-  public static final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
+  private static final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
   // ID -> Class name mapping
-  public static String[] CLAZZES;
+  static String[] CLAZZES;
   // ID -> pre-allocated Golden Instance of Icer
   static private Icer[] GOLD;
   // Unique IDs
