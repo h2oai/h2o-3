@@ -3,10 +3,10 @@ package hex;
 import jsr166y.ForkJoinTask;
 import org.apache.log4j.Logger;
 import water.Iced;
-import water.Key;
 import water.util.IcedAtomicInt;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Dispatcher for parallel model building. Starts building models every time the run method is invoked.
@@ -29,12 +29,12 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
   private final transient ParallelModelBuilderCallback _callback;
   private final transient IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
-  private final transient EachBuilderCallbacks _modelBuildersCallbacks;
+  private final transient ParallelModelBuiltListener _parallelModelBuiltListener;
 
   public ParallelModelBuilder(final ParallelModelBuilderCallback callback) {
     Objects.requireNonNull(callback);
     _callback = callback;
-    _modelBuildersCallbacks = new EachBuilderCallbacks();
+    _parallelModelBuiltListener = new ParallelModelBuiltListener();
   }
 
   /**
@@ -47,18 +47,15 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     if (LOG.isTraceEnabled()) LOG.trace("run with " + modelBuilders.size() + " models");
     for (final ModelBuilder modelBuilder : modelBuilders) {
       _modelInProgressCounter.incrementAndGet();
-      modelBuilder.setCallbacks(_modelBuildersCallbacks);
-      modelBuilder.trainModel();
+      modelBuilder.trainModel(_parallelModelBuiltListener);
     }
   }
 
 
-  private class EachBuilderCallbacks extends ModelBuilderCallbacks<EachBuilderCallbacks> {
+  private class ParallelModelBuiltListener extends ModelBuilderListener<ParallelModelBuiltListener> {
 
     @Override
-    public void onModelSuccess(Key<Model> modelKey) {
-      Model model = modelKey.get();
-      if (model._parms._is_cv_model) return; // not interested in CV models here
+    public void onModelSuccess(Model model) {
       try {
         _callback.onBuildSuccess(model, ParallelModelBuilder.this);
       } finally {
@@ -67,9 +64,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     }
 
     @Override
-    public void onModelFailure(Key<Model> modelKey, Throwable cause, Model.Parameters parameters) {
-      if (checkExceptionHandled(cause)) return;
-      if (parameters._is_cv_model) return; // not interested in CV models here
+    public void onModelFailure(Throwable cause, Model.Parameters parameters) {
       try {
         final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
         _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);

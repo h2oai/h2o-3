@@ -809,7 +809,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
   }
 
-  @Override protected void cv_computeAndSetOptimalParameters(ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput>[] cvModelBuilders) {
+  @Override public void cv_computeAndSetOptimalParameters(ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput>[] cvModelBuilders) {
     if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     _parms._stopping_rounds = 0;

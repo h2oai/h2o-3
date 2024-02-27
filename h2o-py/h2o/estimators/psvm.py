@@ -553,3 +553,4 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
+

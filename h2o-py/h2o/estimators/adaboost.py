@@ -264,3 +264,4 @@ class H2OAdaBoostEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
+

@@ -925,6 +925,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
 
+
     def metalearner(self):
         """Print the metalearner of an H2OStackedEnsembleEstimator.
 
@@ -1046,4 +1047,3 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             raise H2OResponseError("Meta learner didn't get to be trained in time. "
                                    "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
         return self
-

@@ -570,6 +570,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(single_node_mode, None, bool)
         self._parms["single_node_mode"] = single_node_mode
 
+
     @property
     def baseline_hazard_frame(self):
         if (self._model_json is not None
@@ -583,4 +584,3 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
                 and self._model_json.get("output", {}).get("baseline_survival", {}).get("name") is not None):
             baseline_survival_name = self._model_json["output"]["baseline_survival"]["name"]
             return H2OFrame.get_frame(baseline_survival_name)
-

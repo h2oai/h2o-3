@@ -165,7 +165,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     }
   }
 
-  @Override protected void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
+  @Override public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
     _parms._overwrite_with_best_model = false;
 
     if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions

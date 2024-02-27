@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 import water.H2O;
 import water.Job;
 import water.ParallelizationTask;
+import water.util.Log;
 
 /**
  * Execute build of a collection of sub-models (CV models, main model) in parallel
