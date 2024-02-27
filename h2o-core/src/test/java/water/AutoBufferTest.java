@@ -8,6 +8,7 @@ import water.util.ArrayUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -148,6 +149,10 @@ public class AutoBufferTest extends TestUtil {
   @Test
   public void testMaliciousFreezable() {
     int typeId = TypeMap.onIce(MaliciousFreezable.class.getName());
+    System.out.println("MaliciousFreezable typeId="+typeId);
+    System.out.println("Bootstrap classes("+TypeMap.BOOTSTRAP_SIZE+")="+Arrays.toString(TypeMap.bootstrapClasses()));
+    System.out.println("CLAZZES("+TypeMap.CLAZZES.length+")="+Arrays.toString(TypeMap.CLAZZES));
+    System.out.println(TypeMap.MAP.entrySet().stream().map(e -> e.getKey()+" -> "+e.getValue()+"\n").collect(Collectors.toList()));
     byte[] payload = "any data - it doesn't matter what is here".getBytes();
     byte[] bytes = ArrayUtils.append(
             new byte[]{
