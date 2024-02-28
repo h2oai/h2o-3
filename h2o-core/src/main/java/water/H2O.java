@@ -2398,7 +2398,7 @@ final public class H2O {
     
     // Raise user warnings
     if (H2O.ARGS.web_ip == null) {
-      Log.warn("SECURITY_WARNING: web_ip is not specified. H2O Rest API is listening on all available interface.");
+      Log.warn("SECURITY_WARNING: web_ip is not specified. H2O Rest API is listening on all available interfaces.");
     }
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
