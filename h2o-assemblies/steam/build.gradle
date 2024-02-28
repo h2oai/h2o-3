@@ -41,7 +41,7 @@ dependencies {
         exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
-    api "org.apache.commons:commons-compress:1.24.0"
+    api "org.apache.commons:commons-compress:1.26.0"
     // Force specific Parquet version to avoid dependency on vulnerable FasterXML jackson-mapper-asl
     api "org.apache.parquet:parquet-hadoop:${defaultParquetVersion}"
     api("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
