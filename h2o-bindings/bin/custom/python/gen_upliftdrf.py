@@ -23,7 +23,6 @@ examples = dict(
 ...                    training_frame=train,
 ...                    validation_frame=valid)
 >>> uplift_model.model_performance()
-
 """,
     auuc_type="""
 >>> import h2o
