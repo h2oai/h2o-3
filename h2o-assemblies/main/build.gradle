@@ -51,7 +51,7 @@ dependencies {
     }
 
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
-    api "org.apache.commons:commons-compress:1.24.0"
+    api "org.apache.commons:commons-compress:1.26.0"
     api "com.google.protobuf:protobuf-java:3.21.7"
 
     constraints {
