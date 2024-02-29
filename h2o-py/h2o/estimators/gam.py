@@ -1661,7 +1661,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def get_gam_knot_column_names(self):
         """
         Retrieve gam column names corresponding to the knot locations that will be returned if store_knot_locations
-        parameter is enabled.  
+        parameter is enabled.
 
         :return: gam column names whose knot locations are stored in the knot_locations.
         """
