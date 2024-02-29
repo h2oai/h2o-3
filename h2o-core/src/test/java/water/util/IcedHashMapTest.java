@@ -188,6 +188,14 @@ public class IcedHashMapTest extends TestUtil {
         testWriteJSON(map);
     }
 
+    @Test public void testLongFreezable() {
+      final Map<Long, Key> map = Collections.unmodifiableMap(new HashMap<Long, Key>() {{
+        put(1L, Key.make("one"));
+        put(2L, Key.make("two"));
+        put(3L, Key.make("three"));
+      }});
+      testWriteRead(map);
+    }
     @Test public void testStringFreezable() {
         final Map<String, Key> map = Collections.unmodifiableMap(new HashMap<String, Key>() {{
             put("one", Key.make("one"));

@@ -284,7 +284,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public boolean havePojo() {
-    if (_parms._preprocessors != null) return false; // TE processor not included to current POJO (see PUBDEV-8508 for potential fix)
     final String algoName = _parms.algoName();
     return ModelBuilder.getRegisteredBuilder(algoName)
             .map(ModelBuilder::havePojo)
@@ -296,7 +295,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public boolean haveMojo() {
-    if (_parms._preprocessors != null) return false; // until PUBDEV-7799, disable model MOJO if it was trained with embedded TE.
     final String algoName = _parms.algoName();
     return ModelBuilder.getRegisteredBuilder(algoName)
             .map(ModelBuilder::haveMojo)
@@ -350,9 +348,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable, Checksumable {
+  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable<Parameters>, Checksumable {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
+
+    static final Set<String> IGNORED_FIELDS_PARAM_HASH = new HashSet<>(Arrays.asList(
+            "_export_checkpoints_dir",
+            "_max_runtime_secs"        // It is often modified during training on purpose (e.g. grid search)
+    ));
+
 
     /** The short name, used in making Keys.  e.g. "GBM" */
     abstract public String algoName();
@@ -421,8 +425,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }
-
-    public Key<ModelPreprocessor>[] _preprocessors;
 
     public long _seed = -1;
     public long getOrMakeRealSeed(){
@@ -623,7 +625,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override
     public long checksum() {
-      return checksum(null);
+      return checksum(IGNORED_FIELDS_PARAM_HASH);
     }
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
@@ -791,6 +793,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override
     public boolean isParameterAssignable(String name) {
       return "_seed".equals(name) || isParameterSetToDefault(name);
+    }
+
+    @Override
+    public Parameters freshCopy() {
+      return clone();
     }
 
     /** private use only to avoid this getting mutated. */
@@ -1976,7 +1983,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   
   protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics) {
     Frame adaptFr = new Frame(fr);
-    applyPreprocessors(adaptFr);
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     if (msg.length > 0) {
       for (String s : msg) {
@@ -2015,21 +2021,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       return Scope.untrack(output);
     }
-  }
-  
-  private void applyPreprocessors(Frame fr) {
-    if (_parms._preprocessors == null) return;
-    
-    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
-      DKV.prefetch(key);
-    }
-    Frame result = fr;
-    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
-      ModelPreprocessor preprocessor = key.get();
-      result = preprocessor.processScoring(result, this);
-      Scope.track(result);
-    }
-    fr.restructure(result.names(), result.vecs()); //inplace
   }
   
   /**

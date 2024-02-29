@@ -51,7 +51,7 @@ public class ModelAsFeatureTransformerTest {
   @Test
   public void test_delegate_model_trained_and_cached_in_prepare() {
     DummyModelParameters params = makeModelParams(null);
-    DummyModelAsFeatureTransformer transformer = new DummyModelAsFeatureTransformer(params);
+    DummyModelAsFeatureTransformer transformer = Scope.track_generic(new DummyModelAsFeatureTransformer(params));
     assertNull(transformer.getModel());
 
     Frame fr = makeTrain();
@@ -75,7 +75,7 @@ public class ModelAsFeatureTransformerTest {
     DummyModelParameters params = makeModelParams(fr);
     DummyModel model = Scope.track_generic(new DummyModelBuilder(params).trainModel().get());
     long oriChecksum = model.checksum();
-    DummyModelAsFeatureTransformer transformer = new DummyModelAsFeatureTransformer(params, model._key);
+    DummyModelAsFeatureTransformer transformer = Scope.track_generic(new DummyModelAsFeatureTransformer(params, model._key));
     assertNotNull(transformer.getModel());
     
     PipelineContext context = new PipelineContext(new PipelineModel.PipelineParameters());
@@ -91,7 +91,7 @@ public class ModelAsFeatureTransformerTest {
     Frame fr = makeTrain();
     DummyModelParameters params = makeModelParams(fr);
     DummyModel model = Scope.track_generic(new DummyModelBuilder(params).trainModel().get());
-    DummyModelAsFeatureTransformer transformer = new DummyModelAsFeatureTransformer(params, model._key);
+    DummyModelAsFeatureTransformer transformer = Scope.track_generic(new DummyModelAsFeatureTransformer(params, model._key));
     assertNotNull(transformer.getModel());
 
     PipelineContext context = new PipelineContext(new PipelineModel.PipelineParameters());
@@ -108,7 +108,7 @@ public class ModelAsFeatureTransformerTest {
   @Test
   public void test_data_input_model_params_are_detected_from_context() {
     DummyModelParameters params = makeModelParams(null);
-    DummyModelAsFeatureTransformer transformer = new DummyModelAsFeatureTransformer(params);
+    DummyModelAsFeatureTransformer transformer = Scope.track_generic(new DummyModelAsFeatureTransformer(params));
     assertNull(transformer.getModel());
 
     PipelineModel.PipelineParameters pParams = new PipelineModel.PipelineParameters();

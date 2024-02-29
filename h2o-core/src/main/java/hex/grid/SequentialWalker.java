@@ -118,7 +118,7 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
     }
 
     private MP getModelParams(MP params, Object[] hyperParams) {
-        ModelParametersBuilderFactory.ModelParametersBuilder<MP> paramsBuilder = _paramsBuilderFactory.get(params.clone());
+        ModelParametersBuilderFactory.ModelParametersBuilder<MP> paramsBuilder = _paramsBuilderFactory.get(params.freshCopy());
         for (int i = 0; i < _hyperParamNames.length; i++) {
             String paramName = _hyperParamNames[i];
             Object paramValue = hyperParams[i];

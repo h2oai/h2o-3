@@ -56,8 +56,13 @@ h2o.pipeline <- function(model_id = NULL)
   } else {
     model$estimator_model <- NULL
   }
-  model$transformers <- unlist(lapply(model$transformers, function(dt) new("H2ODataTransformer", id=dt$id, description=dt$description)))
+  model$transformers <- unlist(lapply(model$transformers, function(k) .h2o.fetch_datatransformer(k$name)))
   # class(model) <- "H2OPipeline"
   return(model)
+}
+.h2o.fetch_datatransformer <- function(id) {
+  resp <- .h2o.__remoteSend(method="GET", h2oRestApiVersion=3, page=paste0("Pipeline/DataTransformer/", id))
+  tr <- new("H2ODataTransformer", id=resp$key$name, name=resp$name, description=resp$description)
+  return (tr)
 }
 

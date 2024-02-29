@@ -2,6 +2,7 @@ package water.api.schemas3;
 
 import hex.Model;
 import hex.PartialDependence;
+import hex.pipeline.DataTransformer;
 import hex.segments.SegmentModels;
 import hex.grid.Grid;
 import water.*;
@@ -122,6 +123,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public static class DecryptionToolKeyV3 extends KeyV3<Iced, DecryptionToolKeyV3, DecryptionTool> {
     public DecryptionToolKeyV3() {}
     public DecryptionToolKeyV3(Key<DecryptionTool> key) { super(key); }
+  }
+
+  public static class DataTransformerKeyV3<T extends DataTransformer> extends KeyV3<Iced, DataTransformerKeyV3<T>, T> {
+    public DataTransformerKeyV3() {}
+    public DataTransformerKeyV3(Key<T> key) { super(key); }
   }
 
   @Override public S fillFromImpl(Iced i) {

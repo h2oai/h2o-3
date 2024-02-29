@@ -9,8 +9,6 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
-import ai.h2o.automl.preprocessing.PreprocessingConfig;
-import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -24,6 +22,7 @@ import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceWalker;
 import hex.leaderboard.Leaderboard;
 import hex.ModelParametersDelegateBuilderFactory;
+import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -31,14 +30,14 @@ import water.*;
 import water.KeyGen.ConstantKeyGen;
 import water.KeyGen.PatternKeyGen;
 import water.exceptions.H2OIllegalArgumentException;
-import water.util.ArrayUtils;
-import water.util.Countdown;
-import water.util.EnumUtils;
-import water.util.Log;
+import water.util.*;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static hex.pipeline.PipelineModel.ESTIMATOR_PARAM;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -71,7 +70,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         assert hyperParams.size() > 0;
         assert searchCriteria != null;
         GridSearch.Builder builder = makeGridBuilder(resultKey, baseParams, hyperParams, searchCriteria);
-        aml().trackKeys(builder.dest());
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+builder.dest()+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         return builder.start();
@@ -104,9 +102,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                                                                                MP baseParams,
                                                                                Map<String, Object[]> hyperParams,
                                                                                HyperSpaceSearchCriteria searchCriteria) {
-      applyPreprocessing(baseParams);
       Model.Parameters finalParams = applyPipeline(resultKey, baseParams, hyperParams);
-      if (finalParams instanceof PipelineParameters) resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
+      if (finalParams instanceof PipelineParameters) {
+        resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
+        aml().trackKeys(((PipelineParameters)finalParams)._transformers);
+      }
+      aml().trackKeys(resultKey);
       return GridSearch.create(
                       resultKey,
                       HyperSpaceWalker.BaseWalker.WalkerFactory.create(
@@ -121,7 +122,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     
     
     protected <MP extends Model.Parameters> ModelBuilder makeBuilder(Key<M> resultKey, MP params) {
-      applyPreprocessing(params);
       Model.Parameters finalParams = applyPipeline(resultKey, params, null);
       if (finalParams instanceof PipelineParameters) resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
       
@@ -433,18 +433,44 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         if (customParams == null) return;
         customParams.applyCustomParameters(_algo, params);
     }
-    
-    protected void applyPreprocessing(Model.Parameters params) {
-        if (aml().getPreprocessing() == null) return;
-        for (PreprocessingStep preprocessingStep : aml().getPreprocessing()) {
-            PreprocessingStep.Completer complete = preprocessingStep.apply(params, getPreprocessingConfig());
-            _onDone.add(j -> complete.run());
-        }
+
+
+    /**
+     * If some algo/provider needs to modify the pipeline dynamically, it's recommended to override this.
+     */
+    protected void filterPipelineTransformers(List<DataTransformer> transformers, Map<String, Object[]> transformerHyperParams) {}
+
+    protected final void removeTransformersType(Class<? extends DataTransformer> toRemove, List<DataTransformer> transformers, Map<String, Object[]> transformerHyperParams) {
+      List<String> teIds = transformers.stream()
+              .filter(toRemove::isInstance)
+              .map(DataTransformer::name)
+              .collect(Collectors.toList());
+      transformers.removeIf(dt -> teIds.contains(dt.name()));
+      transformerHyperParams.keySet().removeIf(k -> teIds.contains(k.split("\\.", 2)[0]));
     }
-    
+
+  /**
+    * Transforms the simple model parameters and potential hyper-parameters into pipeline parameters.
+    * 
+    * @param resultKey: the key of the final pipe
+    * @param params: parameters for the model being built in this step.
+    * @param hyperParams: hyper-parameters for the grid being built in this step (can be null if simple model).
+    * @return the final pipeline parameters that will be used to build the models in this step.
+    */
     protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
       if (aml().getPipelineParams() == null) return params;
-      PipelineParameters pparams = (PipelineParameters) aml().getPipelineParams().clone();
+      PipelineParameters pparams = aml().getPipelineParams().freshCopy();
+      List<DataTransformer> transformers = new ArrayList<>(Arrays.asList(pparams.getTransformers())); // need to convert to ArrayList as `filterPipelineTransformers` may remove items below
+      Map<String, Object[]> transformersHyperParams = new HashMap<>(aml().getPipelineHyperParams());
+      filterPipelineTransformers(transformers, transformersHyperParams);
+      Key[] defaultTransformersKeys = pparams._transformers;
+      pparams.setTransformers(transformers.toArray(new DataTransformer[0]));
+      if (defaultTransformersKeys.length != pparams._transformers.length) {
+        for (Key k : defaultTransformersKeys) {
+          if (!ArrayUtils.contains(pparams._transformers, k)) ((DataTransformer)k.get()).cleanup();
+        }
+      }
+      if (pparams._transformers.length == 0) return params;
       setCommonModelBuilderParams(pparams);
       pparams._seed = params._seed;
       pparams._max_runtime_secs = params._max_runtime_secs;
@@ -456,19 +482,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
       if (hyperParams != null) {
         Map<String, Object[]> pipelineHyperParams = new HashMap<>();
         for (Map.Entry<String, Object[]> e : hyperParams.entrySet()) {
-          pipelineHyperParams.put("estimator."+e.getKey(), e.getValue());
+          pipelineHyperParams.put(ESTIMATOR_PARAM+"."+e.getKey(), e.getValue());
         }
         hyperParams.clear();
         hyperParams.putAll(pipelineHyperParams);
-        hyperParams.putAll(aml().getPipelineHyperParams());
+        hyperParams.putAll(transformersHyperParams);
       }
       return pparams;
     }
     
-    protected PreprocessingConfig getPreprocessingConfig() {
-        return new PreprocessingConfig();
-    }
-
     /**
      * Configures early-stopping for the model or set of models to be built.
      *

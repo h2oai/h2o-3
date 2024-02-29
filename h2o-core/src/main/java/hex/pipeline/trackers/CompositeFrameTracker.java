@@ -8,9 +8,13 @@ import water.fvec.Frame;
 /**
  * A {@link FrameTracker} applying multiple trackers sequentially.
  */
-public class CompositeFrameTracker implements FrameTracker {
+public class CompositeFrameTracker extends AbstractFrameTracker<CompositeFrameTracker> {
 
   private final FrameTracker[] _trackers;
+  
+  public CompositeFrameTracker() { // for (de)serialization
+    _trackers = new FrameTracker[0];
+  }
 
   public CompositeFrameTracker(FrameTracker... trackers) {
     _trackers = trackers;

@@ -1,9 +1,6 @@
 package water.util;
 
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.TAtomic;
+import water.*;
 
 public class IcedLong extends Iced {
   public long _val;
@@ -19,9 +16,17 @@ public class IcedLong extends Iced {
   public static IcedLong valueOf(long value) {
     return new IcedLong(value);
   }
+  
+  public static long get(Key key) {
+    return ((IcedLong) DKV.getGet(key))._val;
+  }
 
   public static long incrementAndGet(Key key) {
     return ((AtomicIncrementAndGet) new AtomicIncrementAndGet().invoke(key))._val;
+  }
+  
+  public static long decrementAndGet(Key key) {
+    return ((AtomicDecrementAndGet) new AtomicDecrementAndGet().invoke(key))._val;
   }
 
   public static class AtomicIncrementAndGet extends TAtomic<IcedLong> {
@@ -40,5 +45,23 @@ public class IcedLong extends Iced {
       return new IcedLong(_val = old._val + 1);
     }
   }
+
+  public static class AtomicDecrementAndGet extends TAtomic<IcedLong> {
+    public AtomicDecrementAndGet() {
+      this(null);
+    }
+    public AtomicDecrementAndGet(H2O.H2OCountedCompleter cc) {
+      super(cc);
+    }
+
+    // OUT
+    public long _val;
+
+    @Override
+    protected IcedLong atomic(IcedLong old) {
+      return new IcedLong(_val = old._val - 1);
+    }
+  }
+
 
 }

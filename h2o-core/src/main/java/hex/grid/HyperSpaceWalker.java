@@ -286,7 +286,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     
     protected MP getModelParams(MP params, Object[] hyperParams, String[] hyperParamNames) {
       ModelParametersBuilder<MP>
-              paramsBuilder = _paramsBuilderFactory.get((MP) params.clone());
+              paramsBuilder = _paramsBuilderFactory.get((MP) params.freshCopy());
       for (int i = 0; i < hyperParamNames.length; i++) {
         String paramName = hyperParamNames[i];
         Object paramValue = hyperParams[i];

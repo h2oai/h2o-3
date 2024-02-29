@@ -1,6 +1,6 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
+import ai.h2o.automl.preprocessing.PipelineStepDefinition;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
@@ -180,8 +180,7 @@ public class AutoMLBuildSpec extends Iced {
     public StepDefinition[] modeling_plan;
     public double exploitation_ratio = -1;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
-    public PreprocessingStepDefinition[] preprocessing;
-    public boolean _pipelineEnabled = false; // currently used for testing until ready: to be removed
+    public PipelineStepDefinition[] preprocessing;
   }
 
   public static final class AutoMLCustomParameters extends Iced {

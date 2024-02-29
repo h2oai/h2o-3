@@ -1,10 +1,7 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
-import ai.h2o.automl.preprocessing.PreprocessingConfig;
-import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.Model;
-import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 
@@ -32,15 +29,6 @@ public class GLMStepsProvider
                 GLMParameters params = new GLMParameters();
                 params._lambda_search = true;
                 return params;
-            }
-            
-            @Override
-            protected PreprocessingConfig getPreprocessingConfig() {
-                //GLM (the exception as usual) doesn't support targetencoding if CV is enabled
-                // because it is initializing its lambdas + other params before CV (preventing changes in train frame during CV).
-                PreprocessingConfig config = super.getPreprocessingConfig();
-                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, aml().isCVEnabled()); 
-                return config;
             }
         }
 

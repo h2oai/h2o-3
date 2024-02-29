@@ -99,6 +99,8 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # '/usr/bin/sort' needed to avoid windows native sort when run in cygwin
 
 (cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_SLOW | grep -v $JUNIT_TESTS_BOOT | /usr/bin/sort > $OUTDIR/all_tests.txt
+cat $OUTDIR/all_tests.txt | egrep "water\." > $OUTDIR/all_sorted_tests.txt
+cat $OUTDIR/all_tests.txt | egrep -v "water\." >> $OUTDIR/all_sorted_tests.txt
 
 set -f # no globbing
 if [ foo"$DOONLY" = foo ]; then
@@ -110,7 +112,7 @@ fi
 
 # Output the comma-separated list of ignored/dooonly tests
 # Ignored tests trump do-only tests
-cat $OUTDIR/all_tests.txt | egrep -v "$IGNORE" > $OUTDIR/tests.not_ignored.txt
+cat $OUTDIR/all_sorted_tests.txt | egrep -v "$IGNORE" > $OUTDIR/tests.not_ignored.txt
 cat $OUTDIR/tests.not_ignored.txt | egrep "$DOONLY" > $OUTDIR/tests.txt
 set +f
 

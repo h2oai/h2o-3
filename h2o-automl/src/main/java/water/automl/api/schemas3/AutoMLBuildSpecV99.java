@@ -284,7 +284,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     
     @API(help="The list of preprocessing steps to run. Only 'target_encoding' is currently supported.",
             level = API.Level.secondary)
-    public PreprocessingStepDefinitionV99[] preprocessing;
+    public PipelineStepDefinitionV99[] preprocessing;
 
     @API(help="Custom algorithm parameters.",
             level = API.Level.expert)
@@ -294,10 +294,6 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.secondary)
     public KeyValueV3[] monotone_constraints;
     
-    @API(help = "Temporary flag to disable pipeline usage when preprocessing is enabled.", 
-            level = API.Level.expert)
-    public boolean pipelineEnabled;
-
     @Override
     public AutoMLBuildSpec.AutoMLBuildModels fillImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
       super.fillImpl(impl, new String[]{"algo_parameters"});

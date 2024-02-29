@@ -7,6 +7,7 @@ import hex.pipeline.PipelineModel.PipelineParameters;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -58,7 +59,7 @@ public class KFoldColumnGeneratorTest {
 
   @Test
   public void test_transformer_autodetection_in_pipeline_context() {
-    DataTransformer kfold = new KFoldColumnGenerator();
+    DataTransformer kfold = Scope.<DataTransformer>track_generic(new KFoldColumnGenerator());
     final Frame fr = scope.track(new TestFrameBuilder()
             .withColNames("one", "two", "target")
             .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
@@ -84,7 +85,7 @@ public class KFoldColumnGeneratorTest {
   
   @Test
   public void test_transformer_transforms_context_train_frame_during_prepare() {
-    DataTransformer kfold = new KFoldColumnGenerator();
+    DataTransformer kfold = Scope.<DataTransformer>track_generic(new KFoldColumnGenerator());
     final Frame fr = scope.track(new TestFrameBuilder()
             .withColNames("one", "two", "target")
             .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)

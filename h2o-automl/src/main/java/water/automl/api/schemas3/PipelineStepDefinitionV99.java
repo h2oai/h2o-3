@@ -1,13 +1,13 @@
 package water.automl.api.schemas3;
 
-import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
+import ai.h2o.automl.preprocessing.PipelineStepDefinition;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
 
-import static ai.h2o.automl.preprocessing.PreprocessingStepDefinition.*;
+import static ai.h2o.automl.preprocessing.PipelineStepDefinition.*;
 
-public final class PreprocessingStepDefinitionV99 extends Schema<PreprocessingStepDefinition, PreprocessingStepDefinitionV99> {
+public final class PipelineStepDefinitionV99 extends Schema<PipelineStepDefinition, PipelineStepDefinitionV99> {
 
   public static final class TypeProvider extends EnumValuesProvider<Type> {
     public TypeProvider() {

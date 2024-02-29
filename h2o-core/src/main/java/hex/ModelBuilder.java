@@ -1630,8 +1630,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      Frame newtrain = applyPreprocessors(_train, true);
-      newtrain = encodeFrameCategoricals(newtrain); //we could turn this into a preprocessor later
+      Frame newtrain = encodeFrameCategoricals(_train); 
       if (newtrain != _train) {
         _origTrain = _train;
         _origNames = _train.names();
@@ -1642,8 +1641,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _origTrain = null;
       }
       if (_valid != null) {
-        Frame newvalid = applyPreprocessors(_valid, false);
-        newvalid = encodeFrameCategoricals(newvalid /* for CV, need to score one more time in outer loop */);
+        Frame newvalid = encodeFrameCategoricals(_valid /* for CV, need to score one more time in outer loop */);
         setValid(newvalid);
       }
       boolean restructured = false;
@@ -1784,24 +1782,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error(field, iae.getMessage());
     }
     return adapted;
-  }
-
-  private Frame applyPreprocessors(Frame fr, boolean isTraining) {
-    if (_parms._preprocessors == null) return fr;
-
-    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
-      DKV.prefetch(key);
-    }
-    Frame result = fr;
-    Frame encoded;
-    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
-      ModelPreprocessor preprocessor = key.get();
-      encoded = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
-      if (encoded != result) Scope.track(encoded);
-      result = encoded;
-    }
-    track(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
-    return result;
   }
 
   private Frame encodeFrameCategoricals(Frame fr) {

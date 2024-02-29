@@ -15,7 +15,7 @@ import java.util.Collection;
  * If a Frame is cached, then returning a shallow copy is not enough as the individual Vecs could then be removed from DKV.
  * Deep copy would however increase the memory cost of caching.
  */
-public class CachingTransformer<S extends CachingTransformer, T extends DataTransformer> extends DelegateTransformer<S, T> {
+public class CachingTransformer<S extends CachingTransformer<S, T>, T extends DataTransformer<T>> extends DelegateTransformer<S, T> {
   
   boolean _cacheEnabled = true;
   private final NonBlockingHashMap<Object, Key<Frame>> _cache = new NonBlockingHashMap<>();

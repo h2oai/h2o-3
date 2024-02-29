@@ -2,22 +2,31 @@ package hex.pipeline.transformers;
 
 import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
+import water.Key;
 import water.fvec.Frame;
 
-public abstract class DelegateTransformer<S extends DelegateTransformer, T extends DataTransformer> extends DataTransformer<S> {
+public abstract class DelegateTransformer<S extends DelegateTransformer<S, T>, T extends DataTransformer<T>> extends DataTransformer<S> {
   
-  T _transformer;
+  Key<T> _transformer;
   
   protected DelegateTransformer() {}
 
-  public DelegateTransformer(T transformer) {
-    _transformer = transformer;
+  public DelegateTransformer(Key<T> transformer) {
+    this._transformer = transformer;
   }
 
+  public DelegateTransformer(T transformer) {
+    _transformer = transformer._key;
+  }
+  
+  private DataTransformer getDelegate() {
+    return _transformer.get();
+  }
+  
   @Override
   public Object getParameter(String name) {
     try {
-      return _transformer.getParameter(name);
+      return getDelegate().getParameter(name);
     } catch (IllegalArgumentException iae) {
       return super.getParameter(name);
     }
@@ -26,7 +35,7 @@ public abstract class DelegateTransformer<S extends DelegateTransformer, T exten
   @Override
   public void setParameter(String name, Object value) {
     try {
-      _transformer.setParameter(name, value);
+      getDelegate().setParameter(name, value);
     } catch (IllegalArgumentException iae) {
       super.setParameter(name, value);
     }
@@ -35,7 +44,7 @@ public abstract class DelegateTransformer<S extends DelegateTransformer, T exten
   @Override
   public Object getParameterDefaultValue(String name) {
     try {
-      return _transformer.getParameterDefaultValue(name);
+      return getDelegate().getParameterDefaultValue(name);
     } catch (IllegalArgumentException iae) {
       return super.getParameterDefaultValue(name);
     }
@@ -43,18 +52,18 @@ public abstract class DelegateTransformer<S extends DelegateTransformer, T exten
 
   @Override
   protected void doPrepare(PipelineContext context) {
-    _transformer.prepare(context);
+    getDelegate().prepare(context);
   }
 
   @Override
   protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
-    return _transformer.transform(fr, type, context);
+    return getDelegate().transform(fr, type, context);
   }
 
   @Override
   protected S cloneImpl() throws CloneNotSupportedException {
     S clone = super.cloneImpl();
-    clone._transformer = (T)_transformer.clone();
+    clone._transformer = _transformer == null ? null : ((T)getDelegate().clone()).getKey();
     return clone;
   }
 }

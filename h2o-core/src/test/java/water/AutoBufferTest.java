@@ -8,6 +8,7 @@ import water.util.ArrayUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 

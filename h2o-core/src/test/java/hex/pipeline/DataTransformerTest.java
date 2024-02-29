@@ -2,18 +2,19 @@ package hex.pipeline;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.Key;
-import water.MRTask;
-import water.Scope;
+import water.*;
 import water.fvec.*;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.*;
@@ -155,7 +156,7 @@ public class DataTransformerTest {
     
     static final Logger logger = LoggerFactory.getLogger(FrameTrackerAsTransformer.class);
     
-    public static class Transformation {
+    public static class Transformation extends Iced<Transformation> {
       final String frameId;
       final FrameType type;
       final boolean is_cv;
@@ -177,11 +178,56 @@ public class DataTransformerTest {
       }
     }
     
-    transient List<Transformation> transformations = new ArrayList<>();
+    public static class Transformations extends Keyed<Transformations> {
+      
+      Transformation[] transformations;
 
-    @Override
-    protected void doPrepare(PipelineContext context) {
-      transformations.clear();
+      public Transformations(Key<Transformations> key) {
+        super(key);
+        transformations = new Transformation[0];
+      }
+      
+      public void add(Transformation t) {
+        new AddTransformation(t).invoke(getKey());
+      }
+      
+      public int size() {
+        return transformations.length;
+      }
+
+      @Override
+      public String toString() {
+        final StringBuilder sb = new StringBuilder("Transformations{");
+        sb.append("transformations=").append(Arrays.toString(transformations));
+        sb.append('}');
+        return sb.toString();
+      }
+      
+      private static class AddTransformation extends TAtomic<Transformations> {
+        
+        private final Transformation transformation;
+
+        public AddTransformation(Transformation transformation) {
+          this.transformation = transformation;
+        }
+
+        @Override
+        protected Transformations atomic(Transformations old) {
+          old.transformations = ArrayUtils.append(old.transformations, transformation);
+          return old;
+        }
+      }
+    }
+    
+    private final Key<Transformations> transformationsKey;
+    
+    public FrameTrackerAsTransformer() {
+      transformationsKey = Key.make();
+      DKV.put(new Transformations(transformationsKey));
+    }
+    
+    public Transformations getTransformations() {
+      return transformationsKey.get();
     }
 
     @Override
@@ -189,19 +235,25 @@ public class DataTransformerTest {
       if (fr == null) return null;
       logger.info(fr.getKey()+": columns="+Arrays.toString(fr.names()));
       boolean is_cv = context != null && context._params._is_cv_model;
-      transformations.add(new Transformation(fr.getKey().toString(), type, is_cv));
+      transformationsKey.get().add(new Transformation(fr.getKey().toString(), type, is_cv));
       return fr;
+    }
+
+    @Override
+    protected Futures remove_impl(Futures fs, boolean cascade) {
+      Keyed.remove(transformationsKey, fs, cascade);
+      return super.remove_impl(fs, cascade);
     }
   }
   
   @FunctionalInterface 
-  interface FrameChecker {
+  interface FrameChecker extends Serializable {
     void check(Frame fr);
   }
   
   public static class FrameCheckerAsTransformer extends DataTransformer<FrameTrackerAsTransformer> {
 
-    final transient FrameChecker checker;
+    FrameChecker checker;
 
     public FrameCheckerAsTransformer(FrameChecker checker) {
       this.checker = checker;
@@ -213,4 +265,13 @@ public class DataTransformerTest {
       return fr;
     }
   }
+  
+  public static class FailingAssertionTransformer extends DataTransformer<FailingAssertionTransformer> {
+    @Override
+    protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+      assert false: "expected";
+      return fr;
+    }
+  }
+
 }

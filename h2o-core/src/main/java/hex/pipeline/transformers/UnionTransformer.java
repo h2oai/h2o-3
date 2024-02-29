@@ -81,7 +81,7 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
         try {
           int idx = Integer.parseInt(id);
           assert idx >=0 && idx < _transformers.length;
-          return new String[]{_transformers[idx].id(), tokens[1]};
+          return new String[]{_transformers[idx].name(), tokens[1]};
         } catch(NumberFormatException nfe) {
           if (getTransformer(id) != null) return new String[] {id, tokens[1]};
           throw new IllegalArgumentException("Unknown transformer: "+tok0);
@@ -94,7 +94,7 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
 
   private DataTransformer getTransformer(String id) {
     if (_transformers == null) return null;
-    return Stream.of(_transformers).filter(t -> t.id().equals(id)).findFirst().orElse(null);
+    return Stream.of(_transformers).filter(t -> t.name().equals(id)).findFirst().orElse(null);
   }
 
   @Override

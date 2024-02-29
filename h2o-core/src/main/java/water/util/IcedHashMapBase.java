@@ -1,16 +1,10 @@
 package water.util;
 
-import water.AutoBuffer;
-import water.Freezable;
-import water.H2O;
-import water.Iced;
+import water.*;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang.ArrayUtils.toObject;
@@ -22,13 +16,20 @@ import static org.apache.commons.lang.ArrayUtils.toPrimitive;
 public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, Cloneable, Serializable {
 
   public enum KeyType {
+    Long(Long.class, java.lang.Long.MIN_VALUE),
     String(String.class),
     Freezable(Freezable.class),
     ;
 
     Class _clazz;
+    Object _endValue;
     KeyType(Class clazz) {
+      this(clazz, null);
+    }
+    
+    KeyType(Class clazz, Object endValue) {
       _clazz = clazz;
+      _endValue = endValue;
     }
   }
 
@@ -143,9 +144,12 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       byte mode = getMode(getKeyType(key), getValueType(val), getArrayType(val));
       ab.put1(mode);              // Type of hashmap being serialized
       writeMap(ab, mode);         // Do the hard work of writing the map
-      switch (keyType(mode)) {
+      KeyType kt = keyType(mode);
+      switch (kt) {    // finally write null to indicate termination
+        case Long:
+          return ab.put8((long)kt._endValue);
         case String:
-          return ab.putStr(null);
+          return ab.putStr((String)kt._endValue);
         case Freezable:
         default:
           return ab.put(null);
@@ -187,6 +191,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
 
   protected void writeKey(AutoBuffer ab, KeyType keyType, K key) {
     switch (keyType) {
+      case Long:        ab.put8((Long)key); break;
       case String:      ab.putStr((String)key); break;
       case Freezable:   ab.put((Freezable)key); break;
     }
@@ -231,7 +236,8 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
   @SuppressWarnings("unchecked")
   protected K readKey(AutoBuffer ab, KeyType keyType) {
     switch (keyType) {
-      case String: return (K) ab.getStr();
+      case Long:      return (K)(Long) ab.get8();
+      case String:    return (K) ab.getStr();
       case Freezable: return ab.get();
       default: return null;
     }
@@ -292,7 +298,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
 
       while (true) {
         K key = readKey(ab, keyType);
-        if (key == null) break;
+        if (Objects.equals(key, keyType._endValue)) break;
         V val = readValue(ab, valueType, arrayType);
         map.put(key, val);
       }
@@ -317,13 +323,12 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       K key = entry.getKey();
       V value = entry.getValue();
 
-      KeyType keyType = getKeyType(key);
-      assert keyType == KeyType.String: "JSON format supports only String keys";
+      assert key != null;
       ValueType valueType = getValueType(value);
       ArrayType arrayType = getArrayType(value);
 
       if (first) { first = false; } else {ab.put1(',').put1(' '); }
-      String name = (String) key;
+      String name = key.toString();
       switch (arrayType) {
         case None:
           switch (valueType) {
