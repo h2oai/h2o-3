@@ -91,6 +91,7 @@ try {
 
                                 # FIXME: Version of docutils should be installed in install_python_version to fix PUBDEV-8327 issue
                                 pip install docutils==0.16
+                                pip install "jinja2<3.1"
 
                                 mkdir -p ${env.BUILD_NUMBER_DIR}
                                 cd ${env.BUILD_NUMBER_DIR}
