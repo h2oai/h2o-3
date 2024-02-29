@@ -561,6 +561,10 @@ def call(final pipelineContext) {
       stageName: 'R4.0 Explain', target: 'test-r-explain', rVersion: '4.0.2',
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
+    [
+      stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 1,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ]
   ]
 
   def supportedHadoopDists = pipelineContext.getBuildConfig().getSupportedHadoopDistributions()
