@@ -39,7 +39,10 @@ public class H2OStarter {
     if (!H2O.ARGS.disable_web) {
       Log.info("");
       String message = H2O.ARGS.disable_flow ? "Connect to H2O from your R/Python client: " : "Open H2O Flow in your web browser: ";
-      Log.info(message + H2O.getURL(NetworkInit.h2oHttpView.getScheme()));
+      message += H2O.ARGS.web_ip == null ?
+              H2O.getURL(NetworkInit.h2oHttpView.getScheme()) :
+              H2O.getURL(NetworkInit.h2oHttpView.getScheme(), H2O.ARGS.web_ip, H2O.API_PORT, H2O.ARGS.context_path);
+      Log.info(message);
       Log.info("");
     }
   }
