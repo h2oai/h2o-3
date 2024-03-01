@@ -12,7 +12,12 @@ try {
             node(NODE_LABEL) {
                 def insideDocker = null
 
-                env.BUILD_NUMBER_DIR = currentBuild.number
+                if (params.VERSION.isEmpty()) {
+                    env.BUILD_NUMBER_DIR = currentBuild.number
+                } else {
+                    env.BUILD_NUMBER_DIR = params.VERSION
+                }
+
                 env.DATA_DIR = "/home/0xdiag"
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
@@ -647,6 +652,7 @@ private setReleaseJobProperties(final pipelineContext) {
     def jobProperties = [
         disableConcurrentBuilds(),
         parameters([
+            string(defaultValue: '', description: 'Choose version number, if empty then the build number will be used', name: 'VERSION')
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
