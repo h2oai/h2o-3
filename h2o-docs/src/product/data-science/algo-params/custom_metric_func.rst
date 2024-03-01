@@ -23,7 +23,7 @@ The reduce function combine the results from two chunks. It will keep reducing t
     - `l`: is a double array with `l[0]` containing the accumulated custom metric of one chunk and `l[1]` contains the number of rows that are used in the accumulation;
     - `r`: is a double array with `r[0]` containing the accumulated custom metric of another chunk and `r[1]` contains the number of rows that are used in the accumulation;
 
-Example how to implement custom metric from math formula to Map-Reduce approach:
+Here is the math formula and in the example you can see transformation into Map-Reduce principle. 
 
 .. math::
 
@@ -33,30 +33,13 @@ Example how to implement custom metric from math formula to Map-Reduce approach:
     - N is number of data points
     - y(i) is i-th measurement
     - \hat{y}(i) is prediction of the i-th measurement
-    
-.. code-block::
 
-class CustomRmseFunc:
-    def map(self, pred, act, w, o, model):
-        # we expect binomial classification problem here
-        # pred[0] = final predicition -> 0 or 1
-        # pred[1] = prediction probability for 1st class
-        # pred[2] = prediction probability for 2nd class
-        # len(pred) -> 3
-        # act[0] = actual value y(i) -> 0 or 1
-        y = int(act[0]) # 0 or 1
-        y_pred_idx = y + 1 # 1 or 2
-        y_hat = pred[y_pred_idx] # value between 0-1
-        err = 1 - y_hat
-        return [err * err, 1]
+You can easily deconstruct this formula into map-reduce-value principle where:
+- :math:`\Arrowvert y(i) - \hat{y}(i) \Arrowvert ^2` and part is done in `map` function
+- :math:`\sum_{i=0}^{N}` part and count N is done in `reduce` function with results from `map` phase
+- :math:`\sqrt` is done in value function from results from `reduce` phase
 
-    def reduce(self, l, r):
-        return [l[0] + r[0], l[1] + r[1]]
-
-    def metric(self, l):
-        # Use Java API directly
-        import java.lang.Math as math
-        return math.sqrt(l[0] / l[1])
+See example section how to implement custom RMSE metric using this formula. The names of variables in the code should match with the variables in the formula.
 
 **Note**: This option is only supported in the Python client.
 
@@ -99,44 +82,67 @@ Example
 		# split into train and validation sets 
 		train, valid = airlines.split_frame(ratios=[.8], seed=1234)
 
-		# try using the `stopping_metric` parameter: 
-		# since this is a classification problem we will look at the AUC
-		# you could also choose logloss, or misclassification, among other options
-		# train your model, where you specify the stopping_metric, stopping_rounds, 
-		# and stopping_tolerance
-		# initialize the estimator then train the model
-		airlines_gbm = H2OGradientBoostingEstimator(stopping_metric="auc",
-		                                            stopping_rounds=3,
-		                                            stopping_tolerance=1e-2,
-		                                            seed=1234)
-		airlines_gbm.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
-
-		# print the auc for the validation data
-		airlines_gbm.auc(valid=True)
-
 		# Use a custom metric
 		# Create a custom RMSE Model metric and save as mm_rmse.py
 		# Note that this references a java class java.lang.Math
 		class CustomRmseFunc:
-		def map(self, pred, act, w, o, model):
-		    idx = int(act[0])
-		    err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
-		    return [err * err, 1]
 
-		def reduce(self, l, r):
-		    return [l[0] + r[0], l[1] + r[1]]
+            def map(self, pred, act, w, o, model):
+            '''
+            Returns error calculation for a particular record.
+                Parameters:
+                        pred (list[float]) : Prediction probability
+                            for binomial classification problems length of pred is 3:    
+                            pred[0] = final predicition -> 0 or 1
+                            pred[1] = prediction probability for 1st class, value between 0-1
+                            pred[2] = prediction probability for 2nd class, value between 0-1
+                        act (list[int]): Actual value, for binomila classification problems: y(i) -> 0 or 1
+                        w (float) : Weight (if weight_column is provided, w=1 otherwise)
+                        o (float) : Prediction offset (if offset_column is provided, o=0 otherwise)
+                        model (H2OModel) : Model the metrics are calculated against it
+                Returns:
+                    residual error (list[float]): Residual error for particular record and value 1 to count all records
+            '''
+            y = int(act[0]) # 0 or 1
+            y_pred_idx = y + 1 # 1 or 2
+            y_hat = pred[y_pred_idx] # value between 0-1
+            err = 1 - y_hat # value between 0-1
+            return [w * err * err, 1]
 
-		def metric(self, l):
-		    # Use Java API directly
-		    import java.lang.Math as math
-		    return math.sqrt(l[0] / l[1])
+            def reduce(self, l, r):
+            '''
+            Reduce all particular records into one. First reduce pairs of records together, then reduce pairs of pairs 
+            together, and continue until all records are reduced into one.
+            In case of RMSE sum up residual errors together and count number of all records
+                Parameters:
+                    l (list[float]) : Summed up values from the left particular record/records
+                    r (list[float]) : Summed up values from the right particular record/records
+                Returns:
+                    result list (list[float]) : Reduced error from all records and number of all records
+            '''
+            error = l[0] + r[0]
+            n = l[1] + r[1]
+            return [error, n]
 
-		# Upload the custom metric
+            def metric(self, l):
+            '''
+            Calculate the final metric value. In case of RMSE it returns squared reduced error divided by number of records
+                Parameters:
+                    l (list[float]) : Reduced error from all records and number of all records
+                        l[0] = reduced error from all records
+                        l[1] = number of all records
+                Returns:
+                    metric value (float) : Final metric value calculated from all records
+            '''
+            import java.lang.Math as math
+            return math.sqrt(l[0] / l[1])
+
+        # Upload the custom metric
 		custom_mm_func = h2o.upload_custom_metric(CustomRmseFunc, 
 		                                          func_name="rmse", 
 		                                          func_file="mm_rmse.py")
 
-		# Train the model
+        # Train the model
 		model = H2OGradientBoostingEstimator(ntrees=3, 
 		                                     max_depth=5,
 		                                     score_each_iteration=True,
@@ -144,4 +150,14 @@ Example
 		                                     stopping_metric="custom",
 		                                     stopping_tolerance=0.1,
 		                                     stopping_rounds=3)
+
 		model.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+
+        # Get model metrics
+        perf = model.model_performance(valid=True)
+
+        # Print custom metric name and value on validation data
+        print(perf.custom_metric_name())
+        print(perf.custom_metric_value())
+        
+        
