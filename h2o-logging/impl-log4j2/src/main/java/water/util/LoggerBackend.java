@@ -83,6 +83,11 @@ public class LoggerBackend {
                 .addAttribute("target", "SYSTEM_OUT")
                 .add(layoutComponentBuilder));
 
+        builder.add(builder.newAppender("stderr", "Console")
+                .addAttribute("target", "SYSTEM_ERR")
+                .add(builder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.DENY).addAttribute("level", Level.ERROR))
+                .add(layoutComponentBuilder));
+
         builder.add(newRollingFileAppenderComponent(builder, "R1", "1MB", _getLogFilePath.apply("trace"), pattern, Level.TRACE));
         builder.add(newRollingFileAppenderComponent(builder, "R2", _maxLogFileSize, _getLogFilePath.apply("debug"), pattern, Level.DEBUG));
         builder.add(newRollingFileAppenderComponent(builder, "R3", _maxLogFileSize, _getLogFilePath.apply("info"), pattern, Level.INFO));
@@ -92,6 +97,7 @@ public class LoggerBackend {
         builder.add(newRollingFileAppenderComponent(builder, "HTTPD", "1MB", _getLogFilePath.apply("httpd"), "%d{ISO8601} " + patternTail, Level.TRACE));
 
         AppenderRefComponentBuilder consoleAppenderRef = builder.newAppenderRef("Console");
+        AppenderRefComponentBuilder stderrAppenderRef = builder.newAppenderRef("stderr");
         
         // configure loggers:
         List<AppenderRefComponentBuilder> appenderReferences = new ArrayList();
@@ -102,11 +108,12 @@ public class LoggerBackend {
         appenderReferences.add(builder.newAppenderRef("R5"));
         appenderReferences.add(builder.newAppenderRef("R6"));
         appenderReferences.add(consoleAppenderRef);
+        appenderReferences.add(stderrAppenderRef);
         
         builder.add(newLoggerComponent(builder, "hex", appenderReferences));
         builder.add(newLoggerComponent(builder, "water", appenderReferences));
         builder.add(newLoggerComponent(builder, "ai.h2o", appenderReferences));
-        builder.add(builder.newRootLogger(String.valueOf(L4J_LVLS[_level])).add(consoleAppenderRef));
+        builder.add(builder.newRootLogger(String.valueOf(L4J_LVLS[_level])).add(consoleAppenderRef).add(stderrAppenderRef));
 
         // Turn down the logging for some class hierarchies.
         builder.add(newLoggerComponent(builder, "org.apache.http", appenderReferences, "WARN"));

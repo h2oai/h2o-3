@@ -7,6 +7,7 @@ from h2o.exceptions import H2OConnectionError, H2OServerError, H2OValueError
 import tempfile
 import shutil
 import os
+import warnings
 
 def h2oinit():
     """
@@ -125,12 +126,26 @@ def h2oinit_with_extra_classpath():
     finally:
         h2o.cluster().shutdown()
 
+def h2oinit_bind_to_localhost_false():
+    warnings.filterwarnings("error", category=UserWarning)
+    try:
+        h2o.init(strict_version_check=False, bind_to_localhost=False, port=44000)
+        assert False
+    except UserWarning as warning:
+        print(str(warning))
+        assert "SECURITY_WARNING" in str(warning)
+    finally:
+        warnings.resetwarnings()
+        h2o.connect(port=44000)
+        h2o.cluster().shutdown()
+
 # None of the tests below need a pre initialized instance
 h2oinit_default_log_dir()
 h2oinit_custom_log_dir()
 h2oinit_fail_invalid_log_level()
 h2oinitname()
 h2oinit_with_extra_classpath()
+h2oinit_bind_to_localhost_false()
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oinit)

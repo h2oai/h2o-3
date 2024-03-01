@@ -13,6 +13,7 @@ def class_extensions():
     def result(self):
         """
         Get result frame that contains information about the model building process like for modelselection and anovaglm.
+
         :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
@@ -53,5 +54,50 @@ doc = dict(
 H2O ANOVAGLM is used to calculate Type III SS which is used to evaluate the contributions of individual predictors 
 and their interactions to a model.  Predictors or interactions with negligible contributions to the model will have 
 high p-values while those with more contributions will have low p-values. 
+"""
+)
+examples = dict(
+    highest_interaction_term="""
+>>> import h2o
+>>> h2o.init()
+>>> from h2o.estimators import H2OANOVAGLMEstimator 
+>>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+>>> x = ['AGE', 'VOL', 'DCAPS']
+>>> y = 'CAPSULE'
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial',
+...                                    lambda_=0,
+...                                    missing_values_handling="skip",
+...                                    highest_interaction_term=2)
+>>> anova_model.train(x=x, y=y, training_frame=train)
+>>> anova_model.summary()
+""",
+    link="""
+>>> import h2o
+>>> h2o.init()
+>>> from h2o.estimators import H2OANOVAGLMEstimator 
+>>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+>>> x = ['AGE', 'VOL', 'DCAPS']
+>>> y = 'CAPSULE'
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial',
+...                                    lambda_=0,
+...                                    missing_values_handling="skip",
+...                                    link="family_default")
+>>> anova_model.train(x=x, y=y, training_frame=train)
+>>> anova_model.summary()
+""",
+    save_transformed_framekeys="""
+>>> import h2o
+>>> h2o.init()
+>>> from h2o.estimators import H2OANOVAGLMEstimator 
+>>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+>>> x = ['AGE', 'VOL', 'DCAPS']
+>>> y = 'CAPSULE'
+>>> anova_model = H2OANOVAGLMEstimator(family='binomial',
+...                                    lambda_=0,
+...                                    missing_values_handling="skip",
+...                                    save_transformed_framekeys=True)  
+>>> anova_model.train(x=x, y=y, training_frame=train)
+>>> transformFrame = h2o.get_frame(anova_model._model_json['output']['transformed_columns_key']['name'])
+>>> print(transformFrame)
 """
 )

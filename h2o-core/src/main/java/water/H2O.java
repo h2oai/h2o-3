@@ -2410,6 +2410,11 @@ final public class H2O {
 
     // Validate arguments
     validateArguments();
+    
+    // Raise user warnings
+    if (H2O.ARGS.web_ip == null) {
+      Log.warn("SECURITY_WARNING: web_ip is not specified. H2O Rest API is listening on all available interfaces.");
+    }
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");

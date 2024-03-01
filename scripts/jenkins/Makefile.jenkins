@@ -14,6 +14,18 @@ build-h2o-3:
 		exit 1; \
 	fi
 
+test-logger-initialize-properly:
+	-java -jar build/h2o.jar -ip 127.0.0.1 -web_ip 10.20.30.40 > out.txt 2>&1
+	if [[ $$(grep "ERROR" out.txt | wc -l) == "2" ]]; then \
+		rm -f out.txt;  \
+		echo "All good";  \
+		exit 0;  \
+	else   \
+		rm -f out.txt;  \
+		echo "All LOG.error() should be also printed to std.err. The out.txt doesn't contain 2 ERRORs, please check the output.";  \
+		exit 1; \
+	fi
+
 warmup-caches:
 	./gradlew build compileTestJava -x test -x h2o-r:build $$ADDITIONAL_GRADLE_OPTS
 

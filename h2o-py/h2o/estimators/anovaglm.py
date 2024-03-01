@@ -530,6 +530,21 @@ class H2OANOVAGLMEstimator(H2OEstimator):
 
         Type: ``Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]``, defaults to
         ``"family_default"``.
+
+        :examples:
+
+        >>> import h2o
+        >>> h2o.init()
+        >>> from h2o.estimators import H2OANOVAGLMEstimator 
+        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+        >>> x = ['AGE', 'VOL', 'DCAPS']
+        >>> y = 'CAPSULE'
+        >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
+        ...                                    lambda_=0,
+        ...                                    missing_values_handling="skip",
+        ...                                    link="family_default")
+        >>> anova_model.train(x=x, y=y, training_frame=train)
+        >>> anova_model.summary()
         """
         return self._parms.get("link")
 
@@ -722,6 +737,22 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         true to save the keys of transformed predictors and interaction column.
 
         Type: ``bool``, defaults to ``False``.
+
+        :examples:
+
+        >>> import h2o
+        >>> h2o.init()
+        >>> from h2o.estimators import H2OANOVAGLMEstimator 
+        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+        >>> x = ['AGE', 'VOL', 'DCAPS']
+        >>> y = 'CAPSULE'
+        >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
+        ...                                    lambda_=0,
+        ...                                    missing_values_handling="skip",
+        ...                                    save_transformed_framekeys=True)  
+        >>> anova_model.train(x=x, y=y, training_frame=train)
+        >>> transformFrame = h2o.get_frame(anova_model._model_json['output']['transformed_columns_key']['name'])
+        >>> print(transformFrame)
         """
         return self._parms.get("save_transformed_framekeys")
 
@@ -737,6 +768,21 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         on...  Default to 2.
 
         Type: ``int``, defaults to ``0``.
+
+        :examples:
+
+        >>> import h2o
+        >>> h2o.init()
+        >>> from h2o.estimators import H2OANOVAGLMEstimator 
+        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+        >>> x = ['AGE', 'VOL', 'DCAPS']
+        >>> y = 'CAPSULE'
+        >>> anova_model = H2OANOVAGLMEstimator(family='binomial',
+        ...                                    lambda_=0,
+        ...                                    missing_values_handling="skip",
+        ...                                    highest_interaction_term=2)
+        >>> anova_model.train(x=x, y=y, training_frame=train)
+        >>> anova_model.summary()
         """
         return self._parms.get("highest_interaction_term")
 
@@ -785,6 +831,7 @@ class H2OANOVAGLMEstimator(H2OEstimator):
     def result(self):
         """
         Get result frame that contains information about the model building process like for modelselection and anovaglm.
+
         :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
