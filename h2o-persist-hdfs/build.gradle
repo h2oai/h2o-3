@@ -21,7 +21,7 @@ dependencies {
         transitive = false
     }
     
-    api("com.nimbusds:nimbus-jose-jwt:9.24.4")
+    api("com.nimbusds:nimbus-jose-jwt:9.37.2")
 
     testImplementation project(":h2o-test-support")
     testImplementation "org.apache.hadoop:hadoop-common:$defaultHadoopVersion"
