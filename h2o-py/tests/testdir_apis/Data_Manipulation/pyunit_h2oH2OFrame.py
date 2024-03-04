@@ -126,17 +126,67 @@ def H2OFrame_from_H2OFrame():
 
 
 def H2OFrame_skipped_columns():
+    fr = h2o.H2OFrame([
+        [1, "a",  1],
+        [2, "b",  0],
+        [3,  "", 1],
+        ]
+    )
+    skipped_columns_frame = h2o.H2OFrame(data, skipped_columns=[1])
+    assert skipped_columns_frame == fr  # parse_setup is absolutely weird, with only half parameters passed to build the ParseSetup, and then a bunch of logic done locally, that's why it's buggy: see issue https://github.com/h2oai/h2o-3/issues/15947 
+
+def H2OFrame_column_names_with_skipped_columns():
+    skipped_columns_frame = h2o.H2OFrame(
+        [
+            [1, 2,  3],
+            [4, 5,  6],
+        ],
+        column_names=['a', 'b', 'c'],
+        skipped_columns=[0, 1]
+    )
+
+    fr = h2o.H2OFrame(
+        [
+            [3],
+            [6],
+        ],
+        column_names=['c'],
+    )
+
+    assert skipped_columns_frame == fr  # parse_setup is absolutely weird, with only half parameters passed to build the ParseSetup, and then a bunch of logic done locally, that's why it's buggy: see issue https://github.com/h2oai/h2o-3/issues/15947 
+
+def H2OFrame_column_names_with_str_skipped_columns():
+    skipped_columns_frame = h2o.H2OFrame(
+        [
+            [1, 2,  3],
+            [4, 5,  6],
+        ],
+        column_names=['a', 'b', 'c'],
+        skipped_columns=['a', 'b']
+    )
+
+    fr = h2o.H2OFrame(
+        [
+            [3],
+            [6],
+        ],
+        column_names=['c'],
+    )
+
+    assert skipped_columns_frame == fr  # parse_setup is absolutely weird, with only half parameters passed to build the ParseSetup, and then a bunch of logic done locally, that's why it's buggy: see issue https://github.com/h2oai/h2o-3/issues/15947 
+
+def H2OFrame_str_skipped_columns_without_column_names():
     try:
-        fr = h2o.H2OFrame([
-            [1, "a",  1],
-            [2, "b",  0],
-            [3,  "", 1],
-            ]
+        invalid_frame = h2o.H2OFrame(
+            [
+                [1, 2,  3],
+                [4, 5,  6],
+            ],
+            skipped_columns=['a', 'b']
         )
-        skipped_columns_frame = h2o.H2OFrame(data, skipped_columns=[1])
-        assert skipped_columns_frame == fr  # parse_setup is absolutely weird, with only half parameters passed to build the ParseSetup, and then a bunch of logic done locally, that's why it's buggy: see issue https://github.com/h2oai/h2o-3/issues/15947 
+
     except ValueError as e:
-        assert "length of col_names should be equal to the number of columns parsed: 4 vs 3" in str(e)
+        assert "`skipped_columns` must be valid column names" in str(e)
 
 
 pu.run_tests([
@@ -147,5 +197,8 @@ pu.run_tests([
     H2OFrame_from_pandas,
     H2OFrame_from_scipy,
     H2OFrame_from_H2OFrame,
-    H2OFrame_skipped_columns_is_BUGGY
+    H2OFrame_skipped_columns,
+    H2OFrame_column_names_with_skipped_columns,
+    H2OFrame_column_names_with_str_skipped_columns,
+    H2OFrame_str_skipped_columns_without_column_names
 ])
