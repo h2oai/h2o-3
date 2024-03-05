@@ -336,16 +336,16 @@ def call(final pipelineContext) {
       imageVersion: 43,
       healthCheckSuppressed: true
     ],
-    [
-      stageName: 'H2O XGB GPU Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      customDockerArgs: ['--runtime=nvidia', '--pid=host'],
-      timeoutValue: 120, target: 'benchmark-xgb-gpu', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
-      rVersion: '4.0.2',
-      healthCheckSuppressed: true
-    ],
+//    [
+//      stageName: 'H2O XGB GPU Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+//      customDockerArgs: ['--runtime=nvidia', '--pid=host'],
+//      timeoutValue: 120, target: 'benchmark-xgb-gpu', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+//      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+//      customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+//      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
+//      rVersion: '4.0.2',
+//      healthCheckSuppressed: true
+//    ],
     [
       stageName: 'Vanilla XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark-xgb-vanilla', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
