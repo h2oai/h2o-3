@@ -167,19 +167,21 @@ class H2OFrame(Keyed, H2ODisplay):
         
         # create a temporary file that will be written to
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
-        tmp_file = os.fdopen(tmp_handle, 'w', **H2OFrame.__fdopen_kwargs)
-        # create a new csv writer object thingy
-        csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
-        csv_writer.writerow(column_names)
-        if data_to_write and isinstance(data_to_write[0], dict):
-            for row in data_to_write:
-                csv_writer.writerow([row.get(k, None) for k in col_header])
-        else:
-            csv_writer.writerows(data_to_write)
-        tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings,
-                           skipped_columns, force_col_types)
-        os.remove(tmp_path)  # delete the tmp file
+        try:
+            tmp_file = os.fdopen(tmp_handle, 'w', **H2OFrame.__fdopen_kwargs)
+            # create a new csv writer object thingy
+            csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
+            csv_writer.writerow(column_names)
+            if data_to_write and isinstance(data_to_write[0], dict):
+                for row in data_to_write:
+                    csv_writer.writerow([row.get(k, None) for k in col_header])
+            else:
+                csv_writer.writerows(data_to_write)
+            tmp_file.close()  # close the streams
+            self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings,
+                            skipped_columns, force_col_types)
+        finally:
+            os.remove(tmp_path)  # delete the tmp file
 
     def _upload_sparse_matrix(self, matrix, destination_frame=None):
         import scipy.sparse as sp
