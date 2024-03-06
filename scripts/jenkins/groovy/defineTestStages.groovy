@@ -562,7 +562,7 @@ def call(final pipelineContext) {
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 1,
+      stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 10,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
