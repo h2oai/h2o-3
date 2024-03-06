@@ -365,7 +365,8 @@ class H2OCloudNode(object):
                main_class,
                "-name", self.cloud_name,
                port_spec, str(self.port),
-               "-ip", self.ip]
+               "-ip", self.ip,
+               "-web_ip", self.ip]
         if self.flatfile is not None:
             cmd += ["-flatfile", self.flatfile]
 
