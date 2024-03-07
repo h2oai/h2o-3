@@ -730,13 +730,13 @@ def call(final pipelineContext) {
 
   final HADOOP_CLUSTER_CONFIG = [
           distribution: "hdp", version: "2.4", versionExact: "2.4.2.0-258",
-          nameNode: "mr-0xg5", configSource: "mr-0xg5", hdpName: "steam2",
+          nameNode: "mr-0xg9", configSource: "mr-0xg9", hdpName: "steam2",
           hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
           nodes: 4, xmx: "10G", extramem: "100",
           cloudingDir: "/user/jenkins/hadoop_multinode_tests"
   ]
   final extraHostConfig = [
-          "--add-host=mr-0xg5.0xdata.loc:172.17.2.205",
+          "--add-host=mr-0xg9.0xdata.loc:172.17.2.205",
           "--add-host=mr-0xg6.0xdata.loc:172.17.2.206",
           "--add-host=mr-0xg7.0xdata.loc:172.17.2.207",
           "--add-host=mr-0xg8.0xdata.loc:172.17.2.208"
