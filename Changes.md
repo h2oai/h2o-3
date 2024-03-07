@@ -12,8 +12,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index
 - [[#16052]](https://github.com/h2oai/h2o-3/issues/16052) - Fixed finding best split point for UpliftDRF.
 - [[#16043]](https://github.com/h2oai/h2o-3/issues/16043) - Fixed `isin()`.
 - [[#16036]](https://github.com/h2oai/h2o-3/issues/16036) - Fixed `AstMatch` failing with multinode.
-- [[#15978]](https://github.com/h2oai/h2o-3/issues/15978) - Fixed Deep Learning Autoencoder MOJO PredictCSV failure.
-- [[#15963]](https://github.com/h2oai/h2o-3/issues/15963) - Added R Tweedie packaged to test images. 
+- [[#15978]](https://github.com/h2oai/h2o-3/issues/15978) - Fixed Deep Learning Autoencoder MOJO PredictCSV failure. 
 - [[#15682]](https://github.com/h2oai/h2o-3/issues/15682) - Fixed log when `web_ip` is used.
 - [[#15677]](https://github.com/h2oai/h2o-3/issues/15677) - Fixed match function only returning 1 and `no match`. 
 
@@ -47,6 +46,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index
 - [[#15709]](https://github.com/h2oai/h2o-3/issues/15709) - Added examples to Python documentation for ANOVA GLM algorithm.
 
 #### Security
+- [[#16102]](https://github.com/h2oai/h2o-3/issues/16102) - Addressed SNYK-JAVA-COMNIMBUSDS-6247633 by upgrading nimbus-jose-jwt to 9.37.2.
 - [[#16093]](https://github.com/h2oai/h2o-3/issues/16093) - Addressed CVE-2024-26308 by upgrading org.apache.commons:commons-compress.
 - [[#16067]](https://github.com/h2oai/h2o-3/issues/16067) - Addressed CVE-2023-35116 in the h2o-steam.jar. 
 - [[#15972]](https://github.com/h2oai/h2o-3/issues/15972) - Addressed CVE-2023-6038 by adding option to filter file system for reading and writing.
