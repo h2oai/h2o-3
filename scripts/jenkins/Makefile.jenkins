@@ -292,6 +292,7 @@ test-info:
 	cd h2o-r/tests/results && grep -v INFO java_0_0.out.txt > INFO_file.txt || true
 	if [[ $$(wc -c h2o-r/tests/results/INFO_file.txt | awk '{print $$1}') -ne 0 ]]; then \
 		echo "There were non-INFO lines in the output."; \
+		echo "h2o.jar probably generate ERROR or WARNING. Please remove those messages and call h2o startup properly"; \
 		cat h2o-r/tests/results/INFO_file.txt; \
 		exit 1; \
 	fi
