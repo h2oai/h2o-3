@@ -21,16 +21,16 @@ import java.util.regex.Pattern;
 public class PojoUtils {
   public enum FieldNaming {
     CONSISTENT {
-      @Override public String toDest(String origin) { return origin; }
-      @Override public String toOrigin(String dest) { return dest; }
+      @Override String toDest(String origin) { return origin; }
+      @Override String toOrigin(String dest) { return dest; }
     },
     DEST_HAS_UNDERSCORES {
-      @Override public String toDest(String origin) { return "_" + origin; }
-      @Override public String toOrigin(String dest) { return dest.substring(1); }
+      @Override String toDest(String origin) { return "_" + origin; }
+      @Override String toOrigin(String dest) { return dest.substring(1); }
     },
     ORIGIN_HAS_UNDERSCORES {
-      @Override public String toDest(String origin) { return origin.substring(1); }
-      @Override public String toOrigin(String dest) { return "_" + dest; }
+      @Override String toDest(String origin) { return origin.substring(1); }
+      @Override String toOrigin(String dest) { return "_" + dest; }
     };
 
     /**
@@ -38,14 +38,14 @@ public class PojoUtils {
      * @param origin name of origin argument
      * @return  return a name of destination argument.
      */
-    public abstract String toDest(String origin);
+    abstract String toDest(String origin);
 
     /**
      * Return name of origin parameter derived from name of origin parameter.
      * @param dest  name of destination argument.
      * @return  return a name of origin argument.
      */
-    public abstract String toOrigin(String dest);
+    abstract String toOrigin(String dest);
   }
 
 
@@ -625,28 +625,16 @@ public class PojoUtils {
    * @throws java.lang.IllegalArgumentException  when o is <code>null</code>, or field is not found,
    * or field cannot be read.
    */
-  public static Object getFieldValue(Object o, String name) {
-    return getFieldValue(o, name, false);
-  }
-  
-  public static Object getFieldValue(Object o, String name, boolean anyVisibility) {
+  public static Object getFieldValue(Object o, String name, FieldNaming fieldNaming) {
     if (o == null) throw new IllegalArgumentException("Cannot get the field from null object!");
+    String destName = fieldNaming.toDest(name);
     try {
-      Field f = PojoUtils.getFieldEvenInherited(o, name); // failing with fields declared in superclasses
-      if (anyVisibility) f.setAccessible(true);
+      Field f = PojoUtils.getFieldEvenInherited(o, destName); // failing with fields declared in superclasses
       return f.get(o);
     } catch (NoSuchFieldException e) {
-      throw new IllegalArgumentException("Field not found: '"+name+"' on object " + o);
+      throw new IllegalArgumentException("Field not found: '" + name + "/" + destName + "' on object " + o);
     } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException("Cannot get value of the field: '"+name+"' on object " + o);
-    }
-  }
-  public static Object getFieldValue(Object o, String name, FieldNaming fieldNaming) {
-    String dest = fieldNaming.toDest(name);
-    try {
-      return getFieldValue(o, dest);
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException(e.getMessage().replace("'"+dest+"'", "'"+name+"/"+dest+"'"));
+      throw new IllegalArgumentException("Cannot get value of the field: '" + name + "/" + destName + "' on object " + o);
     }
   }
 

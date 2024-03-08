@@ -197,7 +197,6 @@ def h2o_connection(**init_args):
 _excluded_estimators = (  # e.g. abstract classes
     'H2OEstimator',
     'H2OTransformer',
-    'H2OPipeline',
     'H2OInfogram',
     'H2OANOVAGLMEstimator',  # fully disabled as it does not support `predict` method.
     'H2OModelSelectionEstimator',  # fully disabled as it does no support `predict` method.

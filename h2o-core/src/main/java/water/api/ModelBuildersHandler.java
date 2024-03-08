@@ -22,10 +22,8 @@ class ModelBuildersHandler extends Handler {
   public ModelBuildersV3 list(int version, ModelBuildersV3 m) {
     m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
     for( String algo : ModelBuilder.algos() ) {
-      ModelBuilderSchema schema = makeSchema(algo, version);
-      if (schema != null) {
-        m.model_builders.put(algo.toLowerCase(), schema);
-      }
+      ModelBuilder builder = ModelBuilder.make(algo, null, null);
+      m.model_builders.put(algo.toLowerCase(), (ModelBuilderSchema)SchemaServer.schema(version, builder).fillFromImpl(builder));
     }
     return m;
   }
@@ -34,9 +32,8 @@ class ModelBuildersHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelBuildersV3 fetch(int version, ModelBuildersV3 m) {
     m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
-    ModelBuilderSchema schema = makeSchema(m.algo, version);
-    if (schema != null)
-      m.model_builders.put(m.algo.toLowerCase(), schema);
+    ModelBuilder builder = ModelBuilder.make(m.algo, null, null);
+    m.model_builders.put(m.algo.toLowerCase(), (ModelBuilderSchema)SchemaServer.schema(version, builder).fillFromImpl(builder));
     return m;
   }
 
@@ -74,11 +71,6 @@ class ModelBuildersHandler extends Handler {
     return res;
   }
 
-  private ModelBuilderSchema makeSchema(String algo, int version) {
-    ModelBuilder builder = ModelBuilder.make(algo, null, null);
-    if (ModelBuilder.schemaDirectory(builder.getName()) == null) return null; // this builder disabled schema
-    return (ModelBuilderSchema)SchemaServer.schema(version, builder).fillFromImpl(builder);  // use ModelBuilderHandlerUtils.makeBuilderSchema instead?
-  }
 
   private String detectMojoVersion(ModelBuilder builder) {
     Class<? extends Model> modelClass = ReflectionUtils.findActualClassParameter(builder.getClass(), 0);

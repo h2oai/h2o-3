@@ -2599,4 +2599,3 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         m = H2OGeneralizedLinearEstimator()
         m._resolve_model(model_json["model_id"]["name"], model_json)
         return m
-

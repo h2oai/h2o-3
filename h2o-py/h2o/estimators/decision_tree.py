@@ -186,3 +186,4 @@ class H2ODecisionTreeEstimator(H2OEstimator):
         assert_is_type(min_rows, None, int)
         self._parms["min_rows"] = min_rows
 
+

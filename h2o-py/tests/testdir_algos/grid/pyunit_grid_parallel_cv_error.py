@@ -29,7 +29,6 @@ def grid_parallel():
     gs.train(x=list(range(4)), y=4, training_frame=train, fold_column="fold_assignment")
     assert gs is not None
     # only six models are trained, since CV is not possible with min_rows=100
-    print(gs.model_ids)
     assert len(gs.model_ids) == 6
 
 

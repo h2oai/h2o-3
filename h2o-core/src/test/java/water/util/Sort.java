@@ -5,7 +5,6 @@ import hex.ModelCategory;
 
 import hex.ModelMetrics;
 import org.junit.Ignore;
-import water.Futures;
 import water.rapids.Merge;
 
 @Ignore
@@ -47,8 +46,8 @@ public class Sort extends ModelBuilder<SortModel, SortModel.SortParameters, Sort
     }
 
     @Override
-    protected ModelMetrics.MetricBuilder makeCVMetricBuilder(ModelBuilder<SortModel, SortModel.SortParameters, SortModel.SortOutput> cvModelBuilder, Futures fs) {
-        return null;
+    protected boolean makeCVMetrics(ModelBuilder<?, ?, ?> cvModelBuilder) {
+        return false;
     }
 
     @Override

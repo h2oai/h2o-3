@@ -291,3 +291,4 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
+

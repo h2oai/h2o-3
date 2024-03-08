@@ -419,6 +419,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
+
     @staticmethod
     def from_external(external=H2OFrame):
         """
@@ -458,4 +459,3 @@ class H2OWord2vecEstimator(H2OEstimator):
                                 pre_trained.frame_id)
 
         return pre_trained.dim[1] - 1
-

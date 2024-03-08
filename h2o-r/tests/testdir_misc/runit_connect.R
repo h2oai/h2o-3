@@ -8,7 +8,7 @@ to_src <- c("aggregator.R", "classes.R", "connection.R","config.R", "constants.R
             "coxph.R", "coxphutils.R", "gbm.R", "glm.R", "gam.R", "glrm.R", "kmeans.R", "deeplearning.R", "randomforest.R", "generic.R",
             "naivebayes.R", "pca.R", "svd.R", "locate.R", "grid.R", "word2vec.R", "w2vutils.R", "stackedensemble.R", "rulefit.R",
             "predict.R", "xgboost.R", "isolationforest.R", "psvm.R", "segment.R", "tf-idf.R", "explain.R", "permutation_varimp.R", 
-            "extendedisolationforest.R", "upliftrandomforest.R", "pipeline.R")
+            "extendedisolationforest.R", "upliftrandomforest.R")
 src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
 invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 

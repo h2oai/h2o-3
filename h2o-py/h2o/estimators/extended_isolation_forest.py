@@ -333,3 +333,4 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         assert_is_type(disable_training_metrics, None, bool)
         self._parms["disable_training_metrics"] = disable_training_metrics
 
+
