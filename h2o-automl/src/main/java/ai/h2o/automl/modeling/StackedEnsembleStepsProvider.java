@@ -3,6 +3,8 @@ package ai.h2o.automl.modeling;
 import ai.h2o.automl.*;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
+import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.KeyValue;
 import hex.Model;
 import hex.ensemble.Metalearner;
@@ -63,11 +65,19 @@ public class StackedEnsembleStepsProvider
             }
 
             @Override
-            protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
-                return params; // no pipeline in SE, base models handle the transformations when making predictions.
+            protected PreprocessingConfig getPreprocessingConfig() {
+                //SE should not have TE applied, the base models already do it.
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_ENABLED, false);
+                return config;
             }
 
-            @Override
+          @Override
+          protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
+              return params; // no pipeline in SE, base models handle the transformations when making predictions.
+          }
+
+          @Override
             @SuppressWarnings("unchecked")
             public boolean canRun() {
                 Key<Model>[] keys = getBaseModels();

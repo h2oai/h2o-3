@@ -9,7 +9,7 @@ import water.fvec.Frame;
 /**
  * a {@link FrameTracker} ensuring that all transformed framed are added to current {@link Scope}.
  */
-public class ScopeTracker extends AbstractFrameTracker<ScopeTracker> {
+public class ScopeTracker implements FrameTracker {
   @Override
   public void apply(Frame transformed, Frame original, DataTransformer.FrameType type, PipelineContext context, DataTransformer transformer) {
     if (transformed == null) return;

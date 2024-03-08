@@ -17,6 +17,8 @@ import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
 
+import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
+
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.
  * Lazily filled in, this object represents the potentially infinite variety
@@ -273,7 +275,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   }
 
   public Key<Model> getModelKey(MP params) {
-    long checksum = params.checksum();
+    long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
     return getModelKey(checksum);
   }
 

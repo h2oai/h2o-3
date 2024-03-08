@@ -4,8 +4,6 @@ import ai.h2o.automl.*;
 import hex.Model;
 import org.junit.Ignore;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 @Ignore("utility class")
@@ -79,23 +77,4 @@ public class DummyStepsProvider implements ModelingStepsProvider<DummyStepsProvi
             return new DummyModel.DummyModelParameters();
         }
     }
-
-    public static class DummyGridStep extends ModelingStep.GridStep<DummyModel> {
-
-        public DummyGridStep(IAlgo algo, String id, AutoML autoML) {
-            super(DummyModelSteps.NAME, algo, id, autoML);
-        }
-
-        @Override
-        public Model.Parameters prepareModelParameters() {
-            return new DummyModel.DummyModelParameters();
-        }
-
-        @Override
-        public Map<String, Object[]> prepareSearchParameters() {
-            Map<String, Object[]> searchParams = new HashMap<>();
-            searchParams.put("_tag", new String[] {"one", "two", "three"});
-            return searchParams;
-          }
-      }
-  }
+}

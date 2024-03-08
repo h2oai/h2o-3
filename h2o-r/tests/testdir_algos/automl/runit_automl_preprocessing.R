@@ -23,12 +23,9 @@ automl.preprocessing.suite <- function() {
                       preprocessing = list("target_encoding"),
                       seed = 1
     )
-    print(h2o.get_leaderboard(aml))
-    model_ids <- as.vector(aml@leaderboard$model_id)
-    expect_equal(sum(grepl("Pipeline_", model_ids)) > 0, TRUE)
-
+    print(h2o.get_leaderboard(aml))  
     keys <- h2o.ls()$key
-    expect_true(any(grepl("default_TE_1_model", keys)))
+    expect_true(any(grepl("TargetEncoding_AutoML", keys))) 
   }
 
 

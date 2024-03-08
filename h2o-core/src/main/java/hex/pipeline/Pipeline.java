@@ -5,7 +5,9 @@ import hex.ModelBuilder;
 import hex.ModelBuilderCallbacks;
 import hex.ModelCategory;
 import hex.pipeline.DataTransformer.FrameType;
-import hex.pipeline.trackers.*;
+import hex.pipeline.trackers.CompositeFrameTracker;
+import hex.pipeline.trackers.ConsistentKeyTracker;
+import hex.pipeline.trackers.ScopeTracker;
 import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import water.*;
@@ -40,14 +42,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   public void init(boolean expensive) {
     if (expensive) {
       earlyValidateParams();
-      if (_parms._transformers == null) _parms._transformers = new Key[0];
-      DataTransformer[] transformers = _parms.getTransformers();
-      _parms._transformers = Arrays.stream(transformers)
-              .filter(DataTransformer::enabled)
-              .map(DataTransformer::init)
-              .map(DataTransformer::getKey)
-              .toArray(Key[]::new);
-      Arrays.stream(transformers).filter(t -> !t.enabled()).forEach(DataTransformer::cleanup);
+      if (_parms._transformers == null) _parms._transformers = new DataTransformer[0];
+      _parms._transformers = Arrays.stream(_parms._transformers).filter(DataTransformer::enabled).toArray(DataTransformer[]::new);
     }
     super.init(expensive);
   }
@@ -208,7 +204,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
   
   private PipelineContext newCVContext(PipelineContext context, Model.Parameters cvParams) {
-    PipelineContext cvContext = new PipelineContext(context._params, context._tracker, _job);
+    PipelineContext cvContext = new PipelineContext(context._params, context._tracker);
     PipelineParameters pparams = cvContext._params;
     pparams._is_cv_model = cvParams._is_cv_model;
     pparams._cv_fold = cvParams._cv_fold;
@@ -229,35 +225,20 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
   
   private PipelineContext newContext() {
-    return new PipelineContext(
-            _parms, 
-            new CompositeFrameTracker(
-              new CancellationTracker(this),
-              new ConsistentKeyTracker(),
-              new ScopeTracker()
-            ),
-            _job
-    );
+    return new PipelineContext(_parms, new CompositeFrameTracker(
+            new FrameTracker() { // propagates training cancellation requests as early as possible
+              @Override
+              public void apply(Frame transformed, Frame original, FrameType type, PipelineContext context, DataTransformer transformer) {
+                if (stop_requested()) throw new Job.JobCancelledException(_job);
+              }
+            },
+            new ConsistentKeyTracker(),
+            new ScopeTracker()
+    ));
   }
-
-  static class CancellationTracker extends AbstractFrameTracker<CancellationTracker> {
-
-    private final Pipeline _pipeline;
-
-    public CancellationTracker() { this(null); } // for (de)serialization
-
-    public CancellationTracker(Pipeline pipeline) {
-      _pipeline = pipeline;
-    }
-
-    @Override
-    public void apply(Frame transformed, Frame original, DataTransformer.FrameType type, PipelineContext context, DataTransformer transformer) {
-      if (_pipeline.stop_requested()) throw new Job.JobCancelledException(_pipeline._job);
-    }
-  }
-
+  
   private TransformerChain newChain(PipelineContext context) {
-    TransformerChain chain = new TransformerChain(_parms._transformers);//.init();
+    TransformerChain chain = new TransformerChain(_parms._transformers);
     chain.prepare(context);
     return chain;
   }
