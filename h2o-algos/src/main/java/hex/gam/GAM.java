@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
-import static hex.gam.GAMModel.*;
+import static hex.gam.GAMModel.adaptValidFrame;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.*;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
@@ -228,6 +228,14 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _parms._nfolds = 0;
     }
     super.init(expensive);
+    if (_parms._bs != null) {
+      boolean allMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() == _parms._bs.length;
+      boolean containsMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() > 0;
+      if (allMonotoneSplines && containsMonotoneSplines && !_parms._non_negative) {
+        warn("non_negative", " is not set to true when I-spline/monotone-spline (bs=2) is chosen." +
+                "  You will not get monotonic output in this case even though you choose I-spline.");
+      }
+    }
     if (expensive && (_knots == null))  // add GAM specific check here, only do it once especially during CV
       validateGAMParameters();
   }
