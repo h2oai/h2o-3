@@ -20,8 +20,6 @@ public interface ModelParametersBuilderFactory<MP extends Model.Parameters> {
    * @return  this parameters builder
    */
   ModelParametersBuilder<MP> get(MP initialParams);
-  
-  
 
   /**
    * Returns mapping from input parameter specification to
@@ -40,10 +38,8 @@ public interface ModelParametersBuilderFactory<MP extends Model.Parameters> {
    *
    * @param <MP>  type of produced model parameters object
    */
-  interface ModelParametersBuilder<MP extends Model.Parameters> {
-    
-    boolean isAssignable(String name);
-    
+   interface ModelParametersBuilder<MP extends Model.Parameters> {
+
     ModelParametersBuilder<MP> set(String name, Object value);
 
     MP build();

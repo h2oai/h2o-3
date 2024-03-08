@@ -9,7 +9,6 @@ import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
-import hex.grid.SimpleParametersBuilderFactory;
 import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
@@ -211,7 +210,7 @@ public class TestCase {
         // TODO: ModelParametersBuilderFactory parameter must be instantiated properly
         Job<Grid> gs = GridSearch.startGridSearch(
             null,params,hyperParms,
-            new SimpleParametersBuilderFactory<>(), 
+            new GridSearch.SimpleParametersBuilderFactory<>(), 
             searchCriteria, 0
         );
         grid = gs.get();

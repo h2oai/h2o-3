@@ -728,6 +728,32 @@ public class PojoUtils {
     return o;
   }
 
+  /**
+   * Helper for Arrays.equals().
+   */
+  public static boolean arraysEquals(Object a, Object b) {
+    if (a == null || ! a.getClass().isArray())
+      throw new H2OIllegalArgumentException("a", "arraysEquals", a);
+    if (b == null || ! b.getClass().isArray())
+      throw new H2OIllegalArgumentException("b", "arraysEquals", b);
+    if (a.getClass().getComponentType() != b.getClass().getComponentType())
+      throw new H2OIllegalArgumentException("Can't compare arrays of different types: " + a.getClass().getComponentType() + " and: " + b.getClass().getComponentType());
+
+    if (a.getClass().getComponentType() == boolean.class) return Arrays.equals((boolean[])a, (boolean[])b);
+    if (a.getClass().getComponentType() == Boolean.class) return Arrays.equals((Boolean[])a, (Boolean[])b);
+
+    if (a.getClass().getComponentType() == char.class) return Arrays.equals((char[])a, (char[])b);
+    if (a.getClass().getComponentType() == short.class) return Arrays.equals((short[])a, (short[])b);
+    if (a.getClass().getComponentType() == Short.class) return Arrays.equals((Short[])a, (Short[])b);
+    if (a.getClass().getComponentType() == int.class)     return Arrays.equals((int[])a, (int[])b);
+    if (a.getClass().getComponentType() == Integer.class) return Arrays.equals((Integer[])a, (Integer[])b);
+    if (a.getClass().getComponentType() == float.class)   return Arrays.equals((float[])a, (float[])b);
+    if (a.getClass().getComponentType() == Float.class)   return Arrays.equals((Float[])a, (Float[])b);
+    if (a.getClass().getComponentType() == double.class)  return Arrays.equals((double[])a, (double[])b);
+    if (a.getClass().getComponentType() == Double.class)  return Arrays.equals((Double[])a, (Double[])b);
+    return Arrays.deepEquals((Object[])a, (Object[])b);
+  }
+
   public static String toJavaDoubleArray(double[] array) {
     if (array == null) {
       return "null";

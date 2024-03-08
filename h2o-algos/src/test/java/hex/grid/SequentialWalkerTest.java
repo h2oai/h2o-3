@@ -47,7 +47,7 @@ public class SequentialWalkerTest {
                     new SequentialWalker<>(
                             gbmParameters,
                             hyperParams,
-                            new SimpleParametersBuilderFactory<>(),
+                            new GridSearch.SimpleParametersBuilderFactory<>(),
                             new HyperSpaceSearchCriteria.SequentialSearchCriteria()
                     ),
                     GridSearch.SEQUENTIAL_MODEL_BUILDING
@@ -85,7 +85,7 @@ public class SequentialWalkerTest {
         SequentialWalker walker = new SequentialWalker<>(
             gbmParameters,
             hyperParams,
-            new SimpleParametersBuilderFactory<>(),
+            new GridSearch.SimpleParametersBuilderFactory<>(),
             new HyperSpaceSearchCriteria.SequentialSearchCriteria()
         );
         Map<String, Object[]> exp = new HashMap<>();
@@ -124,7 +124,7 @@ public class SequentialWalkerTest {
                     new SequentialWalker<>(
                             gbmParameters,
                             hyperParams,
-                            new SimpleParametersBuilderFactory<>(),
+                            new GridSearch.SimpleParametersBuilderFactory<>(),
                             new HyperSpaceSearchCriteria.SequentialSearchCriteria(StoppingCriteria.create()
                                     .stoppingRounds(1)
                                     .stoppingMetric(StoppingMetric.AUC)
