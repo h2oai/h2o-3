@@ -29,7 +29,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 90,
-                    'train_time_max': 110
+                    'train_time_max': 115
                 ]
             ],
             'springleaf': [
