@@ -2,7 +2,7 @@
 
 ## H2O
 
-### 3.46.0.1 - 3/7/2024
+### 3.46.0.1 - 3/12/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index.html</a>
 
@@ -30,9 +30,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index
 - [[#15993]](https://github.com/h2oai/h2o-3/issues/15993) - Added `custom_metric` as a hyperparameter for grid search.
 - [[#15967]](https://github.com/h2oai/h2o-3/issues/15967) - Added custom metrics for XGBoost.
 - [[#15858]](https://github.com/h2oai/h2o-3/issues/15858) - Implemented consistent mechanism that protects frames and their vecs from autodeletion.
-- [[#15857]](https://github.com/h2oai/h2o-3/issues/15857) - Integrated Target Encoder into AutoML as a pipeline transformer.
-- [[#15856]](https://github.com/h2oai/h2o-3/issues/15856) - Implemented pipeline support for grid search.
-- [[#15855]](https://github.com/h2oai/h2o-3/issues/15855) - Implemented AutoML core pipeline API. 
 - [[#15683]](https://github.com/h2oai/h2o-3/issues/15683) - Introduced a warning if `web_ip` is not specified that H2O Rest API is listening on all interfaces.
 - [[#15654]](https://github.com/h2oai/h2o-3/issues/15654) - Introduced MLFlow flavors for working with H2O-3 MOJOs and POJOs instead of binary models.
 - [[#6573]](https://github.com/h2oai/h2o-3/issues/6573) - Implemented machine learning interpretability support for UpliftDRF by allowing Uplift models to access partial dependences plots and variable importance.
