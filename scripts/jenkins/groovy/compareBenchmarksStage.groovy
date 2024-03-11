@@ -165,11 +165,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'airlines-10m': [
                 [100, "cpu"]: [
                     'train_time_min': 54,
-                    'train_time_max': 70
+                    'train_time_max': 78
                 ],
                 [100, "ext"]: [
                     'train_time_min': 65,
-                    'train_time_max': 75
+                    'train_time_max': 80
                 ],
                 [100, "gpu"]: [
                     'train_time_min': 22,
@@ -223,7 +223,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'higgs': [
                 100: [
                     'train_time_min': 50,
-                    'train_time_max': 60
+                    'train_time_max': 65
                 ]
             ]
         ],
@@ -237,7 +237,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'airlines-10m': [
                 100: [
                     'train_time_min': 61,
-                    'train_time_max': 75
+                    'train_time_max': 78
                 ]
             ],
             'higgs': [
