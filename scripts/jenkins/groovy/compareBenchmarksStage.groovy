@@ -158,7 +158,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 15
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 8,
+                    'train_time_min': 4,
                     'train_time_max': 26
                 ]
             ],
@@ -172,8 +172,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 80
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 22,
-                    'train_time_max': 52
+                    'train_time_min': 10,
+                    'train_time_max': 40
                 ]
             ],
             'higgs': [
@@ -186,8 +186,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 143
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 35,
-                    'train_time_max': 57
+                    'train_time_min': 15,
+                    'train_time_max': 37
                 ]
             ],
             'cox2': [
