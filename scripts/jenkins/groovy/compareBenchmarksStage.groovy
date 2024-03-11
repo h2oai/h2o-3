@@ -262,7 +262,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'fileSize100millionRows2ColsallxyFF': [
                 [100000000, 2]: [
-                    'train_time_min': 30,
+                    'train_time_min': 25,
                     'train_time_max': 37
                 ]
             ],
