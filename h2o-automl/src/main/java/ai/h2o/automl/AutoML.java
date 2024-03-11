@@ -11,22 +11,20 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.leaderboard.ModelGroup;
 import ai.h2o.automl.leaderboard.ModelProvider;
 import ai.h2o.automl.leaderboard.ModelStep;
-import ai.h2o.automl.preprocessing.PipelineStep;
-import ai.h2o.automl.preprocessing.PipelineStepDefinition;
+import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
 import hex.leaderboard.*;
-import hex.pipeline.DataTransformer;
-import hex.pipeline.PipelineModel.PipelineParameters;
 import hex.splitframe.ShuffleSplitFrame;
-import org.apache.log4j.Logger;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
 import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
@@ -63,7 +61,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private static final boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private static final ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
-  private static final Logger log = Logger.getLogger(AutoML.class);
+  private static final Logger log = LoggerFactory.getLogger(AutoML.class);
 
   private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
     final Key<AutoML> amlKey = automl._key;
@@ -168,10 +166,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Vec[] _originalTrainingFrameVecs;
   private String[] _originalTrainingFrameNames;
   private long[] _originalTrainingFrameChecksums;
-  private transient Map<Key, String> _trackedKeys = new NonBlockingHashMap<>();
+  private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
-  private transient PipelineParameters _pipelineParams;
-  private transient Map<String, Object[]> _pipelineHyperParams;
+  private transient PreprocessingStep[] _preprocessing;
   transient StepResultState[] _stepsResults;
 
   private boolean _useAutoBlending;
@@ -220,7 +217,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       prepareData();
       initLeaderboard();
-      initPipeline();
+      initPreprocessing();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -390,46 +387,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     _leaderboard.setExtensionsProvider(createLeaderboardExtensionProvider(this));
   }
-  
-  private void initPipeline() {
-    final AutoMLBuildModels build = _buildSpec.build_models;
-    _pipelineParams = build.preprocessing == null ? null : new PipelineParameters();
-    if (_pipelineParams == null) return;
-    List<DataTransformer> transformers = new ArrayList<>();
-    Map<String, Object[]> hyperParams = new NonBlockingHashMap<>();
-    for (PipelineStepDefinition def : build.preprocessing) {
-      PipelineStep step = def.newPipelineStep(this);
-      transformers.addAll(Arrays.asList(step.pipelineTransformers()));
-      Map<String, Object[]> hp = step.pipelineTransformersHyperParams();
-      if (hp != null) hyperParams.putAll(hp);
-    }
-    if (transformers.isEmpty()) {
-      _pipelineParams = null;
-      _pipelineHyperParams = null;
-    } else {
-      _pipelineParams.setTransformers(transformers.toArray(new DataTransformer[0]));
-      _pipelineHyperParams = hyperParams;
-      trackKeys(transformers.stream().map(DataTransformer::getKey).toArray(Key[]::new));
-    }
-    
-    //TODO: given that a transformer can reference a model (e.g. TE), 
-    // and multiple transformers can refer the same model, 
-    // then we should be careful when deleting a transformer (resp. an entire pipeline) 
-    // as we may delete sth that is still in use by another transformer (resp. pipeline).
-    // --> ref count?
-    
-    //TODO: in AutoML, the same transformations are likely to occur on multiple (sometimes all) models, 
-    // especially if the transformers parameters are not tuned.
-    // But it also depends if the transformers are context(CV)-sensitive (e.g. Target Encoding).
-    // See `CachingTransformer` for some thoughts about this.
+
+  private void initPreprocessing() {
+    _preprocessing = _buildSpec.build_models.preprocessing == null 
+            ? null 
+            : Arrays.stream(_buildSpec.build_models.preprocessing)
+                .map(def -> def.newPreprocessingStep(this))
+                .toArray(PreprocessingStep[]::new);
   }
   
-  PipelineParameters getPipelineParams() {
-    return _pipelineParams;
-  }
-  
-  Map<String, Object[]> getPipelineHyperParams() {
-    return _pipelineHyperParams;
+  PreprocessingStep[] getPreprocessing() {
+    return _preprocessing;
   }
 
   ModelingStep[] getExecutionPlan() {
@@ -523,11 +491,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     eventLog().info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.get().format(_runCountdown.start_time()))
             .setNamedValue("start_epoch", _runCountdown.start_time(), EventLogEntry.epochFormat.get());
     try {
-      Scope.enter();
       learn();
     } finally {
       stop();
-      Scope.exit();
     }
   }
   
@@ -793,6 +759,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private void learn() {
     List<ModelingStep> completed = new ArrayList<>();
+    if (_preprocessing != null) {
+      for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.prepare();
+    }
     for (ModelingStep step : getExecutionPlan()) {
       if (!exceededSearchLimits(step)) {
         StepResultState state = _modelingStepsExecutor.submit(step, job());
@@ -811,6 +780,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           }
         }
       }
+    }
+    if (_preprocessing != null) {
+      for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.dispose();
     }
     _actualModelingSteps = session().getModelingStepsRegistry().createDefinitionPlanFromSteps(completed.toArray(new ModelingStep[0]));
     eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));
@@ -871,6 +843,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
     if (session() != null) session().remove(fs, cascade);
+    if (cascade && _preprocessing != null) {
+      for (PreprocessingStep preprocessingStep : _preprocessing) {
+        preprocessingStep.remove();
+      }
+    }
     for (Key key : _trackedKeys.keySet()) Keyed.remove(key, fs, true);
 
     return super.remove_impl(fs, cascade);

@@ -1,7 +1,8 @@
 package ai.h2o.automl.dummy;
 
 import ai.h2o.automl.IAlgo;
-import hex.*;
+import hex.ModelBuilder;
+import hex.ModelCategory;
 import org.junit.Ignore;
 import water.exceptions.H2OIllegalArgumentException;
 
@@ -57,7 +58,6 @@ public class DummyBuilder extends ModelBuilder<DummyModel, DummyModel.DummyModel
         public void computeImpl() {
             init(true);
             DummyModel model = new DummyModel(_result, _parms, new DummyModel.DummyModelOutput(DummyBuilder.this));
-            model._output._training_metrics = new ModelMetricsBinomial(model, model._parms.train(), 1, 1, null, 1, AUC2.emptyAUC(), 1, null, null);
             model.delete_and_lock(_job);
             model.update(_job);
             model.unlock(_job);

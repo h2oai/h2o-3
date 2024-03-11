@@ -1,22 +1,22 @@
-package ai.h2o.targetencoding.pipeline.transformers;
+package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.Model;
 import hex.Model.Parameters.CategoricalEncodingScheme;
-import hex.ModelBuilder;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
-import hex.pipeline.Pipeline;
-import hex.pipeline.PipelineModel;
+import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -24,20 +24,26 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
+import water.util.RandomUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static water.TestUtil.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class TargetEncoderFeatureTransformerTest {
+public class TargetEncoderPreprocessorTest {
     
     private static String TO_ENCODE = "categorical";
     private static String ENCODED = "categorical_te";
@@ -56,24 +62,21 @@ public class TargetEncoderFeatureTransformerTest {
             Frame train = makeTrainFrame(true);
             Frame valid = makeValidFrame();
             
-            TargetEncoderParameters teParams = makeTEParams(train, DataLeakageHandlingStrategy.KFold, false, false);
+            TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
+            Scope.track_generic(teModel);
+            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
+            Scope.track_generic(tePreproc);
             
-            PipelineModel pModel = buildPipeline(train, null, teParams, CategoricalEncodingScheme.AUTO);
-            Scope.track_generic(pModel);
+            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.AUTO);
+            Scope.track_generic(model);
             
             int expectedCVModels = 3;  //3 folds -> 3 cv models
-            assertEquals(expectedCVModels, pModel._output._cross_validation_models.length);
-            //assertions on the pipeline model (build on a clean frame)
-            assertFalse(ArrayUtils.contains(pModel._output._names, ENCODED));
-            assertTrue(ArrayUtils.contains(pModel._output._names, TO_ENCODE));
-            assertTrue(ArrayUtils.contains(pModel._output._names, NOT_ENCODED));
-            // assertions on the estimator model (build on an encoded frame)
-            Model eModel = pModel._output.getEstimatorModel();
-            assertTrue(ArrayUtils.contains(eModel._output._names, ENCODED));
-            assertFalse(ArrayUtils.contains(eModel._output._names, TO_ENCODE));
-            assertTrue(ArrayUtils.contains(eModel._output._names, NOT_ENCODED));
-          
-            Frame preds = pModel.score(valid);
+            assertEquals(expectedCVModels, model._output._cross_validation_models.length);
+            assertTrue(ArrayUtils.contains(model._output._names, ENCODED));
+            assertFalse(ArrayUtils.contains(model._output._names, TO_ENCODE));
+            assertTrue(ArrayUtils.contains(model._output._names, NOT_ENCODED));
+            
+            Frame preds = model.score(valid);
             Scope.track(preds);
         } finally {
             Scope.exit();
@@ -88,22 +91,19 @@ public class TargetEncoderFeatureTransformerTest {
             Frame train = makeTrainFrame(false);
             Frame valid = makeValidFrame();
 
-            TargetEncoderParameters teParams = makeTEParams(train, DataLeakageHandlingStrategy.None, false, false);
+            TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, false);
+            Scope.track_generic(teModel);
+            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
+            Scope.track_generic(tePreproc);
 
-            PipelineModel pModel = buildPipeline(train, valid, teParams, CategoricalEncodingScheme.AUTO);
-            Scope.track_generic(pModel);
+            Model model = buildModel(train, valid, tePreproc, CategoricalEncodingScheme.AUTO);
+            Scope.track_generic(model);
 
-            //assertions on the pipeline model (build on a clean frame)
-            assertFalse(ArrayUtils.contains(pModel._output._names, ENCODED));
-            assertTrue(ArrayUtils.contains(pModel._output._names, TO_ENCODE));
-            assertTrue(ArrayUtils.contains(pModel._output._names, NOT_ENCODED));
-            // assertions on the estimator model (build on an encoded frame)
-            Model eModel = pModel._output.getEstimatorModel();
-            assertTrue(ArrayUtils.contains(eModel._output._names, ENCODED));
-            assertFalse(ArrayUtils.contains(eModel._output._names, TO_ENCODE));
-            assertTrue(ArrayUtils.contains(eModel._output._names, NOT_ENCODED));
+            assertTrue(ArrayUtils.contains(model._output._names, ENCODED));
+            assertFalse(ArrayUtils.contains(model._output._names, TO_ENCODE));
+            assertTrue(ArrayUtils.contains(model._output._names, NOT_ENCODED));
 
-            Frame preds = pModel.score(valid);
+            Frame preds = model.score(valid);
             Scope.track(preds);
         } finally {
             Scope.exit();
@@ -150,9 +150,9 @@ public class TargetEncoderFeatureTransformerTest {
         return row;
     }
 
-    private TargetEncoderParameters makeTEParams(Frame train, DataLeakageHandlingStrategy strategy, boolean encodeAll, boolean keepOriginalCategoricalPredictors) {
+    private TargetEncoderModel trainTE(Frame train, DataLeakageHandlingStrategy strategy, boolean encodeAll, boolean keepOriginalCategoricalPredictors) {
         TargetEncoderParameters params = new TargetEncoderParameters();
-        params._keep_original_categorical_columns = keepOriginalCategoricalPredictors;
+        params._keep_original_categorical_columns= keepOriginalCategoricalPredictors;
         params._train = train._key;
         params._response_column = TARGET;
         params._fold_column = ArrayUtils.contains(train.names(), FOLDC) ? FOLDC : null;
@@ -160,32 +160,31 @@ public class TargetEncoderFeatureTransformerTest {
         params._data_leakage_handling = strategy;
         params._noise = 0;
         params._seed = 42;
-        return params;
+
+        TargetEncoder te = new TargetEncoder(params);
+        return te.trainModel().get();
     }
 
-    private PipelineModel buildPipeline(Frame train, Frame valid, TargetEncoderParameters teParams, CategoricalEncodingScheme categoricalEncoding) {
-        GBMModel.GBMParameters eparams = new GBMModel.GBMParameters();
-        eparams._min_rows = 1;
-        eparams._max_depth = 1;
-        eparams._categorical_encoding = categoricalEncoding;
+    private Model buildModel(Frame train, Frame valid, TargetEncoderPreprocessor preprocessor, CategoricalEncodingScheme categoricalEncoding) {
+        GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+        params._seed = 987;
+        params._train = train._key;
+        params._valid = valid == null ? null : valid._key;
+        params._response_column = TARGET;
+        params._preprocessors = preprocessor == null ? null : new Key[] {preprocessor._key};
+        params._min_rows = 1;
+        params._max_depth = 1;
+        params._categorical_encoding = categoricalEncoding;
 
         if (ArrayUtils.contains(train.names(), FOLDC)) {
-            eparams._keep_cross_validation_models = true;
-            eparams._keep_cross_validation_predictions = true;
+            params._fold_column = FOLDC;
+            params._keep_cross_validation_models = true;
+            params._keep_cross_validation_predictions = true;
         }
 
-        PipelineModel.PipelineParameters pparams = new PipelineModel.PipelineParameters();
-        TargetEncoderFeatureTransformer teTrans = new TargetEncoderFeatureTransformer(teParams).init();
-        pparams.setTransformers(teTrans);
-        pparams._estimatorParams = eparams;
-        pparams._seed = 987;
-        pparams._train = train._key;
-        pparams._valid = valid == null ? null : valid._key;
-        pparams._response_column = TARGET;
-        pparams._fold_column = ArrayUtils.contains(train.names(), FOLDC) ? FOLDC : null;
-        Pipeline pipeline = ModelBuilder.make(pparams);
-        PipelineModel pmodel = Scope.track_generic(pipeline.trainModel().get());
-        return pmodel;
+        GBM gbm = new GBM(params);
+        GBMModel model = gbm.trainModel().get();
+        return model;
     }
 
 
@@ -222,7 +221,7 @@ public class TargetEncoderFeatureTransformerTest {
             Scope.enter();
             Frame train = makeTrainFrame(true); //without the fold column, the test pass: reordering issue
 
-            Model model = buildPipeline(train, null, null, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, null, CategoricalEncodingScheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");

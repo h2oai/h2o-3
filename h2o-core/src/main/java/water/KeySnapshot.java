@@ -19,11 +19,10 @@ import java.util.TreeMap;
  */
 public class KeySnapshot {
   /** Class to filter keys from the snapshot.  */
-  @FunctionalInterface
-  public interface KVFilter {
+  public abstract static class KVFilter {
     /** @param k KeyInfo to be filtered
      *  @return true if the key should be included in the new (filtered) set.  */
-    boolean filter(KeyInfo k);
+    public abstract boolean filter(KeyInfo k);
   }
 
   /** Class containing information about user keys.
@@ -65,12 +64,6 @@ public class KeySnapshot {
     for(KeyInfo kinfo: _keyInfos)
       if(kvf.filter(kinfo))res.add(kinfo);
     return new KeySnapshot(res.toArray(new KeyInfo[res.size()]));
-  }
-  
-  public Key findFirst(KVFilter kvf) {
-    for (KeyInfo ki : _keyInfos)
-      if (kvf.filter(ki)) return ki._key;
-    return null;
   }
 
   KeySnapshot(KeyInfo[] snapshot){

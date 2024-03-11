@@ -18,9 +18,10 @@ import numbers
 import tabulate
 
 import h2o
-from h2o.exceptions import H2OConnectionError
-from h2o.expr_optimizer import optimize
+from h2o.backend.connection import H2OConnectionError
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
+from h2o.model.model_base import ModelBase
+from h2o.expr_optimizer import optimize
 
 
 class ExprNode(object):
@@ -190,7 +191,7 @@ class ExprNode(object):
                 return "[%d:%s]" % (start, str(stop - start))
             else:
                 return "[%d:%s:%d]" % (start, str((stop - start + step - 1) // step), step)
-        if isinstance(arg, h2o.model.ModelBase):
+        if isinstance(arg, ModelBase):
             return arg.model_id
         # Number representation without Py2 L suffix enforced
         if isinstance(arg, numbers.Integral):

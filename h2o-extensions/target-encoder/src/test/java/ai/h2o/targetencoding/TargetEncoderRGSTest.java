@@ -16,7 +16,7 @@ import water.Job;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
-import water.api.GridSearchHandler.SchemaModelParametersBuilderFactory;
+import water.api.GridSearchHandler.DefaultModelParametersBuilderFactory;
 import water.fvec.Frame;
 
 import java.util.Arrays;
@@ -49,7 +49,7 @@ public class TargetEncoderRGSTest{
 
         TargetEncoderParameters parameters = new TargetEncoderParameters();
 
-        SchemaModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = new SchemaModelParametersBuilderFactory<>();
+        DefaultModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = new DefaultModelParametersBuilderFactory<>();
 
         RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new RandomDiscreteValueSearchCriteria();
         RandomDiscreteValueWalker<TargetEncoderParameters> walker = new RandomDiscreteValueWalker<>(parameters, hpGrid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
@@ -105,8 +105,8 @@ public class TargetEncoderRGSTest{
         parameters._response_column = responseColumn;
         parameters._ignored_columns = ignoredColumns(trainingFrame, "home.dest", "embarked", parameters._response_column);
 
-        SchemaModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = 
-                new SchemaModelParametersBuilderFactory<>();
+        DefaultModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = 
+                new DefaultModelParametersBuilderFactory<>();
 
         RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new RandomDiscreteValueSearchCriteria();
         RandomDiscreteValueWalker<TargetEncoderParameters> walker = new RandomDiscreteValueWalker<>(

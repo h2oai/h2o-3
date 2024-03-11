@@ -30,7 +30,7 @@ public class DummyModelBuilder
         init(true);
         Model model = null;
         try {
-          model = new DummyModel(dest(), _parms, new DummyModelOutput(DummyModelBuilder.this, msg));
+          model = new DummyModel(dest(), _parms, new DummyModelOutput(DummyModelBuilder.this, train(), msg));
           model.delete_and_lock(_job);
           model.update(_job);
         } finally {

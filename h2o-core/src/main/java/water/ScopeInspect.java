@@ -106,8 +106,7 @@ public class ScopeInspect {
         if (fr != null) {
           for (int i=0; i<fr.keys().length; i++) {
             Key<Vec> vk = fr.keys()[i];
-            String name = fr.name(i);
-            appendKey(sb, vk, numIndent+1, i+":'"+name+"'", true, keyFilter);
+            appendKey(sb, vk, numIndent+1, "vec_"+i, true, keyFilter);
           }
         }
       }

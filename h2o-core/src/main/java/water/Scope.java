@@ -199,7 +199,6 @@ public class Scope {
    * Use {@link #untrack(Frame...)} is you need a behaviour symmetrical to {@link #track(Frame...)}.
    * @param keys
    */
-  @SafeVarargs
   public static <K extends Key> void untrack(K... keys) {
     if (keys.length == 0) return;
     Level level = lget();           // Pay the price of T.L.S. lookup

@@ -668,3 +668,4 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
 
+

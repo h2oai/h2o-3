@@ -1326,6 +1326,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         assert_is_type(multinode_mode, None, bool)
         self._parms["multinode_mode"] = multinode_mode
 
+
     def get_regression_influence_diagnostics(self, predictor_size=None):
         """
         Get the regression influence diagnostics frames for all models with different number of predictors.  If a 
@@ -1549,4 +1550,3 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :return: a list of best predictors subset
         """
         return self._model_json["output"]["best_predictors_subset"]
-

@@ -5,12 +5,12 @@ import hex.faulttolerance.Recovery;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.KeyGen.PatternKeyGen;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OGridException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
+import water.util.PojoUtils;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -101,10 +101,6 @@ public final class GridSearch<MP extends Model.Parameters> {
       _gridSearch = new GridSearch<>(destKey, hyperSpaceWalker);
     }
     
-    public Key<Grid> dest() {
-      return _gridSearch._result;
-    }
-    
     public Builder<MP> withParallelism(int parallelism) {
       _gridSearch._parallelism = parallelism;
       return this;
@@ -140,9 +136,6 @@ public final class GridSearch<MP extends Model.Parameters> {
   private int _maxConsecutiveFailures = Integer.MAX_VALUE;  // for now, disabled by default
 
   private final Key<Grid> _result;
-  
-  private final KeyGen _modelKeyGen = new PatternKeyGen("{0}_model_{1}");
-  
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
@@ -279,7 +272,7 @@ public final class GridSearch<MP extends Model.Parameters> {
       try {
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
-        onModel(grid, finishedModel._input_parms.checksum(), finishedModel._key);
+        onModel(grid, finishedModel._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
 
         _job.update(1);
         grid.update(_job);
@@ -351,7 +344,7 @@ public final class GridSearch<MP extends Model.Parameters> {
       while (params == null) {
         if (hyperSpaceIterator.hasNext()) {
           params = hyperSpaceIterator.nextModelParameters();
-          final Key modelKey = grid.getModelKey(params.checksum());
+          final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
           if (modelKey != null) {
             params = null;
           }
@@ -378,7 +371,7 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     while (startModels.size() < _parallelism && iterator.hasNext()) {
       final MP nextModelParameters = iterator.nextModelParameters();
-      final long checksum = nextModelParameters.checksum();
+      final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
       if (grid.getModelKey(checksum) == null) {
         startModels.add(ModelBuilder.make(nextModelParameters));
       }
@@ -405,6 +398,7 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @param grid grid object to save results; grid already locked
    */
   private void gridSearch(Grid<MP> grid) {
+    final String protoModelKey = grid._key + "_model_";
     // Get iterator to traverse hyper space
     HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
     // Number of traversed model parameters
@@ -427,7 +421,7 @@ public final class GridSearch<MP extends Model.Parameters> {
           scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
           //// build the model!
-          model = buildModel(params, grid, ++counter);
+          model = buildModel(params, grid, ++counter, protoModelKey);
           if (model != null) {
             model.fillScoringInfo(scoringInfo);
             grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
@@ -439,7 +433,7 @@ public final class GridSearch<MP extends Model.Parameters> {
           
           if (Job.isCancelledException(e)) {
             assert model == null;
-            final long checksum = params.checksum();
+            final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
             final Key<Model>[] modelKeys = findModelsByChecksum(checksum);
             if (modelKeys.length == 1) {
               Keyed.removeQuietly(modelKeys[0]);
@@ -532,6 +526,11 @@ public final class GridSearch<MP extends Model.Parameters> {
     grid.exportBinary(checkpointsDir, false);
   }
 
+  static final Set<String> IGNORED_FIELDS_PARAM_HASH = new HashSet<>(Arrays.asList(
+          "_export_checkpoints_dir",
+          "_max_runtime_secs"        // We are modifying ourselves in Grid Search code
+  ));
+
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
    *
@@ -547,15 +546,17 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @param params parameters for a new model
    * @param grid   grid object holding created models
    * @param paramsIdx  index of generated model parameter
+   * @param protoModelKey  prototype of model key
    * @return return a new model if it does not exist
    */
-  private Model buildModel(final MP params, Grid<MP> grid, int paramsIdx) {
+  private Model buildModel(final MP params, Grid<MP> grid, int paramsIdx, String protoModelKey) {
     // Make sure that the model is not yet built (can be case of duplicated hyper parameters).
     // We first look in the grid _models cache, then we look in the DKV.
     // FIXME: get checksum here since model builder will modify instance of params!!!
 
     // Grid search might be continued over the very exact hyperspace, but with autoexporting disabled. 
-    final long checksum = params.checksum();
+    // To prevent 
+    final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
     Key<Model> key = grid.getModelKey(checksum);
     if (key != null) {
       if (DKV.get(key) == null) {
@@ -577,11 +578,11 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     // Modify model key to have nice version with counter
     // Note: Cannot create it before checking the cache since checksum would differ for each model
-    Key<Model> result = _modelKeyGen.make(grid._key, paramsIdx);
+    Key<Model> result = Key.make(protoModelKey + paramsIdx);
     // Build a new model
     assert grid.getModel(params) == null;
     Model m = ModelBuilder.trainModelNested(_job, result, params, null);
-    assert checksum == m._input_parms.checksum() : 
+    assert checksum == m._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH) : 
         "Model checksum different from original params";
     onModel(grid, checksum, result);
     return m;
@@ -598,7 +599,7 @@ public final class GridSearch<MP extends Model.Parameters> {
         if ((m == null) || (m._parms == null))
           return false;
         try {
-          return m._parms.checksum() == checksum;
+          return m._parms.checksum(IGNORED_FIELDS_PARAM_HASH) == checksum;
         } catch (H2OConcurrentModificationException e) {
           // We are inspecting model parameters that doesn't belong to us - they might be modified (or deleted) while
           // checksum is being calculated: we skip them (see PUBDEV-5286)
@@ -633,7 +634,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     if (fr == null || fr._key == null) {
       throw new IllegalArgumentException("The frame being grid-searched over must have a Key");
     }
-    return Key.make("Grid_" + modelName + "_" + fr._key + H2O.calcNextUniqueModelId(""));
+    return Key.make("Grid_" + modelName + "_" + fr._key.toString() + H2O.calcNextUniqueModelId(""));
   }
 
   /**
@@ -840,6 +841,58 @@ public final class GridSearch<MP extends Model.Parameters> {
         recovery,
         grid.getParallelism()
     );
+  }
+  
+  /**
+   * The factory is producing a parameters builder which uses reflection to setup field values.
+   *
+   * @param <MP> type of model parameters object
+   */
+  public static class SimpleParametersBuilderFactory<MP extends Model.Parameters>
+          implements ModelParametersBuilderFactory<MP> {
+
+    @Override
+    public ModelParametersBuilder<MP> get(MP initialParams) {
+      return new SimpleParamsBuilder<>(initialParams);
+    }
+
+    @Override
+    public PojoUtils.FieldNaming getFieldNamingStrategy() {
+      return PojoUtils.FieldNaming.CONSISTENT;
+    }
+
+    /**
+     * The builder modifies initial model parameters directly by reflection.
+     *
+     * Usage:
+     * <pre>{@code
+     *   GBMModel.GBMParameters params =
+     *     new SimpleParamsBuilder(initialParams)
+     *      .set("_ntrees", 30).set("_learn_rate", 0.01).build()
+     * }</pre>
+     *
+     * @param <MP> type of model parameters object
+     */
+    public static class SimpleParamsBuilder<MP extends Model.Parameters>
+            implements ModelParametersBuilder<MP> {
+
+      final private MP params;
+
+      public SimpleParamsBuilder(MP initialParams) {
+        params = initialParams;
+      }
+
+      @Override
+      public ModelParametersBuilder<MP> set(String name, Object value) {
+        PojoUtils.setField(params, name, value, PojoUtils.FieldNaming.CONSISTENT);
+        return this;
+      }
+
+      @Override
+      public MP build() {
+        return params;
+      }
+    }
   }
 
   /**

@@ -16,6 +16,9 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.
@@ -102,20 +105,52 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
      */
     private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails, String stackTrace) {
       assert rawParams != null : "API has to always pass rawParams";
-      _failed_params = ArrayUtils.append(_failed_params, params);
-      _failure_details = ArrayUtils.append(_failure_details, failureDetails);
-      _failed_raw_params = ArrayUtils.append(_failed_raw_params, new String[][]{rawParams});
-      _failure_stack_traces = ArrayUtils.append(_failure_stack_traces, stackTrace);
+      // Append parameter
+      MP[] a = _failed_params;
+      MP[] na = Arrays.copyOf(a, a.length + 1);
+      na[a.length] = params;
+      _failed_params = na;
+      // Append message
+      String[] m = _failure_details;
+      String[] nm = Arrays.copyOf(m, m.length + 1);
+      nm[m.length] = failureDetails;
+      _failure_details = nm;
+      // Append raw params
+      String[][] rp = _failed_raw_params;
+      String[][] nrp = Arrays.copyOf(rp, rp.length + 1);
+      nrp[rp.length] = rawParams;
+      _failed_raw_params = nrp;
+      // Append stack trace
+      String[] st = _failure_stack_traces;
+      String[] nst = Arrays.copyOf(st, st.length + 1);
+      nst[st.length] = stackTrace;
+      _failure_stack_traces = nst;
     }
     
-    public void addWarning(String message) {
-      Log.warn(message);
-      _warning_details = ArrayUtils.append(_warning_details, message);
+    private void appendWarningMessage(String[] hyper_parameter, String checkField) {
+      if (hyper_parameter != null && Arrays.asList(hyper_parameter).contains(checkField)) {
+        String warningMessage = null;
+        if ("alpha".equals(checkField)) {
+          warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch. " +
+                  "This is due to the fact that the algo has to run initialization for every alpha value. " +
+                  "Setting the alpha array as a model parameter will skip the initialization and run faster overall.";
+        }
+        if (warningMessage != null) {
+          Log.warn(warningMessage);
+          // Append message
+          String[] m = _warning_details;
+          String[] nm = Arrays.copyOf(m, m.length+1);
+          nm[m.length] = warningMessage;
+          _warning_details = nm;
+        }
+      }
     }
 
     public void appendFailedModelParameters(final MP[] params, final String[][] rawParams,
                                             final String[] failureDetails, final String[] stackTraces) {
+
       assert rawParams != null : "API has to always pass rawParams";
+
       _failed_params = ArrayUtils.append(_failed_params, params);
       _failed_raw_params = ArrayUtils.append(_failed_raw_params, rawParams);
       _failure_details = ArrayUtils.append(_failure_details, failureDetails);
@@ -273,7 +308,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   }
 
   public Key<Model> getModelKey(MP params) {
-    long checksum = params.checksum();
+    long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
     return getModelKey(checksum);
   }
 
@@ -282,8 +317,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     return mKey;
   }
 
-  /* FIXME: should pass model parameters instead of checksum, but model
-   * parameters are not immutable and model builder modifies them! */
+  /* FIXME:  should pass model parameters instead of checksum, but model
+   * parameters are not imutable and model builder modifies them! */
   /* package */
   synchronized Key<Model> putModel(long checksum, Key<Model> modelKey) {
     return _models.put(IcedLong.valueOf(checksum), modelKey);
@@ -311,7 +346,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
         _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
-      if (params != null) params.addSearchWarnings(searchFailure, this);
+      searchFailure.appendWarningMessage(_hyper_names, "alpha");
   }
 
   static boolean isJobCanceled(final Throwable t) {
@@ -404,12 +439,12 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     final Collection<SearchFailure> values = _failures.values();
     // Original failures should be left intact. Also avoid mutability from outer space.
     final SearchFailure searchFailure = new SearchFailure(_params != null ? _params.getClass() : null);
-    if (_params != null) _params.addSearchWarnings(searchFailure, this);
 
     for (SearchFailure f : values) {
       searchFailure.appendFailedModelParameters(f._failed_params, f._failed_raw_params, f._failure_details,
               f._failure_stack_traces);
     }
+    searchFailure.appendWarningMessage(_hyper_names, "alpha");
     return searchFailure;
   }
   
@@ -433,7 +468,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   public Object[] getHyperValues(MP parms) {
     Object[] result = new Object[_hyper_names.length];
     for (int i = 0; i < _hyper_names.length; i++) {
-      result[i] = parms.getParameter(_field_naming_strategy.toDest(_hyper_names[i]));
+      result[i] = PojoUtils.getFieldValue(parms, _hyper_names[i], _field_naming_strategy);
     }
     return result;
   }
@@ -525,7 +560,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       Model.Parameters parms = m._parms;
       int j;
       for (j = 0; j < _hyper_names.length; ++j) {
-        Object paramValue = parms.getParameter(_field_naming_strategy.toDest(_hyper_names[j]));
+        Object paramValue = PojoUtils.getFieldValue(parms, _hyper_names[j], _field_naming_strategy);
         if (paramValue.getClass().isArray()) {
           // E.g., GLM alpha/lambda parameters can be arrays with one value
           if (paramValue instanceof float[] && ((float[])paramValue).length == 1) paramValue = ((float[]) paramValue)[0];

@@ -3,7 +3,7 @@ package ai.h2o.automl.preprocessing;
 import ai.h2o.automl.AutoML;
 import water.Iced;
 
-public class PipelineStepDefinition extends Iced<PipelineStepDefinition> {
+public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinition> {
     
     public enum Type {
         TargetEncoding
@@ -11,13 +11,13 @@ public class PipelineStepDefinition extends Iced<PipelineStepDefinition> {
 
     Type _type;
 
-    public PipelineStepDefinition() { /* for reflection */ }
+    public PreprocessingStepDefinition() { /* for reflection */ }
 
-    public PipelineStepDefinition(Type type) { 
+    public PreprocessingStepDefinition(Type type) { 
         _type = type;
     }
 
-    public PipelineStep newPipelineStep(AutoML aml) {
+    public PreprocessingStep newPreprocessingStep(AutoML aml) {
         switch (_type) {
             case TargetEncoding:
                 return new TargetEncoding(aml);

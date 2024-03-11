@@ -14,10 +14,10 @@ from io import StringIO
 import tabulate
 
 # noinspection PyUnresolvedReferences
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import str2 as str, bytes2 as bytes
-from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.threading import local_context, local_context_safe, local_env
+from .utils.compatibility import *  # NOQA
+from .utils.compatibility import str2 as str, bytes2 as bytes
+from .utils.shared_utils import can_use_pandas
+from .utils.threading import local_context, local_context_safe, local_env
 
 __no_export = set(dir())  # all variables defined above this are not exported
 

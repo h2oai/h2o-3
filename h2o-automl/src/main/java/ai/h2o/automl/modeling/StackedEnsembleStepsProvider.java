@@ -3,6 +3,8 @@ package ai.h2o.automl.modeling;
 import ai.h2o.automl.*;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
+import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.KeyValue;
 import hex.Model;
 import hex.ensemble.Metalearner;
@@ -63,8 +65,11 @@ public class StackedEnsembleStepsProvider
             }
 
             @Override
-            protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
-                return params; // no pipeline in SE, base models handle the transformations when making predictions.
+            protected PreprocessingConfig getPreprocessingConfig() {
+                //SE should not have TE applied, the base models already do it.
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_ENABLED, false);
+                return config;
             }
 
             @Override
@@ -117,18 +122,13 @@ public class StackedEnsembleStepsProvider
             protected abstract Key<Model>[] getBaseModels();
 
             protected String getModelType(Key<Model> key) {
-              ModelingStep step = aml().session().getModelingStep(key);
-//              if (step != null) {  // fixme: commenting out this for now, as it interprets XRT as a DRF (which it is) and breaks legacy tests. We might want to reconsider this distinction as XRT is often very similar to DRF and doesn't bring much diversity to SEs, and the best_of SEs currently almost always have these 2.
-//                return step.getAlgo().name();
-//              } else { // dirty case
                 String keyStr = key.toString();
-                int lookupStart = keyStr.startsWith(PIPELINE_KEY_PREFIX) ? PIPELINE_KEY_PREFIX.length() : 0;
-                return keyStr.substring(lookupStart, keyStr.indexOf('_', lookupStart));
-//              }
+                return keyStr.substring(0, keyStr.indexOf('_'));
             }
 
             protected boolean isStackedEnsemble(Key<Model> key) {
-                return Algo.StackedEnsemble.name().equals(getModelType(key));
+                ModelingStep step = aml().session().getModelingStep(key);
+                return step != null && step.getAlgo() == Algo.StackedEnsemble;
             }
 
             @Override
