@@ -868,30 +868,6 @@ setClass("H2OSegmentModelsFuture", slots = c(job_key = "character", segment_mode
 #' @export
 setClass("H2OSegmentModels", slots = c(segment_models_id = "character"))
 
-#' H2O Data Transformer
-#'
-#' A representation of a transformer used in an H2O Pipeline
-#' @slot id the unique identifier for the transformer.
-#' @slot name the readable name for the transformer and its variants.
-#' @slot description a description of what the transformer does on data.
-#' @export
-setClass("H2ODataTransformer", slots = c(id = "character", name = "character", description = "character"))
-
-#' @rdname h2o.keyof
-setMethod("h2o.keyof", signature("H2ODataTransformer"), function(object) object@id)
-
-#' H2O Pipeline
-#'
-#' A representation of a pipeline model consisting in a sequence of transformers applied to data
-#'   and usually followed by a final estimator model.
-#' @slot transformers the list of H2O Data Transformers in the pipeline.
-#' @slot estimator_model the final estimator model.
-setClass("H2OPipeline", contains="H2OModel",
-         slots = c(
-             transformers = "list",
-             estimator_model = "H2OModel"
-         ))
-
 #' H2O Grid
 #'
 #' A class to contain the information about grid results

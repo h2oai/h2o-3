@@ -408,6 +408,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
+
     @property
     def aggregated_frame(self):
         if (self._model_json is not None
@@ -423,4 +424,3 @@ class H2OAggregatorEstimator(H2OEstimator):
         if mj.get("output", {}).get("mapping_frame", {}).get("name") is not None:
             mapping_frame_name = mj["output"]["mapping_frame"]["name"]
             return H2OFrame.get_frame(mapping_frame_name)
-

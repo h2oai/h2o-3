@@ -148,7 +148,7 @@ public class ModelAdaptTest extends TestUtil {
 
     Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst);
     tst.remove();
-    FrameUtils.cleanUp(am._toDelete.keySet());
+    FrameUtils.cleanUp(am._toDelete);
   }
 
 }

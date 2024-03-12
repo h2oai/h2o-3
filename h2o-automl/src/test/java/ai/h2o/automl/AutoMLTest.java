@@ -233,15 +233,13 @@ public class AutoMLTest {
 
     AutoML aml = scope.track(AutoML.startAutoML(autoMLBuildSpec, true));
     aml.get();
-
-    System.out.println(aml.leaderboard().toTwoDimTable(ModelProvider.COLUMN.getName(), ModelStep.COLUMN.getName()).toString());
+      
     //as max_models is provided, no time budget is assigned to the models by default, 
     // even when user also provides max_runtime_secs: in this case, the latter only acts as a global limit
     // and cancels the last training step.
     StepResultState[] steps = aml._stepsResults;
     assertTrue("shouldn't have managed to train all max_models", steps.length < autoMLBuildSpec.build_control.stopping_criteria.max_models());
     StepResultState lastStep = steps[steps.length - 1];
-    Log.info("last step = "+lastStep);
     assertTrue("last model training should have been cancelled", 
             lastStep.is(StepResultState.ResultStatus.cancelled)      // if timeout during model training
                     || lastStep.is(StepResultState.ResultStatus.success));   // if timeout between models

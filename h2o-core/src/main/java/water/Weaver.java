@@ -61,7 +61,6 @@ public class Weaver {
     }
     catch( InvocationTargetException | InstantiationException | IllegalAccessException | NotFoundException |
             CannotCompileException | NoSuchFieldException | ClassNotFoundException e) {
-      H2O.fail("Fatal error on serialization", e);
       throw new RuntimeException(e);
     }
   }

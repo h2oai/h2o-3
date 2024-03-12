@@ -3260,6 +3260,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         self._parms["gainslift_bins"] = gainslift_bins
 
 
+
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     """
     :examples:
@@ -3279,4 +3280,3 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     def __init__(self, **kwargs):
         super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
         self.autoencoder = True
-

@@ -26,6 +26,7 @@ import hex.util.CheckpointUtils;
 import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.BMulTask;
 import hex.util.LinearAlgebraUtils.FindMaxIndex;
+import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -118,8 +119,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
       ModelCategory.Regression,
-      ModelCategory.Binomial, 
-      ModelCategory.Multinomial
+      ModelCategory.Binomial,
     };
   }
 
@@ -148,12 +148,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   @Override
-  protected void cv_init() {
+  public void computeCrossValidation() {
     // init computes global list of lambdas
     init(true);
     _cvRuns = true;
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+    super.computeCrossValidation();
   }
 
 
@@ -292,7 +293,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    *   4. unlock the n-folds models (they are changed here, so the unlocking happens here)
    */
   @Override
-  protected void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
+  public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
       setMaxRuntimeSecsForMainModel();
       double bestTestDev = Double.POSITIVE_INFINITY;
       double[] alphasAndLambdas = alignSubModelsAcrossCVModels(cvModelBuilders);
@@ -370,6 +371,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           lmin_max = lidx;
           break;
         }
+      }
+      for (int i = 0; i < cvModelBuilders.length; ++i) {
+        GLM g = (GLM) cvModelBuilders[i];
+        if (g._toRemove != null)
+          for (Key k : g._toRemove)
+            Keyed.remove(k);
       }
 
       for (int i = 0; i < cvModelBuilders.length; ++i) {
@@ -1536,11 +1543,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   protected static final long WORK_TOTAL = 1000000;
 
-  @Override
-  protected void cleanUp() {
-    if (_parms._lambda_search && _parms._is_cv_model)
-      keepUntilCompletion(_dinfo.getWeightsVec()._key);
-    super.cleanUp();
+  transient Key [] _toRemove;
+
+  private Key[] removeLater(Key ...k){
+    _toRemove = _toRemove == null?k:ArrayUtils.append(_toRemove,k);
+    return k;
   }
 
   @Override protected GLMDriver trainModelImpl() { return _driver = new GLMDriver(); }
@@ -1568,6 +1575,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient double[][] _vcov;
     private transient GLMTask.GLMIterationTask _gramInfluence;
     private transient double[][] _cholInvInfluence;
+
+    private void doCleanup() {
+      try {
+        if (_parms._lambda_search && _parms._is_cv_model)
+          Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
+        if (_parms._HGLM) {
+          Key[] vecKeys = _toRemove;
+          for (int index = 0; index < vecKeys.length; index++) {
+            Vec tempVec = DKV.getGet(vecKeys[index]);
+            tempVec.remove();
+          }
+        }
+      } catch (Exception e) {
+        Log.err("Error while cleaning up GLM " + _result);
+        Log.err(e);
+      }
+    }
 
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
@@ -3540,8 +3564,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sumExp += Math.exp(nb[i * N + P] - maxRow);
       }
       Vec[] vecs = dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp, maxRow});
-      if (_parms._lambda_search) {
-        track(vecs[0]); track(vecs[1]);
+      if (_parms._lambda_search && _parms._is_cv_model) {
+        Scope.untrack(vecs[0]._key, vecs[1]._key);
+        removeLater(vecs[0]._key, vecs[1]._key);
       }
       return vecs;
     }
@@ -3823,7 +3848,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * - column 2: zi, intermediate values
      * - column 3: eta = X*beta, intermediate values
      */
-    private void addWdataZiEtaOld2Response() { // attach wdata, zi, eta to response for HGLM
+    public void addWdataZiEtaOld2Response() { // attach wdata, zi, eta to response for HGLM
       int moreColnum = 3 + _parms._random_columns.length;
       Vec[] vecs = _dinfo._adaptedFrame.anyVec().makeZeros(moreColnum);
       String[] colNames = new String[moreColnum];
@@ -3836,10 +3861,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         vecs[index] = _parms.train().vec(randColIndices[index - 3]).makeCopy();
       }
       _dinfo.addResponse(colNames, vecs);
-      Frame wdataZiEta = new Frame(Key.make("wdataZiEta"+Key.rand()), colNames, vecs);
-      DKV.put(wdataZiEta);
-      track(wdataZiEta);
+      for (int index = 0; index < moreColnum; index++) {
+        Scope.untrack(vecs[index]._key);
+        removeLater(vecs[index]._key);
+      }
     }
+
+    @Override
+    public void onCompletion(CountedCompleter caller) {
+      doCleanup();
+      super.onCompletion(caller);
+    }
+
+    @Override
+    public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller) {
+      doCleanup();
+      return super.onExceptionalCompletion(t, caller);
+    }
+
 
     @Override
     public boolean progress(double[] beta, GradientInfo ginfo) {
