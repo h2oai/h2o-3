@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def NODE_LABEL = 'h2o-3 && docker && !mr-0xc8 && (!micro || micro_21)'
+def NODE_LABEL = 'h2o-3'
 
 def pipelineContext = null
 def result = 'FAILURE'
