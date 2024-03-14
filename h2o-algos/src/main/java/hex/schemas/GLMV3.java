@@ -98,10 +98,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "gainslift_bins",
             "linear_constraints",
             "init_optimal_glm", 
-            "separate_linear_beta",
-            "constraint_inner_iteration_number",
-            "constraint_increase_inner_loop", 
-            "constraint_obj_eps"
+            "separate_linear_beta"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -371,28 +368,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             " combine the beta and linear constraints.  Default to false.", level = API.Level.secondary,
             direction = API.Direction.INOUT, gridable = true)
     public boolean separate_linear_beta;
-
-    @API(help="For constrained GLM only.  This is the number of iterations to run before changing the constraint" +
-            " parameters like ckCS, epsilonkCS, etakCS.  If you want to want to put more emphasis on the loglikelihood" +
-            " objective, set this to be a high number and vice versa if you want to put more emphasis on the penaly" +
-            " part of the objective function.  Use gridsearch to find a good setting.  Default to 2.", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
-    public int constraint_inner_iteration_number;
-
-    @API(help="For constrained GLM only.  If true, will increase the innerloop iteration by 1 everytime the inner" +
-            "for loop is entered.  The goal of this is to allow the ck for penalty function to increase quickly at the" +
-            "beginning of the optimization and then slow down.  This will put the emphasis of the algo to first find" +
-            " coefficients that will ensure an small penalty and then later on focus more on satisfying the " +
-            "likelihood part of the objective function.  Default to false.", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
-    public boolean constraint_increase_inner_loop;
-
-    @API(help="For constrained GLM only.  It control the exit of the inner loop in the model building process.  If the" +
-            "change calculated as (new_obj-old_obj)/old_obj <= constraint_grad_eps, the inner loop will exit regardless" +
-            " of whether the iteration number specified in constraint_inner_iteration_number has been reached.  Any" +
-            " number < 0.01 is recommended.  Use gridsearch to find a good setting.  Default to 0.01.", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
-    public double constraint_obj_eps;
     /////////////////////
   }
 }

@@ -2372,11 +2372,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
         return;
       }
-      double objDiff;
-      int innerStop = _parms._constraint_inner_iteration_number;
+      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
       try {
         while (true) {
-          for (int index = 0; index < innerStop; index++) {
+          while (gradMagSquare > _state._csGLMState._epsilonkCSSquare) {
             iterCnt++;
             long t1 = System.currentTimeMillis();
             ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
@@ -2407,7 +2406,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ls.reset(betaCnd, _state, coeffNames);
 
             if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)) {
-              objDiff = Math.abs(gradientInfo._objVal-ls._ginfoOriginal._objVal)/Math.abs(gradientInfo._objVal);
+              gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
               betaCnd = ls._newBeta;
               gradientInfo = ls._ginfoOriginal;
             } else {  // ls failed, reset to 
@@ -2429,17 +2428,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
             
             // check for stopping conditions
-/*            if (checkIterationDone(betaCnd, gradientInfo, iterCnt)) // ratio of objective drops.
-              return;*/
+            if (checkIterationDone(betaCnd, gradientInfo, iterCnt)) // ratio of objective drops.
+              return;
             if (ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient) <= _state._csGLMState._epsilonkCSSquare)
             Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-            if (objDiff < _parms._constraint_obj_eps)  // inner loop stop making progress, time to quit
-              break;
           }
           // update constraint parameters, ck, lambdas and others
           updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints);
-          if (_parms._constraint_increase_inner_loop)
-            innerStop++;
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));

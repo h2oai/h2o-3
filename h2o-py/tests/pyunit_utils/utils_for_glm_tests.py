@@ -4,9 +4,7 @@ from h2o.exceptions import H2OValueError
 from h2o.grid.grid_search import H2OGridSearch
 
 def gen_constraint_glm_model(training_dataset, x, y, solver="AUTO", family="gaussian", linear_constraints=None, 
-                             beta_constraints=None, separate_linear_beta=False, constraint_inner_iteration_number=False,
-                             constraint_obj_eps=1e-2, init_optimal_glm=False, constraints_increase_inner_loop=False,
-                             startval = None):
+                             beta_constraints=None, separate_linear_beta=False, init_optimal_glm=False, startval = None):
     """
     This function given the parameters will return a constraint GLM model.
     """
@@ -14,10 +12,7 @@ def gen_constraint_glm_model(training_dataset, x, y, solver="AUTO", family="gaus
         raise H2OValueError("linear_constraints cannot be None")
         
     params = {"family":family, "lambda_":0.0, "seed":12345, "remove_collinear_columns":True, "solver":solver, 
-              "linear_constraints":linear_constraints, "init_optimal_glm":init_optimal_glm, 
-              "constraint_inner_iteration_number":constraint_inner_iteration_number, 
-              "separate_linear_beta":separate_linear_beta, "constraint_obj_eps":constraint_obj_eps,
-              "constraints_increase_inner_loop":constraints_increase_inner_loop}
+              "linear_constraints":linear_constraints, "init_optimal_glm":init_optimal_glm}
     if beta_constraints is not None:
         params['beta_constraints']=beta_constraints
     if startval is not None:
@@ -28,8 +23,7 @@ def gen_constraint_glm_model(training_dataset, x, y, solver="AUTO", family="gaus
     return constraint_glm
 
 def constraint_glm_gridsearch(training_dataset, x, y, solver="AUTO", family="gaussia", linear_constraints=None,
-                              beta_constraints=None, startval=None, obj_eps_hyper=[0.01], inner_loop_hyper=[2,5], 
-                              init_optimal_glm=False):
+                              beta_constraints=None, startval=None, init_optimal_glm=False):
     """
     This function given the obj_eps_hyper and inner_loop_hyper will build and run a gridsearch model and return the one
     with the best metric.
@@ -39,8 +33,7 @@ def constraint_glm_gridsearch(training_dataset, x, y, solver="AUTO", family="gau
 
     params = {"family":family, "lambda_":0.0, "seed":12345, "remove_collinear_columns":True, "solver":solver,
               "linear_constraints":linear_constraints}
-    hyperParams = {"constraint_inner_iteration_number":inner_loop_hyper, "constraint_obj_eps":obj_eps_hyper,
-                   "constraint_increase_inner_loop":[True, False]}
+    hyperParams = {}
     if beta_constraints is not None:
         params['beta_constraints']=beta_constraints
         hyperParams["separate_linear_beta"] = [True, False]

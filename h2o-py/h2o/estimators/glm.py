@@ -119,9 +119,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  linear_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
                  init_optimal_glm=False,  # type: bool
                  separate_linear_beta=False,  # type: bool
-                 constraint_inner_iteration_number=2,  # type: int
-                 constraint_increase_inner_loop=False,  # type: bool
-                 constraint_obj_eps=0.01,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -441,27 +438,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                false, will combine the beta and linear constraints.  Default to false.
                Defaults to ``False``.
         :type separate_linear_beta: bool
-        :param constraint_inner_iteration_number: For constrained GLM only.  This is the number of iterations to run
-               before changing the constraint parameters like ckCS, epsilonkCS, etakCS.  If you want to want to put more
-               emphasis on the loglikelihood objective, set this to be a high number and vice versa if you want to put
-               more emphasis on the penaly part of the objective function.  Use gridsearch to find a good setting.
-               Default to 2.
-               Defaults to ``2``.
-        :type constraint_inner_iteration_number: int
-        :param constraint_increase_inner_loop: For constrained GLM only.  If true, will increase the innerloop iteration
-               by 1 everytime the innerfor loop is entered.  The goal of this is to allow the ck for penalty function to
-               increase quickly at thebeginning of the optimization and then slow down.  This will put the emphasis of
-               the algo to first find coefficients that will ensure an small penalty and then later on focus more on
-               satisfying the likelihood part of the objective function.  Default to false.
-               Defaults to ``False``.
-        :type constraint_increase_inner_loop: bool
-        :param constraint_obj_eps: For constrained GLM only.  It control the exit of the inner loop in the model
-               building process.  If thechange calculated as (new_obj-old_obj)/old_obj <= constraint_grad_eps, the inner
-               loop will exit regardless of whether the iteration number specified in constraint_inner_iteration_number
-               has been reached.  Any number < 0.01 is recommended.  Use gridsearch to find a good setting.  Default to
-               0.01.
-               Defaults to ``0.01``.
-        :type constraint_obj_eps: float
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -546,9 +522,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.linear_constraints = linear_constraints
         self.init_optimal_glm = init_optimal_glm
         self.separate_linear_beta = separate_linear_beta
-        self.constraint_inner_iteration_number = constraint_inner_iteration_number
-        self.constraint_increase_inner_loop = constraint_increase_inner_loop
-        self.constraint_obj_eps = constraint_obj_eps
 
     @property
     def training_frame(self):
@@ -2501,58 +2474,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(separate_linear_beta, None, bool)
         self._parms["separate_linear_beta"] = separate_linear_beta
 
-    @property
-    def constraint_inner_iteration_number(self):
-        """
-        For constrained GLM only.  This is the number of iterations to run before changing the constraint parameters
-        like ckCS, epsilonkCS, etakCS.  If you want to want to put more emphasis on the loglikelihood objective, set
-        this to be a high number and vice versa if you want to put more emphasis on the penaly part of the objective
-        function.  Use gridsearch to find a good setting.  Default to 2.
-
-        Type: ``int``, defaults to ``2``.
-        """
-        return self._parms.get("constraint_inner_iteration_number")
-
-    @constraint_inner_iteration_number.setter
-    def constraint_inner_iteration_number(self, constraint_inner_iteration_number):
-        assert_is_type(constraint_inner_iteration_number, None, int)
-        self._parms["constraint_inner_iteration_number"] = constraint_inner_iteration_number
-
-    @property
-    def constraint_increase_inner_loop(self):
-        """
-        For constrained GLM only.  If true, will increase the innerloop iteration by 1 everytime the innerfor loop is
-        entered.  The goal of this is to allow the ck for penalty function to increase quickly at thebeginning of the
-        optimization and then slow down.  This will put the emphasis of the algo to first find coefficients that will
-        ensure an small penalty and then later on focus more on satisfying the likelihood part of the objective
-        function.  Default to false.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("constraint_increase_inner_loop")
-
-    @constraint_increase_inner_loop.setter
-    def constraint_increase_inner_loop(self, constraint_increase_inner_loop):
-        assert_is_type(constraint_increase_inner_loop, None, bool)
-        self._parms["constraint_increase_inner_loop"] = constraint_increase_inner_loop
-
-    @property
-    def constraint_obj_eps(self):
-        """
-        For constrained GLM only.  It control the exit of the inner loop in the model building process.  If thechange
-        calculated as (new_obj-old_obj)/old_obj <= constraint_grad_eps, the inner loop will exit regardless of whether
-        the iteration number specified in constraint_inner_iteration_number has been reached.  Any number < 0.01 is
-        recommended.  Use gridsearch to find a good setting.  Default to 0.01.
-
-        Type: ``float``, defaults to ``0.01``.
-        """
-        return self._parms.get("constraint_obj_eps")
-
-    @constraint_obj_eps.setter
-    def constraint_obj_eps(self, constraint_obj_eps):
-        assert_is_type(constraint_obj_eps, None, numeric)
-        self._parms["constraint_obj_eps"] = constraint_obj_eps
-
     Lambda = deprecated_property('Lambda', lambda_)
 
     def get_regression_influence_diagnostics(self):
@@ -2844,4 +2765,3 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
             return model._model_json["output"]["all_constraints_satisfied"]
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
-

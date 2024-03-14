@@ -144,9 +144,7 @@ def test_constraints_binomial():
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         linear_constraints=linear_constraints2,
-                                                                        startval=random_coef,
-                                                                        obj_eps_hyper=obj_esp_list,
-                                                                        inner_loop_hyper=inner_loop_number)
+                                                                        startval=random_coef)
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and coefficients initialized random initial values: {0}, number of iterations"
           " taken to build the model: {1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))
@@ -155,9 +153,7 @@ def test_constraints_binomial():
     # GLM model with GLM coefficients with default initialization
     h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",
-                                                                         linear_constraints=linear_constraints2,
-                                                                         obj_eps_hyper=obj_esp_list,
-                                                                         inner_loop_hyper=inner_loop_number)
+                                                                         linear_constraints=linear_constraints2)
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and default coefficients initialization: {0}, number of iterations"
           " taken to build the model: {1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))

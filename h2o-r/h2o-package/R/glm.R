@@ -167,19 +167,6 @@
 #'        coefficients arefound, first beta constraints will be applied followed by the application of linear
 #'        constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
 #'        false, will combine the beta and linear constraints.  Default to false. Defaults to FALSE.
-#' @param constraint_inner_iteration_number For constrained GLM only.  This is the number of iterations to run before changing the constraint parameters
-#'        like ckCS, epsilonkCS, etakCS.  If you want to want to put more emphasis on the loglikelihood objective, set
-#'        this to be a high number and vice versa if you want to put more emphasis on the penaly part of the objective
-#'        function.  Use gridsearch to find a good setting.  Default to 2. Defaults to 2.
-#' @param constraint_increase_inner_loop \code{Logical}. For constrained GLM only.  If true, will increase the innerloop iteration by 1 everytime the
-#'        innerfor loop is entered.  The goal of this is to allow the ck for penalty function to increase quickly at
-#'        thebeginning of the optimization and then slow down.  This will put the emphasis of the algo to first find
-#'        coefficients that will ensure an small penalty and then later on focus more on satisfying the likelihood part
-#'        of the objective function.  Default to false. Defaults to FALSE.
-#' @param constraint_obj_eps For constrained GLM only.  It control the exit of the inner loop in the model building process.  If thechange
-#'        calculated as (new_obj-old_obj)/old_obj <= constraint_grad_eps, the inner loop will exit regardless of whether
-#'        the iteration number specified in constraint_inner_iteration_number has been reached.  Any number < 0.01 is
-#'        recommended.  Use gridsearch to find a good setting.  Default to 0.01. Defaults to 0.01.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -304,10 +291,7 @@ h2o.glm <- function(x,
                     gainslift_bins = -1,
                     linear_constraints = NULL,
                     init_optimal_glm = FALSE,
-                    separate_linear_beta = FALSE,
-                    constraint_inner_iteration_number = 2,
-                    constraint_increase_inner_loop = FALSE,
-                    constraint_obj_eps = 0.01)
+                    separate_linear_beta = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -496,12 +480,6 @@ h2o.glm <- function(x,
     parms$init_optimal_glm <- init_optimal_glm
   if (!missing(separate_linear_beta))
     parms$separate_linear_beta <- separate_linear_beta
-  if (!missing(constraint_inner_iteration_number))
-    parms$constraint_inner_iteration_number <- constraint_inner_iteration_number
-  if (!missing(constraint_increase_inner_loop))
-    parms$constraint_increase_inner_loop <- constraint_increase_inner_loop
-  if (!missing(constraint_obj_eps))
-    parms$constraint_obj_eps <- constraint_obj_eps
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -609,9 +587,6 @@ h2o.glm <- function(x,
                                     linear_constraints = NULL,
                                     init_optimal_glm = FALSE,
                                     separate_linear_beta = FALSE,
-                                    constraint_inner_iteration_number = 2,
-                                    constraint_increase_inner_loop = FALSE,
-                                    constraint_obj_eps = 0.01,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -805,12 +780,6 @@ h2o.glm <- function(x,
     parms$init_optimal_glm <- init_optimal_glm
   if (!missing(separate_linear_beta))
     parms$separate_linear_beta <- separate_linear_beta
-  if (!missing(constraint_inner_iteration_number))
-    parms$constraint_inner_iteration_number <- constraint_inner_iteration_number
-  if (!missing(constraint_increase_inner_loop))
-    parms$constraint_increase_inner_loop <- constraint_increase_inner_loop
-  if (!missing(constraint_obj_eps))
-    parms$constraint_obj_eps <- constraint_obj_eps
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
