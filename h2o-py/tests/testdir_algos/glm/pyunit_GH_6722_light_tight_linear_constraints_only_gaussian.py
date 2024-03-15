@@ -145,7 +145,11 @@ def test_light_tight_linear_constraints_only_gaussian():
     print("RMSE with default GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
           "{1}".format(default_init_MSE, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
-    
+    constraint_eta0 = [0.1, 0.1258925, 0.2]
+    constraint_tau = [2,5,10,15,20]
+    constraint_alpha = [0.01, 0.1, 0.5]
+    constraint_beta = [0.5, 0.9, 1.1]
+    constraint_c0 = [2, 5, 10, 15, 20]    
     random_coef = [0.19109214,  0.00950836, -0.02040451, -0.10378078, -0.0124313 ,0.00304418,  0.00810864,  0.09461915,
                    -0.04671551, -0.0537097, -0.05873786,  0.12283965,  0.03239637,  0.05075875, -0.13135684, 0.02384002,  
                    0.14765001,  0.04634871,  0.06315379,  0.14218046, -0.04808092, -0.11047412, -0.09817918,  
@@ -155,8 +159,11 @@ def test_light_tight_linear_constraints_only_gaussian():
                                                                          family="gaussian",
                                                                          linear_constraints=linear_constraints2,
                                                                          startval=random_coef,
-                                                                         obj_eps_hyper=obj_esp_list,
-                                                                         inner_loop_hyper=inner_loop_number)
+                                                                        constraint_eta0=constraint_eta0,
+                                                                        constraint_tau=constraint_tau,
+                                                                        constraint_alpha=constraint_alpha,
+                                                                        constraint_beta=constraint_beta,
+                                                                        constraint_c0=constraint_c0)
     random_init_MSE = h2o_glm_random_init.model_performance()._metric_json['RMSE']
     print("RMSE with random GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
           "{1}".format(random_init_MSE, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))

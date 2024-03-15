@@ -139,12 +139,20 @@ def test_constraints_binomial():
                    0.9875655504027848, 0.5832266083052889, 0.24205847206862052, 0.9843760682096272, 0.16269008279311103,
                    0.4941250734508458, 0.5446841276322587, 0.19222703209695946, 0.9232239752817498, 0.8824688635063289,
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
-    obj_esp_list = [0.01, 0.05, 0.1]
-    inner_loop_number = [1, 2, 3, 4, 5, 6, 8, 10, 15]
+    constraint_eta0 = [0.1, 0.1258925, 0.2]
+    constraint_tau = [2,5,10,15,20]
+    constraint_alpha = [0.01, 0.1, 0.5]
+    constraint_beta = [0.5, 0.9, 1.1]
+    constraint_c0 = [2, 5, 10, 15, 20]
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         linear_constraints=linear_constraints2,
-                                                                        startval=random_coef)
+                                                                        startval=random_coef,
+                                                                        constraint_eta0=constraint_eta0,
+                                                                        constraint_tau=constraint_tau,
+                                                                        constraint_alpha=constraint_alpha,
+                                                                        constraint_beta=constraint_beta,
+                                                                        constraint_c0=constraint_c0)
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and coefficients initialized random initial values: {0}, number of iterations"
           " taken to build the model: {1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))
@@ -153,7 +161,12 @@ def test_constraints_binomial():
     # GLM model with GLM coefficients with default initialization
     h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",
-                                                                         linear_constraints=linear_constraints2)
+                                                                         linear_constraints=linear_constraints2,
+                                                                         constraint_eta0=constraint_eta0,
+                                                                         constraint_tau=constraint_tau,
+                                                                         constraint_alpha=constraint_alpha,
+                                                                         constraint_beta=constraint_beta,
+                                                                         constraint_c0=constraint_c0)
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and default coefficients initialization: {0}, number of iterations"
           " taken to build the model: {1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))
