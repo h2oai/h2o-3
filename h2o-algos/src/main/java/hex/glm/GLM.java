@@ -1387,8 +1387,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               " IRLSM/irlsm explicitly.");
       return;
     }
-    if (_parms._constraint_inner_iteration_number <= 0) {
-      error("constraint_inner_iteration_number", "must be >= 1.");
+    if (_parms._constraint_eta0 <= 0) {
+      error("constraint_eta0", "must be > 0.");
+      return;
+    }
+    if (_parms._constraint_tau <= 0) {
+      error("constraint_tau", "must be > 0.");
+      return;
+    }
+    if (_parms._constraint_c0 <= 0) {
+      error("constraint_c0", "must be > 0.");
       return;
     }
     // no regularization for constrainted GLM except during testing
@@ -1425,7 +1433,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int index = 0; index < numRedundant; index++)
         error("redundant and possibly conflicting linear constraints", redundantConstraints.get(index));
     } else {
-      _state._csGLMState = new ConstraintGLMStates(constraintCoefficientNames, initConstraintMatrix);
+      _state._csGLMState = new ConstraintGLMStates(constraintCoefficientNames, initConstraintMatrix, _parms);
       _state._hasConstraints = true;
     }
   }
@@ -2430,11 +2438,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // check for stopping conditions
             if (checkIterationDone(betaCnd, gradientInfo, iterCnt)) // ratio of objective drops.
               return;
-            if (ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient) <= _state._csGLMState._epsilonkCSSquare)
             Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           }
           // update constraint parameters, ck, lambdas and others
-          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints);
+          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints, _parms);
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));

@@ -119,6 +119,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  linear_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
                  init_optimal_glm=False,  # type: bool
                  separate_linear_beta=False,  # type: bool
+                 constraint_eta0=0.1258925,  # type: float
+                 constraint_tau=10.0,  # type: float
+                 constraint_alpha=0.1,  # type: float
+                 constraint_beta=0.9,  # type: float
+                 constraint_c0=10.0,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -438,6 +443,25 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                false, will combine the beta and linear constraints.  Default to false.
                Defaults to ``False``.
         :type separate_linear_beta: bool
+        :param constraint_eta0: For constraint GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).
+               Default to 0.1258925
+               Defaults to ``0.1258925``.
+        :type constraint_eta0: float
+        :param constraint_tau: For constraint GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
+               Defaults to ``10.0``.
+        :type constraint_tau: float
+        :param constraint_alpha: For constraint GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).
+               Default to 0.1
+               Defaults to ``0.1``.
+        :type constraint_alpha: float
+        :param constraint_beta: For constraint GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).
+               Default to 0.9
+               Defaults to ``0.9``.
+        :type constraint_beta: float
+        :param constraint_c0: For constraint GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to
+               10
+               Defaults to ``10.0``.
+        :type constraint_c0: float
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -522,6 +546,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.linear_constraints = linear_constraints
         self.init_optimal_glm = init_optimal_glm
         self.separate_linear_beta = separate_linear_beta
+        self.constraint_eta0 = constraint_eta0
+        self.constraint_tau = constraint_tau
+        self.constraint_alpha = constraint_alpha
+        self.constraint_beta = constraint_beta
+        self.constraint_c0 = constraint_c0
 
     @property
     def training_frame(self):
@@ -2473,6 +2502,76 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def separate_linear_beta(self, separate_linear_beta):
         assert_is_type(separate_linear_beta, None, bool)
         self._parms["separate_linear_beta"] = separate_linear_beta
+
+    @property
+    def constraint_eta0(self):
+        """
+        For constraint GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
+
+        Type: ``float``, defaults to ``0.1258925``.
+        """
+        return self._parms.get("constraint_eta0")
+
+    @constraint_eta0.setter
+    def constraint_eta0(self, constraint_eta0):
+        assert_is_type(constraint_eta0, None, numeric)
+        self._parms["constraint_eta0"] = constraint_eta0
+
+    @property
+    def constraint_tau(self):
+        """
+        For constraint GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
+
+        Type: ``float``, defaults to ``10.0``.
+        """
+        return self._parms.get("constraint_tau")
+
+    @constraint_tau.setter
+    def constraint_tau(self, constraint_tau):
+        assert_is_type(constraint_tau, None, numeric)
+        self._parms["constraint_tau"] = constraint_tau
+
+    @property
+    def constraint_alpha(self):
+        """
+        For constraint GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1
+
+        Type: ``float``, defaults to ``0.1``.
+        """
+        return self._parms.get("constraint_alpha")
+
+    @constraint_alpha.setter
+    def constraint_alpha(self, constraint_alpha):
+        assert_is_type(constraint_alpha, None, numeric)
+        self._parms["constraint_alpha"] = constraint_alpha
+
+    @property
+    def constraint_beta(self):
+        """
+        For constraint GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9
+
+        Type: ``float``, defaults to ``0.9``.
+        """
+        return self._parms.get("constraint_beta")
+
+    @constraint_beta.setter
+    def constraint_beta(self, constraint_beta):
+        assert_is_type(constraint_beta, None, numeric)
+        self._parms["constraint_beta"] = constraint_beta
+
+    @property
+    def constraint_c0(self):
+        """
+        For constraint GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10
+
+        Type: ``float``, defaults to ``10.0``.
+        """
+        return self._parms.get("constraint_c0")
+
+    @constraint_c0.setter
+    def constraint_c0(self, constraint_c0):
+        assert_is_type(constraint_c0, None, numeric)
+        self._parms["constraint_c0"] = constraint_c0
 
     Lambda = deprecated_property('Lambda', lambda_)
 

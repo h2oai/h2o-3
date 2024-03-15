@@ -167,6 +167,14 @@
 #'        coefficients arefound, first beta constraints will be applied followed by the application of linear
 #'        constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
 #'        false, will combine the beta and linear constraints.  Default to false. Defaults to FALSE.
+#' @param constraint_eta0 For constraint GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
+#'        Defaults to 0.1258925.
+#' @param constraint_tau For constraint GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10 Defaults to 10.
+#' @param constraint_alpha For constraint GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1 Defaults
+#'        to 0.1.
+#' @param constraint_beta For constraint GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9 Defaults
+#'        to 0.9.
+#' @param constraint_c0 For constraint GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10 Defaults to 10.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -291,7 +299,12 @@ h2o.glm <- function(x,
                     gainslift_bins = -1,
                     linear_constraints = NULL,
                     init_optimal_glm = FALSE,
-                    separate_linear_beta = FALSE)
+                    separate_linear_beta = FALSE,
+                    constraint_eta0 = 0.1258925,
+                    constraint_tau = 10,
+                    constraint_alpha = 0.1,
+                    constraint_beta = 0.9,
+                    constraint_c0 = 10)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -480,6 +493,16 @@ h2o.glm <- function(x,
     parms$init_optimal_glm <- init_optimal_glm
   if (!missing(separate_linear_beta))
     parms$separate_linear_beta <- separate_linear_beta
+  if (!missing(constraint_eta0))
+    parms$constraint_eta0 <- constraint_eta0
+  if (!missing(constraint_tau))
+    parms$constraint_tau <- constraint_tau
+  if (!missing(constraint_alpha))
+    parms$constraint_alpha <- constraint_alpha
+  if (!missing(constraint_beta))
+    parms$constraint_beta <- constraint_beta
+  if (!missing(constraint_c0))
+    parms$constraint_c0 <- constraint_c0
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -587,6 +610,11 @@ h2o.glm <- function(x,
                                     linear_constraints = NULL,
                                     init_optimal_glm = FALSE,
                                     separate_linear_beta = FALSE,
+                                    constraint_eta0 = 0.1258925,
+                                    constraint_tau = 10,
+                                    constraint_alpha = 0.1,
+                                    constraint_beta = 0.9,
+                                    constraint_c0 = 10,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -780,6 +808,16 @@ h2o.glm <- function(x,
     parms$init_optimal_glm <- init_optimal_glm
   if (!missing(separate_linear_beta))
     parms$separate_linear_beta <- separate_linear_beta
+  if (!missing(constraint_eta0))
+    parms$constraint_eta0 <- constraint_eta0
+  if (!missing(constraint_tau))
+    parms$constraint_tau <- constraint_tau
+  if (!missing(constraint_alpha))
+    parms$constraint_alpha <- constraint_alpha
+  if (!missing(constraint_beta))
+    parms$constraint_beta <- constraint_beta
+  if (!missing(constraint_c0))
+    parms$constraint_c0 <- constraint_c0
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

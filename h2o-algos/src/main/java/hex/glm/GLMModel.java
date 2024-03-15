@@ -540,9 +540,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     boolean _testCSZeroGram = false;  // internal parameter, to test zero gram dropped column is correctly implemented
     public boolean _separate_linear_beta = false;  // if true, will perform the beta and linear constraint separately
     public boolean _init_optimal_glm = false;  // only used when there is linear constraints
-    public int _constraint_inner_iteration_number = 2;
-    public boolean _constraint_increase_inner_loop = false;
-    public double _constraint_obj_eps = 0.01;
+    public double _constraint_eta0 = 0.1258925; // eta_k = constraint_eta0/pow(constraint_c0, constraint_alpha)
+    public double _constraint_tau = 10;  // ck+1 = tau*ck
+    public double _constraint_alpha = 0.1; // eta_k = constraint_eta_0/pow(constraint_c0, constraint_alpha)
+    public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
+    public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {

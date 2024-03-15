@@ -98,7 +98,12 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "gainslift_bins",
             "linear_constraints",
             "init_optimal_glm", 
-            "separate_linear_beta"
+            "separate_linear_beta",
+            "constraint_eta0",
+            "constraint_tau",
+            "constraint_alpha",
+            "constraint_beta",
+            "constraint_c0"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -368,6 +373,31 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             " combine the beta and linear constraints.  Default to false.", level = API.Level.secondary,
             direction = API.Direction.INOUT, gridable = true)
     public boolean separate_linear_beta;
+
+    @API(help="For constraint GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to" +
+            " 0.1258925", level = API.Level.secondary,
+            direction = API.Direction.INOUT, gridable = true)
+    public double constraint_eta0;
+
+    @API(help="For constraint GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to" +
+            " 10", level = API.Level.secondary,
+            direction = API.Direction.INOUT, gridable = true)
+    public double constraint_tau;
+
+    @API(help="For constraint GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to" +
+            " 0.1", level = API.Level.secondary,
+            direction = API.Direction.INOUT, gridable = true)
+    public double constraint_alpha;
+
+    @API(help="For constraint GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to" +
+            " 0.9", level = API.Level.secondary,
+            direction = API.Direction.INOUT, gridable = true)
+    public double constraint_beta;
+
+    @API(help="For constraint GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to" +
+            " 10", level = API.Level.secondary,
+            direction = API.Direction.INOUT, gridable = true)
+    public double constraint_c0;
     /////////////////////
   }
 }

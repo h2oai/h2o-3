@@ -575,7 +575,7 @@ public abstract class GLMTask  {
       _likelihood += gmgt._likelihood;
     }
     @Override public final void postGlobal(){
-      ArrayUtils.mult(_gradient,_reg);
+      ArrayUtils.mult(_gradient,_reg); // reg is obj_reg
       for(int j = 0; j < _beta.length - 1; ++j)
         _gradient[j] += _currentLambda * _beta[j];  // add L2 constraint for gradient
       if ((_penalty_mat != null) && (_gamBetaIndices != null))  // update contribution from gam smoothness constraint

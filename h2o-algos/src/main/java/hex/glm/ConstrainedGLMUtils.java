@@ -21,11 +21,6 @@ import static water.util.ArrayUtils.innerProduct;
 public class ConstrainedGLMUtils {
   // constant setting refer to Michel Bierlaire, Optimization: Principles and Algorithms, Chapter 19, EPEL Press,
   // second edition, 2018.
-  public static final double C0CS_tau = 10.0; // also value of Tau
-  public static final double ETA0CS = 0.1258925;
-  public static final double ALPHACS = 0.1;
-  public static final double BETACS = 0.9;
-  public static final double EPSILON0 = 0.1;
   public static final double EPS = 1e-15;
   public static final double EPS2 = 1e-12;
   
@@ -85,20 +80,26 @@ public class ConstrainedGLMUtils {
   }
   
   public static class ConstraintGLMStates {
-    double _ckCS = C0CS_tau;
-    double _epsilonkCS = 1.0/ C0CS_tau;
-    double _epsilonkCSSquare =_epsilonkCS*_epsilonkCS;
-    double _etakCS = ETA0CS*Math.pow(C0CS_tau, ALPHACS);
-    double _etakCSSquare = _etakCS*_etakCS;
+    double _ckCS;
+    double _epsilonkCS;
+    double _epsilonkCSSquare;
+    double _etakCS;
+    double _etakCSSquare;
+    double _epsilon0;
     String[] _constraintNames;
     double[][] _initCSMatrix;
     double _gradientMagSquare;
     double _constraintMagSquare;
     
-    
-    public ConstraintGLMStates(String[] constrainNames, double[][] initMatrix) {
+    public ConstraintGLMStates(String[] constrainNames, double[][] initMatrix, GLMModel.GLMParameters parms) {
       _constraintNames = constrainNames;
       _initCSMatrix = initMatrix;
+      _ckCS = parms._constraint_c0;
+      _epsilonkCS = 1.0/parms._constraint_c0;
+      _epsilonkCSSquare =_epsilonkCS*_epsilonkCS;
+      _etakCS = parms._constraint_eta0/Math.pow(parms._constraint_c0, parms._constraint_alpha);
+      _etakCSSquare = _etakCS*_etakCS;
+      _epsilon0 = 1.0/parms._constraint_c0;
     }
   }
   
@@ -717,7 +718,8 @@ public class ConstrainedGLMUtils {
   }
   
   public static void updateConstraintParameters(ComputationState state, double[] lambdaEqual, double[]lambdaLessThan, 
-                                                LinearConstraints[] equalConst, LinearConstraints[] lessThanConst) {
+                                                LinearConstraints[] equalConst, LinearConstraints[] lessThanConst, 
+                                                GLMModel.GLMParameters parms) {
     // calculate ||h(beta)|| square, ||gradient|| square
     double hBetaMag = state._csGLMState._constraintMagSquare;
     if (hBetaMag <= state._csGLMState._etakCSSquare) {
@@ -726,13 +728,13 @@ public class ConstrainedGLMUtils {
       if (lessThanConst != null)
         updateLambda(lambdaLessThan, state._csGLMState._ckCS, lessThanConst);
       state._csGLMState._epsilonkCS = state._csGLMState._epsilonkCS/state._csGLMState._ckCS;
-      state ._csGLMState._etakCS = state._csGLMState._etakCS/Math.pow(state._csGLMState._ckCS, BETACS);
+      state ._csGLMState._etakCS = state._csGLMState._etakCS/Math.pow(state._csGLMState._ckCS, parms._constraint_beta);
     } else {
-      state._csGLMState._ckCS = state._csGLMState._ckCS* C0CS_tau;
-      state._csGLMState._epsilonkCS = EPSILON0/state._csGLMState._ckCS;
-      state._csGLMState._epsilonkCSSquare = state._csGLMState._epsilonkCS*state._csGLMState._epsilonkCS;
-      state ._csGLMState._etakCS = ETA0CS/Math.pow(state._csGLMState._ckCS, ALPHACS);
+      state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau;
+      state._csGLMState._epsilonkCS = state._csGLMState._epsilon0/state._csGLMState._ckCS;
+      state ._csGLMState._etakCS = parms._constraint_eta0/Math.pow(state._csGLMState._ckCS, parms._constraint_alpha);
     }
+    state._csGLMState._epsilonkCSSquare = state._csGLMState._epsilonkCS*state._csGLMState._epsilonkCS;
     state._csGLMState._etakCSSquare = state ._csGLMState._etakCS*state._csGLMState._etakCS;
   }
   
