@@ -732,7 +732,7 @@ public class ConstrainedGLMUtils {
     } else {
       state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau;
       state._csGLMState._epsilonkCS = state._csGLMState._epsilon0/state._csGLMState._ckCS;
-      state ._csGLMState._etakCS = parms._constraint_eta0/Math.pow(state._csGLMState._ckCS, parms._constraint_alpha);
+      state._csGLMState._etakCS = parms._constraint_eta0/Math.pow(state._csGLMState._ckCS, parms._constraint_alpha);
     }
     state._csGLMState._epsilonkCSSquare = state._csGLMState._epsilonkCS*state._csGLMState._epsilonkCS;
     state._csGLMState._etakCSSquare = state ._csGLMState._etakCS*state._csGLMState._etakCS;
