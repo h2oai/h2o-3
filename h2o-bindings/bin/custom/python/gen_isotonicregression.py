@@ -12,7 +12,7 @@ examples = dict(
 >>> w_values = np.random.rand(train.shape[0])
 >>> w_frame = H2OFrame(w_values.reshape(-1, 1), column_names=["w"])
 >>> train = train.cbind(w_frame)
->>> h2o_iso_reg = H2OIsotonicRegressionEstimator(out_of_bounds="na")
+>>> h2o_iso_reg = H2OIsotonicRegressionEstimator(out_of_bounds="clip")
 >>> h2o_iso_reg.train(training_frame=train, x="X", y="y")
 >>> h2o_iso_reg.predict(train)
 """
