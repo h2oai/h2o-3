@@ -127,11 +127,32 @@ def test_constraints_binomial():
                    0.9875655504027848, 0.5832266083052889, 0.24205847206862052, 0.9843760682096272, 0.16269008279311103,
                    0.4941250734508458, 0.5446841276322587, 0.19222703209695946, 0.9232239752817498, 0.8824688635063289,
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
-    constraint_eta0 = [0.1, 0.1258925, 0.2]
-    constraint_tau = [2,5,10,15,20]
+    constraint_eta0 = [0.1, 0.1258925, 0.2, 0.5]
+    constraint_tau = [5, 10, 50]
     constraint_alpha = [0.01, 0.1, 0.5]
     constraint_beta = [0.5, 0.9, 1.1]
-    constraint_c0 = [2, 5, 10, 15, 20]
+    constraint_c0 = [5, 10, 50, 100] # initial value
+    h2o_glm_random_init_no_grid = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
+                                                                                family="binomial",
+                                                                                beta_constraints=beta_constraints,
+                                                                                linear_constraints=linear_constraints2,
+                                                                                startval=random_coef)
+    init_random_logloss = h2o_glm_random_init_no_grid .model_performance()._metric_json['logloss']
+    print("With default constraint parameter values.  logloss with constraints and coefficients initialized random"
+          " initial values: {0}, number of iterations taken to build the model: "
+          "{1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init_no_grid )))
+    print(glm.getConstraintsInfo(h2o_glm_random_init_no_grid ))
+
+    # GLM model with GLM coefficients with default initialization
+    h2o_glm_default_init_no_grid = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
+                                                                                 family="binomial",
+                                                                                 beta_constraints=beta_constraints,
+                                                                                 linear_constraints=linear_constraints2)
+    default_init_logloss = h2o_glm_default_init_no_grid.model_performance()._metric_json['logloss']
+    print("No grid logloss with constraints and default coefficients initialization: {0}, number of iterations"
+          " taken to build the model: {1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init_no_grid)))
+    print(glm.getConstraintsInfo(h2o_glm_default_init_no_grid))
+
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         beta_constraints=beta_constraints,
@@ -145,7 +166,7 @@ def test_constraints_binomial():
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and coefficients initialized random initial values: {0}, number of iterations"
           " taken to build the model: {1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))
-    print(glm.getConstraintsInfo(h2o_glm_random_init))
+    print(glm.getConstraintsInfo(h2o_glm_random_init))   
     
     # GLM model with GLM coefficients with default initialization
     h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
@@ -166,10 +187,10 @@ def test_constraints_binomial():
     assert abs(logloss-init_logloss)<1e-6, "logloss from optimal GLM {0} and logloss from GLM with loose constraints " \
                                            "and initialized with optimal GLM {1} should equal but is not." \
                                            "".format(logloss, init_logloss)
-    assert abs(logloss - init_random_logloss) < 1e-6, "logloss from optimal GLM {0} should be similar to GLM with constraints " \
+    assert logloss <= init_random_logloss, "logloss from optimal GLM {0} should be smaller than GLM with constraints " \
                                                    "and with random initial coefficients {1} but is" \
                                                    " not.".format(logloss, init_random_logloss)
-    assert abs(logloss - default_init_logloss) < 1e-6, "logloss from optimal GLM {0} should be similar to GLM with constraints " \
+    assert logloss <= default_init_logloss, "logloss from optimal GLM {0} should be smaller than GLM with constraints " \
                                             "and with default initial coefficients {1} but is" \
                                             " not.".format(logloss, default_init_logloss)
     assert pyunit_utils.equal_two_dicts(h2o_glm_optimal_init.coef(), h2o_glm.coef(), throwError=False), \

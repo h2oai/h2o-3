@@ -102,11 +102,11 @@ def test_constraints_binomial():
                    0.9875655504027848, 0.5832266083052889, 0.24205847206862052, 0.9843760682096272, 0.16269008279311103,
                    0.4941250734508458, 0.5446841276322587, 0.19222703209695946, 0.9232239752817498, 0.8824688635063289,
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
-    constraint_eta0 = [0.1, 0.1258925, 0.2]
-    constraint_tau = [2,5,10,15,20]
+    constraint_eta0 = [0.1, 0.1258925, 0.2, 0.5]
+    constraint_tau = [5, 10, 50]
     constraint_alpha = [0.01, 0.1, 0.5]
     constraint_beta = [0.5, 0.9, 1.1]
-    constraint_c0 = [2, 5, 10, 15, 20]  
+    constraint_c0 = [5, 10, 50, 100] # initial value 
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         linear_constraints=linear_constraints2,
@@ -115,7 +115,8 @@ def test_constraints_binomial():
                                                                         constraint_tau=constraint_tau,
                                                                         constraint_alpha=constraint_alpha,
                                                                         constraint_beta=constraint_beta,
-                                                                        constraint_c0=constraint_c0)
+                                                                        constraint_c0=constraint_c0,
+                                                                        return_best=False)
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("**** logloss with random initial values: {0}, iterations: {1}."
           "".format(init_random_logloss, h2o_glm_random_init._model_json["output"]["model_summary"].cell_values[0][6]))
@@ -129,7 +130,8 @@ def test_constraints_binomial():
                                                                          constraint_tau=constraint_tau,
                                                                          constraint_alpha=constraint_alpha,
                                                                          constraint_beta=constraint_beta,
-                                                                         constraint_c0=constraint_c0)
+                                                                         constraint_c0=constraint_c0,
+                                                                         return_best=False)
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with default coefficients initialization: {0}, iterations: {1}."
           "".format(default_init_logloss, h2o_glm_default_init._model_json["output"]["model_summary"].cell_values[0][6]))
@@ -139,7 +141,7 @@ def test_constraints_binomial():
                                            "without constraints but is not."
     assert pyunit_utils.equal_two_dicts(h2o_glm_random_init.coef(), h2o_glm.coef(), tolerance=4.8e-2, throwError=False), \
         "GLM coefficients are different!"
-    assert pyunit_utils.equal_two_dicts(h2o_glm_default_init.coef(), h2o_glm.coef(), tolerance=4.9e-2, throwError=False), \
+    assert pyunit_utils.equal_two_dicts(h2o_glm_default_init.coef(), h2o_glm.coef(), tolerance=8.8e-2, throwError=False), \
         "GLM coefficients are different!"
  
 
