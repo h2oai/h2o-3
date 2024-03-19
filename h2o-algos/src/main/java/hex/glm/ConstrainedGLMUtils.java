@@ -652,8 +652,12 @@ public class ConstrainedGLMUtils {
   public static void genInitialLambda(Random randObj, LinearConstraints[] constraints, double[] lambda) {
     int numC = constraints.length;
     LinearConstraints oneC;
-    for (int index=0; index<numC; index++)
-      lambda[index] = randObj.nextGaussian();
+    for (int index=0; index<numC; index++) {
+      lambda[index] = Math.abs(randObj.nextGaussian());
+      oneC = constraints[index];
+      if (oneC._active && oneC._constraintsVal < 0)
+        lambda[index] *= -1;
+    }
   }
   
   

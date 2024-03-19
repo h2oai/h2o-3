@@ -102,11 +102,11 @@ def test_constraints_binomial():
                    0.9875655504027848, 0.5832266083052889, 0.24205847206862052, 0.9843760682096272, 0.16269008279311103,
                    0.4941250734508458, 0.5446841276322587, 0.19222703209695946, 0.9232239752817498, 0.8824688635063289,
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
-    constraint_eta0 = [0.1, 0.1258925, 0.2, 0.5]
-    constraint_tau = [5, 10, 50]
-    constraint_alpha = [0.01, 0.1, 0.5]
-    constraint_beta = [0.5, 0.9, 1.1]
-    constraint_c0 = [5, 10, 50, 100] # initial value 
+    constraint_eta0 = [0.1258925]
+    constraint_tau = [10, 15]
+    constraint_alpha = [0.01, 0.1]
+    constraint_beta = [0.1, 0.9]
+    constraint_c0 = [10, 15]
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         linear_constraints=linear_constraints2,
@@ -139,9 +139,9 @@ def test_constraints_binomial():
     
     assert init_random_logloss >= logloss, "Random initialization logloss with constraints should be worst than GLM " \
                                            "without constraints but is not."
-    assert pyunit_utils.equal_two_dicts(h2o_glm_random_init.coef(), h2o_glm.coef(), tolerance=4.8e-2, throwError=False), \
+    assert pyunit_utils.equal_two_dicts(h2o_glm_random_init.coef(), h2o_glm.coef(), tolerance=2.8e-3, throwError=False), \
         "GLM coefficients are different!"
-    assert pyunit_utils.equal_two_dicts(h2o_glm_default_init.coef(), h2o_glm.coef(), tolerance=8.8e-2, throwError=False), \
+    assert pyunit_utils.equal_two_dicts(h2o_glm_default_init.coef(), h2o_glm.coef(), tolerance=3.3e-3, throwError=False), \
         "GLM coefficients are different!"
  
 

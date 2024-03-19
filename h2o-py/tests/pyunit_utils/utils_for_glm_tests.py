@@ -68,22 +68,14 @@ def grid_models_analysis(grid_models, metric="logloss", epsilon=1e-3):
     base_metric = grid_models[0].model_performance()._metric_json[metric]
     base_constraints_table = grid_models[0]._model_json["output"]["linear_constraints_table"]
     num_constraints = len(base_constraints_table.cell_values)
-    equality_exist = False
     cond_index = base_constraints_table.col_header.index("condition")
-    num_equality = 0
-    base_equality_constraints=[]
-    for ind in range(num_constraints):
-        if base_constraints_table.cell_values[ind][cond_index] == "== 0":
-            equality_exist=True
-            num_equality = num_equality+1
-            base_equality_constraints.append(base_constraints_table.cell_values[ind][cond_index-1])
-
-    if not(equality_exist):
-        return grid_models[0]
+    base_iteration = find_glm_iterations(grid_models[0])
     num_models = len(grid_models)
     best_model_ind = 0
     model_indices = []
     model_equality_constraints_values = []
+    model_lessthan_constraints_values = []
+    iterations = []
     for ind in range(1, num_models):
         curr_model = grid_models[ind]
         curr_metric = grid_models[ind].model_performance()._metric_json[metric]
@@ -91,17 +83,21 @@ def grid_models_analysis(grid_models, metric="logloss", epsilon=1e-3):
         if metric_diff < epsilon:
             curr_constraint_table = curr_model._model_json["output"]["linear_constraints_table"]
             equality_constraints_values = []
+            lessthan_constraints_values = []
             for ind2 in range(0, num_constraints): # collect all equality constraint info
                 if curr_constraint_table.cell_values[ind2][cond_index]=="== 0":
                     equality_constraints_values.append(curr_constraint_table.cell_values[ind2][cond_index-1])
+                else:
+                    lessthan_constraints_values.append(curr_constraint_table.cell_values[ind2][cond_index-1])
             # compare current equality and base equality constraint and choose the one with smallest magnitude
-            better_model = compare_tuple(base_equality_constraints, equality_constraints_values)
-            if better_model:
+            if find_glm_iterations(curr_model) > base_iteration:
                 best_model_ind = ind
-                base_equality_constraints=equality_constraints_values
+                base_iteration = find_glm_iterations(curr_model)
             model_equality_constraints_values.append(equality_constraints_values)
+            model_lessthan_constraints_values.append(lessthan_constraints_values)
             model_indices.append(ind)
-    print("best equality constraint values: {0} and it is from model index: {1}".format(base_equality_constraints, best_model_ind))
+            iterations.append(find_glm_iterations(curr_model))
+    print("Maximum iterations: {0} and it is from model index: {1}".format(base_iteration, best_model_ind))
     return grid_models[best_model_ind]
 
 def compare_tuple(original_tuple, new_tuple):
