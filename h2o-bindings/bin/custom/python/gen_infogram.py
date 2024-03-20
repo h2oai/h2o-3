@@ -443,7 +443,8 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train, test = df.split_frame(seed=1)
+>>> algorithm_params = ig.algorithm_params
+>>> train = df.split_frame(seed=1)
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -459,7 +460,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train, test = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -475,12 +476,12 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train, test = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
->>> ig = H2OInfogram(protected_columns=pcols, net_information_threshold=-1.0)
+>>> ig = H2OInfogram(protected_columns=pcols, net_information_threshold=-2.0)
 >>> ig.train(y=y, x=x, training_frame=train)
 >>> ig.plot()
 """,
@@ -491,12 +492,12 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train, test = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
->>> ig = H2OInfogram(protected_columns=pcols, relevance_index_threshold=-1.0)
+>>> ig = H2OInfogram(protected_columns=pcols, relevance_index_threshold=-3.0)
 >>> ig.train(y=y, x=x, training_frame=train)
 >>> ig.plot()
 """,
@@ -507,12 +508,12 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train, test = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
->>> ig = H2OInfogram(protected_columns=pcols, safety_index_threshold=-1.0)
+>>> ig = H2OInfogram(protected_columns=pcols, safety_index_threshold=-2.0)
 >>> ig.train(y=y, x=x, training_frame=train)
 >>> ig.plot()
 """,
@@ -523,7 +524,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train, test = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -539,12 +540,12 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train, test = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
->>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=-1.0)
+>>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=-2.0)
 >>> ig.train(y=y, x=x, training_frame=train)
 >>> ig.plot()
 """
