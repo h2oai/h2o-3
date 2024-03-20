@@ -13,6 +13,7 @@ examples = dict(
     >>> h2o.init()
     >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
     >>> target_variable = 'CAPSULE'
+    >>> prostate["RACE"] = prostate["RACE"].asfactor()
     >>> prostate[target_variable] = prostate[target_variable].asfactor()
     >>> train, test = prostate.split_frame(ratios=[0.7])
     >>> sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex",
