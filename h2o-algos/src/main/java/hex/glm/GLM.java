@@ -1,5 +1,6 @@
 package hex.glm;
 
+import Jama.Matrix;
 import hex.*;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -2387,6 +2388,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             iterCnt++;
             long t1 = System.currentTimeMillis();
             ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
+            if (iterCnt <= 1) {
+              Matrix gramMatrix = new Matrix(gram._gram);
+            }
+            // throw an error when the order of magnitude
             predictorSizeChange = !coeffNames.equals(Arrays.asList(_state.activeData().coefNames()));
             if (predictorSizeChange) {  // reset if predictors changed
               coeffNames = changeCoeffBetainfo(_state.activeData()._coefNames);

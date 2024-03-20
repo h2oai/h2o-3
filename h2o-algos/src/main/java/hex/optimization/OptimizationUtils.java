@@ -470,7 +470,7 @@ public class OptimizationUtils {
     public double _alphar;
     public double _alphai;
     public double[] _direction; // beta_k+1 - beta_k
-    public int _maxIteration = 40;  // limit LS steps to save time, 20
+    public int _maxIteration = 50;  // 40 too low for tight constraints
     public double[] _originalBeta;
     public double[] _newBeta;
     public GLM.GLMGradientInfo _ginfoOriginal;
