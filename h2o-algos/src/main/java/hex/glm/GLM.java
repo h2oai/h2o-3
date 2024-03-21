@@ -2395,9 +2395,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               if (gramMatrix.cond() >= BAD_CONDITION_NUMBER)
                 if (_parms._init_optimal_glm) {
                   warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
-                          " being singular.  Please re-run with init_optimal_glm set to false.");
+                          " singular.  Please re-run with init_optimal_glm set to false.");
                   Log.warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
-                          " being singular.  Please re-run with init_optimal_glm set to false.");
+                          " singular.  Please re-run with init_optimal_glm set to false.");
                 }
             }
             // throw an error when the order of magnitude

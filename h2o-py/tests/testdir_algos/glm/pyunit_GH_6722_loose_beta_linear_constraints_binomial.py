@@ -12,13 +12,6 @@ def test_constraints_binomial():
     predictors = list(range(0,20))
 
     loose_init_const = [] # this constraint is satisfied by default coefficient initialization
-
-    h2o_glm = glm(family="binomial", remove_collinear_columns=True, lambda_=0.0, solver="irlsm", seed=12345,
-                  standardize=True)
-    h2o_glm.train(x=predictors, y=response, training_frame=train)
-    logloss = h2o_glm.model_performance()._metric_json['logloss']
-    print("logloss with no constraints: {0}".format(logloss))
-
     bc = []
     name = "C11"
     lower_bound = -8
@@ -42,6 +35,11 @@ def test_constraints_binomial():
 
     beta_constraints = h2o.H2OFrame(bc)
     beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])
+    h2o_glm = glm(family="binomial", remove_collinear_columns=True, lambda_=0.0, solver="irlsm", seed=12345,
+                  beta_constraints=beta_constraints, standardize=True)
+    h2o_glm.train(x=predictors, y=response, training_frame=train)
+    logloss = h2o_glm.model_performance()._metric_json['logloss']
+    print("logloss with no constraints: {0}".format(logloss))
     
     # add loose constraints
     name = "C19"

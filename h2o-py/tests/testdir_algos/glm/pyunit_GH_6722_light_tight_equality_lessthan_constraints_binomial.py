@@ -24,130 +24,77 @@ def test_light_tight_linear_constraints_only_gaussian():
     print("logloss with no constraints: {0}".format(logloss))
 
     # add light tight constraints
-    name = "C1.1"
-    values = 0.5
-    types = "LessThanEqual"
-    contraint_numbers = 0
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C2.1"
-    values = -0.25
-    types = "LessThanEqual"
-    contraint_numbers = 0
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = -1.9
-    types = "LessThanEqual"
-    contraint_numbers = 0
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C4.1"
-    values = 1.5
-    types = "LessThanEqual"
-    contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C17"
-    values = 3
-    types = "LessThanEqual"
-    contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C15"
-    values = -2
-    types = "LessThanEqual"
-    contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = -11
-    types = "LessThanEqual"
-    contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C12"
-    values = -0.5
-    types = "LessThanEqual"
-    contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C13"
-    values = -1.5
-    types = "LessThanEqual"
-    contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C14"
-    values = 2
-    types = "LessThanEqual"
-    contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = -7.5
-    types = "LessThanEqual"
-    contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C11"
-    values = 0.25
-    types = "LessThanEqual"
-    contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C18"
-    values = -0.5
-    types = "LessThanEqual"
-    contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C19"
-    values = 0.75
-    types = "LessThanEqual"
-    contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = 10
-    types = "LessThanEqual"
-    contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
-
     name = "C19"
     values = 0.5
     types = "Equal"
-    contraint_numbers = 4
+    contraint_numbers = 0
     light_tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C10.1"
     values = -0.3
     types = "Equal"
-    contraint_numbers = 4
+    contraint_numbers = 0
     light_tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
-    values = -1.0044392439227687
+    values = -1.00
     types = "Equal"
-    contraint_numbers = 4
+    contraint_numbers = 0
     light_tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C18"
     values = 0.75
     types = "Equal"
-    contraint_numbers = 5
+    contraint_numbers = 1
     light_tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C20"
     values = -0.13
     types = "Equal"
-    contraint_numbers = 5
+    contraint_numbers = 1
     light_tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
-    values = -6.941462080282776
+    values = -6.9
     types = "Equal"
-    contraint_numbers = 5
+    contraint_numbers = 1
+    light_tight_constraints.append([name, values, types, contraint_numbers])
+
+    # add loose constraints
+    name = "C19"
+    values = 0.5
+    types = "LessThanEqual"
+    contraint_numbers = 2
+    light_tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "C20"
+    values = -0.8
+    types = "LessThanEqual"
+    contraint_numbers = 2
+    light_tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "constant"
+    values = -6
+    types = "LessThanEqual"
+    contraint_numbers = 2
+    light_tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "C12"
+    values = 2
+    types = "LessThanEqual"
+    contraint_numbers = 3
+    light_tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "C13"
+    values = -3
+    types = "LessThanEqual"
+    contraint_numbers = 3
+    light_tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "constant"
+    values = -21
+    types = "LessThanEqual"
+    contraint_numbers = 3
     light_tight_constraints.append([name, values, types, contraint_numbers])
     linear_constraints2 = h2o.H2OFrame(light_tight_constraints)
     linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])

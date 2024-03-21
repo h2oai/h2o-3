@@ -23,7 +23,7 @@ def test_light_tight_linear_constraints_only_gaussian():
     logloss = h2o_glm.model_performance()._metric_json['logloss']
     print("logloss with no constraints: {0}".format(logloss))
 
-    # add light tight constraints
+    # add tight constraints
     name = "C1.1"
     values = 0.5
     types = "LessThanEqual"
@@ -147,7 +147,8 @@ def test_light_tight_linear_constraints_only_gaussian():
     name = "constant"
     values = -3
     types = "Equal"
-    contraint_numbers = 5    
+    contraint_numbers = 5
+    light_tight_constraints.append([name, values, types, contraint_numbers])
 
     linear_constraints2 = h2o.H2OFrame(light_tight_constraints)
     linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])

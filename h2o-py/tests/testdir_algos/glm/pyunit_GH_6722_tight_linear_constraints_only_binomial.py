@@ -3,11 +3,6 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-# These are the coefficient relationships
-# 0.5C1.1-0.25C2.1 (=2.0774305639960806) 
-# 1.5C4.1+3C17-2C15 (=12.40377336506003)
-# -0.5C12-1.5C13+2C14 (=7.942988009118055)
-# 0.25*C11-0.5*C18+0.75*C19 (=-9.319464097022614)
 def test_light_tight_linear_constraints_only_gaussian():
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
@@ -22,31 +17,6 @@ def test_light_tight_linear_constraints_only_gaussian():
     h2o_glm.train(x=predictors, y=response, training_frame=train)
     logloss = h2o_glm.model_performance()._metric_json['logloss']
     print("logloss with no constraints: {0}".format(logloss))
-
-    # add beta constraints
-    bc = []
-    name = "C11"
-    lower_bound = -7
-    upper_bound = 0
-    bc.append([name, lower_bound, upper_bound])
-
-    name = "C18"
-    lower_bound = 7.5
-    upper_bound = 8
-    bc.append([name, lower_bound, upper_bound])
-
-    name = "C15"
-    lower_bound = -4.5
-    upper_bound = 0
-    bc.append([name, lower_bound, upper_bound])
-
-    name = "C16"
-    lower_bound = -9
-    upper_bound = 0.3
-    bc.append([name, lower_bound, upper_bound])
-
-    beta_constraints = h2o.H2OFrame(bc)
-    beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])    
 
     # add light tight constraints
     name = "C1.1"

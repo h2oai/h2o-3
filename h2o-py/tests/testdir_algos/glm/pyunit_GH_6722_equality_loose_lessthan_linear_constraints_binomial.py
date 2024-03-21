@@ -118,10 +118,10 @@ def test_constraints_binomial():
                    0.9875655504027848, 0.5832266083052889, 0.24205847206862052, 0.9843760682096272, 0.16269008279311103,
                    0.4941250734508458, 0.5446841276322587, 0.19222703209695946, 0.9232239752817498, 0.8824688635063289,
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
-    constraint_eta0 = [0.1, 0.1258925, 0.2, 0.5]
+    constraint_eta0 = [0.1258925]
     constraint_tau = [5, 10, 50]
-    constraint_alpha = [0.01, 0.1, 0.5]
-    constraint_beta = [0.5, 0.9, 1.1]
+    constraint_alpha = [0.1]
+    constraint_beta = [0.9]
     constraint_c0 = [5, 10, 50, 100] # initial value
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",

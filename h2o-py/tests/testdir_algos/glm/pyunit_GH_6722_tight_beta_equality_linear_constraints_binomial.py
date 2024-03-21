@@ -3,11 +3,6 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-# These are the coefficient relationships
-# 0.5C1.1-0.25C2.1 (=2.0774305639960806)
-# 1.5C4.1+3C17-2C15 (=12.40377336506003)
-# -0.5C12-1.5C13+2C14 (=7.942988009118055)
-# 0.25*C11-0.5*C18+0.75*C19 (=-9.319464097022614)
 def test_light_tight_linear_constraints_only_gaussian():
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
@@ -15,14 +10,6 @@ def test_light_tight_linear_constraints_only_gaussian():
     train["C21"] = train["C21"].asfactor()
     response = "C21"
     predictors = list(range(0,20))
-
-    light_tight_constraints = [] # this constraint is satisfied by default coefficient initialization
-
-    h2o_glm = glm(family="binomial", lambda_=0.0, solver="irlsm", seed=12345, standardize=True)
-    h2o_glm.train(x=predictors, y=response, training_frame=train)
-    logloss = h2o_glm.model_performance()._metric_json['logloss']
-    print("logloss with no constraints: {0}".format(logloss))
-
     # add beta constraints
     bc = []
     name = "C11"
@@ -46,155 +33,200 @@ def test_light_tight_linear_constraints_only_gaussian():
     bc.append([name, lower_bound, upper_bound])
 
     beta_constraints = h2o.H2OFrame(bc)
-    beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])    
+    beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])
+    
+    tight_constraints = [] # this constraint is satisfied by default coefficient initialization
 
-    # add light tight constraints
+    h2o_glm = glm(family="binomial", lambda_=0.0, solver="irlsm", seed=12345, standardize=True)
+    h2o_glm.train(x=predictors, y=response, training_frame=train)
+    logloss = h2o_glm.model_performance()._metric_json['logloss']
+    print("logloss with no constraints: {0}".format(logloss))
+ 
+    # add tight constraints
     name = "C1.1"
     values = 0.5
     types = "LessThanEqual"
     contraint_numbers = 0
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C2.1"
     values = -0.25
     types = "LessThanEqual"
     contraint_numbers = 0
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
     values = -1
     types = "LessThanEqual"
     contraint_numbers = 0
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C4.1"
     values = 1.5
     types = "LessThanEqual"
     contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C17"
     values = 3
     types = "LessThanEqual"
     contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C15"
     values = -2
     types = "LessThanEqual"
     contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
     values = -5
     types = "LessThanEqual"
     contraint_numbers = 1
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C12"
     values = -0.5
     types = "LessThanEqual"
     contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C13"
     values = -1.5
     types = "LessThanEqual"
     contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C14"
     values = 2
     types = "LessThanEqual"
     contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
     values = -3
     types = "LessThanEqual"
     contraint_numbers = 2
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C11"
     values = 0.25
     types = "LessThanEqual"
     contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C18"
     values = -0.5
     types = "LessThanEqual"
     contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C19"
     values = 0.75
     types = "LessThanEqual"
     contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
     values = 5
     types = "LessThanEqual"
     contraint_numbers = 3
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C19"
     values = 0.5
     types = "Equal"
     contraint_numbers = 4
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C10.1"
     values = -0.3
     types = "Equal"
     contraint_numbers = 4
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
-    values = -0.5
+    values = -0.25
     types = "Equal"
     contraint_numbers = 4
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C18"
     values = 0.75
     types = "Equal"
     contraint_numbers = 5
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "C20"
     values = -0.13
     types = "Equal"
     contraint_numbers = 5
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "constant"
+    values = -1.5
+    types = "Equal"
+    contraint_numbers = 5
+    tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "C19"
+    values = 0.5
+    types = "Equal"
+    contraint_numbers = 4
+    tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "C10.1"
+    values = -0.3
+    types = "Equal"
+    contraint_numbers = 4
+    tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "constant"
+    values = -0.5
+    types = "Equal"
+    contraint_numbers = 4
+    tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "C18"
+    values = 0.75
+    types = "Equal"
+    contraint_numbers = 5
+    tight_constraints.append([name, values, types, contraint_numbers])
+
+    name = "C20"
+    values = -0.13
+    types = "Equal"
+    contraint_numbers = 5
+    tight_constraints.append([name, values, types, contraint_numbers])
 
     name = "constant"
     values = -3
     types = "Equal"
     contraint_numbers = 5
-    light_tight_constraints.append([name, values, types, contraint_numbers])
+    tight_constraints.append([name, values, types, contraint_numbers])
     
-    linear_constraints2 = h2o.H2OFrame(light_tight_constraints)
+    linear_constraints2 = h2o.H2OFrame(tight_constraints)
     linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
 
     # GLM model with GLM coefficients with default initialization
-    constraint_eta0 = [0.1258925]
-    constraint_tau = [1.2, 1.5, 2, 5, 10]
-    constraint_alpha = [0.1]
-    constraint_beta = [0.9]
-    constraint_c0 = [1.2, 1.5, 5, 10, 12, 13, 20] # initial value
+    constraint_eta0 = [0.01, 0.1, 0.1258925, 0.2]
+    constraint_tau = [1.2, 1.5, 2, 5, 10, 15]
+    constraint_alpha = [0.01, 0.1, 0.5]
+    constraint_beta = [0.5, 0.9]
+    constraint_c0 = [0.1, 0.5, 1.2, 1.5, 5, 10, 12, 13, 20] # initial value
     # GLM model with with GLM coefficients set to GLM model coefficients built without constraints
     h2o_glm_optimal_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",
                                                                          linear_constraints=linear_constraints2,
+                                                                         beta_constraints=beta_constraints,
                                                                          init_optimal_glm=True,
                                                                          constraint_eta0=constraint_eta0,
                                                                          constraint_tau=constraint_tau,
                                                                          constraint_alpha=constraint_alpha,
                                                                          constraint_beta=constraint_beta,
                                                                          constraint_c0=constraint_c0,
-                                                                         return_best=False)
+                                                                         return_best=False,
+                                                                         epsilon=20)
     optimal_init_logloss = h2o_glm_optimal_init.model_performance()._metric_json['logloss']
     print("logloss with optimal GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
           "{1}".format(optimal_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_optimal_init)))
@@ -204,13 +236,14 @@ def test_light_tight_linear_constraints_only_gaussian():
     h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",
                                                                          linear_constraints=linear_constraints2,
+                                                                         beta_constraints=beta_constraints,
                                                                          init_optimal_glm=False,
                                                                          constraint_eta0=constraint_eta0,
                                                                          constraint_tau=constraint_tau,
                                                                          constraint_alpha=constraint_alpha,
                                                                          constraint_beta=constraint_beta,
                                                                          constraint_c0=constraint_c0,
-                                                                         return_best=False)
+                                                                         return_best=False, epsilon=20)
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with default GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
           "{1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))
@@ -235,6 +268,7 @@ def test_light_tight_linear_constraints_only_gaussian():
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         linear_constraints=linear_constraints2,
+                                                                        beta_constraints=beta_constraints,
                                                                         startval=random_coef,
                                                                         init_optimal_glm=False,
                                                                         constraint_eta0=constraint_eta0,
@@ -242,7 +276,7 @@ def test_light_tight_linear_constraints_only_gaussian():
                                                                         constraint_alpha=constraint_alpha,
                                                                         constraint_beta=constraint_beta,
                                                                         constraint_c0=constraint_c0,
-                                                                        return_best=False)
+                                                                        return_best=False, epsilon=20)
     random_init_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with random GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
           "{1}".format(random_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))
