@@ -70,6 +70,7 @@ import static water.fvec.Vec.T_NUM;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
+  static double BAD_CONDITION_NUMBER = 20000;
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -2382,14 +2383,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         return;
       }
       double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      int origIter = iterCnt+1;
       try {
         while (true) {
-          while (gradMagSquare > _state._csGLMState._epsilonkCSSquare) {
+          do {
             iterCnt++;
             long t1 = System.currentTimeMillis();
             ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
-            if (iterCnt <= 1) {
+            if (iterCnt == origIter) {
               Matrix gramMatrix = new Matrix(gram._gram);
+              if (gramMatrix.cond() >= BAD_CONDITION_NUMBER)
+                if (_parms._init_optimal_glm) {
+                  warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
+                          " being singular.  Please re-run with init_optimal_glm set to false.");
+                  Log.warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
+                          " being singular.  Please re-run with init_optimal_glm set to false.");
+                }
             }
             // throw an error when the order of magnitude
             predictorSizeChange = !coeffNames.equals(Arrays.asList(_state.activeData().coefNames()));
@@ -2444,7 +2453,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if (checkIterationDone(betaCnd, gradientInfo, iterCnt)) // ratio of objective drops.
               return;
             Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-          }
+          } while (gradMagSquare > _state._csGLMState._epsilonkCSSquare);
           // update constraint parameters, ck, lambdas and others
           updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints, _parms);
         }
