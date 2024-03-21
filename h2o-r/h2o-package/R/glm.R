@@ -167,14 +167,14 @@
 #'        coefficients arefound, first beta constraints will be applied followed by the application of linear
 #'        constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
 #'        false, will combine the beta and linear constraints.  Default to false. Defaults to FALSE.
-#' @param constraint_eta0 For constraint GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
+#' @param constraint_eta0 For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
 #'        Defaults to 0.1258925.
-#' @param constraint_tau For constraint GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10 Defaults to 10.
-#' @param constraint_alpha For constraint GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1 Defaults
+#' @param constraint_tau For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10 Defaults to 10.
+#' @param constraint_alpha For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1 Defaults
 #'        to 0.1.
-#' @param constraint_beta For constraint GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9 Defaults
+#' @param constraint_beta For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9 Defaults
 #'        to 0.9.
-#' @param constraint_c0 For constraint GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10 Defaults to 10.
+#' @param constraint_c0 For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10 Defaults to 10.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-

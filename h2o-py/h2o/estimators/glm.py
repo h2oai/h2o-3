@@ -443,23 +443,23 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                false, will combine the beta and linear constraints.  Default to false.
                Defaults to ``False``.
         :type separate_linear_beta: bool
-        :param constraint_eta0: For constraint GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).
+        :param constraint_eta0: For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).
                Default to 0.1258925
                Defaults to ``0.1258925``.
         :type constraint_eta0: float
-        :param constraint_tau: For constraint GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
+        :param constraint_tau: For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
                Defaults to ``10.0``.
         :type constraint_tau: float
-        :param constraint_alpha: For constraint GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).
+        :param constraint_alpha: For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).
                Default to 0.1
                Defaults to ``0.1``.
         :type constraint_alpha: float
-        :param constraint_beta: For constraint GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).
+        :param constraint_beta: For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).
                Default to 0.9
                Defaults to ``0.9``.
         :type constraint_beta: float
-        :param constraint_c0: For constraint GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to
-               10
+        :param constraint_c0: For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default
+               to 10
                Defaults to ``10.0``.
         :type constraint_c0: float
         """
@@ -2506,7 +2506,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_eta0(self):
         """
-        For constraint GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
+        For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
 
         Type: ``float``, defaults to ``0.1258925``.
         """
@@ -2520,7 +2520,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_tau(self):
         """
-        For constraint GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
+        For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
 
         Type: ``float``, defaults to ``10.0``.
         """
@@ -2534,7 +2534,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_alpha(self):
         """
-        For constraint GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1
+        For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1
 
         Type: ``float``, defaults to ``0.1``.
         """
@@ -2548,7 +2548,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_beta(self):
         """
-        For constraint GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9
+        For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9
 
         Type: ``float``, defaults to ``0.9``.
         """
@@ -2562,7 +2562,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_c0(self):
         """
-        For constraint GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10
+        For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10
 
         Type: ``float``, defaults to ``10.0``.
         """

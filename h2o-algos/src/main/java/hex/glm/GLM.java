@@ -2432,6 +2432,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               betaCnd = ls._newBeta;
               gradientInfo = ls._ginfoOriginal;
             } else {  // ls failed, reset to 
+              if (applyBetaConstraints) // separate beta and linear constraints
+                bc.applyAllBounds(_state.beta());
               ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
                       ginfo, _state.beta());
               Log.info(LogMsg("Ls failed " + ls));
@@ -4101,8 +4103,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         // if beta constraint is enabled, check and make sure coefficients are within bounds
-        if (_betaConstraintsOn && betaConstraintsCheckEnabled() && (!_linearConstraintsOn ||
-                (_linearConstraintsOn && _parms._separate_linear_beta)))
+        if (_betaConstraintsOn && betaConstraintsCheckEnabled() && (!_linearConstraintsOn))
           checkCoeffsBounds();
         
         if (stop_requested() || _earlyStop) {
@@ -4247,7 +4248,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int coeffsLen = bc._betaLB.length;
       for (int index=0; index < coeffsLen; index++) {
         if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
-          throw new H2OFailException("GLM model coefficient" + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
+          throw new H2OFailException("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
                   +bc._betaLB[index]+", upper: "+bc._betaUB[index]);
       }
     }
@@ -4887,7 +4888,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     /***
      *
-     * This method calculates the gradient for constraint GLM without taking into account the contribution of the 
+     * This method calculates the gradient for constrained GLM without taking into account the contribution of the 
      * constraints in this case.  The likelihood, objective are calculated without the contribution of the constraints
      * either.
      */

@@ -3,27 +3,6 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-# In this test, I set both the beta and linear constraints to be very loose and they are inactive when the correct GLM
-#  coefficients are found.  The following tests are run:
-# 1. without constraints, regularization, I want to find the optimal GLM coefficients;
-# 2. with constraints, regularization and initializing the constraint GLM run with the optimal coefficients 
-#    obtained in test 1 by setting the parameter init_optimal_glm=True, grab the model coefficients
-# 3. with constraints, regularization and with default GLM coefficient initialization, grab model coefficients
-#
-# In addition, it is pointed out to me that when there are only beta constraints, the optimal solution is just let the
-# GLM model building run and then at the end of each iteration, apply the beta constraints to the coefficients.  Now
-# with linear constraints, I was wondering if I can still separately resolve the beta and linear constraints.  The 
-# reason I am trying to figure this one out is because one beta constraint can have the potential of adding two linear
-# constraints.  To decrease model building run time, I am trying to see if there are any performance difference if
-# I ran linear and beta constraints separately and together.  Hence, I added the following test:
-# 4. with constraints, regularization and initializing the constraint GLM run with the optimal coefficients 
-#    obtained in test 1 by setting the parameter init_optimal_glm=True, and separate_linear_beta=True (to separate 
-#    beta and linear constraints process), grab the model coefficients;
-# 5. with constraints, regularization and with default GLM coefficient initialization, and separate_linear_beta=True, 
-#    grab the model coefficients.
-#
-# The hope here is to find that all the coefficients from the models are the same or very close as the constraints
-# are very loose and are inactive.
 def test_constraints_binomial():
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):

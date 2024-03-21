@@ -3,15 +3,11 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-# In this test, I setup loosely tight linear constraints only.  Next, I compare the performance with GLM initialized with
-# default coefficients, GLM initialized with optimal GLM built without constraints and GLM initialized with random
-# coefficients.
-#
-# These are the constraints
-# 0.5C1.1-0.25C2.1 (=-16.99) <= -17.5, 
-# 1.5C4.1+3C17-2C15 (=-35.6089) <= -37
-# -0.5C12-1.5C13+2C14 (=-159.99) <= -160.5
-# 0.25*C11-0.5*C18+0.75*C19 (=-18.07829604901079) == -18.5
+# These are the coefficient relationships
+# 0.5C1.1-0.25C2.1 (=-16.99)
+# 1.5C4.1+3C17-2C15 (=-35.6089)
+# -0.5C12-1.5C13+2C14 (=-159.99)
+# 0.25*C11-0.5*C18+0.75*C19 (=-18.07829604901079)
 def test_light_tight_linear_constraints_only_gaussian():
     h2o_data = h2o.import_file(
         path=pyunit_utils.locate("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))

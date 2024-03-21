@@ -30,7 +30,7 @@ def gen_constraint_glm_model(training_dataset, x, y, solver="AUTO", family="gaus
 def constraint_glm_gridsearch(training_dataset, x, y, solver="AUTO", family="gaussia", linear_constraints=None,
                               beta_constraints=None, metric="logloss", return_best=True, startval=None, 
                               init_optimal_glm=False, constraint_eta0=[0.1258925],  constraint_tau=[10], 
-                              constraint_alpha=[0.1], constraint_beta=[0.9], constraint_c0=[10]):
+                              constraint_alpha=[0.1], constraint_beta=[0.9], constraint_c0=[10], epsilon=1e-3):
     """
     This function given the obj_eps_hyper and inner_loop_hyper will build and run a gridsearch model and return the one
     with the best metric.
@@ -57,18 +57,22 @@ def constraint_glm_gridsearch(training_dataset, x, y, solver="AUTO", family="gau
     if return_best:
         return sortedGrid.models[0]
     else:
-        return grid_models_analysis(sortedGrid.models, metric=metric)
+        return grid_models_analysis(sortedGrid.models, metric=metric, epsilon=epsilon)
 
 def grid_models_analysis(grid_models, metric="logloss", epsilon=1e-3):
     """
     This method will search within the grid search models that have metrics within epsilon calculated as 
-    abs(metric1-metric2)/abs(metric1) as the best model.  We are wanting to send the best model that has the lowerest
-    equality constraint if it exists.  Else, the original top model will be returned.
+    abs(metric1-metric2)/abs(metric1) as the best model.  We are wanting to send the best model that has the best
+     constraint values meaning either they have the smallest magnitude or if less than constraints, it has the smallest
+     magnitude and the correct sign.  Else, the original top model will be returned.
     """
     base_metric = grid_models[0].model_performance()._metric_json[metric]
     base_constraints_table = grid_models[0]._model_json["output"]["linear_constraints_table"]
     num_constraints = len(base_constraints_table.cell_values)
     cond_index = base_constraints_table.col_header.index("condition")
+    [best_equality_constraints, best_lessthan_constraints] = grab_constraint_values(
+        base_constraints_table, cond_index, num_constraints)
+
     base_iteration = find_glm_iterations(grid_models[0])
     num_models = len(grid_models)
     best_model_ind = 0
@@ -82,23 +86,34 @@ def grid_models_analysis(grid_models, metric="logloss", epsilon=1e-3):
         metric_diff = abs(base_metric-curr_metric)/abs(base_metric)
         if metric_diff < epsilon:
             curr_constraint_table = curr_model._model_json["output"]["linear_constraints_table"]
-            equality_constraints_values = []
-            lessthan_constraints_values = []
-            for ind2 in range(0, num_constraints): # collect all equality constraint info
-                if curr_constraint_table.cell_values[ind2][cond_index]=="== 0":
-                    equality_constraints_values.append(curr_constraint_table.cell_values[ind2][cond_index-1])
-                else:
-                    lessthan_constraints_values.append(curr_constraint_table.cell_values[ind2][cond_index-1])
-            # compare current equality and base equality constraint and choose the one with smallest magnitude
-            if find_glm_iterations(curr_model) > base_iteration:
+            [equality_constraints_values, lessthan_constraints_values] = grab_constraint_values(
+                curr_constraint_table, cond_index, num_constraints)
+            # conditions used to choose the best model
+            if (sum(equality_constraints_values) < sum(best_equality_constraints)) and (sum(lessthan_constraints_values) < sum(best_lessthan_constraints)):
                 best_model_ind = ind
                 base_iteration = find_glm_iterations(curr_model)
+                best_equality_constraints = equality_constraints_values
+                best_lessthan_constraints = lessthan_constraints_values
             model_equality_constraints_values.append(equality_constraints_values)
             model_lessthan_constraints_values.append(lessthan_constraints_values)
             model_indices.append(ind)
             iterations.append(find_glm_iterations(curr_model))
     print("Maximum iterations: {0} and it is from model index: {1}".format(base_iteration, best_model_ind))
     return grid_models[best_model_ind]
+
+def grab_constraint_values(curr_constraint_table, cond_index, num_constraints):
+    equality_constraints_values = []
+    lessthan_constraints_values = []
+    for ind2 in range(0, num_constraints): # collect all equality constraint info
+        if curr_constraint_table.cell_values[ind2][cond_index]=="== 0":
+            equality_constraints_values.append(curr_constraint_table.cell_values[ind2][cond_index-1])
+        else:
+            if curr_constraint_table.cell_values[ind2][cond_index-1] < 0:
+                lessthan_constraints_values.append(0)
+            else:
+                lessthan_constraints_values.append(curr_constraint_table.cell_values[ind2][cond_index-1])
+    return [equality_constraints_values, lessthan_constraints_values]
+    
 
 def compare_tuple(original_tuple, new_tuple):
     """

@@ -3,19 +3,6 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-# In this test, I set the equality constraints which are satisfied when the coefficients are the same as the GLM model
-# built without constraints. The following tests are run:
-# 1. without constraints, regularization, I want to find the optimal GLM coefficients;
-# 2. with constraints, and initializing the constraint GLM run with the optimal coefficients 
-#    obtained in test 1 by setting the parameter init_optimal_glm=True, grab the model metrics
-# 3. with constraints, and with random GLM coefficient initialization and constraint_inner_iteration_number==1, grab 
-# model metrics
-# 4. with constraints, and with default GLM coefficient initialization and constraint_inner_iteration_number==1, grab 
-# # model metrics
-# 5. with constraints, and with random GLM coefficient initialization and constraint_inner_iteration_number==10, grab 
-# model metrics
-# 6. with constraints, and with default GLM coefficient initialization and constraint_inner_iteration_number==10, grab 
-# model metrics
 def test_constraints_binomial():
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):

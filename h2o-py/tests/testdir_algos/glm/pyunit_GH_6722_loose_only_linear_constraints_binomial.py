@@ -3,15 +3,6 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-
-# In this test, I set the constraints to be very loose and they are inactive when the correct GLM coefficients are 
-# found.  The following tests are run:
-# 1. without constraints, regularization, I want to find the optimal GLM coefficients;
-# 2. with constraints, regularization and initializing the constraint GLM run with the optimal coefficients 
-#    obtained in test 1 by setting the parameter init_optimal_glm=True, find the GLM coefficients;
-# 3. with constraints, regularization and with default GLM coefficient initialization, the constraint GLM should 
-#     return with the same (or similar) coefficients as in test 1.
-# To test, I check the coefficients and the logloss from the various model.
 def test_constraints_binomial():
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
