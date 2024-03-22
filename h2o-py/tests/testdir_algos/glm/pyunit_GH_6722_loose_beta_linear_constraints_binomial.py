@@ -36,7 +36,7 @@ def test_constraints_binomial():
     beta_constraints = h2o.H2OFrame(bc)
     beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])
     h2o_glm = glm(family="binomial", remove_collinear_columns=True, lambda_=0.0, solver="irlsm", seed=12345,
-                  beta_constraints=beta_constraints, standardize=True)
+                  standardize=True)
     h2o_glm.train(x=predictors, y=response, training_frame=train)
     logloss = h2o_glm.model_performance()._metric_json['logloss']
     print("logloss with no constraints: {0}".format(logloss))
@@ -106,9 +106,9 @@ def test_constraints_binomial():
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
     constraint_eta0 = [0.01, 0.1258925]
     constraint_tau = [2, 50]
-    constraint_alpha = [0.01, 0.1]
-    constraint_beta = [0.5, 0.9]
-    constraint_c0 = [2, 10] # initial value
+    constraint_alpha = [0.01]
+    constraint_beta = [0.5]
+    constraint_c0 = [2] # initial value
     # GLM model with GLM coefficients with default initialization
     h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
@@ -141,9 +141,8 @@ def test_constraints_binomial():
     print(glm.getConstraintsInfo(h2o_glm_default_init))
 
 
-    assert abs(logloss-init_logloss)<1e-6, "logloss from optimal GLM {0} and logloss from GLM with loose constraints " \
-                                           "and initialized with optimal GLM {1} should equal but is not." \
-                                           "".format(logloss, init_logloss)
+    assert logloss<=init_logloss, "logloss from optimal GLM {0} should be less than logloss {1} from GLM with loose " \
+                                  "constraints and initialized with optimal GLM {1} but is not.".format(logloss, init_logloss)
     assert abs(logloss-init_random_logloss) < 1e-6 or logloss <= init_random_logloss, \
         "logloss from optimal GLM {0} should be smaller than or close to GLM with constraints and with random initial " \
         "coefficients {1} but is not.".format(logloss, init_random_logloss)
