@@ -164,7 +164,7 @@ def test_light_tight_linear_constraints_only_gaussian():
                                                                         constraint_alpha=constraint_alpha,
                                                                         constraint_beta=constraint_beta,
                                                                         constraint_c0=constraint_c0,
-                                                                        bestModel=False, metric="RMSE", epsilon=10)
+                                                                        return_best=False, metric="RMSE", epsilon=10)
     random_init_MSE = h2o_glm_random_init.model_performance()._metric_json['RMSE']
     print("RMSE with random GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
           "{1}".format(random_init_MSE, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))

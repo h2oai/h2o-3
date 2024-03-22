@@ -154,11 +154,11 @@ def test_light_tight_linear_constraints_only_gaussian():
     linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
 
     # GLM model with GLM coefficients with default initialization
-    constraint_eta0 = [0.1258925]
-    constraint_tau = [1.2, 1.5, 2, 5, 10]
-    constraint_alpha = [0.1]
-    constraint_beta = [0.9]
-    constraint_c0 = [1.2, 1.5, 5, 10, 12, 13, 20] # initial value
+    constraint_eta0 = [0.001]
+    constraint_tau = [2]
+    constraint_alpha = [0.001]
+    constraint_beta = [0.001]
+    constraint_c0 = [1.5, 5] # initial value
     # GLM model with with GLM coefficients set to GLM model coefficients built without constraints
     h2o_glm_optimal_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",

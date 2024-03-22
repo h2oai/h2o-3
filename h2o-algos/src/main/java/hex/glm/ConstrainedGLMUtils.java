@@ -803,7 +803,7 @@ public class ConstrainedGLMUtils {
   public static boolean constraintsStop(GLM.GLMGradientInfo gradientInfo, ComputationState state) {
     state._csGLMState._gradientMagSquare = innerProduct(gradientInfo._gradient, gradientInfo._gradient);
     if (state._csGLMState._constraintMagSquare <= ComputationState.EPS_CS_SQUARE && 
-            state._csGLMState._gradientMagSquare <= ComputationState.EPS_CS_SQUARE)
+            state._csGLMState._gradientMagSquare <= ComputationState.EPS_CS)
       return true;
     return false;
   }
