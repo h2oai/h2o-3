@@ -40,26 +40,27 @@ def constraint_glm_gridsearch(training_dataset, x, y, solver="AUTO", family="gau
 
     params = {"family":family, "lambda_":0.0, "seed":12345, "remove_collinear_columns":True, "solver":solver,
               "linear_constraints":linear_constraints}
-    hyperParams = {"constraint_eta0":constraint_eta0, "constraint_tau":constraint_tau, "constraint_alpha":constraint_alpha,
+    hyper_parameters = {"constraint_eta0":constraint_eta0, "constraint_tau":constraint_tau, "constraint_alpha":constraint_alpha,
                    "constraint_beta":constraint_beta, "constraint_c0":constraint_c0}
     if beta_constraints is not None:
         params['beta_constraints']=beta_constraints
-        hyperParams["separate_linear_beta"] = [True, False]
+        hyper_parameters["separate_linear_beta"] = [True, False]
     if startval is not None:
         params["startval"]=startval
     if init_optimal_glm:
         params["init_optimal_glm"]=True
         
-    glmGrid = H2OGridSearch(glm(**params), hyper_params=hyperParams)
+    glmGrid = H2OGridSearch(glm(**params), hyper_params=hyper_parameters)
     glmGrid.train(x=x, y=y, training_frame=training_dataset)
     sortedGrid = glmGrid.get_grid()
     print(sortedGrid)
     if return_best:
+        print_model_hyperparameters(sortedGrid.models[0], hyper_parameters)
         return sortedGrid.models[0]
     else:
-        return grid_models_analysis(sortedGrid.models, metric=metric, epsilon=epsilon)
+        return grid_models_analysis(sortedGrid.models, hyper_parameters, metric=metric, epsilon=epsilon)
 
-def grid_models_analysis(grid_models, metric="logloss", epsilon=1e-3):
+def grid_models_analysis(grid_models, hyper_parameters, metric="logloss", epsilon=1e-3):
     """
     This method will search within the grid search models that have metrics within epsilon calculated as 
     abs(metric1-metric2)/abs(metric1) as the best model.  We are wanting to send the best model that has the best
@@ -99,8 +100,19 @@ def grid_models_analysis(grid_models, metric="logloss", epsilon=1e-3):
             model_indices.append(ind)
             iterations.append(find_glm_iterations(curr_model))
     print("Maximum iterations: {0} and it is from model index: {1}".format(base_iteration, best_model_ind))
+    print_model_hyperparameters(grid_models[best_model_ind], hyper_parameters)
     return grid_models[best_model_ind]
 
+def print_model_hyperparameters(model, hyper_parameters):
+    print("***** Hyper parameter values for best model chosen are:")
+    params = model.actual_params
+    param_keys = hyper_parameters.keys()
+    actual_keys = params.keys()
+    for param in actual_keys:
+        if param in param_keys:
+            print("{0} value {1}.".format(param, params[param]))
+            
+        
 def grab_constraint_values(curr_constraint_table, cond_index, num_constraints):
     equality_constraints_values = []
     lessthan_constraints_values = []
