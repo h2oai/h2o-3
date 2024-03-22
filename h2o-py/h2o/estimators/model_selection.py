@@ -81,7 +81,6 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  max_runtime_secs=0.0,  # type: float
-                 custom_metric_func=None,  # type: Optional[str]
                  nparallelism=0,  # type: int
                  max_predictor_number=1,  # type: int
                  min_predictor_number=1,  # type: int
@@ -290,9 +289,6 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
                Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
-               Defaults to ``None``.
-        :type custom_metric_func: str, optional
         :param nparallelism: number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system
                capability
                Defaults to ``0``.
@@ -383,7 +379,6 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self.max_after_balance_size = max_after_balance_size
         self.max_confusion_matrix_size = max_confusion_matrix_size
         self.max_runtime_secs = max_runtime_secs
-        self.custom_metric_func = custom_metric_func
         self.nparallelism = nparallelism
         self.max_predictor_number = max_predictor_number
         self.min_predictor_number = min_predictor_number
@@ -1123,20 +1118,6 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
-    @property
-    def custom_metric_func(self):
-        """
-        Reference to custom evaluation function, format: `language:keyName=funcName`
-
-        Type: ``str``.
-        """
-        return self._parms.get("custom_metric_func")
-
-    @custom_metric_func.setter
-    def custom_metric_func(self, custom_metric_func):
-        assert_is_type(custom_metric_func, None, str)
-        self._parms["custom_metric_func"] = custom_metric_func
 
     @property
     def nparallelism(self):
