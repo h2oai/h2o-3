@@ -5128,8 +5128,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         BufferedString tmpStr = new BufferedString();
         for (int i = 0; i < dom.length; ++i) {
           dom[i] = v.atStr(tmpStr, i).toString();
-          if ("Intercept".equals(dom[i]))
-            throw new IllegalArgumentException("Beta constraints cannot be applied to the Intercept right row.");
+          if ("intercept".equals(dom[i]))
+            throw new IllegalArgumentException("Beta constraints cannot be applied to the intercept right row.");
           map[i] = i;
         }
         // check for dups
