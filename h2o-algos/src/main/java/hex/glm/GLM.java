@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static hex.ModelMetrics.calcVarImp;
-import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
 import static hex.gam.MatrixFrameUtils.GamUtils.keepFrameKeys;
 import static hex.glm.ComputationState.*;
 import static hex.glm.ConstrainedGLMUtils.*;

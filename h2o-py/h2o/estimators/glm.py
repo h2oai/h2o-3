@@ -249,8 +249,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                of the training/validation frame, use with conjunction missing_values_handling = PlugValues)
                Defaults to ``None``.
         :type plug_values: Union[None, str, H2OFrame], optional
-        :param compute_p_values: Request p-values computation, p-values work only with IRLSM solver and no
-               regularization
+        :param compute_p_values: Request p-values computation, p-values work only with IRLSM solver.
                Defaults to ``False``.
         :type compute_p_values: bool
         :param dispersion_parameter_method: Method used to estimate the dispersion parameter for Tweedie, Gamma and
@@ -262,7 +261,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                calculation of p-values.Default to 1.0.
                Defaults to ``1.0``.
         :type init_dispersion_parameter: float
-        :param remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent columns
+        :param remove_collinear_columns: In case of linearly dependent columns, remove the dependent columns.
                Defaults to ``False``.
         :type remove_collinear_columns: bool
         :param intercept: Include constant term in the model
@@ -281,8 +280,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                value of lambda the default value of objective_epsilon is set to .0001.
                Defaults to ``-1.0``.
         :type objective_epsilon: float
-        :param beta_epsilon: Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to
-               IRLSM solver
+        :param beta_epsilon: Converge if beta changes less (using L-infinity norm) than beta esilon. ONLY applies to
+               IRLSM solver.
                Defaults to ``0.0001``.
         :type beta_epsilon: float
         :param gradient_epsilon: Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to
@@ -444,22 +443,22 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``False``.
         :type separate_linear_beta: bool
         :param constraint_eta0: For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).
-               Default to 0.1258925
+               Default to 0.1258925.
                Defaults to ``0.1258925``.
         :type constraint_eta0: float
-        :param constraint_tau: For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
+        :param constraint_tau: For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10.
                Defaults to ``10.0``.
         :type constraint_tau: float
         :param constraint_alpha: For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).
-               Default to 0.1
+               Default to 0.1.
                Defaults to ``0.1``.
         :type constraint_alpha: float
         :param constraint_beta: For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).
-               Default to 0.9
+               Default to 0.9.
                Defaults to ``0.9``.
         :type constraint_beta: float
         :param constraint_c0: For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default
-               to 10
+               to 10.
                Defaults to ``10.0``.
         :type constraint_c0: float
         """
@@ -1460,7 +1459,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def compute_p_values(self):
         """
-        Request p-values computation, p-values work only with IRLSM solver and no regularization
+        Request p-values computation, p-values work only with IRLSM solver.
 
         Type: ``bool``, defaults to ``False``.
 
@@ -1525,7 +1524,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def remove_collinear_columns(self):
         """
-        In case of linearly dependent columns, remove some of the dependent columns
+        In case of linearly dependent columns, remove the dependent columns.
 
         Type: ``bool``, defaults to ``False``.
 
@@ -1684,7 +1683,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def beta_epsilon(self):
         """
-        Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
+        Converge if beta changes less (using L-infinity norm) than beta esilon. ONLY applies to IRLSM solver.
 
         Type: ``float``, defaults to ``0.0001``.
 
@@ -2506,7 +2505,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_eta0(self):
         """
-        For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
+        For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925.
 
         Type: ``float``, defaults to ``0.1258925``.
         """
@@ -2520,7 +2519,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_tau(self):
         """
-        For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10
+        For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10.
 
         Type: ``float``, defaults to ``10.0``.
         """
@@ -2534,7 +2533,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_alpha(self):
         """
-        For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1
+        For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1.
 
         Type: ``float``, defaults to ``0.1``.
         """
@@ -2548,7 +2547,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_beta(self):
         """
-        For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9
+        For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9.
 
         Type: ``float``, defaults to ``0.9``.
         """
@@ -2562,7 +2561,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def constraint_c0(self):
         """
-        For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10
+        For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10.
 
         Type: ``float``, defaults to ``10.0``.
         """

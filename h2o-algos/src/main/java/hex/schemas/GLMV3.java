@@ -198,7 +198,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "coefficient names and model coefficient dimensions are needed.", level = Level.secondary)
     public int max_iterations;
 
-    @API(help = "Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver "
+    @API(help = "Converge if beta changes less (using L-infinity norm) than beta esilon. ONLY applies to IRLSM solver."
             , level = Level.expert)
     public double beta_epsilon;
 
@@ -331,16 +331,14 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_confusion_matrix_size;
 
-    @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization",
-            level = Level.secondary, direction = Direction.INPUT)
-    public boolean compute_p_values; // _remove_collinear_columns
+    @API(help="Request p-values computation, p-values work only with IRLSM solver.", level = Level.secondary)
+    public boolean compute_p_values;
 
     @API(help="If true, will fix tweedie variance power value to the value set in tweedie_variance_power.",
             level=Level.secondary, direction=Direction.INPUT)
     public boolean fix_tweedie_variance_power;
 
-    @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary,
-            direction = Direction.INPUT)
+    @API(help="In case of linearly dependent columns, remove the dependent columns.", level = Level.secondary)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
     @API(help = "If changes in dispersion parameter estimation or loglikelihood value is smaller than " +
@@ -375,28 +373,23 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public boolean separate_linear_beta;
 
     @API(help="For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to" +
-            " 0.1258925", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
+            " 0.1258925.", level = API.Level.expert, direction = API.Direction.INOUT, gridable = true)
     public double constraint_eta0;
 
     @API(help="For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to" +
-            " 10", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
+            " 10.", level = API.Level.expert, direction = API.Direction.INOUT, gridable = true)
     public double constraint_tau;
 
     @API(help="For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to" +
-            " 0.1", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
+            " 0.1.", level = API.Level.expert, direction = API.Direction.INOUT, gridable = true)
     public double constraint_alpha;
 
     @API(help="For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to" +
-            " 0.9", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
+            " 0.9.", level = API.Level.expert, direction = API.Direction.INOUT, gridable = true)
     public double constraint_beta;
 
     @API(help="For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to" +
-            " 10", level = API.Level.secondary,
-            direction = API.Direction.INOUT, gridable = true)
+            " 10.", level = API.Level.expert, direction = API.Direction.INOUT, gridable = true)
     public double constraint_c0;
     /////////////////////
   }

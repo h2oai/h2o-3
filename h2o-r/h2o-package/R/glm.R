@@ -68,14 +68,13 @@
 #'        "Skip", "PlugValues". Defaults to MeanImputation.
 #' @param plug_values Plug Values (a single row frame containing values that will be used to impute missing values of the
 #'        training/validation frame, use with conjunction missing_values_handling = PlugValues)
-#' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
-#'        Defaults to FALSE.
+#' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver. Defaults to FALSE.
 #' @param dispersion_parameter_method Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only. Must be one
 #'        of: "deviance", "pearson", "ml". Defaults to pearson.
 #' @param init_dispersion_parameter Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion parameter.  If
 #'        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.Default to 1.0.
 #'        Defaults to 1.
-#' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
+#' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove the dependent columns. Defaults to FALSE.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model coefficient
@@ -84,8 +83,8 @@
 #'        True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal
 #'        to zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
 #'        objective_epsilon is set to .0001. Defaults to -1.
-#' @param beta_epsilon Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
-#'        Defaults to 0.0001.
+#' @param beta_epsilon Converge if beta changes less (using L-infinity norm) than beta esilon. ONLY applies to IRLSM solver. Defaults
+#'        to 0.0001.
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
 #'        (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
 #'        gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True,
@@ -167,14 +166,15 @@
 #'        coefficients arefound, first beta constraints will be applied followed by the application of linear
 #'        constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
 #'        false, will combine the beta and linear constraints.  Default to false. Defaults to FALSE.
-#' @param constraint_eta0 For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925
+#' @param constraint_eta0 For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).  Default to 0.1258925.
 #'        Defaults to 0.1258925.
-#' @param constraint_tau For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10 Defaults to 10.
-#' @param constraint_alpha For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1 Defaults
+#' @param constraint_tau For constrained GLM only.  It affects the setting of c_k+1=tau*c_k.  Default to 10. Defaults to 10.
+#' @param constraint_alpha For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha).  Default to 0.1. Defaults
 #'        to 0.1.
-#' @param constraint_beta For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9 Defaults
+#' @param constraint_beta For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta).  Default to 0.9. Defaults
 #'        to 0.9.
-#' @param constraint_c0 For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10 Defaults to 10.
+#' @param constraint_c0 For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0.  Default to 10. Defaults to
+#'        10.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
