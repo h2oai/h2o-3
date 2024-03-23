@@ -2,6 +2,7 @@ package hex.glm;
 
 import Jama.Matrix;
 import hex.*;
+import hex.gam.MatrixFrameUtils.GamUtils;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -1697,7 +1698,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (!_parms._intercept) throw H2O.unimpl();
       ArrayList<Integer> ignoredCols = new ArrayList<>();
       double[] xy = gram._xy.clone();
-      Cholesky chol = ((_state._iter == 0) ? gram.qrCholesky(ignoredCols, copy2DArray(gram._gram), _parms._standardize) : gram.cholesky(null, gram._gram));
+      Cholesky chol = ((_state._iter == 0) ? gram.qrCholesky(ignoredCols, GamUtils.copy2DArray(gram._gram), _parms._standardize) : gram.cholesky(null, gram._gram));
       if (!chol.isSPD()) throw new NonSPDMatrixException();
       if (!ignoredCols.isEmpty()) {
         int[] collinear_cols = ignoredCols.stream().mapToInt(x -> x).toArray();
@@ -3475,7 +3476,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double[][] inv = chol.getInv();
         if (_parms._influence != null) {
           _cholInvInfluence = new double[inv.length][inv.length];
-          copy2DArray(inv, _cholInvInfluence);
+          GamUtils.copy2DArray(inv, _cholInvInfluence);
           ArrayUtils.mult(_cholInvInfluence, _parms._obj_reg);
           g.mul(1.0/_parms._obj_reg);
         }

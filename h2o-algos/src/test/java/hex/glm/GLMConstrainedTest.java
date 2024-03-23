@@ -1,6 +1,7 @@
 package hex.glm;
 
 import Jama.Matrix;
+import hex.gam.MatrixFrameUtils.GamUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -953,7 +954,7 @@ public class GLMConstrainedTest extends TestUtil {
     Matrix initMat = Matrix.random(11, 11);
     double[][] doubleValsOrig = (initMat.plus(initMat.transpose())).getArray();
     double[][] doubleVals = new double[doubleValsOrig.length][doubleValsOrig.length];
-    copy2DArray(doubleValsOrig, doubleVals);
+    GamUtils.copy2DArray(doubleValsOrig, doubleVals);
     // no zero columns
     int[] numZeroCol = findZeroCols(doubleVals);
     assertTrue("number of zero columns is zero in this case but is not.", numZeroCol.length==0);
