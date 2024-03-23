@@ -927,22 +927,6 @@ public final class ComputationState {
     }
     return likelihood * _parms._obj_reg + gamVal + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
   }
-  
-  // calculate transpose(lambda)*constraints
-  public static double calConstraintsVal(double[] lambdaEqual, double[] lambdaLessThan, LinearConstraints[] equalC, 
-                                  LinearConstraints[] lessThanC) {
-    double constrainVal = 0;
-    if (lambdaEqual == null)
-      constrainVal += IntStream.range(0, lambdaEqual.length).mapToDouble(x -> lambdaEqual[x]*equalC[x]._constraintsVal).sum();
-    constrainVal += IntStream.range(0, lambdaEqual.length).filter(x -> lessThanC[x]._constraintsVal >= 0).mapToDouble(x -> lambdaLessThan[x] * equalC[x]._constraintsVal).sum();
-    return constrainVal;
-  }
-  
-  public double calConstratintsSquare(LinearConstraints[] equalC, LinearConstraints[] lessThanC) {
-    double sumVal  = equalC == null ? 0 : Arrays.stream(equalC).mapToDouble(x ->  x._constraintsVal*x._constraintsVal).sum();
-    sumVal += Arrays.stream(lessThanC).filter(x -> (x._constraintsVal > 0)).mapToDouble(x -> x._constraintsVal*x._constraintsVal).sum();
-    return sumVal*_csGLMState._ckCS*0.5;
-  }
 
   /***
    *

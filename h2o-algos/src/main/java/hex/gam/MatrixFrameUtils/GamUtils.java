@@ -149,7 +149,7 @@ public class GamUtils {
   
   // copy a square array
   public static double[][] copy2DArray(double[][] src_array) {
-    double[][] dest_array = new double[src_array.length][src_array.length];
+    double[][] dest_array = MemoryManager.malloc8d(src_array.length, src_array.length);
     copy2DArray(src_array, dest_array);
     return dest_array;
   }

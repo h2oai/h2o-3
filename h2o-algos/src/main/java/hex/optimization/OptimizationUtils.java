@@ -491,7 +491,6 @@ public class OptimizationUtils {
       _alphar = Double.POSITIVE_INFINITY;
       _coeffNames = coeffNames.toArray(new String[0]);
       _currGradDirIP = ArrayUtils.innerProduct(_ginfoOriginal._gradient, _direction);
-      assert _currGradDirIP <= 0 : "direction is not an descent direction!";
     }
 
     /***
@@ -547,7 +546,10 @@ public class OptimizationUtils {
                              ConstrainedGLMUtils.LinearConstraints[] equalityConstraints, 
                              ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
                              GLM.GLMGradientSolver gradientSolver) {
-      GLM.GLMGradientInfo newGrad = null;
+      if (_currGradDirIP > 0) {
+        return false;
+      }
+      GLM.GLMGradientInfo newGrad;
       double[] newCoef;
       int betaLen = _originalBeta.length;
       double[] tempDirection = new double[betaLen];
