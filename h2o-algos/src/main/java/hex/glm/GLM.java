@@ -1192,11 +1192,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       if (_parms._expose_constraints && _parms._linear_constraints == null)
-        error("_expose_constraints", " can only be enabled when there are linear constraints.");
+        error("_expose_constraints", "can only be enabled when there are linear constraints.");
       BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get()) 
               : new BetaConstraint();
       if (betaContsOn && !_betaConstraintsOn) {
-        warn("Beta Constraints", " will be disabled except for solver AUTO, COORDINATE_DESCENT, " +
+        warn("Beta Constraints", "will be disabled except for solver AUTO, COORDINATE_DESCENT, " +
                 "IRLSM or L_BFGS.  It is not available for ordinal or multinomial families.");
       }
       if (bc.hasProximalPenalty() && _parms._compute_p_values)
