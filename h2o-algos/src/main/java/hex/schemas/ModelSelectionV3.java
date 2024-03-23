@@ -64,7 +64,6 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "max_after_balance_size",
                 "max_confusion_matrix_size",
                 "max_runtime_secs",
-                "custom_metric_func",
                 "nparallelism",
                 "max_predictor_number",  // denote maximum number of predictors to build models for
                 "min_predictor_number",
