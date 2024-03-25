@@ -969,6 +969,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
     }
+    
+    if (_parms._linear_constraints != null) {
+      checkInitLinearConstraints();
+    }
+    
     if (expensive) {
       if (_parms._build_null_model) {
         if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
@@ -1374,16 +1379,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return _parms._standardize ? model._output.getNormBeta() : model._output.beta(); // constraint values evaluation will take care of normalization
   }
   
-  /**
-   * This method will extract the constraints from beta_constraints followed by the constraints specified in the 
-   * linear_constraints.  The constraints are extracted into equality and lessthanequalto constraints from
-   * beta_constraints and linear constraints.
-   * 
-   * In addition, we extract all the constraints into a matrix and if the matrix is not full rank, constraints
-   * are redundant and an error will be thrown and the redundant constraints will be included in the error message
-   * so users can know which constraints to remove.
-   */
-  void checkAssignLinearConstraints() {
+  void checkInitLinearConstraints() {
     if (!IRLSM.equals(_parms._solver)) {  // only solver irlsm is allowed
       error("solver", "constrained GLM is only available for IRLSM.  PLease set solver to" +
               " IRLSM/irlsm explicitly.");
@@ -1415,6 +1411,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               " parameter calculation.");
       return;
     }
+  }
+  
+  /**
+   * This method will extract the constraints from beta_constraints followed by the constraints specified in the 
+   * linear_constraints.  The constraints are extracted into equality and lessthanequalto constraints from
+   * beta_constraints and linear constraints.
+   * 
+   * In addition, we extract all the constraints into a matrix and if the matrix is not full rank, constraints
+   * are redundant and an error will be thrown and the redundant constraints will be included in the error message
+   * so users can know which constraints to remove.
+   */
+  void checkAssignLinearConstraints() {
     String[] coefNames = _dinfo.coefNames();
     int[] betaLessThanArr = null;
     if (_parms._beta_constraints != null)
