@@ -108,22 +108,11 @@ def test_constraints_objective_likelihood():
                    0.9875655504027848, 0.5832266083052889, 0.24205847206862052, 0.9843760682096272, 0.16269008279311103,
                    0.4941250734508458, 0.5446841276322587, 0.19222703209695946, 0.9232239752817498, 0.8824688635063289,
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
-    constraint_eta0 = [0.05]
-    constraint_tau = [1.2]
-    constraint_alpha = [0.01]
-    constraint_beta = [0.5, 0.9]
-    constraint_c0 = [40]
-    h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
-                                                                        family="binomial",
-                                                                        linear_constraints=linear_constraints2,
-                                                                        beta_constraints=beta_constraints,
-                                                                        startval=random_coef,
-                                                                        constraint_eta0=constraint_eta0,
-                                                                        constraint_tau=constraint_tau,
-                                                                        constraint_alpha=constraint_alpha,
-                                                                        constraint_beta=constraint_beta,
-                                                                        constraint_c0=constraint_c0,
-                                                                        return_best=False)                                                             
+    h2o_glm_random_init = glm(family="binomial", lambda_=0.0, seed=12345, remove_collinear_columns=True,
+                              solver="irlsm", linear_constraints=linear_constraints2, calc_like=True, 
+                              startval=random_coef, beta_constraints=beta_constraints, constraint_c0=40, 
+                              constraint_eta0=0.05, constraint_alpha=0.01, constraint_beta=0.9, constraint_tau=1.2)
+    h2o_glm_random_init.train(x=predictors, y=response, training_frame=train)
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and coefficients initialized random initial values: {0}, number of iterations"
           " taken to build the model: {1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))
@@ -131,16 +120,12 @@ def test_constraints_objective_likelihood():
 
     
     # GLM model with GLM coefficients with default initialization
-    h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
-                                                                         family="binomial",
-                                                                         linear_constraints=linear_constraints2,
-                                                                         beta_constraints=beta_constraints,
-                                                                         constraint_eta0=constraint_eta0,
-                                                                         constraint_tau=constraint_tau,
-                                                                         constraint_alpha=constraint_alpha,
-                                                                         constraint_beta=constraint_beta,
-                                                                         constraint_c0=constraint_c0,
-                                                                         return_best=False)
+    h2o_glm_default_init = glm(family="binomial", lambda_=0.0, seed=12345, remove_collinear_columns=True,
+                               solver="irlsm", linear_constraints=linear_constraints2, calc_like=True,
+                               beta_constraints=beta_constraints, constraint_c0=40, constraint_eta0=0.05, 
+                               constraint_alpha=0.01, constraint_beta=0.9, constraint_tau=1.2)
+    h2o_glm_random_init.train(x=predictors, y=response, training_frame=train)
+    h2o_glm_default_init.train(x=predictors, y=response, training_frame=train)
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and default coefficients initialization: {0}, number of iterations"
           " taken to build the model: {1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))

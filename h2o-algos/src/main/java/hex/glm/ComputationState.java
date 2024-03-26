@@ -1049,7 +1049,7 @@ public final class ComputationState {
       else System.arraycopy(beta,0,_beta,0,beta.length);
     }
     // now with new beta in _beta, need to update constraint values and then calculate objective
-    updateConstraintValues(_beta, Arrays.stream(activeData()._coefNames).collect(Collectors.toList()), 
+    updateConstraintValues(_beta, Arrays.stream(activeData().coefNames()).collect(Collectors.toList()), 
             _equalityConstraints, _lessThanEqualToConstraints);
     _relImprovement = (objOld - objective()) / Math.abs(objOld);
 
