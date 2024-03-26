@@ -160,6 +160,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public static class MetricBuilderBinomialUplift extends MetricBuilderSupervised<MetricBuilderBinomialUplift> {
 
         protected AUUC.AUUCBuilder _auuc;
+        protected AUUC.AUUCBuilder2 _auuc2;
         public double _sumTE;
         public double _sumTETreatment;
         public long _treatmentCount;
@@ -168,6 +169,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             super(2,domain);
             if(thresholds != null) {
                 _auuc = new AUUC.AUUCBuilder(thresholds);
+                _auuc2 = new AUUC.AUUCBuilder2(400);
             }
         }
 
@@ -194,13 +196,19 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if (_auuc != null) {
                 _auuc.perRow(treatmentEffect, weight, y, treatmentGroup);
             }
+            if(_auuc2 != null){
+                _auuc2.perRow(treatmentEffect, weight, y, treatmentGroup);
+            }
             return ds;
         }
 
         @Override public void reduce(MetricBuilderBinomialUplift mb ) {
             super.reduce(mb);
             if(_auuc != null) {
-                _auuc.reduce(mb._auuc);
+               // _auuc.reduce(mb._auuc);
+            }
+            if(_auuc2 != null) {
+                _auuc2.reduce(mb._auuc2);
             }
             _sumTE += mb._sumTE;
             _sumTETreatment += mb._sumTETreatment;
@@ -259,7 +267,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if(_wcount > 0) {
                 if (auuc == null) {
                     sigma = weightedSigma();
-                    auuc = new AUUC(_auuc, m._parms._auuc_type);
+                    auuc = new AUUC(_auuc2, m._parms._auuc_type);
                 }
                 ate = _sumTE/_wcount;
                 att = _sumTETreatment/_treatmentCount;

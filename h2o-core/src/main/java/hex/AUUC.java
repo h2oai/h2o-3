@@ -79,6 +79,10 @@ public class AUUC extends Iced {
         this(bldr, true, auucType);
     }
 
+    public AUUC(AUUCBuilder2 bldr, AUUCType auucType) {
+        this(bldr, true, auucType);
+    }
+
     public AUUC(double[] customThresholds, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(new AUUCImpl(customThresholds).doAll(probs, y, uplift)._bldr, auucType);
     }
@@ -91,6 +95,70 @@ public class AUUC extends Iced {
         if (_nBins > 0) {
             assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
             _n = bldr._n;
+            _ths = Arrays.copyOf(bldr._thresholds, _nBins);
+            _treatment = Arrays.copyOf(bldr._treatment, _nBins);
+            _control = Arrays.copyOf(bldr._control, _nBins);
+            _yTreatment = Arrays.copyOf(bldr._yTreatment, _nBins);
+            _yControl = Arrays.copyOf(bldr._yControl, _nBins);
+            _frequency = Arrays.copyOf(bldr._frequency, _nBins);
+            _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
+            _uplift = new double[AUUCType.values().length][_nBins];
+            _upliftRandom = new double[AUUCType.values().length][_nBins];
+            _upliftNormalized = new double[AUUCType.values().length][_nBins];
+
+            // Rollup counts
+            long tmpt = 0, tmpc = 0, tmptp = 0, tmpcp = 0, tmpf = 0;
+            for (int i = 0; i < _nBins; i++) {
+                tmpt += _treatment[i];
+                _treatment[i] = tmpt;
+                tmpc += _control[i];
+                _control[i] = tmpc;
+                tmptp += _yTreatment[i];
+                _yTreatment[i] = tmptp;
+                tmpcp += _yControl[i];
+                _yControl[i] = tmpcp;
+                tmpf += _frequencyCumsum[i];
+                _frequencyCumsum[i] = tmpf;
+            }
+
+            // these methods need to be call in this order
+            setUplift();
+            setUpliftRandom();
+            setUpliftNormalized();
+
+            if (trueProbabilities) {
+                _auucs = computeAuucs();
+                _auucsRandom = computeAuucsRandom();
+                _aecu = computeAecu();
+                _auucsNormalized = computeAuucsNormalized();
+                _maxIdx = _auucType.maxCriterionIdx(this);
+            } else {
+                _maxIdx = 0;
+            }
+        } else {
+            _maxIdx = -1;
+            _n = 0;
+            _ths = null;
+            _treatment = null;
+            _control = null;
+            _yTreatment = null;
+            _yControl = null;
+            _frequency = null;
+            _frequencyCumsum = null;
+            _uplift = null;
+            _upliftRandom = null;
+            _upliftNormalized = null;
+        }
+    }
+
+    public AUUC(AUUCBuilder2 bldr, boolean trueProbabilities, AUUCType auucType) {
+        _auucType = auucType;
+        _auucTypeIndx = getIndexByAUUCType(_auucType);
+        _nBins = bldr._n;
+        //assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
+        if (_nBins > 0) {
+            assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
+            _n = bldr._frequency[_nBins-1];
             _ths = Arrays.copyOf(bldr._thresholds, _nBins);
             _treatment = Arrays.copyOf(bldr._treatment, _nBins);
             _control = Arrays.copyOf(bldr._control, _nBins);
@@ -365,6 +433,7 @@ public class AUUC extends Iced {
         final long[] _yControl;         // number of data from control group with prediction = 1 
         final long[] _frequency;        // frequency of data in each bin
         long _n;
+        int _ssx;
         
         public AUUCBuilder(double[] thresholds) {
             int nBins = thresholds.length;
@@ -375,6 +444,7 @@ public class AUUC extends Iced {
             _yTreatment = new long[nBins]; 
             _yControl = new long[nBins];  
             _frequency = new long[nBins];
+            _ssx = -1;
         }
 
         public void perRow(double pred, double w, double y, float treatment) {
@@ -399,7 +469,7 @@ public class AUUC extends Iced {
             }
         }
 
-        public void reduce( AUUCBuilder bldr) {
+        public void reduce(AUUCBuilder bldr) {
             _n += bldr._n;
             ArrayUtils.add(_treatment, bldr._treatment);
             ArrayUtils.add(_control, bldr._control);
@@ -408,7 +478,266 @@ public class AUUC extends Iced {
             ArrayUtils.add(_frequency, bldr._frequency);
         }
         
-        
+        private String toDebugString() {
+            return  "n =" +_n +
+                    "; nBins = " + _nBins +
+                    "; ths = " + Arrays.toString(_thresholds) +
+                    "; treatment = " + Arrays.toString(_treatment) +
+                    "; contribution = " + Arrays.toString(_control) +
+                    "; yTreatment = " + Arrays.toString(_yTreatment) +
+                    "; yContribution = " + Arrays.toString(_yControl) +
+                    "; frequency = " + Arrays.toString(_frequency);
+        }
+    }
+
+    /**
+     * Builder to process input data to build histogram in parallel. This builder is used to calculate AUUC quickly.
+     */
+    public static class AUUCBuilder2 extends Iced {
+        final int _nBins;
+        final double[]_thresholds;      // thresholds
+        final long[] _treatment;        // number of data from treatment group
+        final long[] _control;          // number of data from control group
+        final long[] _yTreatment;       // number of data from treatment group with prediction = 1 
+        final long[] _yControl;         // number of data from control group with prediction = 1 
+        final long[] _frequency;        // frequency of data in each bin
+        int _n;
+        int _ssx;
+
+        public AUUCBuilder2(double[] thresholds) {
+            int nBins = thresholds.length;
+            _nBins = nBins;
+            _thresholds = thresholds;
+            _treatment = new long[nBins];
+            _control = new long[nBins];
+            _yTreatment = new long[nBins];
+            _yControl = new long[nBins];
+            _frequency = new long[nBins];
+            _ssx = -1;
+        }
+
+        public AUUCBuilder2(int nBins) {;
+            _nBins = nBins;
+            _n = 0;
+            int doubleNBins = 2 * nBins;
+            _thresholds = new double[doubleNBins];
+            _treatment = new long[doubleNBins];
+            _control = new long[doubleNBins];
+            _yTreatment = new long[doubleNBins];
+            _yControl = new long[doubleNBins];
+            _frequency = new long[doubleNBins];
+            _ssx = -1;
+        }
+
+        public void perRow(double pred, double w, double y, float treatment) {
+            // Insert the prediction into the set of histograms in sorted order, as
+            // if its a new histogram bin with 1 count.
+            assert !Double.isNaN(pred);
+            assert !Double.isNaN(w) && !Double.isInfinite(w);
+            int idx = Arrays.binarySearch(_thresholds,0,_n,pred);
+            if( idx >= 0 ) {          // Found already in histogram; merge results
+                _n++;
+                _frequency[idx]++;
+                if(treatment == 1){
+                    _treatment[idx]++;
+                    if(y == 1){
+                        _yTreatment[idx]++;
+                    }
+                } else {
+                    _control[idx]++;
+                    if(y == 1){
+                        _yControl[idx]++;
+                    }
+                }
+                _ssx = -1;              // Blows the known best merge
+                return;
+            }
+            idx = -idx-1;             // Get index to insert at
+
+            // If already full bins, try to instantly merge into an existing bin
+            if (_n == _nBins &&
+                    idx > 0 && idx < _n &&       // Give up for the corner cases
+                    _thresholds[idx - 1] != _thresholds[idx])  // Histogram has duplicates (mergeOneBin will get rid of them)
+            {       // Need to merge to shrink things
+                final int ssx = find_smallest();
+                double dssx = compute_delta_error(_thresholds[ssx+1], _frequency[ssx+1], _thresholds[ssx], _frequency[ssx]);
+                // See if this point will fold into either the left or right bin
+                // immediately.  This is the desired fast-path.
+                double d0 = compute_delta_error(pred,w,_thresholds[idx-1],_frequency[idx-1]);
+                double d1 = compute_delta_error(_thresholds[idx], _frequency[idx],pred,w);
+                if (d0 < dssx || d1 < dssx) {
+                    if (d0 <= d1) idx--; // Pick correct bin
+                    if (ssx == idx-1 || ssx == idx)
+                        _ssx = -1;         // We don't know the minimum anymore
+                    double k = _frequency[idx];
+                    _n++;
+                    _frequency[idx]++;
+                    if(treatment == 1){
+                        _treatment[idx]++;
+                        if(y == 1){
+                            _yTreatment[idx]++;
+                        }
+                    } else {
+                        _control[idx]++;
+                        if(y == 1){
+                            _yControl[idx]++;
+                        }
+                    }
+                    _thresholds[idx] = combine_centers(_thresholds[idx], k, pred, w);
+                    return;
+                }
+            }
+
+            // Must insert this point as it's own threshold (which is not insertion
+            // point), either because we have too few bins or because we cannot
+            // instantly merge the new point into an existing bin.
+            if (idx == 0 || idx == _n ||     // Just because we didn't bother to deal with the corner cases ^^^
+                    idx == _ssx) _ssx = -1;  // Smallest error becomes one of the splits
+            else if( idx < _ssx ) _ssx++; // Smallest error will slide right 1
+
+            // Slide over to do the insert.  Horrible slowness.
+            System.arraycopy(_thresholds,idx,_thresholds,idx+1,_n-idx);
+            System.arraycopy(_treatment,idx,_treatment,idx+1,_n-idx);
+            System.arraycopy(_control,idx,_control,idx+1,_n-idx);
+            System.arraycopy(_yTreatment,idx,_yTreatment,idx+1,_n-idx);
+            System.arraycopy(_yControl,idx,_yControl,idx+1,_n-idx);
+            System.arraycopy(_frequency,idx,_frequency,idx+1,_n-idx);
+            // Insert into the histogram
+            _thresholds[idx] = pred;         // New histogram center
+            _n++;
+            _frequency[idx]++;
+            if(treatment == 1){
+                _treatment[idx]++;
+                if(y == 1){
+                    _yTreatment[idx]++;
+                }
+            } else {
+                _control[idx]++;
+                if(y == 1){
+                    _yControl[idx]++;
+                }
+            }
+            if( _n > _nBins )         // Merge as needed back down to nBins
+                mergeOneBin();          // Merge best pair of bins
+        }
+
+        public void reduce(AUUC.AUUCBuilder2 bldr) {
+            // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
+            // half of the double-sized array is unused, but the front half is
+            // probably a source.  Merge into the back.
+            int x = _n-1;
+            int y = bldr._n-1;
+            while( x+y+1 >= 0 ) {
+                boolean self_is_larger = y < 0 || (x >= 0 && _thresholds[x] >= bldr._thresholds[y]);
+                AUUC.AUUCBuilder2 b = self_is_larger ? this : bldr;
+                int idx = self_is_larger ?   x  :   y ;
+                _thresholds[x+y+1] = b._thresholds[idx];
+                _treatment[x+y+1] = b._treatment[idx];
+                _control[x+y+1] = b._control[idx];
+                _yTreatment[x+y+1] = b._yTreatment[idx];
+                _yControl[x+y+1] = b._yControl[idx];
+                _frequency[x+y+1] = b._frequency[idx];
+                if( self_is_larger ) x--; else y--;
+            }
+            _n += bldr._n;
+
+            // Merge elements with least squared-error increase until we get fewer
+            // than _nBins and no duplicates.  May require many merges.
+            while( _n > _nBins || dups() )
+                mergeOneBin();
+        }
+
+        static double combine_centers(double ths1, double n1, double ths0, double n0) {
+            double center = (ths0 * n0 + ths1 * n1) / (n0 + n1);
+            if (Double.isNaN(center) || Double.isInfinite(center)) {
+                // use a simple average as a fallback
+                return (ths0 + ths1) / 2;
+            }
+            return center;
+        }
+
+        private void mergeOneBin( ) {
+            // Too many bins; must merge bins.  Merge into bins with least total
+            // squared error.  Horrible slowness linear arraycopy.
+            int ssx = find_smallest();
+
+            // Merge two bins.  Classic bins merging by averaging the histogram
+            // centers based on counts.
+            double k0 = _frequency[ssx];
+            double k1 = _frequency[ssx+1];
+            _thresholds[ssx] = combine_centers(_thresholds[ssx], k0, _thresholds[ssx+1], k1);
+            _treatment[ssx] += _treatment[ssx+1];
+            _control[ssx] += _control[ssx+1];
+            _yTreatment[ssx] += _yTreatment[ssx+1];
+            _yControl[ssx] += _yControl[ssx+1];
+            _frequency[ssx] += _frequency[ssx+1];
+            int n = (int) _n;
+            // Slide over to crush the removed bin at index (ssx+1)
+            System.arraycopy(_thresholds,ssx+2,_thresholds,ssx+1,n-ssx-2);
+            System.arraycopy(_treatment,ssx+2,_treatment,ssx+1,n-ssx-2);
+            System.arraycopy(_control,ssx+2,_control,ssx+1,n-ssx-2);
+            System.arraycopy(_yTreatment,ssx+2,_yTreatment,ssx+1,n-ssx-2);
+            System.arraycopy(_yControl,ssx+2,_yControl,ssx+1,n-ssx-2);
+            System.arraycopy(_frequency,ssx+2,_frequency,ssx+1,n-ssx-2);
+            _n--;
+            _ssx = -1;
+        }
+
+        // Find the pair of bins that when combined give the smallest increase in
+        // squared error.  Dups never increase squared error.
+        //
+        // I tried code for merging bins with keeping the bins balanced in size,
+        // but this leads to bad errors if the probabilities are sorted.  Also
+        // tried the original: merge bins with the least distance between bin
+        // centers.  Same problem for sorted data.
+        private int find_smallest() {
+            if( _ssx == -1 ) {
+                _ssx = find_smallest_impl();
+                assert _ssx != -1 : toDebugString();
+            }
+            return _ssx;
+        }
+
+        private int find_smallest_impl() {
+            if (_n == 1)
+                return 0;
+            // we couldn't find any bins to merge based on SE (the math can be producing Double.Infinity or Double.NaN)
+            // revert to using a simple distance of the bin centers
+            int minI = 0;
+            long n = _n;
+            double minDist = _thresholds[1] - _thresholds[0];
+            for (int i = 1; i < n - 1; i++) {
+                double dist = _thresholds[i + 1] - _thresholds[i];
+                if (dist < minDist) {
+                    minDist = dist;
+                    minI = i;
+                }
+            }
+            return minI;
+        }
+
+        private boolean dups() {
+            long n = _n;
+            for( int i=0; i<n-1; i++ ) {
+                double derr = compute_delta_error(_thresholds[i+1],_frequency[i+1],_thresholds[i],_frequency[i]);
+                if( derr == 0 ) { _ssx = i; return true; }
+            }
+            return false;
+        }
+
+
+        private double compute_delta_error( double ths1, double n1, double ths0, double n0 ) {
+            // If thresholds vary by less than a float ULP, treat them as the same.
+            // Some models only output predictions to within float accuracy (so a
+            // variance here is junk), and also it's not statistically sane to have
+            // a model which varies predictions by such a tiny change in thresholds.
+            double delta = (float)ths1-(float)ths0;
+            if (delta == 0)
+                return 0;
+            // Parallel equation drawn from:
+            //  http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
+            return delta*delta*n0*n1 / (n0+n1);
+        }
 
         private String toDebugString() {
             return  "n =" +_n +
