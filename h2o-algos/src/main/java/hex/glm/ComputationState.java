@@ -59,10 +59,14 @@ public final class ComputationState {
   private double _gMax; // store max value of original gradient without dividing by math.max(1e-2, _parms._alpha[0])
   private DataInfo _activeData;
   private BetaConstraint _activeBC;
-  LinearConstraints[] _equalityConstraints = null;
-  LinearConstraints[] _lessThanEqualToConstraints = null;
+  LinearConstraints[] _equalityConstraintsLinear = null;
+  LinearConstraints[] _lessThanEqualToConstraintsLinear = null;
   LinearConstraints[] _equalityConstraintsBeta = null;
   LinearConstraints[] _lessThanEqualToConstraintsBeta = null;
+  LinearConstraints[] _equalityConstraints = null;
+  LinearConstraints[] _lessThanEqualToConstraints = null;
+  double[] _lambdaEqual;
+  double[] _lambdaLessThanEqualTo;
   ConstraintsDerivatives[] _derivativeEqual = null;
   ConstraintsDerivatives[] _derivativeLess = null;
   ConstraintsGram[] _gramEqual = null;
@@ -116,7 +120,7 @@ public final class ComputationState {
   }
   
   public void initConstraintInfo(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints,
-                                 double[] betaCnd, List<String> coeffNames) {
+                                 List<String> coeffNames) {
     boolean hasEqualityConstraints = equalityConstraints != null;
     boolean hasLessConstraints = lessThanEqualToConstraints != null;
     _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
@@ -158,9 +162,10 @@ public final class ComputationState {
   }
   
   public void resizeConstraintInfo(LinearConstraints[] equalityConstraints,
-                                   LinearConstraints[] lessThanEqualToConstraints, List<String> coeffNames, int betaLen) {
+                                   LinearConstraints[] lessThanEqualToConstraints) {
     boolean hasEqualityConstraints = _derivativeEqual != null;
     boolean hasLessConstraints = _derivativeLess != null;
+    List<String> coeffNames = Arrays.stream(_activeData.coefNames()).collect(Collectors.toList());
     _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
     _derivativeLess = hasLessConstraints ? calDerivatives(lessThanEqualToConstraints, coeffNames) : null;
     _gramEqual = hasEqualityConstraints ? calGram(_derivativeEqual) : null;
@@ -600,8 +605,8 @@ public final class ComputationState {
        _equalityConstraintsBeta = equalityC.length == 0 ? null : equalityC;
        _lessThanEqualToConstraintsBeta = lessThanEualToC.length == 0 ? null : lessThanEualToC;
      } else {
-       _equalityConstraints = equalityC.length == 0 ? null : equalityC;
-       _lessThanEqualToConstraints = lessThanEualToC.length == 0 ? null : lessThanEualToC;
+       _equalityConstraintsLinear = equalityC.length == 0 ? null : equalityC;
+       _lessThanEqualToConstraintsLinear = lessThanEualToC.length == 0 ? null : lessThanEualToC;
      }
   }
 
@@ -925,7 +930,18 @@ public final class ComputationState {
       else
         gamVal = calSmoothNess(expandBeta(beta), _penaltyMatrix, _gamBetaIndices);  // take up memory
     }
-    return likelihood * _parms._obj_reg + gamVal + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
+    double constraintVal = 0;
+    if (_csGLMState != null) {
+      if (_equalityConstraints != null) {
+        constraintVal += addConstraintObj(_lambdaEqual, _equalityConstraints, _csGLMState._ckCS);
+      }
+      if (_lessThanEqualToConstraints != null) {
+        constraintVal += addConstraintObj(_lambdaLessThanEqualTo, _lessThanEqualToConstraints, _csGLMState._ckCS);;
+      }
+    }
+    
+    return likelihood * _parms._obj_reg + gamVal + constraintVal + penalty(beta) + 
+            (_activeBC == null?0:_activeBC.proxPen(beta));
   }
 
   /***
@@ -1018,7 +1034,7 @@ public final class ComputationState {
     return converged;
   }
 
-  public double updateState(double [] beta,GLMGradientInfo ginfo){
+  public double updateState(double [] beta,GLMGradientInfo ginfo) {
     double objOld;
     if (_beta != null && beta.length > _beta.length) { // beta is full while _beta only contains active columns
       double[] shortBeta = shrinkFullArray(beta);
@@ -1032,10 +1048,10 @@ public final class ComputationState {
       if(_beta == null)_beta = beta.clone();
       else System.arraycopy(beta,0,_beta,0,beta.length);
     }
-    if (_parms._linear_constraints != null && _ginfo != null)
-      _relImprovement = (_ginfo._objVal - ginfo._objVal) / Math.abs(_ginfo._objVal);
-    else
-      _relImprovement = (objOld - objective()) / Math.abs(objOld);
+    // now with new beta in _beta, need to update constraint values and then calculate objective
+    updateConstraintValues(_beta, Arrays.stream(activeData()._coefNames).collect(Collectors.toList()), 
+            _equalityConstraints, _lessThanEqualToConstraints);
+    _relImprovement = (objOld - objective()) / Math.abs(objOld);
 
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
@@ -1494,16 +1510,18 @@ public final class ComputationState {
    * This method adds to objective function the contribution of 
    *    transpose(lambda)*constraint vector + ck/2*transpose(constraint vector)*constraint vector
    */
-  public static void addConstraintObj(double[] lambda, LinearConstraints[] constraints, double ck, GLMGradientInfo ginfo) {
+  public static double addConstraintObj(double[] lambda, LinearConstraints[] constraints, double ck) {
     int numConstraints = constraints.length;
     LinearConstraints oneC;
+    double objValueAdd = 0;
     for (int index=0; index<numConstraints; index++) {
       oneC = constraints[index];
       if (oneC._active) {
-        ginfo._objVal += lambda[index]*oneC._constraintsVal;               // from linear constraints
-        ginfo._objVal += ck*0.5*oneC._constraintsVal*oneC._constraintsVal; // from penalty
+        objValueAdd += lambda[index]*oneC._constraintsVal;               // from linear constraints
+        objValueAdd += ck*0.5*oneC._constraintsVal*oneC._constraintsVal; // from penalty
       }
     }
+    return objValueAdd;
   }
   
   public static double[] formXY(double[][] fullGram, double[] beta, double[] grad) {
@@ -1563,7 +1581,12 @@ public final class ComputationState {
     return _currGram = computeNewGram(activeData,beta,s);
   }
   
-  public void setgInfo(GLMGradientInfo ginfo) {
-    _ginfo = ginfo;
+  public void setConstraintInfo(GLMGradientInfo gradientInfo, LinearConstraints[] equalityConstraints, 
+                                LinearConstraints[] lessThanEqualToConstraints, double[] lambdaEqual, double[] lambdaLessThan) {
+    _ginfo = gradientInfo;
+    _lessThanEqualToConstraints = lessThanEqualToConstraints;
+    _equalityConstraints = equalityConstraints;
+    _lambdaEqual = lambdaEqual;
+    _lambdaLessThanEqualTo = lambdaLessThan;
   }
 }

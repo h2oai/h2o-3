@@ -281,7 +281,7 @@ public class ConstrainedGLMUtils {
     // form double matrix
     int numRow = (state._equalityConstraintsBeta == null ? 0 : state._equalityConstraintsBeta.length) +
             (state._lessThanEqualToConstraintsBeta == null ? 0 : (betaLessThan == null ? 0 : ArrayUtils.sum(betaLessThan))) +
-            (state._equalityConstraints == null ? 0 : state._equalityConstraints.length) + 
+            (state._equalityConstraintsLinear == null ? 0 : state._equalityConstraintsLinear.length) + 
             (state._lessThanEqualToConstraints == null ? 0 : state._lessThanEqualToConstraints.length);
     double[][] initConstraintMatrix = new double[numRow][constraintNamesList.size()];
     fillConstraintValues(state, constraintNamesList, initConstraintMatrix, betaLessThan);
@@ -297,8 +297,8 @@ public class ConstrainedGLMUtils {
     if (state._lessThanEqualToConstraintsBeta != null)
       rowIndex= extractConstraintValues(state._lessThanEqualToConstraintsBeta, constraintNamesList, initCMatrix, 
               rowIndex, betaLessThan);
-    if (state._equalityConstraints != null)
-      rowIndex = extractConstraintValues(state._equalityConstraints, constraintNamesList, initCMatrix, rowIndex, null);
+    if (state._equalityConstraintsLinear != null)
+      rowIndex = extractConstraintValues(state._equalityConstraintsLinear, constraintNamesList, initCMatrix, rowIndex, null);
     if (state._lessThanEqualToConstraints != null)
       extractConstraintValues(state._lessThanEqualToConstraints, constraintNamesList, initCMatrix, rowIndex, null);
   }
@@ -362,8 +362,8 @@ public class ConstrainedGLMUtils {
               beta, coefNameList, "Beta inequality constraint: ", constraintConditions, cSatisfied, cValues,
               cConditions, constraintStrings) && constraintsSatisfied;
 
-      if (state._equalityConstraints != null)
-        constraintsSatisfied = evaluateConstraint(state, state._equalityConstraints, true, beta, 
+      if (state._equalityConstraintsLinear != null)
+        constraintsSatisfied = evaluateConstraint(state, state._equalityConstraintsLinear, true, beta, 
                 coefNameList, "Linear equality constraint: ", constraintConditions, cSatisfied, cValues,
                 cConditions, constraintStrings) && constraintsSatisfied;
 
@@ -476,8 +476,8 @@ public class ConstrainedGLMUtils {
     if (state._lessThanEqualToConstraintsBeta != null)
       nonZeroConstant = nonZeroConstant | extractCoeffNames(tConstraintCoeffName, state._lessThanEqualToConstraintsBeta);
 
-    if (state._equalityConstraints != null)
-      nonZeroConstant = nonZeroConstant | extractCoeffNames(tConstraintCoeffName, state._equalityConstraints);
+    if (state._equalityConstraintsLinear != null)
+      nonZeroConstant = nonZeroConstant | extractCoeffNames(tConstraintCoeffName, state._equalityConstraintsLinear);
 
     if (state._lessThanEqualToConstraints != null)
       nonZeroConstant = nonZeroConstant | extractCoeffNames(tConstraintCoeffName, state._lessThanEqualToConstraints);
@@ -593,11 +593,11 @@ public class ConstrainedGLMUtils {
       }
     }
     
-    if (state._equalityConstraints != null) {
-      if (constIndexWOffset < state._equalityConstraints.length) {
-        return state._equalityConstraints[constIndexWOffset];
+    if (state._equalityConstraintsLinear != null) {
+      if (constIndexWOffset < state._equalityConstraintsLinear.length) {
+        return state._equalityConstraintsLinear[constIndexWOffset];
       } else {
-        constIndexWOffset -= state._equalityConstraints.length;
+        constIndexWOffset -= state._equalityConstraintsLinear.length;
       }
     }
     
@@ -763,37 +763,6 @@ public class ConstrainedGLMUtils {
   }
 
   /***
-   * This method will calculate the ||h(beta)|| square.  It will also update the constraint values as well and the 
-   * active statues for less than and equal to zero constraints are re-evaluated as well with the beta values.
-   * 
-   */
-  public static double calHBetaMagSquare(double[] beta, LinearConstraints[] constraints, List<String> coefNames, 
-                                   boolean setActive2True) {
-    if (constraints == null) return 0;
-    double sumV = 0;
-    int numConst = constraints.length;
-    LinearConstraints oneConst;
-    double val;
-    for (int index=0; index<numConst; index++) {
-      oneConst = constraints[index];
-      evalOneConstraint(oneConst, beta, coefNames);
-      val = oneConst._constraintsVal;
-      if (setActive2True) {  // processing equal constraints
-        oneConst._active = true;
-        sumV += val*val;
-      } else {  // processing less than equal constraints
-        if (val >= 0) {
-          oneConst._active = true;
-          sumV += val*val;
-        } else {   // constraint ignored since it is < 0
-          oneConst._active = false;
-        }
-      }
-    }
-    return sumV;
-  }
-
-  /***
    * This method will check if the stopping conditions for constraint GLM are met and they are namely:
    * 1. ||gradient of L with respect to beta and withy respect to lambda|| <= epsilon
    * 2. ||h(beta)|| square <= epsilon if satisfied is false and ||h(beta)|| square == 0 if satisfied is true
@@ -830,12 +799,13 @@ public class ConstrainedGLMUtils {
     if (hasEqualConstraints) {
       addConstraintGradient(lambdaE, state._derivativeEqual, gradientInfo);
       addPenaltyGradient(state._derivativeEqual, constraintE, gradientInfo, state._csGLMState._ckCS);
-      state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS, gradientInfo);
+      gradientInfo._objVal += state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS);
+      //state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS, gradientInfo);
     }
     if (hasLessConstraints) {
       addConstraintGradient(lambdaL, state._derivativeLess, gradientInfo);
       addPenaltyGradient(state._derivativeLess, constraintL, gradientInfo, state._csGLMState._ckCS);
-      state.addConstraintObj(lambdaL, constraintL, state._csGLMState._ckCS, gradientInfo);
+      gradientInfo._objVal += state.addConstraintObj(lambdaL, constraintL, state._csGLMState._ckCS);
     }
     return gradientInfo;
   }
@@ -863,7 +833,7 @@ public class ConstrainedGLMUtils {
     // check constraints from beta constrains
     numConst += state._equalityConstraintsBeta == null ? 0 : state._equalityConstraintsBeta.length;
     numConst += state._lessThanEqualToConstraintsBeta == null ? 0 : state._lessThanEqualToConstraintsBeta.length/2;
-    numConst += state._equalityConstraints == null ? 0 : state._equalityConstraints.length;
+    numConst += state._equalityConstraintsLinear == null ? 0 : state._equalityConstraintsLinear.length;
     numConst += state._lessThanEqualToConstraints == null ? 0 : state._lessThanEqualToConstraints.length;
     return numConst;
   }
