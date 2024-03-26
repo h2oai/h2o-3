@@ -146,21 +146,42 @@ class H2OFrame(Keyed, H2ODisplay):
         if not column_names:
             column_names = col_header
 
+        if skipped_columns:
+            if isinstance(skipped_columns[0], str):
+                skipped_colsidx = []
+                for col_name in skipped_columns:
+                    if col_name in column_names:
+                        skipped_colsidx.append(column_names.index(col_name))
+                    else:
+                        raise H2OValueError("`skipped_columns` must be valid column names")
+
+                skipped_columns = skipped_colsidx
+            
+            if column_names == col_header:
+                column_names = column_names[:len(column_names)-len(skipped_columns)]
+            else:
+                column_names = [column_names[index] for index in range(len(column_names)) if index not in skipped_columns]
+
+        if not column_names:
+            raise H2OValueError("`skipped_columns` cannot contain all columns")
+        
         # create a temporary file that will be written to
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
-        tmp_file = os.fdopen(tmp_handle, 'w', **H2OFrame.__fdopen_kwargs)
-        # create a new csv writer object thingy
-        csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
-        csv_writer.writerow(column_names)
-        if data_to_write and isinstance(data_to_write[0], dict):
-            for row in data_to_write:
-                csv_writer.writerow([row.get(k, None) for k in col_header])
-        else:
-            csv_writer.writerows(data_to_write)
-        tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings,
-                           skipped_columns, force_col_types)
-        os.remove(tmp_path)  # delete the tmp file
+        try:
+            tmp_file = os.fdopen(tmp_handle, 'w', **H2OFrame.__fdopen_kwargs)
+            # create a new csv writer object thingy
+            csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
+            csv_writer.writerow(column_names)
+            if data_to_write and isinstance(data_to_write[0], dict):
+                for row in data_to_write:
+                    csv_writer.writerow([row.get(k, None) for k in col_header])
+            else:
+                csv_writer.writerows(data_to_write)
+            tmp_file.close()  # close the streams
+            self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings,
+                            skipped_columns, force_col_types)
+        finally:
+            os.remove(tmp_path)  # delete the tmp file
 
     def _upload_sparse_matrix(self, matrix, destination_frame=None):
         import scipy.sparse as sp
