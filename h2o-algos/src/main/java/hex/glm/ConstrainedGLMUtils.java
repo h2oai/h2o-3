@@ -615,13 +615,9 @@ public class ConstrainedGLMUtils {
   public static void setActiveConstraints(LinearConstraints[] lessThanEqualToConstraints,
                                           double[] beta, List<String> coeffNames) {
     // evaluate all constraint values
-    stream(lessThanEqualToConstraints).collect(Collectors.toList()).parallelStream().forEach(constraint -> evalOneConstraint(constraint, beta, coeffNames));
-    // only include constraint with val >= 0 into activeConstraints
-    stream(lessThanEqualToConstraints).forEach(constraint -> {
-      if (constraint._constraintsVal > 0)
-        constraint._active = true;
-      else
-        constraint._active = false;
+    stream(lessThanEqualToConstraints).collect(Collectors.toList()).parallelStream().forEach(constraint -> {
+      evalOneConstraint(constraint, beta, coeffNames);
+      constraint._active = (constraint._constraintsVal > 0);
     });
   }
 
@@ -795,17 +791,20 @@ public class ConstrainedGLMUtils {
     GLM.GLMGradientInfo gradientInfo = ginfo.getGradient(betaCnd, state); // gradient without constraints
     boolean hasEqualConstraints = constraintE != null;
     boolean hasLessConstraints = constraintL != null;
+    List<String> coeffNames = Arrays.stream(state.activeData()._coefNames).collect(Collectors.toList());
     // add gradient, objective and likelihood contribution from constraints
     if (hasEqualConstraints) {
       addConstraintGradient(lambdaE, state._derivativeEqual, gradientInfo);
       addPenaltyGradient(state._derivativeEqual, constraintE, gradientInfo, state._csGLMState._ckCS);
-      gradientInfo._objVal += state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS);
+      gradientInfo._objVal += state.addConstraintObj(lambdaE, constraintE, betaCnd, state._csGLMState._ckCS, 
+              true, coeffNames);
       //state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS, gradientInfo);
     }
     if (hasLessConstraints) {
       addConstraintGradient(lambdaL, state._derivativeLess, gradientInfo);
       addPenaltyGradient(state._derivativeLess, constraintL, gradientInfo, state._csGLMState._ckCS);
-      gradientInfo._objVal += state.addConstraintObj(lambdaL, constraintL, state._csGLMState._ckCS);
+      gradientInfo._objVal += state.addConstraintObj(lambdaL, constraintL, betaCnd, state._csGLMState._ckCS, 
+              false, coeffNames);
     }
     return gradientInfo;
   }
@@ -814,18 +813,21 @@ public class ConstrainedGLMUtils {
                                             LinearConstraints[] equalityConstraints, 
                                             LinearConstraints[] lessThanEqualToConstraints) {
     if (equalityConstraints != null) { // initialize lambda for equality constraints
-      stream(equalityConstraints).collect(Collectors.toList()).parallelStream().forEach(constraint -> {
+      Arrays.stream(equalityConstraints).collect(Collectors.toList()).parallelStream().forEach(constraint -> {
         evalOneConstraint(constraint, betaCnd, coeffNames);
         constraint._active = (Math.abs(constraint._constraintsVal) > EPS2);
       });
     }
     if (lessThanEqualToConstraints != null)
-      setActiveConstraints(lessThanEqualToConstraints, betaCnd, coeffNames);  // evaluate and set constraint active status
+      Arrays.stream(lessThanEqualToConstraints).collect(Collectors.toList()).parallelStream().forEach(constraint -> {
+        evalOneConstraint(constraint, betaCnd, coeffNames);
+        constraint._active = (constraint._constraintsVal > 0);
+      });
   }
   
   public static String[] collinearInConstraints(String[] collinear_cols, String[] constraintNames) {
-    List<String> cNames = stream(constraintNames).collect(Collectors.toList());
-    return stream(collinear_cols).filter(x -> (cNames.contains(x))).toArray(String[]::new);
+    List<String> cNames = Arrays.stream(constraintNames).collect(Collectors.toList());
+    return Arrays.stream(collinear_cols).filter(x -> (cNames.contains(x))).toArray(String[]::new);
   }
   
   public static int countNumConst(ComputationState state) {

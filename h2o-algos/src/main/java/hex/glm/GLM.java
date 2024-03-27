@@ -70,7 +70,7 @@ import static water.fvec.Vec.T_NUM;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
-  static double BAD_CONDITION_NUMBER = 20000;
+  static double BAD_CONDITION_NUMBER = 21000;
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -2389,7 +2389,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
         return;
       }
-      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      double gradMagSquare;
       int origIter = iterCnt+1;
       try {
         while (true) {

@@ -931,12 +931,15 @@ public final class ComputationState {
         gamVal = calSmoothNess(expandBeta(beta), _penaltyMatrix, _gamBetaIndices);  // take up memory
     }
     double constraintVal = 0;
+    List<String> coeffNames = Arrays.stream(activeData().coefNames()).collect(Collectors.toList());
     if (_csGLMState != null) {
       if (_equalityConstraints != null) {
-        constraintVal += addConstraintObj(_lambdaEqual, _equalityConstraints, _csGLMState._ckCS);
+        constraintVal += addConstraintObj(_lambdaEqual, _equalityConstraints, _beta, _csGLMState._ckCS, 
+                true, coeffNames);
       }
       if (_lessThanEqualToConstraints != null) {
-        constraintVal += addConstraintObj(_lambdaLessThanEqualTo, _lessThanEqualToConstraints, _csGLMState._ckCS);;
+        constraintVal += addConstraintObj(_lambdaLessThanEqualTo, _lessThanEqualToConstraints, _beta, _csGLMState._ckCS,
+                false, coeffNames);
       }
     }
     
@@ -1048,13 +1051,10 @@ public final class ComputationState {
       if(_beta == null)_beta = beta.clone();
       else System.arraycopy(beta,0,_beta,0,beta.length);
     }
-    // now with new beta in _beta, need to update constraint values and then calculate objective
-    updateConstraintValues(_beta, Arrays.stream(activeData().coefNames()).collect(Collectors.toList()), 
-            _equalityConstraints, _lessThanEqualToConstraints);
-    _relImprovement = (objOld - objective()) / Math.abs(objOld);
-
-    _ginfo = ginfo;
+    // now with new beta in _beta, calculate objective
     _likelihood = ginfo._likelihood;
+    _relImprovement = (objOld - objective()) / Math.abs(objOld);
+    _ginfo = ginfo;
     return _relImprovement;
   }
   
@@ -1510,8 +1510,13 @@ public final class ComputationState {
    * This method adds to objective function the contribution of 
    *    transpose(lambda)*constraint vector + ck/2*transpose(constraint vector)*constraint vector
    */
-  public static double addConstraintObj(double[] lambda, LinearConstraints[] constraints, double ck) {
+  public static double addConstraintObj(double[] lambda, LinearConstraints[] constraints, double[] betaCnd, double ck, 
+                                        boolean equalityCon, List<String> coeffNames) {
     int numConstraints = constraints.length;
+    if (equalityCon)
+      updateConstraintValues(betaCnd, coeffNames, constraints, null);
+    else
+      updateConstraintValues(betaCnd, coeffNames, null, constraints);
     LinearConstraints oneC;
     double objValueAdd = 0;
     for (int index=0; index<numConstraints; index++) {
@@ -1588,5 +1593,6 @@ public final class ComputationState {
     _equalityConstraints = equalityConstraints;
     _lambdaEqual = lambdaEqual;
     _lambdaLessThanEqualTo = lambdaLessThan;
+    _likelihood = gradientInfo._likelihood;
   }
 }
