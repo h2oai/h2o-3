@@ -63,8 +63,8 @@ public final class ComputationState {
   LinearConstraints[] _lessThanEqualToConstraintsLinear = null;
   LinearConstraints[] _equalityConstraintsBeta = null;
   LinearConstraints[] _lessThanEqualToConstraintsBeta = null;
-  LinearConstraints[] _equalityConstraints = null;
-  LinearConstraints[] _lessThanEqualToConstraints = null;
+  public LinearConstraints[] _equalityConstraints = null;
+  public LinearConstraints[] _lessThanEqualToConstraints = null;
   double[] _lambdaEqual;
   double[] _lambdaLessThanEqualTo;
   ConstraintsDerivatives[] _derivativeEqual = null;
@@ -119,12 +119,11 @@ public final class ComputationState {
     _noReg = (_lambda == 0);
   }
   
-  public void initConstraintInfo(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints,
-                                 List<String> coeffNames) {
-    boolean hasEqualityConstraints = equalityConstraints != null;
-    boolean hasLessConstraints = lessThanEqualToConstraints != null;
-    _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
-    _derivativeLess = hasLessConstraints ? calDerivatives(lessThanEqualToConstraints, coeffNames) : null;
+  public void initConstraintInfo(List<String> coeffNames) {
+    boolean hasEqualityConstraints = _equalityConstraints != null;
+    boolean hasLessConstraints = _lessThanEqualToConstraints != null;
+    _derivativeEqual = hasEqualityConstraints ? calDerivatives(_equalityConstraints, coeffNames) : null;
+    _derivativeLess = hasLessConstraints ? calDerivatives(_lessThanEqualToConstraints, coeffNames) : null;
     // contribution to hessian from ||h(beta)||^2 without C, stays constant once calculated, active status can change
     _gramEqual = hasEqualityConstraints ? calGram(_derivativeEqual) : null;
     _gramLess = hasLessConstraints ? calGram(_derivativeLess) : null;
@@ -137,14 +136,14 @@ public final class ComputationState {
    * active status of the constraint derivatives (transpose(lambda)*h(beta)) and the 2nd order derivatives of 
    * (ck/2*transpose(h(beta))*h(beta)).
    */
-  public void updateConstraintInfo(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints) {
-    if (equalityConstraints != null) {
-      updateDerivatives(_derivativeEqual, equalityConstraints);
-      update2ndDerivatives(_gramEqual, equalityConstraints);
+  public void updateConstraintInfo() {
+    if (_equalityConstraints != null) {
+      updateDerivatives(_derivativeEqual, _equalityConstraints);
+      update2ndDerivatives(_gramEqual, _equalityConstraints);
     }
-    if (lessThanEqualToConstraints != null) {
-      updateDerivatives(_derivativeLess, lessThanEqualToConstraints);
-      update2ndDerivatives(_gramLess, lessThanEqualToConstraints);
+    if (_lessThanEqualToConstraints != null) {
+      updateDerivatives(_derivativeLess, _lessThanEqualToConstraints);
+      update2ndDerivatives(_gramLess, _lessThanEqualToConstraints);
     }
   }
   
@@ -161,13 +160,12 @@ public final class ComputationState {
     }
   }
   
-  public void resizeConstraintInfo(LinearConstraints[] equalityConstraints,
-                                   LinearConstraints[] lessThanEqualToConstraints) {
+  public void resizeConstraintInfo() {
     boolean hasEqualityConstraints = _derivativeEqual != null;
     boolean hasLessConstraints = _derivativeLess != null;
     List<String> coeffNames = Arrays.stream(_activeData.coefNames()).collect(Collectors.toList());
-    _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
-    _derivativeLess = hasLessConstraints ? calDerivatives(lessThanEqualToConstraints, coeffNames) : null;
+    _derivativeEqual = hasEqualityConstraints ? calDerivatives(_equalityConstraints, coeffNames) : null;
+    _derivativeLess = hasLessConstraints ? calDerivatives(_lessThanEqualToConstraints, coeffNames) : null;
     _gramEqual = hasEqualityConstraints ? calGram(_derivativeEqual) : null;
     _gramLess = hasLessConstraints ? calGram(_derivativeLess) : null;
   }
@@ -934,12 +932,10 @@ public final class ComputationState {
     List<String> coeffNames = Arrays.stream(activeData().coefNames()).collect(Collectors.toList());
     if (_csGLMState != null) {
       if (_equalityConstraints != null) {
-        constraintVal += addConstraintObj(_lambdaEqual, _equalityConstraints, _beta, _csGLMState._ckCS, 
-                true, coeffNames);
+        constraintVal += addConstraintObj(_beta, true, coeffNames);
       }
       if (_lessThanEqualToConstraints != null) {
-        constraintVal += addConstraintObj(_lambdaLessThanEqualTo, _lessThanEqualToConstraints, _beta, _csGLMState._ckCS,
-                false, coeffNames);
+        constraintVal += addConstraintObj(_beta,false, coeffNames);
       }
     }
     
@@ -1510,20 +1506,29 @@ public final class ComputationState {
    * This method adds to objective function the contribution of 
    *    transpose(lambda)*constraint vector + ck/2*transpose(constraint vector)*constraint vector
    */
-  public static double addConstraintObj(double[] lambda, LinearConstraints[] constraints, double[] betaCnd, double ck, 
-                                        boolean equalityCon, List<String> coeffNames) {
-    int numConstraints = constraints.length;
-    if (equalityCon)
-      updateConstraintValues(betaCnd, coeffNames, constraints, null);
-    else
-      updateConstraintValues(betaCnd, coeffNames, null, constraints);
+  public double addConstraintObj(double[] betaCnd, boolean equalityCon, List<String> coeffNames) {
+    int numConstraints;
+    LinearConstraints[] constraints;
+    double[] lambda;
+    if (equalityCon) {
+      updateConstraintValues(betaCnd, coeffNames, _equalityConstraints, null);
+      numConstraints = _equalityConstraints.length;
+      constraints = _equalityConstraints;
+      lambda = _lambdaEqual;
+    } else {
+      updateConstraintValues(betaCnd, coeffNames, null, _lessThanEqualToConstraints);
+      numConstraints = _lessThanEqualToConstraints.length;
+      constraints = _lessThanEqualToConstraints;
+      lambda = _lambdaLessThanEqualTo;
+    }
+
     LinearConstraints oneC;
     double objValueAdd = 0;
     for (int index=0; index<numConstraints; index++) {
       oneC = constraints[index];
       if (oneC._active) {
         objValueAdd += lambda[index]*oneC._constraintsVal;               // from linear constraints
-        objValueAdd += ck*0.5*oneC._constraintsVal*oneC._constraintsVal; // from penalty
+        objValueAdd += _csGLMState._ckCS*0.5*oneC._constraintsVal*oneC._constraintsVal; // from penalty
       }
     }
     return objValueAdd;
@@ -1586,13 +1591,37 @@ public final class ComputationState {
     return _currGram = computeNewGram(activeData,beta,s);
   }
   
-  public void setConstraintInfo(GLMGradientInfo gradientInfo, LinearConstraints[] equalityConstraints, 
-                                LinearConstraints[] lessThanEqualToConstraints, double[] lambdaEqual, double[] lambdaLessThan) {
+  public void setGradientInfo(GLMGradientInfo gradientInfo) {
     _ginfo = gradientInfo;
-    _lessThanEqualToConstraints = lessThanEqualToConstraints;
-    _equalityConstraints = equalityConstraints;
-    _lambdaEqual = lambdaEqual;
-    _lambdaLessThanEqualTo = lambdaLessThan;
     _likelihood = gradientInfo._likelihood;
+  }
+
+  /***
+   * This method construct the equality and the less than equal to constraints from the beta constraints and the linear
+   * constraints specified by the users.
+   * 
+   * However, if the parms._separate_beta_linear = true, the constraints from the beta constraints will not be added
+   * to the equality and the less than equal to constraints.  Only the linear constraints specified by the users will
+   * be used.
+   */
+  public void setConstraintInfo(double[] betaCnd, List<String> coeffNames) {
+    if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
+      _equalityConstraints = _equalityConstraintsLinear;
+      _lessThanEqualToConstraints = _lessThanEqualToConstraintsLinear;
+    } else {
+      _equalityConstraints = combineConstraints(_equalityConstraintsBeta, _equalityConstraintsLinear);
+      _lessThanEqualToConstraints = combineConstraints(_lessThanEqualToConstraintsBeta, _lessThanEqualToConstraintsLinear);
+    }
+    boolean hasEqualityConstraints = _equalityConstraints != null;
+    boolean hasLessConstraints = _lessThanEqualToConstraints != null;
+    _lambdaEqual = hasEqualityConstraints ? new double[_equalityConstraints.length] : null; // depend on constraints not predictors null;
+    _lambdaLessThanEqualTo = hasLessConstraints ? new double[_lessThanEqualToConstraints.length] : null;
+    Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
+    Random randObj = new Random(startSeed);
+    updateConstraintValues(betaCnd, coeffNames, _equalityConstraints, _lessThanEqualToConstraints);
+    if (hasEqualityConstraints) // set lambda values
+      genInitialLambda(randObj, _equalityConstraints, _lambdaEqual);
+    if (hasLessConstraints)
+      genInitialLambda(randObj, _lessThanEqualToConstraints, _lambdaLessThanEqualTo);
   }
 }

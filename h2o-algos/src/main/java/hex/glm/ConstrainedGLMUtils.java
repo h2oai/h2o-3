@@ -717,16 +717,14 @@ public class ConstrainedGLMUtils {
     }
   }
   
-  public static void updateConstraintParameters(ComputationState state, double[] lambdaEqual, double[]lambdaLessThan, 
-                                                LinearConstraints[] equalConst, LinearConstraints[] lessThanConst, 
-                                                GLMModel.GLMParameters parms) {
+  public static void updateConstraintParameters(ComputationState state, GLMModel.GLMParameters parms) {
     // calculate ||h(beta)|| square, ||gradient|| square
     double hBetaMag = state._csGLMState._constraintMagSquare;
     if (hBetaMag <= state._csGLMState._etakCSSquare) {
-      if (equalConst != null)
-        updateLambda(lambdaEqual, state._csGLMState._ckCS, equalConst);
-      if (lessThanConst != null)
-        updateLambda(lambdaLessThan, state._csGLMState._ckCS, lessThanConst);
+      if (state._equalityConstraints != null)
+        updateLambda(state._lambdaEqual, state._csGLMState._ckCS, state._equalityConstraints);
+      if (state._lessThanEqualToConstraints != null)
+        updateLambda(state._lambdaLessThanEqualTo, state._csGLMState._ckCS, state._lessThanEqualToConstraints);
       state._csGLMState._epsilonkCS = state._csGLMState._epsilonkCS/state._csGLMState._ckCS;
       state ._csGLMState._etakCS = state._csGLMState._etakCS/Math.pow(state._csGLMState._ckCS, parms._constraint_beta);
     } else {
@@ -738,13 +736,12 @@ public class ConstrainedGLMUtils {
     state._csGLMState._etakCSSquare = state ._csGLMState._etakCS*state._csGLMState._etakCS;
   }
   
-  public static void calculateConstraintSquare(ComputationState state, LinearConstraints[] equalConst, 
-                                               LinearConstraints[] lessThanConst) {
+  public static void calculateConstraintSquare(ComputationState state) {
     double sumSquare = 0;
-    if (equalConst != null)
-      sumSquare += stream(equalConst).mapToDouble(x -> x._constraintsVal*x._constraintsVal).sum();
-    if (lessThanConst != null)  // only counts magnitude when the constraint is active
-      sumSquare += stream(lessThanConst).filter(x -> x._active).mapToDouble(x -> x._constraintsVal*x._constraintsVal).sum();
+    if (state._equalityConstraints != null)
+      sumSquare += stream(state._equalityConstraints).mapToDouble(x -> x._constraintsVal*x._constraintsVal).sum();
+    if (state._lessThanEqualToConstraints != null)  // only counts magnitude when the constraint is active
+      sumSquare += stream(state._lessThanEqualToConstraints).filter(x -> x._active).mapToDouble(x -> x._constraintsVal * x._constraintsVal).sum();
     state._csGLMState._constraintMagSquare = sumSquare;
   }
   
@@ -783,28 +780,23 @@ public class ConstrainedGLMUtils {
    * This method calls getGradient to calculate the gradient, likelhood and objective function values.  In addition,
    * it will add to the gradient and objective function the contribution from the linear constraints.
    */
-  public static GLM.GLMGradientInfo calGradient(double[] betaCnd, ComputationState state, GLM.GLMGradientSolver ginfo,
-                                                double[] lambdaE, double[] lambdaL, LinearConstraints[] constraintE,
-                                                LinearConstraints[] constraintL) {
+  public static GLM.GLMGradientInfo calGradient(double[] betaCnd, ComputationState state, GLM.GLMGradientSolver ginfo) {
     // todo: need to add support for predictors removed for whatever reason
     // calculate gradients
     GLM.GLMGradientInfo gradientInfo = ginfo.getGradient(betaCnd, state); // gradient without constraints
-    boolean hasEqualConstraints = constraintE != null;
-    boolean hasLessConstraints = constraintL != null;
+    boolean hasEqualConstraints = state._equalityConstraints != null;
+    boolean hasLessConstraints = state._lessThanEqualToConstraints != null;
     List<String> coeffNames = Arrays.stream(state.activeData()._coefNames).collect(Collectors.toList());
     // add gradient, objective and likelihood contribution from constraints
     if (hasEqualConstraints) {
-      addConstraintGradient(lambdaE, state._derivativeEqual, gradientInfo);
-      addPenaltyGradient(state._derivativeEqual, constraintE, gradientInfo, state._csGLMState._ckCS);
-      gradientInfo._objVal += state.addConstraintObj(lambdaE, constraintE, betaCnd, state._csGLMState._ckCS, 
-              true, coeffNames);
-      //state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS, gradientInfo);
+      addConstraintGradient(state._lambdaEqual, state._derivativeEqual, gradientInfo);
+      addPenaltyGradient(state._derivativeEqual, state._equalityConstraints, gradientInfo, state._csGLMState._ckCS);
+      gradientInfo._objVal += state.addConstraintObj(betaCnd, true, coeffNames);
     }
     if (hasLessConstraints) {
-      addConstraintGradient(lambdaL, state._derivativeLess, gradientInfo);
-      addPenaltyGradient(state._derivativeLess, constraintL, gradientInfo, state._csGLMState._ckCS);
-      gradientInfo._objVal += state.addConstraintObj(lambdaL, constraintL, betaCnd, state._csGLMState._ckCS, 
-              false, coeffNames);
+      addConstraintGradient(state._lambdaLessThanEqualTo, state._derivativeLess, gradientInfo);
+      addPenaltyGradient(state._derivativeLess, state._lessThanEqualToConstraints, gradientInfo, state._csGLMState._ckCS);
+      gradientInfo._objVal += state.addConstraintObj(betaCnd, false, coeffNames);
     }
     return gradientInfo;
   }

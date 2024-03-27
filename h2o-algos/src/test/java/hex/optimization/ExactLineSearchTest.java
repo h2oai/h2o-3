@@ -64,8 +64,7 @@ public class ExactLineSearchTest extends TestUtil {
     _job = new Job<>(jobKey, _params.javaName(), _params.algoName());
     _state = new ComputationState(null, _params, _dinfo, null, _betaInfo, null, null);
     _ginfo = new GLM.GLMGradientSolver(_job, _params, _dinfo, 0,null, _betaInfo);
-    GLM.GLMGradientInfo gradientInfo = calGradient(_beta, _state, _ginfo, null, null,
-            null, null);
+    GLM.GLMGradientInfo gradientInfo = calGradient(_beta, _state, _ginfo);
     _state.updateState(_beta, gradientInfo);
   }
   
@@ -87,7 +86,7 @@ public class ExactLineSearchTest extends TestUtil {
       double[] betaCnd = _beta.clone();
       ArrayUtils.add(betaCnd, dir);
       OptimizationUtils.ExactLineSearch ls = new OptimizationUtils.ExactLineSearch(betaCnd, _state, Arrays.asList(_coefNames));
-      ls.findAlpha(null, null, _state, null, null, _ginfo);
+      ls.findAlpha(_state, _ginfo);
     } catch(AssertionError ex) {
       Assert.assertTrue(ex.getMessage().contains("direction is not an descent direction!"));
     }
@@ -106,7 +105,7 @@ public class ExactLineSearchTest extends TestUtil {
     double[] betaCnd = _beta.clone();
     ArrayUtils.add(betaCnd, dir);
     OptimizationUtils.ExactLineSearch ls = new OptimizationUtils.ExactLineSearch(betaCnd, _state, Arrays.asList(_coefNames));
-    GLM.GLMGradientInfo newGrad =  calGradient(betaCnd, _state, _ginfo, null, null, null, null);
+    GLM.GLMGradientInfo newGrad =  calGradient(betaCnd, _state, _ginfo);
     boolean firstWolfe = ls.evaluateFirstWolfe(newGrad);
     Assert.assertTrue("First Wolfe should equal to objective condition but is not.", 
             firstWolfe==(newGrad._objVal <= _state.ginfo()._objVal));
@@ -132,15 +131,13 @@ public class ExactLineSearchTest extends TestUtil {
     ArrayUtils.add(betaCnd, dir);
     OptimizationUtils.ExactLineSearch ls = new OptimizationUtils.ExactLineSearch(betaCnd, _state, Arrays.asList(_coefNames));
     ls._maxIteration = maxiter;
-    boolean foundAlpha = ls.findAlpha(null, null, _state, null, 
-            null, _ginfo);
+    boolean foundAlpha = ls.findAlpha(_state, _ginfo);
     // new ExactLineSearch with newly found beta.  If foundAlpha = true, WolfeConditions on ls2 should be both true.
     // If foundAlpha is false, then at least one of the WolfeConditions is false
     if (foundAlpha)
       betaCnd = ls._newBeta;
     OptimizationUtils.ExactLineSearch ls2 = new OptimizationUtils.ExactLineSearch(betaCnd, _state, Arrays.asList(_coefNames));
-    GLM.GLMGradientInfo newGrad = calGradient(betaCnd, _state, _ginfo, null, null, null,
-            null);
+    GLM.GLMGradientInfo newGrad = calGradient(betaCnd, _state, _ginfo);
     Assert.assertTrue("Wolfe conditions and foundAlphai disagree!", 
             foundAlpha == (ls2.evaluateFirstWolfe(newGrad) && ls2.evaluateSecondWolfe(newGrad)));
   }

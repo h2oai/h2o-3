@@ -2,7 +2,6 @@ package hex.optimization;
 
 
 import hex.glm.ComputationState;
-import hex.glm.ConstrainedGLMUtils;
 import hex.glm.GLM;
 import water.Iced;
 import water.util.ArrayUtils;
@@ -527,25 +526,19 @@ public class OptimizationUtils {
       return false;
     }
     
-    public void setBetaConstraintsDeriv(double[] lambdaEqual, double[] lambdaLessThan, ComputationState state,
-                                        ConstrainedGLMUtils.LinearConstraints[] equalityConstraints,
-                                        ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
-                                        GLM.GLMGradientSolver gradientSolver, double[] betaCnd) {
+    public void setBetaConstraintsDeriv(ComputationState state, GLM.GLMGradientSolver gradientSolver, double[] betaCnd) {
       _newBeta = betaCnd;
-      updateConstraintValues(betaCnd, Arrays.asList(_coeffNames), equalityConstraints, lessThanEqualToConstraints);
-      calculateConstraintSquare(state, equalityConstraints, lessThanEqualToConstraints);
+      updateConstraintValues(betaCnd, Arrays.asList(_coeffNames), state._equalityConstraints, 
+              state._lessThanEqualToConstraints);
+      calculateConstraintSquare(state);
       // update gradient from constraints transpose(lambda)*h(beta)(value, not changed, active status may change) 
       // and gram contribution from ck/2*transpose(h(beta))*h(beta)), value not changed but active status may change
-      state.updateConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+      state.updateConstraintInfo();
       // calculate new gradient and objective function;
-      _ginfoOriginal =  calGradient(betaCnd, state, gradientSolver, lambdaEqual, lambdaLessThan,
-              equalityConstraints, lessThanEqualToConstraints);
+      _ginfoOriginal =  calGradient(betaCnd, state, gradientSolver);
     }
 
-    public boolean findAlpha(double[] lambdaEqual, double[] lambdaLessThan, ComputationState state,
-                             ConstrainedGLMUtils.LinearConstraints[] equalityConstraints, 
-                             ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
-                             GLM.GLMGradientSolver gradientSolver) {
+    public boolean findAlpha(ComputationState state, GLM.GLMGradientSolver gradientSolver) {
       if (_currGradDirIP > 0) {
         return false;
       }
@@ -560,14 +553,14 @@ public class OptimizationUtils {
         ArrayUtils.mult(_direction, tempDirection, _alphai);    // tempCoef=alpha_i*direction
         newCoef = ArrayUtils.add(tempDirection, _originalBeta); // newCoef = coef + alpha_i*direction
         // calculate constraint values with new coefficients, constraints magnitude square
-        updateConstraintValues(newCoef, Arrays.asList(_coeffNames), equalityConstraints, lessThanEqualToConstraints);
-        calculateConstraintSquare(state, equalityConstraints, lessThanEqualToConstraints);
+        updateConstraintValues(newCoef, Arrays.asList(_coeffNames), state._equalityConstraints, 
+                state._lessThanEqualToConstraints);
+        calculateConstraintSquare(state);
         // update gradient from constraints transpose(lambda)*h(beta)(value, not changed, active status may change) 
         // and gram contribution from ck/2*transpose(h(beta))*h(beta)), value not changed but active status may change
-        state.updateConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+        state.updateConstraintInfo();
         // calculate new gradient and objective function;
-        newGrad =  calGradient(newCoef, state, gradientSolver, lambdaEqual, lambdaLessThan,
-                equalityConstraints, lessThanEqualToConstraints);
+        newGrad =  calGradient(newCoef, state, gradientSolver);
         // evaluate if first Wolfe condition is satisfied;
         firstWolfe = evaluateFirstWolfe(newGrad);
         // evaluate if second Wolfe condition is satisfied;

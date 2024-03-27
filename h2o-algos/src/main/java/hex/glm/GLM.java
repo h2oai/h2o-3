@@ -70,7 +70,7 @@ import static water.fvec.Vec.T_NUM;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
-  static double BAD_CONDITION_NUMBER = 21000;
+  static double BAD_CONDITION_NUMBER = 100000;
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -2341,47 +2341,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     
     /***
-     * This method fits the constraint GLM for IRLSM.  Please refer to doc: ???
-     * 
-     *
+     * This method fits the constraint GLM for IRLSM.  Please refer to doc: 
      */
     private void fitIRLSMCS(Solver s) {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
       List<String> coeffNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
-      // will be null if constraints do not exist
-      LinearConstraints[] equalityConstraints;
-      LinearConstraints[] lessThanEqualToConstraints;
-      final BetaConstraint bc = _state.activeBC();
-      if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
-        equalityConstraints = _state._equalityConstraintsLinear;
-        lessThanEqualToConstraints = _state._lessThanEqualToConstraints;
-      } else {
-        equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
-        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta, _state._lessThanEqualToConstraints);
-      }
-      boolean hasEqualityConstraints = equalityConstraints != null;
-      boolean hasLessConstraints = lessThanEqualToConstraints != null;
-      double[] lambdaEqual = hasEqualityConstraints ? new double[equalityConstraints.length] : null; // depend on constraints not predictors null;
-      double[] lambdaLessThan = hasLessConstraints ? new double[lessThanEqualToConstraints.length] : null;
-      Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
-      Random randObj = new Random(startSeed);
-      updateConstraintValues(betaCnd, coeffNames, equalityConstraints, lessThanEqualToConstraints);
-      if (hasEqualityConstraints) // set lambda values
-        genInitialLambda(randObj, equalityConstraints, lambdaEqual);
-      if (hasLessConstraints)
-        genInitialLambda(randObj, lessThanEqualToConstraints, lambdaLessThan);
+
+      final BetaConstraint bc = _parms._separate_linear_beta ? _state.activeBC() : null;
       ExactLineSearch ls = null;
       int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
-      // contribution to gradient from transpose(lambda)*constraint vector without lambda values, stays constant
-      _state.initConstraintInfo(equalityConstraints, lessThanEqualToConstraints, coeffNames);
-
+      _state.setConstraintInfo(betaCnd, coeffNames);  // setup the constraints
+      _state.initConstraintInfo(coeffNames);  // setup constraints derivatives and double derivatives
       GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
               _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms, 
               _dinfo, 0, _state.activeBC(), _betaInfo);
-      GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan, 
-              equalityConstraints, lessThanEqualToConstraints);
-      _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);  // update state ginfo with contributions from GLMGradientInfo
+      GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo);
+      _state.setGradientInfo(gradientInfo);  // update state ginfo with contributions from GLMGradientInfo
       boolean predictorSizeChange;
       boolean applyBetaConstraints = _parms._separate_linear_beta && _betaConstraintsOn;
       // short circuit check here: if gradient magnitude is small and all constraints are satisfied, quit right away
@@ -2411,7 +2387,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             predictorSizeChange = !coeffNames.equals(Arrays.asList(_state.activeData().coefNames()));
             if (predictorSizeChange) {  // reset if predictors changed
               coeffNames = changeCoeffBetainfo(_state.activeData()._coefNames);
-              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              _state.resizeConstraintInfo();
               ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
                       _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
                       _state.activeData(), 0, _state.activeBC(), _betaInfo);
@@ -2422,7 +2398,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             predictorSizeChange = !coeffNames.equals(Arrays.asList(_state.activeData().coefNames()));
             if (predictorSizeChange) {  // reset if predictors changed
               coeffNames = changeCoeffBetainfo(_state.activeData()._coefNames);
-              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              _state.resizeConstraintInfo();
               ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
                       _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
                       _state.activeData(), 0, _state.activeBC(), _betaInfo);
@@ -2434,15 +2410,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             else
               ls.reset(betaCnd, _state, coeffNames);
 
-            if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)) {
+            if (ls.findAlpha(_state, ginfo)) {
               gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
               betaCnd = ls._newBeta;
               gradientInfo = ls._ginfoOriginal;
             } else {  // ls failed, reset to 
               if (applyBetaConstraints) // separate beta and linear constraints
                 bc.applyAllBounds(_state.beta());
-              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
-                      ginfo, _state.beta());
+              ls.setBetaConstraintsDeriv(_state, ginfo, _state.beta());
               Log.info(LogMsg("Ls failed " + ls));
               return;
             }
@@ -2451,8 +2426,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               System.arraycopy(betaCnd, 0, tempBeta, 0, betaCnd.length);
               bc.applyAllBounds(betaCnd);
               ArrayUtils.subtract(betaCnd, tempBeta, tempBeta);
-              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, 
-                      lessThanEqualToConstraints, ginfo, betaCnd);
+              ls.setBetaConstraintsDeriv(_state, ginfo, betaCnd);
               gradientInfo = ls._ginfoOriginal;
             }
             
@@ -2463,8 +2437,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           } while (gradMagSquare > _state._csGLMState._epsilonkCSSquare);
           // update constraint parameters, ck, lambdas and others
-          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints, _parms);
-          _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);
+          updateConstraintParameters(_state, _parms);
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
