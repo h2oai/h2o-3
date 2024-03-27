@@ -26,7 +26,7 @@ Map
 
 The ``map`` function defines an action that needs to be performed on each row of the data. Here is a description of each variable for the ``map`` function:
 
-    - ``pred``: a double array storing the model prediction output.  For regresion problems, the prediction value is stored in ``pred[0]``; for classification problems, the prediction value for class ``i`` is stored in ``pred[i]``. 
+    - ``pred``: a double array storing the model prediction output.  For regresion problems, the prediction value is stored in ``pred[0]``; for classification problems, the prediction value for class ``i`` is stored in ``pred[i+1]``. 
     - ``act``: a double array containing the actual response value of the dataset.  Again, the actual response value is stored in ``act[0]``.
     - ``w``: the weight applied to each row of the metric if present; otherwise, it defaults to 1.0.
     - ``o``: refers to the offset applied to each row of the metric if applicable. Defaults to 0.0.
@@ -57,8 +57,8 @@ where:
 You can deconstruct this formula into the map-reduce-value principle where:
 
 - :math:`\Arrowvert y(i) - \hat{y}(i) \Arrowvert ^2` part is done in `map` function
-- :math:`\sum_{i=0}^{N}` part and count N is done in ``reduce`` function with results from ``map`` phase
-- :math:`\sqrt{}` is done in value function from results from ``reduce`` phase
+- :math:`\sum_{i=0}^{N}` part (= sumError) and count N is done in ``reduce`` function with results from ``map`` phase
+- :math:`\sqrt{sumError/N}` is done in ``metric`` function from results from ``reduce`` phase
 
 See the `example <#example>`__ section for how to implement a custom RMSE metric using this formula. The names of the variables in the code should match with the variables in the formula.
 
