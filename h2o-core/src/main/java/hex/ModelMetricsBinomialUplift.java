@@ -134,14 +134,20 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         String[] domain;
         double[] thresholds;
         public MetricBuilderBinomialUplift _mb;
+        int nbins;
 
         public UpliftBinomialMetrics(String[] domain, double[] thresholds) {
             this.domain = domain;
             this.thresholds = thresholds;
         }
 
+        public UpliftBinomialMetrics(String[] domain, int nbins) {
+            this.domain = domain;
+            this.nbins = nbins;
+        }
+
         @Override public void map(Chunk[] chks) {
-            _mb = new MetricBuilderBinomialUplift(domain, thresholds);
+            _mb = new MetricBuilderBinomialUplift(domain, thresholds, nbins);
             Chunk uplift = chks[0];
             Chunk actuals = chks[1];
             Chunk treatment = chks[2];
@@ -165,11 +171,12 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         public double _sumTETreatment;
         public long _treatmentCount;
 
-        public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) {
+        public MetricBuilderBinomialUplift( String[] domain, double[] thresholds, int nbins) {
             super(2,domain);
             if(thresholds != null) {
                 _auuc = new AUUC.AUUCBuilder(thresholds);
-                _auuc2 = new AUUC.AUUCBuilder2(400);
+            } else {
+                _auuc2 = new AUUC.AUUCBuilder2(nbins);
             }
         }
 

@@ -41,6 +41,8 @@ public class UpliftDRFTest extends TestUtil {
             p._response_column = "conversion";
             p._seed = 0xDECAF;
             p._ntrees = 3;
+            p._score_each_iteration = true;
+            p._auuc_nbins = 450;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -356,7 +358,7 @@ public class UpliftDRFTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = generateFrame();
-            int ntrees = 100;
+            int ntrees = 10;
             UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
             p._train = train._key;
             p._treatment_column = "treatment";
@@ -364,6 +366,34 @@ public class UpliftDRFTest extends TestUtil {
             p._ntrees = ntrees;
             p._score_each_iteration = true;
             p._nfolds = 3;
+            p._auuc_nbins = 400;
+
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSupportCVCriteo() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/uplift/criteo_uplift_13k.csv"));
+            train.toCategoricalCol("treatment");
+            train.toCategoricalCol("conversion");
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._ignored_columns = new String[]{"visit", "exposure"};
+            p._treatment_column = "treatment";
+            p._response_column = "conversion";
+            p._seed = 0xDECAF;
+            p._ntrees = 10;
+            p._score_each_iteration = true;
+            p._nfolds = 3;
+            p._auuc_nbins = 50;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();

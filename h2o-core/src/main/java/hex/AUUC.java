@@ -504,21 +504,8 @@ public class AUUC extends Iced {
         int _n;
         int _ssx;
 
-        public AUUCBuilder2(double[] thresholds) {
-            int nBins = thresholds.length;
+        public AUUCBuilder2(int nBins) {
             _nBins = nBins;
-            _thresholds = thresholds;
-            _treatment = new long[nBins];
-            _control = new long[nBins];
-            _yTreatment = new long[nBins];
-            _yControl = new long[nBins];
-            _frequency = new long[nBins];
-            _ssx = -1;
-        }
-
-        public AUUCBuilder2(int nBins) {;
-            _nBins = nBins;
-            _n = 0;
             int doubleNBins = 2 * nBins;
             _thresholds = new double[doubleNBins];
             _treatment = new long[doubleNBins];
@@ -536,7 +523,6 @@ public class AUUC extends Iced {
             assert !Double.isNaN(w) && !Double.isInfinite(w);
             int idx = Arrays.binarySearch(_thresholds,0,_n,pred);
             if( idx >= 0 ) {          // Found already in histogram; merge results
-                _n++;
                 _frequency[idx]++;
                 if(treatment == 1){
                     _treatment[idx]++;
@@ -570,7 +556,6 @@ public class AUUC extends Iced {
                     if (ssx == idx-1 || ssx == idx)
                         _ssx = -1;         // We don't know the minimum anymore
                     double k = _frequency[idx];
-                    _n++;
                     _frequency[idx]++;
                     if(treatment == 1){
                         _treatment[idx]++;
@@ -583,7 +568,7 @@ public class AUUC extends Iced {
                             _yControl[idx]++;
                         }
                     }
-                    _thresholds[idx] = combine_centers(_thresholds[idx], k, pred, w);
+                    _thresholds[idx] = combineCenters(_thresholds[idx], k, pred, w);
                     return;
                 }
             }
@@ -604,9 +589,8 @@ public class AUUC extends Iced {
             System.arraycopy(_frequency,idx,_frequency,idx+1,_n-idx);
             // Insert into the histogram
             _thresholds[idx] = pred;         // New histogram center
-            _n++;
             _frequency[idx]++;
-            if(treatment == 1){
+            if(treatment == 1) {
                 _treatment[idx]++;
                 if(y == 1){
                     _yTreatment[idx]++;
@@ -617,8 +601,10 @@ public class AUUC extends Iced {
                     _yControl[idx]++;
                 }
             }
-            if( _n > _nBins )         // Merge as needed back down to nBins
-                mergeOneBin();          // Merge best pair of bins
+            _n++;
+            if( _n > _nBins ) {       // Merge as needed back down to nBins
+                mergeOneBin(); // Merge best pair of bins
+            }
         }
 
         public void reduce(AUUC.AUUCBuilder2 bldr) {
@@ -647,7 +633,7 @@ public class AUUC extends Iced {
                 mergeOneBin();
         }
 
-        static double combine_centers(double ths1, double n1, double ths0, double n0) {
+        static double combineCenters(double ths1, double n1, double ths0, double n0) {
             double center = (ths0 * n0 + ths1 * n1) / (n0 + n1);
             if (Double.isNaN(center) || Double.isInfinite(center)) {
                 // use a simple average as a fallback
@@ -665,13 +651,13 @@ public class AUUC extends Iced {
             // centers based on counts.
             double k0 = _frequency[ssx];
             double k1 = _frequency[ssx+1];
-            _thresholds[ssx] = combine_centers(_thresholds[ssx], k0, _thresholds[ssx+1], k1);
+            _thresholds[ssx] = combineCenters(_thresholds[ssx], k0, _thresholds[ssx+1], k1);
             _treatment[ssx] += _treatment[ssx+1];
             _control[ssx] += _control[ssx+1];
             _yTreatment[ssx] += _yTreatment[ssx+1];
             _yControl[ssx] += _yControl[ssx+1];
             _frequency[ssx] += _frequency[ssx+1];
-            int n = (int) _n;
+            int n = _n;
             // Slide over to crush the removed bin at index (ssx+1)
             System.arraycopy(_thresholds,ssx+2,_thresholds,ssx+1,n-ssx-2);
             System.arraycopy(_treatment,ssx+2,_treatment,ssx+1,n-ssx-2);
