@@ -312,7 +312,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     data={"feature_frequencies": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
     
-    def predict(self, test_data, custom_metric = None, custom_metric_func = None):
+    def predict(self, test_data, custom_metric=None, custom_metric_func=None):
         """
         Predict on a dataset.
 
@@ -323,11 +323,11 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: A new H2OFrame of predictions.
         """
-        # Upload evaluation function into DKV
+        # Upload custom metric function into DKV
         if custom_metric:
             assert_satisfies(custom_metric_func, custom_metric_func is None,
-                             "The argument 'eval_func_ref' cannot be specified when eval_func is specified, ")
-            eval_func_ref = h2o.upload_custom_metric(custom_metric)
+                             "The argument 'custom_metric_func' cannot be specified when custom_metric is specified, ")
+            custom_metric_func = h2o.upload_custom_metric(custom_metric)
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id), data = {'custom_metric_func': custom_metric_func}),
                    self._model_json["algo"] + " prediction")
