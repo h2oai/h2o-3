@@ -18,7 +18,7 @@ Security patch updates
 
 H2O should always be deployed behind firewalls and in protected clusters. Many of the reported vulnerabilities don’t apply because of this because they assume that H2O isn’t deployed under any protection. Regardless, there are several vulnerabilities we did fix during this release:
 
-- `CVE-2023-6016 <https://github.com/advisories/GHSA-p3v8-5qc4-7p8r>`__: We introduced a Java Property disabling POJO port (defaults to disabled) to avoid remote code execution (courtesy of Marek Novotný).
+- `CVE-2023-6016 <https://github.com/advisories/GHSA-p3v8-5qc4-7p8r>`__: We introduced a Java Property that disables POJO import (defaults to ``disabled``) to avoid remote code execution (courtesy of Marek Novotný).
 - `CVE-2023-35116 <https://github.com/h2oai/h2o-3/issues/16067>`__: We upgraded the jackson-databind version to address potential vulnerabilities (thanks to Marek Novotný).
 - `SYNK-JAVA-CIMNUMBUSDS-6247633 <https://security.snyk.io/vuln/SNYK-JAVA-COMNIMBUSDS-6247633>`__: We upgraded the nimbus-jose-jwt version to enhance security and to mitigate potential risks (kudos to Adam Valenta).
 - `CVE-2023-6038 <https://github.com/h2oai/h2o-3/issues/15972>`__ and `CVE-2023-6569 <https://nvd.nist.gov/vuln/detail/CVE-2023-6569>`__: We introduced a new configuration option for filtering file system access during reading and writing in response to security concerns (credit to Bartosz Krasinski).
