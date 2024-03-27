@@ -833,6 +833,15 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                                  "generate_variable_inflation_factors is enabled.")
         else:
             raise ValueError("variable inflation factors are only found in GLM models for numerical predictors.")
+    
+    def coef_names(self):
+        """
+        Return the coefficient names of glm model
+        """
+        if self.algo == 'glm':
+            coefs = self._model_json['output']['coefficient_names']
+            coefs.remove('Intercept')
+            return coefs
         
     def coef(self):
         """

@@ -365,4 +365,19 @@ public class GLMUtils {
       train.add(parms._response_column, responseVec);
     return train;
   }
+  
+  public static boolean notZeroLambdas(double[] lambdas) {
+    if (lambdas == null) {
+      return false;
+    } else {
+      return ((int) Arrays.stream(lambdas).filter(x -> x != 0.0).boxed().count()) > 0;
+    }
+  }
+  
+  public static List<String> predictorChange(ComputationState state, List<String> coeffNames) {
+    if (!state.activeData().coefNames().equals(coeffNames.size())) // column size changed
+      return Arrays.stream(state.activeData()._coefNames).collect(Collectors.toList());
+    else 
+      return coeffNames;
+  }
 }

@@ -63,12 +63,24 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     
     @API(help = "Predictor names where variable inflation factors are calculated.")
     String[] vif_predictor_names;
+
+    @API(help = "GLM model coefficients names.")
+    String[] coefficient_names;
     
     @API(help = "predictor variable inflation factors.")
     double[] variable_inflation_factors;
+    
+    @API(help = "Beta (if exists) and linear constraints states")
+    String[] linear_constraint_states;
+    
+    @API(help = "Table of beta (if exists) and linear constraints values and status")
+    TwoDimTableV3 linear_constraints_table;
 
     @API(help="Contains the original dataset and the dfbetas calculated for each predictor.")
     KeyV3.FrameKeyV3 regression_influence_diagnostics;
+    
+    @API(help="True if all constraints conditions are satisfied.  Otherwise, false.")
+    boolean all_constraints_satisfied;
 
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
@@ -201,6 +213,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       alpha_best = impl.alpha_best();
       best_submodel_index = impl.bestSubmodelIndex();
       dispersion = impl.dispersion();
+      coefficient_names = impl.coefficientNames().clone();
+      if (impl._linear_constraint_states != null) // pass constraint conditions
+        linear_constraint_states = impl._linear_constraint_states.clone();
       variable_inflation_factors = impl.getVariableInflationFactors();
       vif_predictor_names = impl.hasVIF() ? impl.getVIFPredictorNames() : null;
       List<String> validVIFNames = impl.hasVIF() ? Stream.of(vif_predictor_names).collect(Collectors.toList()) : null;
@@ -215,11 +230,13 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         random_coefficients_table.fillFromImpl(buildRandomCoefficients2DTable(impl.ubeta(), impl.randomcoefficientNames()));
       }
       double [] beta = impl.beta();
-      final double [] magnitudes = new double[beta.length];
-      int len = magnitudes.length - 1;
-      int[] indices = new int[len];
-      for (int i = 0; i < indices.length; ++i)
-        indices[i] = i;
+      final double [] magnitudes = beta==null?null:new double[beta.length];
+      int len = beta==null?0:magnitudes.length - 1;
+      int[] indices = beta==null?null:new int[len];
+      if (beta != null) {
+        for (int i = 0; i < indices.length; ++i)
+          indices[i] = i;
+      }
 
       if(beta == null) beta = MemoryManager.malloc8d(names.length);
       String [] colTypes = new String[]{"double"};

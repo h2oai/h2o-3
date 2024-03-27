@@ -146,6 +146,13 @@ public class GamUtils {
               src_array[colIdx].length);
     }
   }
+  
+  // copy a square array
+  public static double[][] copy2DArray(double[][] src_array) {
+    double[][] dest_array = MemoryManager.malloc8d(src_array.length, src_array[0].length);
+    copy2DArray(src_array, dest_array);
+    return dest_array;
+  }
 
   public static void copy2DArray(int[][] src_array, int[][] dest_array) {
     int numRows = src_array.length;
