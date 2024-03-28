@@ -119,8 +119,8 @@ public final class ComputationState {
     _noReg = (_lambda == 0);
   }
   
-  public void initConstraintInfo(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints,
-                                 List<String> coeffNames) {
+  public void initConstraintDerivatives(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints,
+                                        List<String> coeffNames) {
     boolean hasEqualityConstraints = equalityConstraints != null;
     boolean hasLessConstraints = lessThanEqualToConstraints != null;
     _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
@@ -1049,8 +1049,8 @@ public final class ComputationState {
       else System.arraycopy(beta,0,_beta,0,beta.length);
     }
     // now with new beta in _beta, need to update constraint values and then calculate objective
-    updateConstraintValues(_beta, Arrays.stream(activeData().coefNames()).collect(Collectors.toList()), 
-            _equalityConstraints, _lessThanEqualToConstraints);
+   // updateConstraintValues(_beta, Arrays.stream(activeData().coefNames()).collect(Collectors.toList()), 
+    //        _equalityConstraints, _lessThanEqualToConstraints);
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
     _relImprovement = (objOld - objective()) / Math.abs(objOld);
@@ -1587,5 +1587,6 @@ public final class ComputationState {
     _equalityConstraints = equalityConstraints;
     _lambdaEqual = lambdaEqual;
     _lambdaLessThanEqualTo = lambdaLessThan;
+    _likelihood = gradientInfo._likelihood;
   }
 }

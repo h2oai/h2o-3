@@ -2374,7 +2374,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       ExactLineSearch ls = null;
       int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
       // contribution to gradient from transpose(lambda)*constraint vector without lambda values, stays constant
-      _state.initConstraintInfo(equalityConstraints, lessThanEqualToConstraints, coeffNames);
+      _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coeffNames);
 
       GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
               _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms, 
