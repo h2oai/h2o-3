@@ -69,10 +69,9 @@ def grid_models_analysis(grid_models, hyper_parameters, metric="logloss", epsilo
     """
     base_metric = grid_models[0].model_performance()._metric_json[metric]
     base_constraints_table = grid_models[0]._model_json["output"]["linear_constraints_table"]
-    num_constraints = len(base_constraints_table.cell_values)
     cond_index = base_constraints_table.col_header.index("condition")
     [best_equality_constraints, best_lessthan_constraints] = grab_constraint_values(
-        base_constraints_table, cond_index, num_constraints)
+        base_constraints_table, cond_index, len(base_constraints_table.cell_values))
 
     base_iteration = find_glm_iterations(grid_models[0])
     num_models = len(grid_models)
@@ -88,7 +87,7 @@ def grid_models_analysis(grid_models, hyper_parameters, metric="logloss", epsilo
         if metric_diff < epsilon:
             curr_constraint_table = curr_model._model_json["output"]["linear_constraints_table"]
             [equality_constraints_values, lessthan_constraints_values] = grab_constraint_values(
-                curr_constraint_table, cond_index, num_constraints)
+                curr_constraint_table, cond_index, len(curr_constraint_table.cell_values))
             # conditions used to choose the best model
             if (sum(equality_constraints_values) < sum(best_equality_constraints)) and (sum(lessthan_constraints_values) < sum(best_lessthan_constraints)):
                 best_model_ind = ind
