@@ -2358,7 +2358,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         lessThanEqualToConstraints = _state._lessThanEqualToConstraints;
       } else {
         equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
-        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta, _state._lessThanEqualToConstraints);
+        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta, _state._lessThanEqualToConstraintsLinear);
       }
       boolean hasEqualityConstraints = equalityConstraints != null;
       boolean hasLessConstraints = lessThanEqualToConstraints != null;
