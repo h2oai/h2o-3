@@ -2355,7 +2355,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       final BetaConstraint bc = _state.activeBC();
       if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
         equalityConstraints = _state._equalityConstraintsLinear;
-        lessThanEqualToConstraints = _state._lessThanEqualToConstraints;
+        lessThanEqualToConstraints = _state._lessThanEqualToConstraintsLinear;
       } else {
         equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
         lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta, _state._lessThanEqualToConstraintsLinear);
