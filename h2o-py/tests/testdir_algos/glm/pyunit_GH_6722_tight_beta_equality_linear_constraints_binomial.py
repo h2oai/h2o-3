@@ -213,7 +213,23 @@ def test_light_tight_linear_constraints_only_gaussian():
     constraint_tau = [1.2]
     constraint_alpha = [0.01]
     constraint_beta = [0.001]
-    constraint_c0 = [20,30] # initial value
+    constraint_c0 = [10, 20,30] # initial value
+
+    h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
+                                                                         family="binomial",
+                                                                         linear_constraints=linear_constraints2,
+                                                                         beta_constraints=beta_constraints,
+                                                                         init_optimal_glm=False,
+                                                                         constraint_eta0=constraint_eta0,
+                                                                         constraint_tau=constraint_tau,
+                                                                         constraint_alpha=constraint_alpha,
+                                                                         constraint_beta=constraint_beta,
+                                                                         constraint_c0=constraint_c0,
+                                                                         return_best=False, epsilon=20)
+    default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
+    print("logloss with default GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
+          "{1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))    
+    
     # GLM model with with GLM coefficients set to GLM model coefficients built without constraints
     h2o_glm_optimal_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",

@@ -44,7 +44,7 @@ def constraint_glm_gridsearch(training_dataset, x, y, solver="AUTO", family="gau
                    "constraint_beta":constraint_beta, "constraint_c0":constraint_c0}
     if beta_constraints is not None:
         params['beta_constraints']=beta_constraints
-        hyper_parameters["separate_linear_beta"] = [True, False]
+        hyper_parameters["separate_linear_beta"] = [False, True]
     if startval is not None:
         params["startval"]=startval
     if init_optimal_glm:
