@@ -931,7 +931,8 @@ public final class ComputationState {
         gamVal = calSmoothNess(expandBeta(beta), _penaltyMatrix, _gamBetaIndices);  // take up memory
     }
     double constraintVal = 0;
-    if (_csGLMState != null) {
+    if (_csGLMState != null && (_equalityConstraints != null || _lessThanEqualToConstraints != null)) {
+      //updateConstraintValues(beta, Arrays.stream(activeData().coefNames()).collect(Collectors.toList()), _equalityConstraints, _lessThanEqualToConstraints);
       if (_equalityConstraints != null) {
         constraintVal += addConstraintObj(_lambdaEqual, _equalityConstraints, _csGLMState._ckCS);
       }
