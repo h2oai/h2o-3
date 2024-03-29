@@ -2389,7 +2389,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
         return;
       }
-      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      double gradMagSquare;
       int origIter = iterCnt+1;
       try {
         while (true) {
