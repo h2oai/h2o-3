@@ -570,7 +570,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         ...                                               min_rows=10,
         ...                                               seed=1234,
         ...                                               auuc_type="qini",
-        ...                                               treatment_column="treatment")
+...                                               treatment_column=treatment_column)
         >>> uplift_model.train(x=predictors,
         ...                    y=response,
         ...                    training_frame=train,
@@ -688,7 +688,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         ...                                               min_rows=10,
         ...                                               seed=1234,
         ...                                               auuc_type="qini",
-        ...                                               auuc_nbins=-1)
+        ...                                               auuc_nbins=100)
         >>> uplift_model.train(x=predictors,
         ...                    y=response,
         ...                    training_frame=train,
