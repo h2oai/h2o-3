@@ -930,19 +930,10 @@ public final class ComputationState {
       else
         gamVal = calSmoothNess(expandBeta(beta), _penaltyMatrix, _gamBetaIndices);  // take up memory
     }
-    double constraintVal = 0;
-    if (_csGLMState != null && (_equalityConstraints != null || _lessThanEqualToConstraints != null)) {
-      //updateConstraintValues(beta, Arrays.stream(activeData().coefNames()).collect(Collectors.toList()), _equalityConstraints, _lessThanEqualToConstraints);
-      if (_equalityConstraints != null) {
-        constraintVal += addConstraintObj(_lambdaEqual, _equalityConstraints, _csGLMState._ckCS);
-      }
-      if (_lessThanEqualToConstraints != null) {
-        constraintVal += addConstraintObj(_lambdaLessThanEqualTo, _lessThanEqualToConstraints, _csGLMState._ckCS);;
-      }
-    }
-    
-    return likelihood * _parms._obj_reg + gamVal + constraintVal + penalty(beta) + 
-            (_activeBC == null?0:_activeBC.proxPen(beta));
+    if (_csGLMState != null && (_equalityConstraints != null || _lessThanEqualToConstraints != null))
+      return _ginfo._objVal;
+    else
+      return likelihood * _parms._obj_reg + gamVal + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
   }
 
   /***
