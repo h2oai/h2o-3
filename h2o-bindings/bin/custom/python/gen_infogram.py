@@ -443,14 +443,14 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> algorithm_params = ig.algorithm_params
->>> train = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)[0]
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
+>>> gbm_params = {'ntrees':3}
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols)
->>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.train(y=y, x=x, training_frame=train, algorithm_params=gbm_params)
 >>> ig.plot()
 """,
     data_fraction="""
