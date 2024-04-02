@@ -1497,7 +1497,7 @@ public final class ComputationState {
    * This method adds to objective function the contribution of 
    *    transpose(lambda)*constraint vector + ck/2*transpose(constraint vector)*constraint vector
    */
-  public static double addConstraintObj(double[] lambda, LinearConstraints[] constraints, double ck) {
+  public static double addConstraintObj(double[] lambda, LinearConstraints[] constraints, double ckHalf) {
     int numConstraints = constraints.length;
     LinearConstraints oneC;
     double objValueAdd = 0;
@@ -1505,7 +1505,7 @@ public final class ComputationState {
       oneC = constraints[index];
       if (oneC._active) {
         objValueAdd += lambda[index]*oneC._constraintsVal;               // from linear constraints
-        objValueAdd += ck*0.5*oneC._constraintsVal*oneC._constraintsVal; // from penalty
+        objValueAdd += ckHalf*oneC._constraintsVal*oneC._constraintsVal; // from penalty
       }
     }
     return objValueAdd;

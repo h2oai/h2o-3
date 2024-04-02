@@ -73,27 +73,30 @@ def test_constraints_objective_likelihood():
     linear_constraints2 = h2o.H2OFrame(loose_init_const)
     linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
     # glm without constraints
-    h2o_glm = glm(family="binomial", lambda_=0.0, seed=12345, remove_collinear_columns=True,solver="irlsm", calc_like=True)
+    h2o_glm = glm(family="binomial", lambda_=0.0, seed=12345, remove_collinear_columns=True,solver="irlsm", 
+                  calc_like=True, generate_scoring_history=True)
     h2o_glm.train(x=predictors, y=response, training_frame=train)
     ll = h2o_glm.loglikelihood()
     aic = h2o_glm.aic()
     coef = h2o_glm.coef()
+    obj = h2o_glm.average_objective()
     logloss = h2o_glm.model_performance()._metric_json['logloss']
-    print("GLM losloss: {0}, aic: {1}, llh: {2}.".format(logloss, aic, ll))
+    print("GLM losloss: {0}, aic: {1}, llh: {2}, average_objective: {3}.".format(logloss, aic, ll, obj))
     
     # GLM model with with GLM coefficients set to GLM model coefficients built without constraints
     h2o_glm_optimal_init = glm(family="binomial", lambda_=0.0, seed=12345, remove_collinear_columns=True,solver="irlsm", 
                                linear_constraints=linear_constraints2, init_optimal_glm=True, 
-                               beta_constraints=beta_constraints, calc_like=True)
+                               beta_constraints=beta_constraints, calc_like=True, generate_scoring_history=True)
     h2o_glm_optimal_init.train(x=predictors, y=response, training_frame=train)
     ll_optimal = h2o_glm_optimal_init.loglikelihood(train=True)
     aic_optimal = h2o_glm_optimal_init.aic(train=True)
     coef_optimal = h2o_glm_optimal_init.coef()
     init_logloss = h2o_glm_optimal_init.model_performance()._metric_json['logloss']
+    obj_optimal = h2o_glm_optimal_init.average_objective()
     print("logloss with constraints and coefficients initialized with glm model built without constraints: {0}, aic: "
-          "{2}, llh: {3}, number of iterations taken to build the model: "
+          "{2}, llh: {3}, average_objective: {4}, number of iterations taken to build the model: "
           "{1}".format(init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_optimal_init), aic_optimal,
-                       ll_optimal))
+                       ll_optimal, obj_optimal))
     print(glm.getConstraintsInfo(h2o_glm_optimal_init))
 
     # GLM model with with GLM coefficients set to random GLM model coefficients
@@ -113,31 +116,34 @@ def test_constraints_objective_likelihood():
                    0.224690851359456, 0.5809304720756304, 0.36863807988348585]
     h2o_glm_random_init = glm(family="binomial", lambda_=0.0, seed=12345, remove_collinear_columns=True,solver="irlsm",
                               linear_constraints=linear_constraints2, startval=random_coef, 
-                              beta_constraints=beta_constraints, calc_like=True)
+                              beta_constraints=beta_constraints, calc_like=True, generate_scoring_history=True)
     h2o_glm_random_init.train(x=predictors, y=response, training_frame=train)
     ll_random = h2o_glm_random_init.loglikelihood(train=True)
     aic_random = h2o_glm_random_init.aic(train=True)
     coef_random = h2o_glm_random_init.coef()
+    obj_random = h2o_glm_random_init.average_objective()
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and coefficients initialized random initial values: {0}, aic: {2}, llh: {3}, "
-          "number of iterations taken to build the model: "
+          "average objective: {4}, number of iterations taken to build the model: "
           "{1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init), aic_random,
-                       ll_random))
+                       ll_random, obj_random))
     print(glm.getConstraintsInfo(h2o_glm_random_init))
 
     
     # GLM model with GLM coefficients with default initialization
     h2o_glm_default_init = glm(family="binomial", lambda_=0.0, seed=12345, remove_collinear_columns=True,solver="irlsm",
-                               linear_constraints=linear_constraints2, beta_constraints=beta_constraints, calc_like=True)
+                               linear_constraints=linear_constraints2, beta_constraints=beta_constraints, 
+                               calc_like=True, generate_scoring_history=True)
     h2o_glm_default_init.train(x=predictors, y=response, training_frame=train)
     ll_default = h2o_glm_default_init.loglikelihood(train=True)
     aic_default = h2o_glm_default_init.aic(train=True)
     coef_default = h2o_glm_default_init.coef()
+    obj_default = h2o_glm_default_init.average_objective()
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
-    print("logloss with constraints and default coefficients initialization: {0}, aic: {2}, llh: {3}, "
-          "number of iterations taken to build the model: "
+    print("logloss with constraints and default coefficients initialization: {0}, aic: {2}, llh: {3}, average objective:"
+          " {4}, number of iterations taken to build the model: "
           "{1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init), aic_default,
-                       ll_default))
+                       ll_default, obj_default))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
 
     # if coefficients are close enough, we will compare the objective and aic
@@ -146,17 +152,22 @@ def test_constraints_objective_likelihood():
                                                   " optimal coefficient init: {1} but is not.".format(ll, ll_optimal)
         assert abs(aic-aic_optimal)/abs(aic) < 1e-6, "AIC of glm: {0}, should be close to constrained GLM with" \
                                                   " optimal coefficient init: {1} but is not.".format(aic, aic_optimal)
+        assert abs(obj-obj_optimal)/abs(obj) < 1e-6, "average objective of glm: {0}, should be close to constrained GLM with" \
+                                                     " optimal coefficient init: {1} but is not.".format(obj, obj_optimal)
     if pyunit_utils.equal_two_dicts(coef, coef_random, tolerance=2.1e-3):
         assert abs(ll-ll_random)/abs(ll) < 1e-3, "loglikelihood of glm: {0}, should be close to constrained GLM with" \
                                                   " random coefficient init: {1} but is not.".format(ll, ll_random)
         assert abs(aic-aic_random)/abs(aic) < 1e-3, "AIC of glm: {0}, should be close to constrained GLM with" \
                                                      " random coefficient init: {1} but is not.".format(aic, aic_random)
+        assert abs(obj-obj_random)/abs(obj) < 1e-3, "average objective of glm: {0}, should be close to constrained GLM with" \
+                                                     " random coefficient init: {1} but is not.".format(obj, obj_random)
     if pyunit_utils.equal_two_dicts(coef, coef_default, tolerance=2e-3):
         assert abs(ll-ll_default)/abs(ll) < 1e-3, "loglikelihood of glm: {0}, should be close to constrained GLM with" \
                                                  " default coefficient init: {1} but is not.".format(ll, ll_default)
         assert abs(aic-aic_default)/abs(aic) < 1e-3, "AIC of glm: {0}, should be close to constrained GLM with" \
                                                     " default coefficient init: {1} but is not.".format(aic, aic_default)
-
+        assert abs(obj-obj_default)/abs(obj) < 1e-3, "average objective of glm: {0}, should be close to constrained GLM with" \
+                                                    " default coefficient init: {1} but is not.".format(obj, obj_default)
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_constraints_objective_likelihood)
 else:

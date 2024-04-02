@@ -81,6 +81,7 @@ public class ConstrainedGLMUtils {
   
   public static class ConstraintGLMStates {
     double _ckCS;
+    double _ckCSHalf; // = ck/2
     double _epsilonkCS;
     double _epsilonkCSSquare;
     double _etakCS;
@@ -95,6 +96,7 @@ public class ConstrainedGLMUtils {
       _constraintNames = constrainNames;
       _initCSMatrix = initMatrix;
       _ckCS = parms._constraint_c0;
+      _ckCSHalf = parms._constraint_c0*0.5;
       _epsilonkCS = 1.0/parms._constraint_c0;
       _epsilonkCSSquare =_epsilonkCS*_epsilonkCS;
       _etakCS = parms._constraint_eta0/Math.pow(parms._constraint_c0, parms._constraint_alpha);
@@ -735,6 +737,7 @@ public class ConstrainedGLMUtils {
       state ._csGLMState._etakCS = state._csGLMState._etakCS/Math.pow(state._csGLMState._ckCS, parms._constraint_beta);
     } else {
       state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau;
+      state._csGLMState._ckCSHalf = state._csGLMState._ckCS*0.5;
       state._csGLMState._epsilonkCS = state._csGLMState._epsilon0/state._csGLMState._ckCS;
       state._csGLMState._etakCS = parms._constraint_eta0/Math.pow(state._csGLMState._ckCS, parms._constraint_alpha);
     }
@@ -799,13 +802,13 @@ public class ConstrainedGLMUtils {
     if (hasEqualConstraints) {
       addConstraintGradient(lambdaE, state._derivativeEqual, gradientInfo);
       addPenaltyGradient(state._derivativeEqual, constraintE, gradientInfo, state._csGLMState._ckCS);
-      gradientInfo._objVal += state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS);
+      gradientInfo._objVal += state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCSHalf);
       //state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS, gradientInfo);
     }
     if (hasLessConstraints) {
       addConstraintGradient(lambdaL, state._derivativeLess, gradientInfo);
       addPenaltyGradient(state._derivativeLess, constraintL, gradientInfo, state._csGLMState._ckCS);
-      gradientInfo._objVal += state.addConstraintObj(lambdaL, constraintL, state._csGLMState._ckCS);
+      gradientInfo._objVal += state.addConstraintObj(lambdaL, constraintL, state._csGLMState._ckCSHalf);
     }
     return gradientInfo;
   }
