@@ -213,7 +213,7 @@ def test_light_tight_linear_constraints_only_gaussian():
     constraint_tau = [1.2]
     constraint_alpha = [0.01]
     constraint_beta = [0.001]
-    constraint_c0 = [10, 20,30] # initial value
+    constraint_c0 = [10,20,30] # initial value
 
     h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",

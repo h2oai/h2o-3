@@ -820,7 +820,10 @@ public class ConstrainedGLMUtils {
       });
     }
     if (lessThanEqualToConstraints != null)
-      setActiveConstraints(lessThanEqualToConstraints, betaCnd, coeffNames);  // evaluate and set constraint active status
+      stream(lessThanEqualToConstraints).collect(Collectors.toList()).parallelStream().forEach(constraint -> {
+        evalOneConstraint(constraint, betaCnd, coeffNames);
+        constraint._active = constraint._constraintsVal > 0;
+      });
   }
   
   public static String[] collinearInConstraints(String[] collinear_cols, String[] constraintNames) {

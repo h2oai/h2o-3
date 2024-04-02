@@ -2464,7 +2464,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           } while (gradMagSquare > _state._csGLMState._epsilonkCSSquare);
           // update constraint parameters, ck, lambdas and others
           updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints, _parms);
-          _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);
+         // _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));

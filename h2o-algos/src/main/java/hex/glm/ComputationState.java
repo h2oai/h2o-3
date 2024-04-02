@@ -1040,9 +1040,6 @@ public final class ComputationState {
       if(_beta == null)_beta = beta.clone();
       else System.arraycopy(beta,0,_beta,0,beta.length);
     }
-    // now with new beta in _beta, need to update constraint values and then calculate objective
-   // updateConstraintValues(_beta, Arrays.stream(activeData().coefNames()).collect(Collectors.toList()), 
-    //        _equalityConstraints, _lessThanEqualToConstraints);
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
     _relImprovement = (objOld - objective()) / Math.abs(objOld);
@@ -1050,7 +1047,6 @@ public final class ComputationState {
   }
   
   double getBetaDiff() {return _betaDiff;}
-  double getGradientErr() {return _gradientErr;}
   protected void setBetaDiff(double betaDiff) { _betaDiff = betaDiff; }
   protected void setGradientErr(double gErr) { _gradientErr = gErr; }
   protected void setGinfo(GLMGradientInfo ginfo) {
