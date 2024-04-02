@@ -277,16 +277,15 @@ public class ConstrainedGLMUtils {
     rowIndices.removeAll(processedRowIndices);
   }
   
-  public static double[][] formConstraintMatrix(ComputationState state, List<String> constraintNamesList, int[] betaLessThan) {
+  public static double[][] formConstraintMatrix(ComputationState state, List<String> constraintNamesList, int[] betaEqualLessThanInd) {
     // extract coefficient names from constraints
     constraintNamesList.addAll(extractConstraintCoeffs(state));
     // form double matrix
-    int numRow = (state._equalityConstraintsBeta == null ? 0 : state._equalityConstraintsBeta.length) +
-            (state._lessThanEqualToConstraintsBeta == null ? 0 : (betaLessThan == null ? 0 : ArrayUtils.sum(betaLessThan))) +
+    int numRow = (betaEqualLessThanInd == null ? 0 : ArrayUtils.sum(betaEqualLessThanInd)) +
             (state._equalityConstraintsLinear == null ? 0 : state._equalityConstraintsLinear.length) + 
-            (state._lessThanEqualToConstraints == null ? 0 : state._lessThanEqualToConstraints.length);
+            (state._lessThanEqualToConstraintsLinear == null ? 0 : state._lessThanEqualToConstraintsLinear.length);
     double[][] initConstraintMatrix = new double[numRow][constraintNamesList.size()];
-    fillConstraintValues(state, constraintNamesList, initConstraintMatrix, betaLessThan);
+    fillConstraintValues(state, constraintNamesList, initConstraintMatrix, betaEqualLessThanInd);
     return initConstraintMatrix;
   }
   
@@ -301,8 +300,8 @@ public class ConstrainedGLMUtils {
               rowIndex, betaLessThan);
     if (state._equalityConstraintsLinear != null)
       rowIndex = extractConstraintValues(state._equalityConstraintsLinear, constraintNamesList, initCMatrix, rowIndex, null);
-    if (state._lessThanEqualToConstraints != null)
-      extractConstraintValues(state._lessThanEqualToConstraints, constraintNamesList, initCMatrix, rowIndex, null);
+    if (state._lessThanEqualToConstraintsLinear != null)
+      extractConstraintValues(state._lessThanEqualToConstraintsLinear, constraintNamesList, initCMatrix, rowIndex, null);
   }
   
   public static int extractConstraintValues(LinearConstraints[] constraints, List<String> constraintNamesList, 
@@ -481,8 +480,8 @@ public class ConstrainedGLMUtils {
     if (state._equalityConstraintsLinear != null)
       nonZeroConstant = nonZeroConstant | extractCoeffNames(tConstraintCoeffName, state._equalityConstraintsLinear);
 
-    if (state._lessThanEqualToConstraints != null)
-      nonZeroConstant = nonZeroConstant | extractCoeffNames(tConstraintCoeffName, state._lessThanEqualToConstraints);
+    if (state._lessThanEqualToConstraintsLinear != null)
+      nonZeroConstant = nonZeroConstant | extractCoeffNames(tConstraintCoeffName, state._lessThanEqualToConstraintsLinear);
     
     // remove duplicates in the constraints names
     Set<String> noDuplicateNames = new HashSet<>(tConstraintCoeffName);

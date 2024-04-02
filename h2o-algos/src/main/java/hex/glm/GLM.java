@@ -972,7 +972,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     if (_parms._max_iterations == 0) {
       warn("max_iterations", " must be >= 1 to obtain proper model.  Setting it to be 0 will only" +
               " return the correct coefficient names and an empty model.");
-      warn("_max_iterations", H2O.technote(2 , "if specified, m_be4ust be >= 1."));
+      warn("_max_iterations", H2O.technote(2 , "if specified, must be >= 1."));
     }
     if (_parms._linear_constraints != null) {
       checkInitLinearConstraints();
@@ -1423,14 +1423,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   void checkAssignLinearConstraints() {
     String[] coefNames = _dinfo.coefNames();
-    int[] betaLessThanArr = null;
+    int[] betaEqualLessThanArr = null;
     if (_parms._beta_constraints != null)
-      betaLessThanArr = extractBetaConstraints(_state, coefNames);
+      betaEqualLessThanArr = extractBetaConstraints(_state, coefNames);
     // extract constraints from linear_constraints into equality of lessthanequalto constraints
     extractLinearConstraints(_state, _parms._linear_constraints, _dinfo);
     // make sure constraints have full rank.  If not, generate messages stating what constraints are redundant, error out
     List<String> constraintNames = new ArrayList<>();
-    double[][] initConstraintMatrix = formConstraintMatrix(_state, constraintNames, betaLessThanArr);
+    double[][] initConstraintMatrix = formConstraintMatrix(_state, constraintNames, betaEqualLessThanArr);
     String[] constraintCoefficientNames = constraintNames.toArray(new String[0]);
     if (countNumConst(_state) > coefNames.length)
       warn("number of constraints", " exceeds the number of coefficients.  The system is" +
