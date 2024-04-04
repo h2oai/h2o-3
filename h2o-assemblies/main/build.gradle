@@ -83,6 +83,9 @@ dependencies {
             because 'Fixes CVE-2023-34453'
             because 'Fixes CVE-2023-43642'
         }
+        api('org.apache.commons:commons-configuration2:2.10.1') {
+            because 'Fixes CVE-2024-29131'
+        }
     }
 }
 
