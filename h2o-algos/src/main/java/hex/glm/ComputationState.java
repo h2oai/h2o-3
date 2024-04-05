@@ -113,8 +113,10 @@ public final class ComputationState {
     }
     _modelBetaInfo = bi;
   }
-  
-  // set _noReg to true if l1 and l2 regularization are both zero.
+
+  /***
+   * set _noReg to true if lambda=0.  This also implies both l1 and l2 regularization are zero.
+   */
   public void setNoReg() {
     _noReg = (_lambda == 0);
   }

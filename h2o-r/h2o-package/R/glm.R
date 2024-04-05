@@ -159,13 +159,13 @@
 #' @param linear_constraints Linear constraints: used to specify linear constraints involving more than one coefficients in standard form.
 #'        It is only supported for solver IRLSM.  It contains four columns: names (strings for coefficient names or
 #'        constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers (0 for first linear
-#'        constraint, 1 for second linear constraint, ...
+#'        constraint, 1 for second linear constraint, ...)
 #' @param init_optimal_glm \code{Logical}. If true, will initialize coefficients with values derived from GLM runs without linear
-#'        constraints.  Only available for linear constraints.  Default to false. Defaults to FALSE.
+#'        constraints.  Only available for linear constraints. Defaults to FALSE.
 #' @param separate_linear_beta \code{Logical}. If true, will keep the beta constraints and linear constraints separate.  After new
-#'        coefficients arefound, first beta constraints will be applied followed by the application of linear
+#'        coefficients are found, first beta constraints will be applied followed by the application of linear
 #'        constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
-#'        false, will combine the beta and linear constraints.  Default to false. Defaults to FALSE.
+#'        false, will combine the beta and linear constraints. Defaults to FALSE.
 #' @param constraint_eta0 For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha). Defaults to 0.1258925.
 #' @param constraint_tau For constrained GLM only.  It affects the setting of c_k+1=tau*c_k. Defaults to 10.
 #' @param constraint_alpha For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha). Defaults to 0.1.

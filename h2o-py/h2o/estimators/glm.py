@@ -429,17 +429,17 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param linear_constraints: Linear constraints: used to specify linear constraints involving more than one
                coefficients in standard form.  It is only supported for solver IRLSM.  It contains four columns: names
                (strings for coefficient names or constant), values, types ( strings of 'Equal' or 'LessThanEqual'),
-               constraint_numbers (0 for first linear constraint, 1 for second linear constraint, ...
+               constraint_numbers (0 for first linear constraint, 1 for second linear constraint, ...)
                Defaults to ``None``.
         :type linear_constraints: Union[None, str, H2OFrame], optional
         :param init_optimal_glm: If true, will initialize coefficients with values derived from GLM runs without linear
-               constraints.  Only available for linear constraints.  Default to false.
+               constraints.  Only available for linear constraints.
                Defaults to ``False``.
         :type init_optimal_glm: bool
         :param separate_linear_beta: If true, will keep the beta constraints and linear constraints separate.  After new
-               coefficients arefound, first beta constraints will be applied followed by the application of linear
+               coefficients are found, first beta constraints will be applied followed by the application of linear
                constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
-               false, will combine the beta and linear constraints.  Default to false.
+               false, will combine the beta and linear constraints.
                Defaults to ``False``.
         :type separate_linear_beta: bool
         :param constraint_eta0: For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha).
@@ -2456,7 +2456,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Linear constraints: used to specify linear constraints involving more than one coefficients in standard form.
         It is only supported for solver IRLSM.  It contains four columns: names (strings for coefficient names or
         constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers (0 for first linear
-        constraint, 1 for second linear constraint, ...
+        constraint, 1 for second linear constraint, ...)
 
         Type: ``Union[None, str, H2OFrame]``.
         """
@@ -2470,7 +2470,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def init_optimal_glm(self):
         """
         If true, will initialize coefficients with values derived from GLM runs without linear constraints.  Only
-        available for linear constraints.  Default to false.
+        available for linear constraints.
 
         Type: ``bool``, defaults to ``False``.
         """
@@ -2484,10 +2484,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def separate_linear_beta(self):
         """
-        If true, will keep the beta constraints and linear constraints separate.  After new coefficients arefound, first
-        beta constraints will be applied followed by the application of linear constraints.  Note that the beta
+        If true, will keep the beta constraints and linear constraints separate.  After new coefficients are found,
+        first beta constraints will be applied followed by the application of linear constraints.  Note that the beta
         constraints in this case will not be part of the objective function.  If false, will combine the beta and linear
-        constraints.  Default to false.
+        constraints.
 
         Type: ``bool``, defaults to ``False``.
         """

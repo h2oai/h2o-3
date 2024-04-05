@@ -280,7 +280,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Linear constraints: used to specify linear constraints involving more than one coefficients in " +
             "standard form.  It is only supported for solver IRLSM.  It contains four columns: names (strings for " +
             "coefficient names or constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers" +
-            " (0 for first linear constraint, 1 for second linear constraint, ...", 
+            " (0 for first linear constraint, 1 for second linear constraint, ...)", 
             direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV3 linear_constraints;
 
@@ -361,14 +361,14 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
                                               // scoring_iteration_interval and score_every_iteration
     
     @API(help="If true, will initialize coefficients with values derived from GLM runs without linear constraints.  " +
-            "Only available for linear constraints.  Default to false.", level = API.Level.secondary, 
+            "Only available for linear constraints.", level = API.Level.secondary, 
             direction = API.Direction.INOUT, gridable = true)
     public boolean init_optimal_glm;
 
-    @API(help="If true, will keep the beta constraints and linear constraints separate.  After new coefficients are" +
+    @API(help="If true, will keep the beta constraints and linear constraints separate.  After new coefficients are " +
             "found, first beta constraints will be applied followed by the application of linear constraints.  Note " +
             "that the beta constraints in this case will not be part of the objective function.  If false, will" +
-            " combine the beta and linear constraints.  Default to false.", level = API.Level.secondary,
+            " combine the beta and linear constraints.", level = API.Level.secondary,
             direction = API.Direction.INOUT, gridable = true)
     public boolean separate_linear_beta;
 
