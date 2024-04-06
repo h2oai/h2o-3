@@ -84,5 +84,6 @@ task cleanBuild(type: Delete) {
 //
 // Define the dependencies
 //
+jar.dependsOn copySrcFiles
 clean.dependsOn cleanBuild, cleanUpTestResults
 build.dependsOn copyMainDist
