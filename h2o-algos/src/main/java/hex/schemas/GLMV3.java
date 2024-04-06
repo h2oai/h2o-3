@@ -97,13 +97,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "influence",
             "gainslift_bins",
             "linear_constraints",
-            "init_optimal_glm", 
-            "separate_linear_beta",
-            "constraint_eta0",
-            "constraint_tau",
-            "constraint_alpha",
-            "constraint_beta",
-            "constraint_c0",
+            "init_optimal_glm",     // default to true
+            "separate_linear_beta", // default to false
+            "constraint_eta0",      // default to 0.1258925
+            "constraint_tau",       // default to 10
+            "constraint_alpha",     // default to 0.1
+            "constraint_beta",      // default to 0.9
+            "constraint_c0",        // default to 10
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)
