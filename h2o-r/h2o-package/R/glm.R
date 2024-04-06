@@ -31,7 +31,7 @@
 #' @param random_columns random columns indices for HGLM.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param score_iteration_interval Perform scoring for every score_iteration_interval iterations Defaults to -1.
+#' @param score_iteration_interval Perform scoring for every score_iteration_interval iterations. Defaults to -1.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
@@ -46,7 +46,7 @@
 #' @param rand_family Random Component Family array.  One for each random component. Only support gaussian for now. Must be one of:
 #'        "[gaussian]".
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
-#' @param tweedie_link_power Tweedie link power Defaults to 1.
+#' @param tweedie_link_power Tweedie link power. Defaults to 1.
 #' @param theta Theta Defaults to 1e-10.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
@@ -56,27 +56,26 @@
 #'        represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
 #'        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
 #' @param lambda Regularization strength
-#' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+#' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min.
 #'        Defaults to FALSE.
-#' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided)
+#' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided).
 #'        Defaults to TRUE.
 #' @param nlambdas Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 #'        Defaults to -1.
-#' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to TRUE.
+#' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance. Defaults to TRUE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation, Skip or PlugValues. Must be one of: "MeanImputation",
 #'        "Skip", "PlugValues". Defaults to MeanImputation.
 #' @param plug_values Plug Values (a single row frame containing values that will be used to impute missing values of the
-#'        training/validation frame, use with conjunction missing_values_handling = PlugValues)
+#'        training/validation frame, use with conjunction missing_values_handling = PlugValues).
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver. Defaults to FALSE.
 #' @param dispersion_parameter_method Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only. Must be one
 #'        of: "deviance", "pearson", "ml". Defaults to pearson.
 #' @param init_dispersion_parameter Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion parameter.  If
-#'        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.Default to 1.0.
-#'        Defaults to 1.
+#'        fix_dispersion_parameter is set, this value will be used in the calculation of p-values. Defaults to 1.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove the dependent columns. Defaults to FALSE.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
-#' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
+#' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative. Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model coefficient
 #'        names and model coefficient dimensions are needed. Defaults to -1.
 #' @param objective_epsilon Converge if  objective value changes less than this. Default (of -1.0) indicates: If lambda_search is set to
@@ -95,8 +94,8 @@
 #' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If standardize is
 #'        true, the standardized coefficients should be used.  Otherwise, use the regular coefficients.
 #' @param calc_like \code{Logical}. if true, will return likelihood function value. Defaults to FALSE.
-#' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
-#'        to FALSE.
+#' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.
+#'        Defaults to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values.  If false, build the next model for next set
@@ -112,7 +111,7 @@
 #'        max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults to -1.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
-#' @param obj_reg Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs Defaults to -1.
+#' @param obj_reg Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs. Defaults to -1.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
@@ -159,7 +158,7 @@
 #' @param linear_constraints Linear constraints: used to specify linear constraints involving more than one coefficients in standard form.
 #'        It is only supported for solver IRLSM.  It contains four columns: names (strings for coefficient names or
 #'        constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers (0 for first linear
-#'        constraint, 1 for second linear constraint, ...)
+#'        constraint, 1 for second linear constraint, ...).
 #' @param init_optimal_glm \code{Logical}. If true, will initialize coefficients with values derived from GLM runs without linear
 #'        constraints.  Only available for linear constraints. Defaults to FALSE.
 #' @param separate_linear_beta \code{Logical}. If true, will keep the beta constraints and linear constraints separate.  After new

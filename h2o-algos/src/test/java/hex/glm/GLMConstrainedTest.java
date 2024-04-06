@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
 import static hex.glm.ComputationState.GramGrad.dropCols;
 import static hex.glm.ComputationState.GramGrad.findZeroCols;
 import static hex.glm.ComputationState.calGram;
@@ -298,11 +297,10 @@ public class GLMConstrainedTest extends TestUtil {
   }
   
   public ConstrainedGLMUtils.ConstraintsDerivatives genOneCDerivative(int[] indices, double[] vals, boolean active) {
-    ConstrainedGLMUtils.ConstraintsDerivatives oneD = new ConstrainedGLMUtils.ConstraintsDerivatives();
+    ConstrainedGLMUtils.ConstraintsDerivatives oneD = new ConstrainedGLMUtils.ConstraintsDerivatives(active);
     int numItem = indices.length;
     for (int index=0; index<numItem; index++)
       oneD._constraintsDerivative.put(indices[index], vals[index]);
-    oneD._active = active;
     return oneD;
   }
 
@@ -809,7 +807,7 @@ public class GLMConstrainedTest extends TestUtil {
       params._lambda = new double[]{0};
       GLMModel glm = new GLM(params).trainModel().get();
       Scope.track_generic(glm);
-      List<String> coeffNames = Stream.of(glm._output._coefficient_names).collect(Collectors.toList()); ;
+      List<String> coefNames = Stream.of(glm._output._coefficient_names).collect(Collectors.toList()); ;
   
       params._max_iterations = 1;
       GLMModel glm2 = new GLM(params).trainModel().get();
@@ -817,7 +815,7 @@ public class GLMConstrainedTest extends TestUtil {
       String[] coeffNames2 = glm2.coefficients().keySet().toArray(new String[0]);
       
       for (String oneName : coeffNames2)
-        assertTrue(coeffNames.contains(oneName));
+        assertTrue(coefNames.contains(oneName));
     } finally {
       Scope.exit();
     }

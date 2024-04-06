@@ -106,7 +106,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "constraint_c0",
     };
 
-    @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
+    @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)
     public long seed;
 
     // Input fields
@@ -131,7 +131,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "Defaults to 0.5.", level = Level.expert, gridable = true)
     public double dispersion_learning_rate;
 
-    @API(help = "Tweedie link power", level = Level.critical, gridable = true)
+    @API(help = "Tweedie link power.", level = Level.critical, gridable = true)
     public double tweedie_link_power;
 
     @API(help = "Theta", level = Level.critical, gridable = true)
@@ -152,11 +152,11 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Regularization strength", required = false, level = Level.critical, gridable = true)
     public double[] lambda;
 
-    @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min",
+    @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min.",
             level = Level.critical)
     public boolean lambda_search;
 
-    @API(help="Stop early when there is no more relative improvement on train or validation (if provided)")
+    @API(help="Stop early when there is no more relative improvement on train or validation (if provided).")
     public boolean early_stopping;
 
     @API(help = "Number of lambdas to be used in a search." +
@@ -165,10 +165,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     " are needed for ridge regression) otherwise it is set to 100.", level = Level.critical)
     public int nlambdas;
     
-    @API(help = "Perform scoring for every score_iteration_interval iterations", level = Level.secondary)
+    @API(help = "Perform scoring for every score_iteration_interval iterations.", level = Level.secondary)
     public int score_iteration_interval;
 
-    @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical,
+    @API(help = "Standardize numeric columns to have zero mean and unit variance.", level = Level.critical,
             gridable = true)
     public boolean standardize;
 
@@ -187,11 +187,11 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public GLMParameters.Influence influence;
 
     @API(help = "Plug Values (a single row frame containing values that will be used to impute missing values of the" +
-            " training/validation frame, use with conjunction missing_values_handling = PlugValues)", 
+            " training/validation frame, use with conjunction missing_values_handling = PlugValues).", 
             direction = API.Direction.INPUT)
     public FrameKeyV3 plug_values;
     
-    @API(help = "Restrict coefficients (not intercept) to be non-negative")
+    @API(help = "Restrict coefficients (not intercept) to be non-negative.")
     public boolean non_negative;
 
     @API(help = "Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model " +
@@ -215,7 +215,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             level = API.Level.expert)
     public double gradient_epsilon;
 
-    @API(help="Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs")
+    @API(help="Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs.")
     public double obj_reg;
 
     @API(help = "Link function.", level = Level.secondary, values = {"family_default", "identity", "logit", "log",
@@ -257,11 +257,11 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public boolean fix_dispersion_parameter;
     
     @API(help="Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion " +
-            "parameter.  If fix_dispersion_parameter is set, this value will be used in the calculation of p-values." +
-            "Default to 1.0.", level=Level.expert, gridable=true)
+            "parameter.  If fix_dispersion_parameter is set, this value will be used in the calculation of p-values.",
+            level=Level.expert, gridable=true)
     public double init_dispersion_parameter;
 
-    @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned", level = Level.critical)
+    @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.", level = Level.critical)
     public boolean HGLM;
     
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and" +
@@ -280,7 +280,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Linear constraints: used to specify linear constraints involving more than one coefficients in " +
             "standard form.  It is only supported for solver IRLSM.  It contains four columns: names (strings for " +
             "coefficient names or constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers" +
-            " (0 for first linear constraint, 1 for second linear constraint, ...)", 
+            " (0 for first linear constraint, 1 for second linear constraint, ...).", 
             direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV3 linear_constraints;
 
@@ -327,7 +327,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     /** For classification models, the maximum size (in terms of classes) of
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.  */
-    @API(help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs",
+    @API(help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs.",
             level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_confusion_matrix_size;
 

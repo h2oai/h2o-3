@@ -1712,10 +1712,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Cholesky chol = ((_state._iter == 0) ? gram.qrCholesky(ignoredCols, GamUtils.copy2DArray(gram._gram), _parms._standardize) : gram.cholesky(null, gram._gram));
       if (!chol.isSPD()) throw new NonSPDMatrixException();
       if (!ignoredCols.isEmpty()) {
-        int[] collinear_cols = ignoredCols.stream().mapToInt(x -> x).toArray();
-        String[] ignoredConstraints = collinearInConstraints(ArrayUtils.select(_dinfo.coefNames(), collinear_cols),
+        int[] collinearCols = ignoredCols.stream().mapToInt(x -> x).toArray();
+        String[] ignoredConstraints = collinearInConstraints(ArrayUtils.select(_dinfo.coefNames(), collinearCols),
                 _state._csGLMState._constraintNames);
-        String collinear_col_names = Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinear_cols));
+        String collinearColNames = Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinearCols));
         if (ignoredConstraints != null && ignoredConstraints.length > 0)
           throw new IllegalArgumentException("Found constraints " + Arrays.toString(ignoredConstraints) + 
                   " included on collinear columns that are going to be removed.  Please remove any constraints " +
@@ -1723,16 +1723,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (!_parms._remove_collinear_columns)
           throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. Set " +
                   "remove_collinear_columns flag to true to remove collinear columns automatically. " +
-                  "Found collinear columns " + collinear_col_names);
-        _model.addWarning("Removed collinear columns "+collinear_col_names);
-        Log.warn("Removed collinear columns "+collinear_col_names);
-        _state.removeCols(collinear_cols);
-        gram._gram = GramGrad.dropCols(collinear_cols, gram._gram);
-        gram._grad = ArrayUtils.removeIds(gram._grad, collinear_cols);
-        xy = ArrayUtils.removeIds(xy, collinear_cols);
+                  "Found collinear columns " + collinearColNames);
+        _model.addWarning("Removed collinear columns "+collinearColNames);
+        Log.warn("Removed collinear columns "+collinearColNames);
+        _state.removeCols(collinearCols);
+        gram._gram = GramGrad.dropCols(collinearCols, gram._gram);
+        gram._grad = ArrayUtils.removeIds(gram._grad, collinearCols);
+        xy = ArrayUtils.removeIds(xy, collinearCols);
       }
       _chol = chol;
-      xy = xy.clone();
       chol.solve(xy);
       return xy;
     }
@@ -1743,27 +1742,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         ArrayList<Integer> ignoredCols = new ArrayList<>();
         Cholesky chol = ((_state._iter == 0) ? gram.qrCholesky(ignoredCols, _parms._standardize) : gram.cholesky(null));
         if (!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
-          int[] collinear_cols = new int[ignoredCols.size()];
-          for (int i = 0; i < collinear_cols.length; ++i)
-            collinear_cols[i] = ignoredCols.get(i);
+          int[] collinearCols = new int[ignoredCols.size()];
+          for (int i = 0; i < collinearCols.length; ++i)
+            collinearCols[i] = ignoredCols.get(i);
           throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. P-values can not be " +
                   "computed with collinear columns in the dataset. Set remove_collinear_columns flag to true to remove " +
                   "collinear columns automatically. Found collinear columns " +
-                  Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinear_cols)));
+                  Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinearCols)));
         }
         if (!chol.isSPD()) throw new NonSPDMatrixException();
         _chol = chol;
         if (!ignoredCols.isEmpty()) { // got some redundant cols
-          int[] collinear_cols = new int[ignoredCols.size()];
-          for (int i = 0; i < collinear_cols.length; ++i)
-            collinear_cols[i] = ignoredCols.get(i);
-          String[] collinear_col_names = ArrayUtils.select(_state.activeData().coefNames(), collinear_cols);
+          int[] collinearCols = new int[ignoredCols.size()];
+          for (int i = 0; i < collinearCols.length; ++i)
+            collinearCols[i] = ignoredCols.get(i);
+          String[] collinearColNames = ArrayUtils.select(_state.activeData().coefNames(), collinearCols);
           // need to drop the cols from everywhere
-          _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
-          Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
-          _state.removeCols(collinear_cols);
-          gram.dropCols(collinear_cols);
-          xy = ArrayUtils.removeIds(xy, collinear_cols);
+          _model.addWarning("Removed collinear columns " + Arrays.toString(collinearColNames));
+          Log.warn("Removed collinear columns " + Arrays.toString(collinearColNames));
+          _state.removeCols(collinearCols);
+          gram.dropCols(collinearCols);
+          xy = ArrayUtils.removeIds(xy, collinearCols);
         }
         xy = xy.clone();
         chol.solve(xy);
@@ -2353,7 +2352,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void fitIRLSMCS() {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
-      List<String> coeffNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
+      List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
       // will be null if constraints do not exist
       LinearConstraints[] equalityConstraints;
       LinearConstraints[] lessThanEqualToConstraints;
@@ -2371,7 +2370,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double[] lambdaLessThan = hasLessConstraints ? new double[lessThanEqualToConstraints.length] : null;
       Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
       Random randObj = new Random(startSeed);
-      updateConstraintValues(betaCnd, coeffNames, equalityConstraints, lessThanEqualToConstraints);
+      updateConstraintValues(betaCnd, coefNames, equalityConstraints, lessThanEqualToConstraints);
       if (hasEqualityConstraints) // set lambda values
         genInitialLambda(randObj, equalityConstraints, lambdaEqual);
       if (hasLessConstraints)
@@ -2379,7 +2378,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       ExactLineSearch ls = null;
       int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
       // contribution to gradient from transpose(lambda)*constraint vector without lambda values, stays constant
-      _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coeffNames);
+      _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coefNames);
 
       GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
               _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms, 
@@ -2411,20 +2410,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 }
             }
             // throw an error when the order of magnitude
-            predictorSizeChange = !coeffNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
             if (predictorSizeChange) {  // reset if predictors changed
-              coeffNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
               _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
               ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
                       _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
                       _state.activeData(), 0, _state.activeBC(), _betaInfo);
-              tempBeta = new double[coeffNames.size()];
+              tempBeta = new double[coefNames.size()];
             }
             // solve for GLM coefficients
             betaCnd = constraintGLM_solve(gram);  // beta_k+1 = beta_k+dk where dk = beta_k+1-beta_k   
-            predictorSizeChange = !coeffNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
             if (predictorSizeChange) {  // reset if predictors changed
-              coeffNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
               _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
               ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
                       _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
@@ -2433,9 +2432,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
             // add line search for GLM coefficients
             if (ls == null)
-              ls = new ExactLineSearch(betaCnd, _state, coeffNames);
+              ls = new ExactLineSearch(betaCnd, _state, coefNames);
             else
-              ls.reset(betaCnd, _state, coeffNames);
+              ls.reset(betaCnd, _state, coefNames);
 
             if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)) {
               gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
@@ -2446,7 +2445,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 bc.applyAllBounds(_state.beta());
               ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
                       ginfo, _state.beta());
-              Log.info(LogMsg("Ls failed " + ls));
+              Log.info(LogMsg("Line search failed " + ls));
               return;
             }
 
@@ -3918,17 +3917,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
         if (_parms._HGLM) { // add w, augZ, etaOld and random columns to response for easy access inside _dinfo
           addWdataZiEtaOld2Response();
+        } else { // only need these for non HGLM
+          _ginfoStart = GLMUtils.copyGInfo(_state.ginfo());
+          _betaDiffStart = _state.getBetaDiff();
         }
 
         double oldDevTrain = nullDevTrain;
         double oldDevTest = nullDevValid;
         double[] devHistoryTrain = new double[5];
         double[] devHistoryTest = new double[5];
-
-        if (!_parms._HGLM) {  // only need these for non HGLM
-          _ginfoStart = GLMUtils.copyGInfo(_state.ginfo());
-          _betaDiffStart = _state.getBetaDiff();
-        }
 
         if (_parms.hasCheckpoint()) { // restore _state parameters
           _state.copyCheckModel2State(_model, _gamColIndices);
@@ -4013,7 +4010,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (timeout()) {
             Log.info("Stopping GLM training because of timeout");
           } else if (_earlyStop) {
-            Log.info("Stopping GLM training due to hitting earlyStopping criteria.");
+            Log.info("Stopping GLM training due to hitting early stopping criteria.");
           } else {
             throw new Job.JobCancelledException();
           }
@@ -4963,10 +4960,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     public void setNonNegative(Frame otherConst) {
       List<String> constraintNames = extractVec2List(otherConst); // maximum size = number of predictors, an integer
-      List<String> coeffNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
-      int numCoef = coeffNames.size();
+      List<String> coefNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
+      int numCoef = coefNames.size();
       for (int index=0; index<numCoef; index++) { // only changes beta constraints if not been specified before
-        if (!constraintNames.contains(coeffNames.get(index))) {  
+        if (!constraintNames.contains(coefNames.get(index))) {  
           _betaLB[index] = 0;
           _betaUB[index] = Double.POSITIVE_INFINITY;
         }

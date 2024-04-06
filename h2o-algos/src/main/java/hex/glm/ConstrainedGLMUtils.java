@@ -39,8 +39,9 @@ public class ConstrainedGLMUtils {
     public IcedHashMap<Integer, Double> _constraintsDerivative;
     public boolean _active;
     
-    public ConstraintsDerivatives() {
+    public ConstraintsDerivatives(boolean active) {
       _constraintsDerivative = new IcedHashMap<>();
+      _active = active;
     }
   }
   
@@ -320,8 +321,8 @@ public class ConstrainedGLMUtils {
     return rowIndex;
   }
   
-  public static void printConstraintSummary(GLMModel model, ComputationState state, String[] coeffNames) {
-    LinearConstraintConditions cCond = printConstraintSummary(state, coeffNames);
+  public static void printConstraintSummary(GLMModel model, ComputationState state, String[] coefNames) {
+    LinearConstraintConditions cCond = printConstraintSummary(state, coefNames);
     model._output._linear_constraint_states = cCond._constraintDescriptions;
     model._output._all_constraints_satisfied = cCond._allConstraintsSatisfied;
     makeConstraintSummaryTable(model, cCond);
@@ -343,10 +344,10 @@ public class ConstrainedGLMUtils {
     model._output._linear_constraints_table = cTable;
   }
   
-  public static LinearConstraintConditions printConstraintSummary(ComputationState state, String[] coeffNames) {
+  public static LinearConstraintConditions printConstraintSummary(ComputationState state, String[] coefNames) {
     double[] beta = state.beta();
     boolean constraintsSatisfied = true;
-    List<String> coefNameList = Arrays.stream(coeffNames).collect(Collectors.toList());
+    List<String> coefNameList = Arrays.stream(coefNames).collect(Collectors.toList());
     List<String> constraintConditions = new ArrayList<>();
     List<String> cSatisfied = new ArrayList<>();
     List<Double> cValues = new ArrayList<>();
@@ -385,7 +386,7 @@ public class ConstrainedGLMUtils {
    * constraint values are changed to accommodate the standardized coefficients.
    */
   public static boolean evaluateConstraint(ComputationState state, LinearConstraints[] constraints, boolean equalityConstr, 
-                                        double[] beta, List<String> coeffNames, String startStr, 
+                                        double[] beta, List<String> coefNames, String startStr, 
                                            List<String> constraintCond, List<String> cSatisfied, List<Double> cValues, 
                                            List<String> cConditions, List<String> constraintsStrings) {
     int constLen = constraints.length;
@@ -395,7 +396,7 @@ public class ConstrainedGLMUtils {
     for (int index=0; index<constLen; index++) {
       oneC = constraints[index];
       constrainStr = constraint2Str(oneC, equalityConstr, startStr, state);
-      evalOneConstraint(oneC, beta, coeffNames);
+      evalOneConstraint(oneC, beta, coefNames);
       constraintsStrings.add(constrainStr + " = " + oneC._constraintsVal);
       if (equalityConstr) {
         if (Math.abs(oneC._constraintsVal) <= EPS) { // constraint satisfied
@@ -614,14 +615,14 @@ public class ConstrainedGLMUtils {
    * Note that the beta should be the normalized beta if standardize = true and the coefficients to the coefficients
    * are set correctly for the standardized coefficients.
    */
-  public static void evalOneConstraint(LinearConstraints constraint, double[] beta, List<String> coeffNames) {
+  public static void evalOneConstraint(LinearConstraints constraint, double[] beta, List<String> coefNames) {
     double sumV = 0.0;
     Map<String, Double> constraints = constraint._constraints;
-    for (String coeff : constraints.keySet()) {
-      if ("constant".equals(coeff))
-        sumV += constraints.get(coeff);
+    for (String coef : constraints.keySet()) {
+      if ("constant".equals(coef))
+        sumV += constraints.get(coef);
       else
-        sumV += constraints.get(coeff)*beta[coeffNames.indexOf(coeff)];
+        sumV += constraints.get(coef)*beta[coefNames.indexOf(coef)];
     }
     constraint._constraintsVal = sumV;
   }
@@ -794,18 +795,18 @@ public class ConstrainedGLMUtils {
     return gradientInfo;
   }
   
-  public static void updateConstraintValues(double[] betaCnd, List<String> coeffNames, 
+  public static void updateConstraintValues(double[] betaCnd, List<String> coefNames, 
                                             LinearConstraints[] equalityConstraints, 
                                             LinearConstraints[] lessThanEqualToConstraints) {
     if (equalityConstraints != null) { // initialize lambda for equality constraints
       Arrays.stream(equalityConstraints).forEach(constraint -> {
-        evalOneConstraint(constraint, betaCnd, coeffNames);
+        evalOneConstraint(constraint, betaCnd, coefNames);
         constraint._active = (Math.abs(constraint._constraintsVal) > EPS2);
       });
     }
     if (lessThanEqualToConstraints != null)
       Arrays.stream(lessThanEqualToConstraints).forEach(constraint -> {
-        evalOneConstraint(constraint, betaCnd, coeffNames);
+        evalOneConstraint(constraint, betaCnd, coefNames);
         constraint._active = constraint._constraintsVal > 0;
       });
   }

@@ -144,7 +144,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param export_checkpoints_dir: Automatically export generated models to this directory.
                Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
-        :param seed: Seed for pseudo random number generator (if applicable)
+        :param seed: Seed for pseudo random number generator (if applicable).
                Defaults to ``-1``.
         :type seed: int
         :param keep_cross_validation_models: Whether to keep the cross-validation models.
@@ -178,7 +178,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param score_each_iteration: Whether to score during each iteration of model training.
                Defaults to ``False``.
         :type score_each_iteration: bool
-        :param score_iteration_interval: Perform scoring for every score_iteration_interval iterations
+        :param score_iteration_interval: Perform scoring for every score_iteration_interval iterations.
                Defaults to ``-1``.
         :type score_iteration_interval: int
         :param offset_column: Offset column. This will be added to the combination of columns before applying the link
@@ -206,7 +206,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param tweedie_variance_power: Tweedie variance power
                Defaults to ``0.0``.
         :type tweedie_variance_power: float
-        :param tweedie_link_power: Tweedie link power
+        :param tweedie_link_power: Tweedie link power.
                Defaults to ``1.0``.
         :type tweedie_link_power: float
         :param theta: Theta
@@ -227,11 +227,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param lambda_: Regularization strength
                Defaults to ``None``.
         :type lambda_: List[float], optional
-        :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+        :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min.
                Defaults to ``False``.
         :type lambda_search: bool
         :param early_stopping: Stop early when there is no more relative improvement on train or validation (if
-               provided)
+               provided).
                Defaults to ``True``.
         :type early_stopping: bool
         :param nlambdas: Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda
@@ -239,14 +239,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                otherwise it is set to 100.
                Defaults to ``-1``.
         :type nlambdas: int
-        :param standardize: Standardize numeric columns to have zero mean and unit variance
+        :param standardize: Standardize numeric columns to have zero mean and unit variance.
                Defaults to ``True``.
         :type standardize: bool
         :param missing_values_handling: Handling of missing values. Either MeanImputation, Skip or PlugValues.
                Defaults to ``"mean_imputation"``.
         :type missing_values_handling: Literal["mean_imputation", "skip", "plug_values"]
         :param plug_values: Plug Values (a single row frame containing values that will be used to impute missing values
-               of the training/validation frame, use with conjunction missing_values_handling = PlugValues)
+               of the training/validation frame, use with conjunction missing_values_handling = PlugValues).
                Defaults to ``None``.
         :type plug_values: Union[None, str, H2OFrame], optional
         :param compute_p_values: Request p-values computation, p-values work only with IRLSM solver.
@@ -258,7 +258,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :type dispersion_parameter_method: Literal["deviance", "pearson", "ml"]
         :param init_dispersion_parameter: Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial
                value of dispersion parameter.  If fix_dispersion_parameter is set, this value will be used in the
-               calculation of p-values.Default to 1.0.
+               calculation of p-values.
                Defaults to ``1.0``.
         :type init_dispersion_parameter: float
         :param remove_collinear_columns: In case of linearly dependent columns, remove the dependent columns.
@@ -267,7 +267,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param intercept: Include constant term in the model
                Defaults to ``True``.
         :type intercept: bool
-        :param non_negative: Restrict coefficients (not intercept) to be non-negative
+        :param non_negative: Restrict coefficients (not intercept) to be non-negative.
                Defaults to ``False``.
         :type non_negative: bool
         :param max_iterations: Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the
@@ -304,7 +304,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param calc_like: if true, will return likelihood function value.
                Defaults to ``False``.
         :type calc_like: bool
-        :param HGLM: If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned
+        :param HGLM: If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.
                Defaults to ``False``.
         :type HGLM: bool
         :param prior: Prior probability for y==1. To be used only for logistic regression iff the data has been sampled
@@ -337,7 +337,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param interaction_pairs: A list of pairwise (first order) column interactions.
                Defaults to ``None``.
         :type interaction_pairs: List[tuple], optional
-        :param obj_reg: Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
+        :param obj_reg: Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs.
                Defaults to ``-1.0``.
         :type obj_reg: float
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
@@ -367,7 +367,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``5.0``.
         :type max_after_balance_size: float
         :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
-               the Logs
+               the Logs.
                Defaults to ``20``.
         :type max_confusion_matrix_size: int
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
@@ -429,7 +429,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param linear_constraints: Linear constraints: used to specify linear constraints involving more than one
                coefficients in standard form.  It is only supported for solver IRLSM.  It contains four columns: names
                (strings for coefficient names or constant), values, types ( strings of 'Equal' or 'LessThanEqual'),
-               constraint_numbers (0 for first linear constraint, 1 for second linear constraint, ...)
+               constraint_numbers (0 for first linear constraint, 1 for second linear constraint, ...).
                Defaults to ``None``.
         :type linear_constraints: Union[None, str, H2OFrame], optional
         :param init_optimal_glm: If true, will initialize coefficients with values derived from GLM runs without linear
@@ -682,7 +682,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def seed(self):
         """
-        Seed for pseudo random number generator (if applicable)
+        Seed for pseudo random number generator (if applicable).
 
         Type: ``int``, defaults to ``-1``.
 
@@ -974,7 +974,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def score_iteration_interval(self):
         """
-        Perform scoring for every score_iteration_interval iterations
+        Perform scoring for every score_iteration_interval iterations.
 
         Type: ``int``, defaults to ``-1``.
         """
@@ -1126,7 +1126,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def tweedie_link_power(self):
         """
-        Tweedie link power
+        Tweedie link power.
 
         Type: ``float``, defaults to ``1.0``.
 
@@ -1277,7 +1277,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def lambda_search(self):
         """
-        Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+        Use lambda search starting at lambda max, given lambda is then interpreted as lambda min.
 
         Type: ``bool``, defaults to ``False``.
 
@@ -1305,7 +1305,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def early_stopping(self):
         """
-        Stop early when there is no more relative improvement on train or validation (if provided)
+        Stop early when there is no more relative improvement on train or validation (if provided).
 
         Type: ``bool``, defaults to ``True``.
 
@@ -1364,7 +1364,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def standardize(self):
         """
-        Standardize numeric columns to have zero mean and unit variance
+        Standardize numeric columns to have zero mean and unit variance.
 
         Type: ``bool``, defaults to ``True``.
 
@@ -1422,7 +1422,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def plug_values(self):
         """
         Plug Values (a single row frame containing values that will be used to impute missing values of the
-        training/validation frame, use with conjunction missing_values_handling = PlugValues)
+        training/validation frame, use with conjunction missing_values_handling = PlugValues).
 
         Type: ``Union[None, str, H2OFrame]``.
 
@@ -1506,7 +1506,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def init_dispersion_parameter(self):
         """
         Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion parameter.  If
-        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.Default to 1.0.
+        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.
 
         Type: ``float``, defaults to ``1.0``.
         """
@@ -1584,7 +1584,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def non_negative(self):
         """
-        Restrict coefficients (not intercept) to be non-negative
+        Restrict coefficients (not intercept) to be non-negative.
 
         Type: ``bool``, defaults to ``False``.
 
@@ -1810,7 +1810,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def HGLM(self):
         """
-        If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned
+        If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.
 
         Type: ``bool``, defaults to ``False``.
         """
@@ -2041,7 +2041,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def obj_reg(self):
         """
-        Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
+        Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs.
 
         Type: ``float``, defaults to ``-1.0``.
 
@@ -2207,7 +2207,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_confusion_matrix_size(self):
         """
-        [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
+        [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs.
 
         Type: ``int``, defaults to ``20``.
         """
@@ -2456,7 +2456,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Linear constraints: used to specify linear constraints involving more than one coefficients in standard form.
         It is only supported for solver IRLSM.  It contains four columns: names (strings for coefficient names or
         constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers (0 for first linear
-        constraint, 1 for second linear constraint, ...)
+        constraint, 1 for second linear constraint, ...).
 
         Type: ``Union[None, str, H2OFrame]``.
         """

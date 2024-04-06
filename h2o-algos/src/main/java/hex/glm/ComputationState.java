@@ -934,13 +934,13 @@ public final class ComputationState {
    *  This methold will calculate the first derivative of h(beta).
    *  
    */
-  public static ConstrainedGLMUtils.ConstraintsDerivatives[] calDerivatives(LinearConstraints[] constraints, List<String> coeffNames) {
+  public static ConstrainedGLMUtils.ConstraintsDerivatives[] calDerivatives(LinearConstraints[] constraints, List<String> coefNames) {
     int numConstraints = constraints.length;
     ConstrainedGLMUtils.ConstraintsDerivatives[] constDeriv = new ConstrainedGLMUtils.ConstraintsDerivatives[numConstraints];
     LinearConstraints oneConstraint;
     for (int index=0; index<numConstraints; index++) {
       oneConstraint = constraints[index];
-      constDeriv[index] = genOneDerivative(oneConstraint, coeffNames);
+      constDeriv[index] = genOneDerivative(oneConstraint, coefNames);
     }
     return constDeriv;
   }
@@ -951,8 +951,7 @@ public final class ComputationState {
     * needs to be called again.
    */
   public static ConstrainedGLMUtils.ConstraintsDerivatives genOneDerivative(LinearConstraints oneConstraints, List<String> coeffNames) {
-    ConstrainedGLMUtils.ConstraintsDerivatives constraintDerivative = new ConstrainedGLMUtils.ConstraintsDerivatives();
-    constraintDerivative._active = oneConstraints._active;
+    ConstrainedGLMUtils.ConstraintsDerivatives constraintDerivative = new ConstrainedGLMUtils.ConstraintsDerivatives(oneConstraints._active);
     IcedHashMap<String, Double> coeffNameValues = oneConstraints._constraints;
     int index;
     for (String coefName: coeffNameValues.keySet()) {
