@@ -4003,7 +4003,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         // if beta constraint is enabled, check and make sure coefficients are within bounds
-        if (_betaConstraintsOn && betaConstraintsCheckEnabled() && (!_linearConstraintsOn))
+        if (_betaConstraintsOn && betaConstraintsCheckEnabled() && (!_linearConstraintsOn || _parms._separate_linear_beta))
           checkCoeffsBounds();
         
         if (stop_requested() || _earlyStop) {
@@ -4146,11 +4146,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (bc._betaLB == null || bc._betaUB == null || coeffs == null)
         return;
       int coeffsLen = bc._betaLB.length;
+      StringBuffer errorMessage = new StringBuffer();
       for (int index=0; index < coeffsLen; index++) {
         if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
-          throw new H2OFailException("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
-                  +bc._betaLB[index]+", upper: "+bc._betaUB[index]);
+          errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
+                  +bc._betaLB[index]+", upper: "+bc._betaUB[index]+"\n");
       }
+      if (errorMessage.length() > 0)
+        throw new H2OFailException("\n"+errorMessage.toString());
     }
 
     /***
