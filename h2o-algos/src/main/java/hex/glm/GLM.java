@@ -1705,6 +1705,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
 
+    /***
+     * Use cholesky decomposition to solve for GLM Coefficients from the augmented Langrangian objective.  In addition,
+     * it will check for collinear columns and removed them when found.
+     */
     private double[] constraintGLM_solve(GramGrad  gram) {
       if (!_parms._intercept) throw H2O.unimpl();
       ArrayList<Integer> ignoredCols = new ArrayList<>();
@@ -2345,39 +2349,40 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     
     /***
-     * This method fits the constraint GLM for IRLSM.  Please refer to doc: ???
-     * 
-     *
+     * This method fits the constraint GLM for IRLSM.  We implemented the algorithm depicted in the document (H2O 
+     * Constrained GLM Implementation.pdf) attached to this issue: https://github.com/h2oai/h2o-3/issues/6722.  We will
+     * hereby use the word the doc to refere to this document.  In particular, we following the algorithm described in
+     * Section VII (and table titled Algorithm 19.1) of the doc.
      */
     private void fitIRLSMCS() {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
       List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
-      // will be null if constraints do not exist
       LinearConstraints[] equalityConstraints;
       LinearConstraints[] lessThanEqualToConstraints;
       final BetaConstraint bc = _state.activeBC();
       if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
         equalityConstraints = _state._equalityConstraintsLinear;
         lessThanEqualToConstraints = _state._lessThanEqualToConstraintsLinear;
-      } else {
+      } else {  // combine beta and linear constraints together
         equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
-        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta, _state._lessThanEqualToConstraintsLinear);
+        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta, 
+                _state._lessThanEqualToConstraintsLinear);
       }
       boolean hasEqualityConstraints = equalityConstraints != null;
       boolean hasLessConstraints = lessThanEqualToConstraints != null;
-      double[] lambdaEqual = hasEqualityConstraints ? new double[equalityConstraints.length] : null; // depend on constraints not predictors null;
+      double[] lambdaEqual = hasEqualityConstraints ? new double[equalityConstraints.length] : null;
       double[] lambdaLessThan = hasLessConstraints ? new double[lessThanEqualToConstraints.length] : null;
       Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
       Random randObj = new Random(startSeed);
       updateConstraintValues(betaCnd, coefNames, equalityConstraints, lessThanEqualToConstraints);
-      if (hasEqualityConstraints) // set lambda values
+      if (hasEqualityConstraints) // set lambda values for constraints
         genInitialLambda(randObj, equalityConstraints, lambdaEqual);
       if (hasLessConstraints)
         genInitialLambda(randObj, lessThanEqualToConstraints, lambdaLessThan);
       ExactLineSearch ls = null;
       int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
-      // contribution to gradient from transpose(lambda)*constraint vector without lambda values, stays constant
+      // contribution to gradient and hessian from constraints
       _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coefNames);
 
       GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
@@ -2397,7 +2402,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int origIter = iterCnt+1;
       try {
         while (true) {
-          do {
+          do { // implement Algorithm 11.8 of the doc to find coefficients with epsilon k as the precision
             iterCnt++;
             long t1 = System.currentTimeMillis();
             ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
@@ -2409,7 +2414,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                           " singular.  Please re-run with init_optimal_glm set to false.");
                 }
             }
-            // throw an error when the order of magnitude
             predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
             if (predictorSizeChange) {  // reset if predictors changed
               coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
@@ -2430,7 +2434,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       _state.activeData(), 0, _state.activeBC(), _betaInfo);
               tempBeta = new double[betaCnd.length];
             }
-            // add line search for GLM coefficients
+            // add exact line search for GLM coefficients.  Refer to the doc, Algorithm 11.5
             if (ls == null)
               ls = new ExactLineSearch(betaCnd, _state, coefNames);
             else
@@ -2472,6 +2476,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+    /***
+     * This method will first check if enough progress has been made with progress method.
+     * If no more progress is made, we will check it the constraint stopping conditions are met. 
+     * The model building process will stop if no more progress is made regardless of whether the constraint stopping
+     * conditions are met or not.
+     */
     public boolean checkIterationDone(double[] betaCnd, GLMGradientInfo gradientInfo, int iterCnt) {
       // check for stopping conditions
       boolean done = !progress(betaCnd, gradientInfo); // no good change in coeff, time-out or max_iteration reached
@@ -3299,7 +3309,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               else if (_parms._linear_constraints == null)
                 fitIRLSM(solver);
               else
-                fitIRLSMCS(); // constrained GLM IRLSM, first line search result is not ignored
+                fitIRLSMCS(); // constrained GLM IRLSM
             }
             break;
           case GRADIENT_DESCENT_LH:
@@ -3784,10 +3794,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         if (!_parms._HGLM) {  // only perform this when HGLM is not used.
-          if (!_checkPointFirstIter) {
+          if (!_checkPointFirstIter)
             _state.setLambda(lambda);
-            _state.setNoReg();
-          }
         }
 
         checkMemoryFootPrint(_state.activeData());

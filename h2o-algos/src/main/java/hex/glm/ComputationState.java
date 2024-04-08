@@ -114,20 +114,22 @@ public final class ComputationState {
     _modelBetaInfo = bi;
   }
 
-  /***
-   * set _noReg to true if lambda=0.  This also implies both l1 and l2 regularization are zero.
+  /**
+   * This method calculates 
+   * 1. the contribution of constraints to the gradient;
+   * 2. the contribution of ||h(beta)||^2 to the gradient and the hessian.
+   * 
+   * Note that this calculation is only needed once since the contributions to the derivative and hessian depends only
+   * on the value of linear constraint coefficients and not the actual glm model parameters.  Refer to the doc, 
+   * section VI.
    */
-  public void setNoReg() {
-    _noReg = (_lambda == 0);
-  }
-  
   public void initConstraintDerivatives(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints,
                                         List<String> coeffNames) {
     boolean hasEqualityConstraints = equalityConstraints != null;
     boolean hasLessConstraints = lessThanEqualToConstraints != null;
     _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
     _derivativeLess = hasLessConstraints ? calDerivatives(lessThanEqualToConstraints, coeffNames) : null;
-    // contribution to hessian from ||h(beta)||^2 without C, stays constant once calculated, active status can change
+    // contribution to gradient and hessian from ||h(beta)||^2 without C, stays constant once calculated, active status can change
     _gramEqual = hasEqualityConstraints ? calGram(_derivativeEqual) : null;
     _gramLess = hasLessConstraints ? calGram(_derivativeLess) : null;
   }
@@ -931,7 +933,7 @@ public final class ComputationState {
 
   /***
    *
-   *  This methold will calculate the first derivative of h(beta).
+   *  This methold will calculate the first derivative of h(beta). Refer to the doc, section VI.I
    *  
    */
   public static ConstrainedGLMUtils.ConstraintsDerivatives[] calDerivatives(LinearConstraints[] constraints, List<String> coefNames) {
@@ -946,8 +948,8 @@ public final class ComputationState {
   }
 
    /***
-   * Given a constraint, this method will calculate the derivative.  Note that this derivative does not depend on 
-    * the lambda applied to the constraint.  It only changes when the number of coefficients in beta changes and it
+   * Given a constraint, this method will calculate the first order derivative.  Note that this derivative does not 
+    * depend on the lambda applied to the constraint.  It only changes when the number of coefficients in beta changes and it
     * needs to be called again.
    */
   public static ConstrainedGLMUtils.ConstraintsDerivatives genOneDerivative(LinearConstraints oneConstraints, List<String> coeffNames) {
@@ -963,7 +965,7 @@ public final class ComputationState {
   }
 
   /***
-   * This method to calculate contribution of penalty to gram (d2H/dbidbj)
+   * This method to calculate contribution of penalty to gram (d2H/dbidbj), refer to the doc Section VI.II
    */
   public static ConstrainedGLMUtils.ConstraintsGram[] calGram(ConstrainedGLMUtils.ConstraintsDerivatives[] derivativeEqual) {
     return Arrays.stream(derivativeEqual).map(x -> constructGram(x)).toArray(ConstrainedGLMUtils.ConstraintsGram[]::new);
@@ -975,7 +977,7 @@ public final class ComputationState {
    * at the predictor index.  This predictor index will change when the number of predictors change.  It calculates
    * the second derivative regardless of the active status because an inactive constraint may become active in the 
    * future.  Note that here, only half of the 2nd derivatives are calculated, namely d(tranpose(h(beta))*h(beta)/dCidCj
-   * and not d(tranpose(h(beta))*h(beta)/dCjdCi
+   * and not d(tranpose(h(beta))*h(beta)/dCjdCi since they are symmetric.
    */
   public static ConstrainedGLMUtils.ConstraintsGram constructGram(ConstrainedGLMUtils.ConstraintsDerivatives constDeriv) {
     ConstrainedGLMUtils.ConstraintsGram cGram = new ConstrainedGLMUtils.ConstraintsGram();

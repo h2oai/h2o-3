@@ -461,7 +461,10 @@ public class OptimizationUtils {
       return _ginfox;
     }
   }
-  
+
+  /***
+   * This class implements the exact line search described in the doc, Algorithm 11.5
+   */
   public static final class ExactLineSearch {
     public final double _betaLS1 = 1e-4;
     public final double _betaLS2 = 0.99;
@@ -494,7 +497,8 @@ public class OptimizationUtils {
     }
 
     /***
-     * Evaluate and make sure that step size alphi is not too big so that objective function is still decreasing.
+     * Evaluate and make sure that step size alphi is not too big so that objective function is still decreasing.  Refer
+     * to the doc, Definition 11.6
      */
     public boolean evaluateFirstWolfe(GLM.GLMGradientInfo ginfoNew) {
       double newObj = ginfoNew._objVal;
@@ -503,8 +507,8 @@ public class OptimizationUtils {
     }
 
     /***
-     * Evaluate and make sure that step size alphi is not too small so that good
-     * progress is made in reducing the loss function.
+     * Evaluate and make sure that step size alphi is not too small so that good progress is made in reducing the 
+     * loss function.  Refer to the doc, Definition 11.8
      */
     public boolean evaluateSecondWolfe(GLM.GLMGradientInfo ginfo) {
       double lhs = ArrayUtils.innerProduct(ginfo._gradient, _direction);
@@ -542,6 +546,9 @@ public class OptimizationUtils {
               equalityConstraints, lessThanEqualToConstraints);
     }
 
+    /***
+     * Implements the Line Search algorithm in the doc, Algorithm 11.5.
+     */
     public boolean findAlpha(double[] lambdaEqual, double[] lambdaLessThan, ComputationState state,
                              ConstrainedGLMUtils.LinearConstraints[] equalityConstraints, 
                              ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
@@ -565,7 +572,7 @@ public class OptimizationUtils {
         // update gradient from constraints transpose(lambda)*h(beta)(value, not changed, active status may change) 
         // and gram contribution from ck/2*transpose(h(beta))*h(beta)), value not changed but active status may change
         state.updateConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
-        // calculate new gradient and objective function;
+        // calculate new gradient and objective function for new coefficients newCoef
         newGrad =  calGradient(newCoef, state, gradientSolver, lambdaEqual, lambdaLessThan,
                 equalityConstraints, lessThanEqualToConstraints);
         // evaluate if first Wolfe condition is satisfied;
@@ -581,7 +588,7 @@ public class OptimizationUtils {
 
         // set alphai if first Wolfe condition is not satisfied, set alpha i if second Wolfe condition is not satisfied;
         alphaiChange = setAlphai(firstWolfe, secondWolfe);
-        if (!alphaiChange || _alphar < EPS_CS_SQUARE) {
+        if (!alphaiChange || _alphar < EPS_CS_SQUARE) { // if alphai, alphar value are not changed and alphar is too small, quit
           return false;
         }
       }

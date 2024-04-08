@@ -704,20 +704,24 @@ public class ConstrainedGLMUtils {
       }
     }
   }
-  
+
+  /***
+   *  This method will update the constraint parameter values cKCS, epsilonkCS, etakCS.  Refer to the doc, Algorithm 
+   *  19.1
+   */
   public static void updateConstraintParameters(ComputationState state, double[] lambdaEqual, double[]lambdaLessThan, 
                                                 LinearConstraints[] equalConst, LinearConstraints[] lessThanConst, 
                                                 GLMModel.GLMParameters parms) {
     // calculate ||h(beta)|| square, ||gradient|| square
     double hBetaMag = state._csGLMState._constraintMagSquare;
-    if (hBetaMag <= state._csGLMState._etakCSSquare) {
+    if (hBetaMag <= state._csGLMState._etakCSSquare) {  // implement line 26 to line 29 of Algorithm 19.1
       if (equalConst != null)
         updateLambda(lambdaEqual, state._csGLMState._ckCS, equalConst);
       if (lessThanConst != null)
         updateLambda(lambdaLessThan, state._csGLMState._ckCS, lessThanConst);
       state._csGLMState._epsilonkCS = state._csGLMState._epsilonkCS/state._csGLMState._ckCS;
       state ._csGLMState._etakCS = state._csGLMState._etakCS/Math.pow(state._csGLMState._ckCS, parms._constraint_beta);
-    } else {
+    } else {  // implement line 31 to 34 of Algorithm 19.1
       state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau;
       state._csGLMState._ckCSHalf = state._csGLMState._ckCS*0.5;
       state._csGLMState._epsilonkCS = state._csGLMState._epsilon0/state._csGLMState._ckCS;
@@ -749,10 +753,11 @@ public class ConstrainedGLMUtils {
 
   /***
    * This method will check if the stopping conditions for constraint GLM are met and they are namely:
-   * 1. ||gradient of L with respect to beta and withy respect to lambda|| <= epsilon
+   * 1. ||gradient of L with respect to beta and with respect to lambda|| <= epsilon
    * 2. ||h(beta)|| square <= epsilon if satisfied is false and ||h(beta)|| square == 0 if satisfied is true
    * 
    * If the stopping conditions are met, it will return true, else it will return false.
+   * See the doc, Algorithm 19.1, line 36.
    */
   public static boolean constraintsStop(GLM.GLMGradientInfo gradientInfo, ComputationState state) {
     state._csGLMState._gradientMagSquare = innerProduct(gradientInfo._gradient, gradientInfo._gradient);
@@ -785,7 +790,6 @@ public class ConstrainedGLMUtils {
       addConstraintGradient(lambdaE, state._derivativeEqual, gradientInfo);
       addPenaltyGradient(state._derivativeEqual, constraintE, gradientInfo, state._csGLMState._ckCS);
       gradientInfo._objVal += state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCSHalf);
-      //state.addConstraintObj(lambdaE, constraintE, state._csGLMState._ckCS, gradientInfo);
     }
     if (hasLessConstraints) {
       addConstraintGradient(lambdaL, state._derivativeLess, gradientInfo);
@@ -794,17 +798,24 @@ public class ConstrainedGLMUtils {
     }
     return gradientInfo;
   }
-  
+
+  /**
+   * Simple method to all linear constraints given the coefficient values.  In addition, it will determine if a 
+   * linear constraint is active.  Only active constraints are included in the objective function calculations.
+   * 
+   * For an equality constraint, any constraint value not equal to zero is active.
+   * For a less than or equality constraint, any constraint value that exceed zero is active.
+   */
   public static void updateConstraintValues(double[] betaCnd, List<String> coefNames, 
                                             LinearConstraints[] equalityConstraints, 
                                             LinearConstraints[] lessThanEqualToConstraints) {
-    if (equalityConstraints != null) { // initialize lambda for equality constraints
+    if (equalityConstraints != null) // equality constraints
       Arrays.stream(equalityConstraints).forEach(constraint -> {
         evalOneConstraint(constraint, betaCnd, coefNames);
         constraint._active = (Math.abs(constraint._constraintsVal) > EPS2);
       });
-    }
-    if (lessThanEqualToConstraints != null)
+
+    if (lessThanEqualToConstraints != null) // less than or equal to constraints
       Arrays.stream(lessThanEqualToConstraints).forEach(constraint -> {
         evalOneConstraint(constraint, betaCnd, coefNames);
         constraint._active = constraint._constraintsVal > 0;
