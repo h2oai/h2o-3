@@ -3,12 +3,13 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-# These are the coefficient relationships
-# 0.5C1.1-0.25C2.1 (=2.0774305639960806)
-# 1.5C4.1+3C17-2C15 (=12.40377336506003)
-# -0.5C12-1.5C13+2C14 (=7.942988009118055)
-# 0.25*C11-0.5*C18+0.75*C19 (=-9.319464097022614)
 def test_light_tight_linear_constraints_only_gaussian():
+    '''
+    Test constrained GLM with equality and less than and equal to constraints.  The constraints are very 
+    tight and coefficients from GLM built without constraints won't be able to satisfied the constraints.
+    Constrained GLM models are built with coefficients initialized with coefficients from GLM built without constraints,
+    default coefficients and random coefficients. 
+    '''
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
         train[ind] = train[ind].asfactor()

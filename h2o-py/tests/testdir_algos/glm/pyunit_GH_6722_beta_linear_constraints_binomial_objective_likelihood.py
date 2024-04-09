@@ -7,7 +7,6 @@ def test_constraints_objective_likelihood():
     '''
     In this test, I want to make sure that the correct loglikelihood and objective functions are calculated when
     a user specified constraints and want the likelihood and objective functions.
-    :return: 
     '''
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):

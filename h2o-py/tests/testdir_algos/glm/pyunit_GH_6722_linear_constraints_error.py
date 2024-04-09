@@ -21,7 +21,8 @@ def test_bad_linear_constraints():
         model.train(x=myX, y=myY, training_frame=h2o_data)
         print("Should have thrown an error....")
     except Exception as e:
-        assert 'linear constraint must have at least two coefficients' in e.args[0]
+        print(e.args[0])
+        assert 'Linear constraint must have at least two coefficients' in e.args[0]
         
 
 if __name__ == "__main__":

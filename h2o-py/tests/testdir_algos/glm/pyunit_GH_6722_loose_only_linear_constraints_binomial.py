@@ -4,6 +4,11 @@ from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
 def test_constraints_binomial():
+    '''
+    check and make sure coefficients close to GLM built without constraints are generated with loose constraints
+    that are satisfied with coefficients from GLM without constraints.  Only less than and equal to
+     constraints are present.
+    '''
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
         train[ind] = train[ind].asfactor()

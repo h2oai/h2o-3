@@ -4,6 +4,11 @@ from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
 def test_constraints_binomial():
+    '''
+    This test checks and make sure the equality constraints work with binomial family.  Coefficients are initialized
+    with glm coefficients built without constraints, default coefficients and random coefficients.  Note in this case,
+    coefficients from glm built without constraints will satisfy the equality constraints.
+    '''
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
         train[ind] = train[ind].asfactor()

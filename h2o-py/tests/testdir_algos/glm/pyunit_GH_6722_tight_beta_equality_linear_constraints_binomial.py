@@ -4,6 +4,12 @@ from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
 def test_light_tight_linear_constraints_only_gaussian():
+    '''
+    Test constrained GLM with beta, equality and less than and equal to constraints.  The constraints are very 
+    tight and coefficients from GLM built without constraints won't be able to satisfied the constraints.
+    Constrained GLM models are built with coefficients initialized with coefficients from GLM built without constraints,
+    default coefficients and random coefficients. 
+    '''    
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
         train[ind] = train[ind].asfactor()
