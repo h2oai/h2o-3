@@ -99,11 +99,17 @@ task buildDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, c
     commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
 }
 
-task copyMainDist(type: Copy, dependsOn: [buildDist]) {
-    from ("${buildDir}/main/") {
-        include "dist/**"
+// I don't know why the task with type: Copy doesn't run after buildDist for gradle 8 even though its working for other projects (e.g. h2o-py-cloud-extension)
+// I was able to properly copy the wheel only this way.
+task copyMainDist(dependsOn: [buildDist]) {
+    doLast{
+        copy {
+            from("${buildDir}/main/") {
+                include "dist/**"
+            }
+            into "${buildDir}"
+        }
     }
-    into "${buildDir}"
 }
 
 task buildClientDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, copyClientSrcFiles]) {
