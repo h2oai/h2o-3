@@ -7,9 +7,7 @@ library(h2o) # or load your h2o in a different way
 library(ggplot2)
 
 
-test.model.gam.dataset.error <- function() {
-  # for n=1001 ==========================================================================================
-  n <- 1001
+test.gam.dataset.error <- function(n) {
   sum_insured <- seq(1, 200000, length.out = n)
 browser()  
   d2 <-
@@ -44,15 +42,21 @@ browser()
       non_negative = TRUE,
       num_knots = c(10)
     )
-  
-  pred2 <-
-    h2o.predict(object = model2, newdata = h2o_data2) %>% as.vector
-  
-  # plot result
-  d2$pred <- pred2
-  ggplot(d2) + geom_line(aes(x = x2, y = y)) + geom_line(aes(x = x2, y = pred), colour =
-                                                           'red') + scale_x_continuous(breaks = seq(0, 200000, by = 20000))
-  ggsave('H:/h2o gam monotonic decreasing.png')
+  print("model building completed.")
+}
+
+test.model.gam.dataset.error <- function() {
+  # test for n=1002;
+  test.gam.dataset.error(1002) # not working
+  # test for n=1001;
+  test.gam.dataset.error(1001) # not working
+
+  # test for n=1003;
+  test.gam.dataset.error(1003) # not working
+  # test for n=1004;
+  test.gam.dataset.error(1004) # not working
+  # test for n=1005
+  test.gam.dataset.error(1005) # not working
 }
 
 doTest("General Additive Model dataset size 1001 error", test.model.gam.dataset.error)
