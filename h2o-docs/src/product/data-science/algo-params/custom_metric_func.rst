@@ -26,7 +26,7 @@ Map
 
 The ``map`` function defines an action that needs to be performed on each row of the data. Here is a description of each variable for the ``map`` function:
 
-    - ``pred``: a double array storing the model prediction output.  For regresion problems, the prediction value is stored in ``pred[0]``; for classification problems, the prediction value for class ``i`` is stored in ``pred[i+1]``. 
+    - ``pred``: a double array storing the model prediction output.  For regresion problems, the prediction value is stored in ``pred[0]``. For classification problems, the predicted class label is stored in pred[0], the predicted probability for class i is stored in ``pred[i+1]``. 
     - ``act``: a double array containing the actual response value of the dataset.  Again, the actual response value is stored in ``act[0]``.
     - ``w``: the weight applied to each row of the metric if present; otherwise, it defaults to 1.0.
     - ``o``: refers to the offset applied to each row of the metric if applicable. Defaults to 0.0.
