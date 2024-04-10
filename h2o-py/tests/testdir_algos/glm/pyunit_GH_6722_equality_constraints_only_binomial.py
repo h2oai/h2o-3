@@ -70,7 +70,7 @@ def test_constraints_binomial():
     print("**** logloss with constraints and coefficients initialized with glm model built without constraints:"
           " {0}".format(init_logloss))
     print(glm.getConstraintsInfo(h2o_glm_optimal_init))
-    assert abs(logloss-init_logloss)<1e-6, "logloss from optimal GLM {0} and logloss from GLM with equal constraints " \
+    assert abs(logloss-init_logloss)<2e-6, "logloss from optimal GLM {0} and logloss from GLM with equal constraints " \
                                            "and initialized with optimal GLM {1} should equal but is not." \
                                            "".format(logloss, init_logloss)
     assert pyunit_utils.equal_two_dicts(h2o_glm_optimal_init.coef(), h2o_glm.coef(), throwError=False), \

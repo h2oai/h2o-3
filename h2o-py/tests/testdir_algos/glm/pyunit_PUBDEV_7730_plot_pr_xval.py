@@ -25,7 +25,7 @@ def glm_pr_plot_test():
     cv_model.train(training_frame=training_data,x=myX,y=myY, validation_frame=test_data)
     fn = "pr_plot_train_valid_cx.png"
     perf = cv_model.model_performance(xval=True)
-    perf.plot(type="pr", server=True, save_to_file=fn)
+    perf.plot(type="pr", server=True, save_plot_path=fn)
     if os.path.isfile(fn):
         os.remove(fn)
 

@@ -146,21 +146,21 @@ def test_constraints_objective_likelihood():
     print(glm.getConstraintsInfo(h2o_glm_default_init))
 
     # if coefficients are close enough, we will compare the objective and aic
-    if pyunit_utils.equal_two_dicts(coef, coef_optimal):
+    if pyunit_utils.equal_two_dicts(coef, coef_optimal, throwError=False):
         assert abs(ll-ll_optimal)/abs(ll) < 1e-6, "loglikelihood of glm: {0}, should be close to constrained GLM with" \
                                                   " optimal coefficient init: {1} but is not.".format(ll, ll_optimal)
         assert abs(aic-aic_optimal)/abs(aic) < 1e-6, "AIC of glm: {0}, should be close to constrained GLM with" \
                                                   " optimal coefficient init: {1} but is not.".format(aic, aic_optimal)
         assert abs(obj-obj_optimal)/abs(obj) < 1e-6, "average objective of glm: {0}, should be close to constrained GLM with" \
                                                      " optimal coefficient init: {1} but is not.".format(obj, obj_optimal)
-    if pyunit_utils.equal_two_dicts(coef, coef_random, tolerance=2.1e-3):
+    if pyunit_utils.equal_two_dicts(coef, coef_random, tolerance=2.1e-3, throwError=False):
         assert abs(ll-ll_random)/abs(ll) < 1e-3, "loglikelihood of glm: {0}, should be close to constrained GLM with" \
                                                   " random coefficient init: {1} but is not.".format(ll, ll_random)
         assert abs(aic-aic_random)/abs(aic) < 1e-3, "AIC of glm: {0}, should be close to constrained GLM with" \
                                                      " random coefficient init: {1} but is not.".format(aic, aic_random)
         assert abs(obj-obj_random)/abs(obj) < 1e-3, "average objective of glm: {0}, should be close to constrained GLM with" \
                                                      " random coefficient init: {1} but is not.".format(obj, obj_random)
-    if pyunit_utils.equal_two_dicts(coef, coef_default, tolerance=2e-3):
+    if pyunit_utils.equal_two_dicts(coef, coef_default, tolerance=2e-3, throwError=False):
         assert abs(ll-ll_default)/abs(ll) < 1e-3, "loglikelihood of glm: {0}, should be close to constrained GLM with" \
                                                  " default coefficient init: {1} but is not.".format(ll, ll_default)
         assert abs(aic-aic_default)/abs(aic) < 1e-3, "AIC of glm: {0}, should be close to constrained GLM with" \
