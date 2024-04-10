@@ -3890,8 +3890,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._expose_constraints && _parms._linear_constraints != null) {
         _model._output._equalityConstraintsBeta = _state._equalityConstraintsBeta;
         _model._output._lessThanEqualToConstraintsBeta = _state._lessThanEqualToConstraintsBeta;
-        _model._output._equalityConstraints = _state._equalityConstraintsLinear;
-        _model._output._lessThanEqualToConstraints = _state._lessThanEqualToConstraints;
+        _model._output._equalityConstraintsLinear = _state._equalityConstraintsLinear;
+        _model._output._lessThanEqualToConstraintsLinear = _state._lessThanEqualToConstraintsLinear;
         _model._output._constraintCoefficientNames = _state._csGLMState._constraintNames;
         _model._output._initConstraintMatrix = _state._csGLMState._initCSMatrix;
       }

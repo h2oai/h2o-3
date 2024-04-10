@@ -13,6 +13,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 
 import java.util.*;
@@ -477,12 +478,12 @@ public class GLMConstrainedTest extends TestUtil {
     Scope.track(_linearConstraint1);
     // form correct constraints names and values:
     _betaConstraintNames1Equal = new String[][]{{_coeffNames1.get(coefLen-3), "constant"}};
-    _betaConstraintValStandard1Equal = new double[][]{{1,-0.1/train.vec(_coeffNames1.get(coefLen-3)).sigma()}};
+    _betaConstraintValStandard1Equal = new double[][]{{1,-0.1*train.vec(_coeffNames1.get(coefLen-3)).sigma()}};
     _betaConstraintVal1Equal = new double[][]{{1,-0.1}};
     _betaConstraintNames1Less = new String[][]{{_coeffNames1.get(0), "constant"}, {_coeffNames1.get(0), "constant"},
             {_coeffNames1.get(1), "constant"}, {_coeffNames1.get(coefLen-4), "constant"}};
     _betaConstraintValStandard1Less = new double[][]{{-1,1}, {1,-10}, {-1,-1},
-            {1.0,-8/train.vec(_coeffNames1.get(coefLen-4)).sigma()}};
+            {1.0,-8*train.vec(_coeffNames1.get(coefLen-4)).sigma()}};
     _betaConstraintVal1Less = new double[][]{{-1,1}, {1,-10}, {-1,-1}, {1,-8}};
     _equalityNames1 = new String[][]{{_coeffNames1.get(34), _coeffNames1.get(35), "constant"}};
     _equalityValuesStandard1 = new double[][]{{0.5/train.vec(_coeffNames1.get(34)).sigma(),
@@ -721,10 +722,14 @@ public class GLMConstrainedTest extends TestUtil {
       double[][] initConstraintMatrix = glm2._output._initConstraintMatrix;
       // check rows from beta constraints
       int rowIndex = 0;
-      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _equalityNames2, _equalityValues2, rowIndex);
+      int[] compare = new int[]{1, 1, 1, 1};
+      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _equalityNames2, _equalityValues2, 
+              rowIndex, compare);
       // check row from linear constraints with lessThanEqualTo
-      rowIndex += _equalityNames2.length;
-      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _lessThanNames2, _lessThanValues2, rowIndex);
+      rowIndex += ArrayUtils.sum(compare);
+      compare = new int[]{1, 1, 1};
+      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _lessThanNames2, _lessThanValues2,
+              rowIndex, compare);
     } finally {
       Scope.exit();
     }
@@ -758,35 +763,46 @@ public class GLMConstrainedTest extends TestUtil {
       double[][] initConstraintMatrix = glm2._output._initConstraintMatrix;
       // check rows from beta constraints
       int rowIndex = 0;
+      int[] compare = new int[]{1};
       assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _betaConstraintNames1Equal, 
-              _betaConstraintValStandard1Equal, rowIndex);
+              _betaConstraintValStandard1Equal, rowIndex, compare);
       // check rows from linear constraints with equality
-      rowIndex += _betaConstraintNames1Equal.length;
+      rowIndex += ArrayUtils.sum(compare);
+      compare = new int[]{1, 0, 1, 1};
       assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _betaConstraintNames1Less,
-              _betaConstraintValStandard1Less, rowIndex);
+              _betaConstraintValStandard1Less, rowIndex, compare);
       // check rows from linear constraints with equality
-      rowIndex += _betaConstraintNames1Less.length;
-      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _equalityNames1, _equalityValuesStandard1, rowIndex);
+      rowIndex += ArrayUtils.sum(compare);
+      compare = new int[]{1};
+      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _equalityNames1, _equalityValuesStandard1,
+              rowIndex, compare);
       // check row from linear contraints with lessThanEqualTo
-      rowIndex += _equalityNames1.length;
-      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _lessThanNames1, _lessThanValuesStandard1, rowIndex);
+      rowIndex += ArrayUtils.sum(compare);
+      compare = new int[]{1};
+      assertCorrectConstraintMatrix(constraintNames, initConstraintMatrix, _lessThanNames1, _lessThanValuesStandard1,
+              rowIndex, compare);
     } finally {
       Scope.exit();
     }
   }
   
   public void assertCorrectConstraintMatrix(List<String> constraintNames, double[][] constraintMatrix,
-                                            String[][] origNames, double[][] originalValues, int rowStart) {
+                                            String[][] origNames, double[][] originalValues, int rowStart, 
+                                            int[] compare) {
     int numConstraints = origNames.length;
+    int count = 0;
     for (int index=0; index<numConstraints; index++) {
-      int rowIndex = index+rowStart;
-      String[] constNames = origNames[index];
-      double[] constValues = originalValues[index];
-      int numNames = constNames.length;
-      for (int index2=0; index2<numNames; index2++) {
-        int cNamesIndex = constraintNames.indexOf(constNames[index2]);
-        assertTrue("Expected value: "+constValues[index2]+" for constraint "+constNames[index2]+" but actual: "
-                +constraintMatrix[rowIndex][cNamesIndex],  Math.abs(constraintMatrix[rowIndex][cNamesIndex]-constValues[index2]) < EPS);
+      if (compare[index] > 0) {
+        int rowIndex = count + rowStart;
+        String[] constNames = origNames[index];
+        double[] constValues = originalValues[index];
+        int numNames = constNames.length;
+        for (int index2 = 0; index2 < numNames; index2++) {
+          int cNamesIndex = constraintNames.indexOf(constNames[index2]);
+          assertTrue("Expected value: " + constValues[index2] + " for constraint " + constNames[index2] + " but actual: "
+                  + constraintMatrix[rowIndex][cNamesIndex], Math.abs(constraintMatrix[rowIndex][cNamesIndex] - constValues[index2]) < EPS);
+        }
+        count++;
       }
     }
   }
@@ -834,12 +850,10 @@ public class GLMConstrainedTest extends TestUtil {
       params._response_column = "C21";
       params._solver = IRLSM;
       params._train = train._key;
-      List<String> coeffNames = _coeffNames1;
       // build the beta_constraints
-      int coefLen = coeffNames.size()-1;
       Frame beta_constraints = _betaConstraint1;
       Frame linear_constraints = _linearConstraint1;
-      params._max_iterations = 0;
+      params._max_iterations = 1;
       params._expose_constraints = true;
       params._beta_constraints = beta_constraints._key;
       params._linear_constraints = linear_constraints._key;
@@ -859,9 +873,9 @@ public class GLMConstrainedTest extends TestUtil {
       
       // check constraints from linear constraints are extracted properly
       // check equality constraint
-      assertCorrectConstraintContent(_equalityNames1, _equalityValuesStandard1, glm2._output._equalityConstraints);
+      assertCorrectConstraintContent(_equalityNames1, _equalityValuesStandard1, glm2._output._equalityConstraintsLinear);
       // check lessThanEqual to constraint
-      assertCorrectConstraintContent(_lessThanNames1, _lessThanValuesStandard1, glm2._output._lessThanEqualToConstraints);
+      assertCorrectConstraintContent(_lessThanNames1, _lessThanValuesStandard1, glm2._output._lessThanEqualToConstraintsLinear);
     } finally {
       Scope.exit();
     }
@@ -907,9 +921,9 @@ public class GLMConstrainedTest extends TestUtil {
       
       // check constraints from linear constraints are extracted properly
       // check equality constraint
-      assertCorrectConstraintContent(_equalityNames1, _equalityValues1, glm2._output._equalityConstraints);
+      assertCorrectConstraintContent(_equalityNames1, _equalityValues1, glm2._output._equalityConstraintsLinear);
       // check lessThanEqual to constraint
-      assertCorrectConstraintContent(_lessThanNames1, _lessThanValues1, glm2._output._lessThanEqualToConstraints);
+      assertCorrectConstraintContent(_lessThanNames1, _lessThanValues1, glm2._output._lessThanEqualToConstraintsLinear);
     } finally {
       Scope.exit();
     }
@@ -938,9 +952,9 @@ public class GLMConstrainedTest extends TestUtil {
       Scope.track_generic(glm2);
       // check constraints from linear constraints are extracted properly
       // check equality constraint
-      assertCorrectConstraintContent(_equalityNames2, _equalityValues2, glm2._output._equalityConstraints);
+      assertCorrectConstraintContent(_equalityNames2, _equalityValues2, glm2._output._equalityConstraintsLinear);
       // check lessThanEqual to constraint
-      assertCorrectConstraintContent(_lessThanNames2, _lessThanValues2, glm2._output._lessThanEqualToConstraints);
+      assertCorrectConstraintContent(_lessThanNames2, _lessThanValues2, glm2._output._lessThanEqualToConstraintsLinear);
     } finally {
       Scope.exit();
     }
@@ -1048,9 +1062,9 @@ public class GLMConstrainedTest extends TestUtil {
       Scope.track_generic(glm2);
       // check constraints from linear constraints are extracted properly
       // check equality constraint
-      assertCorrectConstraintContent(_equalityNames2, _equalityValuesStandard2, glm2._output._equalityConstraints);
+      assertCorrectConstraintContent(_equalityNames2, _equalityValuesStandard2, glm2._output._equalityConstraintsLinear);
       // check lessThanEqual to constraint
-      assertCorrectConstraintContent(_lessThanNames2, _lessThanValuesStandard2, glm2._output._lessThanEqualToConstraints);
+      assertCorrectConstraintContent(_lessThanNames2, _lessThanValuesStandard2, glm2._output._lessThanEqualToConstraintsLinear);
     } finally {
       Scope.exit();
     }

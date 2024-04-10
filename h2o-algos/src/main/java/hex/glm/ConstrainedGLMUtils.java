@@ -142,6 +142,7 @@ public class ConstrainedGLMUtils {
       for (int index=0; index<numCons; index++) {
         if (!Double.isInfinite(betaC._betaUB[index]) && (betaC._betaLB[index] == betaC._betaUB[index])) { // equality constraint
           addBCEqualityConstraint(equalityC, betaC, coefNames, index);
+          betaIndexOnOff.add(1);
         } else if (!Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index]) && 
                 (betaC._betaLB[index] < betaC._betaUB[index])) { // low < beta < high, generate two lessThanEqualTo constraints
           addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
@@ -261,9 +262,9 @@ public class ConstrainedGLMUtils {
           constantFound = true;
         processedRowIndices.add(rowIndex);
         // coefNames is valid
-        if (standardize && colNames.contains(coefName)) {  // numerical column with standardization
-          int colInd = colNames.indexOf(coefName);
-          currentConstraint._constraints.put(coefName, constraintF.vec("values").at(rowIndex)*dinfo._normMul[colInd-dinfo._cats]);
+        int colInd = colNames.indexOf(coefName)-dinfo._cats;
+        if (standardize && colNames.contains(coefName) && colInd >= 0) {  // numerical column with standardization
+          currentConstraint._constraints.put(coefName, constraintF.vec("values").at(rowIndex)*dinfo._normMul[colInd]);
         } else {  // categorical column, constant or numerical column without standardization
           currentConstraint._constraints.put(coefName, constraintF.vec("values").at(rowIndex));
         }
@@ -395,7 +396,7 @@ public class ConstrainedGLMUtils {
     boolean allSatisfied = true;
     for (int index=0; index<constLen; index++) {
       oneC = constraints[index];
-      constrainStr = constraint2Str(oneC, equalityConstr, startStr, state);
+      constrainStr = constraint2Str(oneC, startStr, state);
       evalOneConstraint(oneC, beta, coefNames);
       constraintsStrings.add(constrainStr + " = " + oneC._constraintsVal);
       if (equalityConstr) {
@@ -427,7 +428,7 @@ public class ConstrainedGLMUtils {
     return allSatisfied;
   }
 
-  public static String constraint2Str(LinearConstraints oneConst, boolean equalConstr, String startStr, ComputationState state) {
+  public static String constraint2Str(LinearConstraints oneConst, String startStr, ComputationState state) {
       boolean isBetaConstraint = oneConst._constraints.size() < 3;
       StringBuilder sb = new StringBuilder();
       sb.append(startStr);
@@ -461,7 +462,7 @@ public class ConstrainedGLMUtils {
       if (constantVal != 0) {
         if (constantVal > 0)
           sb.append("+");
-        if (isBetaConstraint && colInd >= 0)
+        if (isBetaConstraint && colInd >= 0 && standardize)
           sb.append(constantVal * dinfo._normMul[colInd]);
         else
           sb.append(constantVal);

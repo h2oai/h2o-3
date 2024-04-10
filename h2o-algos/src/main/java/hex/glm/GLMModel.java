@@ -1591,8 +1591,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     private double _dispersion;
     private boolean _dispersionEstimated;
     public int[] _activeColsPerClass;
-    public ConstrainedGLMUtils.LinearConstraints[] _equalityConstraints = null;
-    public ConstrainedGLMUtils.LinearConstraints[] _lessThanEqualToConstraints = null;
+    public ConstrainedGLMUtils.LinearConstraints[] _equalityConstraintsLinear = null;
+    public ConstrainedGLMUtils.LinearConstraints[] _lessThanEqualToConstraintsLinear = null;
     public ConstrainedGLMUtils.LinearConstraints[] _equalityConstraintsBeta = null;
     public ConstrainedGLMUtils.LinearConstraints[] _lessThanEqualToConstraintsBeta = null;
     public String[] _constraintCoefficientNames = null;
