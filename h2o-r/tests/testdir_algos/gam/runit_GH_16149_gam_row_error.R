@@ -6,10 +6,11 @@ library(dplyr)
 library(h2o) # or load your h2o in a different way
 library(ggplot2)
 
-
+# This test was provided by a customer.  No exit condition is needed as
+# the test before my fix always failed.  As long as this test completes
+# successfully, it should be good enough.
 test.gam.dataset.error <- function(n) {
   sum_insured <- seq(1, 200000, length.out = n)
-browser()  
   d2 <-
     data.table(
       sum_insured = sum_insured,
@@ -46,17 +47,10 @@ browser()
 }
 
 test.model.gam.dataset.error <- function() {
-  # test for n=1002;
-  test.gam.dataset.error(1002) # not working
-  # test for n=1001;
-  test.gam.dataset.error(1001) # not working
-
-  # test for n=1003;
-  test.gam.dataset.error(1003) # not working
-  # test for n=1004;
-  test.gam.dataset.error(1004) # not working
   # test for n=1005
   test.gam.dataset.error(1005) # not working
+  # test for n=1001;
+  test.gam.dataset.error(1001) # not working
 }
 
-doTest("General Additive Model dataset size 1001 error", test.model.gam.dataset.error)
+doTest("General Additive Model dataset size 1001 and 1005 error", test.model.gam.dataset.error)

@@ -927,7 +927,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (error_count() > 0)   // if something goes wrong, let's throw a fit
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
       // add gamified columns to training frame
-      Frame newTFrame = new Frame(rebalance(adaptTrain(), false, _result+".temporary.train"));
+      Frame newTFrame = new Frame(rebalance(adaptTrain(), false, Key.make()+".temporary.train"));
       verifyGamTransformedFrame(newTFrame);
       
       if (error_count() > 0)   // if something goes wrong during gam transformation, let's throw a fit again!
@@ -937,7 +937,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         int[] singleGamColsCount = new int[]{_cubicSplineNum, _iSplineNum, _mSplineNum};
         _valid = rebalance(adaptValidFrame(_parms.valid(), _valid, _parms, _gamColNamesCenter, _binvD,
                         _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd, singleGamColsCount),
-                false, _result + ".temporary.valid");
+                false, Key.make() + ".temporary.valid");
       }
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
       Frame newValidFrame = _valid == null ? null : new Frame(_valid);
