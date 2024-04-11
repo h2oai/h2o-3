@@ -44,7 +44,7 @@ class CustomNegativeRmseRegressionFunc:  # used to test custom_increasing
 class CustomRmseFunc:
     def map(self, pred, act, w, o, model):
         idx = int(act[0])
-        err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
+        err = 1 - pred[idx + 1]
         return [err * err, 1]
 
     def reduce(self, l, r):
@@ -60,7 +60,7 @@ class CustomLoglossFunc:
     def map(self, pred, act, w, o, model):
         import water.util.MathUtils as math
         idx = int(act[0])
-        err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
+        err = 1 - pred[idx + 1]
         return [w * math.logloss(err), w]
 
     def reduce(self, l, r):
