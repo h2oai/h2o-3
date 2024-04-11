@@ -2,5 +2,5 @@ compileJava {
     // This only works when forking and passing 'javac' as an executable
     options.compilerArgs << '-XDignore.symbol.file'    
     options.fork = true
-    options.forkOptions.executable = "${System.properties['java.home']}/../bin/javac"
+    options.forkOptions.executable = "${System.env.JAVA_HOME}/bin/javac"
 }
