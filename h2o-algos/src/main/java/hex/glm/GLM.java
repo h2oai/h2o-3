@@ -274,7 +274,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       assert g._model._output._selected_submodel_idx == g._model._output._best_submodel_idx;
       assert g._model._output._selected_submodel_idx == g._model._output._best_lambda_idx;
-      assert (g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value ==
+      if (g._model._output._submodels[g._model._output._selected_submodel_idx] != null &&
+          alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel] != null)
+        assert (g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value ==
               alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].alpha_value) &&
               (g._model._output._submodels[g._model._output._selected_submodel_idx].lambda_value ==
                       alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].lambda_value);
