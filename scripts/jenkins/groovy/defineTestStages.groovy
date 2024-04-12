@@ -354,7 +354,7 @@ def call(final pipelineContext) {
       customData: [algorithm: 'xgb-vanilla'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), pythonVersion: '3.7',
       rVersion: '4.0.2',
-      imageVersion: 43,
+      imageVersion: 44,
       healthCheckSuppressed: true
     ],
     [
