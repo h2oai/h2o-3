@@ -92,7 +92,7 @@ public final class ComputationState {
   int _betaLengthPerClass;
   public boolean _noReg;
   public boolean _hasConstraints;
-  ConstrainedGLMUtils.ConstraintGLMStates _csGLMState;
+  public ConstrainedGLMUtils.ConstraintGLMStates _csGLMState;
   
   public ComputationState(Job job, GLMParameters parms, DataInfo dinfo, BetaConstraint bc, GLM.BetaInfo bi){
     _job = job;

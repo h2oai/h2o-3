@@ -2,6 +2,7 @@ package hex.optimization;
 
 import hex.DataInfo;
 import hex.glm.ComputationState;
+import hex.glm.ConstrainedGLMUtils;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import org.junit.After;
@@ -63,6 +64,7 @@ public class ExactLineSearchTest extends TestUtil {
     Key<GLMModel> jobKey = Key.make();
     _job = new Job<>(jobKey, _params.javaName(), _params.algoName());
     _state = new ComputationState(null, _params, _dinfo, null, _betaInfo, null, null);
+    _state._csGLMState = new ConstrainedGLMUtils.ConstraintGLMStates(_coefNames, null, _params);
     _ginfo = new GLM.GLMGradientSolver(_job, _params, _dinfo, 0,null, _betaInfo);
     GLM.GLMGradientInfo gradientInfo = calGradient(_beta, _state, _ginfo, null, null,
             null, null);
