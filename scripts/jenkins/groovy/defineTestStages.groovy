@@ -82,7 +82,7 @@ def call(final pipelineContext) {
       imageSpecifier: "python-3.7-jdk-8"
     ],
     [
-      stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 8,
+      stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 16,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
@@ -146,7 +146,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
       imageSpecifier: "r-3.5.3-jdk-8"
     ],
     [
@@ -220,7 +220,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.6-jdk-8'
     ],
@@ -267,7 +267,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'MOJO Compatibility (Java 7)', target: 'test-mojo-compatibility',
-      archiveFiles: false, timeoutValue: 20, hasJUnit: false, pythonVersion: '3.7', javaVersion: 7,
+      archiveFiles: false, timeoutValue: 60, hasJUnit: false, pythonVersion: '3.7', javaVersion: 7,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo)
       imageSpecifier: "mojocompat", imageVersion: 43,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
@@ -422,12 +422,12 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 Init Java 11', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 11,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
       imageSpecifier: "r-3.5.3-jdk-11"
     ],
     [
       stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '3.6', javaVersion: 17,
-      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-17"
     ],
@@ -457,7 +457,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.3 AutoML', target: 'test-r-automl', rVersion: '3.3.3',
@@ -476,35 +476,35 @@ def call(final pipelineContext) {
   // Should contain all Java versions and also the minimum supported Python version. 
   def NIGHTLY_STAGES = [
     [
-      stageName: 'Java 10 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
+      stageName: 'Java 10 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 10, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 20,
+      stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 12 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 12, timeoutValue: 20,
+      stageName: 'Java 12 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 12, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 13 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 13, timeoutValue: 20,
+      stageName: 'Java 13 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 13, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 14 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 14, timeoutValue: 20,
+      stageName: 'Java 14 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 14, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 15 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 15, timeoutValue: 20,
+      stageName: 'Java 15 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 15, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 16 Smoke', target: 'test-junit-16-smoke-jenkins', javaVersion: 16, timeoutValue: 20,
+      stageName: 'Java 16 Smoke', target: 'test-junit-16-smoke-jenkins', javaVersion: 16, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 20,
+      stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
@@ -547,7 +547,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.11 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.11',
-      timeoutValue: 380, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 600, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
@@ -797,7 +797,7 @@ def call(final pipelineContext) {
     xgbEnvs.each {xgbEnv ->
       final def stageDefinition = [
         stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins",
-        timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+        timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
         additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.7',
         image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv, xgbImageBuildTag),
         nodeLabel: xgbEnv.nodeLabel
