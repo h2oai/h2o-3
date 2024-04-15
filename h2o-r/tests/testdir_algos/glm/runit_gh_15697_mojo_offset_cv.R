@@ -38,12 +38,14 @@ test_glm_mojo_offset_fold_columns <- function() {
     biny_path <- h2o.saveModel(object = mod_w_offset, path = ".")
     
     mojo <- h2o.import_mojo(mojo_file_path = mojo_path)
+    genericGLM <- h2o.genericModel(mojo_path)
     biny <- h2o.loadModel(path = biny_path)
     
 
-    predict <- h2o.predict(object = mod_w_offset, newdata = mt),
-    predict0 <- h2o.predict(object = mojo, newdata = mt),
+    predict <- h2o.predict(object = mod_w_offset, newdata = mt)
+    predict0 <- h2o.predict(object = mojo, newdata = mt)
     predict1 <- h2o.predict(object = biny, newdata = mt)
+    predict2 <- h2o.predict(object = genericGLM, newdata = mt)
 
     
     # in-memory model and binary match, mojo way off
