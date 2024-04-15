@@ -16,7 +16,7 @@ We are excited to announce the release of H2O-3 3.46.0.1! Some of the highlights
 Security patch updates
 ''''''''''''''''''''''
 
-H2O should always be deployed behind firewalls and in protected clusters. Many of the reported vulnerabilities don’t apply because of this because they assume that H2O isn’t deployed under any protection. Regardless, there are several vulnerabilities we did fix during this release:
+H2O should always be deployed behind firewalls and in protected clusters. Many of the reported vulnerabilities assume that H2O isn’t deployed under any protection. Regardless, there are several vulnerabilities we did fix during this release:
 
 - `CVE-2023-6016 <https://github.com/advisories/GHSA-p3v8-5qc4-7p8r>`__: We introduced a Java Property that disables POJO import (defaults to ``disabled``) to avoid remote code execution (courtesy of Marek Novotný).
 - `CVE-2023-35116 <https://github.com/h2oai/h2o-3/issues/16067>`__: We upgraded the jackson-databind version to address potential vulnerabilities (thanks to Marek Novotný).
