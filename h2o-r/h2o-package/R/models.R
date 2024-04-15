@@ -2685,24 +2685,23 @@ h2o.coef_with_p_values <- function(object) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#'
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv"
-#' train <- h2o.importFile(f) # need to add linear constraints here
-#' predictors <- c("C11", "C12", "C13", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20")
-#' col_names <- c("C11", "C13", "constant", "C14", "C15", "constant")
-#' values <- c(0.5, 1.0, 100, 3, -4, 200)
-#' types <- c("lessthanequal", "lessthanequal", "lessthanqual", "lessthanequal", "lessthanqual", "lessthanequal")
-#' constraints_numbers <- c(0, 0, 0, 1, 1, 1)
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "acceleration"
+#' col_names <- c("power", "weight", "constant")
+#' values <- c(0.5, 1.0, 100)
+#' types <- c("lessthanequal", "lessthanequal", "lessthanqual")
+#' constraints_numbers <- c(0, 0, 0)
 #' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
-#' response <- "C21"
-#' h2o_glm <- h2o.glm(seed = 1234, 
-#'                     lambda=0.0,
-#'                     solver="irlsm,
-#'                     linear_constraints=con,
-#'                     x = predictors, 
-#'                     y = response, 
-#'                     training_frame = train)
-#' h2o.get_constraints_info(h2o_glm)
+#' cars_model <- h2o.glm(y=response, 
+#'                                  x=predictors, 
+#'                                  training_frame = cars,
+#'                                  linear_constraints=con,
+#'                                  lambda=0.0,
+#'                                  family="gaussian")
+#' print(h2o.get_constraints_info(h2o_glm))
 #' }
 #' @export
 h2o.get_constraints_info <- function(object) {
@@ -2728,24 +2727,23 @@ h2o.get_constraints_info <- function(object) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#'
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv"
-#' train <- h2o.importFile(f) # need to add linear constraints here
-#' predictors <- c("C11", "C12", "C13", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20")
-#' col_names <- c("C11", "C13", "constant", "C14", "C15", "constant")
-#' values <- c(0.5, 1.0, 100, 3, -4, 200)
-#' types <- c("lessthanequal", "lessthanequal", "lessthanqual", "lessthanequal", "lessthanqual", "lessthanequal")
-#' constraints_numbers <- c(0, 0, 0, 1, 1, 1)
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "acceleration"
+#' col_names <- c("power", "weight", "constant")
+#' values <- c(0.5, 1.0, 100)
+#' types <- c("lessthanequal", "lessthanequal", "lessthanqual")
+#' constraints_numbers <- c(0, 0, 0)
 #' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
-#' response <- "C21"
-#' h2o_glm <- h2o.glm(seed = 1234, 
-#'                     lambda=0.0,
-#'                     solver="irlsm,
-#'                     linear_constraints=con,
-#'                     x = predictors, 
-#'                     y = response, 
-#'                     training_frame = train)
-#' h2o.all_constraints_passed(h2o_glm)
+#' cars_model <- h2o.glm(y=response, 
+#'                                  x=predictors, 
+#'                                  training_frame = cars,
+#'                                  linear_constraints=con,
+#'                                  lambda=0.0,
+#'                                  family="gaussian")
+#' print(h2o.all_constraints_passed(cars_model))
 #' }
 #' @export
 h2o.all_constraints_passed <- function(object) {
