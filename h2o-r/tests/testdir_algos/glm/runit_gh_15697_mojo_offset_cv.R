@@ -51,6 +51,13 @@ test_glm_mojo_offset_fold_columns <- function() {
     compareFrames(predict, predict0)
     compareFrames(predict, predict1)
     compareFrames(predict, predict2)
+    
+    # remove the fold column in the dataset for prediction
+    predict3 <- h2o.predict(object = mojo, newdata = mt[-c(13)])
+    predict4 <- h2o.predict(object = genericGLM, newdata = mt[-c(13)])
+    # make sure prediction still matches after removing fold column when calling predict
+    compareFrames(predict, predict3)
+    compareFrames(predict, predict4)
 }
 
 doTest("Fix GLM mojo with offset and fold column", test_glm_mojo_offset_fold_columns)
