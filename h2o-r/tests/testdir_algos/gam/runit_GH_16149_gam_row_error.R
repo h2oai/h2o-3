@@ -2,9 +2,6 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 library(data.table)
-library(dplyr)
-library(h2o) # or load your h2o in a different way
-library(ggplot2)
 
 # This test was provided by a customer.  No exit condition is needed as
 # the test before my fix always failed.  As long as this test completes
