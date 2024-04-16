@@ -46,19 +46,11 @@ test_glm_mojo_offset_fold_columns <- function() {
     predict0 <- h2o.predict(object = mojo, newdata = mt)
     predict1 <- h2o.predict(object = biny, newdata = mt)
     predict2 <- h2o.predict(object = genericGLM, newdata = mt)
-
     
-    # in-memory model and binary match, mojo way off
-    
-    #     predict predict0 predict1
-    # 1 21.84395 33.36761 21.84395
-    # 2 21.84395 32.36761 21.84395
-    # 3 26.08886 33.43796 26.08886
-    # 4 19.82676 31.35042 19.82676
-    # 5 14.55267 29.25089 14.55267
-    # 6 20.50602 31.02968 20.50602
-    # 
-    # [32 rows x 3 columns]
+    # check all predicts match
+    compareFrames(predict, predict0)
+    compareFrames(predict, predict1)
+    compareFrames(predict, predict2)
 }
 
 doTest("Fix GLM mojo with offset and fold column", test_glm_mojo_offset_fold_columns)
