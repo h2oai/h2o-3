@@ -2694,7 +2694,7 @@ h2o.coef_with_p_values <- function(object) {
 #' values <- c(0.5, 1.0, 100)
 #' types <- c("lessthanequal", "lessthanequal", "lessthanqual")
 #' constraints_numbers <- c(0, 0, 0)
-#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
+#' con <- as.h2o(data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers))
 #' cars_model <- h2o.glm(y=response, 
 #'                                  x=predictors, 
 #'                                  training_frame = cars,
@@ -2736,7 +2736,7 @@ h2o.get_constraints_info <- function(object) {
 #' values <- c(0.5, 1.0, 100)
 #' types <- c("lessthanequal", "lessthanequal", "lessthanqual")
 #' constraints_numbers <- c(0, 0, 0)
-#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
+#' con <- as.h2o(data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers))
 #' cars_model <- h2o.glm(y=response, 
 #'                                  x=predictors, 
 #'                                  training_frame = cars,
