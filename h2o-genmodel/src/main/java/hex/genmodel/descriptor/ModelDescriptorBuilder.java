@@ -44,7 +44,6 @@ public class ModelDescriptorBuilder {
         private final double[] _modelClassDistrib;
         private final String _offsetColumn;
         private final String _foldColumn;
-       // private final String _foldColumn;
         private final String _weightsColumn;
         private final String _treatmentColumn;
         private final String[][] _domains;
