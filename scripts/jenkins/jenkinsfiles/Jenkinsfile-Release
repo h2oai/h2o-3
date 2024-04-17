@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def NODE_LABEL = 'h2o-3 && docker && !mr-0xc8 && (!micro || micro_21)'
+def NODE_LABEL = 'h2o-3'
 
 def pipelineContext = null
 def result = 'FAILURE'
@@ -17,7 +17,7 @@ try {
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
-                env.PYTHON_VERSION = '3.6'
+                env.PYTHON_VERSION = '3.7'
                 env.R_VERSION = '3.4.1'
 
                 sh 'printenv | sort'
@@ -91,6 +91,7 @@ try {
 
                                 # FIXME: Version of docutils should be installed in install_python_version to fix PUBDEV-8327 issue
                                 pip install docutils==0.16
+                                pip install "jinja2<3.1"
 
                                 mkdir -p ${env.BUILD_NUMBER_DIR}
                                 cd ${env.BUILD_NUMBER_DIR}
@@ -158,6 +159,10 @@ try {
                         try {
                             pipelineContext.getBuildSummary().addStageSummary(this, TAG_STAGE_NAME, env.BUILD_NUMBER_DIR)
                             pipelineContext.getBuildSummary().setStageDetails(this, TAG_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            sh """
+                                git config --global user.name "h2o-ops"
+                                git config --global user.email "h2o-ops@h2o.ai"
+                            """
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}
                                 git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"

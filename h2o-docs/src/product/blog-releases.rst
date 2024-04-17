@@ -6,253 +6,47 @@ This page houses the most recent major release blog and focused content blogs fo
 Major Release Blogs
 -------------------
 
-H2O Release 3.44
+H2O Release 3.46
 ~~~~~~~~~~~~~~~~
 
-.. image:: /images/blog/rel-3-44.png
+.. image:: /images/blog/rel-3-46.png
 
-We are excited to announce the release of H2O-3 3.44.0.1! We have added and improved many items. A few of our highlights are the implementation of AdaBoost, Shapley values support, Python 3.10 and 3.11 support, and added custom metric support for Deep Learning, Uplift Distributed Random Forest (DRF), Stacked Ensemble, GLM, and AutoML. Please read on for more details.
+We are excited to announce the release of H2O-3 3.46.0.1! Some of the highlights of this major release are that we added custom metric support for XGBoost, allowed grid search models to be sorted with custom metrics, and we enabled H2O MOJO and POJO to work with MLFlow. Several improvements were also made to the Uplift model (like MLI support). Another exciting update is that we now allow GLM models that were previously built to be used to calculate full loglikelihood and AIC. We also focused on fixing security vulnerabilities. Please read on for more details!
 
-AdaBoost (Adam Valenta)
-'''''''''''''''''''''''
+Security patch updates
+''''''''''''''''''''''
 
-We are proud to introduce `AdaBoost <data-science/adaboost.html>`__, an algorithm known for its effectiveness in improving model performance. AdaBoost is particularly notable for its approach in constructing an ensemble of weak learners (typically decision trees) and sequentially refining them to enhance predictive accuracy. It achieves this by assigning higher weights to misclassified data points in each iteration. This emphasizes the correction of errors and ultimately leads to a more precise and robust predictive model. This adaptability and refinement makes AdaBoost a valuable tool in various domains, allowing it to aid in better predictions and informed decision-making.
+H2O should always be deployed behind firewalls and in protected clusters. Many of the reported vulnerabilities assume that H2O isn’t deployed under any protection. Regardless, there are several vulnerabilities we did fix during this release:
 
-.. tabs::
-    .. code-tab:: r R
+- `CVE-2023-6016 <https://github.com/advisories/GHSA-p3v8-5qc4-7p8r>`__: We introduced a Java Property that disables POJO import (defaults to ``disabled``) to avoid remote code execution (courtesy of Marek Novotný).
+- `CVE-2023-35116 <https://github.com/h2oai/h2o-3/issues/16067>`__: We upgraded the jackson-databind version to address potential vulnerabilities (thanks to Marek Novotný).
+- `SYNK-JAVA-CIMNUMBUSDS-6247633 <https://security.snyk.io/vuln/SNYK-JAVA-COMNIMBUSDS-6247633>`__: We upgraded the nimbus-jose-jwt version to enhance security and to mitigate potential risks (kudos to Adam Valenta).
+- `CVE-2023-6038 <https://github.com/h2oai/h2o-3/issues/15972>`__ and `CVE-2023-6569 <https://nvd.nist.gov/vuln/detail/CVE-2023-6569>`__: We introduced a new configuration option for filtering file system access during reading and writing in response to security concerns (credit to Bartosz Krasinski).
 
-        library(h2o)
-        h2o.init()
+XGBoost support for customized metrics (Adam Valenta)
+'''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-        # Import the prostate dataset into H2O:
-        prostate <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-        predictors <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
-        response <- "CAPSULE"
-        prostate[response] <- as.factor(prostate[response])
+XGBoost now supports the ``custom_metric_func`` parameter which lets you specify any desired metric. The ``custom_metric_func`` parameter is well known from other algorithms like GBM and Deep Learning. To see it in action, please look to our `documentation <data-science/algo-params/custom_metric_func.html>`__.
 
-        # Build and train the model:
-        adaboost_model <- h2o.adaBoost(nlearners=50,
-                                       learn_rate = 0.5,
-                                       weak_learner = "DRF",
-                                       x = predictors,
-                                       y = response,
-                                       training_frame = prostate)
+Loglikelihood and AIC calculation support for GLM MOJOs (Yuliia Syzon)
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-        # Generate predictions:
-        h2o.predict(adaboost_model, prostate)
+GLM MOJOs now support the calculation of loglikelihood and AIC given a dataset with the response column when the MOJO is loaded with the H2O Generic model. To enable this feature, you have to build the GLM model with ``calc_like=True``.
 
-    .. code-tab:: python
+MLFlow Support (Marek Novotný)
+''''''''''''''''''''''''''''''
 
-        import h2o
-        from h2o.estimators import H2OAdaBoostEstimator
-        h2o.init()
+We added the `libraries from MLFlow <https://github.com/h2oai/h2o-3/tree/master/h2o-py-mlflow-flavor#readme>`__ (and necessary code) to enable you to use H2O-3 MOJO and POJO with the MLFlow frameworks.
 
-        # Import the prostate dataset into H2O:
-        prostate = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
-        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-
-        # Build and train the model:
-        adaboost_model = H2OAdaBoostEstimator(nlearners=50,
-                                              learn_rate = 0.8,
-                                              weak_learner = "DRF",
-                                              seed=0xBEEF)
-        adaboost_model.train(y = "CAPSULE", training_frame = prostate)
-
-        # Generate predictions:
-        pred = adaboost_model.predict(prostate)
-        pred
-
-Shapley support for ensemble models (Tomáš Frýda)
-'''''''''''''''''''''''''''''''''''''''''''''''''
-
-Stacked Ensembles now supports SHapley Additive exPlanations (SHAP) estimation using the Generalized-DeepSHAP method. This is only supported for base models and metalearner models that support SHAP estimation with a background frame. Support for SHAP with a background frame was added for:
-
-Deep Learning (`DeepSHAP <https://arxiv.org/abs/1705.07874>`__),
-DRF/ Extremely Randomized Trees (XRT) (`Independent TreeSHAP <https://arxiv.org/abs/1905.04610>`__),
-Gradient Boosting Machine (GBM) (`Independent TreeSHAP <https://arxiv.org/abs/1905.04610>`__),
-Generalized Linear Models (GLM), and
-XGBoost (`Independent TreeSHAP <https://arxiv.org/abs/1905.04610>`__).
-
-There are two variants of the newly implemented SHAP: baseline SHAP and marginal SHAP (default when calling predict_contributions with a background dataset). Baseline SHAP returns contributions for each point from the background dataset. Marginal SHAP returns the average contribution across the whole background dataset. The calculation of both of these SHAP methods can have big memory requirements because the result of the baseline has number of rows equal to :math:`nrows(frame) \times nrow(background\_frame)`. For marginal SHAP contributions in Stacked Ensembles, we optimized the calculation by going through the whole process (baseline SHAP —> average) several times, so the memory usage is small than :math:`(number of base models + 1) \times nrow(frame) \times nrow(background\_frame)` (unless the frame is very small).
-
-The new SHAP implementation requires you to choose your references, or background dataset. This can be used for getting new insights as seen in Figure 3 of `Explaining a series of models by propagating Shapley values <https://www.nature.com/articles/s41467-022-31384-3>`__. It can also be used to comply with some regulations that require explanations with regards to some reference.
-
-For example, according to the `Consumer Financial Protection Bureau <https://www.consumerfinance.gov/rules-policy/regulations/1002/interp-9/#9-b-2-Interp-5>`__, for credit denials in the US, the regulatory commentary suggests to “identify the factors for which the applicant’s score fell furthest below the average score for each of those factors achieved by applicants whose total score was at or slightly above the minimum passing score.” This process can be done by using the applicants just above the cutoff to receive the credit product as the background dataset according to Hall et al. in their book Machine Learning for High-Risk Applications.
-
-.. tabs::
-    .. code-tab:: r R
-
-        # Import the prostate dataset:
-        pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-
-        # Set the factors:
-        pros[, 2] <- as.factor(pros[, 2])
-        pros[, 4] <- as.factor(pros[, 4])
-        pros[, 5] <- as.factor(pros[, 5])
-        pros[, 6] <- as.factor(pros[, 6])
-        pros[, 9] <- as.factor(pros[, 9])
-
-        # Split the data into training and validation sets:
-        pros_splits <- h2o.splitFrame(data = pros, ratio = 0.8, seed = 1234)
-        train <- pros_splits[[1]]
-        test <- pros_splits[[2]]
-
-        # Build a GBM model:
-        model <- h2o.gbm(y = "CAPSULE",
-                         x = 3:9,
-                         training_frame = train,
-                         distribution = "bernoulli",
-                         ntrees = 100,
-                         max_depth = 4,
-                         learn_rate = 0.1,
-                         seed = 1234)
-
-        # Plot the SHAP summary plot:
-        h2o.shap_summary_plot(model,
-                              prostate_test,
-                              background_frame=prostate_train[prostate_train$AGE > 70, ])
-
-    .. code-tab:: python
-
-        from h2o.estimators.gbm import H2OGradientBoostingEstimator
-
-        # Import the prostate dataset:
-        pros = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-
-        # Set the factors:
-        pros["CAPSULE"] = pros["CAPSULE"].asfactor()
-
-        # Split the data into training and validation sets:
-        train, test = pros.split_frame(ratios = [.75], seed = 1234)
-
-        # Build a GBM model:
-        model = H2OGradientBoostingEstimator(distribution = "bernoulli",
-                                             ntrees = 100,
-                                             max_depth = 4,
-                                             learn_rate = 0.1,
-                                             seed = 1234)
-        model.train(y = "CAPSULE",
-                    x = ["AGE", "RACE", "PSA", "GLEASON"],
-                    training_frame = train)
-
-        # Plot the SHAP summary plot:
-        model.shap_summary_plot(test, background_frame=train[train["AGE"] > 70, :])
-
-Fixed H2O-3 Vulnerabilities (Marek Novotný)
-'''''''''''''''''''''''''''''''''''''''''''
-
-This release contains fixes for more than 30 `CVE <https://www.cve.org/>`__ vulnerabilities in the standalone h2o.jar, Python package, R package, and the `docker image <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__ for Kubernetes. These deployment artifacts don’t contain any critical or high CVE vulnerabilities at the time of writing this article.
-
-Categorical feature support for Single Decision Tree (Yuliia Syzon)
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-We added support for categorical columns into the Single Decision Tree. You can now build a binary Single Decision Tree classifier with both numerical and categorical columns!
-
-Categorical values are treated as non-sortable values. When splitting the dataset into nodes, a categorical binning approach is utilized. It's important for you to note that the number of categories shouldn't be excessively large. Ideally, up to 10 categories is optimal for this implementation.
-
-Uplift DRF enhancements (Veronika Maurerova)
+Uplift DRF improvements (Veronika Maurerova)
 ''''''''''''''''''''''''''''''''''''''''''''
 
-There have been several enhancements to the Uplift DRF algorithm.
+In this release, we added many improvements for the Uplift DRF algorithm to provide you with more opportunities for tuning and interpreting your models. We added grid search, early stopping, `partial dependence plots <data-science/upliftdrf.html#partial-dependence-plot-pdp>`__, and `variable importance <data-science/upliftdrf.html#variable-importance>`__.
 
-New treatment effect metrics
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Python documentation improvements (Shaun Yogeshwaran)
+'''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-`Treatment effect metrics <data-science/upliftdrf.html#treatment-effect-metrics-ate-att-atc>`__ show how the uplift predictions look across the whole dataset (population). Scored data are used to calculate these metrics (``uplift_predict`` column = individual treatment effect).
-
-- Average Treatment Effect (ATE): the average expected uplift prediction (treatment effect) over all records in the dataset.
-- Average Treatment Effect on the Treated (ATT): the average expected uplift prediction (treatment effect) of all records in the dataset belonging to the treatment group.
-- Average Treatment Effect on the Control (ATC): the average expected uplift prediction (treatment effect) of all records in the dataset belonging to the control group.
-
-Custom metric functionality enabled
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You can now specify your custom metric if you need a special metric calculation.
-
-.. tabs::
-    .. code-tab:: python
-
-        import h2o
-        from h2o.estimators import H2OUpliftRandomForestEstimator
-        h2o.init()
-
-        # Import the cars dataset into H2O:
-        data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
-
-        # Set the predictors, response, and treatment column:
-        predictors = ["f1", "f2", "f3", "f4", "f5", "f6","f7", "f8"]
-        # set the response as a factor
-        response = "conversion"
-        data[response] = data[response].asfactor()
-        # set the treatment as a factor
-        treatment_column = "treatment"
-        data[treatment_column] = data[treatment_column].asfactor()
-
-        # Split the dataset into a train and valid set:
-        train, valid = data.split_frame(ratios=[.8], seed=1234)
-
-        # Define custom metric function
-        # ``pred`` is prediction array of length 3, where:
-        #   - pred[0]  = ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
-        #   - pred[1] = ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
-        #   - pred[2] = ``p_y1_ct0``: probability the response is 1 if the row is from the control group
-        # ``act`` is array with original data where
-        #   - act[0] = target variable
-        #   - act[1] = if the record belongs to the treatment or control group
-        # ``w`` (weight) and ``o`` (offset) are nor supported in Uplift DRF yet
-
-        class CustomAteFunc:
-            def map(self, pred, act, w, o, model):
-                return [pred[0], 1]
-
-            def reduce(self, l, r):
-                return [l[0] + r[0], l[1] + r[1]]
-
-            def metric(self, l):
-                return l[0] / l[1]
-
-        custom_metric = h2o.upload_custom_metric(CustomAteFunc, func_name="ate", func_file="mm_ate.py")
-
-        # Build and train the model:
-        uplift_model = H2OUpliftRandomForestEstimator(ntrees=10,
-                                                      max_depth=5,
-                                                      treatment_column=treatment_column,
-                                                      uplift_metric="KL",
-                                                      min_rows=10,
-                                                      seed=1234,
-                                                      auuc_type="qini"
-                                                      custom_metric_func=custom_metric)
-        uplift_model.train(x=predictors,
-                           y=response,
-                           training_frame=train,
-                           validation_frame=valid)
-
-        # Eval performance:
-        perf = uplift_model.model_performance()
-        custom_att = perf._metric_json["training_custom"]
-        print(custom_att)
-        att = perf.att(train=True)
-        print(att)
-
-MOJO support introduced
-^^^^^^^^^^^^^^^^^^^^^^^
-
-You can import the Uplift DRF model as a MOJO and deploy it to your environment.
-
-Prediction Table renamed
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Due to your feedback, we’ve chosen to rename the prediction table column names to be more precise. We changed ``p_y1_ct1`` to ``p_y1_without_treatment`` and ``p_y1_ct0`` to ``p_y1_with_treatment``.
-
-Make metrics from a new dataset with custom AUUC thresholds
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This new feature enables custom AUUC thresholds to calculate the AUUC metric using the make_metrics method. If you don’t specify custom thresholds, the default ones will be used.
-
-Deep Learning with custom metric
-''''''''''''''''''''''''''''''''
-
-We have implemented `custom metric support for the Deep Learning model <data-science/algo-params/custom_metric_func.html>`__. This option is not available for AutoEncoder Deep Learning models.
+We improved the Python documentation for the `GAM <https://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2ogeneralizedadditiveestimator>`__, `Model Selection <https://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2omodelselectionestimator>`__, and `ANOVA GLM <https://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2oanovaglmestimator>`__ algorithms by expanding the number of available examples. More will follow in the coming releases!
 
 Prior Release Blogs
 ~~~~~~~~~~~~~~~~~~~

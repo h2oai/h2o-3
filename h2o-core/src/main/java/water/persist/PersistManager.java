@@ -842,6 +842,20 @@ public class PersistManager {
   }
 
   /**
+   * Returns true when path matches file_deny_glob input argument
+   *
+   * @param path path to a file
+   * @return boolean
+   */
+  public boolean isFileAccessDenied(String path) {
+    if (isHdfsPath(path) || isGcsPath(path) || isS3Path(path)) {
+      return false;
+    }
+    File f = new File(FileUtils.getURI(path));
+    return H2O.ARGS.file_deny_glob.matches(f.toPath().normalize());
+  }
+
+  /**
    * Finds all entries in the list that matches the regex
    * @param prefix The substring to extract before pattern matching
    * @param fileList The list of strings to check

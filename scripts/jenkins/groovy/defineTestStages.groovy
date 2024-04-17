@@ -82,7 +82,7 @@ def call(final pipelineContext) {
       imageSpecifier: "python-3.7-jdk-8"
     ],
     [
-      stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 8,
+      stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 16,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
@@ -146,7 +146,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
       imageSpecifier: "r-3.5.3-jdk-8"
     ],
     [
@@ -195,7 +195,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 Medium-large', target: 'test-r-medium-large', rVersion: '3.5.3',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.5 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.5.3',
@@ -220,7 +220,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 350, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.6-jdk-8'
     ],
@@ -267,7 +267,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'MOJO Compatibility (Java 7)', target: 'test-mojo-compatibility',
-      archiveFiles: false, timeoutValue: 20, hasJUnit: false, pythonVersion: '3.7', javaVersion: 7,
+      archiveFiles: false, timeoutValue: 60, hasJUnit: false, pythonVersion: '3.7', javaVersion: 7,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo)
       imageSpecifier: "mojocompat", imageVersion: 43,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
@@ -300,7 +300,8 @@ def call(final pipelineContext) {
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true,
       image: 'harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3-graalvm-17:42', // manually build, see Dockerfile-graalvm
-      javaVersion: 17
+      javaVersion: 17,
+      pythonVersion: '3.6'
     ],
     [
       stageName: 'GBM Benchmark noscoring-java8', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
@@ -333,7 +334,6 @@ def call(final pipelineContext) {
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), pythonVersion: '3.7',
       rVersion: '4.0.2',
-      imageVersion: 43,
       healthCheckSuppressed: true
     ],
     [
@@ -353,7 +353,6 @@ def call(final pipelineContext) {
       customData: [algorithm: 'xgb-vanilla'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), pythonVersion: '3.7',
       rVersion: '4.0.2',
-      imageVersion: 43,
       healthCheckSuppressed: true
     ],
     [
@@ -363,7 +362,6 @@ def call(final pipelineContext) {
       customData: [algorithm: 'xgb-dmlc'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), pythonVersion: '3.7',
       rVersion: '4.0.2',
-      imageVersion: 43,
       healthCheckSuppressed: true
     ],
     [ 
@@ -421,12 +419,12 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 Init Java 11', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 11,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
       imageSpecifier: "r-3.5.3-jdk-11"
     ],
     [
       stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '3.6', javaVersion: 17,
-      timeoutValue: 350, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-17"
     ],
@@ -452,11 +450,11 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.3 AutoML', target: 'test-r-automl', rVersion: '3.3.3',
@@ -475,40 +473,40 @@ def call(final pipelineContext) {
   // Should contain all Java versions and also the minimum supported Python version. 
   def NIGHTLY_STAGES = [
     [
-      stageName: 'Java 10 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
+      stageName: 'Java 10 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 10, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 20,
+      stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 12 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 12, timeoutValue: 20,
+      stageName: 'Java 12 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 12, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 13 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 13, timeoutValue: 20,
+      stageName: 'Java 13 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 13, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 14 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 14, timeoutValue: 20,
+      stageName: 'Java 14 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 14, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 15 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 15, timeoutValue: 20,
+      stageName: 'Java 15 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 15, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 16 Smoke', target: 'test-junit-16-smoke-jenkins', javaVersion: 16, timeoutValue: 20,
+      stageName: 'Java 16 Smoke', target: 'test-junit-16-smoke-jenkins', javaVersion: 16, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 20,
+      stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
       stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '3.6', javaVersion: 11,
-      timeoutValue: 340, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-11"
     ],
@@ -546,7 +544,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.11 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.11',
-      timeoutValue: 380, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 600, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
@@ -561,6 +559,10 @@ def call(final pipelineContext) {
       stageName: 'R4.0 Explain', target: 'test-r-explain', rVersion: '4.0.2',
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
+    [
+      stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 10,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ]
   ]
 
   def supportedHadoopDists = pipelineContext.getBuildConfig().getSupportedHadoopDistributions()
@@ -792,7 +794,7 @@ def call(final pipelineContext) {
     xgbEnvs.each {xgbEnv ->
       final def stageDefinition = [
         stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins",
-        timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+        timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
         additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.7',
         image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv, xgbImageBuildTag),
         nodeLabel: xgbEnv.nodeLabel
@@ -942,7 +944,7 @@ private void invokeStageUsingDefinition(final stageDef, final pipelineContext) {
 private void invokeStage(final pipelineContext, final body) {
 
   final String DEFAULT_JAVA = '8'
-  final String DEFAULT_PYTHON = '3.6'
+  final String DEFAULT_PYTHON = '3.7'
   final String DEFAULT_R = '3.5.3'
   final int DEFAULT_TIMEOUT = 60
   final String DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'

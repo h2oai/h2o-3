@@ -277,6 +277,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
+  
+  public boolean isGeneric() {
+    return false;
+  }
 
   public boolean havePojo() {
     if (_parms._preprocessors != null) return false; // TE processor not included to current POJO (see PUBDEV-8508 for potential fix)
@@ -309,7 +313,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public GridSortBy getDefaultGridSortBy() {
     if (! isSupervised())
       return null;
-    else if (_output.nclasses() > 1)
+    else if (_output.hasTreatment()){
+      return GridSortBy.AUUC;
+    } else if (_output.nclasses() > 1)
       return GridSortBy.LOGLOSS;
     else
       return GridSortBy.RESDEV;
@@ -319,6 +325,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public static final GridSortBy LOGLOSS = new GridSortBy("logloss", false);
     public static final GridSortBy RESDEV = new GridSortBy("residual_deviance", false);
     public static final GridSortBy R2 = new GridSortBy("r2", true);
+    public static final GridSortBy AUUC = new GridSortBy("auuc", false);
 
     public final String _name;
     public final boolean _decreasing;
@@ -1378,7 +1385,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public double likelihood(double w, double y, double[] f) {
-    return 0.0; // place holder.  This function is overridden in GLM.
+    return Double.NaN; // placeholder.  This function is overridden in GLM and GenericModel.
+  }
+
+  public double aic(double likelihood) {
+    return Double.NaN; // placeholder.  This function is overridden in GenericModel.
   }
 
   public ScoringInfo[] scoring_history() { return scoringInfo; }
@@ -1964,11 +1975,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
   
-  protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
+  protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics) {
     Frame adaptFr = new Frame(fr);
-    applyPreprocessors(adaptFr, tmpFrames);
+    applyPreprocessors(adaptFr);
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    tmpFrames.add(adaptFr);
     if (msg.length > 0) {
       for (String s : msg) {
         if ((_output.responseName() == null) || !containsResponse(s, _output.responseName())) {  // response column missing will not generate warning for prediction
@@ -1977,38 +1987,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }
+    Scope.track(adaptFr);
     return adaptFr;
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    // Adapt frame, clean up the previous score warning messages
-    _warningsP = new String[0];
-    computeMetrics = computeMetrics &&
-            (!_output.hasResponse() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad()));
-    List<Frame> tmpFrames = new ArrayList<>();
-    Frame adaptFr = adaptFrameForScore(fr, computeMetrics, tmpFrames);
+    try (Scope.Safe s = Scope.safe(fr)) {
+      // Adapt frame, clean up the previous score warning messages
+      _warningsP = new String[0];
+      computeMetrics = computeMetrics &&
+              (!_output.hasResponse() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad()));
+      Frame adaptFr = adaptFrameForScore(fr, computeMetrics);
 
-    // Predict & Score
-    PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc); 
-    Frame output = result.getPredictions();
-    result.makeModelMetrics(fr, adaptFr);
+      // Predict & Score
+      PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc);
+      Frame output = result.getPredictions();
+      result.makeModelMetrics(fr, adaptFr);
 
-    Vec predicted = output.vecs()[0]; // Modeled/predicted response
-    String[] mdomain = predicted.domain(); // Domain of predictions (union of test and train)
-    // Output is in the model's domain, but needs to be mapped to the scored
-    // dataset's domain.
-    if(_output.isClassifier() && computeMetrics && !_output.hasTreatment()) {
-      Vec actual = fr.vec(_output.responseName());
-      if( actual != null ) {  // Predict does not have an actual, scoring does
-        String[] sdomain = actual.domain(); // Scored/test domain; can be null
-        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
+      Vec predicted = output.vecs()[0]; // Modeled/predicted response
+      String[] mdomain = predicted.domain(); // Domain of predictions (union of test and train)
+      // Output is in the model's domain, but needs to be mapped to the scored
+      // dataset's domain.
+      if (_output.isClassifier() && computeMetrics && !_output.hasTreatment()) {
+        Vec actual = fr.vec(_output.responseName());
+        if (actual != null) {  // Predict does not have an actual, scoring does
+          String[] sdomain = actual.domain(); // Scored/test domain; can be null
+          if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
+            CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
+        }
       }
+      return Scope.untrack(output);
     }
-    for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
-    return output;
   }
   
-  private void applyPreprocessors(Frame fr, List<Frame> tmpFrames) {
+  private void applyPreprocessors(Frame fr) {
     if (_parms._preprocessors == null) return;
     
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
@@ -2018,7 +2029,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       ModelPreprocessor preprocessor = key.get();
       result = preprocessor.processScoring(result, this);
-      tmpFrames.add(result);
+      Scope.track(result);
     }
     fr.restructure(result.names(), result.vecs()); //inplace
   }
@@ -3135,11 +3146,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   static <T extends Lockable<T>> int deleteAll(Key<T>[] keys) {
     int c = 0;
     for (Key k : keys) {
-      T t = DKV.getGet(k);
-      if (t != null) {
-        t.delete(); //delete all subparts
-        c++;
-      }
+      if (Keyed.remove(k)) c++;
     }
     return c;
   }

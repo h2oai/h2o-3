@@ -9,15 +9,17 @@ cython==0.29.34
 twine==1.10.0
 urllib3==1.26.5
 grip==4.4.0
-wheel==0.38.0
-numpy==1.23.5
-scipy==1.2.3; python_version == '3.6'
+wheel<=0.42.0; python_version < '3.7'
+wheel==0.42.0; python_version >= '3.7'
+numpy<=1.23.5; python_version < '3.8'
+numpy==1.23.5; python_version >= '3.8'
+scipy==1.5.4; python_version == '3.6'
 scipy==1.6.3; python_version == '3.7'
 scipy==1.10.1; python_version > '3.7'
 pandas==0.24.2; python_version == '3.6'
 pandas==1.3.5; python_version > '3.6'
 pyarrow==10.0.1; python_version > '3.6'
-statsmodels==0.9.0; python_version == '3.6'
+statsmodels==0.12.2; python_version == '3.6'
 statsmodels==0.13.5; python_version > '3.6'
 patsy==0.5.3
 scikit-learn==0.24.2; python_version <= '3.7'
@@ -32,17 +34,23 @@ sphinx_rtd_theme==0.2.4
 sphinxcontrib-osexample>=0.1.1
 shap==0.29.1
 boto3==1.18.65
-lifelines>=0.19.5
+lifelines<0.27; python_version < '3.9'
+lifelines>=0.27; python_version >= '3.9'
 xlsxwriter==1.3.7
-xgboost==1.7.6
+xgboost==1.7.6; python_version >= '3.8'
 causalml==0.12.3; python_version <= '3.7'
 causalml==0.14.1; python_version > '3.7' and python_version < '3.11'
 colorama
+datatable==1.0.0; python_version <= '3.9'
+polars==0.19.17; python_version > '3.9'
+pyarrow==14.0.1; python_version > '3.9'
 # not directly required, pinned by Snyk to avoid a vulnerability
-pygments==2.7.4; python_version <= '3.7' 
-pygments==2.15.1; python_version > '3.7'
-sphinx==3.0.4; python_version <= '3.8'
+pygments==2.15.1; python_version >= '3.7'
+sphinx==3.5.4; python_version >= '3.6' and python_version <= '3.8'
 sphinx==6.1.3; python_version > '3.8'
-datatable=1.0.0; python_version <= 3.9
-polars=0.19.17; python_version > 3.9
-pyarrows=14.0.1; python_version > 3.9
+typing_extensions==4.1.1; python_version < '3.7'
+typing_extensions==4.7.1; python_version >= '3.7' and python_version < '3.8'
+typing_extensions==4.9.0; python_version >= '3.8'
+mypy==0.971; python_version < '3.7'
+mypy==1.4.1; python_version >= '3.7' and python_version < '3.8'
+mypy==1.8.0; python_version >= '3.8'

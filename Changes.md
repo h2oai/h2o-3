@@ -2,6 +2,53 @@
 
 ## H2O
 
+### 3.46.0.1 - 3/13/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index.html</a>
+
+#### Bug Fix
+- [[#16079]](https://github.com/h2oai/h2o-3/issues/16079) - Updated warning for multithreading in `H2OFrame.as_data_frame`.
+- [[#16063]](https://github.com/h2oai/h2o-3/issues/16063) - Added error to explain method explaining incompatibility with UpliftDRF models.
+- [[#16052]](https://github.com/h2oai/h2o-3/issues/16052) - Fixed finding best split point for UpliftDRF.
+- [[#16043]](https://github.com/h2oai/h2o-3/issues/16043) - Fixed `isin()`.
+- [[#16036]](https://github.com/h2oai/h2o-3/issues/16036) - Fixed `AstMatch` failing with multinode.
+- [[#15978]](https://github.com/h2oai/h2o-3/issues/15978) - Fixed Deep Learning Autoencoder MOJO PredictCSV failure. 
+- [[#15682]](https://github.com/h2oai/h2o-3/issues/15682) - Fixed log when `web_ip` is used.
+- [[#15677]](https://github.com/h2oai/h2o-3/issues/15677) - Fixed match function only returning 1 and `no match`. 
+
+#### Improvement
+- [[#16074]](https://github.com/h2oai/h2o-3/issues/16074) - Improved `perRow` metric calculation by implementing `isGeneric()` method.
+- [[#16060]](https://github.com/h2oai/h2o-3/issues/16060) - Improved log message to show that Apple silicon is not supported. 
+- [[#16033]](https://github.com/h2oai/h2o-3/issues/16033) - Added optional GBLinear grid step to AutoML.
+- [[#16015]](https://github.com/h2oai/h2o-3/issues/16015) - Suppressed the genmodel warnings when `verbose=False`.
+- [[#15809]](https://github.com/h2oai/h2o-3/issues/15809) - Implemented ability to calculate full loglikelihood and AIC for an already-built GLM model. 
+- [[#15791]](https://github.com/h2oai/h2o-3/issues/15791) - Implemented early stopping for UpliftDRF and implemented gridable parameters for UpliftDRF.
+- [[#15684]](https://github.com/h2oai/h2o-3/issues/15684) - Reconfigured all logs to standard error for level `ERROR` and `FATAL`.
+- [[#7325]](https://github.com/h2oai/h2o-3/issues/7325) - Implemented prediction consistency check for constrained models. 
+
+#### New Feature
+- [[#15993]](https://github.com/h2oai/h2o-3/issues/15993) - Added `custom_metric` as a hyperparameter for grid search.
+- [[#15967]](https://github.com/h2oai/h2o-3/issues/15967) - Added custom metrics for XGBoost.
+- [[#15858]](https://github.com/h2oai/h2o-3/issues/15858) - Implemented consistent mechanism that protects frames and their vecs from autodeletion.
+- [[#15683]](https://github.com/h2oai/h2o-3/issues/15683) - Introduced a warning if `web_ip` is not specified that H2O Rest API is listening on all interfaces.
+- [[#15654]](https://github.com/h2oai/h2o-3/issues/15654) - Introduced MLFlow flavors for working with H2O-3 MOJOs and POJOs instead of binary models.
+- [[#6573]](https://github.com/h2oai/h2o-3/issues/6573) - Implemented machine learning interpretability support for UpliftDRF by allowing Uplift models to access partial dependences plots and variable importance.
+
+#### Docs
+- [[#16004]](https://github.com/h2oai/h2o-3/issues/16004) - Updated copyright year in user guide and Python guide.
+- [[#16000]](https://github.com/h2oai/h2o-3/issues/16000) - Fixed Decision Tree Python example.
+- [[#15930]](https://github.com/h2oai/h2o-3/issues/15930) - Fixed GLM Python example.
+- [[#15915]](https://github.com/h2oai/h2o-3/issues/15915) - Added examples to Python documentation for Model Selection algorithm.
+- [[#15798]](https://github.com/h2oai/h2o-3/issues/15798) - Added examples to Python documentation for GAM algorithm.
+- [[#15709]](https://github.com/h2oai/h2o-3/issues/15709) - Added examples to Python documentation for ANOVA GLM algorithm.
+
+#### Security
+- [[#16102]](https://github.com/h2oai/h2o-3/issues/16102) - Addressed SNYK-JAVA-COMNIMBUSDS-6247633 by upgrading nimbus-jose-jwt to 9.37.2.
+- [[#16093]](https://github.com/h2oai/h2o-3/issues/16093) - Addressed CVE-2024-26308 by upgrading org.apache.commons:commons-compress.
+- [[#16067]](https://github.com/h2oai/h2o-3/issues/16067) - Addressed CVE-2023-35116 in the h2o-steam.jar. 
+- [[#15972]](https://github.com/h2oai/h2o-3/issues/15972) - Addressed CVE-2023-6038 by adding option to filter file system for reading and writing.
+- [[#15971]](https://github.com/h2oai/h2o-3/issues/15971) - Addressed CVE-2023-6016 by introducing Java property that disables automatic import of POJOs during `import_mojo` or `upload_mojo`.
+
 ### 3.44.0.3 - 12/20/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/3/index.html</a>

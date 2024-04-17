@@ -93,9 +93,6 @@ public class PartialDependence extends Lockable<PartialDependence> {
     if (!m._output.isSupervised()) {
       throw new IllegalArgumentException("Partial dependence plots are only implemented for supervised models");
     }
-    if (m._output._hasTreatment) {
-      throw new IllegalArgumentException("Partial dependence plots are not implemented for uplift models");
-    }
     int nclasses = m._output.nclasses();
     if(nclasses <= 2 && _targets != null){
       throw new IllegalArgumentException("Targets parameter is available only for multinomial classification.");
@@ -386,7 +383,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         } else {
           fr = _frame_id.get();
         }
-        Frame test = new Frame(fr.names(), fr.vecs());
+        Frame test = new Frame(fr);
         Vec orig = test.remove(_col);
         Vec cons = orig.makeCon(_value);
         if (_col1_cat) cons.setDomain(fr.vec(_col).domain());

@@ -41,7 +41,7 @@ dependencies {
         exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
-    api "org.apache.commons:commons-compress:1.24.0"
+    api "org.apache.commons:commons-compress:1.26.0"
     // Force specific Parquet version to avoid dependency on vulnerable FasterXML jackson-mapper-asl
     api "org.apache.parquet:parquet-hadoop:${defaultParquetVersion}"
     api("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
@@ -51,9 +51,10 @@ dependencies {
     api "com.google.oauth-client:google-oauth-client:1.33.3"
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.15.1') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.16.1') {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
+            because 'Fixes CVE-2023-35116'
         }
         api('org.codehaus.jettison:jettison:1.5.4') {
             because 'Fixes CVE-2023-1436'
@@ -79,6 +80,9 @@ dependencies {
             because 'Fixes CVE-2023-34454'
             because 'Fixes CVE-2023-34453'
             because 'Fixes CVE-2023-43642'
+        }
+        api('org.apache.commons:commons-configuration2:2.10.1') {
+            because 'Fixes CVE-2024-29131'
         }
     }
 }

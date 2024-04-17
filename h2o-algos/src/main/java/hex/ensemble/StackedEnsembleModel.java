@@ -177,25 +177,21 @@ public class StackedEnsembleModel
     List<Integer> baseModelsIdx = new ArrayList<>();
     String[] columns = null;
     baseModelsIdx.add(0);
-    Frame fr = new Frame();
-    Frame levelOneFrame = null;
-    Frame levelOneFrameBg = null;
-    Frame adaptFr = null;
-    Frame adaptFrBg = null;
-    try {
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame fr = new Frame();
       for (Key<Model> bm : _parms._base_models) {
         if (isUsefulBaseModel(bm)) {
           baseModels.add(bm.toString());
           Frame contributions = ((Model.Contributions) bm.get()).scoreContributions(
                   frame,
-                  Key.make(destination_key.toString() + "_" + bm),
+                  Key.make(destination_key.toString()+"_"+bm),
                   j,
                   new ContributionsOptions()
                           .setOutputFormat(options._outputFormat)
                           .setOutputSpace(true)
                           .setOutputPerReference(true),
                   backgroundFrame);
-
+          Scope.track(contributions);
           if (null == columns)
             columns = contributions._names;
 
@@ -214,7 +210,6 @@ public class StackedEnsembleModel
               }
             }
             if (!Arrays.equals(columns, contributions._names)) {
-              Frame.deleteTempFrameAndItsNonSharedVecs(contributions, fr);
               if (Original.equals(options._outputFormat)) {
                 throw new IllegalArgumentException("Base model contributions have different columns likely due to models using different categorical encoding. Please use output_format=\"compact\".");
               }
@@ -223,14 +218,14 @@ public class StackedEnsembleModel
           }
           contributions.setNames(
                   Arrays.stream(contributions._names)
-                          .map(name -> bm + "_" + name)
+                          .map(name -> bm+"_"+name)
                           .toArray(String[]::new)
           );
           fr.add(contributions);
-          Frame.deleteTempFrameAndItsNonSharedVecs(contributions, fr);
           baseModelsIdx.add(fr.numCols());
         }
       }
+      
       if (baseModels.isEmpty())
         throw new RuntimeException("Stacked Ensemble \"" + this._key + "\" doesn't use any base models. Stopping contribution calculation as no feature contributes.");
 
@@ -238,13 +233,11 @@ public class StackedEnsembleModel
       String[] colsWithRows = columns;
       columns = Arrays.copyOfRange(columns, 0, columns.length - 3);
 
-      List<Frame> tmpFrames = new ArrayList<>();
-      adaptFr = adaptFrameForScore(frame, false, tmpFrames);
-      levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, j);
+      Frame adaptFr = adaptFrameForScore(frame, false);
+      Frame levelOneFrame = makeLevelOnePredictFrame(frame, adaptFr, j);
 
-      tmpFrames = new ArrayList<>();
-      adaptFrBg = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, j);
+      Frame adaptFrBg = adaptFrameForScore(backgroundFrame, false);
+      Frame levelOneFrameBg = makeLevelOnePredictFrame(backgroundFrame, adaptFrBg, j);
 
       Frame metalearnerContrib = ((Model.Contributions) _output._metalearner).scoreContributions(levelOneFrame,
               Key.make(destination_key + "_" + _output._metalearner._key), j,
@@ -253,27 +246,20 @@ public class StackedEnsembleModel
                       .setOutputSpace(options._outputSpace)
                       .setOutputPerReference(true),
               levelOneFrameBg);
+      Scope.track(metalearnerContrib);
 
       metalearnerContrib.setNames(Arrays.stream(metalearnerContrib._names)
               .map(name -> "metalearner_" + name)
               .toArray(String[]::new));
 
       fr.add(metalearnerContrib);
-      Frame.deleteTempFrameAndItsNonSharedVecs(metalearnerContrib, fr);
-
-
-      return new GDeepSHAP(columns, baseModels.toArray(new String[0]),
+      DKV.remove(metalearnerContrib.getKey());
+      
+      return Scope.untrack(new GDeepSHAP(columns, baseModels.toArray(new String[0]),
               fr._names, baseModelsIdx.toArray(new Integer[0]), _parms._metalearner_transform)
               .withPostMapAction(JobUpdatePostMap.forJob(j))
               .doAll(colsWithRows.length, Vec.T_NUM, fr)
-              .outputFrame(destination_key, colsWithRows, null);
-
-    } finally {
-      if (null != levelOneFrame) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, frame);
-      if (null != levelOneFrameBg) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrameBg, backgroundFrame);
-      Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
-      if (null != adaptFr) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, frame);
-      if (null != adaptFrBg) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFrBg, backgroundFrame);
+              .outputFrame(destination_key, colsWithRows, null));
     }
   }
 
@@ -292,39 +278,41 @@ public class StackedEnsembleModel
     if (null == backgroundFrame)
       throw H2O.unimpl("StackedEnsemble supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for " + this._key + "...");
-    try {
-      if (options._outputPerReference)
-        return baseLineContributions(frame, destination_key, j , options, backgroundFrame);
-      
-      Function2<Frame, Boolean, Frame> fun = (subFrame, resultIsFinalFrame) -> {
-        String[] columns = null;
-        String[] colsWithBiasTerm = null;
-        Frame indivContribs = baseLineContributions(subFrame,  Key.make(destination_key + "_individual_contribs_for_subframe_"+subFrame._key), j, options, backgroundFrame);
-        columns = Arrays.copyOf(indivContribs.names(), indivContribs.names().length-3);
-        colsWithBiasTerm = Arrays.copyOf(indivContribs.names(), indivContribs.names().length -2 );
-        assert colsWithBiasTerm[colsWithBiasTerm.length - 1].equals("BiasTerm");
-        
-        try {
-          return new ContributionsMeanAggregator(j,(int) subFrame.numRows(), columns.length + 1 /* (bias term) */, (int)backgroundFrame.numRows())
-                  .withPostMapAction(JobUpdatePostMap.forJob(j))
-                  .doAll(columns.length + 1, Vec.T_NUM, indivContribs)
-                  .outputFrame(resultIsFinalFrame
-                          ? destination_key // no subframes -> one result with the destination key
-                          : Key.make(destination_key + "_for_subframe_"+subFrame._key),
-                          colsWithBiasTerm, null);
-        } finally {
-          indivContribs.delete(true);
+    try (Scope.Safe safe = Scope.safe(frame, backgroundFrame)) {
+      Frame contributions;
+      if (options._outputPerReference) {
+        contributions = baseLineContributions(frame, destination_key, j, options, backgroundFrame);
+      } else {
+        Function2<Frame, Boolean, Frame> fun = (subFrame, resultIsFinalFrame) -> {
+          String[] columns = null;
+          String[] colsWithBiasTerm = null;
+          Frame indivContribs = baseLineContributions(subFrame, Key.make(destination_key+"_individual_contribs_for_subframe_"+subFrame._key), j, options, backgroundFrame);
+          columns = Arrays.copyOf(indivContribs.names(), indivContribs.names().length-3);
+          colsWithBiasTerm = Arrays.copyOf(indivContribs.names(), indivContribs.names().length-2);
+          assert colsWithBiasTerm[colsWithBiasTerm.length-1].equals("BiasTerm");
+
+          try {
+            return new ContributionsMeanAggregator(j, (int) subFrame.numRows(), columns.length+1 /* (bias term) */, (int) backgroundFrame.numRows())
+                    .withPostMapAction(JobUpdatePostMap.forJob(j))
+                    .doAll(columns.length+1, Vec.T_NUM, indivContribs)
+                    .outputFrame(resultIsFinalFrame
+                                    ? destination_key // no subframes -> one result with the destination key
+                                    : Key.make(destination_key+"_for_subframe_"+subFrame._key),
+                            colsWithBiasTerm, null);
+          } finally {
+            indivContribs.delete(true);
+          }
+        };
+        if (backgroundFrame.anyVec().nChunks() > H2O.CLOUD._memary.length || // could be map-reduced over the bg frame 
+                !ContributionsWithBackgroundFrameTask.enoughMinMemory(numOfUsefulBaseModels() *
+                        ContributionsWithBackgroundFrameTask.estimatePerNodeMinimalMemory(frame.numCols(), frame, backgroundFrame))) // or we have no other choice due to memory
+          contributions = SplitToChunksApplyCombine.splitApplyCombine(frame, (fr -> fun.apply(fr, false)), destination_key);
+        else {
+          contributions = fun.apply(frame, true);
+          DKV.put(contributions);
         }
-      };
-      if (backgroundFrame.anyVec().nChunks() > H2O.CLOUD._memary.length || // could be map-reduced over the bg frame 
-              !ContributionsWithBackgroundFrameTask.enoughMinMemory(numOfUsefulBaseModels() *
-                      ContributionsWithBackgroundFrameTask.estimatePerNodeMinimalMemory(frame.numCols(), frame, backgroundFrame))) // or we have no other choice due to memory
-        return SplitToChunksApplyCombine.splitApplyCombine(frame, (fr -> fun.apply(fr, false)), destination_key);
-      else {
-        Frame result = fun.apply(frame, true);
-        DKV.put(result);
-        return result;
       }
+      return Scope.untrack(contributions);
     } finally {
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
@@ -487,39 +475,41 @@ public class StackedEnsembleModel
    */
   @Override
   protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    Frame levelOneFrame = getLevelOnePredictFrame(fr, adaptFrm, j);
-    // TODO: what if we're running multiple in parallel and have a name collision?
-    Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
+    try (Scope.Safe safe = Scope.safe(fr, adaptFrm)) {
+      Frame levelOneFrame = makeLevelOnePredictFrame(fr, adaptFrm, j);
+      // TODO: what if we're running multiple in parallel and have a name collision?
+      Log.info("Finished creating \"level one\" frame for scoring: "+levelOneFrame.toString());
 
-    // Score the dataset, building the class distribution & predictions
+      // Score the dataset, building the class distribution & predictions
 
-    Model metalearner = this._output._metalearner;
-    Frame predictFr = metalearner.score(
-        levelOneFrame, 
-        destination_key, 
-        j, 
-        computeMetrics, 
-        CFuncRef.from(_parms._custom_metric_func)
-    );
-    ModelMetrics mmStackedEnsemble = null;
-    if (computeMetrics) {
-      // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
-      // We need to be able to look it up by the (this, fr) pair.
-      // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
-      Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
-      ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
-      mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
-      this.addModelMetrics(mmStackedEnsemble);
-      //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
-      for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
-        DKV.remove(mm);
+      Model metalearner = this._output._metalearner;
+      Frame predictFr = metalearner.score(
+              levelOneFrame,
+              destination_key,
+              j,
+              computeMetrics,
+              CFuncRef.from(_parms._custom_metric_func)
+      );
+      ModelMetrics mmStackedEnsemble = null;
+      if (computeMetrics) {
+        // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
+        // We need to be able to look it up by the (this, fr) pair.
+        // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
+        Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
+        ModelMetrics lastComputedMetric = mms[mms.length-1].get();
+        mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
+        this.addModelMetrics(mmStackedEnsemble);
+        //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
+        for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
+          DKV.remove(mm);
+        }
       }
+      Scope.untrack(predictFr); // needed in the result
+      return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
     }
-    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
-    return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
   }
 
-  private Frame getLevelOnePredictFrame(Frame fr, Frame adaptFrm, Job j) {
+  private Frame makeLevelOnePredictFrame(Frame fr, Frame adaptFrm, Job j) {
     final StackedEnsembleParameters.MetalearnerTransform transform;
     if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
       if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))
@@ -529,11 +519,11 @@ public class StackedEnsembleModel
       transform = null;
     }
     final String seKey = this._key.toString();
-    final Key<Frame> levelOneFrameKey = Key.make("preds_levelone_" + seKey + fr._key);
-    Frame levelOneFrame = transform == null ?
-            new Frame(levelOneFrameKey)  // no transform -> this will be the final frame
-            :
-            new Frame();        // transform -> this is only an intermediate result
+    final String frId = ""+(fr._key == null ? fr.checksum() : fr._key);
+    final Key<Frame> levelOneFrameKey = Key.make("preds_levelone_"+seKey+"_"+frId);
+    Frame levelOneFrame = transform == null 
+            ? new Frame(levelOneFrameKey)  // no transform -> this will be the final frame
+            : new Frame();                 // transform -> this is only an intermediate result
 
     Model[] usefulBaseModels = Stream.of(_parms._base_models)
             .filter(this::isUsefulBaseModel)
@@ -549,7 +539,7 @@ public class StackedEnsembleModel
         protected void map(int id) {
           baseModelPredictions[id] = usefulBaseModels[id].score(
                   fr,
-                  "preds_base_" + seKey + usefulBaseModels[id]._key + fr._key,
+                  "preds_base_"+seKey+"_"+usefulBaseModels[id]._key+"_"+frId,
                   j,
                   false
           );
@@ -570,6 +560,7 @@ public class StackedEnsembleModel
     }
     // Add response column, weights columns to level one frame
     StackedEnsemble.addNonPredictorsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
+    Scope.track(levelOneFrame); // level-one frame is always temporary and must be used in a scoped context.
     return levelOneFrame;
   }
 

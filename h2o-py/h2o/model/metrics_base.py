@@ -4,6 +4,7 @@
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+import math
 from collections import OrderedDict
 
 from h2o.display import H2ODisplay, display, repr_def, format_to_html, format_to_multiline
@@ -151,7 +152,13 @@ class MetricsBase(h2o_meta(H2ODisplay)):
                     "Null deviance: {}".format(self.null_deviance()),
                     "Residual deviance: {}".format(self.residual_deviance()),
                 ])
-                if is_type(self.aic(), numeric): items.append("AIC: {}".format(self.aic()))
+            
+        if m_is_glm:
+            if is_type(self.aic(), numeric) and not math.isnan(self.aic()) and self.aic() != 0:
+                items.append("AIC: {}".format(self.aic()))
+            if is_type(self.loglikelihood(), numeric) and not math.isnan(self.loglikelihood()) and self.loglikelihood() != 0:
+                items.append("Loglikelihood: {}".format(self.loglikelihood()))       
+            
         items.extend(self._str_items_custom())
         return items
     

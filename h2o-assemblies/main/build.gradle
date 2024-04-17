@@ -51,7 +51,7 @@ dependencies {
     }
 
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
-    api "org.apache.commons:commons-compress:1.24.0"
+    api "org.apache.commons:commons-compress:1.26.0"
     api "com.google.protobuf:protobuf-java:3.21.7"
 
     constraints {
@@ -82,6 +82,9 @@ dependencies {
             because 'Fixes CVE-2023-34454'
             because 'Fixes CVE-2023-34453'
             because 'Fixes CVE-2023-43642'
+        }
+        api('org.apache.commons:commons-configuration2:2.10.1') {
+            because 'Fixes CVE-2024-29131'
         }
     }
 }

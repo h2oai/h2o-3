@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
   private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 42
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 44
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
@@ -369,7 +369,7 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'), //master or nightly build
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-0xk10'), //master or nightly build
     LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build
 
     static Map<String, NodeLabels> LABELS_MAP = [

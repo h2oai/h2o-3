@@ -15,10 +15,15 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     """
     Uplift Distributed Random Forest
 
+    Build a Uplift Random Forest model
+
+    Builds a Uplift Random Forest model on an H2OFrame.
     """
 
     algo = "upliftdrf"
     supervised_learning = True
+    _options_ = {'model_extensions': ['h2o.model.extensions.VariableImportance'],
+                 'verbose': True}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -44,13 +49,16 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  col_sample_rate_per_tree=1.0,  # type: float
                  histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
-                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
+                 distribution="auto",  # type: Literal["auto", "bernoulli"]
                  check_constant_response=True,  # type: bool
                  custom_metric_func=None,  # type: Optional[str]
                  treatment_column="treatment",  # type: str
                  uplift_metric="auto",  # type: Literal["auto", "kl", "euclidean", "chi_squared"]
                  auuc_type="auto",  # type: Literal["auto", "qini", "lift", "gain"]
                  auuc_nbins=-1,  # type: int
+                 stopping_rounds=0,  # type: int
+                 stopping_metric="auto",  # type: Literal["auto", "auuc", "ate", "att", "atc", "qini"]
+                 stopping_tolerance=0.001,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -131,8 +139,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                "sort_by_response", "enum_limited"]
         :param distribution: Distribution function
                Defaults to ``"auto"``.
-        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
-               "quantile", "huber"]
+        :type distribution: Literal["auto", "bernoulli"]
         :param check_constant_response: Check if response column is constant. If enabled, then an exception is thrown if
                the response column is a constant value.If disabled, then model will train regardless of the response
                column being a constant value or not.
@@ -154,6 +161,19 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :param auuc_nbins: Number of bins to calculate Area Under Uplift Curve.
                Defaults to ``-1``.
         :type auuc_nbins: int
+        :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
+               length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+               Defaults to ``0``.
+        :type stopping_rounds: int
+        :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
+               regression and anomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               used in GBM and DRF with the Python client.
+               Defaults to ``"auto"``.
+        :type stopping_metric: Literal["auto", "auuc", "ate", "att", "atc", "qini"]
+        :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
+               is not at least this much)
+               Defaults to ``0.001``.
+        :type stopping_tolerance: float
         """
         super(H2OUpliftRandomForestEstimator, self).__init__()
         self._parms = {}
@@ -187,6 +207,9 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.uplift_metric = uplift_metric
         self.auuc_type = auuc_type
         self.auuc_nbins = auuc_nbins
+        self.stopping_rounds = stopping_rounds
+        self.stopping_metric = stopping_metric
+        self.stopping_tolerance = stopping_tolerance
 
     @property
     def training_frame(self):
@@ -504,14 +527,13 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         """
         Distribution function
 
-        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
-        "quantile", "huber"]``, defaults to ``"auto"``.
+        Type: ``Literal["auto", "bernoulli"]``, defaults to ``"auto"``.
         """
         return self._parms.get("distribution")
 
     @distribution.setter
     def distribution(self, distribution):
-        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+        assert_is_type(distribution, None, Enum("auto", "bernoulli"))
         self._parms["distribution"] = distribution
 
     @property
@@ -701,5 +723,50 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def auuc_nbins(self, auuc_nbins):
         assert_is_type(auuc_nbins, None, int)
         self._parms["auuc_nbins"] = auuc_nbins
+
+    @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``, defaults to ``0``.
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        Type: ``Literal["auto", "auuc", "ate", "att", "atc", "qini"]``, defaults to ``"auto"``.
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "auuc", "ate", "att", "atc", "qini"))
+        self._parms["stopping_metric"] = stopping_metric
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``, defaults to ``0.001``.
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
 
 

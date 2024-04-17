@@ -243,15 +243,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    List<Frame> tmpFrames = new ArrayList<>();
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
     if (null == backgroundFrame)
       throw H2O.unimpl("GLM supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for " + this._key + "...");
-    try {
-      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+      Frame adaptedFrame = adaptFrameForScore(frame, false);
       DKV.put(adaptedBgFrame);
       DKV.put(adaptedFrame);
       DataInfo dinfo = _output._dinfo.clone();
@@ -277,13 +274,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }).toArray(String[]::new)
               : _output._coefficient_names, 0, colNames, 0, colNames.length - 1);
       colNames[colNames.length - 1] = "BiasTerm";
-      return contributions.runAndGetOutput(j, destination_key, colNames);
+      return Scope.untrack(contributions.runAndGetOutput(j, destination_key, colNames));
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
-
   }
 
   public static class RegularizationPath extends Iced {
@@ -733,6 +727,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk, 
                          String[] interactions, double theta){
+      this(f,l,lambda,alpha,twVar,twLnk,interactions, theta, Double.NaN);
+    }
+
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk,
+                         String[] interactions, double theta, double dispersion_estimated){
       this._lambda = lambda;
       this._alpha = alpha;
       this._tweedie_variance_power = twVar;
@@ -742,7 +741,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = l;
       this._theta=theta;
       this._invTheta = 1.0/theta;
-      this._dispersion_estimated = _init_dispersion_parameter;
+      this._dispersion_estimated = Double.isNaN(dispersion_estimated) ? _init_dispersion_parameter : dispersion_estimated;
     }
 
     public final double variance(double mu){
@@ -1254,7 +1253,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if( yr == 0 ) return 2 * ym;
           return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
         case negativebinomial:
-          return (yr==0||ym<=0)?0:2*((_invTheta+yr)*Math.log((1+_theta*ym)/(1+_theta*yr))+yr*Math.log(yr/ym));
+          if( yr == 0 && ym <= 0 ) return 0;
+          if( yr == 0 ) return 2 * _invTheta * Math.log(1 + _theta * ym);
+          return 2*((_invTheta+yr)*Math.log((1+_theta*ym)/(1+_theta*yr))+yr*Math.log(yr/ym));
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);

@@ -7,6 +7,7 @@ from h2o.utils.shared_utils import (can_use_datatable, can_use_polars, can_use_p
 import time
 from h2o.utils.threading import local_context
 
+
 def test_frame_conversion(dataset, original_pandas_frame, module):
     # convert frame using datatable or polar
     h2oFrame = h2o.import_file(pyunit_utils.locate(dataset))
@@ -35,6 +36,7 @@ def test_frame_conversion(dataset, original_pandas_frame, module):
             diff = (new_pandas_frame[colNames[ind]] - original_pandas_frame[colNames[ind]]).abs()
             assert diff.max() < 1e-10
 
+
 def single_thread_pandas_conversion(dataset):
     with local_context(datatable_disabled=True, polars_disabled=True):
         print("converting h2o frame to pandas frame using single thread")
@@ -45,6 +47,7 @@ def single_thread_pandas_conversion(dataset):
         print("H2O frame to Pandas frame conversion time with single thread for dataset {1}: {0}".format(newTime, dataset))
         return h2oframe_panda
 
+
 # if datatable or polars/pyarrow is installed, this test will show that using datatable to convert h2o frame to pandas
 # frame is much faster for large datasets.
 def test_polars_datatable_2_pandas():
@@ -52,25 +55,17 @@ def test_polars_datatable_2_pandas():
     original_converted_frame1 = single_thread_pandas_conversion(file1)  # need to run conversion in single thread
 
     if can_install_datatable():
-        if not(can_use_datatable()):
-            pyunit_utils.install("datatable")
-        with local_context(polars_disabled=True):   # run with datatable
+        with local_context(polars_disabled=True, datatable_enabled=True):   # run with datatable
+            assert can_use_datatable(), "Can't use datatable"
             print("test data frame conversion using datatable.")
             test_frame_conversion(file1, original_converted_frame1, "datatable")
 
-    else:
-        print("datatable is not available.  Skipping tests using datatable.")
-
     if can_install_polars():
-        if not(can_use_polars()):
-            pyunit_utils.install("polars")
-        if not(can_use_pyarrow()):
-            pyunit_utils.install("pyarrow")
-        with local_context(datatable_disabled=True):
+        with local_context(datatable_disabled=True, polars_enabled=True):
+            assert can_use_polars() and can_use_pyarrow(), "Can't use polars"
             print("test data frame conversion using polars and pyarrow.")
             test_frame_conversion(file1, original_converted_frame1, "polars and pyarrow")
-    else:
-            print("polars, pyarrow are not available.  Skipping tests using polars and pyarrow")
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_polars_datatable_2_pandas)

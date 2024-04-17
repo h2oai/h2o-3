@@ -180,14 +180,6 @@ Common parameters
 
     - ``AUTO`` (default)
     - ``bernoulli`` -- response column must be 2-class categorical
-    - ``multinomial`` -- response column must be categorical
-    - ``poisson`` -- response column must be numeric
-    - ``gaussian`` -- response column must be numeric
-    - ``gamma`` -- response column must be numeric
-    - ``laplace`` -- response column must be numeric
-    - ``quantile`` -- response column must be numeric
-    - ``huber`` -- response column must be numeric
-    - ``tweedie`` -- response column must be numeric
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
 
@@ -200,6 +192,19 @@ Common parameters
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
+
+-  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
+    
+    - ``AUTO`` (This defaults to ``logloss`` for classification and ``deviance`` for regression)
+    - ``AUUC`` (area under the uplift curve, for UpliftDRF only)
+    - ``qini`` (difference between the Qini AUUC and area under the random uplift curve, for UpliftDRF only)
+    - ``ATE`` (average treatment effect, for UpliftDRF only)
+    - ``ATT`` (average treatment effect on the Treated, for UpliftDRF only)
+    - ``ATC`` (average treatment effect on the Control, for UpliftDRF only)
+   
+-  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). The metric is computed on the validation data (if provided); otherwise, training data is used. 
+
+-  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to ``0.001``.
 
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
    
@@ -216,7 +221,6 @@ Common parameters
 Leaf Node Assignment 
 ~~~~~~~~~~~~~~~~~~~~
 Leaf Node assignment is not currently supported.
-
 
 Interpreting an Uplift DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,7 +247,7 @@ By default, the following output displays:
 -  **AECU table** which contains all computed AECU values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
 -  **Uplift Curve plot** for given metric type (qini, lift, gain)
-
+-  **Variable Importance** calculated based on Uplift Gain Improvement 
 
 Treatment effect metrics (ATE, ATT, ATC)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -330,7 +334,6 @@ Custom metric example for Uplift DRF
     att = perf.att(train=True)
     print(att)
 
-
 Uplift Curve and Area Under Uplift Curve (AUUC) calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -380,13 +383,25 @@ Qini value is calculated as the difference between the Qini AUUC and area under 
 .. image:: /images/qini_value.png
    :width: 640px
    :height: 480px
-   
 
 Average Excess Cumulative Uplift (AECU)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The Qini value can be generalized for all AUUC metric types. So AECU for Qini metric is the same as Qini value, but the AECU can be also calculated for Gain and Lift metric type. These values are stored in ``aecu_table``.
 
+Partial dependence plot (PDP)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A partial dependence plot gives a graphical depiction of the marginal effect of a variable on the response. The effect of a variable is measured in change in the mean response. 
+
+You can plot the partial plot for the whole dataset. However, plotting for treatment and control groups separately could provide better insight into model interpretability. See the Example section below.
+
+Variable Importance
+~~~~~~~~~~~~~~~~~~~
+
+The Variable Importance is calculated based on Uplift Gain improvement. After every split the local split improvement is calculated as difference between Uplift Gain before split and Uplift Gain after split. 
+
+The Uplift Gain is calculated based on selected `uplift_metric <algo-params/uplift_metric.html>`__. The higher Uplift Gain the better.
 
 Examples
 ~~~~~~~~
@@ -427,6 +442,10 @@ Below is a simple example showing how to build an Uplift Random Forest model and
                                            min_rows=10,
                                            seed=1234,
                                            auuc_type="qini")
+    # Variable importance
+    varimp <- h2o.varimp(uplift.model)
+    print(varimp)                                       
+                                           
     # Eval performance:
     perf <- h2o.performance(uplift.model)
 
@@ -463,6 +482,18 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     # Get all AECU values in a table
     print(h2o.aecu_table(perf))
     
+    # Plot Partial dependence for valid data
+    h2o.partialPlot(uplift.model, valid, c("f3"))
+        
+    mask <- test[, "treatment"] == 1
+        
+    # Partial dependence plot for treatment group valid data   
+    valid.tr <- valid[mask, ]
+    h2o.partialPlot(uplift.model, valid.tr, c("f3"))
+    
+    # Partial dependence plot for control group valid data    
+    valid.ct <- test[!mask, ]
+    h2o.partialPlot(model, valid.ct, c("f3"))
     
    .. code-tab:: python
    
@@ -497,6 +528,10 @@ Below is a simple example showing how to build an Uplift Random Forest model and
                        y=response, 
                        training_frame=train, 
                        validation_frame=valid)
+                       
+    # Variable Importance
+    varimp = uplift_model.varimp()
+    print(varimp)
 
     # Eval performance:
     perf = uplift_model.model_performance()
@@ -533,7 +568,19 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     
     # Get AECU values in a table
     print(perf.aecu_table())
-
+    
+    # Partial dependence plot for valid data
+    uplift_model.partial_plot(valid_h2o, cols=["f1"])
+        
+    mask = valid_h2o[treatment_column] == 1
+        
+    # Partial dependence plot for treatment group valid data
+    treatment_valid_h2o = valid[mask, :]
+    uplift_model.partial_plot(treatment_valid_h2o, cols=["f1"])
+    
+    # Partial dependence plot for control group valid data
+    control_valid_h2o = valid[~mask, :]
+    uplift_model.partial_plot(control_valid_h2o, cols=["f1"])
 
 FAQ
 ~~~

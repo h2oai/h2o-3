@@ -5,6 +5,7 @@ import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
+import water.exceptions.H2OFileAccessDeniedException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BinaryFormatExporter;
 import water.parser.BufferedString;
@@ -14,7 +15,6 @@ import water.util.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
@@ -74,7 +74,7 @@ public class Frame extends Lockable<Frame> {
    * Given a temp Frame and a base Frame from which it was created, delete the
    * Vecs that aren't found in the base Frame and then delete the temp Frame.
    *
-   * TODO: Really should use Scope but Scope does not.
+   * For most use cases with short-lived temp frames, use {@link Scope#protect(Frame...)} or a {@link Scope#safe(Frame...)} instead.
    */
   public static void deleteTempFrameAndItsNonSharedVecs(Frame tempFrame, Frame baseFrame) {
     Key[] keys = tempFrame.keys();
@@ -799,7 +799,7 @@ public class Frame extends Lockable<Frame> {
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override protected Futures remove_impl(Futures fs, boolean cascade) {
-    final Key[] keys = _keys;
+    final Key<Vec>[] keys = _keys;
     if( keys.length==0 ) return fs;
 
     // Get the nChunks without calling anyVec - which loads all Vecs eagerly,
@@ -824,10 +824,16 @@ public class Frame extends Lockable<Frame> {
     setNames(new String[0]);
     _keys = makeVecKeys(0);
 
-    // Bulk dumb local remove - no JMM, no ordering, no safety.
-    Vec.bulk_remove(keys, v.nChunks());
-
+    if (cascade) { // removing the vecs from mem only if cascading (default behaviour)
+      // Bulk dumb local remove - no JMM, no ordering, no safety.
+      Vec.bulk_remove(keys, v.nChunks());
+    }
     return fs;
+  }
+
+  @Override
+  public Frame delete_and_lock(Key<Job> job_key) {
+    return super.delete_and_lock(job_key, true); // for Frames, remove dependencies (Vecs) by default when forcing internal delete
   }
 
   /**
@@ -1584,6 +1590,9 @@ public class Frame extends Lockable<Frame> {
                            String compression, CSVStreamParams csvParms) {
     boolean forceSingle = nParts == 1;
     // Validate input
+    if (H2O.getPM().isFileAccessDenied(path)) {
+      throw new H2OFileAccessDeniedException("File " + path + " access denied");
+    }
     if (forceSingle) {
       boolean fileExists = H2O.getPM().exists(path);
       if (overwrite && fileExists) {
@@ -1607,6 +1616,9 @@ public class Frame extends Lockable<Frame> {
 
   public static Job exportParquet(Frame fr, String path, boolean overwrite, String compression, boolean writeChecksum) {
     // Validate input
+    if (H2O.getPM().isFileAccessDenied(path)) {
+      throw new H2OFileAccessDeniedException("File " + path + " access denied");
+    }
     if (! H2O.getPM().isEmptyDirectoryAllNodes(path)) {
       throw new H2OIllegalArgumentException(path, "exportFrame", "Cannot use path " + path +
               " to store part files! The target needs to be either an existing empty directory or not exist yet.");

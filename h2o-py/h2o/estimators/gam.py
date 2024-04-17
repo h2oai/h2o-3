@@ -94,7 +94,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  max_runtime_secs=0.0,  # type: float
-                 custom_metric_func=None,  # type: Optional[str]
                  num_knots=None,  # type: Optional[List[int]]
                  spline_orders=None,  # type: Optional[List[int]]
                  knot_ids=None,  # type: Optional[List[str]]
@@ -329,9 +328,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
                Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
-               Defaults to ``None``.
-        :type custom_metric_func: str, optional
         :param num_knots: Number of knots for gam predictors.  If specified, must specify one for each gam predictor.
                For monotone I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of
                polynomial basis + 2.
@@ -438,7 +434,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self.max_after_balance_size = max_after_balance_size
         self.max_confusion_matrix_size = max_confusion_matrix_size
         self.max_runtime_secs = max_runtime_secs
-        self.custom_metric_func = custom_metric_func
         self.num_knots = num_knots
         self.spline_orders = spline_orders
         self.knot_ids = knot_ids
@@ -893,6 +888,22 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         true.
 
         Type: ``List[bool]``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> y = "C21"
+        >>> x = ["C19","C20"]
+        >>> numKnots = [5,5,5]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='gaussian',
+        ...                                             gam_columns=["C16","C17","C18"],
+        ...                                             bs=[2,2,2],
+        ...                                             splines_non_negative=[True, True, True])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.coef()
         """
         return self._parms.get("splines_non_negative")
 
@@ -1272,26 +1283,29 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self._parms["max_runtime_secs"] = max_runtime_secs
 
     @property
-    def custom_metric_func(self):
-        """
-        Reference to custom evaluation function, format: `language:keyName=funcName`
-
-        Type: ``str``.
-        """
-        return self._parms.get("custom_metric_func")
-
-    @custom_metric_func.setter
-    def custom_metric_func(self, custom_metric_func):
-        assert_is_type(custom_metric_func, None, str)
-        self._parms["custom_metric_func"] = custom_metric_func
-
-    @property
     def num_knots(self):
         """
         Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For monotone
         I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of polynomial basis + 2.
 
         Type: ``List[int]``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+        >>> h2o_data["C11"] = h2o_data["C11"].asfactor()
+        >>> train, test = h2o_data.split_frame(ratios = [.8])
+        >>> y = "C11"
+        >>> x = ["C9","C10"]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial',
+        ...                                             store_knot_locations=True,
+        ...                                             gam_columns=["C6","C7","C8"],
+        ...                                             num_knots=[3,4,5])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.get_knot_locations()
         """
         return self._parms.get("num_knots")
 
@@ -1309,6 +1323,22 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         be ignored.
 
         Type: ``List[int]``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> y = "C21"
+        >>> x = ["C19","C20"]
+        >>> numKnots = [5,5,5]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='gaussian',
+        ...                                             gam_columns=["C16","C17","C18"],
+        ...                                             bs=[2,2,2],
+        ...                                             spline_orders=[3,4,5])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.coef()
         """
         return self._parms.get("spline_orders")
 
@@ -1323,6 +1353,29 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Array storing frame keys of knots.  One for each gam column set specified in gam_columns
 
         Type: ``List[str]``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
+        >>> frameKnots1 = h2o.H2OFrame(python_obj=knots1)
+        >>> knots2 = [-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589]
+        >>> frameKnots2 = h2o.H2OFrame(python_obj=knots2)
+        >>> knots3 = [-1.999675688, -0.979893796, 0.007573327, 1.011437347, 1.999611676]
+        >>> frameKnots3 = h2o.H2OFrame(python_obj=knots3)
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")()
+        >>> h2o_data["C11"] = h2o_data["C11"].asfactor()
+        >>> train, test = h2o_data.split_frame(ratios = [.8])
+        >>> y = "C11"
+        >>> x = ["C9","C10"]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial',
+        ...                                             gam_columns=["C6","C7","C8"],
+        ...                                             store_knot_locations=True,
+        ...                                             knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.get_knot_locations()
         """
         return self._parms.get("knot_ids")
 
@@ -1338,6 +1391,20 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         {{'c1'},{'c2','c3'},{'c4'},...}
 
         Type: ``List[List[str]]``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+        >>> h2o_data["C11"] = h2o_data["C11"].asfactor()
+        >>> y = "C11"
+        >>> x = ["C9","C10"]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial',
+        ...                                             gam_columns=["C6","C7","C8"])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.coef()
         """
         return self._parms.get("gam_columns")
 
@@ -1354,6 +1421,21 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         standardize tp (thin plate) predictor columns
 
         Type: ``bool``, defaults to ``False``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> y = "C21"
+        >>> x = ["C19","C20"]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='gaussian',
+        ...                                             gam_columns=["C16","C17","C18"],
+        ...                                             bs=[1,1,1],
+        ...                                             standardize_tp_gam_cols=True)
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.coef()
         """
         return self._parms.get("standardize_tp_gam_cols")
 
@@ -1368,6 +1450,22 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Scale penalty matrix for tp (thin plate) smoothers as in R
 
         Type: ``bool``, defaults to ``False``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.cs
+        >>> h2o_data["C11"] = h2o_data["C11"].asfactor()
+        >>> y = "C11"
+        >>> x = ["C9","C10"]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial',
+        ...                                             scale_tp_penalty_mat=True,
+        ...                                             gam_columns=["C6","C7","C8"],
+        ...                                             bs=[1,1,1])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.coef()
         """
         return self._parms.get("scale_tp_penalty_mat")
 
@@ -1384,6 +1482,21 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         specified, must be the same size as gam_columns
 
         Type: ``List[int]``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+        >>> h2o_data["C11"] = h2o_data["C11"].asfactor()
+        >>> y = "C11"
+        >>> x = ["C9","C10"]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial',
+        ...                                             gam_columns=["C6","C7","C8"],
+        ...                                             bs=[0,1,3])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o_model.coef() # note the spline type in the names of gam column coefficients
         """
         return self._parms.get("bs")
 
@@ -1412,6 +1525,22 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Save keys of model matrix
 
         Type: ``bool``, defaults to ``False``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+        >>> h2o.init()
+        >>> h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+        >>> h2o_data["C11"] = h2o_data["C11"].asfactor()
+        >>> train, test = h2o_data.split_frame(ratios = [.8])
+        >>> y = "C11"
+        >>> x = ["C9","C10"]
+        >>> h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial',
+        ...                                             keep_gam_cols=True,
+        ...                                             gam_columns=["C6","C7","C8"])
+        >>> h2o_model.train(x=x, y=y, training_frame=h2o_data)
+        >>> h2o.get_frame(h2o_model._model_json["output"] ["gam_transformed_center_key"])
         """
         return self._parms.get("keep_gam_cols")
 
@@ -1491,7 +1620,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
     def get_knot_locations(self, gam_column=None):
         """
-        Retrieve gam columns knot locations if store_knot_location parameter is enabled.  If a gam column name is 
+        Retrieve gam columns knot locations if store_knot_locations parameter is enabled.  If a gam column name is 
         specified, the know loations corresponding to that gam column is returned.  Otherwise, all knot locations are
         returned for all gam columns.  The order of the gam columns are specified in gam_knot_column_names of the 
         model output.
@@ -1512,8 +1641,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
     def get_gam_knot_column_names(self):
         """
-        Retrieve gam column names corresponding to the knot locations that will be returned if store_knot_location
-        parameter is enabled.  
+        Retrieve gam column names corresponding to the knot locations that will be returned if store_knot_locations
+        parameter is enabled.
 
         :return: gam column names whose knot locations are stored in the knot_locations.
         """

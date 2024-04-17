@@ -725,31 +725,29 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     Log.info("Starting contributions calculation for " + this._key + "...");
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
-    try {
-      if (null == backgroundFrame)
-        return scoreContributions(frame, destination_key, j, options);
-      adaptedFrame = new Frame(frame);
-      adaptTestForTrain(adaptedFrame, true, false);
-      DKV.put(adaptedFrame);
-      adaptedBgFrame = new Frame(backgroundFrame);
-      adaptTestForTrain(adaptedBgFrame, true, false);
-      DKV.put(adaptedBgFrame);
-      
-      DataInfo di = model_info().dataInfo();
-      assert di != null;
-      final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
-              _output.features() : di.coefNames();
-      final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame contributions;
+      if (null == backgroundFrame) {
+        contributions = scoreContributions(frame, destination_key, j, options);
+      } else {
+        Frame adaptedFrame = adaptFrameForScore(frame, false);
+        DKV.put(adaptedFrame);
+        Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+        DKV.put(adaptedBgFrame);
+
+        DataInfo di = model_info().dataInfo();
+        assert di != null;
+        final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
+                _output.features() : di.coefNames();
+        final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
 
-      return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, 
-              adaptedFrame, adaptedBgFrame, options._outputPerReference, options._outputSpace)
-              .runAndGetOutput(j, destination_key, outputNames);
+        contributions = new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options,
+                adaptedFrame, adaptedBgFrame, options._outputPerReference, options._outputSpace)
+                .runAndGetOutput(j, destination_key, outputNames);
+      }
+      return Scope.untrack(contributions);
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
   }
