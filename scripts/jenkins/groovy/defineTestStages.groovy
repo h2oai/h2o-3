@@ -429,6 +429,12 @@ def call(final pipelineContext) {
       imageSpecifier: "python-3.6-jdk-17"
     ],
     [
+      stageName: 'Java 21 JUnit', target: 'test-junit-21-jenkins', pythonVersion: '3.6', javaVersion: 21,
+      timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.6-jdk-21"
+    ],
+    [
       stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -502,6 +508,10 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 40,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 21 Smoke', target: 'test-junit-21-smoke-jenkins', javaVersion: 21, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [

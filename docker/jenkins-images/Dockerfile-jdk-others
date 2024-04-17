@@ -15,7 +15,8 @@ RUN \
     sync && \
     if [ "${JAVA_VERSION}" = '8' ] || [ "${JAVA_VERSION}" = '10' ] || [ "${JAVA_VERSION}" = '11' ] || \
         [ "${JAVA_VERSION}" = '12' ] || [ "${JAVA_VERSION}" = '13' ] || [ "${JAVA_VERSION}" = '14' ] || \
-        [ "${JAVA_VERSION}" = '15' ] || [ "${JAVA_VERSION}" = '16' ] || [ "${JAVA_VERSION}" = '17' ]; then \
+        [ "${JAVA_VERSION}" = '15' ] || [ "${JAVA_VERSION}" = '16' ] || [ "${JAVA_VERSION}" = '17' ] || \
+        [ "${JAVA_VERSION}" = '21' ]; then \
         /tmp/install_java_version_local ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh; \
     else \
         /tmp/install_java_version ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh; \

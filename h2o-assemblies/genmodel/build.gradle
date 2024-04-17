@@ -5,8 +5,8 @@ apply plugin: 'com.github.hierynomus.license'
 description = "H2O GenModel Assembly which is embedded into H2O.jar"
 
 // MOJO has to stay Java 1.7 compatible! 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 // Dependencies
 dependencies {

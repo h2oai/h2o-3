@@ -19,8 +19,8 @@ properties([
 
 IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15', '16', '17']
-JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
+JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15', '16', '17', '21']
+JDK_VERSIONS_PY_R = ['8', '17', '21'] // stable, last-supported, latest
 PYTHON_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
 R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2']
 
@@ -60,6 +60,7 @@ ansiColor('xterm') {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-21/x64-linux/jdk-21.0.0_linux-x64_bin.tar.gz"
                         }
                     }
                     stash name: 'docker-sources'
@@ -75,22 +76,26 @@ ansiColor('xterm') {
         PYTHON_VERSIONS.each {version ->
             pythonImages += "dev-python-${version}"
         }
-        buildInParallel(pipelineContext, pythonImages)
+        //buildInParallel(pipelineContext, pythonImages)
 
         buildInParallel(pipelineContext, ['dev-r-base'])
-        def componentImages = []
-        R_VERSION.each {version ->
-            componentImages += "dev-r-${version}"
-        }
-        JDK_VERSIONS.each {version ->
-            componentImages += "dev-jdk-${version}"
-        }
-        componentImages += "dev-mojocompat"
-        buildInParallel(pipelineContext, componentImages)
+        //def componentImages = []
+        //R_VERSION.each {version ->
+        //    componentImages += "dev-r-${version}"
+        //}
+        //JDK_VERSIONS.each {version ->
+        //    componentImages += "dev-jdk-${version}"
+        //}
+        //componentImages += "dev-mojocompat"
+        //buildInParallel(pipelineContext, componentImages)
 
-        buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
-        buildInParallel(pipelineContext, ["dev-release"])
+        //buildInParallel(pipelineContext, ["dev-build-base"])
+        //buildInParallel(pipelineContext, ["dev-build-hadoop"],)
+        //buildInParallel(pipelineContext, ["dev-release"])
+        
+        buildInParallel(pipelineContext, ["dev-jdk-21"])
+        buildInParallel(pipelineContext, ["dev-r-3.5.3-jdk-21"])
+        buildInParallel(pipelineContext, ["dev-python-3.6-jdk-21"])
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -103,7 +108,7 @@ ansiColor('xterm') {
                 componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
             }
         }
-        buildInParallel(pipelineContext, componentJdkImages)
+        //buildInParallel(pipelineContext, componentJdkImages)
     }
 }
 

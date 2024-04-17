@@ -37,7 +37,7 @@ H2O runs on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To 
 
 H2O supports the following versions of Java: 
 
-- Java SE 17, 16, 15, 14, 13, 12, 11, 10, 9, 8
+- Java SE 21, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8
 
 Click `here <https://jdk.java.net/archive/>`__ to download the latest supported version.
 
