@@ -2706,7 +2706,7 @@ h2o.coef_with_p_values <- function(object) {
 #' @export
 h2o.get_constraints_info <- function(object) {
     if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
-        if (isNull(object@parameters$linear_constraints)) {
+        if (is.null(object@parameters$linear_constraints)) {
             stop("GLM linear constraints information is only available where there are linear constraints specified
             in the parameter linear_constraints!")
         } else {
@@ -2748,7 +2748,7 @@ h2o.get_constraints_info <- function(object) {
 #' @export
 h2o.all_constraints_passed <- function(object) {
     if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
-        if (isNull(object@parameters$linear_constraints)) {
+        if (is.null(object@parameters$linear_constraints)) {
             stop("h2o.all_constraints_passed is only available where there are linear constraints specified
             in the parameter linear_constraints!")
         } else {
