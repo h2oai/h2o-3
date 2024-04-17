@@ -2701,7 +2701,7 @@ h2o.coef_with_p_values <- function(object) {
 #'                                  linear_constraints=con,
 #'                                  lambda=0.0,
 #'                                  family="gaussian")
-#' print(h2o.get_constraints_info(h2o_glm))
+#' print(h2o.get_constraints_info(cars_model))
 #' }
 #' @export
 h2o.get_constraints_info <- function(object) {
