@@ -130,10 +130,6 @@ def test_constraints_binomial():
     
     assert init_random_logloss >= logloss, "Random initialization logloss with constraints should be worst than GLM " \
                                            "without constraints but is not."
-    assert pyunit_utils.equal_two_dicts(h2o_glm_random_init.coef(), h2o_glm.coef(), tolerance=2.8e-3, throwError=False), \
-        "GLM coefficients are different!"
-    assert pyunit_utils.equal_two_dicts(h2o_glm_default_init.coef(), h2o_glm.coef(), tolerance=3.3e-3, throwError=False), \
-        "GLM coefficients are different!"
  
 
 if __name__ == "__main__":

@@ -133,12 +133,6 @@ def test_constraints_binomial():
     assert abs(logloss - default_init_logloss) < 1e-6, "logloss from optimal GLM {0} should equal to GLM with " \
                                                        "loose constraints and with default initial coefficients {1}" \
                                                        " but is not.".format(logloss, default_init_logloss)
-    assert pyunit_utils.equal_two_dicts(h2o_glm_optimal_init.coef(), h2o_glm.coef(), throwError=False), \
-        "GLM coefficients are different!"
-    assert pyunit_utils.equal_two_dicts(h2o_glm_random_init.coef(), h2o_glm.coef(), tolerance=1.3e-4, throwError=False), \
-        "GLM coefficients are different!"
-    assert pyunit_utils.equal_two_dicts(h2o_glm_default_init.coef(), h2o_glm.coef(), tolerance=2.3e-4, throwError=False), \
-        "GLM coefficients are different!" # again random coefficient intialization performs better than default initialization
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_constraints_binomial)

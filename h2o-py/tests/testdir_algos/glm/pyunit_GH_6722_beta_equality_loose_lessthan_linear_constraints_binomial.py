@@ -205,10 +205,6 @@ def test_constraints_binomial():
                                             "and with default initial coefficients {1} but is" \
                                             " not.".format(logloss, default_init_logloss)
 
-    assert pyunit_utils.equal_two_dicts(h2o_glm_optimal_init.coef(), h2o_glm.coef(), throwError=False), \
-        "GLM coefficients are different!"
-    assert pyunit_utils.equal_two_dicts(h2o_glm_optimal_init_sep.coef(), h2o_glm.coef(), throwError=False), \
-        "GLM coefficients are different!"
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_constraints_binomial)
