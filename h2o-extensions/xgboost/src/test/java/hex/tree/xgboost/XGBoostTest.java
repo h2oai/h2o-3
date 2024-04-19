@@ -3320,5 +3320,32 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
+
+  @Test
+  public void testGBLinearShotgun() {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = parseAndTrackTestFile("./smalldata/logreg/prostate_train.csv");
+      train.toCategoricalCol(response);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 1;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._booster = XGBoostModel.XGBoostParameters.Booster.gblinear;
+      parms._updater = XGBoostModel.XGBoostParameters.Updater.shotgun;
+      parms._feature_selector = XGBoostModel.XGBoostParameters.FeatureSelector.shuffle;
+
+      ModelBuilder job =  new hex.tree.xgboost.XGBoost(parms);
+      XGBoostModel xgboost = (XGBoostModel) job.trainModel().get();
+      assertNotNull(xgboost);
+      Scope.track_generic(xgboost);
+      assertEquals("updater should be changed", xgboost._output._native_parameters.get(1,1), XGBoostModel.XGBoostParameters.Updater.shotgun.toString());
+    }
+    finally {
+      Scope.exit();
+    }
+  }
 }
