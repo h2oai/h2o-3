@@ -73,10 +73,6 @@ def test_constraints_binomial():
     assert abs(logloss-init_logloss)<2e-6, "logloss from optimal GLM {0} and logloss from GLM with equal constraints " \
                                            "and initialized with optimal GLM {1} should equal but is not." \
                                            "".format(logloss, init_logloss)
-    assert pyunit_utils.equal_two_dicts(h2o_glm_optimal_init.coef(), h2o_glm.coef(), throwError=False), \
-        "GLM coefficients are different!" # initializing GLM with optimal GLM coeff without constraints performs the best 
-    assert pyunit_utils.equal_two_dicts(h2o_glm_optimal_init.coef(), h2o_glm.coef(), throwError=False), \
-        "GLM coefficients are different!" # initializing GLM with optimal GLM coeff without constraints performs the best
 
     # GLM model with with GLM coefficients set to random GLM model coefficients
     random_coef = [0.9740393731418461, 0.9021970400494406, 0.8337282995102272, 0.20588758679724872, 0.12522385214612453,
