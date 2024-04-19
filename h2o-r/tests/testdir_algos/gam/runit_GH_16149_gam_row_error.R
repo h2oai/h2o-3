@@ -45,9 +45,9 @@ test.gam.dataset.error <- function(n) {
 
 test.model.gam.dataset.error <- function() {
   # test for n=1005
-  test.gam.dataset.error(1005) # not working
+  test.gam.dataset.error(1005)
   # test for n=1001;
-  test.gam.dataset.error(1001) # not working
+  test.gam.dataset.error(1001)
 }
 
 doTest("General Additive Model dataset size 1001 and 1005 error", test.model.gam.dataset.error)
