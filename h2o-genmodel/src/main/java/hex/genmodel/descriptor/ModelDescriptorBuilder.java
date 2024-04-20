@@ -43,6 +43,7 @@ public class ModelDescriptorBuilder {
         private final double[] _priorClassDistrib;
         private final double[] _modelClassDistrib;
         private final String _offsetColumn;
+        private final String _foldColumn;
         private final String _weightsColumn;
         private final String _treatmentColumn;
         private final String[][] _domains;
@@ -65,6 +66,7 @@ public class ModelDescriptorBuilder {
             _modelClassDistrib = mojoModel._modelClassDistrib;
             _h2oVersion = mojoModel._h2oVersion;
             _offsetColumn = mojoModel._offsetColumn;
+            _foldColumn = mojoModel._foldColumn;
             _domains = mojoModel._domains;
             _origDomains = mojoModel.getOrigDomainValues();
             _names = mojoModel._names;
@@ -116,7 +118,7 @@ public class ModelDescriptorBuilder {
 
         @Override
         public String foldColumn() {
-            return null;
+            return _foldColumn;
         }
 
         @Override
