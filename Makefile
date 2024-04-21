@@ -1,5 +1,6 @@
 all: clean build
 
+
 .PHONY: clean
 clean:
 	./gradlew clean
