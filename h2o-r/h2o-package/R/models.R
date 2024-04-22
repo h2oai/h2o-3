@@ -2690,11 +2690,11 @@ h2o.coef_with_p_values <- function(object) {
 #' cars <- h2o.importFile(f)
 #' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "acceleration"
-#' col_names <- c("power", "weight", "constant")
+#' colnames <- c("power", "weight", "constant")
 #' values <- c(0.5, 1.0, 100)
 #' types <- c("lessthanequal", "lessthanequal", "lessthanequal")
-#' constraints_numbers <- c(0, 0, 0)
-#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
+#' numbers <- c(0, 0, 0)
+#' con <- data.frame(names=colnames, values=values, types=types, constraint_numbers=numbers)
 #' cars_model <- h2o.glm(y=response, solver="irlsm",
 #'                                  x=predictors, 
 #'                                  training_frame = cars,
@@ -2732,11 +2732,11 @@ h2o.get_constraints_info <- function(object) {
 #' cars <- h2o.importFile(f)
 #' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "acceleration"
-#' col_names <- c("power", "weight", "constant")
+#' colnames <- c("power", "weight", "constant")
 #' values <- c(0.5, 1.0, 100)
 #' types <- c("lessthanequal", "lessthanequal", "lessthanequal")
-#' constraints_numbers <- c(0, 0, 0)
-#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
+#' numbers <- c(0, 0, 0)
+#' con <- data.frame(names=colnames, values=values, types=types, constraint_numbers=numbers)
 #' cars_model <- h2o.glm(y=response, solver="irlsm",
 #'                                  x=predictors, 
 #'                                  training_frame = cars,
