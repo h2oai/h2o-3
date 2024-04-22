@@ -179,7 +179,7 @@ ext {
     // Versions of libraries shared cross all projects
     //
     junitVersion  = '4.12'
-    awsJavaSdkVersion = '1.12.268'
+    awsJavaSdkVersion = '1.12.705'
 
     //
     // Optional H2O modules which can be included h2o.jar assembly
