@@ -2694,11 +2694,11 @@ h2o.coef_with_p_values <- function(object) {
 #' values <- c(0.5, 1.0, 100)
 #' types <- c("lessthanequal", "lessthanequal", "lessthanequal")
 #' constraints_numbers <- c(0, 0, 0)
-#' con <- as.h2o(data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers))
+#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
 #' cars_model <- h2o.glm(y=response, solver="irlsm",
 #'                                  x=predictors, 
 #'                                  training_frame = cars,
-#'                                  linear_constraints=con,
+#'                                  linear_constraints=as.h2o(con),
 #'                                  lambda=0.0,
 #'                                  family="gaussian")
 #' print(h2o.get_constraints_info(cars_model))
@@ -2736,11 +2736,11 @@ h2o.get_constraints_info <- function(object) {
 #' values <- c(0.5, 1.0, 100)
 #' types <- c("lessthanequal", "lessthanequal", "lessthanequal")
 #' constraints_numbers <- c(0, 0, 0)
-#' con <- as.h2o(data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers))
+#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
 #' cars_model <- h2o.glm(y=response, solver="irlsm",
 #'                                  x=predictors, 
 #'                                  training_frame = cars,
-#'                                  linear_constraints=con,
+#'                                  linear_constraints=as.h2o(con),
 #'                                  lambda=0.0,
 #'                                  family="gaussian")
 #' print(h2o.all_constraints_passed(cars_model))
