@@ -274,9 +274,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       assert g._model._output._selected_submodel_idx == g._model._output._best_submodel_idx;
       assert g._model._output._selected_submodel_idx == g._model._output._best_lambda_idx;
-      if (g._model._output._submodels[g._model._output._selected_submodel_idx] != null &&
-          alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel] != null)
-        assert (g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value ==
+      assert (g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value ==
               alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].alpha_value) &&
               (g._model._output._submodels[g._model._output._selected_submodel_idx].lambda_value ==
                       alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].lambda_value);
@@ -3981,7 +3979,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     (oldDevTrain - trainDev) / oldDevTrain;
             oldDevTrain = trainDev;
             if (_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
-              if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
+              if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) { // implement early stopping for lambda search
                 double s = ArrayUtils.maxValue(devHistoryTrain);
                 if (s < 1e-4) {
                   Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + "alpha[" + alphaInd + "] = "

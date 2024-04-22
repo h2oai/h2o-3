@@ -1905,24 +1905,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void setSubmodelIdx(int l, GLMParameters parms){
       _selected_submodel_idx = l;
       _best_lambda_idx = l; // kept to ensure backward compatibility
-      if (_submodels[l] != null) {
-        _selected_alpha_idx = indexOf(_submodels[l].alpha_value, parms._alpha);
-        _selected_lambda_idx = indexOf(_submodels[l].lambda_value, parms._lambda);
+      _selected_alpha_idx = indexOf(_submodels[l].alpha_value, parms._alpha);
+      _selected_lambda_idx = indexOf(_submodels[l].lambda_value, parms._lambda);
 
-        if (_random_coefficient_names != null)
-          _ubeta = Arrays.copyOf(_submodels[l].ubeta, _submodels[l].ubeta.length);
-        if (_multinomial || _ordinal) {
-          _global_beta_multinomial = getNormBetaMultinomial(l);
-          for (int i = 0; i < _global_beta_multinomial.length; ++i)
-            _global_beta_multinomial[i] = _dinfo.denormalizeBeta(_global_beta_multinomial[i]);
-        } else {
-          if (_global_beta == null)
-            _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
-          else
-            Arrays.fill(_global_beta, 0);
-          _submodels[l].getBeta(_global_beta);
-          _global_beta = _dinfo.denormalizeBeta(_global_beta);
-        }
+      if (_random_coefficient_names != null) 
+        _ubeta = Arrays.copyOf(_submodels[l].ubeta, _submodels[l].ubeta.length);
+      if(_multinomial || _ordinal) {
+        _global_beta_multinomial = getNormBetaMultinomial(l);
+        for(int i = 0; i < _global_beta_multinomial.length; ++i)
+          _global_beta_multinomial[i] = _dinfo.denormalizeBeta(_global_beta_multinomial[i]);
+      } else {
+        if (_global_beta == null)
+          _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
+        else
+          Arrays.fill(_global_beta, 0);
+        _submodels[l].getBeta(_global_beta);
+        _global_beta = _dinfo.denormalizeBeta(_global_beta);
       }
     }
     public double [] beta() { return _global_beta;}

@@ -869,8 +869,8 @@ public class ArrayUtils {
     return maxValue(ary,0,ary.length);
   }
   public static double maxValue(double[] ary, int from, int to) {
-    double result = Double.NEGATIVE_INFINITY;
-    for (int i = from; i<to; ++i)
+    double result = ary[from];
+    for (int i = from+1; i<to; ++i)
       if (ary[i]>result) result = ary[i];
     return result;
   }
