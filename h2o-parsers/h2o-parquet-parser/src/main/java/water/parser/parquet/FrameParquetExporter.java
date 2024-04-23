@@ -112,7 +112,11 @@ public class FrameParquetExporter  {
                                 group = group.append(currColName, cs[j].at8(i));
                                 break;
                             case (T_STR):
-                                group = group.append(currColName, cs[j].atStr(new BufferedString(), i).toString());
+                                if (cs[j].isNA(i)) {
+                                    group = group.append(currColName, "");
+                                } else {
+                                    group = group.append(currColName, cs[j].atStr(new BufferedString(), i).toString());
+                                } 
                                 break;
                             case (T_CAT):
                                 if (cs[j].isNA(i)) {
