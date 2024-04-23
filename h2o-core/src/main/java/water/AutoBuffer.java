@@ -8,6 +8,7 @@ import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.apache.commons.io.serialization.ValidatingObjectInputStream;
 import water.network.SocketChannelUtils;
 import water.util.Log;
 import water.util.StringUtils;
@@ -1579,7 +1580,7 @@ public final class AutoBuffer implements AutoCloseable {
 
   public static Object javaSerializeReadPojo(byte [] bytes) {
     try {
-      final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+      final ValidatingObjectInputStream ois = new ValidatingObjectInputStream(new ByteArrayInputStream(bytes));
       Object o = ois.readObject();
       return o;
     } catch (IOException e) {
