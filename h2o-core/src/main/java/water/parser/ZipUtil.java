@@ -1,5 +1,6 @@
 package water.parser;
 
+import com.github.luben.zstd.ZstdInputStream;
 import water.DKV;
 import water.Iced;
 import water.Key;
@@ -23,7 +24,8 @@ import static water.fvec.FileVec.getPathForKey;
 
 public abstract class ZipUtil {
 
-  public enum Compression { NONE, ZIP, GZIP }
+  public enum Compression { NONE, ZIP, GZIP, ZSTD }
+  public static int ZSTD_MAGIC = 0xFD2FB528;
 
   /**
    * This method will attempt to read the few bytes off a file which will in turn be used
@@ -147,6 +149,8 @@ public abstract class ZipUtil {
       return Compression.ZIP;
     if( bits.length > 2 && (UnsafeUtils.get2(bits,0)&0xffff) == GZIPInputStream.GZIP_MAGIC )
       return Compression.GZIP;
+    if (bits.length >= 4 && UnsafeUtils.get4(bits, 0) == ZSTD_MAGIC)
+      return Compression.ZSTD;
     return Compression.NONE;
   }
 
@@ -185,7 +189,7 @@ public abstract class ZipUtil {
     if( cmp == Compression.NONE ) return bs; // No compression
     // Wrap the bytes in a stream
     ByteArrayInputStream bais = new ByteArrayInputStream(bs);
-    InflaterInputStream is = null;
+    InputStream is = null;
     try {
       if (cmp == Compression.ZIP) {
         ZipInputStream zis = new ZipInputStream(bais);
@@ -194,7 +198,10 @@ public abstract class ZipUtil {
         if (ze == null || ze.isDirectory())
           zis.getNextEntry(); // read the next entry which should be a file
         is = zis;
-      } else {
+      } else if (cmp == Compression.ZSTD) {
+        is = new ZstdInputStream(bais);
+      }
+      else {
         assert cmp == Compression.GZIP;
         is = new GZIPInputStream(bais);
       }

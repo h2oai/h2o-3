@@ -17,6 +17,7 @@ dependencies {
   api 'org.javassist:javassist:3.28.0-GA'
   api 'org.apache.commons:commons-math3:3.6.1'
   api "commons-io:commons-io:2.11.0"
+  api 'com.github.luben:zstd-jni:1.5.6-2'
   compileOnly "javax.servlet:javax.servlet-api:3.1.0"
   api("com.github.wendykierp:JTransforms:3.1") { exclude module: "junit" }
   api project(":h2o-jaas-pam")
