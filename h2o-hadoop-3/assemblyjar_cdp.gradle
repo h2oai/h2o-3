@@ -22,16 +22,13 @@ dependencies {
     compileOnly "org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion"
     compileOnly "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"
     // Libraries need for Google Cloud Storage strongly require this Guava version
-    api('com.google.guava:guava')
+    api('com.google.guava:guava:20.0') { force = true }
     api(project(':h2o-app')) {
         exclude module: "${defaultWebserverModule}"
         exclude module: "h2o-ext-krbstandalone" // exclude here to avoid pulling all transitive dependencies
     }
     api(project(':h2o-ext-krbstandalone')) { // include without dependencies
         transitive = false
-    }
-    constraints {
-        api('com.google.guava:guava:20.0')
     }
 }
 
