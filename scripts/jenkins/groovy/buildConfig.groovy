@@ -99,7 +99,7 @@ class BuildConfig {
     changesMap[COMPONENT_HADOOP] = buildHadoop
     changedPythonTests = detectPythonTestChanges(changes)
 
-    nodeLabels = LABELS_MAP.get("g1")
+    nodeLabels = NodeLabels.LABELS_MAP.get("g1")
     supportedXGBEnvironments = [
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
