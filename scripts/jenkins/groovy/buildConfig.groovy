@@ -406,15 +406,15 @@ class BuildConfig {
       return gpuBenchmarkNodeLabel
     }
 
-    private static NodeLabels findByBuildURL(final String buildURL) {
-      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', ':8080')
-
-      if (LABELS_MAP.containsKey(name)) {
-        return LABELS_MAP.get(name)
-      } else {
-        throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
-      }
-    }
+//    private static NodeLabels findByBuildURL(final String buildURL) {
+//      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', ':8080')
+//
+//      if (LABELS_MAP.containsKey(name)) {
+//        return LABELS_MAP.get(name)
+//      } else {
+//        throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
+//      }
+//    }
   }
 }
 
