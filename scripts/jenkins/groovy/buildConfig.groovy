@@ -407,7 +407,7 @@ class BuildConfig {
     }
 
     private static NodeLabels findByBuildURL(final String buildURL) {
-      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
+      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', ':8080')
 
       if (LABELS_MAP.containsKey(name)) {
         return LABELS_MAP.get(name)
