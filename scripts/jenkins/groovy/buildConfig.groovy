@@ -99,7 +99,7 @@ class BuildConfig {
     changesMap[COMPONENT_HADOOP] = buildHadoop
     changedPythonTests = detectPythonTestChanges(changes)
 
-    nodeLabels = NodeLabels.LABELS_MAP.get("g1")
+    nodeLabels = NodeLabels.findByBuildURL(context.env.BUILD_URL)
     supportedXGBEnvironments = [
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
@@ -406,15 +406,9 @@ class BuildConfig {
       return gpuBenchmarkNodeLabel
     }
 
-//    private static NodeLabels findByBuildURL(final String buildURL) {
-//      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', ':8080')
-//
-//      if (LABELS_MAP.containsKey(name)) {
-//        return LABELS_MAP.get(name)
-//      } else {
-//        throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
-//      }
-//    }
+    private static NodeLabels findByBuildURL(final String buildURL) {
+        return LABELS_MAP.get("g1")
+    }
   }
 }
 
