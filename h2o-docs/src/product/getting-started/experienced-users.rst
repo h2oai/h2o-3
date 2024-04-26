@@ -31,6 +31,7 @@ Open the folder with H2O-3 in IntelliJ IDEA and it will automatically recognize 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration:
 
 ::
+
 	Type: Application
 	Main class: H2OApp
 	Use class path of module: h2o-app
