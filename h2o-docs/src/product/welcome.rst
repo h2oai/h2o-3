@@ -51,15 +51,15 @@ Java support
 
 H2O supports the following versions of Java:
 
-- Java SE 17, 
-- Java SE 16, 
-- Java SE 15, 
-- Java SE 14, 
-- Java SE 13, 
-- Java SE 12, 
-- Java SE 11, 
-- Java SE 10, 
-- Java SE 9, 
+- Java SE 17
+- Java SE 16
+- Java SE 15
+- Java SE 14
+- Java SE 13
+- Java SE 12
+- Java SE 11
+- Java SE 10
+- Java SE 9
 - Java SE 8
 
 `Download the latest supported version of Java <https://jdk.java.net/archive/>`__.
@@ -69,10 +69,13 @@ Unsupported Java versions
 
 We recommend that only power users force an unsupported Java version. Unsupported Java versions can only be used for experiments. For production versions, we only guarantee the Java versions from the supported list.
 
-How to force an unsupported java version
+How to force an unsupported Java version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:: 
+The following code forces an unsupported Java version:
+
+.. code-block:: bash
+
    java -jar -Dsys.ai.h2o.debug.allowJavaVersions=19 h2o.jar
 
 Java support with H2O and Hadoop

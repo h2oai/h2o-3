@@ -121,7 +121,7 @@ Step 6: Access H2O from the web browser or Python/R
 		.. code-block:: bash
 
 			$ boot2docker ip
-     		192.168.59.103
+			192.168.59.103  		
 
 
 You can also view the IP address (``192.168.99.100`` in the following example) by scrolling to the top of the Docker daemon window:
@@ -151,15 +151,11 @@ After obtaining the IP address, point your browser to the specified IP address a
 	.. code-tab:: python
 
 		# Initialize H2O 
-        import h2o
-        docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+		import h2o
+		docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321)
 
 	.. code-tab:: r R
 
 		# Initialize H2O
-        library(h2o)
-        dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
-
-
-
-
+		library(h2o)
+		dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
