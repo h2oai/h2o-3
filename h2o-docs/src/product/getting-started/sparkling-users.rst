@@ -34,14 +34,14 @@ Sparkling Water documentation
 
 The documentation for Sparkling Water is separate from the H2O user guide. Read this documentation to get started with Sparkling Water.
 
-- `Sparkling Water for Spark 3.5 <https://docs.h2o.ai/sparkling-water/3.5/latest-stable/doc/index.html.`__
-- `Sparkling Water for Spark 3.4 <https://docs.h2o.ai/sparkling-water/3.4/latest-stable/doc/index.html.`__
-- `Sparkling Water for Spark 3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/index.html.`__
-- `Sparkling Water for Spark 3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/index.html.`__
-- `Sparkling Water for Spark 3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/index.html.`__
-- `Sparkling Water for Spark 3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/index.html.`__
-- `Sparkling Water for Spark 2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/index.html.`__
-- `Sparkling Water for Spark 2.3 <https://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html.`__
+- `Sparkling Water for Spark 3.5 <https://docs.h2o.ai/sparkling-water/3.5/latest-stable/doc/index.html>`__
+- `Sparkling Water for Spark 3.4 <https://docs.h2o.ai/sparkling-water/3.4/latest-stable/doc/index.html>`__
+- `Sparkling Water for Spark 3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/index.html>`__
+- `Sparkling Water for Spark 3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/index.html>`__
+- `Sparkling Water for Spark 3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/index.html>`__
+- `Sparkling Water for Spark 3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/index.html>`__
+- `Sparkling Water for Spark 2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/index.html>`__
+- `Sparkling Water for Spark 2.3 <https://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__
 
 Sparkling Water tutorials
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,11 +59,11 @@ Sparkling Water FAQ
 
 The frequently asked questions provide answers to many common questions about Sparkling Water.
 
-- Sparkling Water FAQ for 3.5 <https://docs.h2o.ai/sparkling-water/3.5/latest-stable/doc/FAQ.html>`__
-- Sparkling Water FAQ for 3.4 <https://docs.h2o.ai/sparkling-water/3.4/latest-stable/doc/FAQ.html>`__
-- Sparkling Water FAQ for 3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/FAQ.html>`__
-- Sparkling Water FAQ for 3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/FAQ.html>`__
-- Sparkling Water FAQ for 3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/FAQ.html>`__
+- `Sparkling Water FAQ for 3.5 <https://docs.h2o.ai/sparkling-water/3.5/latest-stable/doc/FAQ.html>`__
+- `Sparkling Water FAQ for 3.4 <https://docs.h2o.ai/sparkling-water/3.4/latest-stable/doc/FAQ.html>`__
+- `Sparkling Water FAQ for 3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/FAQ.html>`__
+- `Sparkling Water FAQ for 3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/FAQ.html>`__
+- `Sparkling Water FAQ for 3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/FAQ.html>`__
 - `Sparkling Water FAQ for 3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/FAQ.html>`__
 - `Sparkling Water FAQ for 2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/FAQ.html>`__
 - `Sparkling Water FAQ for 2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/FAQ.html>`__

@@ -21,7 +21,7 @@ See `this cheatsheet on H2O in R <https://github.com/rstudio/cheatsheets/blob/ma
 Installing H2O with R
 ~~~~~~~~~~~~~~~~~~~~~
 
-You can find instructions for using H2O with Python in the `Downloading and installing H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r>`__ section and on the `Downloads page <http://www.h2o.ai/download>`__.
+You can find instructions for using H2O with Python in the `Downloading and installing H2O <../downloading.html#install-in-r>`__ section and on the `Downloads page <http://www.h2o.ai/download>`__.
 
 From the Downloads page:
 
@@ -35,6 +35,7 @@ Checking your R version for H2O
 To check which version of H2O is installed in R, run the following:
 
 ::
+
 	versions::installed.versions("h2o")
 
 .. note::
