@@ -78,12 +78,14 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 2. Prepare the job input on the Hadoop node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files:
 
 ::
+
 	unzip h2o-{{project_version}}-*.zip
 	cd h2o-{{project_version}}-*
 
 3. Launch H2O nodes and form a cluster on the Hadoop cluster by running:
 
 ::
+
 	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
 	The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
@@ -97,6 +99,7 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 4. Monitor your job by directing your web browser to your standard job tracker web UI. To access H2O's web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes have clouded and formed a cluster. Any nodes' IP addresses will work as there is no master node:
 
 ::
+
 	Determining driver host interface for mapper->driver callback...
 	[Possible callback IP address: 172.16.2.181]
 	[Possible callback IP address: 127.0.0.1]
@@ -183,15 +186,15 @@ where:
 3. Import the data with the S3 URL path:
 
 .. tabs::
-	code-tab:: r R
+	.. code-tab:: r R
 
 		h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
-	code-tab:: python
+	.. code-tab:: python
 
 		h2o.import_frame(path = "s3://bucket/path/to/file.csv")
 
-	code-tab:: Flow
+	.. code-tab:: bash Flow
 
 		importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]
 
@@ -345,7 +348,7 @@ Let's say that you have a Hadoop cluster with six worker nodes and six HDFS node
 The ``hadoop jar`` command that you run on the edge node talks to the YARN Resource Manager to launch an H2O MRv2 (map-reduce V2) job. The Resource Manager then places the requested number of H2O nodes (i.e. MRv2 mappers and YARN mappers), three in this example, on worker nodes. 
 
 
-  .. figure:: ../images/h2o-on-yarn-1.png
+.. figure:: ../images/h2o-on-yarn-1.png
   :alt: Hadoop cluster showing YARN resource manager placing requested number of H2O nodes on worker nodes.
 
 Once the H2O job's nodes all start, they find each other and create an H2O cluster (as shown by the dark blue line encircling the three H2O nodes in the following figure). The three H2O nodes work together to perform distributed Machine Learning functions as a group.
@@ -355,13 +358,13 @@ Once the H2O job's nodes all start, they find each other and create an H2O clust
 	The three worker nodes that are not part of the H2O job have been removed from the following picture for explanatory purposes. They aren't part of the compute or memory resources used by the H2O job, The full complement of HDFS is still available, though.
 
 
-  .. figure:: ../images/h2o-on-yarn-2.png
+.. figure:: ../images/h2o-on-yarn-2.png
   :alt: Hadoop cluster showing H2O nodes forming a cluster to perform distributed machine learning functions as a group.
 
 Data is then read in from HDFS once (seen by the red lines in the following figure) and stored as distributed H2O frames in H2O's in-memory column-compressed distributed key-value (DKV) store. 
 
 
-  .. figure:: ../images/h2o-on-yarn-3.png
+.. figure:: ../images/h2o-on-yarn-3.png
   :alt: Hadoop cluster showing data read from HDFS and stored as distributed H2O frames.
 
 Machine Learning algorithms then run very fast in a parallel and distributed way (as shown by the light blue lines in the following image). They iteratively sweep the data over and over again to build models. This is why the in-memory storage makes H2O fast.
@@ -370,7 +373,7 @@ Machine Learning algorithms then run very fast in a parallel and distributed way
 	
 	The HDFS nodes have been removed from the following figure for explanatory purposes to emphasize that the data lives in-memory during the model training process.
 
-  .. figure:: ../images/h2o-on-yarn-4.png
+.. figure:: ../images/h2o-on-yarn-4.png
   :alt: Hadoop cluster showing algorithms running in parallel, iteratively sweeping data to build models.
 
 Hadoop and AWS
