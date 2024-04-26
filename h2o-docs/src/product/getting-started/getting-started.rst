@@ -17,7 +17,7 @@ To begin, download a copy of H2O from the `Downloads page <https://h2o.ai/resour
 For first-time users, we recomment downloading the latest alpha release and the default standalone option (the Download and Run tab) as the installation method. Make sure to install Java if it is not already installed.
 
 .. note::
-	By default, this setup is open. Follow `security guidelines <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html>`__ if you want to secure your installation.
+	By default, this setup is open. Follow `security guidelines <../security.html>`__ if you want to secure your installation.
 
 Using Flow - H2O's web UI
 -------------------------
@@ -45,7 +45,7 @@ You can configure H2O when you launch it from the command line. For example, you
 Algorithms
 ----------
 
-`This section describes the science behind our algorithms <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science.html#data-science>`__ and provides a detailed, per-algorithm view of each model type.
+`This section describes the science behind our algorithms <../data-science.html#data-science>`__ and provides a detailed, per-algorithm view of each model type.
 
 Use cases
 ---------
@@ -85,7 +85,7 @@ You can follow these steps to quickly get up and running with H2O directly from 
     repos user$ cd h2o-3
     h2o-3 user$
 
-4. Run the following command to retrieve sample datasets. These datasets are used throughout the user guide and within the `booklets <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/additional-resources.html#algorithms>`__.
+4. Run the following command to retrieve sample datasets. These datasets are used throughout the user guide and within the `booklets <../additional-resources.html#algorithms>`__.
 
 .. code-block:: bash
 
