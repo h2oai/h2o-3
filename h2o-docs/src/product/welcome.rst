@@ -29,7 +29,7 @@ We recommend the following at minimum for compatibility with H2O:
    - Ubuntu 12.04
    - RHEL/CentOS 6+
 
-- **Languages**: R and Python are not required to use H2O (unless you want to use H2O in those environments), but Java is always required (see `Java requirements ,http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
+- **Languages**: R and Python are not required to use H2O (unless you want to use H2O in those environments), but Java is always required (see `Java requirements <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
    
    - R version 3+
    - Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x

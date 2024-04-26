@@ -1,7 +1,7 @@
 Java users
 ==========
 
-The following resources will help you create your own custom app that uses H2O. See `H2O's Java requirements <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__for more information.
+The following resources will help you create your own custom app that uses H2O. See `H2O's Java requirements <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__ for more information.
 
 Java developer documentation
 ----------------------------

@@ -5,8 +5,8 @@ H2O nodes must be treated as stateful by the Kubernetes environment because H2O 
 
 H2O pods deployed on a Kubernetes cluster require a `headless service <https://kubernetes.io/docs/concepts/services-networking/service/#headless-services>`__ for H2O node discovery. The headless service returns a set of addresses to all the underlying pods instead of load-balancing incoming requests to the underlying H2O pods.
 
-.. figure:: images/h2o-k8s-clustering.png
-:alt: Kubernetes headless service enclosing an underlying H2O cluster made of a StatefulSet.
+.. figure:: ../images/h2o-k8s-clustering.png
+    :alt: Kubernetes headless service enclosing an underlying H2O cluster made of a StatefulSet.
 
 Kubernetes integration
 ----------------------

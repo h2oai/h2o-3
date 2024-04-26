@@ -269,8 +269,8 @@ For Hortonworks, configure the settings in Ambari. See more on `Hortonworks conf
 
 4. In the **Scheduler** section, enter the amount of memory (in MB) to allocate in the **yarn.scheduler.maximum-allocation-mb** entry field.
 
-.. figure:: ../images/TroubleshootingHadoopAmbariyarnscheduler.png
-     :alt: Ambari configuration scheduler section with the yarn.scheduler.maximum-allocation-mb section highlighted in red.
+	.. figure:: ../images/TroubleshootingHadoopAmbariyarnscheduler.png
+		:alt: Ambari configuration scheduler section with the yarn.scheduler.maximum-allocation-mb section highlighted in red.
 
 5. Click **Save** and redeploy the cluster.
 
