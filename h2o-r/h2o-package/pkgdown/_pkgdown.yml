@@ -43,6 +43,7 @@ reference:
       - h2o.aggregator
       - h2o.aic
       - h2o.all
+      - h2o.all_constraints_passed
       - h2o.anomaly
       - h2o.any
       - h2o.anyFactor
@@ -71,6 +72,7 @@ reference:
       - h2o.clusterIsUp
       - h2o.clusterStatus
       - h2o.coef
+      - h2o.coef_names
       - h2o.coef_norm
       - h2o.coef_with_p_values
       - h2o.colnames
@@ -132,6 +134,7 @@ reference:
       - h2o.generic
       - h2o.genericModel
       - h2o.get_automl
+      - h2o.get_constraints_info
       - h2o.get_knot_locations
       - h2o.get_leaderboard
       - h2o.get_ntrees_actual

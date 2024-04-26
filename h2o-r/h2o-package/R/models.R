@@ -2677,6 +2677,90 @@ h2o.coef_with_p_values <- function(object) {
 }
 
 #'
+#' Return the GLM linear constraints descriptions, constraints values, constraints bounds and whether the constraints
+#' satisfied the bounds (true) or not (false)
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "acceleration"
+#' colnames <- c("power", "weight", "constant")
+#' values <- c(0.5, 1.0, 100)
+#' types <- c("lessthanequal", "lessthanequal", "lessthanequal")
+#' numbers <- c(0, 0, 0)
+#' con <- data.frame(names=colnames, values=values, types=types, constraint_numbers=numbers)
+#' cars_model <- h2o.glm(y=response, solver="irlsm",
+#'                                  x=predictors, 
+#'                                  training_frame = cars,
+#'                                  linear_constraints=as.h2o(con),
+#'                                  lambda=0.0,
+#'                                  family="gaussian")
+#' print(h2o.get_constraints_info(cars_model))
+#' }
+#' @export
+h2o.get_constraints_info <- function(object) {
+    if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+        if (is.null(object@parameters$linear_constraints)) {
+            stop("GLM linear constraints information is only available where there are linear constraints specified
+            in the parameter linear_constraints!")
+        } else {
+            object@model$linear_constraints_table
+        }
+    } else {
+        stop("get_constraints_info is only available for GLM models with linear constraints specified in the parameter
+         linear_constraints!.")
+    }
+}
+
+#'
+#' Return the TRUE if all constraints are satisfied for a constraint GLM model and FALSE otherwise.  If you want to 
+#' check which constraint failed, use h2o.get_constraints_info method.
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "acceleration"
+#' colnames <- c("power", "weight", "constant")
+#' values <- c(0.5, 1.0, 100)
+#' types <- c("lessthanequal", "lessthanequal", "lessthanequal")
+#' numbers <- c(0, 0, 0)
+#' con <- data.frame(names=colnames, values=values, types=types, constraint_numbers=numbers)
+#' cars_model <- h2o.glm(y=response, solver="irlsm",
+#'                                  x=predictors, 
+#'                                  training_frame = cars,
+#'                                  linear_constraints=as.h2o(con),
+#'                                  lambda=0.0,
+#'                                  family="gaussian")
+#' print(h2o.all_constraints_passed(cars_model))
+#' }
+#' @export
+h2o.all_constraints_passed <- function(object) {
+    if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+        if (is.null(object@parameters$linear_constraints)) {
+            stop("h2o.all_constraints_passed is only available where there are linear constraints specified
+            in the parameter linear_constraints!")
+        } else {
+            object@model$all_constraints_satisfied
+        }
+    } else {
+        stop("h2o.all_constraints_passed is only available for GLM models with linear constraints specified in the
+         parameter linear_constraints!.")
+    }
+}
+
+#'
 #' Return the variable inflation factors associated with numerical predictors for GLM models.
 #'
 #' @param object An \linkS4class{H2OModel} object.
@@ -2967,6 +3051,41 @@ extract_scoring_history <- function(model, value) {
   } else {
       stop("negative_log_likelihood and average_objection functions are only available for GLM models.")
   }
+}
+
+#'
+#' Return the GLM coefficient names without building the actual GLM model by setting max_iterations=0.
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' 
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "cylinders"
+#' cars_glm <- h2o.glm(balance_classes = TRUE, 
+#'                     seed = 1234, 
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = cars,
+#'                     max_iterations=0)
+#' h2o.coef_names(cars_glm)
+#' }
+#' @export
+h2o.coef_names <- function(object) {
+    if (is(object, "H2OModel") &&
+        (object@algorithm %in% c("glm"))) {
+        coef_names = object@model$coefficient_names
+        if (object@allparameters$intercept) { # intercept exist
+            return(coef_names[-length(coef_names)])
+        } else {
+            return(coef_names)
+        }
+    }
 }
 
 #'
