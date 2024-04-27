@@ -469,6 +469,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
     }
+    public enum Constraints {EqualTo, LessThanEqualTo}; 
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
@@ -515,6 +516,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public StringPair[] _interaction_pairs=null;
     public boolean _early_stopping = true;
     public Key<Frame> _beta_constraints = null;
+    public Key<Frame> _linear_constraints = null;
+    public boolean _expose_constraints = false; // internal parameter for testing only.
     public Key<Frame> _plug_values = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1;
@@ -534,6 +537,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _dispersion_learning_rate = 0.5;
     public Influence _influence;  // if set to dfbetas will calculate the difference of betas obtained from including and excluding a data row
     public boolean _keepBetaDiffVar = false;  // if true, will keep the frame generating the beta without from i and the variance estimation
+    boolean _testCSZeroGram = false;  // internal parameter, to test zero gram dropped column is correctly implemented
+    public boolean _separate_linear_beta = false;  // if true, will perform the beta and linear constraint separately
+    public boolean _init_optimal_glm = false;  // only used when there is linear constraints
+    public double _constraint_eta0 = 0.1258925; // eta_k = constraint_eta0/pow(constraint_c0, constraint_alpha)
+    public double _constraint_tau = 10;  // ck+1 = tau*ck
+    public double _constraint_alpha = 0.1; // eta_k = constraint_eta_0/pow(constraint_c0, constraint_alpha)
+    public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
+    public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -1552,6 +1563,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _selected_submodel_idx;  // submodel index with best deviance
     public int _best_submodel_idx;      // submodel index with best deviance
     public int _best_lambda_idx;        // the same as best_submodel_idx, kept to ensure backward compatibility
+    public String[] _linear_constraint_states;
+    public boolean _all_constraints_satisfied;
+    public TwoDimTable _linear_constraints_table;
     public Key<Frame> _regression_influence_diagnostics;
     public Key<Frame> _betadiff_var;  // for debugging only, no need to serialize
     public double lambda_best(){return _submodels.length == 0 ? -1 : _submodels[_best_submodel_idx].lambda_value;}
@@ -1577,6 +1591,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     private double _dispersion;
     private boolean _dispersionEstimated;
     public int[] _activeColsPerClass;
+    public ConstrainedGLMUtils.LinearConstraints[] _equalityConstraintsLinear = null;
+    public ConstrainedGLMUtils.LinearConstraints[] _lessThanEqualToConstraintsLinear = null;
+    public ConstrainedGLMUtils.LinearConstraints[] _equalityConstraintsBeta = null;
+    public ConstrainedGLMUtils.LinearConstraints[] _lessThanEqualToConstraintsBeta = null;
+    public String[] _constraintCoefficientNames = null;
+    public double[][] _initConstraintMatrix = null;
     public boolean hasPValues(){return _zvalues != null;}
     public boolean hasVIF() { return _vif_predictor_names != null; }
 

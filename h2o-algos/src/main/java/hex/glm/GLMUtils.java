@@ -365,4 +365,12 @@ public class GLMUtils {
       train.add(parms._response_column, responseVec);
     return train;
   }
+  
+  public static boolean notZeroLambdas(double[] lambdas) {
+    if (lambdas == null) {
+      return false;
+    } else {
+      return ((int) Arrays.stream(lambdas).filter(x -> x != 0.0).boxed().count()) > 0;
+    }
+  }
 }

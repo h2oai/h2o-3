@@ -31,7 +31,7 @@
 #' @param random_columns random columns indices for HGLM.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param score_iteration_interval Perform scoring for every score_iteration_interval iterations Defaults to -1.
+#' @param score_iteration_interval Perform scoring for every score_iteration_interval iterations. Defaults to -1.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
@@ -46,7 +46,7 @@
 #' @param rand_family Random Component Family array.  One for each random component. Only support gaussian for now. Must be one of:
 #'        "[gaussian]".
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
-#' @param tweedie_link_power Tweedie link power Defaults to 1.
+#' @param tweedie_link_power Tweedie link power. Defaults to 1.
 #' @param theta Theta Defaults to 1e-10.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
@@ -56,35 +56,34 @@
 #'        represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
 #'        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
 #' @param lambda Regularization strength
-#' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+#' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min.
 #'        Defaults to FALSE.
-#' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided)
+#' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided).
 #'        Defaults to TRUE.
 #' @param nlambdas Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 #'        Defaults to -1.
-#' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to TRUE.
+#' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance. Defaults to TRUE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation, Skip or PlugValues. Must be one of: "MeanImputation",
 #'        "Skip", "PlugValues". Defaults to MeanImputation.
 #' @param plug_values Plug Values (a single row frame containing values that will be used to impute missing values of the
-#'        training/validation frame, use with conjunction missing_values_handling = PlugValues)
-#' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
-#'        Defaults to FALSE.
+#'        training/validation frame, use with conjunction missing_values_handling = PlugValues).
+#' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver. Defaults to FALSE.
 #' @param dispersion_parameter_method Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only. Must be one
 #'        of: "deviance", "pearson", "ml". Defaults to pearson.
 #' @param init_dispersion_parameter Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion parameter.  If
-#'        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.Default to 1.0.
-#'        Defaults to 1.
-#' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
+#'        fix_dispersion_parameter is set, this value will be used in the calculation of p-values. Defaults to 1.
+#' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove the dependent columns. Defaults to FALSE.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
-#' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
-#' @param max_iterations Maximum number of iterations Defaults to -1.
+#' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative. Defaults to FALSE.
+#' @param max_iterations Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model coefficient
+#'        names and model coefficient dimensions are needed. Defaults to -1.
 #' @param objective_epsilon Converge if  objective value changes less than this. Default (of -1.0) indicates: If lambda_search is set to
 #'        True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal
 #'        to zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
 #'        objective_epsilon is set to .0001. Defaults to -1.
-#' @param beta_epsilon Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
-#'        Defaults to 0.0001.
+#' @param beta_epsilon Converge if beta changes less (using L-infinity norm) than beta esilon. ONLY applies to IRLSM solver. Defaults
+#'        to 0.0001.
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
 #'        (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
 #'        gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True,
@@ -92,17 +91,18 @@
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
 #' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
-#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If standardize is
+#'        true, the standardized coefficients should be used.  Otherwise, use the regular coefficients.
 #' @param calc_like \code{Logical}. if true, will return likelihood function value. Defaults to FALSE.
-#' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
-#'        to FALSE.
+#' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.
+#'        Defaults to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values.  If false, build the next model for next set
 #'        of alpha/lambda values starting from the values provided by current model.  If true will start GLM model from
 #'        scratch. Defaults to FALSE.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
-#'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
+#'        coefficients to zero).  Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
 #'        variables, then lambda_min_ratio is set to 0.01. Defaults to -1.
 #' @param beta_constraints Beta constraints
@@ -111,7 +111,7 @@
 #'        max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults to -1.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
-#' @param obj_reg Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs Defaults to -1.
+#' @param obj_reg Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs. Defaults to -1.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
@@ -155,6 +155,21 @@
 #' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the
 #'        dataset. Must be one of: "dfbetas".
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
+#' @param linear_constraints Linear constraints: used to specify linear constraints involving more than one coefficients in standard form.
+#'        It is only supported for solver IRLSM.  It contains four columns: names (strings for coefficient names or
+#'        constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers (0 for first linear
+#'        constraint, 1 for second linear constraint, ...).
+#' @param init_optimal_glm \code{Logical}. If true, will initialize coefficients with values derived from GLM runs without linear
+#'        constraints.  Only available for linear constraints. Defaults to FALSE.
+#' @param separate_linear_beta \code{Logical}. If true, will keep the beta constraints and linear constraints separate.  After new
+#'        coefficients are found, first beta constraints will be applied followed by the application of linear
+#'        constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
+#'        false, will combine the beta and linear constraints. Defaults to FALSE.
+#' @param constraint_eta0 For constrained GLM only.  It affects the setting of eta_k+1=eta_0/power(ck+1, alpha). Defaults to 0.1258925.
+#' @param constraint_tau For constrained GLM only.  It affects the setting of c_k+1=tau*c_k. Defaults to 10.
+#' @param constraint_alpha For constrained GLM only.  It affects the setting of  eta_k = eta_0/pow(c_0, alpha). Defaults to 0.1.
+#' @param constraint_beta For constrained GLM only.  It affects the setting of eta_k+1 = eta_k/pow(c_k, beta). Defaults to 0.9.
+#' @param constraint_c0 For constrained GLM only.  It affects the initial setting of epsilon_k = 1/c_0. Defaults to 10.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -276,7 +291,15 @@ h2o.glm <- function(x,
                     fix_tweedie_variance_power = TRUE,
                     dispersion_learning_rate = 0.5,
                     influence = c("dfbetas"),
-                    gainslift_bins = -1)
+                    gainslift_bins = -1,
+                    linear_constraints = NULL,
+                    init_optimal_glm = FALSE,
+                    separate_linear_beta = FALSE,
+                    constraint_eta0 = 0.1258925,
+                    constraint_tau = 10,
+                    constraint_alpha = 0.1,
+                    constraint_beta = 0.9,
+                    constraint_c0 = 10)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -459,6 +482,22 @@ h2o.glm <- function(x,
     parms$influence <- influence
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(linear_constraints))
+    parms$linear_constraints <- linear_constraints
+  if (!missing(init_optimal_glm))
+    parms$init_optimal_glm <- init_optimal_glm
+  if (!missing(separate_linear_beta))
+    parms$separate_linear_beta <- separate_linear_beta
+  if (!missing(constraint_eta0))
+    parms$constraint_eta0 <- constraint_eta0
+  if (!missing(constraint_tau))
+    parms$constraint_tau <- constraint_tau
+  if (!missing(constraint_alpha))
+    parms$constraint_alpha <- constraint_alpha
+  if (!missing(constraint_beta))
+    parms$constraint_beta <- constraint_beta
+  if (!missing(constraint_c0))
+    parms$constraint_c0 <- constraint_c0
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -563,6 +602,14 @@ h2o.glm <- function(x,
                                     dispersion_learning_rate = 0.5,
                                     influence = c("dfbetas"),
                                     gainslift_bins = -1,
+                                    linear_constraints = NULL,
+                                    init_optimal_glm = FALSE,
+                                    separate_linear_beta = FALSE,
+                                    constraint_eta0 = 0.1258925,
+                                    constraint_tau = 10,
+                                    constraint_alpha = 0.1,
+                                    constraint_beta = 0.9,
+                                    constraint_c0 = 10,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -750,6 +797,22 @@ h2o.glm <- function(x,
     parms$influence <- influence
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(linear_constraints))
+    parms$linear_constraints <- linear_constraints
+  if (!missing(init_optimal_glm))
+    parms$init_optimal_glm <- init_optimal_glm
+  if (!missing(separate_linear_beta))
+    parms$separate_linear_beta <- separate_linear_beta
+  if (!missing(constraint_eta0))
+    parms$constraint_eta0 <- constraint_eta0
+  if (!missing(constraint_tau))
+    parms$constraint_tau <- constraint_tau
+  if (!missing(constraint_alpha))
+    parms$constraint_alpha <- constraint_alpha
+  if (!missing(constraint_beta))
+    parms$constraint_beta <- constraint_beta
+  if (!missing(constraint_c0))
+    parms$constraint_c0 <- constraint_c0
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

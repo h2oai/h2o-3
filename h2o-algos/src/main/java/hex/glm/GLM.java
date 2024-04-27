@@ -1,6 +1,8 @@
 package hex.glm;
 
+import Jama.Matrix;
 import hex.*;
+import hex.gam.MatrixFrameUtils.GamUtils;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -48,10 +50,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static hex.ModelMetrics.calcVarImp;
-import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
 import static hex.gam.MatrixFrameUtils.GamUtils.keepFrameKeys;
-import static hex.glm.ComputationState.extractSubRange;
-import static hex.glm.ComputationState.fillSubRange;
+import static hex.glm.ComputationState.*;
+import static hex.glm.ConstrainedGLMUtils.*;
 import static hex.glm.DispersionUtils.*;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
@@ -69,10 +70,10 @@ import static water.fvec.Vec.T_NUM;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
+  static double BAD_CONDITION_NUMBER = 20000;
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-  
   public static final int SCORING_INTERVAL_MSEC = 15000; // scoreAndUpdateModel every minute unless score every iteration is set
   public int[] _randC;  // contains categorical column levels for random columns for HGLM
   public String _generatedWeights = null;
@@ -86,6 +87,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private boolean _checkPointFirstIter = false;  // indicate first iteration for checkpoint model
   private boolean _betaConstraintsOn = false;
   private boolean _tweedieDispersionOnly = false;
+  private boolean _linearConstraintsOn = false;
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -814,6 +816,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private GLMGradientInfo _ginfoStart;
   private double _betaDiffStart;
   private double[] _betaStart;
+  private int _initIter = 0;
   
   @Override
   public int nclasses() {
@@ -966,6 +969,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
     }
+    if (_parms._max_iterations == 0) {
+      warn("max_iterations", "for GLM, must be >= 1 (or -1 for unlimited or default setting) " +
+              "to obtain proper model.  Setting it to be 0 will only return the correct coefficient names and an empty" +
+              " model.");
+      warn("_max_iterations", H2O.technote(2 , "for GLM, if specified, must be >= 1 or == -1."));
+    }
+    if (_parms._linear_constraints != null) {
+      checkInitLinearConstraints();
+    }
     if (expensive) {
       if (_parms._build_null_model) {
         if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
@@ -973,8 +985,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         else
           removePredictors(_parms, _train);
       }
-      if (_parms._max_iterations == 0)
-        error("_max_iterations", H2O.technote(2, "if specified, must be >= 1."));
       if (error_count() > 0) return;
       if (_parms._lambda_search && (_parms._stopping_rounds > 0)) {
         error("early stop", " cannot run when lambda_search=True.  Lambda_search has its own " +
@@ -1173,6 +1183,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       boolean betaContsOn = _parms._beta_constraints != null || _parms._non_negative;
+      _linearConstraintsOn = _parms._linear_constraints != null;
       _betaConstraintsOn = (betaContsOn && (Solver.AUTO.equals(_parms._solver) ||
               Solver.COORDINATE_DESCENT.equals(_parms._solver) || IRLSM.equals(_parms._solver )||
               Solver.L_BFGS.equals(_parms._solver)));
@@ -1185,17 +1196,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _enumInCS = true; // make sure we only do this once
         }
       }
+      if (_parms._expose_constraints && _parms._linear_constraints == null)
+        error("_expose_constraints", "can only be enabled when there are linear constraints.");
       BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get()) 
               : new BetaConstraint();
       if (betaContsOn && !_betaConstraintsOn) {
-        warn("Beta Constraints", " will be disabled except for solver AUTO, COORDINATE_DESCENT, " +
+        warn("Beta Constraints", "will be disabled except for solver AUTO, COORDINATE_DESCENT, " +
                 "IRLSM or L_BFGS.  It is not available for ordinal or multinomial families.");
       }
-      if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
-        error("_compute_p_values","P-values can not be computed for constrained problems");
+      if (bc.hasProximalPenalty() && _parms._compute_p_values)
+        error("_compute_p_values","P-values can not be computed for constrained problems with proximal penalty");
       if (bc.hasBounds() && _parms._early_stopping)
         warn("beta constraint and early_stopping", "if both are enabled may degrade model performance.");
       _state.setBC(bc);
+
       if(hasOffsetCol() && _parms._intercept && !ordinal.equals(_parms._family)) { // fit intercept
         GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
                 _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) 
@@ -1223,12 +1237,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     " be the following:\n"+String.join("\n", _dinfo._adaptedFrame._names)+"\n Intercept.\n  " +
                     "Run your model without specifying startval to find out the actual coefficients names and " +
                     "lengths.");
-          } else
+          } else {
             System.arraycopy(_parms._startval, 0, beta, 0, beta.length);
+          }
+        } else if (_parms._linear_constraints != null && _parms._init_optimal_glm) {  // start value is not assigned
+          beta = genInitBeta();
         }
+
         GLMGradientInfo ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0, 
                 _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices).getGradient(beta) : new GLMGradientSolver(_job, 
-                _parms, _dinfo, 0, _state.activeBC(), _betaInfo).getGradient(beta);  // gradient obtained with zero penalty
+                _parms, _dinfo, 0, _state.activeBC(), _betaInfo).getGradient(beta);  // gradient with L2 penalty, no constraints
         _lmax = lmax(ginfo._gradient);
         _gmax = _lmax*Math.max(1e-2, _parms._alpha[0]); // each alpha should have its own best lambda
         _state.setLambdaMax(_lmax);
@@ -1339,10 +1357,101 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._compute_p_values = true;  // automatically turned these on
         _parms._remove_collinear_columns = true;
       }
+      if (_parms._linear_constraints != null) {
+        checkAssignLinearConstraints();
+      }
       buildModel();
     }
   }
-
+  
+  public double[] genInitBeta() {
+    if (_checkPointFirstIter)
+      return _model._betaCndCheckpoint;
+    Key<Frame> linear_constr = _parms._linear_constraints;
+    Key<Frame> beta_constr = _parms._beta_constraints;
+    _parms._linear_constraints = _parms._beta_constraints = null;
+    GLMModel model = new GLM(_parms).trainModel().get();
+    Scope.track_generic(model);
+    _parms._linear_constraints= linear_constr;
+    _parms._beta_constraints = beta_constr;
+    ScoringInfo[] scInfo = model.getScoringInfo();
+    _initIter = ((GLMScoringInfo) scInfo[scInfo.length-1]).iterations;
+    return _parms._standardize ? model._output.getNormBeta() : model._output.beta(); // constraint values evaluation will take care of normalization
+  }
+  
+  void checkInitLinearConstraints() {
+    if (!IRLSM.equals(_parms._solver)) {  // only solver irlsm is allowed
+      error("solver", "constrained GLM is only available for IRLSM.  PLease set solver to" +
+              " IRLSM/irlsm explicitly.");
+      return;
+    }
+    if (_parms._constraint_eta0 <= 0) {
+      error("constraint_eta0", "must be > 0.");
+      return;
+    }
+    if (_parms._constraint_tau <= 0) {
+      error("constraint_tau", "must be > 0.");
+      return;
+    }
+    if (_parms._constraint_c0 <= 0) {
+      error("constraint_c0", "must be > 0.");
+      return;
+    }
+    if (!_parms._intercept) {
+      error("intercept", "constrained GLM is only supported with when intercept=true.");
+      return;
+    }
+    // no regularization for constrainted GLM except during testing
+    if ((notZeroLambdas(_parms._lambda) || _parms._lambda_search) && !_parms._testCSZeroGram) {
+      error("lambda or lambda_search", "Regularization is not allowed for constrained GLM.");
+      return;
+    }
+    if ("multinomial".equals(_parms._solver) || "ordinal".equals(_parms._solver)) {
+      error("solver", "Constrained GLM is not supported for multinomial and ordinal families");
+      return;
+    }
+    if ("ml".equals(_parms._dispersion_parameter_method)) {
+      error("dispersion_parameter_method", "Only pearson and deviance is supported for dipsersion" +
+              " parameter calculation.");
+      return;
+    }
+  }
+  
+  /**
+   * This method will extract the constraints from beta_constraints followed by the constraints specified in the 
+   * linear_constraints.  The constraints are extracted into equality and lessthanequalto constraints from
+   * beta_constraints and linear constraints.
+   * 
+   * In addition, we extract all the constraints into a matrix and if the matrix is not full rank, constraints
+   * are redundant and an error will be thrown and the redundant constraints will be included in the error message
+   * so users can know which constraints to remove.
+   */
+  void checkAssignLinearConstraints() {
+    String[] coefNames = _dinfo.coefNames();
+    int[] betaEqualLessThanArr = null;
+    if (_parms._beta_constraints != null)
+      betaEqualLessThanArr = extractBetaConstraints(_state, coefNames);
+    // extract constraints from linear_constraints into equality of lessthanequalto constraints
+    extractLinearConstraints(_state, _parms._linear_constraints, _dinfo);
+    // make sure constraints have full rank.  If not, generate messages stating what constraints are redundant, error out
+    List<String> constraintNames = new ArrayList<>();
+    double[][] initConstraintMatrix = formConstraintMatrix(_state, constraintNames, betaEqualLessThanArr);
+    String[] constraintCoefficientNames = constraintNames.toArray(new String[0]);
+    if (countNumConst(_state) > coefNames.length)
+      warn("number of constraints", " exceeds the number of coefficients.  The system is" +
+              " over-constraints, and probably may not yield a valid solution due to possible conflicting " +
+              "constraints.  Consider reducing the number of constraints.");
+    List<String> redundantConstraints = foundRedundantConstraints(_state, initConstraintMatrix);
+    if (redundantConstraints != null) {
+      int numRedundant = redundantConstraints.size();
+      for (int index = 0; index < numRedundant; index++)
+        error("redundant and possibly conflicting linear constraints", redundantConstraints.get(index));
+    } else {
+      _state._csGLMState = new ConstraintGLMStates(constraintCoefficientNames, initConstraintMatrix, _parms);
+      _state._hasConstraints = true;
+    }
+  }
+  
   /**
    * initialize the following parameters for HGLM from either user initial inputs or from a GLM model if user did not 
    * provide any starting values.
@@ -1596,34 +1705,72 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
 
+    /***
+     * Use cholesky decomposition to solve for GLM Coefficients from the augmented Langrangian objective.  In addition,
+     * it will check for collinear columns and removed them when found.
+     */
+    private double[] constraintGLM_solve(GramGrad  gram) {
+      if (!_parms._intercept) throw H2O.unimpl();
+      ArrayList<Integer> ignoredCols = new ArrayList<>();
+      double[] xy = gram._xy.clone();
+      Cholesky chol = ((_state._iter == 0) ? gram.qrCholesky(ignoredCols, GamUtils.copy2DArray(gram._gram), _parms._standardize) : gram.cholesky(null, gram._gram));
+      if (!chol.isSPD()) throw new NonSPDMatrixException();
+      if (!ignoredCols.isEmpty()) {
+        int[] collinearCols = ignoredCols.stream().mapToInt(x -> x).toArray();
+        String[] ignoredConstraints = collinearInConstraints(ArrayUtils.select(_dinfo.coefNames(), collinearCols),
+                _state._csGLMState._constraintNames);
+        String collinearColNames = Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinearCols));
+        if (ignoredConstraints != null && ignoredConstraints.length > 0)
+          throw new IllegalArgumentException("Found constraints " + Arrays.toString(ignoredConstraints) + 
+                  " included on collinear columns that are going to be removed.  Please remove any constraints " +
+                  "involving collinear columns.");
+        if (!_parms._remove_collinear_columns)
+          throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. Set " +
+                  "remove_collinear_columns flag to true to remove collinear columns automatically. " +
+                  "Found collinear columns " + collinearColNames);
+        _model.addWarning("Removed collinear columns "+collinearColNames);
+        Log.warn("Removed collinear columns "+collinearColNames);
+        _state.removeCols(collinearCols);
+        gram._gram = GramGrad.dropCols(collinearCols, gram._gram);
+        gram._grad = ArrayUtils.removeIds(gram._grad, collinearCols);
+        xy = ArrayUtils.removeIds(xy, collinearCols);
+      }
+      _chol = chol;
+      chol.solve(xy);
+      return xy;
+    }
+    
     private double[] ADMM_solve(Gram gram, double[] xy) {
       if (_parms._remove_collinear_columns || _parms._compute_p_values) {
         if (!_parms._intercept) throw H2O.unimpl();
         ArrayList<Integer> ignoredCols = new ArrayList<>();
         Cholesky chol = ((_state._iter == 0) ? gram.qrCholesky(ignoredCols, _parms._standardize) : gram.cholesky(null));
         if (!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
-          int[] collinear_cols = new int[ignoredCols.size()];
-          for (int i = 0; i < collinear_cols.length; ++i)
-            collinear_cols[i] = ignoredCols.get(i);
-          throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. P-values can not be computed with collinear columns in the dataset. Set remove_collinear_columns flag to true to remove collinear columns automatically. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinear_cols)));
+          int[] collinearCols = new int[ignoredCols.size()];
+          for (int i = 0; i < collinearCols.length; ++i)
+            collinearCols[i] = ignoredCols.get(i);
+          throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. P-values can not be " +
+                  "computed with collinear columns in the dataset. Set remove_collinear_columns flag to true to remove " +
+                  "collinear columns automatically. Found collinear columns " +
+                  Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinearCols)));
         }
         if (!chol.isSPD()) throw new NonSPDMatrixException();
         _chol = chol;
         if (!ignoredCols.isEmpty()) { // got some redundant cols
-          int[] collinear_cols = new int[ignoredCols.size()];
-          for (int i = 0; i < collinear_cols.length; ++i)
-            collinear_cols[i] = ignoredCols.get(i);
-          String[] collinear_col_names = ArrayUtils.select(_state.activeData().coefNames(), collinear_cols);
+          int[] collinearCols = new int[ignoredCols.size()];
+          for (int i = 0; i < collinearCols.length; ++i)
+            collinearCols[i] = ignoredCols.get(i);
+          String[] collinearColNames = ArrayUtils.select(_state.activeData().coefNames(), collinearCols);
           // need to drop the cols from everywhere
-          _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
-          Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
-          _state.removeCols(collinear_cols);
-          gram.dropCols(collinear_cols);
-          xy = ArrayUtils.removeIds(xy, collinear_cols);
+          _model.addWarning("Removed collinear columns " + Arrays.toString(collinearColNames));
+          Log.warn("Removed collinear columns " + Arrays.toString(collinearColNames));
+          _state.removeCols(collinearCols);
+          gram.dropCols(collinearCols);
+          xy = ArrayUtils.removeIds(xy, collinearCols);
         }
         xy = xy.clone();
         chol.solve(xy);
-      } else {
+      } else {  // ADMM solve is only used when there is l1 regularization (lasso).
         gram = gram.deep_clone();
         xy = xy.clone();
         GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(), _state.l1pen(), _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
@@ -2199,6 +2346,162 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
       }
+    }
+    
+    /***
+     * This method fits the constraint GLM for IRLSM.  We implemented the algorithm depicted in the document (H2O 
+     * Constrained GLM Implementation.pdf) attached to this issue: https://github.com/h2oai/h2o-3/issues/6722.  We will
+     * hereby use the word the doc to refere to this document.  In particular, we following the algorithm described in
+     * Section VII (and table titled Algorithm 19.1) of the doc.
+     */
+    private void fitIRLSMCS() {
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
+      List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
+      LinearConstraints[] equalityConstraints;
+      LinearConstraints[] lessThanEqualToConstraints;
+      final BetaConstraint bc = _state.activeBC();
+      if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
+        equalityConstraints = _state._equalityConstraintsLinear;
+        lessThanEqualToConstraints = _state._lessThanEqualToConstraintsLinear;
+      } else {  // combine beta and linear constraints together
+        equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
+        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta, 
+                _state._lessThanEqualToConstraintsLinear);
+      }
+      boolean hasEqualityConstraints = equalityConstraints != null;
+      boolean hasLessConstraints = lessThanEqualToConstraints != null;
+      double[] lambdaEqual = hasEqualityConstraints ? new double[equalityConstraints.length] : null;
+      double[] lambdaLessThan = hasLessConstraints ? new double[lessThanEqualToConstraints.length] : null;
+      Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
+      Random randObj = new Random(startSeed);
+      updateConstraintValues(betaCnd, coefNames, equalityConstraints, lessThanEqualToConstraints);
+      if (hasEqualityConstraints) // set lambda values for constraints
+        genInitialLambda(randObj, equalityConstraints, lambdaEqual);
+      if (hasLessConstraints)
+        genInitialLambda(randObj, lessThanEqualToConstraints, lambdaLessThan);
+      ExactLineSearch ls = null;
+      int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
+      // contribution to gradient and hessian from constraints
+      _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coefNames);
+
+      GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
+              _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms, 
+              _dinfo, 0, _state.activeBC(), _betaInfo);
+      GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan, 
+              equalityConstraints, lessThanEqualToConstraints);
+      _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);  // update state ginfo with contributions from GLMGradientInfo
+      boolean predictorSizeChange;
+      boolean applyBetaConstraints = _parms._separate_linear_beta && _betaConstraintsOn;
+      // short circuit check here: if gradient magnitude is small and all constraints are satisfied, quit right away
+      if (constraintsStop(gradientInfo, _state)) {
+        Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
+        return;
+      }
+      double gradMagSquare;
+      int origIter = iterCnt+1;
+      try {
+        while (true) {
+          do { // implement Algorithm 11.8 of the doc to find coefficients with epsilon k as the precision
+            iterCnt++;
+            long t1 = System.currentTimeMillis();
+            ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
+            if (iterCnt == origIter) {
+              Matrix gramMatrix = new Matrix(gram._gram);
+              if (gramMatrix.cond() >= BAD_CONDITION_NUMBER)
+                if (_parms._init_optimal_glm) {
+                  warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
+                          " singular.  Please re-run with init_optimal_glm set to false.");
+                }
+            }
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[coefNames.size()];
+            }
+            // solve for GLM coefficients
+            betaCnd = constraintGLM_solve(gram);  // beta_k+1 = beta_k+dk where dk = beta_k+1-beta_k   
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[betaCnd.length];
+            }
+            // add exact line search for GLM coefficients.  Refer to the doc, Algorithm 11.5
+            if (ls == null)
+              ls = new ExactLineSearch(betaCnd, _state, coefNames);
+            else
+              ls.reset(betaCnd, _state, coefNames);
+
+            if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)) {
+              gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+              betaCnd = ls._newBeta;
+              gradientInfo = ls._ginfoOriginal;
+            } else {  // ls failed, reset to 
+              if (applyBetaConstraints) // separate beta and linear constraints
+                bc.applyAllBounds(_state.beta());
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
+                      ginfo, _state.beta());
+              Log.info(LogMsg("Line search failed " + ls));
+              return;
+            }
+
+            if (applyBetaConstraints) { // if beta constraints are applied, may need to update constraints, derivatives, gradientInfo
+              System.arraycopy(betaCnd, 0, tempBeta, 0, betaCnd.length);
+              bc.applyAllBounds(betaCnd);
+              ArrayUtils.subtract(betaCnd, tempBeta, tempBeta);
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, 
+                      lessThanEqualToConstraints, ginfo, betaCnd);
+              gradientInfo = ls._ginfoOriginal;
+            }
+            
+            // check for stopping conditions
+            if (checkIterationDone(betaCnd, gradientInfo, iterCnt)) // ratio of objective drops.
+              return;
+            Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + 
+                    ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } while (gradMagSquare > _state._csGLMState._epsilonkCSSquare);
+          // update constraint parameters, ck, lambdas and others
+          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints, _parms);
+        }
+      } catch (NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+      }
+    }
+
+    /***
+     * This method will first check if enough progress has been made with progress method.
+     * If no more progress is made, we will check it the constraint stopping conditions are met. 
+     * The model building process will stop if no more progress is made regardless of whether the constraint stopping
+     * conditions are met or not.
+     */
+    public boolean checkIterationDone(double[] betaCnd, GLMGradientInfo gradientInfo, int iterCnt) {
+      // check for stopping conditions
+      boolean done = !progress(betaCnd, gradientInfo); // no good change in coeff, time-out or max_iteration reached
+      if (done) {
+        _model._betaCndCheckpoint = betaCnd;
+        boolean kktAchieved = constraintsStop(gradientInfo, _state);
+        if (kktAchieved)
+          Log.info("KKT Conditions achieved after " + iterCnt + " iterations ");
+        else
+          Log.warn("KKT Conditions not achieved but no further progress made due to time out or no changes" +
+                  " to coefficients after " + iterCnt + " iterations");
+        return true;
+      }
+      return false;
+    }
+    
+    public List<String> changeCoeffBetainfo(String[] coefNames) {
+      _betaInfo = new BetaInfo(fractionalbinomial.equals(_parms._family) ? 2 :
+              (multinomial.equals(_parms._family) || ordinal.equals(_parms._family)) ? nclasses() : 1, coefNames.length);
+      return Arrays.stream(coefNames).collect(Collectors.toList());
     }
 
     private void fitIRLSMML(Solver s) {
@@ -2998,13 +3301,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               fitIRLSM_multinomial(solver);
             else if (ordinal.equals(_parms._family))
               fitIRLSM_ordinal_default(solver);
-            else if (gaussian.equals(_parms._family) && Link.identity.equals(_parms._link))
-              fitLSM(solver);
+            else if (gaussian.equals(_parms._family) && Link.identity.equals(_parms._link) && _parms._linear_constraints == null)
+              fitLSM(solver); // not constrained GLM
             else {
               if (_parms._dispersion_parameter_method.equals(ml))
                   fitIRLSMML(solver);
-              else
+              else if (_parms._linear_constraints == null)
                 fitIRLSM(solver);
+              else
+                fitIRLSMCS(); // constrained GLM IRLSM
             }
             break;
           case GRADIENT_DESCENT_LH:
@@ -3082,7 +3387,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double[][] inv = chol.getInv();
         if (_parms._influence != null) {
           _cholInvInfluence = new double[inv.length][inv.length];
-          copy2DArray(inv, _cholInvInfluence);
+          GamUtils.copy2DArray(inv, _cholInvInfluence);
           ArrayUtils.mult(_cholInvInfluence, _parms._obj_reg);
           g.mul(1.0/_parms._obj_reg);
         }
@@ -3537,13 +3842,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       try {
         doCompute();
       } finally {
+        final List<Key> keep = new ArrayList<>();
         if ((!_doInit || !_cvRuns) && _betaConstraints != null) {
           DKV.remove(_betaConstraints._key);
           _betaConstraints.delete();
         }
+        if ((!_doInit || !_cvRuns) && _parms._linear_constraints != null) {
+          keepFrameKeys(keep, _parms._linear_constraints);
+        }
         if (_model != null) {
           if (_parms._influence != null) {
-            final List<Key> keep = new ArrayList<>();
             keepFrameKeys(keep, _model._output._regression_influence_diagnostics);
             if (_parms._keepBetaDiffVar)
               keepFrameKeys(keep, _model._output._betadiff_var);
@@ -3579,177 +3887,189 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       _model._output._start_time = System.currentTimeMillis(); //quickfix to align output duration with other models
-      if (_parms._lambda_search) {
-        if (ordinal.equals(_parms._family))
-          nullDevTrain = new GLMResDevTaskOrdinal(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
-        else
-          nullDevTrain = multinomial.equals(_parms._family)
-                  ? new GLMResDevTaskMultinomial(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev()
-                  : new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame).avgDev();
-        if (_validDinfo != null) {
+      if (_parms._expose_constraints && _parms._linear_constraints != null) {
+        _model._output._equalityConstraintsBeta = _state._equalityConstraintsBeta;
+        _model._output._lessThanEqualToConstraintsBeta = _state._lessThanEqualToConstraintsBeta;
+        _model._output._equalityConstraintsLinear = _state._equalityConstraintsLinear;
+        _model._output._lessThanEqualToConstraintsLinear = _state._lessThanEqualToConstraintsLinear;
+        _model._output._constraintCoefficientNames = _state._csGLMState._constraintNames;
+        _model._output._initConstraintMatrix = _state._csGLMState._initCSMatrix;
+      }
+      if (_parms._max_iterations == 0) {
+        return;
+      } else {
+        if (_parms._lambda_search) {
           if (ordinal.equals(_parms._family))
-            nullDevValid = new GLMResDevTaskOrdinal(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev();
+            nullDevTrain = new GLMResDevTaskOrdinal(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
           else
-            nullDevValid = multinomial.equals(_parms._family)
-                    ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
-                    : new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame).avgDev();
+            nullDevTrain = multinomial.equals(_parms._family)
+                    ? new GLMResDevTaskMultinomial(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev()
+                    : new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame).avgDev();
+          if (_validDinfo != null) {
+            if (ordinal.equals(_parms._family))
+              nullDevValid = new GLMResDevTaskOrdinal(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev();
+            else
+              nullDevValid = multinomial.equals(_parms._family)
+                      ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
+                      : new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame).avgDev();
+          }
+          _workPerIteration = WORK_TOTAL / _parms._nlambdas;
+        } else
+          _workPerIteration = 1 + (WORK_TOTAL / _parms._max_iterations);
+
+        if (!Solver.L_BFGS.equals(_parms._solver) && (multinomial.equals(_parms._family) ||
+                ordinal.equals(_parms._family))) {
+          Vec[] vecs = genGLMVectors(_dinfo, getNullBeta());
+          addGLMVec(vecs, false, _dinfo);
         }
-        _workPerIteration = WORK_TOTAL / _parms._nlambdas;
-      } else
-        _workPerIteration = 1 + (WORK_TOTAL / _parms._max_iterations);
 
-      if (!Solver.L_BFGS.equals(_parms._solver) && (multinomial.equals(_parms._family) || 
-              ordinal.equals(_parms._family))) {
-        Vec[] vecs = genGLMVectors(_dinfo, getNullBeta());
-        addGLMVec(vecs, false, _dinfo);
-      }
+        if (_parms._HGLM) { // add w, augZ, etaOld and random columns to response for easy access inside _dinfo
+          addWdataZiEtaOld2Response();
+        } else { // only need these for non HGLM
+          _ginfoStart = GLMUtils.copyGInfo(_state.ginfo());
+          _betaDiffStart = _state.getBetaDiff();
+        }
 
-      if (_parms._HGLM) { // add w, augZ, etaOld and random columns to response for easy access inside _dinfo
-        addWdataZiEtaOld2Response();
-      }
+        double oldDevTrain = nullDevTrain;
+        double oldDevTest = nullDevValid;
+        double[] devHistoryTrain = new double[5];
+        double[] devHistoryTest = new double[5];
 
-      double oldDevTrain = nullDevTrain;
-      double oldDevTest = nullDevValid;
-      double[] devHistoryTrain = new double[5];
-      double[] devHistoryTest = new double[5];
+        if (_parms.hasCheckpoint()) { // restore _state parameters
+          _state.copyCheckModel2State(_model, _gamColIndices);
+          if (_model._output._submodels.length == 1)
+            _model._output._submodels = null; // null out submodel only for single alpha/lambda values
+        }
 
-      if (!_parms._HGLM) {  // only need these for non HGLM
-        _ginfoStart = GLMUtils.copyGInfo(_state.ginfo());
-        _betaDiffStart = _state.getBetaDiff();
-      }
+        if (!_parms._lambda_search & !_parms._HGLM)
+          updateProgress(false);
 
-      if (_parms.hasCheckpoint()) { // restore _state parameters
-        _state.copyCheckModel2State(_model, _gamColIndices);
-        if (_model._output._submodels.length == 1)
-          _model._output._submodels = null; // null out submodel only for single alpha/lambda values
-      }
-
-      if (!_parms._lambda_search & !_parms._HGLM)
-        updateProgress(false);
-
-      // alpha, lambda search loop
-      int alphaStart = 0;
-      int lambdaStart = 0;
-      int submodelCount = 0;
-      if (_parms.hasCheckpoint() && _model._output._submodels != null) {  // multiple alpha/lambdas or lambda search
-        submodelCount = Family.gaussian.equals(_parms._family) ? _model._output._submodels.length
-                : _model._output._submodels.length - 1;
-        alphaStart = submodelCount / _parms._lambda.length;
-        lambdaStart = submodelCount % _parms._lambda.length;
-      }
-      _model._output._lambda_array_size = _parms._lambda.length;
-      for (int alphaInd = alphaStart; alphaInd < _parms._alpha.length; alphaInd++) {
-        _state.setAlpha(_parms._alpha[alphaInd]);   // loop through the alphas
-        if ((!_parms._HGLM) && (alphaInd > 0) && !_checkPointFirstIter) // no need for cold start during the first iteration
-          coldStart(devHistoryTrain, devHistoryTest);  // reset beta, lambda, currGram
-        for (int i = lambdaStart; i < _parms._lambda.length; ++i) {  // for lambda search, can quit before it is done
-          if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0))
-            break;  //need at least one submodel on timeout to avoid issues.
-          if (_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations)
-            break;  // iterations accumulate across all lambda/alpha values when coldstart = false
-          if ((!_parms._HGLM && (_parms._cold_start || (!_parms._lambda_search && _parms._cold_start))) && (i > 0)
-                  && !_checkPointFirstIter) // default: cold_start for non lambda_search
-            coldStart(devHistoryTrain, devHistoryTest);
-          Submodel sm = computeSubmodel(submodelCount, _parms._lambda[i], nullDevTrain, nullDevValid);
-          if (_checkPointFirstIter)
-            _checkPointFirstIter = false;
-          double trainDev = sm.devianceTrain; // this is stupid, they are always -1 except for lambda_search=True
-          double testDev = sm.devianceValid;
-          devHistoryTest[submodelCount % devHistoryTest.length] =
-                  (oldDevTest - testDev) / oldDevTest; // only remembers 5
-          oldDevTest = testDev;
-          devHistoryTrain[submodelCount % devHistoryTrain.length] =
-                  (oldDevTrain - trainDev) / oldDevTrain;
-          oldDevTrain = trainDev;
-          if (_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
-            if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
-              double s = ArrayUtils.maxValue(devHistoryTrain);
-              if (s < 1e-4) {
-                Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + "alpha[" + alphaInd + "] = "
-                        + _parms._alpha[alphaInd] + ", improvement on train = " + s));
-                break; // started overfitting
-              }
-              if (_validDinfo != null && _parms._nfolds <= 1) { // check for early stopping on test with no xval
-                s = ArrayUtils.maxValue(devHistoryTest);
-                if (s < 0) {
-                  Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + "alpha[" + alphaInd +
-                          "] = " + _parms._alpha[alphaInd] + ", improvement on test = " + s));
+        // alpha, lambda search loop
+        int alphaStart = 0;
+        int lambdaStart = 0;
+        int submodelCount = 0;
+        if (_parms.hasCheckpoint() && _model._output._submodels != null) {  // multiple alpha/lambdas or lambda search
+          submodelCount = Family.gaussian.equals(_parms._family) ? _model._output._submodels.length
+                  : _model._output._submodels.length - 1;
+          alphaStart = submodelCount / _parms._lambda.length;
+          lambdaStart = submodelCount % _parms._lambda.length;
+        }
+        _model._output._lambda_array_size = _parms._lambda.length;
+        for (int alphaInd = alphaStart; alphaInd < _parms._alpha.length; alphaInd++) {
+          _state.setAlpha(_parms._alpha[alphaInd]);   // loop through the alphas
+          if ((!_parms._HGLM) && (alphaInd > 0) && !_checkPointFirstIter) // no need for cold start during the first iteration
+            coldStart(devHistoryTrain, devHistoryTest);  // reset beta, lambda, currGram
+          for (int i = lambdaStart; i < _parms._lambda.length; ++i) {  // for lambda search, can quit before it is done
+            if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0))
+              break;  //need at least one submodel on timeout to avoid issues.
+            if (_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations)
+              break;  // iterations accumulate across all lambda/alpha values when coldstart = false
+            if ((!_parms._HGLM && (_parms._cold_start || (!_parms._lambda_search && _parms._cold_start))) && (i > 0)
+                    && !_checkPointFirstIter) // default: cold_start for non lambda_search
+              coldStart(devHistoryTrain, devHistoryTest);
+            Submodel sm = computeSubmodel(submodelCount, _parms._lambda[i], nullDevTrain, nullDevValid);
+            if (_checkPointFirstIter)
+              _checkPointFirstIter = false;
+            double trainDev = sm.devianceTrain; // this is stupid, they are always -1 except for lambda_search=True
+            double testDev = sm.devianceValid;
+            devHistoryTest[submodelCount % devHistoryTest.length] =
+                    (oldDevTest - testDev) / oldDevTest; // only remembers 5
+            oldDevTest = testDev;
+            devHistoryTrain[submodelCount % devHistoryTrain.length] =
+                    (oldDevTrain - trainDev) / oldDevTrain;
+            oldDevTrain = trainDev;
+            if (_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
+              if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) { // implement early stopping for lambda search
+                double s = ArrayUtils.maxValue(devHistoryTrain);
+                if (s < 1e-4) {
+                  Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + "alpha[" + alphaInd + "] = "
+                          + _parms._alpha[alphaInd] + ", improvement on train = " + s));
                   break; // started overfitting
+                }
+                if (_validDinfo != null && _parms._nfolds <= 1) { // check for early stopping on test with no xval
+                  s = ArrayUtils.maxValue(devHistoryTest);
+                  if (s < 0) {
+                    Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + "alpha[" + alphaInd +
+                            "] = " + _parms._alpha[alphaInd] + ", improvement on test = " + s));
+                    break; // started overfitting
+                  }
                 }
               }
             }
-          }
 
-          if ((_parms._lambda_search || _parms._generate_scoring_history) && (_parms._score_each_iteration || 
-                  timeSinceLastScoring() > _scoringInterval || ((_parms._score_iteration_interval > 0) &&
-                  ((_state._iter % _parms._score_iteration_interval) == 0)))) {
-            _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount, _parms); // quick and easy way to set submodel parameters
-            scoreAndUpdateModel(); // update partial results
+            if ((_parms._lambda_search || _parms._generate_scoring_history) && (_parms._score_each_iteration ||
+                    timeSinceLastScoring() > _scoringInterval || ((_parms._score_iteration_interval > 0) &&
+                    ((_state._iter % _parms._score_iteration_interval) == 0)))) {
+              _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount, _parms); // quick and easy way to set submodel parameters
+              scoreAndUpdateModel(); // update partial results
+            }
+            _job.update(_workPerIteration, "iter=" + _state._iter + " lmb=" +
+                    lambdaFormatter.format(_state.lambda()) + " alpha=" + lambdaFormatter.format(_state.alpha()) +
+                    "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) +
+                    " P=" + ArrayUtils.countNonzeros(_state.beta()));
+            submodelCount++;  // updata submodel index count here
           }
-          _job.update(_workPerIteration, "iter=" + _state._iter + " lmb=" +
-                  lambdaFormatter.format(_state.lambda()) + " alpha=" + lambdaFormatter.format(_state.alpha()) +
-                  "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) +
-                  " P=" + ArrayUtils.countNonzeros(_state.beta()));
-          submodelCount++;  // updata submodel index count here
         }
-      }
-      // if beta constraint is enabled, check and make sure coefficients are within bounds
-      if (_betaConstraintsOn && betaConstraintsCheckEnabled())
-        checkCoeffsBounds();
+        // if beta constraint is enabled, check and make sure coefficients are within bounds
+        if (_betaConstraintsOn && betaConstraintsCheckEnabled() && (!_linearConstraintsOn || _parms._separate_linear_beta))
+          checkCoeffsBounds();
         
-      if (stop_requested() || _earlyStop) {
-        if (timeout()) {
-          Log.info("Stopping GLM training because of timeout");
-        } else if (_earlyStop) {
-          Log.info("Stopping GLM training due to hitting earlyStopping criteria.");
-        } else {
-          throw new Job.JobCancelledException();
+        if (stop_requested() || _earlyStop) {
+          if (timeout()) {
+            Log.info("Stopping GLM training because of timeout");
+          } else if (_earlyStop) {
+            Log.info("Stopping GLM training due to hitting early stopping criteria.");
+          } else {
+            throw new Job.JobCancelledException();
+          }
         }
-      }
-      if (_state._iter >= _parms._max_iterations)
-        _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
-      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate) && _bestCVSubmodel < _model._output._submodels.length)
-        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel, _model._parms);  // reset best_submodel_idx to what xval has found
-      else
-        _model._output.pickBestModel(_model._parms);
-      if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
-        _model.setVcov(_vcov);
+        if (_state._iter >= _parms._max_iterations)
+          _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
+        if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate) && _bestCVSubmodel < _model._output._submodels.length)
+          _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel, _model._parms);  // reset best_submodel_idx to what xval has found
+        else
+          _model._output.pickBestModel(_model._parms);
+        if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
+          _model.setVcov(_vcov);
+          _model.update(_job._key);
+        }
+        if (!_parms._HGLM) {  // no need to do for HGLM
+          _model._finalScoring = true; // enables likelihood calculation while scoring
+          scoreAndUpdateModel();
+          _model._finalScoring = false; // avoid calculating likelihood in case of further updates
+        }
+
+        if (dfbetas.equals(_parms._influence))
+          genRID();
+
+        if (_parms._generate_variable_inflation_factors) {
+          _model._output._vif_predictor_names = _model.buildVariableInflationFactors(_train, _dinfo);
+        }// build variable inflation factors for numerical predictors
+        TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
+                (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
+        _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
+                scoring_history_early_stop);
+        _model._output._varimp = _model._output.calculateVarimp();
+        _model._output._variable_importances = calcVarImp(_model._output._varimp);
+        if (_linearConstraintsOn)
+          printConstraintSummary(_model, _state, _dinfo.coefNames());
+          
         _model.update(_job._key);
-      }
-      if (!_parms._HGLM) {  // no need to do for HGLM
-        _model._finalScoring = true; // enables likelihood calculation while scoring
-        scoreAndUpdateModel();
-        _model._finalScoring = false; // avoid calculating likelihood in case of further updates
-      }
-      
-      if (dfbetas.equals(_parms._influence))
-        genRID();
-      
-      if (_parms._generate_variable_inflation_factors) {
-        _model._output._vif_predictor_names = _model.buildVariableInflationFactors(_train, _dinfo);
-      }// build variable inflation factors for numerical predictors
-      TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
-              (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
-      _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
-              scoring_history_early_stop);
-      _model._output._varimp = _model._output.calculateVarimp();
-      _model._output._variable_importances = calcVarImp(_model._output._varimp);
-      
-      _model.update(_job._key);
 /*      if (_vcov != null) {
         _model.setVcov(_vcov);
         _model.update(_job._key);
       }*/
-      if (!(_parms)._lambda_search && _state._iter < _parms._max_iterations) {
-        _job.update(_workPerIteration * (_parms._max_iterations - _state._iter));
-      }
-      if (_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
-        assert _parms._intercept;
-        double[] b = _model._output._global_beta;
-        b[b.length - 1] += _iceptAdjust;
-        for (Submodel sm : _model._output._submodels)
-          sm.beta[sm.beta.length - 1] += _iceptAdjust;
-        _model.update(_job._key);
+        if (!(_parms)._lambda_search && _state._iter < _parms._max_iterations) {
+          _job.update(_workPerIteration * (_parms._max_iterations - _state._iter));
+        }
+        if (_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
+          assert _parms._intercept;
+          double[] b = _model._output._global_beta;
+          b[b.length - 1] += _iceptAdjust;
+          for (Submodel sm : _model._output._submodels)
+            sm.beta[sm.beta.length - 1] += _iceptAdjust;
+          _model.update(_job._key);
+        }
       }
     }
 
@@ -3834,11 +4154,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (bc._betaLB == null || bc._betaUB == null || coeffs == null)
         return;
       int coeffsLen = bc._betaLB.length;
+      StringBuffer errorMessage = new StringBuffer();
       for (int index=0; index < coeffsLen; index++) {
         if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
-          throw new H2OFailException("GLM model coefficient" + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
-                  +bc._betaLB[index]+", upper: "+bc._betaUB[index]);
+          errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
+                  +bc._betaLB[index]+", upper: "+bc._betaUB[index]+"\n");
       }
+      if (errorMessage.length() > 0)
+        throw new H2OFailException("\n"+errorMessage.toString());
     }
 
     /***
@@ -4474,6 +4797,47 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               smoothval, null);
     }
 
+    /***
+     *
+     * This method calculates the gradient for constrained GLM without taking into account the contribution of the 
+     * constraints in this case.  The likelihood, objective are calculated without the contribution of the constraints
+     * either.
+     */
+    public GLMGradientInfo getGradient(double[] beta, ComputationState state) {
+      DataInfo dinfo = state.activeData()._activeCols == null ? _dinfo : state.activeData();
+      assert beta.length == dinfo.fullN() + 1;
+      assert _parms._intercept || (beta[beta.length-1] == 0);
+      GLMGradientTask gt;
+      if((_parms._family == binomial && _parms._link == Link.logit) ||
+              (_parms._family == Family.fractionalbinomial && _parms._link == Link.logit))
+        gt = new GLMBinomialGradientTask(_job == null?null:_job._key,dinfo,_parms,_l2pen, beta, _penaltyMatrix,
+                _gamColIndices).doAll(dinfo._adaptedFrame);
+      else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
+        gt = new GLMGaussianGradientTask(_job == null?null:_job._key,dinfo,_parms,_l2pen, beta, _penaltyMatrix,
+                _gamColIndices).doAll(dinfo._adaptedFrame);
+      else if (Family.negativebinomial.equals(_parms._family))
+        gt =  new GLMNegativeBinomialGradientTask(_job == null?null:_job._key,dinfo,
+                _parms,_l2pen, beta, _penaltyMatrix, _gamColIndices).doAll(dinfo._adaptedFrame);
+      else if(_parms._family == Family.poisson && _parms._link == Link.log)
+        gt = new GLMPoissonGradientTask(_job == null?null:_job._key,dinfo,_parms,_l2pen, beta, _penaltyMatrix,
+                _gamColIndices).doAll(dinfo._adaptedFrame);
+      else if(_parms._family == Family.quasibinomial)
+        gt = new GLMQuasiBinomialGradientTask(_job == null?null:_job._key,dinfo,_parms,_l2pen, beta,
+                _penaltyMatrix, _gamColIndices).doAll(dinfo._adaptedFrame);
+      else
+        gt = new GLMGenericGradientTask(_job == null?null:_job._key, dinfo, _parms, _l2pen, beta, _penaltyMatrix,
+                _gamColIndices).doAll(dinfo._adaptedFrame);
+      double [] gradient = gt._gradient;
+      double  likelihood = gt._likelihood;
+      if (!_parms._intercept) // no intercept, null the ginfo
+        gradient[gradient.length - 1] = 0;
+
+      double gamSmooth = gam.equals(_parms._glmType)?
+              calSmoothNess(expandVec(beta, dinfo._activeCols, _betaInfo.totalBetaLength()), _penaltyMatrix, _gamColIndices):0;
+      double obj = likelihood * _parms._obj_reg + .5 * _l2pen * ArrayUtils.l2norm2(beta, true)+gamSmooth;
+      return new GLMGradientInfo(likelihood, obj, gradient);
+    }
+
     @Override
     public GLMGradientInfo getGradient(double[] beta) {
       if (multinomial.equals(_parms._family) || ordinal.equals(_parms._family)) {
@@ -4607,10 +4971,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     public void setNonNegative(Frame otherConst) {
       List<String> constraintNames = extractVec2List(otherConst); // maximum size = number of predictors, an integer
-      List<String> coeffNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
-      int numCoef = coeffNames.size();
+      List<String> coefNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
+      int numCoef = coefNames.size();
       for (int index=0; index<numCoef; index++) { // only changes beta constraints if not been specified before
-        if (!constraintNames.contains(coeffNames.get(index))) {  
+        if (!constraintNames.contains(coefNames.get(index))) {  
           _betaLB[index] = 0;
           _betaUB[index] = Double.POSITIVE_INFINITY;
         }
@@ -4656,7 +5020,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     
     public BetaConstraint(Frame beta_constraints) {
      // beta_constraints = encodeCategoricalsIfPresent(beta_constraints); // null key
-      if (_enumInCS) {
+  if (_enumInCS) {
         if (_betaConstraints == null) {
           beta_constraints = expandedCatCS(_parms._beta_constraints.get(), _parms);
           DKV.put(beta_constraints);
@@ -4674,6 +5038,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         BufferedString tmpStr = new BufferedString();
         for (int i = 0; i < dom.length; ++i) {
           dom[i] = v.atStr(tmpStr, i).toString();
+          if ("intercept".equals(dom[i]))
+            throw new IllegalArgumentException("Beta constraints cannot be applied to the intercept right row.");
           map[i] = i;
         }
         // check for dups
