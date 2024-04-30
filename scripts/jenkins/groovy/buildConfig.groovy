@@ -370,7 +370,7 @@ class BuildConfig {
 
   static enum NodeLabels {
     LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-0xk10'), //master or nightly build - use only this one
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build - no used
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build - not used
 
     static Map<String, NodeLabels> LABELS_MAP = [
             "c1": LABELS_C1,
