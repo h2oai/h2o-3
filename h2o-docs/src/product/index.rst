@@ -17,7 +17,7 @@ The following are additional resources to learn more information about H2O:
 
 - `See how customers are using H2O <https://www.h2o.ai/customers/>`__.
 - Keep up to date with `the latest H2O blogs <https://www.h2o.ai/blog/>`__.
-- `Explore Awesome H2O <https://github.com/h2oai/awesome-h2o>`__ to review projects, applications, research papers, tutorials, courses, and books that use H2O
+- `Explore Awesome H2O <https://github.com/h2oai/awesome-h2o>`__ to review projects, applications, research papers, tutorials, courses, and books that use H2O.
 - Learn about securing your installation by following `H2O's security guidelines <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html>`__.
 
 .. toctree::
