@@ -99,7 +99,7 @@ class BuildConfig {
     changesMap[COMPONENT_HADOOP] = buildHadoop
     changedPythonTests = detectPythonTestChanges(changes)
 
-    nodeLabels = NodeLabels.findByBuildURL(context.env.BUILD_URL)
+    nodeLabels = NodeLabels.LABELS_C1
     supportedXGBEnvironments = [
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
@@ -369,13 +369,13 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-0xk10'), //master or nightly build
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-0xk10'), //master or nightly build - use only this one
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build - not used
 
     static Map<String, NodeLabels> LABELS_MAP = [
             "c1": LABELS_C1,
             "g1": LABELS_C1, //mr-0xg1 was set as alias to mr-0xc1
-            "b4": LABELS_B4
+            "b4": LABELS_B4  // not used
     ]
 
     private final String defaultNodeLabel
@@ -404,16 +404,6 @@ class BuildConfig {
 
     String getGPUBenchmarkNodeLabel() {
       return gpuBenchmarkNodeLabel
-    }
-
-    private static NodeLabels findByBuildURL(final String buildURL) {
-      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
-
-      if (LABELS_MAP.containsKey(name)) {
-        return LABELS_MAP.get(name)
-      } else {
-        throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
-      }
     }
   }
 }
