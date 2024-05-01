@@ -1,5 +1,5 @@
-Using H2O with Amazon AWS
-=========================
+Use H2O with Amazon AWS
+=======================
 
 The old `H2O Artificial Intelligence instance <https://aws.amazon.com/marketplace/pp/prodview-76ewxkmzkvr3m>`_ is no longer available.
 
