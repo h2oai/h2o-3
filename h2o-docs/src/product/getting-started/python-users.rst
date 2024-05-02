@@ -11,13 +11,12 @@ The following sections will help you begin using Python for H2O.
 Installing H2O with Python
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can find instructions for using H2O with Python in the `Downloading and installing H2O <../downloading.html#install-in-python>`__ section and on the `Downloads page <http://www.h2o.ai/download>`__.
+You can find instructions for using H2O with Python in the `Downloading and installing H2O <../downloading.html#install-in-python>`__ section and on the `Downloads page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__.
 
 From the Downloads page:
 
-1. Select the version of H2O you want.
-2. Click the Install in Python tab.
-3. Follow the on-page instructions.
+1. Click the Install in Python tab.
+2. Follow the on-page instructions.
 
 Python documentation
 ~~~~~~~~~~~~~~~~~~~~

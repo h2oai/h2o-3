@@ -74,7 +74,7 @@ Walkthrough
 
 The following steps show you how to download or build H2O with Hadoop and the parameters involved in launching H2O from the command line.
 
-1. Download the latest H2O release for your version of Hadoop from the `Downloads page <https://h2o.ai/resources/download/>`__. Refer to the H2O on Hadoop tab of the H2O download page for the latest stable release or the nightly bleeding edge release.
+1. Download the latest H2O release for your version of Hadoop from the `Downloads page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Refer to the H2O on Hadoop tab of the H2O download page for the latest stable release or the nightly bleeding edge release.
 2. Prepare the job input on the Hadoop node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files:
 
 ::
