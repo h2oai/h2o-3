@@ -1,4 +1,4 @@
-EC2 Instances & S3 Storage
+EC2 instances & S3 storage
 ==========================
 
 *Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI*
@@ -14,7 +14,7 @@ For security reasons, we recommend writing a script to read the access credentia
  - You can only specify one S3 endpoint. This means you can either read data from AWS S3 or Minio S3, not from both.
  - We recommend using S3 for data ingestion and S3N for data export. 
 
-AWS Standalone Instance
+AWS Standalone instance
 -----------------------
 
 When running H2O in standalone mode using the simple Java launch command, you can pass in the S3 credentials in three ways. H2O supports the following:
@@ -117,7 +117,7 @@ Just like regular AWS credentials, temporary credentials using an AWS SESSION TO
 
 .. _Core-site.xml:
 
-Core-site.xml Example
+Core-site.xml example
 ~~~~~~~~~~~~~~~~~~~~~
 
 The following is an example ``core-site.xml`` file:
@@ -207,7 +207,7 @@ Build a cluster of EC2 instances by running the following commands on the host t
 
 .. _minio:
 
-Minio Instance
+Minio instance
 --------------
 
 Minio Cloud Storage is an alternative to Amazon AWS S3. When connecting to a Minio server, the following additional parameters are specified in the Java launch command:
@@ -259,8 +259,8 @@ To pass in credentials, create a ``core-site.xml`` file that contains your Acces
     h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
 
-Launching H2O
--------------
+Launch H2O
+----------
 
 .. note:: 
 
@@ -278,8 +278,8 @@ Select your operating system and the virtualization type of the prebuilt AMI on 
 See `Amazon virtualization <http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/virtualization_types.html>`__ for more information about virtualization types.
 
 
-Configuring the instance
-~~~~~~~~~~~~~~~~~~~~~~~~
+Configure the instance
+~~~~~~~~~~~~~~~~~~~~~~
 
 1. Select the IAM role and policy to use to launch the instance. H2O detects the temporary access keys associated with the instance, so you don't need to copy your AWS credentials to the instances.
 
@@ -335,8 +335,8 @@ Otherwise, you can download `PuTTY <https://www.putty.org/>`_ and follow these i
     :alt: PuTTY security alert about the server's host key not cached in the registry.
 
 
-Downloading Java and H2O
-~~~~~~~~~~~~~~~~~~~~~~~~
+Download Java and H2O
+~~~~~~~~~~~~~~~~~~~~~
 
 1. Download `Java <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__ (JDK 1.8 or later) if it is not already available on the instance.
 2. Download H2O with the ``wget`` command and the link to the ZIP file available on our `website <http://h2o.ai/download/>`__ by copying the link associated with the **Download** button for the selected H2O build.
