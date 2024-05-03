@@ -3,20 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-========
 Overview
 ========
 
-Welcome to the H2O documentation site! Depending on your area of interest, select a learning path from the sidebar, or look at the full content outline below.
+Welcome to the H2O documentation site! Select a learning path from the sidebar or browse through the full content outline below.
 
-We're glad you're interested in learning more about H2O. If you have questions or ideas to share, please post them to the `H2O community site on Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
+We're excited you're interesting in learning more about H2O. If you have questions or ideas to share, please post them to the H2O community site on `Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
 
-Additional Resources:
+Additional resources
+--------------------
 
-- See how are customers are using H2O at https://www.h2o.ai/customers/.
-- Keep up to date with the latest H2O blogs at https://www.h2o.ai/blog/.
-- Review projects, applications, research papers, tutorials, courses, and books that use H2O at https://github.com/h2oai/awesome-h2o.
-- Learn about securing your installation by following our `security guidelines <security.html>`__.
+The following are additional resources to learn more information about H2O:
+
+- `See how customers are using H2O <https://www.h2o.ai/customers/>`__.
+- Keep up to date with `the latest H2O blogs <https://www.h2o.ai/blog/>`__.
+- `Explore Awesome H2O <https://github.com/h2oai/awesome-h2o>`__ to review projects, applications, research papers, tutorials, courses, and books that use H2O.
+- Learn about securing your installation by following `H2O's security guidelines <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html>`__.
 
 .. toctree::
    :maxdepth: 2
