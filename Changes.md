@@ -10,7 +10,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index
 - [[#16161]](https://github.com/h2oai/h2o-3/issues/16161) - Fixed parquet export throwing NPEs when column types are strings. **[IN PROG]**
 - [[#16149]](https://github.com/h2oai/h2o-3/issues/16149) - Fixed GAM models failing with datasets of certain size by rebalancing the dataset to avoid collision.
 - [[#16130]](https://github.com/h2oai/h2o-3/issues/16130) - Removed `distutils` version check to stop deprecation warnings with Python 3.12.
-- [[#16026]](https://github.com/h2oai/h2o-3/issues/16026) -  Removed `custom_metric_func` from ModelSelection.
+- [[#16026]](https://github.com/h2oai/h2o-3/issues/16026) - Removed `custom_metric_func` from ModelSelection.
 - [[#15697]](https://github.com/h2oai/h2o-3/issues/15697) - Fixed MOJO failing to recognize `fold_column` and therefore  using wrong index calculated for the `offset_column`.
 
 #### Improvement
