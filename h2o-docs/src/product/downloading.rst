@@ -1,25 +1,30 @@
-Downloading & Installing H2O
-============================
+Downloading and installing H2O
+==============================
 
-This section describes how to download and install the latest stable version of H2O. These instructions are also available on the `H2O Download page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__.  Please first make sure you meet the requirements listed `here <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#requirements>`__.  Java is a prerequisite for H2O, even if using it from the R or Python packages.
+This section describes how to download and install the latest stable version of H2O. These instructions are also available on the `H2O Download page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__.  Please first make sure you meet `the requirements to download and use H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#requirements>`__.  Java is a prerequisite for H2O, even if using it from the R or Python packages.
 
-**Note**: To download the nightly bleeding edge release, go to `h2o-release.s3.amazonaws.com/h2o/master/latest.html <https://h2o-release.s3.amazonaws.com/h2o/master/latest.html>`__. Choose the type of installation you want to perform (for example, "Install in Python") by clicking on the tab. 
+.. note::
+	
+	Check our `Downloads page to download the nightly bleeding edge release <h2o-release.s3.amazonaws.com/h2o/master/latest.html>`__. 
 
-Choose your desired method of use below.  Most users will want to use H2O from either `R <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r>`__ or `Python <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-python>`__; however we also include instructions for using H2O's web GUI Flow and Hadoop below.
+	Scroll down to the H2O section and select Nightly Bleeding Edge. Then, choose the type of installation you want to perform (for example, "Install in Python") by clicking on the tab. 
+
+Choose your desired method of use below.  Most users will want to use H2O from either `R <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r>`__ or `Python <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-python>`__. However, we also include instructions for using H2O's web GUI Flow and Hadoop below.
 
 
-Download and Run from the Command Line
---------------------------------------
+Download and run Flow from the command line
+-------------------------------------------
 
-If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html>`__, this is the method you should use.  If you plan to use H2O from R or Python, skip to the appropriate sections below.
+If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html>`__, this is the method you should use.
 
-1. Click the ``Download H2O`` button on the `http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__ page. This downloads a zip file that contains everything you need to get started.
+1. Go to our `latest stable release page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__.
+2. Click the ``Download H2O`` button from the Download and Run tab. This downloads a zip file that contains everything you need to get started.
 
 .. note::
 	
 	By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
 
-2. From your terminal, unzip and start H2O as in the example below. 
+3. From your terminal, unzip and start H2O as in the example below. 
 
  .. substitution-code-block:: bash
 
@@ -28,7 +33,7 @@ If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/late
 	cd h2o-|version|
 	java -jar h2o.jar
 
-3. Point your browser to http://localhost:54321 to open up the H2O Flow web GUI.
+4. Point your browser to http://localhost:54321 to open up the H2O Flow web GUI.
 
 Install in R
 ------------
@@ -46,7 +51,7 @@ Perform the following steps in R to install H2O. Copy and paste these commands o
 	if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
 	if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
 
-2. Next, download packages that H2O depends on.
+2. Next, `download packages that H2O depends on <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__.
 
  .. code-block:: r
 
@@ -69,10 +74,14 @@ Perform the following steps in R to install H2O. Copy and paste these commands o
 	localH2O = h2o.init() 
 	demo(h2o.kmeans) 
 
-Installing H2O's R Package from CRAN
+Install H2O's R package from CRAN
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Alternatively you can install H2O’s R package from `CRAN <https://cran.r-project.org/web/packages/h2o/>`__ or by typing ``install.packages("h2o")`` in R.  Sometimes there can be a delay in publishing the latest stable release to CRAN, so to guarantee you have the latest stable version, use the instructions above to install directly from the H2O website.
+Alternatively you can install H2O’s R package from `CRAN <https://cran.r-project.org/web/packages/h2o/>`__ or by typing ``install.packages("h2o")`` in R. 
+
+.. note::
+	
+	Sometimes there can be a delay in publishing the latest stable release to CRAN. To guarantee you have the latest stable version, use the instructions above to install directly from the H2O website.
 
 Install in Python
 -----------------
@@ -94,7 +103,9 @@ Run the following commands in a Terminal window to install H2O for Python.
 	# Required for plotting:
 	pip install matplotlib
 
- **Note**: These are the dependencies required to run H2O. ``matplotlib`` is optional and only required to plot in H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o-main/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o-main/meta.yaml>`__.
+.. note::
+	
+	These are the dependencies required to run H2O. ``matplotlib`` is optional and only required to plot in H2O. See our `complete list of dependencies <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o-main/meta.yaml>`__.
 
 2. Run the following command to remove any existing H2O module for Python.
 
@@ -102,17 +113,11 @@ Run the following commands in a Terminal window to install H2O for Python.
 
   pip uninstall h2o
 
-3. Use ``pip`` to install this version of the H2O Python module.
+3. Use ``pip`` to install `the H2O Python module <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__.
 
  .. code-block:: bash
 
 	pip install -f http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Py.html h2o
-
- **Note**: When installing H2O from ``pip`` in OS X El Capitan, users must include the ``--user`` flag. For example:
-
- .. code-block:: bash
-	
-   pip install -f http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Py.html h2o --user
 
 4. Optionally initialize H2O in Python and run a demo to see H2O at work.
 
@@ -125,9 +130,9 @@ Run the following commands in a Terminal window to install H2O for Python.
 Install on Anaconda Cloud
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
+This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O versions. See `which H2O versions are available on Anaconda <https://anaconda.org/h2oai/h2o/files>`__.
 
-Open a terminal window and run the following command to install H2O on the Anaconda Cloud. The H2O version in this command should match the version that you want to download. If you leave the h2o version blank and specify just ``h2o``, then the latest version will be installed. For example: 
+Open a terminal window and run the following command to install H2O on the Anaconda Cloud. The H2O version in this command should match the version that you want to download. If you leave the H2O version blank and specify just ``h2o``, then the latest version will be installed. For example: 
       
   .. substitution-code-block:: bash
 
@@ -139,16 +144,18 @@ or:
 
      user$ conda install -c h2oai h2o    
 
-**Note**: For Python 3.6 users, H2O has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O. This can be done by performing the following steps:
+.. note::
+	
+	For Python 3.6 users, H2O has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O. This can be done by performing the following steps:
 
- .. code-block:: bash
+ 	.. code-block:: bash
 
-   conda create -n py36 python=3.6 anaconda
-   source activate py36
-   conda config --append channels conda-forge
-   conda install -c h2oai h2o 
+	   conda create -n py36 python=3.6 anaconda
+	   source activate py36
+	   conda config --append channels conda-forge
+	   conda install -c h2oai h2o 
 
-After H2O is installed, refer to the `Starting H2O from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O and to view a GBM example run in Jupyter Notebook. 
+After H2O is installed, see the `Starting H2O from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O and to view a GBM example run in Jupyter Notebook. 
 
 Install on Hadoop
 -----------------
