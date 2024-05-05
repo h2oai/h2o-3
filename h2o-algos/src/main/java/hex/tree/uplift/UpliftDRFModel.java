@@ -84,7 +84,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     }
 
     @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output._defaultAuucThresholds, _parms._auuc_nbins);
+        return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output._defaultAuucThresholds, _parms._auuc_nbins, AUUC.calculateProbs(_parms._auuc_nbins));
     }
 
     @Override

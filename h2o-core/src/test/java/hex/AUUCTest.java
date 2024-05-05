@@ -94,7 +94,7 @@ public class AUUCTest extends TestUtil {
         }
         Frame fr = ArrayUtils.frame(new String[]{"probs", "y", "treatment"}, rows);
         fr.vec("treatment").setDomain(new String[]{"0", "1"});
-        AUUC auuc = new AUUC(fr.vec("probs"),fr.vec("y"), fr.vec("treatment"), type, nbins);
+        AUUC auuc = new AUUC(fr.vec("probs"),fr.vec("y"), fr.vec("treatment"), type, nbins, AUUC.calculateProbs(nbins));
         fr.remove();
         return auuc;
     }

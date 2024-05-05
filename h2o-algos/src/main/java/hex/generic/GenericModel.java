@@ -137,7 +137,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             case AnomalyDetection:
                 return new ModelMetricsAnomaly.MetricBuilderAnomaly();
             case BinomialUplift:
-                return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, null, _parms._auuc_nbins);
+                return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, null, _parms._auuc_nbins,AUUC.calculateProbs(_parms._auuc_nbins));
             default:
                 throw H2O.unimpl();
         }

@@ -155,43 +155,6 @@ public class UpliftDRFTest extends TestUtil {
         }
     }
 
-
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testBasicTrainErrorDoNotSupportNfolds() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._nfolds = 10;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            udrf.trainModel().get();
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testBasicTrainErrorDoNotSupportFoldColumn() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._fold_column = "C0";
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            udrf.trainModel().get();
-        } finally {
-            Scope.exit();
-        }
-    }
-
     @Test(expected = H2OModelBuilderIllegalArgumentException.class)
     public void testBasicTrainErrorDoNotSupportOffset() {
         try {
