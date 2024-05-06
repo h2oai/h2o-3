@@ -15,7 +15,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index
 
 #### Improvement
 - [[#16116]](https://github.com/h2oai/h2o-3/issues/16116) - Implemented a warning if you want to use monotone splines for GAM but don’t set `non_negative=True` that you will not get a monotone output.
-- [[#16056]](https://github.com/h2oai/h2o-3/issues/16066) - Added support to XGBoost for all `gblinear` parameters. **[IN PROG]**
+- [[#16056]](https://github.com/h2oai/h2o-3/issues/16066) - Added support to XGBoost for all `gblinear` parameters.
 - [[#6722]](https://github.com/h2oai/h2o-3/issues/6722) - Implemented linear constraint support to GLM toolbox. 
 
 #### New Feature
@@ -26,7 +26,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index
 - [[#16131]](https://github.com/h2oai/h2o-3/issues/16131) - Added 3.46 release blog to the user guide.
 
 #### Security
-- [[#16170]](https://github.com/h2oai/h2o-3/issues/16170) - Addressed CVE-2024-21634 by upgrading awsJavaSdk. **[IN PROG]**
+- [[#16170]](https://github.com/h2oai/h2o-3/issues/16170) - Addressed CVE-2024-21634 by upgrading awsJavaSdk.
 - [[#16135]](https://github.com/h2oai/h2o-3/issues/16135) - Addressed CVE-2024-29131 by upgrading commons-configuration2.
 
 ### 3.46.0.1 - 3/13/2024
