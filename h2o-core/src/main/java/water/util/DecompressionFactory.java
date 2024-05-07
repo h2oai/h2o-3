@@ -1,5 +1,6 @@
 package water.util;
 
+import com.github.luben.zstd.ZstdInputStream;
 import water.Iced;
 
 import java.io.IOException;
@@ -26,6 +27,8 @@ public class DecompressionFactory extends Iced<DecompressionFactory> {
         return wrapDynamic("org.python.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream", is);
       case "snappy":
         return wrapDynamic("org.xerial.snappy.SnappyInputStream", is);
+      case "zstd":
+        return new ZstdInputStream(is);
       default:
         return wrapDynamic(_name, is);
     }
