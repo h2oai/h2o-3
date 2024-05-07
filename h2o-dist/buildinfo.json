@@ -179,6 +179,11 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr6.2.zip"
         },
         {
+            "distribution" : "mapr7.0",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr7.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr7.0.zip"
+        },
+        {
             "distribution" : "iop4.2",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-iop4.2.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-iop4.2.zip"
