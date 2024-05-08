@@ -353,7 +353,7 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._seed = 0xDECAF;
-            p._ntrees = 10;
+            p._ntrees = 11;
             p._score_each_iteration = true;
             p._nfolds = 3;
             p._auuc_nbins = 50;
