@@ -1581,6 +1581,10 @@ public final class AutoBuffer implements AutoCloseable {
   public static Object javaSerializeReadPojo(byte [] bytes) {
     try {
       final ValidatingObjectInputStream ois = new ValidatingObjectInputStream(new ByteArrayInputStream(bytes));
+      // GH-16174 this method is used for HyperParameter serialization and allow execution of malicious code
+      // if the object type is not checked -> the acceptable objects are Integer, Number and String
+      // TODO: see what happens with other usage of this method -> edit acceptable classes based on the tests results
+      ois.accept(Integer.class, Number.class, String.class);
       Object o = ois.readObject();
       return o;
     } catch (IOException e) {
