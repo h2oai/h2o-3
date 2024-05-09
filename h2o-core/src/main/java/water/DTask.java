@@ -4,8 +4,6 @@ import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
 import water.util.DistributedException;
 
-import java.io.*;
-
 /** Objects which are passed and {@link #dinvoke} is remotely executed.<p>
  * <p>
  * Efficient serialization methods for subclasses will be automatically
@@ -42,7 +40,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
   }
   /** The _ex field as a RuntimeException or null.
    *  @return The _ex field as a RuntimeException or null. */
-  public Throwable getDException() {return _ex == null?null:(Throwable)AutoBuffer.javaSerializeReadPojo(_ex);}
+  public Throwable getDException() {return _ex == null?null:(Throwable)AutoBuffer.javaSerializeReadBytes(_ex);}
 
   // Track if the reply came via TCP - which means a timeout on ACKing the TCP
   // result does NOT need to get the entire result again, just that the client
