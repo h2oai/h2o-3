@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.commons.io.serialization.ValidatingObjectInputStream;
+import water.exceptions.H2OAbstractRuntimeException;
+import water.exceptions.H2OIllegalArgumentException;
 import water.network.SocketChannelUtils;
 import water.util.Log;
 import water.util.StringUtils;
@@ -1584,7 +1586,21 @@ public final class AutoBuffer implements AutoCloseable {
       // GH-16174 this method is used for HyperParameter serialization and allow execution of malicious code
       // if the object type is not checked -> the acceptable objects are Integer, Number and String
       // TODO: see what happens with other usage of this method -> edit acceptable classes based on the tests results
-      ois.accept(Integer.class, Number.class, String.class);
+      // TODO: find better way to defifne acceptable class
+      ois.accept(Integer.class, Number.class, String.class, 
+              water.exceptions.H2OIllegalArgumentException.class, 
+              water.exceptions.H2OAbstractRuntimeException.class,
+              java.lang.RuntimeException.class,
+              java.lang.Exception.class,
+              java.lang.Throwable.class,
+              java.lang.StackTraceElement.class,
+              java.util.ArrayList.class,
+              water.util.IcedHashMapGeneric.class,
+              water.Iced.class);
+      ois.accept("[Ljava.lang.StackTraceElement;", 
+              "java.util.Collections$UnmodifiableList", 
+              "java.util.Collections$UnmodifiableCollection", 
+              "water.util.IcedHashMapGeneric$IcedHashMapStringObject");
       Object o = ois.readObject();
       return o;
     } catch (IOException e) {
