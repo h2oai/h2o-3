@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.commons.io.serialization.ValidatingObjectInputStream;
-import water.exceptions.H2OAbstractRuntimeException;
-import water.exceptions.H2OIllegalArgumentException;
 import water.network.SocketChannelUtils;
 import water.util.Log;
 import water.util.StringUtils;
