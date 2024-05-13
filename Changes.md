@@ -2,6 +2,34 @@
 
 ## H2O
 
+### 3.46.0.2 - 5/13/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html</a>
+
+#### Bug Fix
+- [[#16161]](https://github.com/h2oai/h2o-3/issues/16161) - Fixed parquet export throwing NPEs when column types are strings. 
+- [[#16149]](https://github.com/h2oai/h2o-3/issues/16149) - Fixed GAM models failing with datasets of certain size by rebalancing the dataset to avoid collision.
+- [[#16130]](https://github.com/h2oai/h2o-3/issues/16130) - Removed `distutils` version check to stop deprecation warnings with Python 3.12.
+- [[#16026]](https://github.com/h2oai/h2o-3/issues/16026) - Removed `custom_metric_func` from ModelSelection.
+- [[#15697]](https://github.com/h2oai/h2o-3/issues/15697) - Fixed MOJO failing to recognize `fold_column` and therefore  using wrong index calculated for the `offset_column`.
+
+#### Improvement
+- [[#16116]](https://github.com/h2oai/h2o-3/issues/16116) - Implemented a warning if you want to use monotone splines for GAM but don’t set `non_negative=True` that you will not get a monotone output.
+- [[#16056]](https://github.com/h2oai/h2o-3/issues/16066) - Added support to XGBoost for all `gblinear` parameters.
+- [[#6722]](https://github.com/h2oai/h2o-3/issues/6722) - Implemented linear constraint support to GLM toolbox. 
+
+#### New Feature
+- [[#16146]](https://github.com/h2oai/h2o-3/issues/16146) - Added ZSTD compression format support. 
+
+#### Docs
+- [[#16193]](https://github.com/h2oai/h2o-3/issues/16193) - Added mapr7.0 to the download page for the Install on Hadoop tab.
+- [[#16180]](https://github.com/h2oai/h2o-3/issues/16180) - Updated Index page to adhere to style guide requirements.
+- [[#16131]](https://github.com/h2oai/h2o-3/issues/16131) - Added 3.46 release blog to the user guide.
+
+#### Security
+- [[#16170]](https://github.com/h2oai/h2o-3/issues/16170) - Addressed CVE-2024-21634 by upgrading aws-java-sdk-*.
+- [[#16135]](https://github.com/h2oai/h2o-3/issues/16135) - Addressed CVE-2024-29131 by upgrading commons-configuration2.
+
 ### 3.46.0.1 - 3/13/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index.html</a>
