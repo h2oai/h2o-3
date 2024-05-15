@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 
-library(randomForest)
+#library(randomForest)
 
 test.DRF.bigcat <- function() {
   # Training set has 100 categories from cat001 to cat100

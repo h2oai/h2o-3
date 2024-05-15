@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 
-library(randomForest)
+#library(randomForest)
 
 test.DRF.smallcat <- function() {
   # Training set has 26 categories from A to Z
