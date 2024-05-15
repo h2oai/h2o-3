@@ -51,7 +51,7 @@
 #'        "Euclidean", "ChiSquared". Defaults to AUTO.
 #' @param auuc_type Metric used to calculate Area Under Uplift Curve. Must be one of: "AUTO", "qini", "lift", "gain". Defaults to
 #'        AUTO.
-#' @param auuc_nbins Number of bins to calculate Area Under Uplift Curve. Defaults to -1.
+#' @param auuc_nbins Number of bins to calculate Area Under Uplift Curve. Defaults to 20.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
@@ -92,7 +92,7 @@ h2o.upliftRandomForest <- function(x,
                                    custom_metric_func = NULL,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
-                                   auuc_nbins = -1,
+                                   auuc_nbins = 20,
                                    stopping_rounds = 0,
                                    stopping_metric = c("AUTO", "AUUC", "ATE", "ATT", "ATC", "qini"),
                                    stopping_tolerance = 0.001,
@@ -218,7 +218,7 @@ h2o.upliftRandomForest <- function(x,
                                                    custom_metric_func = NULL,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
-                                                   auuc_nbins = -1,
+                                                   auuc_nbins = 20,
                                                    stopping_rounds = 0,
                                                    stopping_metric = c("AUTO", "AUUC", "ATE", "ATT", "ATC", "qini"),
                                                    stopping_tolerance = 0.001,
