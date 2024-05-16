@@ -26,15 +26,15 @@ Legacy client code using the deprecated parameters should expect a deprecation w
 ``transform`` parameter updates
 '''''''''''''''''''''''''''''''
 
-In an objective of performance optimization on the backend, and of simplification of the API, the ``transform`` method used to apply target encoding was modified as follow.
+In an objective of performance optimization on the backend, and of simplification of the API, the ``transform`` method used to apply target encoding was modified as follows:
 
 - The R ``h2o.transform`` function (accepting a target encoder model as the first argument) and the Python ``H2OTargetEncoderEstimator.transform`` methods are now fully compatible: they accept the same parameters and work consistently.
 - The parameters ``data_leakage_handling``, ``seed`` are now ignored on those methods: by default, ``transform`` will use the corresponding values defined when building the TargetEncoder model.
 - The other regularization parameters on these ``transform`` methods (e.g. ``noise``, ``blending``, ``inflection_point``, ``smoothing``), always default to the value defined on the TargetEncoder model.
 - A new ``as_training`` parameter has been introduced to simplify and enforce a correct usage of target encoding:
 
-  - When transforming a training dataset, user should use (R) ``h2o.transform(te_model, train_dataset, as_training=TRUE)`` or (Python) ``te_model.transform(train_dataset, as_training=True)``.
-  - When transforming any other dataset (validation, test, ...), user can just use (R) ``h2o.transform(te_model, train_dataset)`` or (Python) ``te_model.transform(train_dataset)``.
+  - When transforming a training dataset, you should use (R) ``h2o.transform(te_model, train_dataset, as_training=TRUE)`` or (Python) ``te_model.transform(train_dataset, as_training=True)``.
+  - When transforming any other dataset (validation, test, ...), you can just use (R) ``h2o.transform(te_model, train_dataset)`` or (Python) ``te_model.transform(train_dataset)``.
   - Legacy code using for example ``h2o.transform(te_model, train_dataset, data_leakage_handling="KFold")`` will now be translated internally to ``h2o.transform(te_model, train_dataset, as_training=TRUE)``.
 
 
@@ -80,8 +80,7 @@ From 3.28 or below to 3.30
 Java API
 ~~~~~~~~
 
-The ``hex.grid.HyperSpaceWalker`` and ``hex.grid.HyperspaceWalker.HyperSpaceIterator`` interfaces have been simplified.
-Users implementing those interfaces directly, for example to create a custom grid search exploration algorithm, may want to look at the default implementations in **h2o-core/src/main/java/hex/grid/HyperSpaceWalker.java** if they are facing any issue when compiling against the new interfaces.
+The ``hex.grid.HyperSpaceWalker`` and ``hex.grid.HyperspaceWalker.HyperSpaceIterator`` interfaces have been simplified. Users implementing those interfaces directly, for example to create a custom grid search exploration algorithm, may want to look at the default implementations in ``h2o-core/src/main/java/hex/grid/HyperSpaceWalker.java`` if they are facing any issue when compiling against the new interfaces.
 
 
 From 3.26 or below to 3.28
@@ -117,4 +116,4 @@ The following classes were moved and/or renamed:
 ``ai.h2o.automl.AutoML.algo``                       ``ai.h2o.automl.Algo``
 =================================================   ======================================
 
-Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` are no longer public, but this should not impact users.
+Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` are no longer public, but this should not impact you.
