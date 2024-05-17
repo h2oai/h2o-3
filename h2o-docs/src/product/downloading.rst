@@ -160,9 +160,9 @@ After H2O is installed, see the `Starting H2O from Anaconda <starting-h2o.html#f
 Install on Hadoop
 -----------------
 
-1. Go to `http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Click on the **Install on Hadoop** tab, and download H2O for your version of Hadoop. This is a zip file that contains everything you need to get started.
+1. Go to the `Downloads page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Click on the **Install on Hadoop** tab, and download H2O for your version of Hadoop. This is a ZIP file that contains everything you need to get started.
 
-2. Unpack the zip file and launch a 6g instance of H2O. For example:
+2. Unpack the ZIP file and launch a 6g instance of H2O. For example:
 
  .. substitution-code-block:: bash
 
