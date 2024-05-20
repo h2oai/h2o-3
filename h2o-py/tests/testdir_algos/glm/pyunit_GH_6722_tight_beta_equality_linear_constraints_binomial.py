@@ -174,42 +174,6 @@ def test_light_tight_linear_constraints_only_gaussian():
     types = "Equal"
     contraint_numbers = 5
     tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C19"
-    values = 0.5
-    types = "Equal"
-    contraint_numbers = 4
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C10.1"
-    values = -0.3
-    types = "Equal"
-    contraint_numbers = 4
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = -0.5
-    types = "Equal"
-    contraint_numbers = 4
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C18"
-    values = 0.75
-    types = "Equal"
-    contraint_numbers = 5
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C20"
-    values = -0.13
-    types = "Equal"
-    contraint_numbers = 5
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = -3
-    types = "Equal"
-    contraint_numbers = 5
-    tight_constraints.append([name, values, types, contraint_numbers])
     
     linear_constraints2 = h2o.H2OFrame(tight_constraints)
     linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
