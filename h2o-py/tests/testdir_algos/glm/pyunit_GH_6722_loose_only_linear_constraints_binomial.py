@@ -3,7 +3,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-def test_constraints_binomial():
+def test_loose_linear_constraints_binomial():
     '''
     check and make sure coefficients close to GLM built without constraints are generated with loose constraints
     that are satisfied with coefficients from GLM without constraints.  Only less than and equal to
@@ -135,6 +135,6 @@ def test_constraints_binomial():
                                                        " but is not.".format(logloss, default_init_logloss)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_constraints_binomial)
+    pyunit_utils.standalone_test(test_loose_linear_constraints_binomial)
 else:
-    test_constraints_binomial()
+    test_loose_linear_constraints_binomial()
