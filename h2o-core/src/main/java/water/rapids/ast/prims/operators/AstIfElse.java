@@ -68,7 +68,7 @@ public class AstIfElse extends AstPrimitive {
     // If all zero's, return false and never execute true.
     Val tval = null;
     for (Vec vec : tst.vecs())
-      if (vec.min() != 0 || vec.max() != 0) {
+      if (vec.min() != 0 || vec.max() != 0) { // if true, this means we have all 1s
         tval = exec_check(env, stk, tst, asts[2]);
         break;
       } else
