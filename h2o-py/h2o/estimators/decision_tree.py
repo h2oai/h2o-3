@@ -107,6 +107,22 @@ class H2ODecisionTreeEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``, defaults to ``True``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators import H2ODecisionTreeEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> target_variable = 'CAPSULE'
+        >>> prostate[target_variable] = prostate[target_variable].asfactor()
+        >>> prostate["const_1"] = 6
+        >>> train, test = prostate.split_frame(ratios=[0.7])
+        >>> sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex",
+        ...                                    max_depth=5,
+        ...                                    ignore_const_cols=True)
+        >>> sdt_h2o.train(y=target_variable, training_frame=train)
+        >>> pred_test = sdt_h2o.predict(test)
         """
         return self._parms.get("ignore_const_cols")
 
@@ -122,6 +138,22 @@ class H2ODecisionTreeEstimator(H2OEstimator):
 
         Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
         "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators import H2ODecisionTreeEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> target_variable = 'CAPSULE'
+        >>> prostate["RACE"] = prostate["RACE"].asfactor()
+        >>> prostate[target_variable] = prostate[target_variable].asfactor()
+        >>> train, test = prostate.split_frame(ratios=[0.7])
+        >>> sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex",
+        ...                                    max_depth=5,
+        ...                                    categorical_encoding="binary")
+        >>> sdt_h2o.train(y=target_variable, training_frame=train)
+        >>> pred_test = sdt_h2o.predict(test)
         """
         return self._parms.get("categorical_encoding")
 
@@ -164,6 +196,20 @@ class H2ODecisionTreeEstimator(H2OEstimator):
         Max depth of tree.
 
         Type: ``int``, defaults to ``20``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators import H2ODecisionTreeEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> target_variable = 'CAPSULE'
+        >>> prostate[target_variable] = prostate[target_variable].asfactor()
+        >>> train, test = prostate.split_frame(ratios=[0.7])
+        >>> sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex",
+        ...                                    max_depth=5)
+        >>> sdt_h2o.train(y=target_variable, training_frame=train)
+        >>> pred_test = sdt_h2o.predict(test)
         """
         return self._parms.get("max_depth")
 
@@ -178,6 +224,21 @@ class H2ODecisionTreeEstimator(H2OEstimator):
         Fewest allowed (weighted) observations in a leaf.
 
         Type: ``int``, defaults to ``10``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators import H2ODecisionTreeEstimator
+        >>> h2o.init()
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> target_variable = 'CAPSULE'
+        >>> prostate[target_variable] = prostate[target_variable].asfactor()
+        >>> train, test = prostate.split_frame(ratios=[0.7])
+        >>> sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex",
+        ...                                    max_depth=5,
+        ...                                    min_rows=20)
+        >>> sdt_h2o.train(y=target_variable, training_frame=train)
+        >>> pred_test = sdt_h2o.predict(test)
         """
         return self._parms.get("min_rows")
 
