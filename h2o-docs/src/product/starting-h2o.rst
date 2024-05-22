@@ -8,8 +8,8 @@ From R
 
 Use the ``h2o.init()`` method to initialize H2O. In most cases, simply using ``h2o.init()`` is all that you are required to do.
 
-Options to initialize H2O
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Options to initialize H2O in R
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This method accepts the following options:
 
@@ -95,35 +95,42 @@ Example
 From Python
 -----------
 
-Use the ``h2o.init()`` function to initialize H2O. This function accepts the following options. Note that in most cases, simply using ``h2o.init()`` is all that a user is required to do.
+Use the ``h2o.init()`` function to initialize H2O. In most cases, simply using ``h2o.init()`` is all that you are required to do.
+
+Options to initialize H2O in Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This function accepts the following options:
 
 
-- ``url``: Full URL of the server to connect to. (This can be used instead of ``ip`` + ``port`` + ``https``.)
+- ``url``: Full URL of the server to connect to (this can be used instead of ``ip`` + ``port`` + ``https``).
 - ``ip``: The ip address (or host name) of the server where H2O is running.
 - ``port``: Port number that H2O service is listening to.
-- ``name``: Cluster name. If None while connecting to an existing cluster it will not check the cluster name. If set then will connect only if the target cluster name matches. If no instance is found and decides to start a local one then this will be used as the cluster name or a random one will be generated if set to None.
-- ``https``: Set to True to connect via https:// instead of http://.
-- ``insecure``: When using https, setting this to True will disable SSL certificates verification.
+- ``name``: Cluster name. If ``None``, while connecting to an existing cluster, it will not check the cluster name. If set, then it will connect only if the target cluster name matches. If no instance is found and it decides to start a local one then this will be used as the cluster name or a random one will be generated if set to ``None``.
+- ``https``: Set to ``True`` to connect via https:// instead of http://.
+- ``insecure``: When using https, setting this to ``True`` will disable SSL certificates verification.
 - ``username``: The username to log in with when using basic authentication.
 - ``password``: The password to log in with when using basic authentication.
 - ``cookies``: Cookie (or list of) to add to each request.
 - ``proxy``: The proxy server address.
-- ``start_h2o``: If False, do not attempt to start an H2O server when a connection to an existing one failed.
+- ``start_h2o``: If ``False``, do not attempt to start an H2O server when a connection to an existing one failed.
 - ``nthreads``: "Number of threads" option when launching a new H2O server.
 - ``ice_root``: The directory for temporary files for the new H2O server.
 - ``log_dir``: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
-- ``log_level``: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA. Default is INFO. Ignored if connecting to an existing node.
+- ``log_level``: The logger level for H2O if a new instance is started. One of ``TRACE``, ``DEBUG``, ``INFO``, ``WARN``, ``ERRR``, or ``FATA``. Default is ``INFO``. Ignored if connecting to an existing node.
 - ``enable_assertions``: Enable assertions in Java for the new H2O server.
-- ``max_mem_size``: Maximum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+- ``max_mem_size``: Maximum memory to use for the new H2O server. Integer input will be evaluated as gigabytes. Other units can be specified by passing in a string (e.g. ``"160M"`` for 160 megabytes).
   
-  **Note:** If ``max_mem_size`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+  .. note:: 
 
-- ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).  
-- ``strict_version_check``: If True, an error will be raised if the client and server versions don't match.
-- ``ignore_config``: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
+    If ``max_mem_size`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+
+- ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. ``"160M"`` for 160 megabytes).  
+- ``strict_version_check``: If ``True``, an error will be raised if the client and server versions don't match.
+- ``ignore_config``: Indicates whether a processing of a ``.h2oconfig`` file should be conducted or not. Default value is ``False``.
 - ``extra_classpath``: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
-- ``kwargs``: (all other deprecated attributes)
-- ``jvm_custom_args``: Customer, user-defined argument’s for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+- ``kwargs``: (All other deprecated attributes.)
+- ``jvm_custom_args``: User-defined arguments for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
 - ``bind_to_localhost``: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
 
 Example
@@ -170,13 +177,13 @@ This section describes how run H2O in an Anaconda Cloud environment. This sectio
 Launching Jupyter Notebook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Open a Terminal window and launch jupyter notebook. 
+1. Open a Terminal window and launch Jupyter Notebook. 
 
    ::
 
      user$ jupyter notebook
 
-2. Create a new Python notebook by selecting the **New** button in the upper left corner. At this point, you can begin using Jupyter Notebook to run H2O Python commands. An example notebook follows.
+2. Create a new Python notebook by clicking **New**. At this point, you can begin using Jupyter Notebook to run H2O Python commands. See the following example.
 
 GBM example
 ^^^^^^^^^^^
@@ -186,47 +193,47 @@ After you successfully launch Jupyter notebook, enter the following commands to 
 1. Import the H2O and GBM modules.
 
   .. figure:: images/anaconda_import_module.png
-     :alt: Import H2O
+     :alt: Import H2O and GBM estimator commands in a Jupyter Notebook.
 
 2. Initialize H2O using ``h2o.init()``.
 
   .. figure:: images/anaconda_init.png
-     :alt: Initialize H2O
+     :alt: Initialize H2O command and the following printout with H2O cluster information.
 
 3. Import the Airlines dataset. This dataset will be used to classify whether a flight will be delayed.
 
   .. figure:: images/anaconda_import_airlines.png
-     :alt: Import dataset
+     :alt: Import airlines dataset with parse progress bar.
 
 4. Convert columns to factors.
 
   .. figure:: images/anaconda_convert_columns.png
-     :alt: Convert columns to factors
+     :alt: Convert columns to factors: Year, Month, dayOfWeek, Cancelled, and FlightNum.
 
 5. Set the predictor names and the response column name.
 
   .. figure:: images/anaconda_predictor_response.png
-     :alt: Set predictor names and response column
+     :alt: Set Origin, Dest, Year, UniqueCarrier, DayOfWeek, Month, Distance, and FlightNum for the predictors. Set IsDepDelayed for response.
 
 6. Split the dataset into training and validation sets.
 
   .. figure:: images/anaconda_split_data.png
-     :alt: Split the dataset
+     :alt: Split the dataset with a .8 ratio and seed set to 1234.
 
 7. Specify the number of bins that will be included in the historgram and then split. 
 
   .. figure:: images/anaconda_nbins_cats.png
-     :alt: Try a range of nbins_cats
+     :alt: Try a range of nbins_cats: 8, 16, 32, 64, 128, 256, 512, 1024, 2048, and 4096.
 
 8. Train the models.
 
   .. figure:: images/anaconda_train_model.png
-     :alt: Train the models
+     :alt: Train the models using the information you've set.
 
 9. Print the AUC scores for the training data and the validation data. 
 
   .. figure:: images/anaconda_print_auc.png
-     :alt: Print the AUC score
+     :alt: Print the AUC score for the training and validation.
 
 Troubleshooting
 ^^^^^^^^^^^^^^^
