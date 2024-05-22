@@ -86,10 +86,8 @@ public class AUUC extends Iced {
     public AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
         _auucType = auucType;
         _auucTypeIndx = getIndexByAUUCType(_auucType);
-        _nBins = bldr._nbins;
-        //assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
+        _nBins = bldr._nbinsUsed;
         if (_nBins > 0) {
-            assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
             _n = bldr._n;
             _ths = Arrays.copyOf(bldr._thresholds, _nBins);
             _treatment = Arrays.copyOf(bldr._treatment, _nBins);
@@ -116,6 +114,9 @@ public class AUUC extends Iced {
                 tmpf += _frequencyCumsum[i];
                 _frequencyCumsum[i] = tmpf;
             }
+
+            System.out.println(Arrays.toString(_treatment));
+            System.out.println(Arrays.toString(_control));
 
             // these methods need to be call in this order
             setUplift();
@@ -148,16 +149,19 @@ public class AUUC extends Iced {
     }
     
     public void setUplift(){
-        for(int i=0; i<AUUCType.VALUES.length; i++) {
+        for(int i=0; i < AUUCType.VALUES.length; i++) {
             for (int j = 0; j < _nBins; j++) {
-                _uplift[i][j] = AUUCType.VALUES[i].exec(this, j);
+                double value = AUUCType.VALUES[i].exec(this, j);
+                _uplift[i][j] = value;
             }
         }
-        for(int i=0; i<AUUCType.VALUES.length; i++) {
+        for(int i=0; i < AUUCType.VALUES.length; i++) {
             if (_uplift[i].length == 1 && Double.isNaN(_uplift[i][0])) {
                 _uplift[i][0] = 0;
             } else {
-                ArrayUtils.interpolateLinear(_uplift[i]);
+                if (!Double.isNaN(_uplift[i][_uplift[i].length-1])) {
+                    ArrayUtils.interpolateLinear(_uplift[i]);
+                }
             }
         }
     }
@@ -601,14 +605,22 @@ public class AUUC extends Iced {
         qini() { 
             @Override 
             double exec(long treatment, long control, long yTreatment, long yControl) {
-                double norm = treatment / (double)control;
+                double norm = control > 0 ? treatment / (double)control : 1;
                 return yTreatment - yControl * norm;
             }
         },
         lift() {
             @Override 
             double exec(long treatment, long control, long yTreatment, long yControl) {
-                return yTreatment / (double) treatment - yControl / (double)control;
+                if (treatment > 0 && control > 0) {
+                    return yTreatment / (double) treatment - yControl / (double) control;
+                } else if (treatment < 0 && control > 0) {
+                    return - (yControl / (double) control);
+                } else if (treatment > 0 && control < 0) {
+                    return yTreatment / (double) treatment;
+                } else {
+                    return Double.NaN;
+                }
             }
         },
         gain() {

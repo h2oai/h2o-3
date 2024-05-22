@@ -2248,7 +2248,7 @@ public class ArrayUtils {
    */
   public static void interpolateLinear(double[] array){
     assert array.length > 0 && !Double.isNaN(array[array.length-1]): 
-            "Input array length should be > 0 and the first item should not be NaN";
+            "Input array length should be > 0 and the last item should not be NaN";
     if (array.length == 1){
       return;
     }
