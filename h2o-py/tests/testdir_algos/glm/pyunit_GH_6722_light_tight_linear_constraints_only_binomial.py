@@ -3,7 +3,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-def test_light_tight_linear_constraints_only_gaussian():
+def test_light_tight_linear_constraints_only_binomial():
     '''
     Test constrained GLM with less than and equal to constraints.  The constraints are not very 
     tight.  However, coefficients from GLM built without constraints won't be able to satisfied the constraints.
@@ -201,6 +201,6 @@ def test_light_tight_linear_constraints_only_gaussian():
                                      "not.".format(logloss, random_init_logloss)
     
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_light_tight_linear_constraints_only_gaussian)
+    pyunit_utils.standalone_test(test_light_tight_linear_constraints_only_binomial)
 else:
-    test_light_tight_linear_constraints_only_gaussian()
+    test_light_tight_linear_constraints_only_binomial()
