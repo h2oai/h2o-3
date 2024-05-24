@@ -5,7 +5,7 @@ This section describes how to download and install the latest stable version of 
 
 .. note::
 	
-	Check our `Downloads page to download the nightly bleeding edge release <h2o-release.s3.amazonaws.com/h2o/master/latest.html>`__. 
+	Check our `Downloads page to download the nightly bleeding edge release <https://h2o-release.s3.amazonaws.com/h2o/master/latest.html>`__. 
 
 	Scroll down to the H2O section and select Nightly Bleeding Edge. Then, choose the type of installation you want to perform (for example, "Install in Python") by clicking on the tab. 
 
