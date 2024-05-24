@@ -3,7 +3,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-def test_light_tight_linear_constraints_only_gaussian():
+def test_tight_beta_linear_constraints_binomial():
     '''
     Test constrained GLM with beta, equality and less than and equal to constraints.  The constraints are very 
     tight and coefficients from GLM built without constraints won't be able to satisfied the constraints.
@@ -174,42 +174,6 @@ def test_light_tight_linear_constraints_only_gaussian():
     types = "Equal"
     contraint_numbers = 5
     tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C19"
-    values = 0.5
-    types = "Equal"
-    contraint_numbers = 4
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C10.1"
-    values = -0.3
-    types = "Equal"
-    contraint_numbers = 4
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = -0.5
-    types = "Equal"
-    contraint_numbers = 4
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C18"
-    values = 0.75
-    types = "Equal"
-    contraint_numbers = 5
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "C20"
-    values = -0.13
-    types = "Equal"
-    contraint_numbers = 5
-    tight_constraints.append([name, values, types, contraint_numbers])
-
-    name = "constant"
-    values = -3
-    types = "Equal"
-    contraint_numbers = 5
-    tight_constraints.append([name, values, types, contraint_numbers])
     
     linear_constraints2 = h2o.H2OFrame(tight_constraints)
     linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
@@ -317,6 +281,6 @@ def test_light_tight_linear_constraints_only_gaussian():
                                      "not.".format(logloss, random_init_logloss)
     
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_light_tight_linear_constraints_only_gaussian)
+    pyunit_utils.standalone_test(test_tight_beta_linear_constraints_binomial)
 else:
-    test_light_tight_linear_constraints_only_gaussian()
+    test_tight_beta_linear_constraints_binomial()

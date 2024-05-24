@@ -3,7 +3,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-def test_constraints_binomial():
+def test_equality_constraints_only_binomial():
     '''
     This test checks and make sure the equality constraints work with binomial family.  Coefficients are initialized
     with glm coefficients built without contraints, default coefficients and random coefficients.
@@ -129,6 +129,6 @@ def test_constraints_binomial():
  
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_constraints_binomial)
+    pyunit_utils.standalone_test(test_equality_constraints_only_binomial)
 else:
-    test_constraints_binomial()
+    test_equality_constraints_only_binomial()
