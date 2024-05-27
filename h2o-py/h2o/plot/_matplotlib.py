@@ -1,5 +1,6 @@
 
 def get_matplotlib_pyplot(server, raise_if_not_available=False):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         # noinspection PyUnresolvedReferences
         import matplotlib
@@ -26,6 +27,7 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
 
 
 def get_polycollection(server, raise_if_not_available=False):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         from matplotlib.collections import PolyCollection as polycoll
         return polycoll
@@ -37,6 +39,7 @@ def get_polycollection(server, raise_if_not_available=False):
     
     
 def get_matplotlib_cm(function_name):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         from matplotlib import cm
         return cm
@@ -46,6 +49,7 @@ def get_matplotlib_cm(function_name):
 
 
 def get_mplot3d_axes(function_name):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         # noinspection PyUnresolvedReferences
         from mpl_toolkits.mplot3d import Axes3D
