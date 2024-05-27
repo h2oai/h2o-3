@@ -3,7 +3,8 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
     try:
         # noinspection PyUnresolvedReferences
         import matplotlib
-        matplotlib.use("Agg")
+        if server:
+            matplotlib.use("Agg")
         try:
             # noinspection PyUnresolvedReferences
             import matplotlib.pyplot as plt
