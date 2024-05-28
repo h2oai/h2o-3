@@ -1942,7 +1942,7 @@ class H2OFrame(Keyed, H2ODisplay):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True, header=True):
+    def as_data_frame(self, use_pandas=True, header=True, use_multi_thread=False):
         """
         Obtain the dataset as a python-local object.
 
@@ -1952,7 +1952,8 @@ class H2OFrame(Keyed, H2ODisplay):
             possible with the right python modules (datatable or polars and pyarrow) installed.  Otherwise, single
             thread operation will be used in the conversion.  
         :param bool header: If True (default), then column names will be appended as the first row in list
-
+        :param bool header: If True (False by default), will use datatable or polars/pyarrow to perform conversion in
+            multi-thread which is faster.
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
 
@@ -1969,22 +1970,22 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         if can_use_pandas() and use_pandas:
             import pandas
-            if (can_use_datatable()) or (can_use_polars() and can_use_pyarrow()): # can use multi-thread
-                exportFile = tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv", delete=False)
-                try:
-                    exportFile.close()  # needed for Windows
-                    h2o.export_file(self, exportFile.name, force=True)
-                    if can_use_datatable():  # use datatable for multi-thread by default
-                        return self.convert_with_datatable(exportFile.name)
-                    elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
-                        return self.convert_with_polars(exportFile.name)
-                finally:
-                    os.unlink(exportFile.name)
+            if use_multi_thread:
+                with local_context(datatable_enabled=True, polars_enabled=True): # turn on multi-thread toolboxes   
+                    if (can_use_datatable()) or (can_use_polars() and can_use_pyarrow()): # can use multi-thread
+                        exportFile = tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv", delete=False)
+                        try:
+                            exportFile.close()  # needed for Windows
+                            h2o.export_file(self, exportFile.name, force=True)
+                            if can_use_datatable():  # use datatable for multi-thread by default
+                                return self.convert_with_datatable(exportFile.name)
+                            elif can_use_polars() and can_use_pyarrow():  # polar/pyarrow if datatable is not available
+                                return self.convert_with_polars(exportFile.name)
+                        finally:
+                            os.unlink(exportFile.name)
             warnings.warn("Converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
-                          "(for Python 3.10 or above) and activate it using:\n\n"+
-                          "with h2o.utils.threading.local_context(polars_enabled=True, datatable_enabled=True):\n"
-                          "    pandas_df = h2o_df.as_data_frame()\n", H2ODependencyWarning)
+                          "(for Python 3.10 or above) and use it as pandas_df = h2o_df.as_data_frame(use_multi_thread=True)\n", H2ODependencyWarning)
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
                 
         from h2o.utils.csv.readers import reader
