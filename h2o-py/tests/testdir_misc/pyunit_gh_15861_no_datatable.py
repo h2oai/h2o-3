@@ -9,8 +9,8 @@ def test_datatable_without_datatable():
     # should run to completion
     with local_context(datatable_disabled=True, polars_disabled=True):
         with pyunit_utils.catch_warnings() as ws:
-            h2oFrame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv"))
-            h2oFrame.as_data_frame() 
+            h2o_frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/jira/PUBDEV_5266_merge_with_string_columns/PUBDEV_5266_f1.csv"))
+            h2o_frame.as_data_frame() 
             assert not(can_use_datatable() or can_use_polars()) or "converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
             " multi-thread, install datatable (for Python 3.9 or lower), or polars and pyarrow "
             "(for Python 3.10 or above)" in str(ws[0].message)
