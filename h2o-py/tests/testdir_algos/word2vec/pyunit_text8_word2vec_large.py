@@ -16,10 +16,12 @@ def word2vec():
     
         cnt = 10
         synonyms = w2v_model.find_synonyms("horse", cnt)
-        assert len(synonyms) == cnt, "There should be three synonyms."
-
+        print(synonyms)
+        assert len(synonyms) == cnt, "There should be ten synonyms."
+        
         # GH-16192 find_synonyms returns empty dataset if there is no synonyms to find
         synonyms = w2v_model.find_synonyms("hhorse", cnt)
+        print(synonyms)
         assert len(synonyms) == 0, "There should be zero synonyms."
         
 
