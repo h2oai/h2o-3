@@ -219,8 +219,10 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
     else
       col.names
     if (!is.null(parseSetup$column_names) &&
-        (length(parseSetup$column_names) != parsedColLength)) {
-      stop("length of col.names must equal to the number of columns in dataset")
+        (length(parseSetup$column_names) != parsedColLength)) { # should equal, if not, need to check skipped_columns
+        if ((!is.null(skipped_columns) && ((length(parseSetup$column_names)-length(skipped_columns)) != parsedColLength))
+            || is.null(skipped_columns)) # if no skipped column, this is an error.  If skipped columns, check length
+            stop("length of col.names (minus length of skipped_columns if present) must equal to the number of columns in dataset")
     }
     # change column names to what the user specified
     if (!is.null(skipped_columns)) {
