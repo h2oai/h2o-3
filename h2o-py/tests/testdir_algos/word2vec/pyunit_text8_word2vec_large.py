@@ -14,11 +14,14 @@ def word2vec():
         w2v_model = H2OWord2vecEstimator(epochs=1, word_model=word_model)
         w2v_model.train(training_frame=train)
     
-        synonyms = w2v_model.find_synonyms("horse", 3)
-        print(synonyms)
-    
-        assert len(synonyms) == 3, "there should be three synonmys"
+        cnt = 10
+        synonyms = w2v_model.find_synonyms("horse", cnt)
+        assert len(synonyms) == cnt, "There should be three synonyms."
 
+        # GH-16192 find_synonyms returns empty dataset if there is no synonyms to find
+        synonyms = w2v_model.find_synonyms("hhorse", cnt)
+        assert len(synonyms) == 0, "There should be zero synonyms."
+        
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(word2vec)

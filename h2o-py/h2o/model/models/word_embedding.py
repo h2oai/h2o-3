@@ -36,7 +36,7 @@ class H2OWordEmbeddingModel(ModelBase):
         >>> print(synonyms)
         """
         j = h2o.api("GET /3/Word2VecSynonyms", data={'model': self.model_id, 'word': word, 'count': count})
-        return OrderedDict(sorted(zip(j['synonyms'], j['scores']), key=lambda t: t[1], reverse=True))
+        return dict(zip(j['synonyms'], j['scores']))
 
     def transform(self, words, aggregate_method):
         """
