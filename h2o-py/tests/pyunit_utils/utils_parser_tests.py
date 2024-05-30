@@ -3,16 +3,16 @@ import h2o
 import time
 import pandas as pd
 
-def test_frame_conversion(dataset, original_pandas_frame, module):
+def test_frame_conversion(dataset, original_pandas_frame):
     # convert frame using datatable or polar/pyarrow
     h2oframe = h2o.import_file(pyunit_utils.locate(dataset))
-    test_frames_conversion(h2oframe, original_pandas_frame, module)
+    test_frames_conversion(h2oframe, original_pandas_frame)
             
-def test_frames_conversion(h2oframe, original_pandas_frame, module):
+def test_frames_conversion(h2oframe, original_pandas_frame):
     start_time = time.time()
     new_pandas_frame = h2oframe.as_data_frame(use_multi_thread=True)
     new_time = time.time()-start_time
-    print("H2O frame to Pandas frame conversion time with multi-thread using module {1}: {0}".format(new_time, module))
+    print("H2O frame to Pandas frame conversion time with multi-thread using module polars/pyarrow: {0}".format(new_time))
     # compare two frames column types                
     new_types = new_pandas_frame.dtypes
     old_types = original_pandas_frame.dtypes
@@ -41,5 +41,5 @@ def single_thread_pandas_conversion(dataset):
     start_time = time.time()
     h2oframe_panda =  h2oframe.as_data_frame()
     new_time = time.time()-start_time
-    print("H2O frame to Pandas frame conversion time with single thread for dataset {1}: {0}".format(newTime, dataset))
+    print("H2O frame to Pandas frame conversion time with single thread for dataset {1}: {0}".format(new_time, dataset))
     return h2oframe_panda
