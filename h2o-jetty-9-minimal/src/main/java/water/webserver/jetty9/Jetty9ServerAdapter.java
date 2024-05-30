@@ -7,11 +7,13 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.H2OWebsocketServlet;
 import water.webserver.iface.RequestAuthExtension;
 import water.webserver.iface.WebServer;
 
+import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
