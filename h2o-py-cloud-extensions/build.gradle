@@ -30,14 +30,14 @@ task copySrcFiles(type: Copy) {
 }
 
 task buildDist(type: Exec, dependsOn: copySrcFiles) {
-    file("${buildDir}/h2o_cloud_extensions/").mkdirs()
-    File version_file = new File("${buildDir}/h2o_cloud_extensions/", "version.txt")
-    version_file.write(PROJECT_VERSION)
-
-    File build_file = new File("${buildDir}/h2o_cloud_extensions/", "buildinfo.txt")
-    build_file.write(buildVersion.toString())
     workingDir buildDir
     doFirst {
+        file("${buildDir}/h2o_cloud_extensions/").mkdirs()
+        File version_file = new File("${buildDir}/h2o_cloud_extensions/", "version.txt")
+        version_file.write(PROJECT_VERSION)
+
+        File build_file = new File("${buildDir}/h2o_cloud_extensions/", "buildinfo.txt")
+        build_file.write(buildVersion.toString())
         file("${buildDir}/tmp").mkdirs()
         standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o-py_buildDist.out"))
     }
