@@ -8,6 +8,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import water.webserver.iface.H2OHttpView;
+import water.webserver.iface.H2OWebsocketServlet;
 import water.webserver.iface.RequestAuthExtension;
 import water.webserver.iface.WebServer;
 
@@ -73,6 +74,14 @@ class Jetty9ServerAdapter implements WebServer {
   private void registerHandlers(final HandlerWrapper handlerWrapper, final ServletContextHandler context) {
     for (Map.Entry<String, Class<? extends HttpServlet>> entry : h2oHttpView.getServlets().entrySet()) {
       context.addServlet(entry.getValue(), entry.getKey());
+    }
+    for (Map.Entry<String, Class<? extends H2OWebsocketServlet>> entry : h2oHttpView.getWebsockets().entrySet()) {
+      try {
+        Servlet servlet = new Jetty9WebsocketServlet(entry.getValue().newInstance());
+        context.addServlet(new ServletHolder(entry.getValue().getName(), servlet), entry.getKey());
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new RuntimeException("Failed to instantiate websocket servlet object", e);
+      }
     }
 
     final List<Handler> extHandlers = new ArrayList<>();
