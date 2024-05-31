@@ -561,7 +561,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /**
      * Bins for calculating AUUC, if applicable. Ignored for non uplift models.
      */
-    public int _auuc_nbins = -1;
+    public int _auuc_nbins = 20;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }

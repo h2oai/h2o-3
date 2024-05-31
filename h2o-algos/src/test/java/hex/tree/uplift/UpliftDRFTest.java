@@ -41,6 +41,8 @@ public class UpliftDRFTest extends TestUtil {
             p._response_column = "conversion";
             p._seed = 0xDECAF;
             p._ntrees = 3;
+            p._score_each_iteration = true;
+            p._auuc_nbins = 450;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -145,43 +147,6 @@ public class UpliftDRFTest extends TestUtil {
             p._train = train._key;
             p._treatment_column = "treatment";
             p._response_column = "C1";
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            udrf.trainModel().get();
-        } finally {
-            Scope.exit();
-        }
-    }
-
-
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testBasicTrainErrorDoNotSupportNfolds() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._nfolds = 10;
-
-            UpliftDRF udrf = new UpliftDRF(p);
-            udrf.trainModel().get();
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testBasicTrainErrorDoNotSupportFoldColumn() {
-        try {
-            Scope.enter();
-            Frame train = generateFrame();
-            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
-            p._train = train._key;
-            p._treatment_column = "treatment";
-            p._response_column = "conversion";
-            p._fold_column = "C0";
 
             UpliftDRF udrf = new UpliftDRF(p);
             udrf.trainModel().get();
@@ -346,6 +311,57 @@ public class UpliftDRFTest extends TestUtil {
             Scope.track_generic(model);
             assertNotNull(model);
             assertTrue(model._output._treeStats._num_trees < ntrees);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainSupportCV() {
+        try {
+            Scope.enter();
+            Frame train = generateFrame();
+            int ntrees = 10;
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._treatment_column = "treatment";
+            p._response_column = "conversion";
+            p._ntrees = ntrees;
+            p._score_each_iteration = true;
+            p._nfolds = 3;
+            p._auuc_nbins = 400;
+
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSupportCVCriteo() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/uplift/criteo_uplift_13k.csv"));
+            train.toCategoricalCol("treatment");
+            train.toCategoricalCol("conversion");
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._ignored_columns = new String[]{"visit", "exposure"};
+            p._treatment_column = "treatment";
+            p._response_column = "conversion";
+            p._seed = 0xDECAF;
+            p._ntrees = 11;
+            p._score_each_iteration = true;
+            p._nfolds = 3;
+            p._auuc_nbins = 50;
+
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
         } finally {
             Scope.exit();
         }

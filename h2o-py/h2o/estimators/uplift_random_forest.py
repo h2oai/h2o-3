@@ -55,7 +55,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  treatment_column="treatment",  # type: str
                  uplift_metric="auto",  # type: Literal["auto", "kl", "euclidean", "chi_squared"]
                  auuc_type="auto",  # type: Literal["auto", "qini", "lift", "gain"]
-                 auuc_nbins=-1,  # type: int
+                 auuc_nbins=20,  # type: int
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "auuc", "ate", "att", "atc", "qini"]
                  stopping_tolerance=0.001,  # type: float
@@ -159,7 +159,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type auuc_type: Literal["auto", "qini", "lift", "gain"]
         :param auuc_nbins: Number of bins to calculate Area Under Uplift Curve.
-               Defaults to ``-1``.
+               Defaults to ``20``.
         :type auuc_nbins: int
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
@@ -689,7 +689,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         """
         Number of bins to calculate Area Under Uplift Curve.
 
-        Type: ``int``, defaults to ``-1``.
+        Type: ``int``, defaults to ``20``.
 
         :examples:
 

@@ -115,10 +115,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             fr.add("labels", labels);
             fr.add("treatment", treatment);
             MetricBuilderBinomialUplift mb;
+            double[] probs = AUUC.calculateProbs(auucNbins);
             if (customAuucThresholds == null) {
-                mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, predictedProbs)).doAll(fr)._mb;
+                mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(probs, predictedProbs), auucNbins, probs).doAll(fr)._mb;
             } else {
-                mb = new UpliftBinomialMetrics(labels.domain(), customAuucThresholds).doAll(fr)._mb;
+                mb = new UpliftBinomialMetrics(labels.domain(), customAuucThresholds, auucNbins, probs).doAll(fr)._mb;
             }
             labels.remove();
             ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, auucType);
@@ -134,14 +135,18 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         String[] domain;
         double[] thresholds;
         public MetricBuilderBinomialUplift _mb;
+        int nbins;
+        double[] probs;
 
-        public UpliftBinomialMetrics(String[] domain, double[] thresholds) {
+        public UpliftBinomialMetrics(String[] domain, double[] thresholds, int nbins, double[] probs) {
             this.domain = domain;
             this.thresholds = thresholds;
+            this.probs = probs;
+            this.nbins = nbins;
         }
 
         @Override public void map(Chunk[] chks) {
-            _mb = new MetricBuilderBinomialUplift(domain, thresholds);
+            _mb = new MetricBuilderBinomialUplift(domain, thresholds, nbins, probs);
             Chunk uplift = chks[0];
             Chunk actuals = chks[1];
             Chunk treatment = chks[2];
@@ -164,11 +169,9 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         public double _sumTETreatment;
         public long _treatmentCount;
 
-        public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) {
+        public MetricBuilderBinomialUplift( String[] domain, double[] thresholds, int nbins, double[] probs) {
             super(2,domain);
-            if(thresholds != null) {
-                _auuc = new AUUC.AUUCBuilder(thresholds);
-            }
+            _auuc = new AUUC.AUUCBuilder(nbins, thresholds, probs);
         }
 
         @Override public double[] perRow(double[] ds, float[] yact, Model m) {
@@ -241,7 +244,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             AUUC auuc = null;
             if (preds != null) {
                 if (resp != null) {
-                    auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins);
+                    auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins, AUUC.calculateProbs(nbins));
                 }
             }
             return makeModelMetrics(m, f, auuc);
