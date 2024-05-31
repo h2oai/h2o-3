@@ -5,7 +5,7 @@ from tests import pyunit_utils
 from h2o.utils.threading import local_context
 from h2o.utils.shared_utils import (can_use_polars)
     
-def test_datatable_without_datatable():  
+def test_datatable_without_multi_thread():  
     # should run to completion
     with local_context(polars_disabled=True):
         with pyunit_utils.catch_warnings() as ws:
@@ -16,6 +16,6 @@ def test_datatable_without_datatable():
                                             "" in str(ws[0].message)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_datatable_without_datatable)
+    pyunit_utils.standalone_test(test_datatable_without_multi_thread)
 else:
-    test_datatable_without_datatable()
+    test_datatable_without_multi_thread()
