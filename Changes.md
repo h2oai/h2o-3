@@ -2,6 +2,21 @@
 
 ## H2O
 
+### 3.46.0.3 - 6/3/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index.html</a>
+
+#### Bug Fix
+- [[#16274]](https://github.com/h2oai/h2o-3/issues/16274) - Fixed plotting for H2O Explainabilty by resolving issue in the matplotlib wrapper.
+- [[#16192]](https://github.com/h2oai/h2o-3/issues/16192) - Fixed `h2o.findSynonyms` failing if the `word` parameter is unknown to the Word2Vec model.
+- [[#15947]](https://github.com/h2oai/h2o-3/issues/15947) - Fixed `skipped_columns` error caused by mismatch during the call to `parse_setup` when constructing an `H2OFrame`.
+
+#### Docs
+- [[#16288]](https://github.com/h2oai/h2o-3/issues/16288) - Fixed GBM Python example in user guide.
+- [[#16188]](https://github.com/h2oai/h2o-3/issues/16188) - Updated API-related changes page to adhere to style guide requirements.
+- [[#16016]](https://github.com/h2oai/h2o-3/issues/16016) - Added examples to Python documentation for Uplift DRF.
+- [[#15988]](https://github.com/h2oai/h2o-3/issues/15988) - Added examples to Python documentation for Isotonic Regression.
+
 ### 3.46.0.2 - 5/13/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html</a>
