@@ -442,7 +442,7 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     feature_interactions = pros_gbm.feature_interaction()
 
     # Get Friedman and Popescu's H statistics
-    h = pros_gbm.h(prostate_train, ['DPROS','DCAPS'])
+    h = pros_gbm.h(prostate, ['DPROS','DCAPS'])
     print(h)
 
 
