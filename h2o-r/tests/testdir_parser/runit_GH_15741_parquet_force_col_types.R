@@ -2,7 +2,6 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 test.force_col_types <- function() {
-  browser()
   originalTypes <- c("real", "int") # old H2O parse column tyoes
   h2odata <- h2o.importFile(path = locate("smalldata/parser/parquet/df.parquet"))
   checkTypes(originalTypes, h2odata)
