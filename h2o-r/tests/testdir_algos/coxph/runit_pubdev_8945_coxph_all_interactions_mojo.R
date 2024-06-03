@@ -10,7 +10,6 @@ test.CoxPH.mojo_interactions_impl <- function(stratify_by = NULL) {
                            interaction_pairs = list(c("C1", "C3"), c("C1", "C2"), c("C3", "C4"), c("C4", "C2"),  c("C1", "age"), c("surgery", "C3")),
                            training_frame = training_frame)
 
-    browser()
     predict_h2o <- h2o.predict(coxph_h2o, training_frame)
     print(predict_h2o)
 
@@ -21,7 +20,6 @@ test.CoxPH.mojo_interactions_impl <- function(stratify_by = NULL) {
 
     predict_mojo <- h2o.predict(coxph_mojo, training_frame)
     print(predict_mojo)
-    browser()
 
     expect_equal(as.data.frame(predict_h2o), as.data.frame(predict_mojo))
 }
