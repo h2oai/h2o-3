@@ -34,7 +34,7 @@ test <- function() {
 	expect_equal(gr$df.residual,hh@model$training_metrics@metrics$residual_degrees_of_freedom)
 	#predictions
 	ph = h2o.predict(object = hh,newdata = val)
-	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]),offset = as.matrix(valid[,32]),type = "response")
+	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]), newoffset = as.matrix(valid[,32]),type = "response")
 	print("compare predictions")
 	expect_equal(min(pr),min(ph$p1),tolerance = 0.0001)
 	expect_equal(max(pr),max(ph$p1),tolerance = 0.0001)
@@ -49,7 +49,7 @@ test <- function() {
 	expect_equal(deviance(gg),hh@model$training_metrics@metrics$residual_deviance,tolerance = 0.00001)
 	#predictions
 	ph = h2o.predict(object = hh,newdata = val)
-	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]),offset = as.matrix(valid[,32]),type = "response")
+	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]), newoffset = as.matrix(valid[,32]),type = "response")
 	print("compare predictions")
 	expect_equal(min(pr),min(ph$p1),tolerance = 0.0001)
 	expect_equal(max(pr),max(ph$p1),tolerance = 0.0001)
