@@ -111,7 +111,8 @@ function getAndInstallFromCRAN(){
   NAME="$1"
   VERSION="$2"
   getAndInstall "https://cran.r-project.org/src/contrib/Archive/${NAME}/${NAME}_${VERSION}.tar.gz" "$NAME" "$VERSION" || \
-  getAndInstall "https://cran.r-project.org/src/contrib/${NAME}_${VERSION}.tar.gz" "$NAME" "$VERSION" || exit 1
+  getAndInstall "https://cran.r-project.org/src/contrib/${NAME}_${VERSION}.tar.gz" "$NAME" "$VERSION" || \
+  getAndInstall "https://cloud.r-project.org/src/contrib/Archive/${NAME}/${NAME}_${VERSION}.tar.gz" "$NAME" "$VERSION" || exit 1
   set -x
 }
 
@@ -408,6 +409,8 @@ if [ "$R_VERSION" = "4.4.0" ]; then
   getAndInstallFromCRAN Hmisc 5.1-3
   getAndInstallFromCRAN testthat 3.2.1.1
   getAndInstallFromCRAN devtools 2.4.5
+  getAndInstallFromCRAN uplift 0.3.5
+  
 else
   
   getAndInstallFromCRAN abind 1.4-5
