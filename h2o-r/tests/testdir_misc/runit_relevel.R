@@ -28,7 +28,7 @@ test.relevel <- function() {
   expect_true(("DPROS.Both" %in% ns2), "Both level IS NOT expected to be skipped in re-leveled column")
 
   # compare against R
-  dr <- read.csv(locate("smalldata/prostate/prostate_cat.csv"))
+  dr <- read.csv(locate("smalldata/prostate/prostate_cat.csv"), stringsAsFactors=TRUE)
   dr$DPROS <- relevel(dr$DPROS,"None")
   mr <- glm(data=dr,CAPSULE ~ ., family=binomial)
   print(mr)
