@@ -1,4 +1,3 @@
-import h2o
 from h2o.estimators import H2OGeneralizedLinearEstimator as glm
 from h2o.exceptions import H2OValueError
 from h2o.grid.grid_search import H2OGridSearch
