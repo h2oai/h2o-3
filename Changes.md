@@ -11,6 +11,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index
 - [[#16192]](https://github.com/h2oai/h2o-3/issues/16192) - Fixed `h2o.findSynonyms` failing if the `word` parameter is unknown to the Word2Vec model.
 - [[#15947]](https://github.com/h2oai/h2o-3/issues/15947) - Fixed `skipped_columns` error caused by mismatch during the call to `parse_setup` when constructing an `H2OFrame`.
 
+#### Improvement
+- [[#16278]](https://github.com/h2oai/h2o-3/issues/16278) - Added flag to enable `use_multi_thread` automatically when using `as_data_frame`.
+
 #### Docs
 - [[#16288]](https://github.com/h2oai/h2o-3/issues/16288) - Fixed GBM Python example in user guide.
 - [[#16188]](https://github.com/h2oai/h2o-3/issues/16188) - Updated API-related changes page to adhere to style guide requirements.
