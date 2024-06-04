@@ -410,6 +410,7 @@ if [ "$R_VERSION" = "4.4.0" ]; then
   getAndInstallFromCRAN testthat 3.2.1.1
   getAndInstallFromCRAN devtools 2.4.5
   getAndInstallFromCRAN uplift 0.3.5
+  getAndInstallFromCRAN DT 0.33
   
 else
   
