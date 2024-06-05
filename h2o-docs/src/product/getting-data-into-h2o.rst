@@ -24,14 +24,17 @@ H2O-3 supports the following file types:
  
     - H2O supports UTF-8 encodings for CSV files. Please convert UTF-16 encodings to UTF-8 encoding before parsing CSV files into H2O-3.
     - ORC is available only if H2O-3 is running as a Hadoop job. 
-    - Users can also import Hive files that are saved in ORC format (experimental).
-    - If you encounter issues importing XLS or XLSX files, you may be using an unsupported version. In this case, re-save the file in BIFF 8 format. Also note that XLS and XLSX support will eventually be deprecated. 
+    - Users can also import Hive files that are saved in ORC format (experimental). 
     - When doing a parallel data import into a cluster: 
 
         - If the data is an unzipped CSV file, H2O-3 can do offset reads, so each node in your cluster can be directly reading its part of the CSV file in parallel. 
         - If the data is zipped, H2O-3 will have to read the whole file and unzip it before doing the parallel read.
 
     So, if you have very large data files reading from HDFS, it's best to use unzipped CSV. But, if the data is further away than the LAN, then it's best to use zipped CSV.
+
+.. caution::
+    
+    - If you encounter issues importing XLS or XLSX files, you may be using an unsupported version. In this case, re-save the file in BIFF 8 format. Also note that XLS and XLSX support will eventually be deprecated.
 
 .. _data_sources:
 
@@ -53,12 +56,12 @@ Default data sources
 Local file system
 '''''''''''''''''
 
-Data from a local machine can be uploaded to H2O-3 via a push from the client. For more information, refer to `Uploading a File <data-munging/uploading-data.html>`__.
+Data from a local machine can be uploaded to H2O-3 through a push from the client. See more information on `uploading from your local file system <data-munging/uploading-data.html>`__.
 
 Remote file
 '''''''''''
 
-Data that is hosted on the Internet can be imported into H2O-3 by specifying the URL. For more information, refer to `Importing a File <data-munging/importing-data.html>`__.
+Data that is hosted on the Internet can be imported into H2O-3 by specifying the URL. See more information on `importing data from the internet <data-munging/importing-data.html>`__.
 
 HDFS-like data sources
 ''''''''''''''''''''''
@@ -69,12 +72,15 @@ Various data sources can be accessed through an HDFS API. In this case, a librar
     
     Each node in the cluster must be launched in the same way. 
 
+Example HDFS-like data sources
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. tabs::
     .. tab:: Alluxio
 
         **Required library**
         
-        To access Alluxio data source, an Alluxio client library that is part of Alluxio distribution is required. For example, ``alluxio-1.3.0/core/client/target/alluxio-core-client-1.3.0-jar-with-dependencies.jar``.
+        To access the Alluxio data source, an Alluxio client library that is part of Alluxio distribution is required. For example, ``alluxio-1.3.0/core/client/target/alluxio-core-client-1.3.0-jar-with-dependencies.jar``.
 
         **H2O-3 command line**
 
@@ -84,7 +90,7 @@ Various data sources can be accessed through an HDFS API. In this case, a librar
 
         **URI scheme**
 
-        An Alluxio data source is referenced using ``alluxio://`` schema and the location of Alluxio master. For example,
+        An Alluxio data source is referenced using the ``alluxio://`` schema and the location of the Alluxio master. For example,
 
         .. code-block:: bash
 
@@ -98,9 +104,9 @@ Various data sources can be accessed through an HDFS API. In this case, a librar
 
         **Required library**
 
-        To access IBM Object Store (which can be exposed via Bluemix or Softlayer), IBM's HDFS driver ``hadoop-openstack.jar`` is required. The driver can be obtained, for example, by running BigInsight instances at location ``/usr/iop/4.2.0.0/hadoop-mapreduce/hadoop-openstack.jar``.
+        To access IBM Object Store (which can be exposed via Bluemix or Softlayer), IBM's HDFS driver ``hadoop-openstack.jar`` is required. The driver can be obtained, for example, by running BigInsight instances at the following location: ``/usr/iop/4.2.0.0/hadoop-mapreduce/hadoop-openstack.jar``.
 
-        .. note:: 
+        .. caution:: 
 
             The JAR file available at Maven central is not compatible with IBM Swift Object Storage.
 
@@ -157,7 +163,7 @@ Various data sources can be accessed through an HDFS API. In this case, a librar
 
         **Required library**
         
-        To access the Google Cloud Store Object Store, Google's cloud storage connector, ``gcs-connector-latest-hadoop2.jar`` is required. See `the official documentation and driver <https://cloud.google.com/hadoop/google-cloud-storage-connector>`__.
+        To access the Google Cloud Store Object Store, Google's cloud storage connector, ``gcs-connector-latest-hadoop2.jar`` is required. See `the official documentation and driver <https://cloud.google.com/dataproc/docs/concepts/connectors/cloud-storage>`__.
 
         **H2O-3 command line**
 
@@ -186,7 +192,7 @@ Various data sources can be accessed through an HDFS API. In this case, a librar
         - project-id
         - bucketname
 
-        See the `full list of configuration options <https://github.com/GoogleCloudPlatform/bigdata-interop/blob/master/gcs/conf/gcs-core-default.xml>`__. 
+        See the `full list of configuration options <https://github.com/GoogleCloudDataproc/hadoop-connectors/blob/master/gcs/CONFIGURATION.md>`__. 
 
         .. code:: xml
 
@@ -215,7 +221,7 @@ H2O-3 supports direct ingestion of data managed by Hive in Hadoop. This feature 
 - Direct Metastore access 
 - JDBC
 
-.. note:: 
+.. tip:: 
     
     When ingesting data from Hive in Hadoop, direct Hive import is preferred over :ref:`hive2`.
 
@@ -223,7 +229,7 @@ Requirements
 ''''''''''''
 
 - You must have read access to Hive and the files it manages.
-- For Direct Metastore access, the Hive JARs and configuration must be present on the H2O-3 job classpath. You can achieve this either by adding it to the ``yarn.application.classpath`` (or similar property for your resource manger of choice) or by adding Hive JARs and configuration to ``-libjars``. 
+- For direct metastore access, the Hive JARs and configuration must be present on the H2O-3 job classpath. You can achieve this either by adding it to the ``yarn.application.classpath`` (or similar property for your resource manger of choice) or by adding Hive JARs and configuration to ``-libjars``. 
 - For JDBC metadata access, the Hive JDBC Driver must be on the H2O-3 job classpath.
 
 Limitations
@@ -310,9 +316,9 @@ This example shows how to access metadata through JDBC.
 JDBC Databases
 ~~~~~~~~~~~~~~
 
-Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O-3. The supported SQL databases are MySQL, PostgreSQL, MariaDB, Netezza, Amazon Redshift, Teradata, and Hive. (Refer to :ref:`hive2` for more information.) Data from these SQL databases can be pulled into H2O-3 using the ``import_sql_table`` and ``import_sql_select`` functions. 
+Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O-3. The supported SQL databases are MySQL, PostgreSQL, MariaDB, Netezza, Amazon Redshift, Teradata, and Hive. (See :ref:`hive2` for more information.) Data from these SQL databases can be pulled into H2O-3 using the ``import_sql_table`` and ``import_sql_select`` functions. 
 
-Refer to the following articles for examples about using JDBC data sources with H2O-3.
+See the following articles for examples about using JDBC data sources with H2O-3.
 
 - `Setup postgresql database on OSX <https://aichamp.wordpress.com/2017/03/20/setup-postgresql-database-on-osx/>`__
 - `Restoring DVD rental database into postgresql <https://aichamp.wordpress.com/2017/03/20/restoring-dvd-rental-database-into-postgresql/>`__
@@ -326,11 +332,11 @@ Refer to the following articles for examples about using JDBC data sources with 
 ``import_sql_table`` function
 '''''''''''''''''''''''''''''
 
-This function imports a SQL table to H2OFrame in memory. This function assumes that the SQL table is not being updated and is stable. Users can run multiple SELECT SQL queries concurrently for parallel ingestion.
+This function imports a SQL table to H2OFrame in memory. This function assumes that the SQL table is not being updated and is stable. You can run multiple SELECT SQL queries concurrently for parallel ingestion.
 
 .. tip::
 
-    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
+    Be sure to start the ``h2o.jar`` in the terminal with your downloaded JDBC driver in the classpath:
 
     ::
       
@@ -340,11 +346,11 @@ The ``import_sql_table`` function accepts the following parameters:
 
 - ``connection_url``: The URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver. For example, ``jdbc:mysql://localhost:3306/menagerie?&useSSL=false``.
 - ``table``: The name of the SQL table.
-- ``columns``: A list of column names to import from SQL table. Default is to import all columns.
-- ``username``: The username for SQL server.
-- ``password``: The password for SQL server.
-- ``optimize``: Specifies to optimize the import of SQL table for faster imports. Note that this option is experimental.
-- ``fetch_mode``: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node from the database.
+- ``columns``: A list of column names to import from SQL table. Defaults to importing all columns.
+- ``username``: The username for the SQL server.
+- ``password``: The password for the SQL server.
+- ``optimize``: Specifies to optimize the import of the SQL table for faster imports. Note that this option is experimental.
+- ``fetch_mode``: Set to ``DISTRIBUTED`` to enable distributed import. Set to ``SINGLE`` to force a sequential read by a single node from the database.
 - ``num_chunks_hint``: Optionally specify the number of chunks for the target frame.
 
 .. tabs::
@@ -380,24 +386,15 @@ This function imports the SQL table that is the result of the specified SQL quer
 The ``import_sql_select`` function accepts the following parameters:
 
 - ``connection_url``: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver. For example, ``jdbc:mysql://localhost:3306/menagerie?&useSSL=false``.
-- ``select_query``: SQL query starting with `SELECT` that returns rows from one or more database tables.
-- ``username``: The username for the SQL server
-- ``password``: The password for the SQL server
-- ``optimize``: Specifies to optimize import of SQL table for faster imports. Note that this option is experimental.
+- ``select_query``: SQL query starting with ``SELECT`` that returns rows from one or more database tables.
+- ``username``: The username for the SQL server.
+- ``password``: The password for the SQL server.
+- ``optimize``: Specifies to optimize import of the SQL table for faster imports. Note that this option is experimental.
 - ``use_temp_table``: Specifies whether a temporary table should be created by ``select_query``.
 - ``temp_table_name``: The name of the temporary table to be created by ``select_query``.
-- ``fetch_mode``: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node from the database.
+- ``fetch_mode``: Set to ``DISTRIBUTED`` to enable distributed import. Set to ``SINGLE`` to force a sequential read by a single node from the database.
 
 .. tabs::
-   .. code-tab:: r R
-
-        connection_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
-        select_query <-  "SELECT  bikeid  from  citibike20k"
-        username <- "root"
-        password <- "abc123"
-        my_citibike_data <- h2o.import_sql_select(connection_url, select_query, username, password)
-
-
    .. code-tab:: python
 
         connection_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -406,14 +403,22 @@ The ``import_sql_select`` function accepts the following parameters:
         password = "abc123"
         my_citibike_data = h2o.import_sql_select(connection_url, select_query, username, password)
 
+   .. code-tab:: r R
+
+        connection_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+        select_query <-  "SELECT  bikeid  from  citibike20k"
+        username <- "root"
+        password <- "abc123"
+        my_citibike_data <- h2o.import_sql_select(connection_url, select_query, username, password)
+
 .. _hive2:
 
 Hive JDBC driver
 ''''''''''''''''
 
-H2O-3 can ingest data from Hive through the Hive JDBC driver (v2+) by providing H2O-3 with the JDBC driver for your Hive version. Explore this `demo showing how to ingest data from Hive through the Hive v2 JDBC driver <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/hive_jdbc_driver/Hive.md>`__. The basic steps are described below. 
+H2O-3 can ingest data from Hive through the Hive JDBC driver (v2) by providing H2O-3 with the JDBC driver for your Hive version. Explore this `demo showing how to ingest data from Hive through the Hive v2 JDBC driver <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/hive_jdbc_driver/Hive.md>`__. The basic steps are described below. 
 
-.. note::
+.. tip::
 
     - :ref:`direct_hive_import` is preferred over using the Hive JDBC driver.
     - H2O-3 can only load data from Hive version 2.2.0 or greater due to a limited implementation of the JDBC interface by Hive in earlier versions.
@@ -472,7 +477,7 @@ H2O-3 can ingest data from Hive through the Hive JDBC driver (v2+) by providing 
         # Add the Hive JDBC driver to H2O-3's classpath:
         java -cp hive-jdbc.jar:<path_to_h2o_jar> water.H2OApp
 
-4. Initialize H2O-3 in either R or Python and import data.
+4. Initialize H2O-3 in either Python or R and import your data:
 
  .. tabs::
    .. group-tab:: Python
@@ -525,19 +530,19 @@ When importing data from Kerberized Hive on Hadoop, it's necessary to configure 
 
 H2O-3 is able to generate Hive delegation tokens in three modes:
 
-- On the driver side, a token can be generated on H2O-3 cluster start.
-- On the mapper side, a token refresh thread is started, periodically re-generating the token.
-- A combination of both of the above.
+- `On the driver side <#generate-the-token-in-the-driver>`__, a token can be generated on H2O-3 cluster start.
+- `On the mapper side <#generate-the-token-in-the-mapper-and-token-refresh>`__, a token refresh thread is started, periodically re-generating the token.
+- `A combination of both of the above <#generate-the-token-in-the-driver-with-refresh-in-the-mapper>`__.
 
-H2O-3 arguments used to configure the JDBC URL for Hive delegation token generation:
+The following are the H2O-3 arguments used to configure the JDBC URL for Hive delegation token generation:
 
-- ``hiveHost`` - The full address of HiveServer2, for example ``hostname:10000``
-- ``hivePrincipal`` -  Hiveserver2 Kerberos principal, for example ``hive/hostname@DOMAIN.COM``
-- ``hiveJdbcUrlPattern`` - (optional) Can be used to further customize the way the driver constructs the Hive JDBC URL. The default pattern used is ``jdbc:hive2://{{host}}/;{{auth}}`` where ``{{auth}}`` is replaced by ``principal={{hivePrincipal}}`` or ``auth=delegationToken`` based on context
+- ``hiveHost`` - The full address of HiveServer2 (for example, ``hostname:10000``).
+- ``hivePrincipal`` -  The Hiveserver2 Kerberos principal (for example, ``hive/hostname@DOMAIN.COM``).
+- ``hiveJdbcUrlPattern`` - (optional) Can be used to further customize the way the driver constructs the Hive JDBC URL. The default pattern used is ``jdbc:hive2://{{host}}/;{{auth}}`` where ``{{auth}}`` is replaced by ``principal={{hivePrincipal}}`` or ``auth=delegationToken`` based on the context.
 
 .. attention::
     
-    In the following examples, we are omitting the ``-libjars`` option of the ``hadoop.jar`` command because it is not necessary for token generation. You may need to add it to be able to import data from Hive via JDBC. 
+    In the following examples, we omit the ``-libjars`` option of the ``hadoop.jar`` command because it is not necessary for token generation. You may need to add it to be able to import data from Hive via JDBC. 
 
 Generate the token in the driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -546,7 +551,7 @@ The advantage of this approach is that the keytab does not need to be distribute
 
 **Requirements**
 
-- The Hive JDBC driver is on h2odriver classpath through the ``HADOOP_CLASSPATH`` environment variable. (Only used to acquire Hive delegation token.)
+- The Hive JDBC driver is on h2odriver classpath through the ``HADOOP_CLASSPATH`` environment variable. (Only used to acquire the Hive delegation token.)
 - The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. See `Connect to Hive in a Kerberized Hadoop cluster <#connect-to-hive-in-a-kerberized-hadoop-cluster>`__ for more details.
 
 **Example**
@@ -564,11 +569,11 @@ The following is an example of generating a token in the driver:
 Generate the token in the mapper and token refresh
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This approach generates a Hive delegation token after the H2O-3 cluster is fully started up and then periodically refreshes the token. Delegation tokens usually have a limited life span, and for long-running H2O-3 clusters, they need to be refreshed. For this to work, the user's keytab and principal need to be available to the H2O-3 cluster leader node.
+This approach generates a Hive delegation token after the H2O-3 cluster is fully started up and then periodically refreshes the token. Delegation tokens usually have a limited life span, and for long-running H2O-3 clusters, they need to be refreshed. For this to work, your keytab and principal need to be available to the H2O-3 cluster leader node.
 
 **Requirements**
 
-- The Hive JDBC driver is on the h2o mapper classpath (either via ``-libjars`` or YARN configuration).
+- The Hive JDBC driver is on the h2o mapper classpath (either through ``-libjars`` or YARN configuration).
 - The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. See `Connect to Hive in a Kerberized Hadoop cluster <#connect-to-hive-in-a-kerberized-hadoop-cluster>`__ for more details.
 - The ``principal`` argument is set with the value of your Kerberos principal.
 - The ``keytab`` argument set pointing to the file with your Kerberos keytab file.
@@ -588,28 +593,28 @@ The following is an example of how to set up a token refresh using the h2o mappe
 
 .. important::
     
-    The provided keytab (``refreshHiveTokens``) will be copied over to the machine running the H2O-3 Cluster leader node. For this reason, we strongly recommended that both YARN and HDFS be secured with encryption.
+    The provided keytab (``refreshHiveTokens``) will be copied over to the machine running the H2O-3 cluster leader node. For this reason, we strongly recommended that both YARN and HDFS be secured with encryption.
 
 .. note:: 
     
-    In case generation of the refreshing HDFS delegation tokens is required, the ``-refreshHdfsTokens`` argument has to be present. In specific deployments (eg. on CDP with IDbroker security) you might need to enable S3A token refresh to acquire (and keep refreshing) delegation tokens to access S3 buckets. This option is being enabled by the ``refreshS3ATokens`` argument.
+    In case generation of the refreshing HDFS delegation tokens is required, the ``-refreshHdfsTokens`` argument has to be present. In specific deployments (e.g. on CDP with IDbroker security) you might need to enable S3A token refresh to acquire (and keep refreshing) delegation tokens to access S3 buckets. This option is enabled by the ``refreshS3ATokens`` argument.
 
 Generate the token in the driver with refresh in the mapper
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This approach is a combination of the two previous scenarios. Hive delegation token is first generated by the h2odriver and then periodically refreshed by the H2O-3 cluster leader node.
+This approach is a combination of the two previous scenarios. The Hive delegation token is first generated by the h2odriver and then periodically refreshed by the H2O-3 cluster leader node.
 
 This is the best-of-both-worlds approach. The token is generated first in the driver and is available immediately on cluster start. It is then periodically refreshed and never expires.
 
 **Requirements**
 
-- The Hive JDBC driver is on the h2o driver and mapper classpaths.
+- The Hive JDBC driver is on the h2odriver and mapper classpaths.
 - The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. See `Connect to Hive in a Kerberized Hadoop cluster <#connect-to-hive-in-a-kerberized-hadoop-cluster>`__ for more details.
 - The ``refreshHiveTokens`` argument is present.
 
 **Example**
 
-The following is an example of generating a token in the driver a setting up token refresh using the h2o mapper classpath:
+The following is an example of generating a token in the driver and setting up token refresh using the h2o mapper classpath:
 
 .. code-block:: bash
 
