@@ -50,7 +50,7 @@ Tips for troubleshooting
 ------------------------
 
 - Be aware that Azure subscriptions only allow 20 cores by default. If you get a Validation error on template deployment, this might be the cause. Follow these `steps to increase your core quota limits <https://blogs.msdn.microsoft.com/girishp/2015/09/20/increasing-core-quota-limits-in-azure/>`__.
-- OS Disk by default is small (approx 30GB). In this case, you will have approximately 16GB of free space to start with. This is the same for all VM sizes. Follow these `steps to add an SSD data disk <https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-classic-attach-disk/>`__.
+- OS Disk by default is small (approx 30GB). In this case, you will have approximately 16GB of free space to start with. This is the same for all VM sizes. Follow these `steps to add an SSD data disk <https://learn.microsoft.com/en-us/azure/devtest-labs/devtest-lab-attach-detach-data-disk>`__.
 - Pick a VM size that provides RAM of at least 4x the size of your dataset. See more about `Azure VM sizes <https://azure.microsoft.com/en-us/pricing/details/virtual-machines/>`__.
 - The previous examples use a ``locate`` function for importing data. This function is not available to end users. For example:
 
@@ -58,9 +58,14 @@ Tips for troubleshooting
 
     air_path = [_locate("smalldata/airlines/allyears2k_headers.zip")]
 
- To retrieve the datasets, use one of the following methods instead:
+  To retrieve the datasets, use one of the following methods instead:
 
-  - Replace this path with a pointer to a raw github file at **https://raw.github.com/h2o.ai/h2o/master/..**. For example, ``air_path="https://raw.github.com/h2oai/h2o/master/smalldata/airlines/allyears2k_headers.zip"``.
-  - Use ``wget`` to retrieve the files.
+    - Replace this path with a pointer to an Amazon S3 file at **http://s3.amazonaws.com/h2o-public-test-data/..**. For example: 
 
- A list of the datasets used in the examples along with their locate path is available in the **h2o > python > README** file.
+    ::
+
+      air_path="http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip"
+
+    - Use ``wget`` to retrieve the files.
+
+  A list of the datasets used in the examples along with their locate path is available in the **h2o > python > README** file.
