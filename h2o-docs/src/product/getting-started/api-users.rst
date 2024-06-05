@@ -6,15 +6,15 @@ Our REST APIs are generated immediately out of the code, allowing you to impleme
 REST API references
 -------------------
 
-See the definitive `guide to H2O's REST API <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/rest-api-reference.html>`__.
+See the definitive `guide to H2O-3's REST API <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/rest-api-reference.html>`__.
 
 Schemas
 ~~~~~~~
 
-See the definitive `guide to H2O's REST API schemas <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/rest-api-reference.html#schema-reference>`__.
+See the definitive `guide to H2O-3's REST API schemas <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/rest-api-reference.html#schema-reference>`__.
 
 
 REST API example
 ~~~~~~~~~~~~~~~~
 
-See an `in-depth explanation of how H2O REST API commands are used <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/api/REST/h2o_3_rest_api_overview.md>`__. This explanation includes versioning, experimental APIs, verbs, status codes, formats, schemas, payloads, metadata, and examples.
+See an `in-depth explanation of how H2O-3 REST API commands are used <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/api/REST/h2o_3_rest_api_overview.md>`__. This explanation includes versioning, experimental APIs, verbs, status codes, formats, schemas, payloads, metadata, and examples.

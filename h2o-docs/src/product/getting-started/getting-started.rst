@@ -1,26 +1,26 @@
 Getting started
 ===============
 
-Here are some helpful links to help you get started learning H2O.
+Here are some helpful links to help you get started learning H2O-3.
 
 Downloads page
 --------------
 
-To begin, download a copy of H2O from the `Downloads page <https://h2o.ai/resources/download/>`__.
+To begin, download a copy of H2O-3 from the `Downloads page <https://h2o.ai/resources/download/>`__.
 
-1. Click H2O Open Source Platform or scroll down to the H2O section. Here you have access to the different ways to download H2O:
+1. Click H2O Open Source Platform or scroll down to the H2O section. Here you have access to the different ways to download H2O-3:
 
-- Latest stable: this version is the most recentl alpha release version of H2O.
-- Nightly bleeding edge: this version contains all the latest changes to H2O that haven't been released officially yet.
-- Prior releases: this houses all previously released versions of H2O.
+- Latest stable: this version is the most recentl alpha release version of H2O-3.
+- Nightly bleeding edge: this version contains all the latest changes to H2O-3 that haven't been released officially yet.
+- Prior releases: this houses all previously released versions of H2O-3.
 
 For first-time users, we recomment downloading the latest alpha release and the default standalone option (the Download and Run tab) as the installation method. Make sure to install Java if it is not already installed.
 
 .. note::
 	By default, this setup is open. Follow `security guidelines <../security.html>`__ if you want to secure your installation.
 
-Using Flow - H2O's web UI
--------------------------
+Using Flow - H2O-3's web UI
+---------------------------
 
 `This section describes our web interface, Flow <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html#using-flow>`__. Flow is similar to IPython notebooks and allows you to create a visual workflow to share with others.
 
@@ -39,7 +39,7 @@ The following examples use H2O Flow. To see a step-by-step example of one of our
 Launch from the command line
 ----------------------------
 
-You can configure H2O when you launch it from the command line. For example, you can specify a different directory for saved Flow data, you could allocate more memory, or you could use a flatfile for a quick configuration of your cluster. See more details about `configuring the additional options when you launch H2O <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`__.
+You can configure H2O-3 when you launch it from the command line. For example, you can specify a different directory for saved Flow data, you could allocate more memory, or you could use a flatfile for a quick configuration of your cluster. See more details about `configuring the additional options when you launch H2O-3 <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`__.
 
 
 Algorithms
@@ -50,7 +50,7 @@ Algorithms
 Use cases
 ---------
 
-H2O can handle a wide variety of practical use cases due to its robust catalogue of supported algorithms, wrappers, and machine learning tools. The following are some example problems H2O can handle:
+H2O-3 can handle a wide variety of practical use cases due to its robust catalogue of supported algorithms, wrappers, and machine learning tools. The following are some example problems H2O-3 can handle:
 
 - Determining outliers in housing prices based on number of bedrooms, number of bathrooms, access to waterfront, etc. through `anomaly detection <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/anomaly-detection>`__.
 - Revealing natural customer `segments <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/segmentation>`__ in retail data to determine which groups are purchasing which products.
@@ -58,14 +58,14 @@ H2O can handle a wide variety of practical use cases due to its robust catalogue
 - Unsampling the minority class for credit card fraud data to handle `imbalanced data <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/imbalanced-data>`__. 
 - `Detecting drift <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/drift-detection>`__ on avocado sales pre-2018 and 2018+ to determine if a model is still relevant for new data.
 
-See our `best practice tutorials <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices>`__ to further explore the capabilities of H2O.
+See our `best practice tutorials <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices>`__ to further explore the capabilities of H2O-3.
 
 New user quickstart
 -------------------
 
-You can follow these steps to quickly get up and running with H2O directly from the `H2O-3 repository <https://github.com/h2oai/h2o-3>`__. These steps will guide you through cloning the repository, starting H2O, and importing a dataset. Once you're up and running, you'll be better able to follow examples included within this user guide.
+You can follow these steps to quickly get up and running with H2O-3 directly from the `H2O-3 repository <https://github.com/h2oai/h2o-3>`__. These steps will guide you through cloning the repository, starting H2O-3, and importing a dataset. Once you're up and running, you'll be better able to follow examples included within this user guide.
 
-1. In a terminal window, create a folder for the H2O repository:
+1. In a terminal window, create a folder for the H2O-3 repository:
 
 .. code-block:: bash
 

@@ -5,15 +5,15 @@ Sparkling Water is a gradle project with the following submodules:
 
 - **Core**: Implementation of H2OContext, H2ORDD, and all technical integration code.
 - **Examples**: Application, demos, and examples.
-- **ML**: Implementation of `MLlib <https://spark.apache.org/mllib/>`__ pipelines for H2O algorithms.
+- **ML**: Implementation of `MLlib <https://spark.apache.org/mllib/>`__ pipelines for H2O-3 algorithms.
 - **Assembly**: This creates "fatJar" (composed of all other modules).
-- **py**: Implementation of (H2O) Python binding to Sparkling Water.
+- **py**: Implementation of (H2O-3) Python binding to Sparkling Water.
 
 The best way to get started is to modify the core module or create a new module (which extends the project).
 
 .. note::
 	
-	Sparkling Water is only supported with the latest version of H2O. 
+	Sparkling Water is only supported with the latest version of H2O-3. 
 
 	Sparkling Water is versioned according to the Spark versioning, so make sure to use the Sparkling Water version that corresponds to your installed version of spark.
 
@@ -32,7 +32,7 @@ Download Sparkling Water
 Sparkling Water documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The documentation for Sparkling Water is separate from the H2O user guide. Read this documentation to get started with Sparkling Water.
+The documentation for Sparkling Water is separate from the H2O-3 user guide. Read this documentation to get started with Sparkling Water.
 
 - `Sparkling Water for Spark 3.5 <https://docs.h2o.ai/sparkling-water/3.5/latest-stable/doc/index.html>`__
 - `Sparkling Water for Spark 3.4 <https://docs.h2o.ai/sparkling-water/3.4/latest-stable/doc/index.html>`__
@@ -71,7 +71,7 @@ The frequently asked questions provide answers to many common questions about Sp
 Sparkling Water blog posts
 --------------------------
 
--  `How Sparkling Water Brings H2O to Spark <https://www.h2o.ai/blog/how-sparkling-water-brings-h2o-to-spark/>`_
+-  `How Sparkling Water Brings H2O-3 to Spark <https://www.h2o.ai/blog/how-sparkling-water-brings-h2o-to-spark/>`_
 -  `H2O - The Killer App on Spark <https://www.h2o.ai/blog/h2o-killer-application-spark/>`_
 -  `In-memory Big Data: Spark + H2O <https://www.h2o.ai/blog/spark-h2o/>`_
 
@@ -97,9 +97,9 @@ Documentation for PySparkling is available for the following versions:
 RSparkling
 ----------
 
-The RSparkling R package is an extension package for `sparklyr <https://spark.posit.co/>`__ that creates an R front-end for the Sparkling Water package from H2O. This provides an interface to H2O's high performance, distributed machine learning algorithms on Spark using R.
+The RSparkling R package is an extension package for `sparklyr <https://spark.posit.co/>`__ that creates an R front-end for the Sparkling Water package from H2O-3. This provides an interface to H2O-3's high performance, distributed machine learning algorithms on Spark using R.
 
-This package implements basic functionality by creating an H2OContext, showing the H2O Flow interface, and converting between Spark DataFrames. The main purpose of this package is to provide a connector between sparklyr and H2O's machine learning algorithms.
+This package implements basic functionality by creating an H2OContext, showing the H2O Flow interface, and converting between Spark DataFrames. The main purpose of this package is to provide a connector between sparklyr and H2O-3's machine learning algorithms.
 
 The RSparkling package uses sparklyr for Spark job deployment and initialization of Sparkling Water. After that, you can use the regular H2O R package for modeling.
 

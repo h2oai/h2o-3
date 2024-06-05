@@ -1,14 +1,14 @@
 Docker users
 ============
 
-This section describes how to use H2O on Docker. It walks you through the following steps:
+This section describes how to use H2O-3 on Docker. It walks you through the following steps:
 
 1. Installing Docker on Mac or Linux OS.
 2. Creating and modifying your Dockerfile.
 3. Building a Docker image from the Dockerfile.
 4. Running the Docker build.
-5. Launching H2O.
-6. Accessing H2O frm the web browser or from Python/R.
+5. Launching H2O-3.
+6. Accessing H2O-3 from the web browser or from Python/R.
 
 Prerequisites
 -------------
@@ -22,13 +22,13 @@ Prerequisites
 .. note::
 	
 	- Older Linux kernal versions can cause kernal panics that break Docker. There are ways around it, but attempt these at your own risk. Check the version of your kernel by running ``uname -r``.
-	- The Dockerfile always pulls the latest H2O release.
+	- The Dockerfile always pulls the latest H2O-3 release.
 	- The Docker image only needs to be built once.
 
 Walkthrough
 -----------
 
-The following steps walk you through how to use H2O on Docker.
+The following steps walk you through how to use H2O-3 on Docker.
 
 .. note::
 	
@@ -67,8 +67,8 @@ This Dockerfile will do the following:
 
 - Obtain and update the base image (Ubuntu 14.0.4).
 - Install Java 8.
-- Obtain and download the H2O build from H2O's S3 repository.
-- Expose ports ``54321`` and ``54322`` in preparation for launching H2O on those ports.
+- Obtain and download the H2O-3 build from H2O-3's S3 repository.
+- Expose ports ``54321`` and ``54322`` in preparation for launching H2O-3 on those ports.
 
 Step 3: Build a Docker image from the Dockerfile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,23 +92,23 @@ On a mac, use the argument ``-p 54321:54321`` to expressly map the port ``54321`
 	
 	docker run -ti -p 54321:54321 h2o.ai/{{branch_name}}:v5 /bin/bash
 
-Step 5: Launch H2O
-~~~~~~~~~~~~~~~~~~
+Step 5: Launch H2O-3
+~~~~~~~~~~~~~~~~~~~~
 
-Navigate to the ``/opt`` directory and launch H2O. Update the value of ``-Xmx`` to the amount of memory you want ot allocate to the H2O instance. By default, H2O will launch on port ``54321``.
+Navigate to the ``/opt`` directory and launch H2O-3. Update the value of ``-Xmx`` to the amount of memory you want ot allocate to the H2O-3 instance. By default, H2O-3 will launch on port ``54321``.
 
 .. code-block:: bash
 	
 	cd /opt
 	java -Xmx1g -jar h2o.jar
 
-Step 6: Access H2O from the web browser or Python/R
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 6: Access H2O-3 from the web browser or Python/R
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tabs::
 	.. tab:: On Linux
 
-		After H2O launches, copy and paste the IP address and port of the H2O instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
+		After H2O-3 launches, copy and paste the IP address and port of the H2O-3 instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
 
 		.. code-block:: bash
 
@@ -145,7 +145,7 @@ You can also view the IP address (``192.168.99.100`` in the following example) b
 Access Flow
 '''''''''''
 
-After obtaining the IP address, point your browser to the specified IP address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O:
+After obtaining the IP address, point your browser to the specified IP address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O-3:
 
 .. tabs::
 	.. code-tab:: python

@@ -1,7 +1,7 @@
 Java users
 ==========
 
-The following resources will help you create your own custom app that uses H2O. See `H2O's Java requirements <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__ for more information.
+The following resources will help you create your own custom app that uses H2O-3. See `H2O-3's Java requirements <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__ for more information.
 
 Java developer documentation
 ----------------------------
@@ -9,12 +9,12 @@ Java developer documentation
 Core components
 ~~~~~~~~~~~~~~~
 
-The definitive `Java API guide for the core components of H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-core/javadoc/index.html>`__.
+The definitive `Java API guide for the core components of H2O-3 <https://docs.h2o.ai/h2o/latest-stable/h2o-core/javadoc/index.html>`__.
 
 Algorithms
 ~~~~~~~~~~
 
-The definitive `Java API guide for the algorithms used by H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-algos/javadoc/index.html>`__.
+The definitive `Java API guide for the algorithms used by H2O-3 <https://docs.h2o.ai/h2o/latest-stable/h2o-algos/javadoc/index.html>`__.
 
 Example
 -------
