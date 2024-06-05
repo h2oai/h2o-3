@@ -10,7 +10,7 @@ buildscript {
     }
 
     repositories {
-        if (isCi) {
+        if (true) {
             maven { url "${localNexusLocation}/public" }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
