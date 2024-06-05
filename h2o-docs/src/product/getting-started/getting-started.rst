@@ -24,6 +24,34 @@ Using Flow - H2O-3's web UI
 
 `This section describes our web interface, Flow <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html#using-flow>`__. Flow is similar to IPython notebooks and allows you to create a visual workflow to share with others.
 
+Algorithm support
+~~~~~~~~~~~~~~~~~
+
+H2O Flow supports the following H2O-3 algorithms:
+
+- `AdaBoost <../data-science/adaboost.html>`__
+- `Aggregator <../data-science/aggregator.html>`__
+- `ANOVA GLM <../data-science/anova_glm.html>`__
+- `Cox Proportional Hazards (CoxPH) <../data-science/coxph.html>`__
+- `Deep Learning <../data-science/deep-learning.html>`__
+- `Distributed Random Forest (DRF) <../data-science/drf.html>`__
+- `Distributed Uplift Random Forest (Uplift DRF) <../data-science/upliftdrf.html>`__
+- `Extended Isolation Forest <../data-science/eif.html>`__
+- `Generalized Additive Models (GAM) <../data-science/gam.html>`__
+- `Generalized Linear Model (GLM) <../data-science/glm.html>`__
+- `Generalized Low Rank Models (GLRM) <../data-science/glrm.html>`__
+- `Gradient Boosting Machine (GBM) <../data-science/gbm.html>`__
+- `Isolation Forest <../data-science/if.html>`__
+- `Isotonic Regression <../data-science/isotonic-regression.html>`__
+- `K-Means Clustering <../data-science/k-means.html>`__
+- `ModelSelection <../data-science/model_selection.html>`__
+- `Naïve Bayes Classifier <../data-science/naive-bayes.html>`__
+- `Principal Component Analysis (PCA) <../data-science/pca.html>`__
+- `RuleFit <../data-science/rulefit.html>`__
+- `Stacked Ensemble <../data-science/stacked-ensembles.html>`__
+- `Support Vector Machine (PSVM) <../data-science/svm.html>`__
+- `Word2Vec <../data-science/word2vec.html>`__
+
 
 Tutorials of Flow
 ~~~~~~~~~~~~~~~~~
