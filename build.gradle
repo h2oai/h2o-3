@@ -10,7 +10,7 @@ buildscript {
     }
 
     repositories {
-        if (isCi and false) { // Temporarily disabling because of a failure in internal nexus 
+        if (isCi && false) { // Temporarily disabling because of a failure in internal nexus 
             maven { url "${localNexusLocation}/public" }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
