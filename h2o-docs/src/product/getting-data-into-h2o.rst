@@ -239,8 +239,8 @@ Limitations
 - (CSV) The Hive table property ``skip.header.line.count`` is not supported. CSV files with header rows will be imported with the header row as data.
 - (Partitioned tables with different storage formats) H2O-3 supports importing partitioned tables that use different storage formats for different partitions; however, in some cases (for example, a large number of small partitions), H2O-3 may run out of memory while importing, even though the final data would easily fit into the memory allocated to the H2O-3 cluster.
 
-Importing Examples
-''''''''''''''''''
+Examples of importing
+'''''''''''''''''''''
 
 Example 1: Access metadata through metastore
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -313,7 +313,7 @@ This example shows how to access metadata through JDBC.
         # basic import of metadata via JDBC
         basic_import <- h2o.import_hive_table("jdbc:hive2://hive-server:10000/default", "table_name")
 
-JDBC Databases
+JDBC databases
 ~~~~~~~~~~~~~~
 
 Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O-3. The supported SQL databases are MySQL, PostgreSQL, MariaDB, Netezza, Amazon Redshift, Teradata, and Hive. (See :ref:`hive2` for more information.) Data from these SQL databases can be pulled into H2O-3 using the ``import_sql_table`` and ``import_sql_select`` functions. 
