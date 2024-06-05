@@ -1,5 +1,5 @@
-H2O clients
-===========
+H2O-3 clients
+=============
 
 These clients allow you to connect to and interact with H2O-3.
 
