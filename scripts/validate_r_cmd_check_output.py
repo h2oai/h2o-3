@@ -37,6 +37,7 @@ class Check:
             r"^\* using R Under development",
             r"^\* R was compiled by",
             r"^    Apple clang.*",
+            r"^    gcc.*",
             r"^    GNU Fortran.*",
             r"^\* using platform",
             r"^\* using platform:.*",
