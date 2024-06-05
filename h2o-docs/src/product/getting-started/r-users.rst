@@ -13,7 +13,7 @@ See `this cheatsheet on H2O-3 in R <https://github.com/rstudio/cheatsheets/blob/
 
 .. note::
 	
-	If you are running R on Linus, then you must install ``libcurl`` which allows H2O-3 to communicate with R. We also recommend disabling SElinux and any firewalls (at least initially until you confirmed H2O-3 can initialize).
+	If you are running R on Linux, then you must install ``libcurl`` which allows H2O-3 to communicate with R. We also recommend disabling SElinux and any firewalls (at least initially until you confirmed H2O-3 can initialize).
 
 	- On Ubuntu, run: ``apt-get install libcurl4-openssl-dev``
 	- On CentOS, run: ``yum install libcurl-devel``
