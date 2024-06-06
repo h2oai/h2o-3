@@ -1,7 +1,13 @@
 Pivot tables
 ============
 
-Use this function to pivot tables. This is performed by designating three columns: index, column, and value. Index is the column where pivoted rows should be aligned on. Column represents the column to pivot. Value specifies the values of the pivoted table. For cases with multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame.
+Use this function to pivot tables. This is performed by designating three columns: index, column, and value. 
+
+- Index is the column where pivoted rows should be aligned on. 
+- Column represents the column to pivot. 
+- Value specifies the values of the pivoted table. 
+
+For cases with multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame.
 
 .. note::
 

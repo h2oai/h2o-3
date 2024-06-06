@@ -3,9 +3,9 @@ Group by
 
 The ``group_by`` function lets you group one or more columns and apply a function to the result. Specifically, the ``group_by`` function performs the following actions on an H2O Frame:
 
-- Splits the data into groups based on some criteria.
-- Applies a function to each group independently.
-- Combines the results into an H2OFrame.
+1. Splits the data into groups based on some criteria.
+2. Applies a function to each group independently.
+3. Combines the results into an H2OFrame.
 
 The result is a new H2OFrame with columns equivalent to the number of groups created. The returned groups are sorted by the natural group-by column sort.
 
@@ -17,28 +17,28 @@ The ``group_by`` function accepts the following parameters:
 Python and R
 ~~~~~~~~~~~~
 
- - H2O Frame: This specifies the H2OFrame that you want the group by operation to be performed on.
+ - ``H2OFrame``: This specifies the H2OFrame that you want the group by operation to be performed on.
  - ``by``: The ``by`` option can take a list of columns if you want to group by more than one column to compute the summary. 
 
 Python only
 ~~~~~~~~~~~
 
-- ``na``: This option controls the treatment of ``NA`` values during the calculation. It can be one of:
+- ``na``: This option controls the treatment of NA values during the calculation. It can be one of:
 
-  - ``all`` (default): Any ``NA`` values are used in the calculation as-is (which usually results in the final result being ``NA``, too).
-  - ``ignore``: ``NA`` entries are not included in calculations, but the total number of entries is taken as the total number of rows. For example, ``mean([1, 2, 3, nan], na="ignore")`` will produce ``1.5``.
-  - ``rm``: ``NA`` entries are skipped during the calculations, reducing the total effective count of entries. For example, ``mean([1, 2, 3, nan], na="rm")`` will produce ``2``.
+  - ``all`` (default): Any NA values are used in the calculation as-is (which usually results in the final result being NA, too).
+  - ``ignore``: NA entries are not included in calculations, but the total number of entries is taken as the total number of rows. For example, ``mean([1, 2, 3, nan], na="ignore")`` will produce ``1.5``.
+  - ``rm``: NA entries are skipped during the calculations, reducing the total effective count of entries. For example, ``mean([1, 2, 3, nan], na="rm")`` will produce ``2``.
 
 R only
 ~~~~~~
 
-- ``gb.control``: In R, the ``gb.control`` option specifies how to handle ``NA`` values in the dataset as well as how to name output columns. Note that to specify a list of column names in the ``gb.control`` list, you must add the ``col.names`` argument. 
+- ``gb.control``: In R, the ``gb.control`` option specifies how to handle NA values in the dataset as well as how to name output columns. Note that to specify a list of column names in the ``gb.control`` list, you must add the ``col.names`` argument. 
 - ``nrow``: Specify the name of the generated column.
-- ``na.methods``: This option controls the treatment of ``NA`` values during the calculation. It can be one of:
+- ``na.methods``: This option controls the treatment of NA values during the calculation. It can be one of:
 
-  - ``all`` (default): Any ``NA`` values are used in the calculation as-is (which usually results in the final result being ``NA``, too).
-  - ``ignore``: ``NA`` entries are not included in calculations, but the total number of entries is taken as the total number of rows. For example, ``mean([1, 2, 3, nan], na="ignore")`` will produce ``1.5``.
-  - ``rm``: ``NA`` entries are skipped during the calculations, reducing the total effective count of entries. For example, ``mean([1, 2, 3, nan], na="rm")`` will produce ``2``.
+  - ``all`` (default): Any NA values are used in the calculation as-is (which usually results in the final result being NA, too).
+  - ``ignore``: NA entries are not included in calculations, but the total number of entries is taken as the total number of rows. For example, ``mean([1, 2, 3, nan], na="ignore")`` will produce ``1.5``.
+  - ``rm``: NA entries are skipped during the calculations, reducing the total effective count of entries. For example, ``mean([1, 2, 3, nan], na="rm")`` will produce ``2``.
 
 .. note:: 
   
@@ -61,7 +61,7 @@ In addition to the above parameters, any number of the following aggregations ca
 
 .. note::
 
-  If no arguments are given to the aggregation (e.g., ``max()`` in ``grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()``), then it is assumed that the aggregation should apply to all columns except the GroupBy columns.
+  If no arguments are given to the aggregation (e.g. ``max()`` in ``grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()``), then it is assumed that the aggregation should apply to all columns except the GroupBy columns.
 
 Once the aggregation operations are complete, calling the GroupBy object with a new set of aggregations will yield no effect. You must generate a new GroupBy object in order to apply a new aggregation on it. In addition, certain aggregations are only defined for numerical or categorical columns. An error will be thrown for calling aggregation on the wrong data types.
 

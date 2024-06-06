@@ -74,7 +74,7 @@ When running on Hadoop, H2O-3 can also export data into Hive tables. In order to
 			table_name = "airlines",
 			format = "parquet",
 			table_path = "/user/bob/tables/iris"
-        )
+		)
 
    .. code-tab:: r R
 

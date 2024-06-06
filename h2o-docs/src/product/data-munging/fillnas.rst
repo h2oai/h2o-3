@@ -1,11 +1,11 @@
-Fill ``NA`` values
-==================
+Fill NA values
+==============
 
-Use this function to fill in ``NA`` values in a sequential manner up to a specified limit. When using this function, you will specify the following: 
+Use this function to fill in NA values in a sequential manner up to a specified limit. When using this function, you will specify the following: 
 
-- Whether the method to fill the ``NA`` values should go forward (default) or backward. 
-- Whether the ``NA`` values should be filled along rows (default) or columns. 
-- The maximum number of consecutive ``NA`` values to fill (defaults to 1). 
+- Whether the method to fill the NA values should go forward (default) or backward. 
+- Whether the NA values should be filled along rows (default) or columns. 
+- The maximum number of consecutive NA values to fill (defaults to 1). 
 
 .. tabs::
    .. code-tab:: python

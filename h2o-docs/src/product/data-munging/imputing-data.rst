@@ -1,11 +1,7 @@
 Impute data
 ===========
 
-The impute function lets you perform in-place imputation by filling missing values with aggregates computed on the "na.rm’d" vector. Additionally, you can perform imputation based on groupings of columns from within the dataset. These columns can be passed by index or by column name to the ``by`` parameter. 
-
-.. note::
-    
-    If a factor column is supplied, then the method must be ``mode``.
+The impute function lets you perform in-place imputation by filling missing values with aggregates computed on the ``na.rm’d`` vector. Additionally, you can perform imputation based on groupings of columns from within the dataset. These columns can be passed by index or by column name to the ``by`` parameter. 
 
 The ``impute`` function accepts the following arguments:
 
@@ -17,7 +13,11 @@ The ``impute`` function accepts the following arguments:
     - ``median``: Replaces NA values with the column median. 
     - ``mode``: Replaces NA values with the most common factor (for factor columns only).
 
-- ``combine_method``: If method is ``median``, then this will choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases. The available options are:
+.. note::
+
+    If a factor column is supplied, then the method must be ``mode``.
+
+- ``combine_method``: (``method`` must be set to ``median``) This option will choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases. The available options are:
     
     - ``interpolate`` 
     - ``average`` 
