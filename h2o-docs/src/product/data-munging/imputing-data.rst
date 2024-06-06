@@ -5,8 +5,17 @@ The impute function lets you perform in-place imputation by filling missing valu
 
 The ``impute`` function accepts the following arguments:
 
-- ``dataset``: The dataset containing the column to impute.
+- ``by``: The group by columns.
 - ``column``: A specific column to impute. The default of ``0`` specifies to impute the entire frame.
+- ``combine_method``: (``method`` must be set to ``median``) This option will choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases. The available options are:
+    
+    - ``average`` 
+    - ``high``
+    - ``interpolate`` 
+    - ``low``
+
+- ``dataset``: The dataset containing the column to impute.
+- ``groupByFrame`` or ``group_by_frame``: Impute the column with this pre-computed grouped frame.
 - ``method``: The type of imputation to perform. The available options are:
     
     - ``mean``: Replaces NA values with the column mean.
@@ -17,15 +26,6 @@ The ``impute`` function accepts the following arguments:
 
     If a factor column is supplied, then the method must be ``mode``.
 
-- ``combine_method``: (``method`` must be set to ``median``) This option will choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases. The available options are:
-    
-    - ``interpolate`` 
-    - ``average`` 
-    - ``low``
-    - ``high``
-
-- ``by``: The group by columns.
-- ``groupByFrame`` or ``group_by_frame``: Impute the column with this pre-computed grouped frame.
 - ``values``:  A vector of impute values (one per column). ``NaN`` indicates to skip the column.
 
 .. tabs::

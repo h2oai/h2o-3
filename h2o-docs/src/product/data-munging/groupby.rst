@@ -17,8 +17,8 @@ The ``group_by`` function accepts the following parameters:
 Python and R
 ~~~~~~~~~~~~
 
- - ``H2OFrame``: This specifies the H2OFrame that you want the group by operation to be performed on.
  - ``by``: The ``by`` option can take a list of columns if you want to group by more than one column to compute the summary. 
+ - ``H2OFrame``: This specifies the H2OFrame that you want the group by operation to be performed on.
 
 Python only
 ~~~~~~~~~~~
@@ -33,12 +33,13 @@ R only
 ~~~~~~
 
 - ``gb.control``: In R, the ``gb.control`` option specifies how to handle NA values in the dataset as well as how to name output columns. Note that to specify a list of column names in the ``gb.control`` list, you must add the ``col.names`` argument. 
-- ``nrow``: Specify the name of the generated column.
 - ``na.methods``: This option controls the treatment of NA values during the calculation. It can be one of:
 
   - ``all`` (default): Any NA values are used in the calculation as-is (which usually results in the final result being NA, too).
   - ``ignore``: NA entries are not included in calculations, but the total number of entries is taken as the total number of rows. For example, ``mean([1, 2, 3, nan], na="ignore")`` will produce ``1.5``.
   - ``rm``: NA entries are skipped during the calculations, reducing the total effective count of entries. For example, ``mean([1, 2, 3, nan], na="rm")`` will produce ``2``.
+
+- ``nrow``: Specify the name of the generated column.
 
 .. note:: 
   
