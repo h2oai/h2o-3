@@ -11,13 +11,13 @@ Quantile parameters
 -------------------
 
 - **combine_method**: Specify the method for combining quantiles for even sample sizes. Abbreviations for average, low, and high are acceptable (avg, lo, hi). The default is to do linear interpolation (e.g. if method is "lo", then it will take the lo value of the quantile). Available methods include: 
-	
-	- ``interpolate``
+
 	- ``average``
-	- ``low``
 	- ``high``
+	- ``interpolate``
+	- ``low``
 	
-- **h2oFrame**: Specify the an H2OFrame.
+- **h2oFrame**: Specify the H2OFrame.
 - **prob**: Specify a list of probabilities with values in the range [0,1]. By default, the following probabilities are returned:
 	
 	- Python: 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99 

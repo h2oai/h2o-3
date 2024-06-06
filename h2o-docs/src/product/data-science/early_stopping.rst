@@ -8,7 +8,7 @@ Early stopping in all supervised algorithms
 
 The following early stopping parameter is available to all supervised algorithms:
 
-- :ref:`max_runtime_secs` (Defaults to 0/disabled.)
+- :ref:`max_runtime_secs` (Defaults to ``0``/disabled.)
 
 The ``max_runtime_secs`` option specifes the maximum runtime in seconds that you want to allot in order to complete the model. If this maximum runtime is exceeded before the model build is completed, then the model will fail. When performing a grid search, this option specifies the maximum runtime in seconds for the entire grid. This option can also be combined with ``max_runtime_secs`` in the model parameters. If ``max_runtime_secs`` is not set in the model parameters, then each model build is launched with a limit equal to the remainder of the grid time. On the other hand, if ``max_runtime_secs`` is set in the model parameters, then each build is launched with a limit equal to the minimum of the model time limit and the remaining time for the grid.
 
@@ -25,7 +25,8 @@ In AutoML, grid search, Deep Learning, DRF, GBM, and XGBoost, the following addi
 
 - :ref:`stopping_tolerance` - Defaults to: 
 	
-	- ``0.001`` In AutoML for datasets with more than 1 million rows, this defaults to a larger valued determined by the size of the dataset and the non-NA-rate.
+	- ``0.001`` 
+	- In AutoML, for datasets with more than 1 million rows, this defaults to a larger valued determined by the size of the dataset and the non-NA-rate.
 
 - :ref:`stopping_metric` - Defaults to:
 
@@ -42,7 +43,7 @@ Early stopping in GLM and GAM
 In GLM and GAM, the following additional parameters are used for early stopping:
 
 - :ref:`early_stopping` (Defaults to ``enabled``.)
-- :ref:`max_active_predictors` (Default varies based on the solver.)
+- :ref:`max_active_predictors` (Default varies based on the ``solver``.)
 - :ref:`stopping_rounds` (Defaults to ``0`` in GLM and GAM.)
 - :ref:`stopping_tolerance` (Defaults to ``0.001`` in GLM and GAM.)
 - :ref:`stopping_metric` (Defaults to ``"logloss"`` for classification and ``"deviance"`` for regression.)

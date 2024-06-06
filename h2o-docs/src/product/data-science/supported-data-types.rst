@@ -1,4 +1,4 @@
-Supported Data Types
+Supported data types
 ====================
 
 When building models, the supported data types vary per algorithm.
