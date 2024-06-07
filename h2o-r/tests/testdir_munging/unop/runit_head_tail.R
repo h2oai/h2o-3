@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.head_tail <- function() {
   Log.info("Uploading iris/iris_wheader.csv")
   iris.hex <- h2o.importFile(locate("smalldata/iris/iris_wheader.csv"), "iris_wheader.hex")
-  iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"))
+  iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"), stringsAsFactors=TRUE)
   nrows <- nrow(iris.dat)
   ncols <- ncol(iris.dat)
   

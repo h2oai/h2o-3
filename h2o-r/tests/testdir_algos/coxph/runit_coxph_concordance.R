@@ -15,11 +15,12 @@ test.CoxPH.concordance <- function() {
     
     rModel <- coxph(Surv(time, status) ~ age + sex + meal.cal + age:meal.cal, data = tstdata, ties = "efron")
     rPredictor <- rModel$linear.predictors
+    
     hexModel <- h2o.coxph(x = c("age", "sex", "meal.cal"), interaction_pairs = list(c("age", "meal.cal")),
                           event_column = "status", stop_column = "time", ties = "efron", training_frame = tstdataHex)
     hexPredictor <- pred(hexModel, tstdataHex)
-    
-    expect_equal(rPredictor, hexPredictor, scale = 1, tolerance = 1e-3)
+
+    expect_equal(rPredictor - mean(rPredictor), hexPredictor, scale = 1, tolerance = 1e-3)
     
     rConcordance <- unname(summary(rModel)$concordance)[1]
     hexConcordance <- h2o.performance(hexModel, data=tstdataHex)@metrics$concordance

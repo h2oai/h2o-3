@@ -277,6 +277,22 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-r-4.4.0-jdk-%: dev-r-4.4.0
+endif
+dev-r-4.4.0-jdk-%:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-4.4.0-jdk-$*:$(VERSION) \
+		$(NO_CACHE) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-4.4.0 \
+		--build-arg INSTALL_JAVA_VERSION=$* \
+		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-4.4.0-jdk-$*:$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-r-%: dev-r-base
 endif
 dev-r-%:

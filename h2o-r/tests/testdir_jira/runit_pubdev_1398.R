@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.pubdev.1398 <- function() {
   k <- 13
   Log.info("Importing decathlon.csv...")
-  dec.dat <- read.csv(locate("smalldata/pca_test/decathlon.csv"))
+  dec.dat <- read.csv(locate("smalldata/pca_test/decathlon.csv"), stringsAsFactors = TRUE)
   dec.hex <- h2o.importFile(locate("smalldata/pca_test/decathlon.csv"))
   print(summary(dec.hex))
   

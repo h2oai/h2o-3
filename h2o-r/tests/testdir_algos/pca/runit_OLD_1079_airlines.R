@@ -3,7 +3,6 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 # Make sure we can run with airline data
 test.pca.airline<- function() {
-  browser()
   dimD = 234
   pp = h2o.uploadFile(locate("smalldata/airlines/AirlinesTest.csv.zip"))
   aa = h2o.prcomp(pp, k=dimD, transform="STANDARDIZE")
