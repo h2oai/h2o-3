@@ -13,6 +13,8 @@ test.LiblineaR.airlines <- function() {
     Log.info("epsilon = 1E-4: Tolerance of termination criterion\n")
     Log.info("  cross =    0: No kfold cross-validation\n")
     
+    dimnames(test) <- dimnames(train)
+    
     LibR.m        <- LiblineaR(train, trainLabels,type=0, epsilon=1E-4, cost=100)
     LibRpreds     <- predict(LibR.m, test, proba=1, decisionValues=TRUE)
     LibRCM        <- table(testLabels, LibRpreds$predictions)

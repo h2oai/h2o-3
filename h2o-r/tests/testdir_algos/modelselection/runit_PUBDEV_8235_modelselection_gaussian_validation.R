@@ -6,7 +6,7 @@ testModelSelectionV <- function() {
   bhexFV2 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
   Y <- "GLEASON"
   X   <- c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS")
-  browser()
+  
   Log.info("Build the MaxRGLM model")
   allsubsetsModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=2, 
   mode="allsubsets")

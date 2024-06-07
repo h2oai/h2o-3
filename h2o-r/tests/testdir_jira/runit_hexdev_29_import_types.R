@@ -11,7 +11,6 @@ source("../../scripts/h2o-r-test-setup.R")
 test.continuous.or.categorical <- function() {
   df.hex <- h2o.uploadFile(locate("smalldata/jira/hexdev_29.csv"),
     col.types = c("enum", "enum", "enum"))
-  browser()
 
   expect_true(is.factor(df.hex$h1))
   expect_true(is.factor(df.hex$h2))
