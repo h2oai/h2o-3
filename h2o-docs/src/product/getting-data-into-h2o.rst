@@ -1,7 +1,7 @@
 Getting data into your H2O-3 cluster
 ====================================
 
-The first step toward building and scoring your models is getting your data into the H2O cluster/Java process that’s running on your local or remote machine. Whether you're importing data, uploading data, or retrieving data from HDFS or S3, be sure that your data is compatible with H2O-3.
+The first step toward building and scoring your models is getting your data into the H2O-3 cluster/Java process that’s running on your local or remote machine. Whether you're importing data, uploading data, or retrieving data from HDFS or S3, be sure that your data is compatible with H2O-3.
 
 .. _supported_file_formats:
 
