@@ -28,7 +28,7 @@ This function accepts the following options:
 - ``nthreads``: "Number of threads" option when launching a new H2O-3 server.
 - ``ice_root``: The directory for temporary files for the new H2O-3 server.
 - ``log_dir``: Directory for H2O-3 logs to be stored if a new instance is started. Ignored if connecting to an existing node.
-- ``log_level``: The logger level for H2O-3 if a new instance is started. One of ``TRACE``, ``DEBUG``, ``INFO``, ``WARN``, ``ERRR``, or ``FATA``. Default is ``INFO``. Ignored if connecting to an existing node.
+- ``log_level``: The logger level for H2O-3 if a new instance is started. One of ``TRACE``, ``DEBUG``, ``INFO``, ``WARN``, ``ERRR``, or ``FATAL``. Default is ``INFO``. Ignored if connecting to an existing node.
 - ``enable_assertions``: Enable assertions in Java for the new H2O-3 server.
 - ``max_mem_size``: Maximum memory to use for the new H2O-3 server. Integer input will be evaluated as gigabytes. Other units can be specified by passing in a string (e.g. ``"160M"`` for 160 megabytes).
   
