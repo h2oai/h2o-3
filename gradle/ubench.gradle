@@ -7,14 +7,14 @@ buildscript {
         maven { url 'https://plugins.gradle.org/m2/' }
     }
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
+        classpath 'io.github.goooler.shadow:shadow-gradle-plugin:8.1.7'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.5.2'
     }
 }
 
 apply plugin: 'me.champeau.gradle.jmh' // This plugin is not compatible with Gradle 8, upgrade to Gradle 8 friendly
                                        // version of the plugin should help in the future
-apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: "io.github.goooler.shadow"
 
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
