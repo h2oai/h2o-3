@@ -16,7 +16,7 @@ R users can use H2O-R library which internally uses H2O REST API calls to connec
 Python client
 -------------
 
-Python users can connect to H2O-3 using the H2O Python package that internally uses H2O REST API calls to connect to H2O-3 (Server) and allows users to run their H2O-3 workflow via Python. See the `documentation for the H2O-Python Client <../h2o-py/docs/index.html>`__. 
+Python users can connect to H2O-3 using the H2O Python package that internally uses H2O REST API calls to connect to H2O-3 (Server) and allows users to run their H2O-3 workflow via Python. See the `documentation for the H2O-Python Client <../h2o-py/docs/index.html>`__.
 
 Sklearn support
 ~~~~~~~~~~~~~~~
