@@ -3,10 +3,6 @@ Sort columns
 
 Use the ``sort`` function in Python or the ``arrange`` function in R to create a new frame that is sorted by column(s) in ascending (default) or descending order. 
 
-.. note::
-	
-	When using ``sort``, the original frame cannot contain any string columns. 
-
 If only one column is specified in the sort, then the final results are sorted according to that one single column either in ascending (default) or in descending order. However, if you specify more than one column in the sort, then H2O-3 performs as described below:
 
 	Assuming two columns, X (first column) and Y (second column):
