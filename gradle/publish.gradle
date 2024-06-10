@@ -4,7 +4,7 @@ apply plugin: 'signing'
 
 // Default task to bundle sources code as jar
 task sourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
