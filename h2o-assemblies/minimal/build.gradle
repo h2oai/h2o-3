@@ -1,7 +1,7 @@
 // WARNING: This is a modified copy of the main assembly with some dependencies excluded
 // TODO: refactor the build script to avoid code duplication
 
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'io.github.goooler.shadow'
 apply plugin: 'java-library'
 
 description = "Minimal H2O Application Assembly - includes all algos, but has only limited support for data sources"
@@ -33,7 +33,7 @@ dependencies {
 
 shadowJar {
   mergeServiceFiles()
-  classifier = ''
+  archiveClassifier = ''
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'

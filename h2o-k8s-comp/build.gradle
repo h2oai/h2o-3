@@ -1,5 +1,5 @@
 apply plugin: 'java-library'
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'io.github.goooler.shadow'
 
 description = "H2O Kubernetes Compatibility Library - enables older H2O versions to run on K8S"
 
@@ -19,7 +19,7 @@ dependencies {
 
 shadowJar {
     mergeServiceFiles()
-    classifier = ''
+    archiveClassifier = ''
     exclude 'META-INF/*.DSA'
     exclude 'META-INF/*.SF'
     exclude 'synchronize.properties'

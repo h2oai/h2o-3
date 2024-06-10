@@ -1,4 +1,4 @@
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'io.github.goooler.shadow'
 apply plugin: 'java-library'
 apply plugin: 'com.github.hierynomus.license'
 
@@ -35,7 +35,7 @@ for (comp in optionalComponents) {
 
 shadowJar {
   mergeServiceFiles()
-  classifier = ''
+  archiveClassifier = ''
   relocate 'com.google.gson', 'ai.h2o.com.google.gson' // Should be eventually removed: https://github.com/h2oai/h2o-3/issues/12372
   relocate 'org.apache.commons.text', 'ai.h2o.org.apache.commons.text'
   relocate 'org.apache.commons.lang3', 'ai.h2o.org.apache.commons.lang3'
