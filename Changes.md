@@ -13,7 +13,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index
 
 #### Improvement
 - [[#16278]](https://github.com/h2oai/h2o-3/issues/16278) - Added flag to enable `use_multi_thread` automatically when using `as_data_frame`.
-- [[#15810]](https://github.com/h2oai/h2o-3/issues/15810) - Added ability to see the timestamp in system timezone instead of just GMT/UTC.
 
 #### New Feature
 - [[#16284]](https://github.com/h2oai/h2o-3/issues/16284) - Added support for Websockets to steam.jar.
