@@ -20,7 +20,7 @@ H2O-3 supports the following file types:
 - Parquet
 - Google Storage (gs://)
 
-.. note:: 
+.. note::
  
     - H2O supports UTF-8 encodings for CSV files. Please convert UTF-16 encodings to UTF-8 encoding before parsing CSV files into H2O-3.
     - ORC is available only if H2O-3 is running as a Hadoop job. 
