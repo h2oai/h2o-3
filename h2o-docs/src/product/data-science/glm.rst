@@ -1,10 +1,10 @@
 .. _glm:
 
 Generalized Linear Model (GLM)
-------------------------------
+==============================
 
 Introduction
-~~~~~~~~~~~~
+------------
 
 Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
 
@@ -21,23 +21,23 @@ The GLM suite includes:
 -  Negative Binomial regression
 -  Tweedie distribution
 
-MOJO Support
-''''''''''''
+MOJO support
+~~~~~~~~~~~~
 
 GLM supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
-Additional Resources
-~~~~~~~~~~~~~~~~~~~~
+Additional resources
+--------------------
 
 * `GLM Booklet <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf>`__
 
-Defining a GLM Model
-~~~~~~~~~~~~~~~~~~~~
+Defining a GLM model
+--------------------
 
 Parameters are optional unless specified as *required*.
 
 Algorithm-specific parameters
-'''''''''''''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - **build_null_model**: If set, will build a model with only the intercept.  This option defaults to ``False``.
 
@@ -70,7 +70,7 @@ Algorithm-specific parameters
 - `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
 HGLM parameters
-'''''''''''''''
+~~~~~~~~~~~~~~~
 
 -  `HGLM <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built. If disabled (default), then a GLM model will be built. 
 
@@ -82,7 +82,7 @@ HGLM parameters
 
 
 Shared GLM family parameters
-''''''''''''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. |GAM| image:: ../images/GAM.png
    :alt: Generalized Additive Models
@@ -200,7 +200,7 @@ Shared GLM family parameters
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: |GAM| |MS| |ANOVA| (Only applicable if ``family="tweedie"``) Specify the Tweedie variance power. This option defaults to ``0``.
 
 Common parameters
-'''''''''''''''''
+~~~~~~~~~~~~~~~~~
 
 - `auc_type <algo-params/auc_type.html>`__: Set the default multinomial AUC type. Must be one of:
 
@@ -299,8 +299,8 @@ Common parameters
    -  For a regression model, this column must be numeric (**Real** or **Int**).
    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset cannot contain more than two levels.
 
-Interpreting a GLM Model
-~~~~~~~~~~~~~~~~~~~~~~~~
+Interpreting a GLM model
+------------------------
 
 By default, the following output displays:
 
@@ -314,28 +314,28 @@ By default, the following output displays:
 -  Coefficients
 -  Standardized coefficient magnitudes (if standardization is enabled)
 
-Classification and Regression
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Classification and regression
+-----------------------------
 
 GLM can produce two categories of models: classification and regression. Logistic regression is the GLM performing binary classification.
 
-Handling of Categorical Variables
-'''''''''''''''''''''''''''''''''
+Handling of categorical variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GLM supports both binary and multinomial classification. For binary classification, the response column can only have two levels; for multinomial classification, the response column will have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
 
 We strongly recommend avoiding one-hot encoding categorical columns with any levels into many binary columns, as this is very inefficient. This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
 
 Handling of Numeric Variables
-'''''''''''''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When GLM performs regression (with factor columns), one category can be left out to avoid multicollinearity. If regularization is disabled (``lambda = 0``), then one category is left out. However, when using a the default lambda parameter, all categories are included.  
 
 The reason for the different behavior with regularization is that collinearity is not a problem with regularization. 
 And it’s better to leave regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
 
-Regression Influence Diagnostics
-''''''''''''''''''''''''''''''''
+Regression influence diagnostics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Regression influence diagnostics reveal the influence of each data row on the GLM parameter determination for IRLSM. This shows the parameter value change for each predictor when  a data row is included and excluded in the dataset used to train the GLM model. 
 
@@ -436,8 +436,8 @@ where:
 
 .. _family_and_link_functions:
 
-Family and Link Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Family and link functions
+-------------------------
 
 GLM problems consist of three main components:
 
@@ -448,7 +448,7 @@ GLM problems consist of three main components:
 Accordingly, in order to specify a GLM problem, you must choose a family function :math:`f`, link function :math:`g`, and any parameters needed to train the model.
 
 Families
-''''''''
+~~~~~~~~
 
 The ``family`` option specifies a probability distribution from an exponential family. You can specify one of the following, based on the response column type:
 
@@ -469,8 +469,8 @@ The ``family`` option specifies a probability distribution from an exponential f
  - If you DO convert the response column to categorical and DO NOT to set ``family=binomial``, then you will receive an error message.
  - If you DO NOT convert response column to categorical and DO NOT set the family, then GLM will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
 
-Linear Regression (Gaussian Family)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Linear regression (Gaussian family)
+'''''''''''''''''''''''''''''''''''
 
 Linear regression corresponds to the Gaussian family model. The link function :math:`g` is the identity, and density :math:`f` corresponds to a normal distribution. It is the simplest example of a GLM but has many uses and several advantages over other families. Specifically, it is faster and requires more stable computations. Gaussian models the dependency between a response :math:`y` and a covariates vector :math:`x` as a linear function:
 
@@ -490,8 +490,8 @@ The deviance is the sum of the squared prediction errors:
 
  D = \sum_{i=1}^{N}(y_i - \hat {y}_i)^2
 
-Logistic Regression (Binomial Family)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Logistic regression (Binomial family)
+'''''''''''''''''''''''''''''''''''''
 
 Logistic regression is used for binary classification problems where the response is a categorical variable with two levels. It models the probability of an observation belonging to an output category given the data (for example, :math:`Pr(y=1|x)`). The canonical link for the binomial family is the logit function (also known as log odds). Its inverse is the logistic function, which takes any real number and projects it onto the [0,1] range as desired to model the probability of belonging to a class. The corresponding s-curve is below:
 
@@ -523,8 +523,8 @@ The corresponding deviance is equal to:
 
  D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)
 
-Fractional Logit Model (Fraction Binomial)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fractional logit model (Fraction Binomial)
+''''''''''''''''''''''''''''''''''''''''''
 
 In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0, 1]. The following assumptions are made for this model.
 
@@ -535,8 +535,8 @@ In the financial service industry, there are many outcomes that are fractional i
 Note that these are exactly the same as the binomial distribution.  However, the values are  calculated with the value of :math:`y` in the range of 0 and 1 instead of just 0 and 1.  Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
 
 
-Logistic Ordinal Regression (Ordinal Family)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Logistic ordinal regression (Ordinal family)
+''''''''''''''''''''''''''''''''''''''''''''
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
 
@@ -587,13 +587,13 @@ Because only first-order methods are used in adjusting the model parameters, use
 
 In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
 
-Pseudo-Logistic Regression (Quasibinomial Family)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Pseudo-logistic regression (Quasibinomial family)
+'''''''''''''''''''''''''''''''''''''''''''''''''
 
 The quasibinomial family option works in the same way as the aforementioned binomial family. The difference is that binomial models only support 0/1 for the values of the target. A quasibinomial model supports "pseudo" logistic regression and allows for two arbitrary integer values (for example -4, 7). Additional information about the quasibinomial option can be found in the `"Estimating Effects on Rare Outcomes: Knowledge is Power" <http://biostats.bepress.com/ucbbiostat/paper310/>`__ paper.
 
-Multiclass Classification (Multinomial Family)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Multiclass classification (Multinomial family)
+''''''''''''''''''''''''''''''''''''''''''''''
 
 Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the binomail family, GLM models the conditional probability of observing class "c" given "x". A vector of coefficients exists for each of the output classes. (:math:`\beta` is a matrix.) The probabilities are defined as:
 
@@ -609,8 +609,8 @@ The penalized negative log-likelihood is defined as:
 
 where :math:`\beta_c` is a vector of coefficients for class "c", and :math:`y_{i,k}` is the :math:`k\text{th}` element of the binary vector produced by expanding the response variable using one-hot encoding (i.e., :math:`y_{i,k} == 1` iff the response at the :math:`i\text{th}` observation is "k"; otherwise it is 0.)
 
-Poisson Models
-^^^^^^^^^^^^^^
+Poisson models
+''''''''''''''
 
 Poisson regression is typically used for datasets where the response represents counts, and the errors are assumed to have a Poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the response and covariates as:
 
@@ -632,8 +632,8 @@ The corresponding deviance is equal to:
 
 Note in the equation above that H2O-3 uses the negative log of the likelihood. This is different than the way deviance is specified in https://onlinecourses.science.psu.edu/stat501/node/377/. In order to use this deviance definition, simply multiply the H2O-3 deviance by -1. 
 
-Gamma Models
-^^^^^^^^^^^^
+Gamma models
+''''''''''''
 
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional variance of the response grows with its mean, but the coefficientof variation of the response :math:`\sigma^2(y_i)/\mu_i` is constant. It is usually used with the log link :math:`g(\mu_i) = \text{log}(\mu_i)` or the inverse link :math:`g(\mu_i) = \dfrac {1} {\mu_i}`, which is equivalent to the canonical link. 
 
@@ -649,8 +649,8 @@ The corresponding deviance is equal to:
 
  D = 2 \sum_{i=1}^{N} - \text{log} \bigg (\dfrac {y_i} {\hat {y}_i} \bigg) + \dfrac {(y_i - \hat{y}_i)} {\hat {y}_i}
 
-Tweedie Models
-^^^^^^^^^^^^^^
+Tweedie models
+''''''''''''''
 
 Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p`-{th} power of the mean :math:`var(y_i) = \phi\mu{^p_i}`, where :math:`\phi` is the dispersion parameter and :math:`p` is the variance power. 
 
@@ -689,8 +689,8 @@ The corresponding deviance is equal to:
 
 .. _negative_binomial:
 
-Negative Binomial Models
-^^^^^^^^^^^^^^^^^^^^^^^^
+Negative binomial models
+''''''''''''''''''''''''
 
 Negative binomial regression is a generalization of Poisson regression that loosens the restrictive assumption that the variance is equal to the mean. Instead, the variance of negative binomial is a function of its mean and parameter :math:`\theta`, the dispersion parameter. 
 
@@ -736,7 +736,7 @@ The corresponding deviance is:
 
 
 Links
-'''''
+~~~~~
 
 As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
 
@@ -778,13 +778,13 @@ For **AUTO**:
 - X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
 - X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
 
-Dispersion Parameter Estimation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dispersion parameter estimation
+-------------------------------
 
 Regularization is not supported when you use dispersion parameter estimation with maximum likelihood. 
 
 Tweedie
-'''''''
+~~~~~~~
 
 The density for the maximum likelihood function for Tweedie can be written as:
 
@@ -807,7 +807,7 @@ If there are weights introduced to each data row, *equation 1* will become:
    f \Big( y; \theta, \frac{\phi}{w} \Big) = a \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]
 
 :math:`\alpha (y,\phi)` when :math:`1 < p < 2`
-''''''''''''''''''''''''''''''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For :math:`Y=0`,
 
@@ -839,7 +839,7 @@ The :math:`W_j` terms are all positive. The following figure plots for :math:`\m
    :width: 600px
 
 :math:`\alpha (y,\phi)` when :math:`p > 2`
-'''''''''''''''''''''''''''''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here, you have
 
@@ -865,20 +865,20 @@ In the following figure, we use :math:`\mu =0.5,p=2.5,\phi =1, y=0.1`.
    :width: 600px
 
 Warnings 
-''''''''
+~~~~~~~~
 
-**Accuracy and Limitation**
+**Accuracy and limitation**
 
 While the Tweedie's probability density function contains an infinite series sum, when :math:`p` is close to 2, the response (:math:`y`) is large, and :math:`\phi` is small the common number of terms that are needed to approximate the infinite sum grow without bound. This causes an increase in computation time without reaching the desired accuracy.
 
-**Multimodal Densities**
+**Multimodal densities**
 
 As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. This means that the optimization procedure will fail since it will not be able to find the global optimal point. It will instead arrive at a local optimal point.
 
 As a conservative condition, to ensure that the density is unimodal for most values of :math:`y,\phi`, we should have :math:`p>1.2`.
 
-Tweedie Dispersion Example
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Tweedie dispersion example
+''''''''''''''''''''''''''
 
 .. tabs::
    .. code-tab:: r R
@@ -932,8 +932,8 @@ Tweedie Dispersion Example
       model._model_json["output"]["dispersion"]
       0.7599964835351135
 
-Negative Binomial
-'''''''''''''''''
+Negative binomial
+~~~~~~~~~~~~~~~~~
 
 GLM dispersion estimation using the maximum likelihood method for the negative binomial family is available when you set ``dispersion_parameter_method=“ml”``.
 
@@ -953,14 +953,14 @@ While not converged:
       i. Theta :math:`\gets` Maximum Likelihood estimate using Newton’s method with learning rate estimated using Golden section search
 
 Hierarchical GLM
-~~~~~~~~~~~~~~~~
+----------------
 
 Introduced in 3.28.0.1, Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM allows you to specify both fixed and random effects, which allows fitting correlated to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects. 
 
 **Note**: The initial release of HGLM supports only the Gaussian family and random family.
 
-Gaussian Family and Random Family in HGLM
-'''''''''''''''''''''''''''''''''''''''''
+Gaussian family and random family in HGLM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To build an HGLM, we need the hierarchical log-likelihood (h-likelihood) function. The h-likelihood function can be expressed as (equation 1):
 
@@ -1008,8 +1008,8 @@ In principal, the HGLM model building involves the following main steps:
 
  Note that :math:`D` is the matrix of the second derivatives of :math:`h` around :math:`\beta = \hat \beta, u = \hat u, \theta = (\delta_u^2, \delta_e^2)`.
 
-H2O Implementation
-''''''''''''''''''
+H2O-3 implementation
+~~~~~~~~~~~~~~~~~~~~
 
 In reality, Lee and Nelder (see References) showed that linear mixed models can be fitted using a hierarchy of GLM by using an augmented linear model.  The linear mixed model will be written as:
 
@@ -1034,8 +1034,8 @@ Note that :math:`q` is the number of columns in :math:`Z, 0_q` is a vector of :m
 .. figure:: ../images/hglm_variance_covariance.png
    :align: center
 
-Fixed and Random Coefficients Estimation
-''''''''''''''''''''''''''''''''''''''''
+Fixed and random coefficients estimation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The estimates for :math:`\delta` from weighted least squares are given by solving
 
@@ -1055,19 +1055,19 @@ The two variance components are estimated iteratively by applying a gamma GLM to
 
  H_a=T_a (T_a^T W^{-1} T_a )^{-1} T_a^T W^{-1}
 
-Estimation of Fixed Effect Dispersion Parameter/Variance
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Estimation of fixed effect dispersion parameter/variance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A gamma GLM is used to fit the dispersion part of the model with response
 :math:`y_{d,i}=(e_i^2)⁄(1-h_i )` where :math:`E(y_d )=u_d` and :math:`u_d≡\phi` (i.e., :math:`\delta_e^2` for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function :math:`g_d (.)` and the linear predictor :math:`X_d \beta_d` with prior weights for :math:`(1-h_i )⁄2` for :math:`g_d (u_d )=X_d \beta_d`. Because we are not using a dispersion model, :math:`X_d \beta_d` will only contain the intercept term.
 
-Estimation of Random Effect Dispersion Parameter/Variance
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Estimation of random effect dispersion parameter/variance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e., :math:`\delta_e^2` for a GLM) for the random effect :math:`v`, with :math:`y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,…,q` and :math:`g_\alpha (u_\alpha )=\lambda`, where the prior weights are :math:`(1-h_{n+j} )⁄2`, and the estimated dispersion term for the random effect is given by :math:`\hat \alpha = g_α^{-1}(\hat \lambda)`.
 
-Fitting Algorithm Overview
-''''''''''''''''''''''''''
+Fitting algorithm overview
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following fitting algorithm from "Generalized linear models with random effects" (Y. Lee, J. A. Nelder and Y. Pawitan; see References) is used to build our HGLM. Let :math:`n` be the number of observations and :math:`k` be the number of levels in the random effect. The algorithm that was implemented here at H2O will perform the following:
 
@@ -1086,8 +1086,8 @@ A timeout event can be defined as the following:
 
 For families and random families other than Gaussian, link functions are used to translate from the linear space to the model the mean output.  
 
-Linear Mixed Model with Correlated Random Effect
-''''''''''''''''''''''''''''''''''''''''''''''''
+Linear mixed model with correlated random effect
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let :math:`A` be a matrix with known elements that describe the correlation among the random effects. The model is now given by:
 
@@ -1101,8 +1101,8 @@ where :math:`N` is normal distribution and :math:`MVN` is multi-variable normal.
 
 where :math:`Z^* = ZL` and :math:`L` is the Cholesky factorization of :math:`A`. Hence, if you have correlated random effects, you can first perform the transformation to your data before using our HGLM implementation here.
 
-HGLM Model Metrics
-''''''''''''''''''
+HGLM model metrics
+~~~~~~~~~~~~~~~~~~
 
 H2O provides the following model metrics at the end of each HGLM experiment:
 
@@ -1126,8 +1126,8 @@ H2O provides the following model metrics at the end of each HGLM experiment:
 
 - bad: row index of the most influential observation.
 
-Mapping of Fitting Algorithm to the H2O-3 Implementation
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Mapping of fitting algorithm to the H2O-3 implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This mapping is done in four steps:
 
@@ -1196,12 +1196,12 @@ Again, a gamma GLM model is used here. In addition, the error estimates are gene
 .. _regularization:
 
 Regularization
-~~~~~~~~~~~~~~
+--------------
 
 Regularization is used to attempt to solve problems with overfitting that can occur in GLM. Penalties can be introduced to the model building process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties using both the ``alpha`` and ``lambda`` options (i.e., values greater than 0 for both).
 
-LASSO and Ridge Regression
-''''''''''''''''''''''''''
+LASSO and ridge regression
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 LASSO represents the :math:`\ell{_1}` penalty and is an alternative regularized least squares method that penalizes the sum of the absolute coefficents :math:`||\beta||{_1} = \sum{^p_{k=1}} \beta{^2_k}`. LASSO leads to a sparse solution when the tuning parameter is sufficiently large. As the tuning parameter value :math:`\lambda` is increased, all coefficients are set to zero. Because reducing parameters to zero removes them from the model, LASSO is a good selection tool. 
 
@@ -1214,8 +1214,8 @@ The two penalites also differ in the presence of correlated predictors. The :mat
 
 The elastic net method selects variables and preserves the grouping effect (shrinking coefficients of correlated columns together). Moreover, while the number of predictors that can enter a LASSO model saturates at min :math:`(n,p)` (where :math:`n` is the number of observations, and :math:`p` is the number of variables in the model), the elastic net does not have this limitation and can fit models with a larger number of predictors. 
 
-Elastic Net Penalty
-'''''''''''''''''''
+Elastic net penalty
+~~~~~~~~~~~~~~~~~~~
 
 As indicated previously, elastic net regularization is a combination of the :math:`\ell{_1}` and :math:`\ell{_2}` penalties parametrized by the :math:`\alpha` and :math:`\lambda` arguments (similar to "Regularization Paths for Genarlized Linear Models via Coordinate Descent" by Friedman et all).
 
@@ -1225,8 +1225,8 @@ As indicated previously, elastic net regularization is a combination of the :mat
 
 The combination of the :math:`\ell_1` and :math:`\ell_2` penalties is beneficial because :math:`\ell_1` induces sparsity, while :math:`\ell_2` gives stability and encourages the grouping effect (where a group of correlated variables tend to be dropped or added into the model simultaneously). When focusing on sparsity, one possible use of the :math:`\alpha` argument involves using the :math:`\ell_1` mainly with very little :math:`\ell_2` (:math:`\alpha` almost 1) to stabilize the computation and improve convergence speed.
 
-Regularization Parameters in GLM
-''''''''''''''''''''''''''''''''
+Regularization parameters in GLM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To get the best possible model, we need to find the optimal values of the regularization parameters :math:`\alpha` and
 :math:`\lambda`.  To find the optimal values, H2O allows you to perform a grid search over :math:`\alpha` and a special form of grid search called "lambda search" over :math:`\lambda`.
@@ -1241,8 +1241,8 @@ The recommended way to find optimal regularization settings on H2O is to do a gr
 
  The ``lambda`` parameter controls the amount of regularization applied. If ``lambda`` is 0.0, no regularization is applied, and the ``alpha`` parameter is ignored. The default value for ``lambda`` is calculated by H2O using a heuristic based on the training data. If you allow H2O to calculate the value for ``lambda``, you can see the chosen value in the model output. 
 
-Lambda Search
-'''''''''''''
+Lambda search
+~~~~~~~~~~~~~
 
 If the ``lambda_search`` option is set, GLM will compute models for full regularization path similar to glmnet. (See the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__.) Regularization path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
 
@@ -1263,8 +1263,8 @@ Lambda search can be configured along with the following arguments:
 
 - ``max_active_predictors``: This limits the number of active predictors. (The actual number of non-zero predictors in the  model is going to be slightly  lower.) It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
-Full Regularization Path
-''''''''''''''''''''''''
+Full regularization path
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 It can sometimes be useful to see the coefficients for all lambda values or to override default lambda selection. Full regularization path can be extracted from both R and python clients (currently not from Flow). It returns coefficients (and standardized coefficients) for all computed lambda values and also the explained deviances on both train and validation. Subsequently, the makeGLMModel call can be used to create an H2O GLM model with selected coefficients.
 
@@ -1276,7 +1276,7 @@ To extract the regularization path from R or python:
 .. _solvers:
 
 Solvers
-~~~~~~~
+-------
 
 This section provides general guidelines for best performance from the GLM implementation details. The optimal solver depends on the data properties and prior information regarding the variables (if available). In general, the data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than 10. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.
 
@@ -1291,7 +1291,7 @@ In GLM, you can specify one of the following solvers:
 - GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
 IRLSM and L-BFGS
-''''''''''''''''
+~~~~~~~~~~~~~~~~
 
 IRLSM (the default) uses a `Gram Matrix <https://en.wikipedia.org/wiki/Gramian_matrix>`__ approach, which is efficient for tall and narrow datasets and when running lambda search via a sparse solution. For wider and dense datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than 500 predictors (or so) in the data, then use the default solver (IRLSM). For larger numbers of predictors, we recommend running IRLSM with a lambda search, and then comparing it to L-BFGS with just one :math:`\ell_2` penalty. For advanced users, we recommend the following general guidelines:
 
@@ -1306,7 +1306,7 @@ IRLSM (the default) uses a `Gram Matrix <https://en.wikipedia.org/wiki/Gramian_m
 If you are unsure whether the solution should be sparse or dense, try both along with a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively, based on the performance in cross-validation when not enough data is available to have a separate validation dataset).
 
 Coordinate Descent
-''''''''''''''''''
+~~~~~~~~~~~~~~~~~~
 
 In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coordinate Descent. Cyclical Coordinate Descent is able to handle large datasets well and deals efficiently with sparse features. It can improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. 
 
@@ -1318,14 +1318,14 @@ In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coord
 Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
 
 Gradient Descent
-''''''''''''''''
+~~~~~~~~~~~~~~~~
 
 For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 .. _coefficients_table: 
 
 Coefficients Table
-~~~~~~~~~~~~~~~~~~
+------------------
 
 A Coefficients Table is outputted in a GLM model. This table provides the following information: Column names, Coefficients, Standard Error, z-value, p-value, and Standardized Coefficients.
 
@@ -1335,8 +1335,8 @@ A Coefficients Table is outputted in a GLM model. This table provides the follow
 
 - The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes (e.g. to compare relative variable importance). In this case, the "normal" coefficients are obtained from the standardized coefficients by reversing the data standardization process (de-scaled, with the intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e.  no standardization prior to scoring). **Note**: These are not the same as coefficients of a model built on non-standardized data. 
 
-Extracting Coefficients Table Information
-'''''''''''''''''''''''''''''''''''''''''
+Extracting Coefficients Table information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can extract the columns in the Coefficients Table by specifying ``names``, ``coefficients``, ``std_error``, ``z_value``, ``p_value``, ``standardized_coefficients`` in a retrieve/print statement. (Refer to the example that follows.) In addition, H2O provides the following built-in methods for retrieving standard and non-standard coefficients:
 
@@ -1345,11 +1345,11 @@ You can extract the columns in the Coefficients Table by specifying ``names``, `
 
 For an example, refer `here <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples>`__.
 
-GLM Likelihood
-~~~~~~~~~~~~~~
+GLM likelihood
+--------------
 
-Maximum Likelihood Estimation
-'''''''''''''''''''''''''''''
+Maximum likelihood estimation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For an initial rough estimate of the parameters :math:`\hat{\beta}` you use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`
 
@@ -1372,7 +1372,7 @@ Regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w
 This process is repeated until the estimates :math:`\hat{\beta}` change by less than the specified amount.
 
 Likelihood and AIC
-''''''''''''''''''
+~~~~~~~~~~~~~~~~~~
 
 During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log likelihood and full AIC values. The full formula is used to calculate the output of the full log likelihood and full AIC values if the parameter ``calc_like`` is set to ``True``.
 
@@ -1488,8 +1488,8 @@ The Tweedie calculation is located in the section `Tweedie Likelihood Calculatio
    
    For Tweedie family, you need the dispersion parameter estimate. When the parameter ``calc_like`` is set to ``True``, the ``dispersion_parameter_method`` is set to ``"ml"`` which provides you with the best log likelihood estimation.
 
-Final AIC Calculation
-^^^^^^^^^^^^^^^^^^^^^
+Final AIC calculation
+'''''''''''''''''''''
 
 The final AIC in the output metric is calculated using the standard formula, utilizing the previously computed log likelihood.
 
@@ -1504,8 +1504,8 @@ where
 
 To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` and the parameter ``HGLM`` to ``False`` to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
 
-Tweedie Likelihood Calculation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Tweedie likelihood calculation
+''''''''''''''''''''''''''''''
 
 There are three different estimations you calculate Tweedie likelihood for:
 
@@ -1557,8 +1557,8 @@ When estimating just the Tweedie variance power, it uses the golden section sear
    
    (Applicable for Gamma, Tweedie, and Negative Binomial families) If you set ``dispersion_parameter_method="ml"``, then ``solver`` must be set to ``"IRLSM"``.
 
-Variable Inflation Factors
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Variable inflation factors
+--------------------------
 
 The variable inflation factor (VIF) quantifies the inflation of the variable. Variables are inflated due to their correlation with other predictor variables within the model. For each predictor in a multiple regression model, there is a VIF. This process can be calculated with cross validation turned on. 
 
@@ -1569,8 +1569,8 @@ The VIF is constructed by:
 - calculating the VIF as :math:`\frac{1.0}{(1.0-R^2)}` where :math:`R^2` is taken from the GLM regression model built in the prior step, and
 - repeating this process for all remaining numerical predictors to retrieve their VIF.
 
-Variable Inflation Factor Example
-'''''''''''''''''''''''''''''''''
+Variable inflation factor example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tabs::
    .. code-tab:: r R
@@ -1623,8 +1623,8 @@ Variable Inflation Factor Example
       vif_glm.get_variable_inflation_factors()
       {'Intercept': nan, 'abs.C1.': 1.0003341467438167, 'abs.C2.': 1.0001734204183244, 'abs.C3.': 1.0007846189027745, 'abs.C4.': 1.0005388379729434, 'abs.C5.': 1.0005349427184604}
 
-Modifying or Creating a Custom GLM Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Modifying or creating a custom GLM model
+----------------------------------------
 
 In R and Python, the ``makeGLMModel`` call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or Python:
 
@@ -1632,7 +1632,7 @@ In R and Python, the ``makeGLMModel`` call can be used to create an H2O model fr
 - **Python**: ``H2OGeneralizedLinearEstimator.makeGLMModel`` (static method) takes a model, a dictionary containing coefficients, and (optional) decision threshold as parameters.
 
 Examples
-~~~~~~~~
+--------
 
 Below is a simple example showing how to build a Generalized Linear model.
 
@@ -1764,8 +1764,8 @@ Below is a simple example showing how to build a Generalized Linear model.
     print("negative log likelihood: {0}.".format(prostate_glm.negative_log_likelihood()))
     negative log likelihood: 205.46143534076492.
 
-Calling Model Attributes
-''''''''''''''''''''''''
+Calling model attributes
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 While not all model attributes have their own callable APIs, you can still retrieve their information. Using the previous example, here is how to call a model's attributes:
 
@@ -1802,7 +1802,7 @@ While not all model attributes have their own callable APIs, you can still retri
 
 
 FAQ
-~~~
+---
 
 -  **How does the algorithm handle missing values during training?**
 
@@ -1904,8 +1904,8 @@ FAQ
   **Note:** ``beta_constraints`` must not be set.
 
 
-GLM Algorithm
-~~~~~~~~~~~~~
+GLM algorithm
+-------------
 
 Following the definitive text by P. McCullagh and J.A. Nelder (1989) on
 the generalization of linear models to non-linear distributions of the
@@ -1935,7 +1935,7 @@ linear model.
 When inverted: :math:`\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)`
 
 Cost of computation
-'''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~
 
 H2O can process large data sets because it relies on parallel processes.
 Large data sets are divided into smaller data sets and processed
@@ -1959,7 +1959,7 @@ than (N/CPUs), O is dominated by p.
   :math:`Complexity = O(p^3 + N*p^2)`
 
 References
-~~~~~~~~~~
+----------
 
 Breslow, N E. “Generalized Linear Models: Checking Assumptions and
 Strengthening Conclusions.” Statistica Applicata 8 (1996): 23-41.
