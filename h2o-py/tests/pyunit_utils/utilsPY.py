@@ -684,7 +684,6 @@ def standalone_test(test, init_options={}):
     h2o.log_and_echo("STARTING TEST "+test.__name__)
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
-    import os
     import tempfile
     with tempfile.TemporaryDirectory() as dir:  # Create a temporary dir that will clean itself
         tempfile._once_lock.acquire()  # Better lock to avoid race conditions (but since we don't test in multiple threads (to avoid side-effects on the backend) it should not matter)
@@ -3744,7 +3743,39 @@ def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6, returnResult=F
     if returnResult:
         return True
 
-# frame compare with NAs in column
+# frame with only one column with integers and no NAs, will return row indices and the different results
+def compare_frame_local_one_int_column(f1, f2, offset):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    result = []
+    lastF2Row = f2.nrow+1
+    for colInd in range(f1.ncol):
+        for rowInd in range(1,lastF2Row):
+            v1 = float(temp1[rowInd][colInd])
+            v2 = float(temp2[rowInd][colInd])
+            if not(v1==v2):
+                bad_row = [rowInd+offset, v1, v2]
+                result.append(bad_row)
+    return result
+
+# Use data_frames for smaller frame size
+def check_sorted_1_column_local(frame1, sorted_column_index, prob=0.5, ascending=True, offset=0):
+    totRow = frame1.nrow * prob
+    skipRow = int(frame1.nrow/totRow)
+    temp1 = frame1[:, sorted_column_index].as_data_frame(use_pandas=False)
+    for rowInd in range(1, frame1.nrow-1, skipRow):
+        v1 = float(temp1[rowInd][0])
+        v2 = float(temp1[rowInd+1][0])
+        
+        if ascending:
+            assert v1 <= v2, "At row {0}, value is {1}, at row {2}, value is {3}.  The second value is bigger but " \
+                             "should not be.".format(rowInd-1+offset, v1, rowInd+offset, v2)
+        else:
+            assert v1 >= v2, "At row {0}, value is {1}, at row {2}, value is {3}.  The second value is smaller but " \
+                             "should not be.".format(rowInd-1+offset, v1, rowInd+offset, v2)
+
+            # frame compare with NAs in column
 def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     temp1 = f1.as_data_frame(use_pandas=False)
     temp2 = f2.as_data_frame(use_pandas=False)
