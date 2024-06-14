@@ -62,9 +62,9 @@ public class AstRankWithinGroupBy extends AstPrimitive {
             sortcols, sortgroupbyrank._chunkFirstG, sortgroupbyrank._chunkLastG,
             sortgroupbyrank._newRankCol).doAll(sortgroupbyrank._groupedSortedOut);
 
-    if (sortColsOrder)
+/*    if (sortColsOrder)
       return new ValFrame(rankgroups._finalResult.sort(sortcols, sortAsc));
-    else
+    else*/
       return new ValFrame(rankgroups._finalResult);
   }
 
@@ -154,7 +154,7 @@ public class AstRankWithinGroupBy extends AstPrimitive {
       System.arraycopy(_sortCols, 0, allSorts, _groupbyLen, _sortLen);
       Arrays.fill(allSortDirs, 1);
       System.arraycopy(_sortOrders, 0, allSortDirs, _groupbyLen, _sortLen);
-      _groupedSortedOut = original.sort(allSorts, allSortDirs); // sort frame
+      //_groupedSortedOut = original.sort(allSorts, allSortDirs); // sort frame
 
       Vec newrank = original.anyVec().makeCon(Double.NaN);
       _groupedSortedOut.add(_newColname, newrank);  // add new rank column of invalid rank, NAs

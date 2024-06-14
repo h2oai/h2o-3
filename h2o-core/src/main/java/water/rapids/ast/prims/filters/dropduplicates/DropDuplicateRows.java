@@ -6,8 +6,6 @@ import water.fvec.Vec;
 import water.rapids.Merge;
 import water.util.ArrayUtils;
 
-import java.util.Arrays;
-
 /**
  * Drops duplicated rows of a Frame
  */
@@ -47,7 +45,7 @@ public class DropDuplicateRows {
       // Before the final sorted duplicated is created, remove the unused datasets to free some space early
       chunkBoundaries.remove();
       sortedFrame.remove();
-      outputFrame = Scope.track(Merge.sort(deDuplicatedFrame, deDuplicatedFrame.numCols() - 1));
+      outputFrame = Scope.track(Merge.sort(deDuplicatedFrame, new int[]{deDuplicatedFrame.numCols() - 1}));
       outputFrame.remove(outputFrame.numCols() - 1).remove();
       return outputFrame;
     } finally {
@@ -73,10 +71,7 @@ public class DropDuplicateRows {
 
     final int[] sortOrder = new int[sortByColumns.length];
     // Compared columns are always sorted in the same order
-    Arrays.fill(sortOrder, 0, sortOrder.length - 1, Merge.ASCENDING);
-    // Label column is sorted differently based on DropOrder
-    sortOrder[sortOrder.length - 1] = ascendingSort ? Merge.ASCENDING : Merge.DESCENDING;
 
-    return Merge.sort(fr, sortByColumns, sortOrder);
+    return Merge.sort(fr, sortByColumns);
   }
 }

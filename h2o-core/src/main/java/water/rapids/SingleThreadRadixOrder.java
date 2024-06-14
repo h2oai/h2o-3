@@ -38,27 +38,23 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   private transient long counts[][];
   private transient byte keytmp[];
   //public long _groupSizes[][];
-  
-  final long _mergeId;
 
 
   // outputs ...
   // o and x are changed in-place always
   // iff _groupsToo==true then the following are allocated and returned
 
-  SingleThreadRadixOrder(Frame fr, boolean isLeft, int batchSize, int keySize, /*long nGroup[],*/ int MSBvalue, 
-                         long mergeId) {
+  SingleThreadRadixOrder(Frame fr, boolean isLeft, int batchSize, int keySize, /*long nGroup[],*/ int MSBvalue) {
     _fr = fr;
     _isLeft = isLeft;
     _batchSize = batchSize;
     _keySize = keySize;
     _MSBvalue = MSBvalue;
-    _mergeId = mergeId;
   }
 
   @Override
   public void compute2() {
-    keytmp = MemoryManager.malloc1(_keySize);
+    keytmp = new byte[_keySize];
     counts = new long[_keySize][256];
     Key k;
 
@@ -67,7 +63,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     for (int n=0; n<H2O.CLOUD.size(); n++) {
       // Log.info("Getting MSB " + MSBvalue + " Node Header from node " + n + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
-      k = SplitByMSBLocal.getMSBNodeHeaderKey(_isLeft, _MSBvalue, n, _mergeId);
+      k = SplitByMSBLocal.getMSBNodeHeaderKey(_isLeft, _MSBvalue, n);
       MSBnodeHeader[n] = DKV.getGet(k);
       if (MSBnodeHeader[n]==null) continue;
       DKV.remove(k);
@@ -88,22 +84,22 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     _x = new byte[nbatch][];
     int b;
     for (b = 0; b < nbatch-1; b++) {
-      _o[b] = MemoryManager.malloc8(_batchSize);          // TO DO?: use MemoryManager.malloc8()
-      _x[b] = MemoryManager.malloc1(_batchSize * _keySize);
+      _o[b] = new long[_batchSize];          // TO DO?: use MemoryManager.malloc8()
+      _x[b] = new byte[_batchSize * _keySize];
     }
-    _o[b] = MemoryManager.malloc8(lastSize);
-    _x[b] = MemoryManager.malloc1(lastSize * _keySize);
+    _o[b] = new long[lastSize];
+    _x[b] = new byte[lastSize * _keySize];
 
     SplitByMSBLocal.OXbatch ox[/*node*/] = new SplitByMSBLocal.OXbatch[H2O.CLOUD.size()];
     int oxBatchNum[/*node*/] = new int[H2O.CLOUD.size()];  // which batch of OX are we on from that node?  Initialized to 0.
     for (int node=0; node<H2O.CLOUD.size(); node++) {  //TO DO: why is this serial?  Relying on
-      k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0, _mergeId);
+      k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0);
       // assert k.home();   // TODO: PUBDEV-3074
       ox[node] = DKV.getGet(k);   // get the first batch for each node for this MSB
       DKV.remove(k);
     }
-    int oxOffset[] = MemoryManager.malloc4(H2O.CLOUD.size());
-    int oxChunkIdx[] = MemoryManager.malloc4(H2O.CLOUD.size());  // that node has n chunks and which of those are we currently on?
+    int oxOffset[] = new int[H2O.CLOUD.size()];
+    int oxChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
 
     int targetBatch = 0, targetOffset = 0, targetBatchRemaining = _batchSize;
     final Vec vec = _fr.anyVec();
@@ -138,7 +134,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
         targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
         if (sourceBatchRemaining == 0) {
           // fetch the next batch :
-          k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode], _mergeId);
+          k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode]);
           assert k.home();
           ox[fromNode] = DKV.getGet(k);
           DKV.remove(k);
@@ -190,11 +186,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     // tell the world how many batches and rows for this MSB
     OXHeader msbh = new OXHeader(_o.length, numRows, _batchSize);
     Futures fs = new Futures();
-    DKV.put(getSortedOXHeaderKey(_isLeft, _MSBvalue, _mergeId), msbh, fs, true);
+    DKV.put(getSortedOXHeaderKey(_isLeft, _MSBvalue), msbh, fs, true);
     assert _o.length == _x.length;
     for (b=0; b<_o.length; b++) {
       SplitByMSBLocal.OXbatch tmp = new SplitByMSBLocal.OXbatch(_o[b], _x[b]);
-      Value v = new Value(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b, _mergeId), tmp);
+      Value v = new Value(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b), tmp);
       DKV.put(v._key, v, fs, true);  // the OXbatchKey's on this node will be reused for the new keys
       v.freeMem();
     }
@@ -203,10 +199,10 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     tryComplete();
   }
 
-  static Key getSortedOXHeaderKey(boolean isLeft, int MSBvalue, long mergeId) {
+  static Key getSortedOXHeaderKey(boolean isLeft, int MSBvalue) {
     // This guy has merges together data from all nodes and its data is not "from" 
     // any particular node.  Therefore node number should not be in the key.
-    return Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + "_" + mergeId + (isLeft ? "_LEFT" : "_RIGHT"));  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
+    return Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + (isLeft ? "_LEFT" : "_RIGHT"));  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
   }
 
   static class OXHeader extends Iced<OXHeader> {
@@ -241,18 +237,18 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // copy two halves to contiguous temp memory, do the below, then split it back to the two halves afterwards.
       // Straddles batches very rarely (at most once per batch) so no speed impact at all.
       _xbatch = new byte[len * _keySize];
-      System.arraycopy(_x[batch0], (int)((start % _batchSize)*_keySize),_xbatch, 0,  len0*_keySize);
-      System.arraycopy( _x[batch1], 0,_xbatch, len0*_keySize, (len-len0)*_keySize);
+      System.arraycopy(_xbatch, 0, _x[batch0], (int)((start % _batchSize)*_keySize), len0*_keySize);
+      System.arraycopy(_xbatch, len0*_keySize, _x[batch1], 0, (len-len0)*_keySize);
       _obatch = new long[len];
-      System.arraycopy(_o[batch0], (int)(start % _batchSize), _obatch, 0, len0);
-      System.arraycopy(_o[batch1], 0, _obatch, len0, len-len0);
+      System.arraycopy(_obatch, 0, _o[batch0], (int)(start % _batchSize), len0);
+      System.arraycopy(_obatch, len0, _o[batch1], 0, len-len0);
       start = 0;
     } else {
       _xbatch = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
       _obatch = _o[batch0];
     }
     int offset = (int) (start % _batchSize);
-    for (int i=1; i<len; i++) { // like bubble sort
+    for (int i=1; i<len; i++) {
       int cmp = keycmp(_xbatch, offset+i, _xbatch, offset+i-1);  // TO DO: we don't need to compare the whole key here.  Set cmpLen < keySize
       if (cmp < 0) {
         System.arraycopy(_xbatch, (offset+i)*_keySize, keytmp, 0, _keySize);
@@ -269,10 +265,10 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     if (batch1 != batch0) {
       // Put the sorted data back into original two places straddling the boundary
-      System.arraycopy(_xbatch, 0,_x[batch0], (int)(origstart % _batchSize) *_keySize,  len0*_keySize);
-      System.arraycopy(_xbatch, len0*_keySize,_x[batch1], 0,  (len-len0)*_keySize);
-      System.arraycopy( _obatch, 0,_o[batch0], (int)(origstart % _batchSize), len0);
-      System.arraycopy(_obatch, len0,_o[batch1], 0,  len-len0);
+      System.arraycopy(_x[batch0], (int)(origstart % _batchSize) *_keySize, _xbatch, 0, len0*_keySize);
+      System.arraycopy(_x[batch1], 0, _xbatch, len0*_keySize, (len-len0)*_keySize);
+      System.arraycopy(_o[batch0], (int)(origstart % _batchSize), _obatch, 0, len0);
+      System.arraycopy(_o[batch1], 0, _obatch, len0, len-len0);
     }
   }
 
@@ -322,7 +318,6 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     long rollSum = 0;
     for (int c = 0; c < 256; c++) {
-      if (rollSum == len) break;  // done, all other bins are zero, no need to loop through them all
       final long tmp = thisHist[c];
       // important to skip zeros for logic below to undo cumulate.  Worth the
       // branch to save a deeply iterative memset back to zero

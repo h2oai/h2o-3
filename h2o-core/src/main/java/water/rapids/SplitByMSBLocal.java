@@ -4,33 +4,26 @@ import water.*;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.MathUtils;
 import water.util.PrettyPrint;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Hashtable;
-import static java.math.BigInteger.ONE;
-import static java.math.BigInteger.ZERO;
 
 class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   private final boolean _isLeft;
   private final int _shift, _batchSize, _bytesUsed[], _keySize;
-  private final BigInteger _base[];
+  private final long _base[];
   private final int  _col[];
   private final Key _linkTwoMRTask;
   private final int _id_maps[][];
-  private final int[] _ascending;
 
   private transient long _counts[][];
   private transient long _o[][][];  // transient ok because there is no reduce here between nodes, and important to save shipping back to caller.
   private transient byte _x[][][];
   private long _numRowsOnThisNode;
-  final long _mergeId;
 
   static Hashtable<Key,SplitByMSBLocal> MOVESHASH = new Hashtable<>();
-  SplitByMSBLocal(boolean isLeft, BigInteger base[], int shift, int keySize, int batchSize, int bytesUsed[], int[] col,
-                  Key linkTwoMRTask, int[][] id_maps, int[] ascending, long mergeId) {
+  SplitByMSBLocal(boolean isLeft, long base[], int shift, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask, int[][] id_maps) {
     _isLeft = isLeft;
     // we only currently use the shift (in bits) for the first column for the
     // MSB (which we don't know from bytesUsed[0]). Otherwise we use the
@@ -40,17 +33,15 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     _keySize = keySize;
     _linkTwoMRTask = linkTwoMRTask;
     _id_maps = id_maps;
-    _ascending = ascending;
-    _mergeId = mergeId;
   }
 
   @Override protected void setupLocal() {
 
-    Key k = RadixCount.getKey(_isLeft, _col[0], _mergeId, H2O.SELF);
+    Key k = RadixCount.getKey(_isLeft, _col[0], H2O.SELF);
     _counts = ((RadixCount.Long2DArray) DKV.getGet(k))._val;   // get the sparse spine for this node, created and DKV-put above
     DKV.remove(k);
     // First cumulate MSB count histograms across the chunks in this node
-    long MSBhist[] = MemoryManager.malloc8(256);
+    long MSBhist[] = new long[256];
     int nc = _fr.anyVec().nChunks();
     assert nc == _counts.length;
     for (int c = 0; c < nc; c++) {
@@ -60,7 +51,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         }
       }
     }
-    _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message, number of rows having values with current MSB
+    _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message
     if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
       Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
@@ -68,7 +59,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     }
     // shared between threads on the same node, all mappers write into distinct
     // locations (no conflicts, no need to atomic updates, etc.)
-    Log.info("Allocating _o and _x buckets on this node with known size up front ... ");
+    System.out.print("Allocating _o and _x buckets on this node with known size up front ... ");
     long t0 = System.nanoTime();
     _o = new long[256][][];
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
@@ -82,14 +73,13 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       _x[msb] = new byte[nbatch][];
       int b;
       for (b = 0; b < nbatch-1; b++) {
-        _o[msb][b] = MemoryManager.malloc8(_batchSize);          // TODO?: use MemoryManager.malloc8()
-        _x[msb][b] = MemoryManager.malloc1(_batchSize * _keySize);
+        _o[msb][b] = new long[_batchSize];          // TO DO?: use MemoryManager.malloc8()
+        _x[msb][b] = new byte[_batchSize * _keySize];
       }
-      _o[msb][b] = MemoryManager.malloc8(lastSize);
-      _x[msb][b] = MemoryManager.malloc1(lastSize * _keySize);
+      _o[msb][b] = new long[lastSize];
+      _x[msb][b] = new byte[lastSize * _keySize];
     }
-    Log.debug("done in " + (System.nanoTime() - t0) / 1e9+" seconds.");
-
+    System.out.println("done in " + (System.nanoTime() - t0) / 1e9);
 
     // TO DO: otherwise, expand width. Once too wide (and interestingly large
     // width may not be a problem since small buckets won't impact cache),
@@ -118,7 +108,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   @Override public void map(Chunk chk[]) {
     long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
     if (myCounts == null) {
-      Log.debug("myCounts empty for chunk " + chk[0].cidx());
+      System.out.println("myCounts empty for chunk " + chk[0].cidx());
       return;
     }
 
@@ -131,30 +121,19 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // although, it will be most cache efficient (holding one page of each
     // column's _mem, plus a page of this_x, all contiguous.  At the cost of
     // more instructions.
-    boolean[] isIntCols = MemoryManager.mallocZ(chk.length);
-    for (int c=0; c < chk.length; c++){
-      isIntCols[c] = chk[c].vec().isCategorical() || chk[c].vec().isInt();
-    }
-
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       int MSBvalue = 0;  // default for NA
-      BigInteger thisx = ZERO;
+      long thisx = 0;
       if (!chk[0].isNA(r)) {
+        thisx = chk[0].at8(r);
         // TODO: restore branch-free again, go by column and retain original
         // compression with no .at8()
-        if (_id_maps[0]!=null) { // dealing with enum column
-          thisx = BigInteger.valueOf(_isLeft?_id_maps[0][(int)chk[0].at8(r)] + 1:(int)chk[0].at8(r) + 1);
-          MSBvalue = thisx.shiftRight(_shift).intValue();
-          // may not be worth that as has to be global minimum so will rarely be
-          // able to use as raw, but when we can maybe can do in bulk
-        } else {    // dealing with numeric columns (int or double), translate row value into MSB Bucket value
-          thisx = isIntCols[0] ?
-                  BigInteger.valueOf(_ascending[0]*chk[0].at8(r)).subtract(_base[0]).add(ONE):
-                  MathUtils.convertDouble2BigInteger(_ascending[0]*chk[0].atd(r)).subtract(_base[0]).add(ONE);
-          MSBvalue = thisx.shiftRight(_shift).intValue();
-        }
+        if (_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;
+        // may not be worth that as has to be global minimum so will rarely be
+        // able to use as raw, but when we can maybe can do in bulk
+        else thisx = thisx - _base[0] + 1;    // +1 leaving 0'th offset from base to mean NA
+        MSBvalue = (int)(thisx >> _shift);   // NA are counted in the first bin
       }
-
       long target = myCounts[MSBvalue]++;
       int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
@@ -163,30 +142,19 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
       byte this_x[] = _x[MSBvalue][batch];
       offset *= _keySize; // can't overflow because batchsize was chosen above to be maxByteSize/max(keysize,8)
-
-      byte keyArray[] = thisx.toByteArray();  // switched already here.
-      int offIndex = keyArray.length > 8 ? -1 : _bytesUsed[0] - keyArray.length;
-      int endLen = _bytesUsed[0] - (keyArray.length > 8 ? 8 : keyArray.length);
-
-      for (int i = _bytesUsed[0] - 1; (i >= endLen && i >= 0); i--) {
-        this_x[offset + i] = keyArray[i - offIndex];
+      for (int i = _bytesUsed[0] - 1; i >= 0; i--) {   // a loop because I don't believe System.arraycopy() can copy parts of (byte[])long to byte[]
+        this_x[offset + i] = (byte) (thisx & 0xFFL);
+        thisx >>= 8;
       }
-        // add on the key values with values from other columns
       for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
         offset += _bytesUsed[c-1];     // advance offset by the previous field width
         if (chk[c].isNA(r)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
-        if (_id_maps[c] != null) {
-          thisx = BigInteger.valueOf(_isLeft?_id_maps[c][(int)chk[c].at8(r)] + 1:(int)chk[c].at8(r) + 1);
-        } else { // for numerical/integer columns
-          thisx =  isIntCols[c]?
-                  BigInteger.valueOf(_ascending[c]*chk[c].at8(r)).subtract(_base[c]).add(ONE):
-                  MathUtils.convertDouble2BigInteger(_ascending[c]*chk[c].atd(r)).subtract(_base[c]).add(ONE);
-        }
-        keyArray = thisx.toByteArray();  // switched already here.
-        offIndex = keyArray.length > 8 ? -1 : _bytesUsed[c] - keyArray.length;
-        endLen = _bytesUsed[c] - (keyArray.length > 8 ? 8 : keyArray.length);
-        for (int i = _bytesUsed[c] - 1; (i >= endLen && i >= 0); i--) {
-          this_x[offset + i] = keyArray[i - offIndex];
+        thisx = chk[c].at8(r);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
+        if (_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
+        else thisx = thisx - _base[c] + 1;
+        for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
+          this_x[offset + i] = (byte) (thisx & 0xFFL);
+          thisx >>= 8;
         }
       }
     }
@@ -200,15 +168,13 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     return H2O.CLOUD._memary[MSBvalue % H2O.CLOUD.size()];   // spread it around more.
   }
 
-  static Key getNodeOXbatchKey(boolean isLeft, int MSBvalue, int node, int batch, long mergeId) {
-    return Key.make("__radix_order__NodeOXbatch_MSB" + MSBvalue + "_node" + node + "_batch" + batch +  "_"
-                    + mergeId + (isLeft ? "_LEFT" : "_RIGHT"),
+  static Key getNodeOXbatchKey(boolean isLeft, int MSBvalue, int node, int batch) {
+    return Key.make("__radix_order__NodeOXbatch_MSB" + MSBvalue + "_node" + node + "_batch" + batch + (isLeft ? "_LEFT" : "_RIGHT"),
             Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
-  static Key getSortedOXbatchKey(boolean isLeft, int MSBvalue, int batch, long mergeId) {
-    return Key.make("__radix_order__SortedOXbatch_MSB" + MSBvalue + "_batch" + batch + "_"
-                    + mergeId + (isLeft ? "_LEFT" : "_RIGHT"),
+  static Key getSortedOXbatchKey(boolean isLeft, int MSBvalue, int batch) {
+    return Key.make("__radix_order__SortedOXbatch_MSB" + MSBvalue + "_batch" + batch + (isLeft ? "_LEFT" : "_RIGHT"),
             Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
@@ -219,9 +185,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     final byte[/*batchSize or lastSize*/] _x;
   }
 
-  static Key getMSBNodeHeaderKey(boolean isLeft, int MSBvalue, int node, long mergeId) {
-    return Key.make("__radix_order__OXNodeHeader_MSB" + MSBvalue + "_node" + node + "_" + mergeId
-                    + (isLeft ? "_LEFT" : "_RIGHT"),
+  static Key getMSBNodeHeaderKey(boolean isLeft, int MSBvalue, int node) {
+    return Key.make("__radix_order__OXNodeHeader_MSB" + MSBvalue + "_node" + node + (isLeft ? "_LEFT" : "_RIGHT"),
             Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
@@ -259,9 +224,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // TODO: send nChunks * 256.  Currently we do nNodes * 256.  Or avoid DKV
     // altogether if possible.
 
-    Log.info("Starting SendSplitMSB on this node (keySize is " + _keySize + " as [");
-    for( int bs : _bytesUsed ) Log.debug(" "+bs);
-    Log.debug(" ]) ...");
+    System.out.print("Starting SendSplitMSB on this node (keySize is " + _keySize + " as [");
+    for( int bs : _bytesUsed ) System.out.print(" "+bs);
+    System.out.println(" ]) ...");
 
     long t0 = System.nanoTime();
     Futures myfs = new Futures(); // Private Futures instead of _fs, so can block early and get timing results
@@ -275,8 +240,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     myfs.blockForPending();
     double timeTaken = (System.nanoTime() - t0) / 1e9;
     long bytes = _numRowsOnThisNode*( 8/*_o*/ + _keySize) + 64;
-    Log.debug("took : " + timeTaken+" seconds.");
-    Log.debug("  DKV.put " + PrettyPrint.bytes(bytes) + " @ " +
+    System.out.println("took : " + timeTaken);
+    System.out.println("  DKV.put " + PrettyPrint.bytes(bytes) + " @ " +
                        String.format("%.3f", bytes / timeTaken / (1024*1024*1024)) + " GByte/sec  [10Gbit = 1.25GByte/sec]");
   }
 
@@ -295,7 +260,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           numChunks++;
       // make dense.  And by construction (i.e. cumulative counts) these chunks
       // contributed in order
-      int msbNodeChunkCounts[] = MemoryManager.malloc4(numChunks);
+      int msbNodeChunkCounts[] = new int[numChunks];
       int j=0;
       long lastCount = 0; // _counts are cumulative at this stage so need to diff
       for( long[] cnts : _counts ) {
@@ -314,10 +279,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       MSBNodeHeader msbh = new MSBNodeHeader(msbNodeChunkCounts);
       // Need dontCache==true, so data does not remain both locally and on remote.
       // Use private Futures so can block independent of MRTask Futures.
-      DKV.put(getMSBNodeHeaderKey(_isLeft, _msb, H2O.SELF.index(), _mergeId), msbh, _myfs, true);
+      DKV.put(getMSBNodeHeaderKey(_isLeft, _msb, H2O.SELF.index()), msbh, _myfs, true);
       for (int b=0;b<_o[_msb].length; b++) {
         OXbatch ox = new OXbatch(_o[_msb][b], _x[_msb][b]);   // this does not copy in Java, just references
-        DKV.put(getNodeOXbatchKey(_isLeft, _msb, H2O.SELF.index(), b, _mergeId), ox, _myfs, true);
+        DKV.put(getNodeOXbatchKey(_isLeft, _msb, H2O.SELF.index(), b), ox, _myfs, true);
       }
       tryComplete();
     }

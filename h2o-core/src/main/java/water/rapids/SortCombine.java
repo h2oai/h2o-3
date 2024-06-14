@@ -6,7 +6,6 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.util.Log;
 
 import java.util.Arrays;
 
@@ -136,7 +135,7 @@ class SortCombine extends DTask<SortCombine> {
 
     void initKeyOrder(int msb, boolean isLeft) {
       for (int b = 0; b < _key.length; b++) {
-        Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(isLeft, msb, b, _mergeId));
+        Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(isLeft, msb, b));
         SplitByMSBLocal.OXbatch ox = v.get(); //mem version (obtained from remote) of the Values gets turned into POJO version
         v.freeMem(); //only keep the POJO version of the Value
         _key[b] = ox._x;
@@ -320,7 +319,7 @@ class SortCombine extends DTask<SortCombine> {
         for (int index = 0; index < frameLikeChunks4String[col][b].length; index++)
           nc.addStr(frameLikeChunks4String[col][b][index]);
         Chunk ck = nc.compress();
-        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, mergeId), ck, fs, true);
+        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b), ck, fs, true);
         frameLikeChunks4String[col][b] = null; //free mem as early as possible (it's now in the store)
       } else if (_intCols[col]) {
         NewChunk nc = new NewChunk(null, -1);
@@ -329,11 +328,11 @@ class SortCombine extends DTask<SortCombine> {
           else nc.addNum(l, 0);
         }
         Chunk ck = nc.compress();
-        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, mergeId), ck, fs, true);
+        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b), ck, fs, true);
         frameLikeChunksLong[col][b] = null; //free mem as early as possible (it's now in the store)
       } else {
         Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
-        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, mergeId), ck, fs, true);
+        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b), ck, fs, true);
         frameLikeChunks[col][b] = null; //free mem as early as possible (it's now in the store)
       }
     }

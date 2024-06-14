@@ -1960,10 +1960,6 @@ public class Frame extends Lockable<Frame> {
   public Frame sort( int[] cols ) {
     return Merge.sort(this,cols);
   }
-
-  public Frame sort(int[] cols, int[] ascending) {
-    return Merge.sort(this, cols, ascending);
-  }
   
   /**
    * A structure for fast lookup in the set of frame's vectors.

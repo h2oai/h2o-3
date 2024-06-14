@@ -1,6 +1,5 @@
 package water.rapids;
 
-import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -215,6 +214,22 @@ public class SortTest extends TestUtil {
     }
   }
 
+  @Test public void testBigInteger() {
+    Scope.enter();
+    Frame fr, sorted, correctFrame;
+    try {
+      correctFrame = parseTestFile("bigdata/laptop/sort_merge_tests/gh_6644_sort_bug_shorter.csv");
+      fr = parseTestFile("bigdata/laptop/sort_merge_tests/gh_6644_after_1st_sort_shorter.csv");
+      sorted = fr.sort(new int[]{1});
+      Scope.track(fr);
+      Scope.track(sorted);
+      Scope.track(correctFrame);
+      TestUtil.assertFrameEquals(correctFrame, sorted, 1e-6);
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test public void testSortOverflows() throws IOException {
     Scope.enter();
     Frame fr=null, sorted=null;
@@ -326,56 +341,6 @@ public class SortTest extends TestUtil {
       sortedInt = fr.sort(new int[]{colIndex});
       Scope.track(sortedInt);
       testSort(sortedInt, fr, colIndex);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test public void testSortIntegersDescend() throws IOException {
-    Scope.enter();
-    Frame fr, sortedInt;
-    try {
-      fr = parseTestFile("smalldata/synthetic/integerFrame.csv");
-      sortedInt = fr.sort(new int[]{0}, new int[]{-1});
-      Scope.track(fr);
-      Scope.track(sortedInt);
-
-      long numRows = fr.numRows();
-      assert numRows==sortedInt.numRows();
-      for (long index = 1; index < numRows; index++) {
-        assertTrue(sortedInt.vec(0).at8(index) >= sortedInt.vec(0).at8(index));
-      }
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  /***
-   * This simple test just want to test and make sure that processing the final frames by a batch does
-   * not leak memories.  The accuracy of the sort is tested elsewhere.
-   */
-  @Test public void testSortOOM() throws IOException {
-    Scope.enter();
-    Frame fr, sortedInt;
-    try {
-      CreateFrame cf = new CreateFrame();
-      cf.rows=9000000;
-      cf.cols = 2;
-      cf.categorical_fraction = 0;
-      cf.integer_fraction = 1;
-      cf.binary_fraction = 0;
-      cf.time_fraction = 0;
-      cf.string_fraction = 0;
-      cf.binary_ones_fraction = 0;
-      cf.integer_range = 1;
-      cf.has_response = false;
-      cf.seed = 1234;
-      fr = cf.execImpl().get();
-      sortedInt = fr.sort(new int[]{0}, new int[]{-1});
-      Scope.track(fr);
-      Scope.track(sortedInt);
-      
-      assert fr.numRows()==sortedInt.numRows();
     } finally {
       Scope.exit();
     }

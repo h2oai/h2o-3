@@ -2713,7 +2713,8 @@ class H2OFrame(Keyed, H2ODisplay):
             assert len(ascending)==len(by), "Sorting direction must be specified for each sorted column."
             for index in range(len(by)):
                 ascendingI[index]=1 if ascending[index] else -1
-        return H2OFrame._expr(expr=ExprNode("sort",self,by,ascendingI))
+       # return H2OFrame._expr(expr=ExprNode("sort",self,by,ascendingI))
+        return H2OFrame._expr(expr=ExprNode("sort", self, by))
 
     def fillna(self,method="forward",axis=0,maxlen=1):
         """
