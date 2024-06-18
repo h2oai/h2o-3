@@ -12,8 +12,7 @@ import java.math.BigInteger;
 
 import static java.math.BigInteger.ONE;
 import static java.math.BigInteger.ZERO;
-import static water.rapids.Merge.MEM_MULTIPLIER;
-import static water.rapids.Merge.OPTIMAL_BATCHSIZE;
+import static water.rapids.Merge.*;
 
 
 // counted completer so that left and right index can run at the same time
@@ -53,7 +52,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     // it when aligning two keys in Merge()
     int keySize = ArrayUtils.sum(_bytesUsed);
     // 256MB is the DKV limit.  / 2 because we fit o and x together in one OXBatch.
-    int batchSize = OPTIMAL_BATCHSIZE ; // larger, requires more memory with less remote row fetch and vice versa for smaller
+    int batchSize = OPTIMAL_BATCHSIZE2 ; // larger, requires more memory with less remote row fetch and vice versa for smaller
     // go through all node memory and reduce batchSize if needed
     long minMem = Long.MAX_VALUE; // memory size of nodes with smallest memory
     for (H2ONode h2o : H2O.CLOUD._memary) {

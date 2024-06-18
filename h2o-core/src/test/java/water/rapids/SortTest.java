@@ -349,6 +349,22 @@ public class SortTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  @Test public void testBigInteger() {
+    Scope.enter();
+    Frame fr, sorted, correctFrame;
+    try {
+      correctFrame = parseTestFile("bigdata/laptop/sort_merge_tests/gh_6644_sort_bug_shorter.csv");
+      fr = parseTestFile("bigdata/laptop/sort_merge_tests/gh_6644_after_1st_sort_shorter.csv");
+      sorted = fr.sort(new int[]{1});
+      Scope.track(correctFrame);
+      Scope.track(fr);
+      Scope.track(sorted);
+      TestUtil.assertFrameEquals(correctFrame, sorted, 1e-6);
+    } finally {
+      Scope.exit();
+    }
+  }
 
   /***
    * This simple test just want to test and make sure that processing the final frames by a batch does
