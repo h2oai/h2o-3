@@ -1,65 +1,13 @@
-Combining Columns from Two Datasets
------------------------------------
+Combine columns from two datasets
+=================================
 
-The ``cbind`` function allows you to combine datasets by adding columns from one dataset into another. Note that when using ``cbind``, the two datasets must have the same number of rows. In addition, if the datasets contain common column names, H2O will append the joined column with ``0``. 
+The ``cbind`` function lets you combine datasets by adding columns from one dataset into another. If the datasets contain common column names, H2O will append the joined column with ``0``. 
+
+.. note:: 
+	
+	The two datasets you are combining columns from must have the same number of rows.
 
 .. tabs::
-   .. code-tab:: r R
-	
-		library(h2o)
-		h2o.init()
-		
-		# Create two simple, two-column R data frames by inputting values, 
-		# ensuring that both have a common column (in this case, "fruit").
-		left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'), 
-		     color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
-		right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'), 
-		    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
-		
-		# Create the H2O data frames from the inputted data.
-		left_frame <- as.h2o(left)
-		print(left_frame)
-		        fruit  color
-		 1      apple    red
-		 2     orange orange
-		 3     banana yellow
-		 4      lemon yellow
-		 5 strawberry    red
-		 6  blueberry   blue
-		
-		[6 rows x 2 columns]
-		
-		right_frame <- as.h2o(right)
-		print(right_frame)
-		        fruit  citrus
-		 1      apple  FALSE
-		 2     orange   TRUE
-		 3     banana  FALSE
-		 4      lemon   TRUE
-		 5 strawberry  FALSE
-		 6 watermelon  FALSE
-
-		[6 rows x 2 columns]
-
-		# Combine the l.hex and r.hex datasets into a single dataset. 
-		# The columns from r.hex will be appended to the right side of the final dataset. 
-		# In addition, because both datasets include a "fruit" column, H2O will append the 
-		# second "fruit" column name with "0". Note that this is different than ``merge``, 
-		# which combines data from two commonly named columns in two datasets. 
-		
-		columns <- h2o.cbind(left_frame, right_frame)
-		print(columns)
-		       fruit  color     fruit0 citrus
-		1      apple    red      apple  FALSE
-		2     orange orange     orange   TRUE
-		3     banana yellow     banana  FALSE
-		4      lemon yellow      lemon   TRUE
-		5 strawberry    red strawberry  FALSE
-		6  blueberry   blue watermelon  FALSE
-		
-		[6 rows x 4 columns]
-
-		
    .. code-tab:: python
    
 		import h2o
@@ -122,4 +70,59 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 		-0.881062  -0.897391   0.980548  -0.266982    0.363517    0.465146
 
 		[10 rows x 6 columns]
+
+   .. code-tab:: r R
 	
+		library(h2o)
+		h2o.init()
+		
+		# Create two simple, two-column R data frames by inputting values, 
+		# ensuring that both have a common column (in this case, "fruit").
+		left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'), 
+		     color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
+		right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'), 
+		    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
+		
+		# Create the H2O data frames from the inputted data.
+		left_frame <- as.h2o(left)
+		print(left_frame)
+		        fruit  color
+		 1      apple    red
+		 2     orange orange
+		 3     banana yellow
+		 4      lemon yellow
+		 5 strawberry    red
+		 6  blueberry   blue
+		
+		[6 rows x 2 columns]
+		
+		right_frame <- as.h2o(right)
+		print(right_frame)
+		        fruit  citrus
+		 1      apple  FALSE
+		 2     orange   TRUE
+		 3     banana  FALSE
+		 4      lemon   TRUE
+		 5 strawberry  FALSE
+		 6 watermelon  FALSE
+
+		[6 rows x 2 columns]
+
+		# Combine the l.hex and r.hex datasets into a single dataset. 
+		# The columns from r.hex will be appended to the right side of the final dataset. 
+		# In addition, because both datasets include a "fruit" column, H2O will append the 
+		# second "fruit" column name with "0". Note that this is different than ``merge``, 
+		# which combines data from two commonly named columns in two datasets. 
+		
+		columns <- h2o.cbind(left_frame, right_frame)
+		print(columns)
+		       fruit  color     fruit0 citrus
+		1      apple    red      apple  FALSE
+		2     orange orange     orange   TRUE
+		3     banana yellow     banana  FALSE
+		4      lemon yellow      lemon   TRUE
+		5 strawberry    red strawberry  FALSE
+		6  blueberry   blue watermelon  FALSE
+		
+		[6 rows x 4 columns]
+
