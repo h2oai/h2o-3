@@ -1,53 +1,19 @@
 .. _tokenize:
 
-Tokenize Strings
-~~~~~~~~~~~~~~~~
+Tokenize strings
+================
 
-A ``tokenize`` function is available in H2O-3, which converts strings into tokens, then stores the tokenized text into a single column, making it easier for additional processing. 
+The ``tokenize`` function is available in H2O-3. This function converts strings into tokens then stores the tokenized text into a single column, therefore making it easier for additional processing. 
 
-Simple Tokenize Example
-'''''''''''''''''''''''
+Tokenize example
+----------------
 
-Below is a simple example showing strings from frames tokenized into a single column. Refer to the following demos for a more extensive demo using tokenized text in Word2Vec:
+The following short example shows strings from frames tokenized into a single column. Refer to the following demos for a more extensive demo using tokenized text in Word2Vec:
 
-- Python: https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/word2vec_craigslistjobtitles.ipynb
-- R: https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R
+- `Python tokenizing demo <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/word2vec_craigslistjobtitles.ipynb>`__
+- `R tokenizing demo <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__
 
 .. tabs::
-   .. code-tab:: r R
-	
-    	library(h2o)
-    	h2o.init()
-    	
-    	# Create four simple, single-column R data frames by inputting values.
-    	s1 <- as.character(as.h2o(" this is a string "))
-    	s2 <- as.character(as.h2o("this is another string"))
-    	s3 <- as.character(as.h2o("this is a longer string"))
-    	s4 <- as.character(as.h2o("this is tall, this is taller"))
-
-    	# Combine the datasets into a single dataset. 
-    	ds <- h2o.rbind(s1, s2, s3, s4)
-    	ds
-    	                            C1
-    	1            this is a string 
-    	2       this is another string
-    	3      this is a longer string
-    	4 this is tall, this is taller
-
-    	# Tokenize the dataset.
-    	# Notice that tokenized sentences are separated by <NA>.
-    	tokenized <- h2o.tokenize(ds, " ")
-    	tokenized
-    	      C1
-    	1       
-    	2   this
-    	3     is
-    	4      a
-    	5 string
-    	6   <NA>
-
-    	[24 rows x 1 column]
-
    .. code-tab:: python
 
         import h2o
@@ -91,3 +57,38 @@ Below is a simple example showing strings from frames tokenized into a single co
         string
 
         [24 rows x 1 column]
+
+   .. code-tab:: r R
+	
+    	library(h2o)
+    	h2o.init()
+    	
+    	# Create four simple, single-column R data frames by inputting values.
+    	s1 <- as.character(as.h2o(" this is a string "))
+    	s2 <- as.character(as.h2o("this is another string"))
+    	s3 <- as.character(as.h2o("this is a longer string"))
+    	s4 <- as.character(as.h2o("this is tall, this is taller"))
+
+    	# Combine the datasets into a single dataset. 
+    	ds <- h2o.rbind(s1, s2, s3, s4)
+    	ds
+    	                            C1
+    	1            this is a string 
+    	2       this is another string
+    	3      this is a longer string
+    	4 this is tall, this is taller
+
+    	# Tokenize the dataset.
+    	# Notice that tokenized sentences are separated by <NA>.
+    	tokenized <- h2o.tokenize(ds, " ")
+    	tokenized
+    	      C1
+    	1       
+    	2   this
+    	3     is
+    	4      a
+    	5 string
+    	6   <NA>
+
+    	[24 rows x 1 column]
+
