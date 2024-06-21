@@ -33,7 +33,7 @@ dependencies {
 
 shadowJar {
   mergeServiceFiles()
-  classifier = ''
+  archiveClassifier.set('')
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'

@@ -16,7 +16,9 @@ dependencies {
     api "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"
     api "org.apache.hadoop:hadoop-aws:$hadoopMavenArtifactVersion"
     // Libraries need for Google Cloud Storage strongly require this Guava version
-    api('com.google.guava:guava:20.0') { force = true }
+    api('com.google.guava:guava') {
+        version { strictly '20.0' }
+    }
     api(project(':h2o-app')) {
         exclude module: "${defaultWebserverModule}"
     }

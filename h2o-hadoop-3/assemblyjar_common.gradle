@@ -90,8 +90,8 @@ shadowJar {
     exclude hadoopShadowJarExcludes
     relocate 'com.google.common', 'ai.h2o.com.google.common'
     relocate 'org.eclipse.jetty', 'ai.h2o.org.eclipse.jetty'
-    baseName = 'h2odriver'
-    classifier = ''
+    archiveBaseName.set('h2odriver')
+    archiveClassifier.set('')
     manifest {
         attributes 'Main-Class': 'water.hadoop.h2odriver'
     }

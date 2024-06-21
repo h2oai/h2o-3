@@ -19,15 +19,15 @@ if (hasCustomHdfsDep) {
 }
 
 dependencies {
-  api("org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion") {
-    force = true
+  api("org.apache.hadoop:hadoop-client") {
+    version { strictly hadoopMavenArtifactVersion }
   }
-  api("org.apache.hadoop:hadoop-common:$hadoopMavenArtifactVersion") {
-    force = true
+  api("org.apache.hadoop:hadoop-common") {
+    version { strictly hadoopMavenArtifactVersion }
   }
   if (hasCustomHdfsDep) {
-    api("org.apache.hadoop:${hdfsDependency}:$hadoopMavenArtifactVersion") {
-      force = true
+    api("org.apache.hadoop:${hdfsDependency}") {
+      version { strictly hadoopMavenArtifactVersion }
     }
   }
   api(project(":h2o-mapreduce-generic")) {
@@ -36,7 +36,9 @@ dependencies {
   api project(":h2o-security")
   api project(":h2o-ext-steam")
   // Libraries need for Google Cloud Storage strongly require this Guava version
-  api('com.google.guava:guava:20.0') {force = true}
+  api('com.google.guava:guava') {
+    version { strictly '20.0' }
+  }
   api(project(':h2o-app')) {
     exclude module: "${defaultWebserverModule}"
   }
@@ -127,8 +129,8 @@ shadowJar {
   relocate 'org.apache.http', 'ai.h2o.org.apache.http'
   exclude hadoopShadowJarExcludes
   relocate 'com.google.common', 'ai.h2o.com.google.common'
-  baseName = 'h2odriver'
-  classifier = ''
+  archiveBaseName.set('h2odriver')
+  archiveClassifier.set('')
   manifest {
     attributes 'Main-Class': 'water.hadoop.h2odriver'
   }

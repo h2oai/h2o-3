@@ -76,7 +76,7 @@ task jmhPostProcess(dependsOn: "jmh") {
 }
 
 task jmhFatJar(type: ShadowJar) {
-    classifier = "jmh"
+    archiveClassifier.set('jmh')
     manifest {
         attributes "Main-Class": "org.openjdk.jmh.Main"
     }

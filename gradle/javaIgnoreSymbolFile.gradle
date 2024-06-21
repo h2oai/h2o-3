@@ -1,6 +1,16 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 compileJava {
     // This only works when forking and passing 'javac' as an executable
     options.compilerArgs << '-XDignore.symbol.file'    
     options.fork = true
-    options.forkOptions.executable = 'javac'
+    if (System.env.JAVA_HOME != null) {
+        if (Os.isFamily(Os.FAMILY_WINDOWS))
+            options.forkOptions.executable = "${System.env.JAVA_HOME}/bin/javac.exe"
+        else
+            options.forkOptions.executable = "${System.env.JAVA_HOME}/bin/javac"
+    } else {
+        // JAVA_HOME is not set. Using expected javac location
+        options.forkOptions.executable = "/usr/bin/javac"
+    }
 }
