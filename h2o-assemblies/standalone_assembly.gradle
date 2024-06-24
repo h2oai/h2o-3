@@ -1,4 +1,4 @@
-apply plugin: 'io.github.goooler.shadow'
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java-library'
 apply plugin: 'com.github.hierynomus.license'
 

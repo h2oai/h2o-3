@@ -1,4 +1,4 @@
-apply plugin: 'io.github.goooler.shadow'
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java-library'
 
 description = "H2O Application Assembly"
@@ -92,7 +92,7 @@ dependencies {
 shadowJar {
   zip64 true
   mergeServiceFiles()
-  archiveClassifier = ''
+  classifier = ''
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
   if (!project.hasProperty("jacocoCoverage")) {
     relocate 'org.joda.time', 'ai.h2o.org.joda.time'

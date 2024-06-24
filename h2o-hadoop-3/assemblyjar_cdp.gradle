@@ -1,5 +1,5 @@
 apply plugin: 'java-library'
-apply plugin: 'io.github.goooler.shadow'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 description = "H2O HDFS client shadowjar for Hadoop ${ext.hadoopVersion}"
 

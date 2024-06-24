@@ -1,4 +1,4 @@
-apply plugin: 'io.github.goooler.shadow'
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java-library'
 
 description = "H2O Application Assembly for Secure deployments using H2O Steam"
@@ -89,7 +89,7 @@ dependencies {
 
 shadowJar {
   mergeServiceFiles()
-  archiveClassifier = ''
+  classifier = ''
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'

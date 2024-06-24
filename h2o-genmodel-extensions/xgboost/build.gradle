@@ -1,4 +1,4 @@
-apply plugin: 'io.github.goooler.shadow'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 description = "H2O GenModel XGBoost support"
 

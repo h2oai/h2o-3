@@ -1,5 +1,5 @@
 apply plugin: 'java-library'
-apply plugin: 'io.github.goooler.shadow'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 
@@ -128,7 +128,7 @@ shadowJar {
   exclude hadoopShadowJarExcludes
   relocate 'com.google.common', 'ai.h2o.com.google.common'
   baseName = 'h2odriver'
-  archiveClassifier = ''
+  classifier = ''
   manifest {
     attributes 'Main-Class': 'water.hadoop.h2odriver'
   }
