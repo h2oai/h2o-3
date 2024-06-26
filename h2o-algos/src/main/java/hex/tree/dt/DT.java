@@ -8,7 +8,6 @@ import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.mrtasks.GetClassCountsMRTask;
 import hex.tree.dt.mrtasks.ScoreDTTask;
-import org.apache.commons.math3.util.Precision;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -19,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplit;
+import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplitMultinomial;
 
 /**
  * Decision Tree
@@ -108,8 +107,8 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
     private AbstractSplittingRule findBestSplitForFeature(Histogram histogram, int featureIndex) {
         return (_train.vec(featureIndex).isNumeric()
-                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex)
-                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex))
+                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex, _nclass)
+                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex, _nclass))
                 .stream()
                 // todo - consider setting min count of samples in bin instead of filtering splits
                 .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
@@ -128,6 +127,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
 
     private static double calculateCriterionOfSplit(SplitStatistics binStatistics) {
+        // if(binStatistics.() == 2) // todo - fix bin statistics first, they are binomial-only now
         return binStatistics.binaryEntropy();
     }
 
@@ -139,7 +139,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      */
     private int selectDecisionValue(int[] countsByClass) {
         if (_nclass == 1) {
-            return countsByClass[0];
+            return 0;
         }
         int currentMaxClass = 0;
         int currentMax = countsByClass[currentMaxClass];
@@ -205,11 +205,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         // compute node depth
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
         // stop building from this node, the node will be a leaf
-        if ((nodeDepth >= _parms._max_depth)
-                || (countsByClass[0] <= _min_rows)
-                || (countsByClass[1] <= _min_rows)
-//                || zeroRatio > 0.999 || zeroRatio < 0.001
-        ) {
+        if ((nodeDepth >= _parms._max_depth) || Arrays.stream(countsByClass).anyMatch(c -> c <= _min_rows)) {
             // add imaginary left and right children to imitate valid tree structure
             // left child
             limitsQueue.add(null);
@@ -219,10 +215,10 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             return;
         }
 
-        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH/*, minNumSamplesInBin - todo consider*/);
+        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH, _nclass/*, minNumSamplesInBin - todo consider*/);
 
         AbstractSplittingRule bestSplittingRule = findBestSplit(histogram);
-        double criterionForTheParentNode = entropyBinarySplit(1.0 * countsByClass[0] / (countsByClass[0] + countsByClass[1]));
+        double criterionForTheParentNode = entropyBinarySplitMultinomial(countsByClass, Arrays.stream(countsByClass).sum());
         // if no split could be found, make a list from current node
         // if the information gain is low, make a leaf from current node
         if (bestSplittingRule == null
@@ -365,7 +361,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     public ModelCategory[] can_build() {
         return new ModelCategory[]{
                 ModelCategory.Binomial,
-//                ModelCategory.Multinomial,
+                ModelCategory.Multinomial,
 //                                            ModelCategory.Ordinal,
 //                ModelCategory.Regression
         };
