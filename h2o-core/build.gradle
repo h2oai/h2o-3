@@ -29,6 +29,10 @@ dependencies {
   testRuntimeOnly project(":${defaultWebserverModule}")
   testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
   testImplementation "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
+  
+  constraints {
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.15.0'
+  }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
