@@ -1032,17 +1032,21 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   // This should have been called predict(), because that's what it does
-  protected double[] preamble(ModelCategory c, RowData data) throws PredictException {
+  public double[] preamble(ModelCategory c, RowData data) throws PredictException {
     return preamble(c, data, 0.0);
   }
-  protected double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
+  public double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
     validateModelCategory(c);
     final int predsSize = m.getPredsSize(c);
     return predict(data, offset, new double[predsSize]);
   }
 
-  protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
+  public double[] fillRawData(RowData data, double[] rawData) throws PredictException {
     return rowDataConverter.convert(data, rawData);
+  }
+  
+  public double extractRawDataValue(RowData data, String columnName) throws PredictException {
+      return rowDataConverter.convertValue(data, columnName);
   }
 
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {
