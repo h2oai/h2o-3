@@ -55,8 +55,10 @@ dependencies {
     api "com.google.protobuf:protobuf-java:3.21.7"
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.16.1') {
             because 'Fixes CVE-2022-42003'
+            because 'Fixes PRISMA-2023-0067'
+            because 'Fixes CVE-2023-35116'
         }
         api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
             because 'Fixes CVE-2020-29582'
@@ -93,10 +95,6 @@ shadowJar {
   zip64 true
   mergeServiceFiles()
   classifier = ''
-  // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
-  if (!project.hasProperty("jacocoCoverage")) {
-    relocate 'org.joda.time', 'ai.h2o.org.joda.time'
-  }
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'
