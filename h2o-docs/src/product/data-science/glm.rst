@@ -29,7 +29,7 @@ GLM supports importing and exporting `MOJOs <../save-and-load-model.html#support
 Additional resources
 --------------------
 
-* `GLM Booklet <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf>`__
+See the `GLM Booklet <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf>`__ for more information on the GLM algorithm.
 
 Defining a GLM model
 --------------------
@@ -109,7 +109,9 @@ Shared GLM family parameters
 
 - **cold_start**: |GAM| |MS| Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple ``alpha``/``lambda`` values. If ``False`` and for a fixed ``alpha`` value, the next model with the next ``lambda`` value out of the ``lambda`` array will be built using the coefficients and the GLM state values of the current model. If ``True``, the next GLM model will be built from scratch. The default value is ``False``.
 
-     **note** If an ``alpha`` array is specified and for a brand new ``alpha``, the model will be built from scratch regardless of the value of ``cold_start``.
+   .. note:: 
+
+      If an ``alpha`` array is specified and for a brand new ``alpha``, the model will be built from scratch regardless of the value of ``cold_start``.
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: |GAM| |MS| |ANOVA| Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
@@ -177,7 +179,9 @@ Shared GLM family parameters
 
 -  `prior <algo-params/prior.html>`__: |GAM| |MS| |ANOVA| Specify prior probability for :math:`p(y==1)`. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to ``-1`` and must be a value in the range (0,1).
    
-     **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
+      .. note:: 
+
+         This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: |GAM| |MS| Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This option defaults to ``False`` (disabled).
 
@@ -214,7 +218,9 @@ Common parameters
 
 - `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a previously trained model. Use this option to build a new model as a continuation of a previously generated model.
 
-  - **Note:** GLM only supports checkpoint for the ``IRLSM`` solver. The solver option must be set explicitly to ``IRLSM`` and cannot be set to ``AUTO``. In addition, checkpoint for GLM does not work when cross-validation is enabled. 
+   .. note:: 
+
+      GLM only supports checkpoint for the ``IRLSM`` solver. The solver option must be set explicitly to ``IRLSM`` and cannot be set to ``AUTO``. In addition, checkpoint for GLM does not work when cross-validation is enabled. 
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set. This option defaults to ``True`` (enabled).
 
@@ -249,7 +255,9 @@ Common parameters
 
 -  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``.
    
-     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+      .. note:: 
+
+         Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
 
@@ -274,23 +282,33 @@ Common parameters
 
 - `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
 
-    **Note:** If cross-validation is enabled:
-  
-    - All cross-validation models stop training when the validation metric doesn't improve.
-    - The main model runs for the mean number of epochs.
-    - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+    .. note:: 
+
+       If cross-validation is enabled:
+     
+       - All cross-validation models stop training when the validation metric doesn't improve.
+       - The main model runs for the mean number of epochs.
+       - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
 - `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. Defaults to ``0.001``.
 
--  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+      
+      .. note::
+
+         In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
 -  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
    
-    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+    .. admonition:: Python only 
+
+      To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
    
-    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+    .. note:: 
+
+      Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
@@ -304,15 +322,15 @@ Interpreting a GLM model
 
 By default, the following output displays:
 
--  Model parameters (hidden)
--  A bar chart representing the standardized coefficient magnitudes (blue for negative, orange for positive). Note that this only displays is standardization is enabled.
--  A graph of the scoring history (objective vs. iteration)
--  Output (model category, validation metrics, and standardized coefficients magnitude)
--  GLM model summary (family, link, regularization, number of total predictors, number of active predictors, number of iterations, training frame)
--  Scoring history in tabular form (timestamp, duration, iteration, log likelihood, objective)
--  Training metrics (model, model checksum, frame, frame checksum, description, model category, scoring time, predictions, MSE, r2, residual deviance, null deviance, AIC, null degrees of freedom, residual degrees of freedom)  
--  Coefficients
--  Standardized coefficient magnitudes (if standardization is enabled)
+-  **Model parameters** (hidden)
+-  A **bar chart representing the standardized coefficient magnitudes** (blue for negative, orange for positive). Note that this only displays if standardization is enabled.
+-  A **graph of the scoring history** (objective vs. iteration)
+-  **Output** (model category, validation metrics, and standardized coefficients magnitude)
+-  **GLM model summary** (family, link, regularization, number of total predictors, number of active predictors, number of iterations, training frame)
+-  **Scoring history in tabular form** (timestamp, duration, iteration, log likelihood, objective)
+-  **Training metrics** (model, model checksum, frame, frame checksum, description, model category, scoring time, predictions, MSE, r2, residual deviance, null deviance, AIC, null degrees of freedom, residual degrees of freedom)  
+-  **Coefficients**
+-  **Standardized coefficient magnitudes** (if standardization is enabled)
 
 Classification and regression
 -----------------------------
@@ -322,22 +340,21 @@ GLM can produce two categories of models: classification and regression. Logisti
 Handling of categorical variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-GLM supports both binary and multinomial classification. For binary classification, the response column can only have two levels; for multinomial classification, the response column will have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
+GLM supports both binary and multinomial classification. For binary classification, the response column can only have two levels; for multinomial classification, the response column will have more than two levels. We recommend letting GLM handle categorical columns as it can take advantage of the categorical column for better performance and memory utilization.
 
-We strongly recommend avoiding one-hot encoding categorical columns with any levels into many binary columns, as this is very inefficient. This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
+We strongly recommend avoiding one-hot encoding categorical columns with any levels into many binary columns because it is very inefficient. This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
 
 Handling of Numeric Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When GLM performs regression (with factor columns), one category can be left out to avoid multicollinearity. If regularization is disabled (``lambda = 0``), then one category is left out. However, when using a the default lambda parameter, all categories are included.  
 
-The reason for the different behavior with regularization is that collinearity is not a problem with regularization. 
-And it’s better to leave regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
+The reason for the different behavior with regularization is that collinearity is not a problem with regularization. It’s also better to leave out regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
 
 Regression influence diagnostics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Regression influence diagnostics reveal the influence of each data row on the GLM parameter determination for IRLSM. This shows the parameter value change for each predictor when  a data row is included and excluded in the dataset used to train the GLM model. 
+Regression influence diagnostics reveal the influence of each data row on the GLM parameter determination for IRLSM. This shows the parameter value change for each predictor when a data row is included and excluded in the dataset used to train the GLM model. 
 
 To find the regression diagnostics for the Gaussian family, the output is:
 
@@ -387,7 +404,7 @@ The DFBETAS for the :math:`k\text{th}` coefficient due to the absence of data ro
 
 .. math::
 
-   DFBETAS(l)_k = \frac{\Delta_l \hat{\beta}_k}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} = \frac{\beta_k - \beta_{(l)k}}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} \quad \text{euqation 4}
+   DFBETAS(l)_k = \frac{\Delta_l \hat{\beta}_k}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} = \frac{\beta_k - \beta_{(l)k}}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} \quad \text{equation 4}
 
 where:
 
@@ -411,7 +428,7 @@ where:
 - :math:`V` is a diagonal matrix with diagonal value :math:`v_{ii} = \mu_i (1-\mu_i)`;
 - :math:`s_i = y_i - \mu_i`.
 
-The formula for DFBETAS for the :math:`k\text{th}` coefficient due to the ansence of data row :math:`l` is defined as:
+The formula for DFBETAS for the :math:`k\text{th}` coefficient due to the absence of data row :math:`l` is defined as:
 
 .. math::
    
@@ -464,10 +481,12 @@ The ``family`` option specifies a probability distribution from an exponential f
 - ``negativebinomial``: (See `Negative Binomial Models`_). The response must be numeric and non-negative (Int).
 - ``AUTO``: Determines the family automatically for the user.
 
-**Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
+.. note:: 
+   
+   If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results:
 
- - If you DO convert the response column to categorical and DO NOT to set ``family=binomial``, then you will receive an error message.
- - If you DO NOT convert response column to categorical and DO NOT set the family, then GLM will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
+    - If you DO convert the response column to categorical and DO NOT to set ``family=binomial``, then you will receive an error message.
+    - If you DO NOT convert response column to categorical and DO NOT set the family, then GLM will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
 
 Linear regression (Gaussian family)
 '''''''''''''''''''''''''''''''''''
@@ -497,7 +516,8 @@ Logistic regression is used for binary classification problems where the respons
 
 .. figure:: ../images/scurve.png 
    :width: 400px
-   :alt: S-curve
+   :alt: S-curve with x-axis stretching -100 to 100 and y-axis stretching 0.0 to 1.0. Half the responses are along the 0 between -100 and 0; the other half are along the 1.0 between 0 and 100. This creates the S shaped curve.
+   :align: center
 
 The fitted model has the form:
 
