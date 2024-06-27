@@ -13,7 +13,7 @@ This section describes how to use H2O-3 on Docker. It walks you through the foll
 Prerequisites
 -------------
 
-- Linux kernal verison 3.8+ or Mac OS 10.6+
+- Linux kernel verison 3.8+ or Mac OS 10.6+
 - VirtualBox
 - Latest version of Docker installed and configured
 - Docker daemon running (enter all following commands in the Docker daemon window)
