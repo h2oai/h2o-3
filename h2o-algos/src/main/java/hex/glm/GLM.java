@@ -1448,7 +1448,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error("redundant and possibly conflicting linear constraints", redundantConstraints.get(index));
     } else {
       _state._csGLMState = new ConstraintGLMStates(constraintCoefficientNames, initConstraintMatrix, _parms);
-      _state._hasConstraints = true;
     }
   }
   
@@ -2389,7 +2388,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms, 
               _dinfo, 0, _state.activeBC(), _betaInfo);
       GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan, 
-              equalityConstraints, lessThanEqualToConstraints);
+              equalityConstraints, lessThanEqualToConstraints); // add dpenalty/dx to gradient from penalty term
       _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);  // update state ginfo with contributions from GLMGradientInfo
       boolean predictorSizeChange;
       boolean applyBetaConstraints = _parms._separate_linear_beta && _betaConstraintsOn;
@@ -2398,7 +2397,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
         return;
       }
-      double gradMagSquare;
+      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      boolean done;
       int origIter = iterCnt+1;
       try {
         while (true) {
@@ -2440,17 +2440,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             else
               ls.reset(betaCnd, _state, coefNames);
 
-            if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)) {
-              gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+            // line search can fail when the gradient is close to zero.  In this case, we need to update the 
+            // constraint parameters.
+            if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)
+                    || (gradMagSquare <= _state._csGLMState._epsilonkCSSquare)) {
               betaCnd = ls._newBeta;
               gradientInfo = ls._ginfoOriginal;
-            } else {  // ls failed, reset to 
-              if (applyBetaConstraints) // separate beta and linear constraints
-                bc.applyAllBounds(_state.beta());
-              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
-                      ginfo, _state.beta());
-              Log.info(LogMsg("Line search failed " + ls));
-              return;
+              gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+            } else {  // ls failed, reset to
+                if (applyBetaConstraints) // separate beta and linear constraints
+                  bc.applyAllBounds(_state.beta());
+                ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
+                        ginfo, _state.beta());
+                Log.info(LogMsg("Line search failed " + ls));
+                return;
             }
 
             if (applyBetaConstraints) { // if beta constraints are applied, may need to update constraints, derivatives, gradientInfo
@@ -2462,9 +2465,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               gradientInfo = ls._ginfoOriginal;
             }
             
-            // check for stopping conditions
-            if (checkIterationDone(betaCnd, gradientInfo, iterCnt)) // ratio of objective drops.
+            // check for stopping conditions which also updates the variables in state.
+            // stopping condition is to stop us getting stuck in improvements that are too insignificant.
+            // However, we will only exit the while loop when the gradMagSquare is still too high.  There is no hope
+            // for improvement here anymore since the beta values and gradient values are not changing much anymore.
+            done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
+            if ((!progress(betaCnd, gradientInfo) &&
+                    (gradMagSquare > _state._csGLMState._epsilonkCSSquare)) || done) {
+              checkKKTConditions(betaCnd, gradientInfo, iterCnt);
               return;
+            }
+            
             Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + 
                     ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           } while (gradMagSquare > _state._csGLMState._epsilonkCSSquare);
@@ -2477,25 +2488,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     /***
-     * This method will first check if enough progress has been made with progress method.
-     * If no more progress is made, we will check it the constraint stopping conditions are met. 
-     * The model building process will stop if no more progress is made regardless of whether the constraint stopping
-     * conditions are met or not.
+     * We will check it the constraint stopping conditions are met.
      */
-    public boolean checkIterationDone(double[] betaCnd, GLMGradientInfo gradientInfo, int iterCnt) {
+    public void checkKKTConditions(double[] betaCnd, GLMGradientInfo gradientInfo, int iterCnt) {
       // check for stopping conditions
-      boolean done = !progress(betaCnd, gradientInfo); // no good change in coeff, time-out or max_iteration reached
-      if (done) {
-        _model._betaCndCheckpoint = betaCnd;
-        boolean kktAchieved = constraintsStop(gradientInfo, _state);
-        if (kktAchieved)
-          Log.info("KKT Conditions achieved after " + iterCnt + " iterations ");
-        else
-          Log.warn("KKT Conditions not achieved but no further progress made due to time out or no changes" +
-                  " to coefficients after " + iterCnt + " iterations");
-        return true;
-      }
-      return false;
+      _model._betaCndCheckpoint = betaCnd;
+      boolean kktAchieved = constraintsStop(gradientInfo, _state);
+      if (kktAchieved)
+        Log.info("KKT Conditions achieved after " + iterCnt + " iterations ");
+      else
+        Log.warn("KKT Conditions not achieved but no further progress made due to time out or no changes" +
+                " to coefficients after " + iterCnt + " iterations");
     }
     
     public List<String> changeCoeffBetainfo(String[] coefNames) {
