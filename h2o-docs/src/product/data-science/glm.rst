@@ -546,21 +546,22 @@ The corresponding deviance is equal to:
 Fractional logit model (Fraction Binomial)
 ''''''''''''''''''''''''''''''''''''''''''
 
-In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0, 1]. The following assumptions are made for this model.
+In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0,1]. The following assumptions are made for this model.
 
 - :math:`\text{Pr}(y=1|x) = E(y) = \frac{1}{1 + \text{exp}(-\beta^T x-\beta_0)}`
 - The likelihood function = :math:`\text{Pr}{(y=1|x)}^y (1-\text{Pr}(y=1|x))^{(1-y)}` for :math:`1 \geq y \geq 0`
 - :math:`var(y) = \varphi E(y)(1-E(y))` and :math:`\varphi` is estimated as :math:`\varphi = \frac{1}{n-p} \frac{\sum {(y_i - E(y))}2} {E(y)(1-E(y))}`
 
-Note that these are exactly the same as the binomial distribution.  However, the values are  calculated with the value of :math:`y` in the range of 0 and 1 instead of just 0 and 1.  Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
-
+.. note:: 
+   
+   These are exactly the same as the binomial distribution. However, the values are calculated with the value of :math:`y` in the range of 0 and 1 instead of just 0 and 1. Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
 
 Logistic ordinal regression (Ordinal family)
 ''''''''''''''''''''''''''''''''''''''''''''
 
-A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
+A logistic ordinal regression model is a generalized linear model that predicts ordinal variables. In classification, these variables are discreet; in regression, the variables can be ordered.
 
-Let :math:`X_i\in\rm \Bbb I \!\Bbb R^p`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative distribution function (CDF) of :math:`y` belonging to class :math:`j`, given :math:`X_i` as the logistic function:
+Let :math:`X_i\in\rm \Bbb I \!\Bbb R^p`, where :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative distribution function (CDF) of :math:`y` belonging to class :math:`j`, given :math:`X_i` as the logistic function:
 
 .. math::
 
@@ -593,19 +594,21 @@ and
 .. math::
    \beta^{T}X_i + \theta_{j'} \leq 0 \; \text{for} \; j' < j
 
-Hence, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model parameters :math:`\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}` by considering the thresholds :math:`\beta^{T}X_i + \theta_j` directly. The following loss function is used to adjust the model parameters:
+Therefore, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model parameters :math:`\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}` by considering the thresholds :math:`\beta^{T}X_i + \theta_j` directly. The following loss function is used to adjust the model parameters:
 
-.. figure:: ../images/ordinal_equation.png 
-   :align: center
-   :height: 243
-   :width: 565
-   :alt: Loss function 
+.. math::
+   
+   L(\beta,\theta, X_i, y_i) = \begin{cases} 0 \begin{cases}\text{if } \beta^T X_i + \theta_j > 0 \text{ for all } j \geq y_i \\ \text{and } \beta^T X_i + \theta_j \leq 0 \text{ for all } j < y_i \\\end{cases} \\ (\beta^T X_i + \theta_j)^2 \text{ if } \beta^TX_i + \theta_j \leq 0 \text{ for all } j \geq y_i \text{ and } \beta^TX_i + \theta_j > \text{ for all } j < y_i \\\end{cases}
+
+.. math::
+   
+   L(\beta,\theta) = \sum^n_{i=1} L(\beta,\theta,X_i,y_i)
 
 Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH`` and use the log-likelihood function. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj_reg``, ``alpha``, and ``lambda`` parameters.
 
-In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
+In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster because it doesn't deal with logistic functions - just linear functions when adjusting the model parameters.
 
 Pseudo-logistic regression (Quasibinomial family)
 '''''''''''''''''''''''''''''''''''''''''''''''''
@@ -615,7 +618,7 @@ The quasibinomial family option works in the same way as the aforementioned bino
 Multiclass classification (Multinomial family)
 ''''''''''''''''''''''''''''''''''''''''''''''
 
-Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the binomail family, GLM models the conditional probability of observing class "c" given "x". A vector of coefficients exists for each of the output classes. (:math:`\beta` is a matrix.) The probabilities are defined as:
+Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the binomial family, GLM models the conditional probability of observing class "c" given "x". A vector of coefficients exists for each of the output classes (:math:`\beta` is a matrix). The probabilities are defined as:
 
 .. math::
 
@@ -627,7 +630,7 @@ The penalized negative log-likelihood is defined as:
 
  - \Big[ \dfrac {1} {N} \sum_{i=1}^N \sum_{k=1}^K \big( y_{i,k} (x^T_i \beta_k + \beta_{k0}) \big) - \text{log} \big( \sum_{k=1}^K e^{x{^T_i}\beta_k + {\beta_{k0}}} \big) \Big] + \lambda \Big[ \dfrac {(1-\alpha)} {2} ||\beta || ^2_F + \alpha \sum_{j=1}^P ||\beta_j ||_1 \Big]
 
-where :math:`\beta_c` is a vector of coefficients for class "c", and :math:`y_{i,k}` is the :math:`k\text{th}` element of the binary vector produced by expanding the response variable using one-hot encoding (i.e., :math:`y_{i,k} == 1` iff the response at the :math:`i\text{th}` observation is "k"; otherwise it is 0.)
+where :math:`\beta_c` is a vector of coefficients for class "c", and :math:`y_{i,k}` is the :math:`k\text{th}` element of the binary vector produced by expanding the response variable using one-hot encoding (i.e. :math:`y_{i,k} == 1` if the response at the :math:`i\text{th}` observation is "k"; otherwise it is 0.)
 
 Poisson models
 ''''''''''''''
@@ -650,12 +653,14 @@ The corresponding deviance is equal to:
 
  D = -2 \sum_{i=1}^{N} \big( y_i \text{log}(y_i / \hat {y}_i) - (y_i - \hat {y}_i) \big)
 
-Note in the equation above that H2O-3 uses the negative log of the likelihood. This is different than the way deviance is specified in https://onlinecourses.science.psu.edu/stat501/node/377/. In order to use this deviance definition, simply multiply the H2O-3 deviance by -1. 
+.. note::
+   
+   In the equation above, H2O-3 uses the negative log of the likelihood. In order to convert this to use the other deviance definition, simply multiply the H2O-3 deviance by -1. 
 
 Gamma models
 ''''''''''''
 
-The gamma distribution is useful for modeling a positive continuous response variable, where the conditional variance of the response grows with its mean, but the coefficientof variation of the response :math:`\sigma^2(y_i)/\mu_i` is constant. It is usually used with the log link :math:`g(\mu_i) = \text{log}(\mu_i)` or the inverse link :math:`g(\mu_i) = \dfrac {1} {\mu_i}`, which is equivalent to the canonical link. 
+The gamma distribution is useful for modeling a positive continuous response variable, where the conditional variance of the response grows with its mean, but the coefficient of variation of the response :math:`\sigma^2(y_i)/\mu_i` is constant. It's usually used with the log link :math:`g(\mu_i) = \text{log}(\mu_i)` or the inverse link :math:`g(\mu_i) = \dfrac {1} {\mu_i}`, which is equivalent to the canonical link. 
 
 The model is fitted by solving the following likelihood maximization:
 
@@ -672,9 +677,9 @@ The corresponding deviance is equal to:
 Tweedie models
 ''''''''''''''
 
-Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p`-{th} power of the mean :math:`var(y_i) = \phi\mu{^p_i}`, where :math:`\phi` is the dispersion parameter and :math:`p` is the variance power. 
+Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p`-th power of the mean :math:`var(y_i) = \phi\mu{^p_i}`, where :math:`\phi` is the dispersion parameter and :math:`p` is the variance power. 
 
-The Tweedie distribution is parametrized by variance power :math:`p` while :math:`\phi` is an unknown constant. It is defined for all :math:`p` values except in the (0,1) interval and has the following distributions as special cases:
+The Tweedie distribution is parameterized by variance power :math:`p` while :math:`\phi` is an unknown constant. It is defined for all :math:`p` values except in the (0,1) interval and has the following distributions as special cases:
 
 - :math:`p = 0`: Normal
 - :math:`p = 1`: Poisson
@@ -685,27 +690,30 @@ The Tweedie distribution is parametrized by variance power :math:`p` while :math
 
 The model likelood to maximize has the form:
 
-.. figure:: ../images/model_log_likelihood_tweedie.png
-   :alt: Tweedie model log likelihood
-   :scale: 50%
+.. math::
+   
+   \sum^N_{i=1}\log(\alpha(y_i,\phi) + \begin{cases} \frac{1}{\phi} \Big( y_i \log(\mu_i) - \frac{\mu^{2-p}_i}{2-p} \Big), & p=1 \\ \frac{1}{\phi} \Big( y_i \frac{\mu^{1-p}_i}{1-p} - \log(\mu_i) \Big), & p=2 \\ \frac{1}{\phi} \Big( y_i \frac{\mu^{1-p}_i}{1-p} - \frac{\mu^{2-p}_i}{2-p} \Big), & p \neq 1, p \neq 2 \\\end{cases}
 
-where the function :math:`a(y_i,\phi)` is evaluated using an infinite series expansion and does not have an analytical solution. However, because :math:`\phi` is an unknown constant, :math:`\sum_{i=1}^N\text{log}(a(y_i,\phi))` is a constant and will be ignored. Hence, the final objective function to minimize with the penalty term is:
+where the function :math:`a(y_i,\phi)` is evaluated using an infinite series expansion and does not have an analytical solution. However, because :math:`\phi` is an unknown constant, :math:`\sum_{i=1}^N\text{log}(a(y_i,\phi))` is a constant and will be ignored. Therefore, the final objective function to minimize with the penalty term is:
 
-.. figure:: ../images/minimize_penalty.png
-   :alt: Objective function to minimize penalty
+.. math::
+   
+   \min_{\beta,\beta_0} \lambda \big( \alpha \| \beta \|_1 +\frac{1}{2}(1-\alpha) \|\beta \|_2 \big) - \begin{cases} \Big(y_i\log(\mu_i) - \frac{\mu^{2-p}_i}{2-p} \Big), & p=1 \\ \Big(y_i \frac{\mu^{1-p}_i}{1-p} -\log(\mu_i) \Big), & p=2 \\ \Big(y_i \frac{\mu^{1-p}_i}{1-p} - \frac{\mu^{2-p}_i}{2-p} \Big), & p \neq 1, p \neq 2 \\\end{cases}
 
 The link function in the GLM representation of the Tweedie distribution defaults to:
 
-.. figure:: ../images/link_function_tweedie.png
-   :alt: Link function of tweedie distribution
-   :scale: 50%
+.. math::
+   
+   g(\mu) = \begin{cases} \mu^q = \eta = X\beta, q \neq 0 \\ \log(\mu) = \eta = X\beta,q = 0 \\\end{cases}
 
 And :math:`q = 1 - p`. The link power :math:`q` can be set to other values as well.
 
 The corresponding deviance is equal to:
 
-.. figure:: ../images/tweedie_deviance.png
-   :alt: Deviance in tweedie
+.. math::
+   
+   D = 2 \times \begin{cases} \sum^N_{i=1}y_i\log \Big(\frac{y_i}{\mu_i} \Big) - \frac{\big(y_i^{2-p} - \mu_i^{2-p} \big)}{2-p}, & p=1 \\ \sum^N_{i=1} {y_i}^{1-p} \big(y_i^{1-p} - \mu_i^{1-p} \big) - \log \Big(\frac{y_i}{\mu_i} \Big), & p=2 \\ \sum_{i=1}^N \frac{y_i \big(y_i^{1-p} - \mu_i^{1-p} \big)}{1-p} - \frac{\big(y_i^{2-p} - \mu_i^{2-p} \big)}{2-p}, & p \neq 1, p \neq 2
+   \end{cases}
 
 .. _negative_binomial:
 
