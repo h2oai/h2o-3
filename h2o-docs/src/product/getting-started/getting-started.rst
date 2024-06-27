@@ -29,29 +29,28 @@ Algorithm support
 
 H2O Flow supports the following H2O-3 algorithms:
 
-- `AdaBoost <../data-science/adaboost.html>`__
 - `Aggregator <../data-science/aggregator.html>`__
 - `ANOVA GLM <../data-science/anova_glm.html>`__
+- `AutoML <../automl.html>`__
 - `Cox Proportional Hazards (CoxPH) <../data-science/coxph.html>`__
 - `Deep Learning <../data-science/deep-learning.html>`__
 - `Distributed Random Forest (DRF) <../data-science/drf.html>`__
 - `Distributed Uplift Random Forest (Uplift DRF) <../data-science/upliftdrf.html>`__
 - `Extended Isolation Forest <../data-science/eif.html>`__
-- `Generalized Additive Models (GAM) <../data-science/gam.html>`__
 - `Generalized Linear Model (GLM) <../data-science/glm.html>`__
 - `Generalized Low Rank Models (GLRM) <../data-science/glrm.html>`__
 - `Gradient Boosting Machine (GBM) <../data-science/gbm.html>`__
+- `Information Diagram (Infogram) <../admissible.html>`__
 - `Isolation Forest <../data-science/if.html>`__
-- `Isotonic Regression <../data-science/isotonic-regression.html>`__
 - `K-Means Clustering <../data-science/k-means.html>`__
 - `ModelSelection <../data-science/model_selection.html>`__
 - `Naïve Bayes Classifier <../data-science/naive-bayes.html>`__
 - `Principal Component Analysis (PCA) <../data-science/pca.html>`__
 - `RuleFit <../data-science/rulefit.html>`__
 - `Stacked Ensemble <../data-science/stacked-ensembles.html>`__
-- `Support Vector Machine (PSVM) <../data-science/svm.html>`__
+- `Target Encoding <../data-science/target-encoding.html>`__
 - `Word2Vec <../data-science/word2vec.html>`__
-
+- `XGBoost <../data-science/xgboost.html>`__
 
 Tutorials of Flow
 ~~~~~~~~~~~~~~~~~
@@ -148,7 +147,7 @@ At this point, choose whether you want to complete this quickstart in Python or 
         >>> h2o.demo("deeplearning")
 
         # Import the Iris (with headers) dataset:
-        >>> path = "smalldata/iris/iris_wheader.csv"
+        >>> path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
         >>> iris = h2o.import_file(path=path)
 
         # View a summary of the imported dataset:
@@ -200,7 +199,7 @@ At this point, choose whether you want to complete this quickstart in Python or 
         > h2o.init()
      
         # Import the Iris (with headers) dataset.
-        > path <- "smalldata/iris/iris_wheader.csv"
+        > path <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
         > iris <- h2o.importFile(path)
 
         # View a summary of the imported dataset.

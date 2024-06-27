@@ -60,7 +60,7 @@ H2O-3 communicates using two communication paths. Verify these paths are open an
 Path 1: Mapper to driver
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Optionally specify this port using the ``-driverport`` option in the ``hadoop jar`` command (see `Hadoop launch parameters <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#hadoop-launch-parameters>`__). This port is opened on the driver host (the host where you entered the ``hadoop jar`` command). By default, this port is chosen randomly by the operating system. If you don't want to spcify an exact port but still want to restrict the port to a certain range of pors, you can use the option ``-driverportrange``.
+Optionally specify this port using the ``-driverport`` option in the ``hadoop jar`` command (see `Hadoop launch parameters <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#hadoop-launch-parameters>`__). This port is opened on the driver host (the host where you entered the ``hadoop jar`` command). By default, this port is chosen randomly by the operating system. If you don't want to specify an exact port but still want to restrict the port to a certain range of ports, you can use the option ``-driverportrange``.
 
 Path 2: Mapper to mapper
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,7 +118,7 @@ Hadoop launch parameters
 -  ``-h | -help``: Display help.
 -  ``-jobname <JobName>``: Specify a job name for the Jobtracker to use; the default is ``H2O_nnnnn`` (where n is chosen randomly).
 -  ``-principal <kerberos principal> -keytab <keytab path> | -run_as_user <hadoop username>``: Optionally specify a Kerberos principal and keytab or specify the ``run_as_user`` parameter to start clusters on behalf of the user/principal. Note that using ``run_as_user`` implies that the Hadoop cluster does not have Kerberos. 
--  ``-driverif <IP address of mapper -> driver callback interface>``: Specify the IP address for callback messages from the mapper to the driver.
+-  ``-driverip <IP address of mapper -> driver callback interface>``: Specify the IP address for callback messages from the mapper to the driver.
 -  ``-driverport <port of mapper -> callback interface>``: Specify the port number for callback messages from the mapper to the driver.
 -  ``-driverportrange <range portX-portY of mapper-> callback interface>``: Specify the allowed port range of the driver callback interface, eg. 50000-55000.
 -  ``-network <IPv4Network1>[,<IPv4Network2>]``: Specify the IPv4 network(s) to bind to the H2O-3 nodes; multiple networks can be specified to force H2O-3 to use the specified host in the Hadoop cluster. ``10.1.2.0/24`` allows 256 possibilities.

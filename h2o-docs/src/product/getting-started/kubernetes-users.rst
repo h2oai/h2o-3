@@ -122,7 +122,7 @@ Where:
 
 - ``H2O_KUBERNETES_SERVICE_DNS``: *Required* Crucial for clustering to work. This format usually follows the ``<service-name>.<project-namespace>.svc.cluster.local`` pattern. This setting enables H2O-3 node discovery through DNS. It must be modified to match the name of the headless service you created. Be sure you also pay attention to the rest of the address: it needs to match the specifics of your Kubernetes implementation.
 - ``H2O_NODE_LOOKUP_TIMEOUT``: Node lookup constraint. Specify the time before the node lookup times out.
-- ``H2O_NODE_EXPECTED_COUNT``: Node lookup constraint. Specofu the expected number of H2O-3 pods to be discovered.
+- ``H2O_NODE_EXPECTED_COUNT``: Node lookup constraint. Specify the expected number of H2O-3 pods to be discovered.
 - ``H2O_KUBERNETES_API_PORT``: Port for Kubernetes API checks to listen on (defaults to ``8080``). 
 
 If none of these optional lookup constraints are specified, a sensible default node lookup timeout will be set (defaults to three minutes). If any of the lookup constraints are defined, the H2O-3 node lookup is terminated on whichever condition is met first.
