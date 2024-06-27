@@ -36,6 +36,7 @@ H2O-3 supports the following `algorithms <data-science.html>`__:
 - `Generalized Linear Model (GLM) <data-science/glm.html>`__
 - `Generalized Low Rank Models (GLRM) <data-science/glrm.html>`__
 - `Gradient Boosting Machine (GBM) <data-science/gbm.html>`__
+- `Information Diagram (Infogram) <admissible.html>`__
 - `Isolation Forest <data-science/if.html>`__
 - `Isotonic Regression <data-science/isotonic-regression.html>`__
 - `K-Means Clustering <data-science/k-means.html>`__
