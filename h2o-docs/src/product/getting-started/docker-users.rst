@@ -21,7 +21,7 @@ Prerequisites
 
 .. note::
 	
-	- Older Linux kernal versions can cause kernal panics that break Docker. There are ways around it, but attempt these at your own risk. Check the version of your kernel by running ``uname -r``.
+	- Older Linux kernel versions can cause kernel panics that break Docker. There are ways around it, but attempt these at your own risk. Check the version of your kernel by running ``uname -r``.
 	- The Dockerfile always pulls the latest H2O-3 release.
 	- The Docker image only needs to be built once.
 
