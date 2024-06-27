@@ -720,7 +720,7 @@ The corresponding deviance is equal to:
 Negative binomial models
 ''''''''''''''''''''''''
 
-Negative binomial regression is a generalization of Poisson regression that loosens the restrictive assumption that the variance is equal to the mean. Instead, the variance of negative binomial is a function of its mean and parameter :math:`\theta`, the dispersion parameter. 
+Negative binomial regression is a generalization of Poisson regression that loosens the restrictive assumption that the variance is equal to the mean. Instead, the variance of negative binomial is a function of its mean and parameter :math:`\theta` (i.e. the dispersion parameter). 
 
 Let :math:`Y` denote a random variable with negative binomial distribution, and let :math:`\mu` be the mean. The variance of :math:`Y (\sigma^2)` will be :math:`\sigma^2 = \mu + \theta\mu^2`. The possible values of :math:`Y` are non-negative integers like 0, 1, 2, ...
 
@@ -741,13 +741,13 @@ where :math:`\Gamma(x)` is the gamma function, and :math:`\mu_i` can be modeled 
                 \end{array}
               \right.
 
-The  negative log likelihood :math:`L(y_i,\mu_i)` function is:
+The  negative log-likelihood :math:`L(y_i,\mu_i)` function is:
 
 .. math::
 
    ^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=0}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \theta\mu_i) + y_i \text{log}(\mu_i) + y_i \text{log} (\theta) \bigg \} \bigg]
 
-The final penalized negative log likelihood is used to find the coefficients :math:`\beta, \beta_0` given a fixed :math:`\theta` value:
+The final penalized negative log-likelihood is used to find the coefficients :math:`\beta, \beta_0` given a fixed :math:`\theta` value:
 
 .. math::
 
@@ -759,8 +759,9 @@ The corresponding deviance is:
 
  D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y_i + \theta^{-1}) \text{log} \frac{(1+\theta y_i)}{(1+\theta \mu_i)} \bigg \}
 
-**Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
-
+.. note::  
+   
+   Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
 
 
 Links
@@ -768,43 +769,46 @@ Links
 
 As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
 
-H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, and Ologit. 
+H2O-3's GLM supports the following link functions: ``Family_Default``, ``Identity``, ``Logit``, ``Log``, ``Inverse``, ``Tweedie``, and ``Ologit``. 
 
 The following table describes the allowed Family/Link combinations.
 
-+---------------------+-------------------------------------------------------------+--------+
-| **Family**          | **Link Function**                                                    |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-|                     | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Binomial            | X              |          | X     |     |         |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Fractional Binomial | X              |          | X     |     |         |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Quasibinomial       | X              |          | X     |     |         |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Multinomial         | X              |          |       |     |         |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Ordinal             | X              |          |       |     |         |         | X      |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gaussian            | X              | X        |       | X   | X       |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Poisson             | X              | X        |       | X   |         |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gamma               | X              | X        |       | X   | X       |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Tweedie             | X              |          |       |     |         | X       |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Negative Binomial   | X              | X        |       | X   |         |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
-| AUTO                | X***           | X*       | X**   | X*  | X*      |         |        |
-+---------------------+----------------+----------+-------+-----+---------+---------+--------+
++-------------------------+--------------------------------------------------------------------------------------------------+
+| **Family**              | **Link Function**                                                                                |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+|                         | ``Family_Default`` | ``Identity`` | ``Logit`` | ``Log`` | ``Inverse`` | ``Tweedie`` | ``Ologit`` |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Binomial``            | X                  |              | X         |         |             |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Fractional Binomial`` | X                  |              | X         |         |             |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Quasibinomial``       | X                  |              | X         |         |             |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Multinomial``         | X                  |              |           |         |             |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Ordinal``             | X                  |              |           |         |             |             | X          |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Gaussian``            | X                  | X            |           | X       | X           |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Poisson``             | X                  | X            |           | X       |             |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Gamma``               | X                  | X            |           | X       | X           |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Tweedie``             | X                  |              |           |         |             | X           |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``Negative Binomial``   | X                  | X            |           | X       |             |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
+| ``AUTO`` (see below)    | X                  | X            | X         | X       | X           |             |            |
++-------------------------+--------------------+--------------+-----------+---------+-------------+-------------+------------+
 
-For **AUTO**:
+.. tip::
+   
+   For **AUTO**:
 
-- X*: the data is numeric (``Real`` or ``Int``) (family determined as ``gaussian``)
-- X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
-- X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
+   - (``Identity``, ``Log``, ``Inverse``): the data is numeric (``Real`` or ``Int``) (family determined as ``gaussian``)
+   - (``Logit``): the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
+   - (``Family_Default``): the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
+
 
 Dispersion parameter estimation
 -------------------------------
