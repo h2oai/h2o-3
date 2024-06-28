@@ -84,7 +84,7 @@ public class ConstrainedGLMUtils {
     double _ckCS;
     double _ckCSHalf; // = ck/2
     double _epsilonkCS;
-    double _epsilonkCSSquare;
+    public double _epsilonkCSSquare;
     double _etakCS;
     double _etakCSSquare;
     double _epsilon0;
@@ -714,8 +714,8 @@ public class ConstrainedGLMUtils {
                                                 LinearConstraints[] equalConst, LinearConstraints[] lessThanConst, 
                                                 GLMModel.GLMParameters parms) {
     // calculate ||h(beta)|| square, ||gradient|| square
-    double hBetaMag = state._csGLMState._constraintMagSquare;
-    if (hBetaMag <= state._csGLMState._etakCSSquare) {  // implement line 26 to line 29 of Algorithm 19.1
+    double hBetaMagSquare = state._csGLMState._constraintMagSquare;
+    if (hBetaMagSquare <= state._csGLMState._etakCSSquare) {  // implement line 26 to line 29 of Algorithm 19.1
       if (equalConst != null)
         updateLambda(lambdaEqual, state._csGLMState._ckCS, equalConst);
       if (lessThanConst != null)

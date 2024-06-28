@@ -2399,7 +2399,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
       boolean done;
+      boolean gradSmallEnough = (gradMagSquare <= _state._csGLMState._epsilonkCSSquare);
       int origIter = iterCnt+1;
+      boolean lineSearchSuccess;
       try {
         while (true) {
           do { // implement Algorithm 11.8 of the doc to find coefficients with epsilon k as the precision
@@ -2442,11 +2444,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
             // line search can fail when the gradient is close to zero.  In this case, we need to update the 
             // constraint parameters.
-            if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)
-                    || (gradMagSquare <= _state._csGLMState._epsilonkCSSquare)) {
+            lineSearchSuccess = ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, 
+                    lessThanEqualToConstraints, ginfo);
+            gradMagSquare = ArrayUtils.innerProduct(ls._ginfoOriginal._gradient, ls._ginfoOriginal._gradient);
+            gradSmallEnough = gradMagSquare <= _state._csGLMState._epsilonkCSSquare;            
+            if (lineSearchSuccess || gradSmallEnough) {
               betaCnd = ls._newBeta;
               gradientInfo = ls._ginfoOriginal;
-              gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
             } else {  // ls failed, reset to
                 if (applyBetaConstraints) // separate beta and linear constraints
                   bc.applyAllBounds(_state.beta());
@@ -2470,17 +2474,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // However, we will only exit the while loop when the gradMagSquare is still too high.  There is no hope
             // for improvement here anymore since the beta values and gradient values are not changing much anymore.
             done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
-            if ((!progress(betaCnd, gradientInfo) &&
-                    (gradMagSquare > _state._csGLMState._epsilonkCSSquare)) || done) {
+            if ((!progress(betaCnd, gradientInfo) && !gradSmallEnough) || done) {
               checkKKTConditions(betaCnd, gradientInfo, iterCnt);
               return;
             }
             
             Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + 
                     ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-          } while (gradMagSquare > _state._csGLMState._epsilonkCSSquare);
+          } while (!gradSmallEnough);
           // update constraint parameters, ck, lambdas and others
-          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints, _parms);
+          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, 
+                  lessThanEqualToConstraints, _parms);
+          // update gradient calculation with new value (lambda and/or ck).
+          gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+                  equalityConstraints, lessThanEqualToConstraints);
+          _state.updateState(betaCnd, gradientInfo); // update computation state with new info
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
