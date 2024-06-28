@@ -869,6 +869,7 @@ The :math:`W_j` terms are all positive. The following figure plots for :math:`\m
 
 .. figure:: ../images/dispersion_param_fig1.png 
    :width: 600px
+   :alt: Series value graph with x values (index) ranging from 0 to 30 and y values (series value) ranging from 0 to 50000. There's a standard bell curve between 0 and 15.
 
 :math:`\alpha (y,\phi)` when :math:`p > 2`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -891,28 +892,55 @@ Note that :math:`0 < \alpha < 1` for :math:`p>2`. The :math:`V_k` terms are both
    
    V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}
 
-In the following figure, we use :math:`\mu =0.5,p=2.5,\phi =1, y=0.1`.
+In the following figure, we use :math:`\mu =0.5,p=2.5,\phi =1, and y=0.1`.
 
 .. figure:: ../images/dispersion_param_fig2.png 
    :width: 600px
+   :alt: A cross correlation plot with x values (index) ranging from 0 to 30 and y values (series value) ranging from -40 to 40. It has values alternating between positive and negative.
 
 Warnings 
 ~~~~~~~~
 
-**Accuracy and limitation**
+Accuracy and limitation
+'''''''''''''''''''''''
 
-While the Tweedie's probability density function contains an infinite series sum, when :math:`p` is close to 2, the response (:math:`y`) is large, and :math:`\phi` is small the common number of terms that are needed to approximate the infinite sum grow without bound. This causes an increase in computation time without reaching the desired accuracy.
+While Tweedie's probability density function contains an infinite series sum (when :math:`p` is close to 2, the response (:math:`y`) is large, and :math:`\phi` is small), the common number of terms that are needed to approximate the infinite sum grow without bound. This causes an increase in computation time without reaching the desired accuracy.
 
-**Multimodal densities**
+Multimodal densities
+''''''''''''''''''''
 
 As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. This means that the optimization procedure will fail since it will not be able to find the global optimal point. It will instead arrive at a local optimal point.
 
 As a conservative condition, to ensure that the density is unimodal for most values of :math:`y,\phi`, we should have :math:`p>1.2`.
 
 Tweedie dispersion example
-''''''''''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tabs::
+   .. code-tab:: python
+
+      # Import the training data:
+      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
+
+      # Set the predictors and response:
+      predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.""]
+      response = "x"
+
+      # Build and train the model:
+      model = H2OGeneralizedLinearEstimator(family="tweedie", 
+                                            lambda_=0, 
+                                            compute_p_values=True, 
+                                            dispersion_parameter_method="pearson", 
+                                            init_dispersion_parameter=0.5, 
+                                            dispersion_epsilon=1e-4,
+                                            tweedie_variance_power=3, 
+                                            max_iterations_dispersion=100)
+      model.train(x=predictors, y=response, training_frame=training_data)
+
+      # Retrieve the estimated dispersion:
+      model._model_json["output"]["dispersion"]
+      0.7599964835351135
+
    .. code-tab:: r R
 
       # Import the training data:
@@ -940,29 +968,6 @@ Tweedie dispersion example
       [1] 0.7599965
 
 
-   .. code-tab:: python
-
-      # Import the training data:
-      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
-
-      # Set the predictors and response:
-      predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.""]
-      response = "x"
-
-      # Build and train the model:
-      model = H2OGeneralizedLinearEstimator(family="tweedie", 
-                                            lambda_=0, 
-                                            compute_p_values=True, 
-                                            dispersion_parameter_method="pearson", 
-                                            init_dispersion_parameter=0.5, 
-                                            dispersion_epsilon=1e-4,
-                                            tweedie_variance_power=3, 
-                                            max_iterations_dispersion=100)
-      model.train(x=predictors, y=response, training_frame=training_data)
-
-      # Retrieve the estimated dispersion:
-      model._model_json["output"]["dispersion"]
-      0.7599964835351135
 
 Negative binomial
 ~~~~~~~~~~~~~~~~~
@@ -987,26 +992,28 @@ While not converged:
 Hierarchical GLM
 ----------------
 
-Introduced in 3.28.0.1, Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM allows you to specify both fixed and random effects, which allows fitting correlated to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects. 
+Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM lets you specify both fixed and random effects, which allows fitting correlation to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects. 
 
-**Note**: The initial release of HGLM supports only the Gaussian family and random family.
+.. note::
+   
+   The initial release of HGLM supports only the Gaussian family and random family.
 
 Gaussian family and random family in HGLM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To build an HGLM, we need the hierarchical log-likelihood (h-likelihood) function. The h-likelihood function can be expressed as (equation 1):
+To build an HGLM, we need the hierarchical log-likelihood (h-likelihood) function. The h-likelihood function can be expressed as:
 
 .. math::
 
- h(\beta, \theta, u) = \log(f (y|u)) + \log (f(u))
+ h(\beta, \theta, u) = \log(f (y|u)) + \log (f(u)) \quad \text{Equation 1}
 
 for fixed effects :math:`\beta`, variance components :math:`\theta`, and random effects :math:`u`.
 
-A standard linar mixed model can be expressed as (equation 2):
+A standard linar mixed model can be expressed as:
 
 .. math::
 
-  y = X\beta + Zu + e
+  y = X\beta + Zu + e \quad \text{Equation 2}
 
 where
 
@@ -1015,10 +1022,11 @@ where
  - :math:`n` is the number of i.i.d observations of :math:`y` with mean :math:`0`
  - :math:`q` is the number of values :math:`Z` can take
 
-Then rewriting equation 2 as :math:`e = X\beta + Zu - y` and derive the h-likelihood as:
+Then, rewriting equation 2 as :math:`e = X\beta + Zu - y` you can derive the h-likelihood as:
 
-.. figure:: ../images/h-likelihood.png
-   :align: center
+.. math::
+   
+   h(\beta,\theta,u) = \log(f(e)) + \log(f(u)) \quad \quad \quad \quad \quad \\ = \Big\{C_1 - \frac{n}{2} \log(\delta^2_e) - \frac{1}{2\delta^2_e}e^Te \Big\} + \Big\{C_1 - \frac{q}{2} \log(\delta^2_u) - \frac{1}{2\delta^2_u}u^Tu \Big\}
 
 where :math:`C_1 = - \frac{n}{2} \log(2\pi), C_2 = - \frac{q}{2} \log(2\pi)`
 
@@ -1043,43 +1051,45 @@ In principal, the HGLM model building involves the following main steps:
 H2O-3 implementation
 ~~~~~~~~~~~~~~~~~~~~
 
-In reality, Lee and Nelder (see References) showed that linear mixed models can be fitted using a hierarchy of GLM by using an augmented linear model.  The linear mixed model will be written as:
+In reality, `Lee and Nelder <#references>`__ showed that linear mixed models can be fitted using a hierarchy of GLM by using an augmented linear model. The linear mixed model will be written as:
 
 .. math::
 
   y = X\beta + Zu + e \\
   v = ZZ^T\sigma_u^2 + R\sigma_e^2
 
-where :math:`R` is a diagonal matrix with elements given by the estimated dispersion model. The dispersion model refers to the variance part of the fixed effect model with error :math:`e`. There are cases where the dispersion model is modeled itself as :math:`exp(x_d, \beta_d)`. However, in our current version, the variance is just a constant :math:`\sigma_e^2`, and hence :math:`R` is just a scalar value. It is initialized to be the identity matrix.  The model can be written as an augmented weighted linear model:
+where :math:`R` is a diagonal matrix with elements given by the estimated dispersion model. The dispersion model refers to the variance part of the fixed effect model with error :math:`e`. There are cases where the dispersion model is modeled itself as :math:`exp(x_d, \beta_d)`. However, in our current version, the variance is just a constant :math:`\sigma_e^2`, so :math:`R` is just a scalar value. Its initialized to be the identity matrix. The model can be written as an augmented weighted linear model:
 
 .. math::
 
   y_a = T_a \delta + e_a
 
-where
+where:
 
-.. figure:: ../images/hglm_augmentation.png
-   :align: center
+.. math::
+   
+   y_a = \binom{y}{0_q}, T_a = \binom{X \quad Z}{0 \quad I_q}, \delta = \binom{\beta}{u}, e_a = \binom{e}{-u}
 
-Note that :math:`q` is the number of columns in :math:`Z, 0_q` is a vector of :math:`q` zeroes, :math:`I_q` is the :math:`qxq` identity matrix. The variance-covariance matrix of the augmented residual matrix is
+Note that :math:`q` is the number of columns in :math:`Z, 0_q` is a vector of :math:`q` zeroes, and :math:`I_q` is the :math:`qxq` identity matrix. The variance-covariance matrix of the augmented residual matrix:
 
-.. figure:: ../images/hglm_variance_covariance.png
-   :align: center
+.. math::
+   
+   V(e_a) = \binom{R\delta^2_e \quad 0}{0 \quad I_q\delta^2_u}
 
 Fixed and random coefficients estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The estimates for :math:`\delta` from weighted least squares are given by solving
+The estimates for :math:`\delta` from weighted least squares are given by solving:
 
 .. math::
 
   T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a 
 
-where 
+where:
 
 .. math::
 
-  W= V(e_a )
+  W= V(e_a)
 
 The two variance components are estimated iteratively by applying a gamma GLM to the residuals :math:`e_i^2,u_i^2`. Because we are not using a dispersion model, there is only an intercept terms in the linear predictors. The leverages :math:`h_i` for these models are calculated from the diagonal elements of the hat matrix: 
 
@@ -1091,12 +1101,12 @@ Estimation of fixed effect dispersion parameter/variance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A gamma GLM is used to fit the dispersion part of the model with response
-:math:`y_{d,i}=(e_i^2)⁄(1-h_i )` where :math:`E(y_d )=u_d` and :math:`u_d≡\phi` (i.e., :math:`\delta_e^2` for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function :math:`g_d (.)` and the linear predictor :math:`X_d \beta_d` with prior weights for :math:`(1-h_i )⁄2` for :math:`g_d (u_d )=X_d \beta_d`. Because we are not using a dispersion model, :math:`X_d \beta_d` will only contain the intercept term.
+:math:`y_{d,i}=(e_i^2)⁄(1-h_i )` where :math:`E(y_d )=u_d` and :math:`u_d≡\phi` (i.e. :math:`\delta_e^2` for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function :math:`g_d (.)` and the linear predictor :math:`X_d \beta_d` with prior weights for :math:`(1-h_i )⁄2` for :math:`g_d (u_d )=X_d \beta_d`. Because we are not using a dispersion model, :math:`X_d \beta_d` will only contain the intercept term.
 
 Estimation of random effect dispersion parameter/variance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e., :math:`\delta_e^2` for a GLM) for the random effect :math:`v`, with :math:`y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,…,q` and :math:`g_\alpha (u_\alpha )=\lambda`, where the prior weights are :math:`(1-h_{n+j} )⁄2`, and the estimated dispersion term for the random effect is given by :math:`\hat \alpha = g_α^{-1}(\hat \lambda)`.
+Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e. :math:`\delta_e^2` for a GLM) for the random effect :math:`v`, with :math:`y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,…,q` and :math:`g_\alpha (u_\alpha )=\lambda`, where the prior weights are :math:`(1-h_{n+j} )⁄2`, and the estimated dispersion term for the random effect is given by :math:`\hat \alpha = g_α^{-1}(\hat \lambda)`.
 
 Fitting algorithm overview
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
