@@ -723,7 +723,7 @@ public class ConstrainedGLMUtils {
       state._csGLMState._epsilonkCS = state._csGLMState._epsilonkCS/state._csGLMState._ckCS;
       state ._csGLMState._etakCS = state._csGLMState._etakCS/Math.pow(state._csGLMState._ckCS, parms._constraint_beta);
     } else {  // implement line 31 to 34 of Algorithm 19.1
-      state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau;
+      state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau; // tau belongs to [4,10]
       state._csGLMState._ckCSHalf = state._csGLMState._ckCS*0.5;
       state._csGLMState._epsilonkCS = state._csGLMState._epsilon0/state._csGLMState._ckCS;
       state._csGLMState._etakCS = parms._constraint_eta0/Math.pow(state._csGLMState._ckCS, parms._constraint_alpha);
@@ -813,13 +813,14 @@ public class ConstrainedGLMUtils {
     if (equalityConstraints != null) // equality constraints
       Arrays.stream(equalityConstraints).forEach(constraint -> {
         evalOneConstraint(constraint, betaCnd, coefNames);
-        constraint._active = (Math.abs(constraint._constraintsVal) > EPS2);
+       // constraint._active = (Math.abs(constraint._constraintsVal) > EPS2);
+        constraint._active = true;
       });
 
     if (lessThanEqualToConstraints != null) // less than or equal to constraints
       Arrays.stream(lessThanEqualToConstraints).forEach(constraint -> {
         evalOneConstraint(constraint, betaCnd, coefNames);
-        constraint._active = constraint._constraintsVal > 0;
+        constraint._active = constraint._constraintsVal >= 0;
       });
   }
   
