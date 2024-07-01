@@ -2746,7 +2746,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               betaCnd = ls._newBeta;
               gradientInfo = ls._ginfoOriginal;
             } else {  // ls failed, reset to
-              if (applyBetaConstraints) // separate beta and linear constraints
+              if (_betaConstraintsOn) // separate beta and linear constraints
                 bc.applyAllBounds(_state.beta());
               ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
                       ginfo, _state.beta());
@@ -2770,6 +2770,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
             if ((!progress(betaCnd, gradientInfo) && !gradSmallEnough) || done) {
               checkKKTConditions(betaCnd, gradientInfo, iterCnt);
+              if (_betaConstraintsOn)
+                bc.applyAllBounds(_state.beta());
               return;
             }
 
@@ -4605,14 +4607,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get())
               : new BetaConstraint(); // bounds for columns _dinfo.fullN()+1 only
       double[] coeffs = _parms._standardize ? _model._output.getNormBeta() :_model._output.beta();
-      if (bc._betaLB == null || bc._betaUB == null || coeffs == null)
+      if (coeffs == null)
         return;
-      int coeffsLen = bc._betaLB.length;
+      int coeffsLen = bc._betaLB != null ? bc._betaLB.length : bc._betaUB.length;
       StringBuffer errorMessage = new StringBuffer();
+      boolean lowerBoundNull = bc._betaLB == null;
+      boolean upperBoundNull = bc._betaUB == null;
       for (int index=0; index < coeffsLen; index++) {
-        if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
-          errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
-                  +bc._betaLB[index]+", upper: "+bc._betaUB[index]+"\n");
+        if (coeffs[index] != 0) {
+          if (lowerBoundNull && !Double.isInfinite(bc._betaUB[index]) && (coeffs[index] > bc._betaUB[index])) {
+            errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint upper bounds: " +
+                    "upper: "+bc._betaUB[index]+"\n");
+          } else if (upperBoundNull && !Double.isInfinite(bc._betaLB[index]) &&  (coeffs[index] < bc._betaLB[index])) {
+            errorMessage.append("GLM model coefficient " + coeffs[index]+" falls below beta constraint lower bounds: " +
+                    "upper: "+bc._betaLB[index]+"\n");
+          } else if (!lowerBoundNull && !upperBoundNull && (coeffs[index] < bc._betaLB[index] && coeffs[index] > bc._betaUB[index])) {
+            errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
+                    +bc._betaLB[index]+", upper: "+bc._betaUB[index]+"\n");
+          }
+        }
       }
       if (errorMessage.length() > 0)
         throw new H2OFailException("\n"+errorMessage.toString());

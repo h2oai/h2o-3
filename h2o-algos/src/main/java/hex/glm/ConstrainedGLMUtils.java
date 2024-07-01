@@ -140,32 +140,32 @@ public class ConstrainedGLMUtils {
     boolean bothEndsPresent = (betaC._betaUB != null) && (betaC._betaLB != null);
     boolean lowerEndPresentOnly = (betaC._betaUB == null) && (betaC._betaLB != null);
     boolean upperEndPresentOnly = (betaC._betaUB != null) && (betaC._betaLB == null);
-    if (betaC._betaLB != null) {
-      int numCons = betaC._betaLB.length - 1;
-      for (int index = 0; index < numCons; index++) {
-        if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && (betaC._betaLB[index] == betaC._betaUB[index])) { // equality constraint
-          addBCEqualityConstraint(equalityC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-        } else if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index]) &&
-                (betaC._betaLB[index] < betaC._betaUB[index])) { // low < beta < high, generate two lessThanEqualTo constraints
-          addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-          betaIndexOnOff.add(0);
-        } else if ((lowerEndPresentOnly || (betaC._betaUB != null && Double.isInfinite(betaC._betaUB[index]))) && 
-                betaC._betaLB != null && !Double.isInfinite(betaC._betaLB[index])) {  // low < beta < infinity
-          addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-        } else if ((upperEndPresentOnly || (betaC._betaLB != null && Double.isInfinite(betaC._betaLB[index]))) && 
-                betaC._betaUB != null && !Double.isInfinite(betaC._betaUB[index])) { // -infinity < beta < high
-          addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-        }
+
+    int numCons = betaC._betaLB != null ? betaC._betaLB.length - 1 : betaC._betaUB.length - 1;
+    for (int index = 0; index < numCons; index++) {
+      if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && (betaC._betaLB[index] == betaC._betaUB[index])) { // equality constraint
+        addBCEqualityConstraint(equalityC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
+      } else if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index]) &&
+              (betaC._betaLB[index] < betaC._betaUB[index])) { // low < beta < high, generate two lessThanEqualTo constraints
+        addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
+        betaIndexOnOff.add(0);
+      } else if ((lowerEndPresentOnly || (betaC._betaUB != null && Double.isInfinite(betaC._betaUB[index]))) &&
+              betaC._betaLB != null && !Double.isInfinite(betaC._betaLB[index])) {  // low < beta < infinity
+        addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
+      } else if ((upperEndPresentOnly || (betaC._betaLB != null && Double.isInfinite(betaC._betaLB[index]))) &&
+              betaC._betaUB != null && !Double.isInfinite(betaC._betaUB[index])) { // -infinity < beta < high
+        addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
       }
     }
+
     state.setLinearConstraints(equalityC.toArray(new LinearConstraints[0]),
             lessThanEqualToC.toArray(new LinearConstraints[0]), true);
-    return betaIndexOnOff.size()==0 ? null : betaIndexOnOff.stream().mapToInt(x->x).toArray();
+    return betaIndexOnOff.size() == 0 ? null : betaIndexOnOff.stream().mapToInt(x -> x).toArray();
   }
 
   /***

@@ -1,10 +1,8 @@
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
-from tests.pyunit_utils import utils_for_glm_tests
 import numpy as np
 import pandas as pd
-from h2o.grid.grid_search import H2OGridSearch
 
 def data_prep(seed):
     np.random.seed(seed)
@@ -75,39 +73,13 @@ def test_bad_linear_constraints():
         "solver" : solver,
         "linear_constraints": linear_constraints,
         "standardize": True,
-        #"startval": list(np.random.rand(6))
     }
-    
-    # add grid search
-    # set hyperparameter search
-    constraint_eta0 = [0.05, 0.1, 0.1258925, 0.5, 1.1]
-    constraint_tau = [1.5, 5, 10, 20, 50, 60] # increase penalty
-    constraint_alpha = [0.1, 0.5, 0.9]
-    constraint_beta = [0.1, 0.5, 0.9]
-    constraint_c0 = [1.5, 2, 5, 10, 15, 20] # initial value, controls precision of line search
-    
-    # best hyperparameters
-    # constraint_eta0 = [0.05, 0.1, 0.1258925]
-    # constraint_tau = [1.5, 5, 10, 20, 50, 60] # increase penalty
-    # constraint_alpha = [0.5]
-    # constraint_beta = [0.1]
-    # constraint_c0 = [1.5] # initial value, controls precision of line search
-    
-    hyper_parameters = {"constraint_eta0":constraint_eta0, "constraint_tau":constraint_tau, "constraint_alpha":constraint_alpha,
-                       "constraint_beta":constraint_beta, "constraint_c0":constraint_c0}
-    # glmGrid = H2OGridSearch(glm(**params3), hyper_params=hyper_parameters)
-    # glmGrid.train(x=predictors, y=response, training_frame=train_data)
-    # sortedGrid = glmGrid.get_grid()
-    # print(sortedGrid)
-    # best_model = h2o.get_model(sortedGrid.model_ids[0])
-    # print(best_model.coef())
-
-
 
     glm3 = glm(**params3)
-
-    model3 = glm3.train(x = predictors, y = response, training_frame = train_data)
-    print(model3.coef())
+    glm3.train(x = predictors, y = response, training_frame = train_data)
+    print(glm.getConstraintsInfo(glm3))
+    coef3 = glm3.coef()
+    print(glm3.coef())
 
     params2 = {
         "family" : family,
@@ -120,10 +92,15 @@ def test_bad_linear_constraints():
         "solver" : solver
     }
     glm2 = glm(**params2)
-
-    model2 = glm2.train(x = predictors, y = response, training_frame = train_data)
-    print(model2.coef())
-    # check x2 + X3 <= 0
+    glm2.train(x = predictors, y = response, training_frame = train_data)
+    print("Models built without linear constraints")
+    coef2 = glm2.coef()
+    print(coef2)
+    print("x2 + x3: {0}".format(coef2["x2"]+coef2["x3"]))
+    
+    # check that model with constraints are closer to the constraints than models without constraints
+    assert (coef3["x2"]+coef3["x3"])<(coef2["x2"]+coef3["x3"]), \
+        "models built with constraints should be closer to the constraints x2+x3 but is not."
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_bad_linear_constraints)

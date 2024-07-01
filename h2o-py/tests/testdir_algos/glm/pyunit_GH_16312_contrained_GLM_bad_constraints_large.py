@@ -1,10 +1,10 @@
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
-from tests import pyunit_utils
 import numpy as np
 import pandas as pd
+from tests import pyunit_utils
 
-# no need to check anything, this test just needs to run into completion duplicating/conflicting constraints
+# this test needs to run into completion duplicating/conflicting constraints
 def data_prep(seed):
     np.random.seed(seed)
     x1 = np.random.normal(0, 10, 100000)
@@ -26,7 +26,7 @@ def data_prep(seed):
     }
     return h2o.H2OFrame(pd.DataFrame(data))
 
-def test_bad_lambda_specification():
+def test_duplicate_conflicting_constraints():
     train_data = data_prep(123)
     family = 'gaussian'
     link = 'identity'
@@ -136,9 +136,21 @@ def test_bad_lambda_specification():
     model_no_constraints = glm(**params)
     model_no_constraints.train(x = predictors, y = response, training_frame = train_data)
     coef_no_constraints = model_no_constraints.coef()
+    print("model built without constraints")
     print(coef_no_constraints)
+    print("x2-x3: {0}".format(coef_no_constraints['x2']-coef_no_constraints['x3']))
+    print("x3-x4: {0}".format(coef_no_constraints['x3']-coef_no_constraints['x4']))
+    print("x2+x3+x4: {0}".format(coef_no_constraints['x2']+coef_no_constraints['x3']+coef_no_constraints['x4']))
+    # assert that model with linear constraints does a better job than model without constraints 
+    assert (coef_constrained['x2']-coef_constrained['x3']) < (coef_no_constraints['x2']-coef_no_constraints['x3']), \
+        "Model built with constraints should be closer to the constraint x2-x3 <= 0"
+    assert (coef_constrained['x3']-coef_constrained['x4']) < (coef_no_constraints['x3']-coef_no_constraints['x4']), \
+        "Model built with constraints should be closer to the constraint x3-x4 <= 0"
+    assert (coef_constrained['x2']+coef_constrained['x3']+coef_constrained['x4']) < \
+           (coef_no_constraints['x2']+coef_no_constraints['x3']+coef_no_constraints['x4']), \
+        "Model built with constraints should be closer to the constraint x2+x3+x4 <= 0"
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_bad_lambda_specification)
+    pyunit_utils.standalone_test(test_duplicate_conflicting_constraints)
 else:
-    test_bad_lambda_specification()
+    test_duplicate_conflicting_constraints()

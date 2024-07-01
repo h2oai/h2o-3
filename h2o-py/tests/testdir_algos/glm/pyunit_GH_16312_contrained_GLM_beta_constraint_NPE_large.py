@@ -4,7 +4,8 @@ from tests import pyunit_utils
 import numpy as np
 import pandas as pd
 
-# no need to check anything, this test just needs to run into completion without NPE error.
+# no need to check anything, this test just needs to run into completion without NPE error for both model building
+# process where only the upper_bounds or lower_bounds are specified
 def data_prep(seed):
     np.random.seed(seed)
     x1 = np.random.normal(0, 10, 100000)
@@ -38,6 +39,15 @@ def test_bad_lambda_specification():
     solver = 'irlsm'
     predictors = ['x1', 'x2', 'x3', 'x4', 'x5']
     response = "y"
+    
+    # beta constraints
+    bc = []
+    name = 'x1'
+    lower_bound = 0.03
+    bc.append([name, lower_bound])
+    
+    beta_constraints = h2o.H2OFrame(bc)
+    beta_constraints.set_names(["names", "lower_bounds"])
 
     linear_constraints2 = []
     
@@ -117,13 +127,29 @@ def test_bad_lambda_specification():
         "compute_p_values" : compute_p_values,
         "calc_like" : calc_like,
         "solver" : solver,
-        "linear_constraints": linear_constraints
+        "linear_constraints": linear_constraints,
+        "beta_constraints": beta_constraints
     }
 
     model = glm(**params)
     model.train(x = predictors, y = response, training_frame = train_data)
     print(model.coef())
-        
+    print(glm.getConstraintsInfo(model))
+
+    # beta constraints
+    bc = []
+    name = 'x1'
+    upper_bound = 1.5
+    bc.append([name, upper_bound])
+
+    beta_constraints2 = h2o.H2OFrame(bc)
+    beta_constraints2.set_names(["names", "upper_bounds"])
+    
+    params['beta_constraints'] = beta_constraints2
+    model = glm(**params)
+    model.train(x = predictors, y = response, training_frame = train_data)
+    print(model.coef())
+    print(glm.getConstraintsInfo(model))
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_bad_lambda_specification)
