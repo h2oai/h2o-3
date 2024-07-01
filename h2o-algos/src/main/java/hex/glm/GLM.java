@@ -1403,7 +1403,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     // no regularization for constrainted GLM except during testing
     if ((notZeroLambdas(_parms._lambda) || _parms._lambda_search) && !_parms._testCSZeroGram) {
-      error("lambda or lambda_search", "Regularization is not allowed for constrained GLM.");
+      error("lambda or lambda_search", "Regularization is not allowed for constrained GLM.  Set" +
+              " lambda to 0.0.");
       return;
     }
     if ("multinomial".equals(_parms._solver) || "ordinal".equals(_parms._solver)) {
@@ -2353,7 +2354,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * hereby use the word the doc to refere to this document.  In particular, we following the algorithm described in
      * Section VII (and table titled Algorithm 19.1) of the doc.  Not as good as when considering magnitude of gradient.
      */
-    private void fitIRLSMCS() {
+    private void fitIRLSMCS9() {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
       List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
@@ -2646,7 +2647,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     // original implementation but will not quit when magnitude of gradient is small.  If exit condition is triggered 
     // (either ls failed or no progress is made, if the magnitude of gradient is small, we will exit thw while loop
     // but will arrive at the part to change the constrained parameters.  This seems to help.
-    private void fitIRLSMCS4() {
+    private void fitIRLSMCS() {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
       List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());

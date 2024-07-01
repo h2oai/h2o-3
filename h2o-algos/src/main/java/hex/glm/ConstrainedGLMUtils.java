@@ -137,22 +137,27 @@ public class ConstrainedGLMUtils {
     List<LinearConstraints> equalityC = new ArrayList<>();
     List<LinearConstraints> lessThanEqualToC = new ArrayList<>();
     List<Integer> betaIndexOnOff = new ArrayList<>();
+    boolean bothEndsPresent = (betaC._betaUB != null) && (betaC._betaLB != null);
+    boolean lowerEndPresentOnly = (betaC._betaUB == null) && (betaC._betaLB != null);
+    boolean upperEndPresentOnly = (betaC._betaUB != null) && (betaC._betaLB == null);
     if (betaC._betaLB != null) {
-      int numCons = betaC._betaLB.length-1;
-      for (int index=0; index<numCons; index++) {
-        if (!Double.isInfinite(betaC._betaUB[index]) && (betaC._betaLB[index] == betaC._betaUB[index])) { // equality constraint
+      int numCons = betaC._betaLB.length - 1;
+      for (int index = 0; index < numCons; index++) {
+        if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && (betaC._betaLB[index] == betaC._betaUB[index])) { // equality constraint
           addBCEqualityConstraint(equalityC, betaC, coefNames, index);
           betaIndexOnOff.add(1);
-        } else if (!Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index]) && 
+        } else if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index]) &&
                 (betaC._betaLB[index] < betaC._betaUB[index])) { // low < beta < high, generate two lessThanEqualTo constraints
           addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
           addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
           betaIndexOnOff.add(1);
           betaIndexOnOff.add(0);
-        } else if (Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index])) {  // low < beta < infinity
+        } else if ((lowerEndPresentOnly || (betaC._betaUB != null && Double.isInfinite(betaC._betaUB[index]))) && 
+                betaC._betaLB != null && !Double.isInfinite(betaC._betaLB[index])) {  // low < beta < infinity
           addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
           betaIndexOnOff.add(1);
-        } else if (!Double.isInfinite(betaC._betaUB[index]) && Double.isInfinite(betaC._betaLB[index])) { // -infinity < beta < high
+        } else if ((upperEndPresentOnly || (betaC._betaLB != null && Double.isInfinite(betaC._betaLB[index]))) && 
+                betaC._betaUB != null && !Double.isInfinite(betaC._betaUB[index])) { // -infinity < beta < high
           addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
           betaIndexOnOff.add(1);
         }
@@ -506,11 +511,10 @@ public class ConstrainedGLMUtils {
   
   public static List<String> foundRedundantConstraints(ComputationState state, final double[][] initConstraintMatrix) {
     Matrix constMatrix = new Matrix(initConstraintMatrix);
-    Matrix constMatrixLessConstant = constMatrix.getMatrix(0, constMatrix.getRowDimension() -1, 1, constMatrix.getColumnDimension()-1);
-    Matrix constMatrixTConstMatrix = constMatrixLessConstant.times(constMatrixLessConstant.transpose());
-    int rank = constMatrixLessConstant.rank();
+    Matrix matrixSquare = constMatrix.times(constMatrix.transpose());
+    int rank = matrixSquare.rank();
     if (rank < constMatrix.getRowDimension()) { // redundant constraints are specified
-      double[][] rMatVal = constMatrixTConstMatrix.qr().getR().getArray();
+      double[][] rMatVal = matrixSquare.qr().getR().getArray();
       List<Double> diag = IntStream.range(0, rMatVal.length).mapToDouble(x->Math.abs(rMatVal[x][x])).boxed().collect(Collectors.toList());
       int[] sortedIndices = IntStream.range(0, diag.size()).boxed().sorted((i, j) -> diag.get(i).compareTo(diag.get(j))).mapToInt(ele->ele).toArray();
       List<Integer> duplicatedEleIndice = IntStream.range(0, diag.size()-rank).map(x -> sortedIndices[x]).boxed().collect(Collectors.toList());
