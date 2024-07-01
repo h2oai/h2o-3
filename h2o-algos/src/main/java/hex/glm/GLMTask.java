@@ -1547,15 +1547,6 @@ public abstract class GLMTask  {
       _c = c;
     }
 
-    public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw, double [] beta, int c, boolean hasConst) {
-      super(null,dinfo,jobKey);
-      _beta = beta;
-      _ymu = null;
-      _glmf = glmw;
-      _c = c;
-      _hasConstraints = hasConst;
-    }
-
     @Override public boolean handlesSparseData(){return true;}
 
     transient private double _sparseOffset;

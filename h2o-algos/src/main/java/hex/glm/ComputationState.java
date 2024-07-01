@@ -91,7 +91,6 @@ public final class ComputationState {
   int _totalBetaLength; // actual coefficient length without taking into account active columns only
   int _betaLengthPerClass;
   public boolean _noReg;
-  public boolean _hasConstraints;
   public ConstrainedGLMUtils.ConstraintGLMStates _csGLMState;
   
   public ComputationState(Job job, GLMParameters parms, DataInfo dinfo, BetaConstraint bc, GLM.BetaInfo bi){
@@ -1414,7 +1413,7 @@ public final class ComputationState {
     double obj_reg = _parms._obj_reg;
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,
-            _activeClass, _hasConstraints).doAll(activeData._adaptedFrame);
+            _activeClass).doAll(activeData._adaptedFrame);
     gt._gram.mul(obj_reg);
     if (_parms._glmType.equals(GLMParameters.GLMType.gam)) { // add contribution from GAM smoothness factor
         Integer[] activeCols=null;
@@ -1463,7 +1462,7 @@ public final class ComputationState {
     double obj_reg = _parms._obj_reg;
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,
-            _activeClass, _hasConstraints).doAll(activeData._adaptedFrame);
+            _activeClass).doAll(activeData._adaptedFrame);
     double[][] fullGram = gt._gram.getXX(); // only extract gram matrix
     mult(fullGram, obj_reg);
     if (_gramEqual != null)
