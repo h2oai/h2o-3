@@ -645,6 +645,16 @@ public class ConstrainedGLMUtils {
     }
   }
   
+  public static void adjustLambda(LinearConstraints[] constraints, double[] lambda) {
+    int numC = constraints.length;
+    LinearConstraints oneC;
+    for (int index=0; index<numC; index++) {
+      oneC = constraints[index];
+      if (!oneC._active)
+        lambda[index]=0.0;
+    }
+  }
+  
   
   public static double[][] sumGramConstribution(ConstraintsGram[] gramConstraints, int numCoefs) {
     if (gramConstraints == null)
