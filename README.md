@@ -87,8 +87,6 @@ You can browse and create new issues in our GitHub repository:  <https://github.
     * Nightly build page (nightly docs linked in page): <https://s3.amazonaws.com/h2o-release/h2o/master/latest.html>
 *  Download (pre-built packages)
     * <http://h2o.ai/download>
-*  Jenkins (H2O build and test system)
-    * <http://test.h2o.ai>
 *  Website
     * <http://h2o.ai>
 *  Twitter -- follow us for updates and H2O news!
