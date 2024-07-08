@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def NODE_LABEL = 'h2o-3'
+def NODE_LABEL = 'k8s-cpu-large'
 
 def pipelineContext = null
 def result = 'FAILURE'

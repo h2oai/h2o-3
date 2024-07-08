@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def DEFAULT_NODE_LABEL = 'h2o-3'
+def DEFAULT_NODE_LABEL = 'k8s-cpu-large'
 final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null

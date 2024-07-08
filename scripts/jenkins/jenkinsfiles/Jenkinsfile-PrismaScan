@@ -48,7 +48,7 @@ def setPrismaScanningStages(assemblyType, stageIndex) {
 }
 
 pipeline {
-    agent { node { label 'h2o-3' } }
+    agent { node { label 'k8s-cpu-large' } }
 
     options {
         ansiColor('xterm')
