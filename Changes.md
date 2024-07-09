@@ -7,7 +7,6 @@
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html</a>
 
 #### Docs
-- [[#16189]](https://github.com/h2oai/h2o-3/issues/16189) - Updating user guide - Downloading & Installing H2O.
 - [[#16212]](https://github.com/h2oai/h2o-3/issues/16212) - Updating user guide - H2O Clients.
 - [[#16214]](https://github.com/h2oai/h2o-3/issues/16214) - Updating user guide - Data Manipulation.
 - [[#16213]](https://github.com/h2oai/h2o-3/issues/16213) - Updating user guide - Getting data into your H2O cluster.
@@ -31,6 +30,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index
 - [[#16284]](https://github.com/h2oai/h2o-3/issues/16284) - Added support for Websockets to steam.jar.
 
 #### Docs
+- [[#16189]](https://github.com/h2oai/h2o-3/issues/16189) - Updating user guide - Downloading & Installing H2O.
 - [[#16288]](https://github.com/h2oai/h2o-3/issues/16288) - Fixed GBM Python example in user guide.
 - [[#16188]](https://github.com/h2oai/h2o-3/issues/16188) - Updated API-related changes page to adhere to style guide requirements.
 - [[#16016]](https://github.com/h2oai/h2o-3/issues/16016) - Added examples to Python documentation for Uplift DRF.
