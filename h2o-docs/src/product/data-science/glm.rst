@@ -1106,12 +1106,12 @@ A gamma GLM is used to fit the dispersion part of the model with response
 Estimation of random effect dispersion parameter/variance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e. :math:`\delta_e^2` for a GLM) for the random effect :math:`v`, with :math:`y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,…,q` and :math:`g_\alpha (u_\alpha )=\lambda`, where the prior weights are :math:`(1-h_{n+j} )⁄2`, and the estimated dispersion term for the random effect is given by :math:`\hat \alpha = g_α^{-1}(\hat \lambda)`.
+Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e. :math:`\delta_e^2` for a GLM) for the random effect :math:`v`, with :math:`y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,…,q` and :math:`g_\alpha (u_\alpha )=\lambda`, where the prior weights are :math:`(1-h_{n+j} )⁄2`, and the estimated dispersion term for the random effect is given by :math:`\hat{\alpha} = g_α^{-1}(\hat{\lambda})`.
 
 Fitting algorithm overview
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following fitting algorithm from "Generalized linear models with random effects" (Y. Lee, J. A. Nelder and Y. Pawitan; see References) is used to build our HGLM. Let :math:`n` be the number of observations and :math:`k` be the number of levels in the random effect. The algorithm that was implemented here at H2O will perform the following:
+The following fitting algorithm from "Generalized linear models with random effects" (Y. Lee, J. A. Nelder and Y. Pawitan; see References) is used to build our HGLM. Let :math:`n` be the number of observations and :math:`k` be the number of levels in the random effect. The algorithm that was implemented for H2O-3 will perform the following:
 
 1. Initialize starting values either from user by setting parameter startval or by the system if startval is left unspecified.  
 2. Construct an augmented model with response :math:`y_{aug}= {y \choose {E(u)}}`.
@@ -1122,9 +1122,9 @@ The following fitting algorithm from "Generalized linear models with random effe
 
 A timeout event can be defined as the following:
 
-1. Maximum number of iterations have been reached
-2. Model building run time exceeds what is specified in ``max_runtime_secs``
-3. A user has clicked on stop model button or similar from Flow.
+1. The maximum number of iterations have been reached,
+2. The model building run time exceeds what is specified in ``max_runtime_secs``, or
+3. You clicked on the stop model button or similar from Flow.
 
 For families and random families other than Gaussian, link functions are used to translate from the linear space to the model the mean output.  
 
@@ -1133,20 +1133,24 @@ Linear mixed model with correlated random effect
 
 Let :math:`A` be a matrix with known elements that describe the correlation among the random effects. The model is now given by:
 
-.. figure:: ../images/hglm_linear_mixed_model1.png
-   :align: center
+.. math::
+   
+   y_i | \beta,\mu \sim N(X_i\beta + Z_iu, \delta^2_e) \\
+   u \sim MVN(0,A\delta^2_u) \quad
 
 where :math:`N` is normal distribution and :math:`MVN` is multi-variable normal. This can be easily translated to:
 
-.. figure:: ../images/hglm_linear_mixed_model2.png
-   :align: center
+.. math::
+   
+   y_i | \beta,\mu \sim N(X_i\beta + Z^*_iu^*, \delta^2_e) \\
+   u^* \sim MVN(0,I\delta^2_u) \quad \quad
 
-where :math:`Z^* = ZL` and :math:`L` is the Cholesky factorization of :math:`A`. Hence, if you have correlated random effects, you can first perform the transformation to your data before using our HGLM implementation here.
+where :math:`Z^* = ZL` and :math:`L` is the Cholesky factorization of :math:`A`. Therefore, if you have correlated random effects, you can first perform the transformation to your data before using our HGLM implementation here.
 
 HGLM model metrics
 ~~~~~~~~~~~~~~~~~~
 
-H2O provides the following model metrics at the end of each HGLM experiment:
+H2O-3 provides the following model metrics at the end of each HGLM experiment:
 
 - fixef: fixed effects coefficients
 - ranef: random effects coefficients
