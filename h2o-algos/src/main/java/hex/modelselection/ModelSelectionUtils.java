@@ -1063,7 +1063,7 @@ public class ModelSelectionUtils {
         }
         // grab min z-values for numerical and categorical columns
         PredNameMinZVal numericalPred = findNumMinZVal(numPredNames, zValList, coeffNames);
-        PredNameMinZVal categoricalPred = findCatMinZVal(model, zValList);
+       PredNameMinZVal categoricalPred = findCatMaxZVal(model, zValList);
         
         // choose the min z-value from numerical and categorical predictors and return its index in predNames
         if (categoricalPred._minZVal >= 0 && categoricalPred._minZVal < numericalPred._minZVal) { // categorical pred has minimum z-value
@@ -1102,14 +1102,18 @@ public class ModelSelectionUtils {
      * 2. To figure out which coefficient name corresponds to which column name, we use the catOffsets which will tell
      * us how many enum levels are used in the glm model coefficients.  If the catOffset for the first coefficient
      * says 3, that means that column will have three enum levels represented in the glm model coefficients.
+     * 
+     * For categorical predictors with multiple enum levels, we will look at the max z-score.  This will show the best
+     * performing enum levels.  We will remove the enum predictor if its best z-score is not good enough when compared
+     * to the z-score of other predictors.
      */
-    public static PredNameMinZVal findCatMinZVal(GLMModel model, List<Double> zValList) {
+    public static PredNameMinZVal findCatMaxZVal(GLMModel model, List<Double> zValList) {
         String[] columnNames = model.names(); // column names of dinfo._adaptedFrame
         int[] catOffsets = model._output.getDinfo()._catOffsets;
-        double minCatVal = -1;
+        double maxCatLevel = -1;
         String catPredMinZ = null;
         if (catOffsets != null) {
-            minCatVal = Double.MAX_VALUE;
+            maxCatLevel = Double.MIN_VALUE;
             int numCatCol = catOffsets.length - 1;
 
             int numNaN = (int) zValList.stream().filter(x -> Double.isNaN(x)).count();
@@ -1130,15 +1134,15 @@ public class ModelSelectionUtils {
                     }
                     if (catZValues.size() > 0) {
                         double oneCatMinZ = catZValues.stream().max(Double::compare).get(); // choose the best z-value here
-                        if (oneCatMinZ < minCatVal) {
-                            minCatVal = oneCatMinZ;
+                        if (oneCatMinZ > maxCatLevel) {
+                            maxCatLevel = oneCatMinZ;
                             catPredMinZ = columnNames[catInd];
                         }
                     }
                 }
             }
         }
-        return new PredNameMinZVal(catPredMinZ, minCatVal);
+        return new PredNameMinZVal(catPredMinZ, maxCatLevel);
     }
     
     static class PredNameMinZVal {

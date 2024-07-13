@@ -53,7 +53,7 @@ def assert_smallest_z_removed(back_coef, z_values_backward, z_values_removed, co
     model_z_values = glm_model._model_json["output"]["coefficients_table"]["z_value"]
     model_coeffs = glm_model._model_json["output"]["coefficients_table"]["names"]
     
-    assert_equal_z_values(back_coef, glm_model.coef(), z_values_backward, coeff_backward, model_z_values, model_coeffs)
+    assert_equal_z_values(z_values_backward, coeff_backward, model_z_values, model_coeffs)
     min_z_value = min(z_values_removed)
     # check that predictor with smallest z-value magnitude is removed
     assert_smallest_z_value_numerical(num_predictors, min_z_value, model_coeffs, model_z_values)
@@ -96,7 +96,7 @@ def extractCatCols(df, x):
             cat_pred.append(name)
     return cat_pred
     
-def assert_equal_z_values(back_coef, curr_coef, z_values_backward, coeff_backward, model_z_values, glm_coeff):
+def assert_equal_z_values(z_values_backward, coeff_backward, model_z_values, glm_coeff):
     for coeff in glm_coeff:
         backward_z_value = z_values_backward[coeff_backward.index(coeff)]
         model_z_value = model_z_values[glm_coeff.index(coeff)]
