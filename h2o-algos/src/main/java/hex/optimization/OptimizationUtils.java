@@ -554,6 +554,7 @@ public class OptimizationUtils {
                              ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
                              GLM.GLMGradientSolver gradientSolver) {
       if (_currGradDirIP > 0) {
+        _newBeta = _originalBeta;
         return false;
       }
       GLM.GLMGradientInfo newGrad;

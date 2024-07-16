@@ -2754,7 +2754,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               return;
             }
 
-            if (applyBetaConstraints) { // if beta constraints are applied, may need to update constraints, derivatives, gradientInfo
+            if (applyBetaConstraints) { // if beta constraints are applied separately, may need to update constraints, derivatives, gradientInfo
               System.arraycopy(betaCnd, 0, tempBeta, 0, betaCnd.length);
               bc.applyAllBounds(betaCnd);
               ArrayUtils.subtract(betaCnd, tempBeta, tempBeta);
