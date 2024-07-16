@@ -4,8 +4,8 @@ from tests import pyunit_utils
 import numpy as np
 import pandas as pd
 
-# no need to check anything, this test just needs to run into completion without NPE error for both model building
-# process where only the upper_bounds or lower_bounds are specified
+# For beta constraints, if only upper_bounds are specified, there are NPE errors because the code expects both upper
+# and lower bounds to be specified.  I have since fixed this error.
 def data_prep(seed):
     np.random.seed(seed)
     x1 = np.random.normal(0, 10, 100000)
@@ -133,8 +133,11 @@ def test_bad_lambda_specification():
 
     model = glm(**params)
     model.train(x = predictors, y = response, training_frame = train_data)
-    print(model.coef())
+    coefs = model.coef()
+    print(coefs)
     print(glm.getConstraintsInfo(model))
+    # beta constraints should be satisfied
+    assert coefs["x1"] >= 0.03, "beta constraint x1 ({0}) >= 0.03 is violated!".format(coefs["x1"])
 
     # beta constraints
     bc = []
@@ -148,8 +151,11 @@ def test_bad_lambda_specification():
     params['beta_constraints'] = beta_constraints2
     model = glm(**params)
     model.train(x = predictors, y = response, training_frame = train_data)
-    print(model.coef())
+    coefs = model.coef()
+    print(coefs)
     print(glm.getConstraintsInfo(model))
+    # beta constraints should always be satisfied
+    assert coefs["x1"] <= 1.5, "beta constraint x1 ({0}) >= 1.5 is violated.".format(coefs["x1"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_bad_lambda_specification)
