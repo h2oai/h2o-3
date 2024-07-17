@@ -1111,20 +1111,24 @@ Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e. :mat
 Fitting algorithm overview
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following fitting algorithm from "Generalized linear models with random effects" (Y. Lee, J. A. Nelder and Y. Pawitan; see References) is used to build our HGLM. Let :math:`n` be the number of observations and :math:`k` be the number of levels in the random effect. The algorithm that was implemented for H2O-3 will perform the following:
+The following fitting algorithm from "Generalized linear models with random effects" (`Y. Lee, J. A. Nelder and Y. Pawitan <#references>`__) is used to build our HGLM. Let :math:`n` be the number of observations and :math:`k` be the number of levels in the random effect. The algorithm that was implemented for H2O-3 will perform the following:
 
-1. Initialize starting values either from user by setting parameter startval or by the system if startval is left unspecified.  
+1. Initialize starting values (either from the user if you set parameter ``startval`` or from the system if ``startval`` is left unspecified).  
 2. Construct an augmented model with response :math:`y_{aug}= {y \choose {E(u)}}`.
-3. Use a GLM to estimate :math:`\delta={\beta \choose u}` given the dispersion :math:`\phi` and :math:`\lambda`. Save the deviance components and leverages from the fitted model.
+3. Use a GLM to estimate :math:`\delta={\beta \choose u}` given the dispersion :math:`\phi` and :math:`\lambda`. Then, save the deviance components and leverages from the fitted model.
 4. Use a gamma GLM to estimate the dispersion parameter for :math:`\phi` (i.e. :math:`\delta_e^2` for a Gaussian response).
-5. Use a similar GLM as in step 4 to estimate :math:`\lambda` from the last :math:`k` deviance components and leverages obtained from the GLM in step 3.
-6. Iterate between steps 3-5 until convergence. Note that the convergence measure here is either a timeout event or the following condition has been met: :math:`\frac {\Sigma_i{(\text{eta}. i - \text{eta}.o)^2}} {\Sigma_i(\text{eta}.i)^2 \text{<} 1e - 6}`.
+5. Use a similar GLM (as in step 4) to estimate :math:`\lambda` from the last :math:`k` deviance components and leverages obtained from the GLM in step 3.
+6. Iterate between steps 3-5 until convergence. 
+   
+   .. note::
 
-A timeout event can be defined as the following:
+      The convergence measure is either a timeout event or the following condition has been met: :math:`\frac {\Sigma_i{(\text{eta}. i - \text{eta}.o)^2}} {\Sigma_i(\text{eta}.i)^2 \text{<} 1e - 6}`.
 
-1. The maximum number of iterations have been reached,
-2. The model building run time exceeds what is specified in ``max_runtime_secs``, or
-3. You clicked on the stop model button or similar from Flow.
+      A timeout event can be defined as the following:
+
+      1. The maximum number of iterations have been reached,
+      2. The model building run time exceeds what is specified in ``max_runtime_secs``, or
+      3. You clicked on the stop model button or similar from Flow.
 
 For families and random families other than Gaussian, link functions are used to translate from the linear space to the model the mean output.  
 
@@ -1152,25 +1156,25 @@ HGLM model metrics
 
 H2O-3 provides the following model metrics at the end of each HGLM experiment:
 
-- fixef: fixed effects coefficients
-- ranef: random effects coefficients
-- randc: vector of random column indices
-- varfix: dispersion parameter of the mean model
-- varranef: dispersion parameter of the random effects
-- converge: true if algorithm has converge, otherwise false
-- sefe: standard errors of fixed effects
-- sere: standard errors of random effects
-- dfrefe: deviance degrees of freedom for the mean part of model
-- sumvc1: estimates and standard errors of linear predictor in the dispersion model
-- summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
-- likelihood: if ``calc_like`` is true, the following four values are returned:
+- **fixef**: fixed effects coefficients
+- **ranef**: random effects coefficients
+- **randc**: vector of random column indices
+- **varfix**: dispersion parameter of the mean model
+- **varranef**: dispersion parameter of the random effects
+- **converge**: true if algorithm has converge, otherwise false
+- **sefe**: standard errors of fixed effects
+- **sere**: standard errors of random effects
+- **dfrefe**: deviance degrees of freedom for the mean part of model
+- **sumvc1**: estimates and standard errors of linear predictor in the dispersion model
+- **summvc2**: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
+- **likelihood**: if ``calc_like`` is true, the following four values are returned:
 
-   - hlik: log-h-likelihood;
-   - pvh: adjusted profile log-likelihood profiled over the random effects;
-   - pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
-   - caic: conditional AIC.
+   - **hlik**: log-h-likelihood
+   - **pvh**: adjusted profile log-likelihood profiled over the random effects
+   - **pbvh**: adjusted profile log-likelihood profiled over fixed and random effects
+   - **caic**: conditional AIC
 
-- bad: row index of the most influential observation.
+- **bad**: row index of the most influential observation
 
 Mapping of fitting algorithm to the H2O-3 implementation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1182,52 +1186,55 @@ This mapping is done in four steps:
 3. Estimate :math:`\delta_e^2(\text {tau})`.
 4. Estimate :math:`\delta_u^2(\text {phi})`.
 
-**Step 1**: Initialize starting values by the system.
+Step 1: Initialize starting values by the system
+''''''''''''''''''''''''''''''''''''''''''''''''
 
-Following the implementation from R, when a user fails to specify starting values for psi, :math:`\beta`, :math:`\mu`, :math:`\delta_e^2`, :math:`\delta_u^2`, we will do it for the users as follows: 
+Following the implementation from R, when you fail to specify starting values for psi, :math:`\beta`, :math:`\mu`, :math:`\delta_e^2`, :math:`\delta_u^2`, we will do it for you as follows: 
 
  1. A GLM model is built with just the fixed columns and response.
- 2. Next init_sig_e(:math:`\delta_e^2`)/tau is set to 0.6*residual_deviance()/residual_degrees_of_freedom().
- 3. init_sig_u(:math:`\delta_u^2`) is set to 0.66*init_sig_e.
- 4. For numerical stability, we restrict the magnitude to init_sig_e and init_sig_u to >= 0.1.
- 5. Set phi = vector of length number of random columns of value init_sig_u/(number of random columns).
+ 2. Next, :math:`\frac{\text{init_sig_e}(\delta_e^2)}{\text{tau}}` is set to 0.6 :math:`\times \frac{\text{residual_deviance()}}{\text{residual_degrees_of_freedom()}}`.
+ 3. init_sig_u(:math:`\delta_u^2`) is set to 0.66 :math:`\times` init_sig_e.
+ 4. For numerical stability, we restrict the magnitude to init_sig_e and init_sig_u to :math:`\geq` 0.1.
+ 5. Set phi = vector of length number of random columns of value :math:`\frac{\text{init_sig_u}}{\text{(number of random columns)}}`.
  6. Set :math:`\beta` to the GLM model coefficients, :math:`\mu` to be a zero vector.
  7. Set psi to be a zero vector.
 
-**Step 2**: Estimate :math:`\delta =` :math:`\beta \choose u`.
+Step 2: Estimate :math:`\delta =` :math:`\beta \choose u`
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Given the current values of :math:`\delta_e^2, \delta_u^2`, we will solve for :math:`\delta =` :math:`\beta \choose u`. Instead of solving :math:`\delta` from :math:`T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a`, a different set of formulae are used. A loop is used to solve for the coefficients:
 
  1. The following variables are generated:
 
   - :math:`v.i= g_r^{-1} (u_i)` where :math:`u_i` are the random coefficients of the random effects/columns and :math:`g_r^{-1}` can be considered as the inverse link function.
-  - :math:`tau` is a vector of length number of data containing init.sig.e;
-  - :math:`eta.i=X_i \beta+offset` and store the previous :math:`eta.i` as :math:`eta.o`.
+  - :math:`tau` is a vector of length number of data containing init.sig.e.
+  - :math:`eta.i=X_i \beta+\text{offset}` and store the previous :math:`eta.i` as :math:`eta.o`.
   - :math:`mu.i=g^{-1} (eta.i)`.
   - dmu_deta is derivative of :math:`g^{-1} (eta.i)` with respect to :math:`eta.i`, which is 1 for identity link.
-  - :math:`z_i=eta.i-offset+(y_i-mu.i)/\text {dmu_deta}`
-  - :math:`zmi= \text{psi}`
+  - :math:`z_i=eta.i-\text{offset}+\frac{(y_i-mu.i)}{\text{dmu_deta}}`.
+  - :math:`zmi= \text{psi}`.
   - :math:`augZ =` :math:`zi \choose zmi`.
   - du_dv is the derivative of :math:`g_r^{-1} (u_i)` with respect to :math:`v.i.`  Again, for identity link, this is 1.
-  - The weight :math:`W =` :math:`wdata \choose wpsi` where :math:`wdata = \frac {d \text{mu_deta}^2}{\text {prior_weight*family}\$\text{variance}(mu.i)*tau}` and :math:`wpsi = \frac {d \text{u_dv}^2}{\text {prior_weight*family}\$\text{variance(psi)*phi}}`
+  - The weight :math:`W =` :math:`wdata \choose wpsi` where :math:`wdata = \frac {d \text{mu_deta}^2}{\text {prior_weight*family}\$\text{variance}(mu.i)*tau}` and :math:`wpsi = \frac {d \text{u_dv}^2}{\text {prior_weight*family}\$\text{variance(psi)*phi}}`.
 
  2. Finally the following formula is used to solve for the parameters: :math:`augXZ \cdot \delta=augZW` where :math:`augXZ=T_a \cdot W` and :math:`augZW=augZ \cdot W`:
 
   - Use QR decomposition to augXZ and obtain: :math:`QR \delta = augZW`.
   - Use backward solve to obtain the coefficients :math:`\delta` from :math:`R \delta = Q^T augZW`.
   - Calculate :math:`hv=\text{rowsum}(Q)` of length n+number of expanded and store in returnFrame.
-  - Calculate :math:`dev =` :math:`prior weight*(y_i-mu.i)^2 \choose (psi -u_i )^2` of length n+number of expanded random columns and store in returnFrame.
+  - Calculate :math:`dev =` :math:`prior weight\times(y_i-mu.i)^2 \choose (psi -u_i )^2` of length n+number of expanded random columns and store in returnFrame.
   - Calculate :math:`resid= \frac {(y-mu.i)} {\sqrt \frac {sum(dev)(1-hv)}{n-p}}` of length n and store in returnFrame.
   - Go back to step 1 unless :math:`\Sigma_i(eta.i-eta.o)^2 / \Sigma_i(eta.i)^2<1e-6` or a timeout event has occurred. 
 
-**Step 3**: Estimate :math:`\delta_e^2(\text {tau})`
+Step 3: Estimate :math:`\delta_e^2(\text {tau})`
+''''''''''''''''''''''''''''''''''''''''''''''''
 
-With the newly estimated fixed and random coefficients, we will estimate the dispersion parameter for the fixed effects/columns by building a gamma GLM:
+With the newly estimated fixed and random coefficients, we'll estimate the dispersion parameter for the fixed effects/columns by building a gamma GLM:
 
- 1. Generate a training frame with constant predictor column of 1 to force glm model to generate only the intercept term:
+ 1. Generate a training frame with constant predictor column of 1 to force the GLM model to generate only the intercept term:
 
-  - Response column as :math:`dev/(1-hv)`.
-  - Weight column as :math:`(1-hv)/2`.
+  - Response column as :math:`\frac{\text{dev}}{(1-hv)}`.
+  - Weight column as :math:`\frac{(1-hv)}{2}`.
   - Predictor column of ones.
   - The length of the training frame is the number of data rows.
 
@@ -1235,16 +1242,17 @@ With the newly estimated fixed and random coefficients, we will estimate the dis
  3. Set :math:`tau = \text {exp (intercept value)}`.
  4. Assign estimation standard error and sigma from the GLM standard error calculation for coefficients.
 
-**Step 4**: Estimate :math:`\delta_u^2(\text {phi})`.
+Step 4: Estimate :math:`\delta_u^2(\text {phi})`
+''''''''''''''''''''''''''''''''''''''''''''''''
 
-Again, a gamma GLM model is used here. In addition, the error estimates are generated for each random column. Exactly the same steps are used here as in Step 3. The only difference is that we are looking at the :math:`dev,hv` corresponding to the expanded random columns/effects.
+Again, a gamma GLM model is used here. In addition, the error estimates are generated for each random column. Exactly the same steps are used here as in Step 3. The only difference is that we are looking at the :math:`\text{dev,hv}` corresponding to the expanded random columns/effects.
 
 .. _regularization:
 
 Regularization
 --------------
 
-Regularization is used to attempt to solve problems with overfitting that can occur in GLM. Penalties can be introduced to the model building process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties using both the ``alpha`` and ``lambda`` options (i.e., values greater than 0 for both).
+Regularization is used to attempt to solve problems with overfitting that can occur in GLM. Penalties can be introduced to the model building process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties using both the ``alpha`` and ``lambda`` options (i.e. values greater than 0 for both).
 
 LASSO and ridge regression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1254,7 +1262,7 @@ LASSO represents the :math:`\ell{_1}` penalty and is an alternative regularized 
 Ridge regression penalizes the :math:`\ell{_2}` norm of the model coefficients :math:`||\beta||{^2_2} = \sum{^p_{k=1}} \beta{^2_k}`. It provides greater numerical stability and is easier and faster to compute than LASSO. It keeps all the predictors in the model and shrinks them proportionally. Ridge regression reduces coefficient values simultaneously as the
 penalty is increased without setting any of them to zero.
 
-Variable selection is important in numerous modern applications wiht many covariates where the :math:`\ell{_1}` penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, we recommend using LASSO, which will select a small number of variables for sufficiently high :math:`\lambda` that could be crucial to the inperpretability of the mode. The :math:`\ell{_2}` norm does not have this effect; it shrinks the coefficients but does not set them exactly to zero. 
+Variable selection is important in numerous modern applications with many covariates where the :math:`\ell{_1}` penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, we recommend using LASSO, which will select a small number of variables for sufficiently high :math:`\lambda` that could be crucial to the interpretability of the mode. The :math:`\ell{_2}` norm does not have this effect; it shrinks the coefficients but does not set them exactly to zero. 
 
 The two penalites also differ in the presence of correlated predictors. The :math:`\ell{_2}` penalty shrinks coefficients for correlated columns toward each other, while the :math:`\ell{_1}` penalty tends to select only one of them and sets the other coefficients to zero. Using the elastic net argument :math:`\alpha` combines these two behaviors. 
 
@@ -1263,34 +1271,34 @@ The elastic net method selects variables and preserves the grouping effect (shri
 Elastic net penalty
 ~~~~~~~~~~~~~~~~~~~
 
-As indicated previously, elastic net regularization is a combination of the :math:`\ell{_1}` and :math:`\ell{_2}` penalties parametrized by the :math:`\alpha` and :math:`\lambda` arguments (similar to "Regularization Paths for Genarlized Linear Models via Coordinate Descent" by Friedman et all).
+As indicated previously, elastic net regularization is a combination of the :math:`\ell{_1}` and :math:`\ell{_2}` penalties parametrized by the :math:`\alpha` and :math:`\lambda` arguments (similar to "Regularization Paths for Genarlized Linear Models via Coordinate Descent" by `Friedman et al <#references>`__).
 
- - :math:`\alpha` controls the elastic net penalty distribution between the :math:`\ell_1` and :math:`\ell_2` norms. It can have any value in the [0,1] range or a vector of values (via grid search). If :math:`\alpha=0`, then H2O solves the GLM using ridge regression. If :math:`\alpha=1`, then LASSO penalty is used. 
-
- - :math:`\lambda` controls the penalty strength. The range is any positive value or a vector of values (via grid search). Note that :math:`\lambda` values are capped at :math:`\lambda_{max}`, which is the smallest :math:`\lambda` for which the solution is all zeros (except for the intercept term).
+ - :math:`\alpha` controls the elastic net penalty distribution between the :math:`\ell_1` and :math:`\ell_2` norms. It can have any value in the [0,1] range or a vector of values (through grid search). If :math:`\alpha=0`, then H2O-3 solves the GLM using ridge regression. If :math:`\alpha=1`, then LASSO penalty is used. 
+ - :math:`\lambda` controls the penalty strength. The range is any positive value or a vector of values (through grid search). Note that :math:`\lambda` values are capped at :math:`\lambda_{max}`, which is the smallest :math:`\lambda` for which the solution is all zeros (except for the intercept term).
 
 The combination of the :math:`\ell_1` and :math:`\ell_2` penalties is beneficial because :math:`\ell_1` induces sparsity, while :math:`\ell_2` gives stability and encourages the grouping effect (where a group of correlated variables tend to be dropped or added into the model simultaneously). When focusing on sparsity, one possible use of the :math:`\alpha` argument involves using the :math:`\ell_1` mainly with very little :math:`\ell_2` (:math:`\alpha` almost 1) to stabilize the computation and improve convergence speed.
 
 Regularization parameters in GLM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To get the best possible model, we need to find the optimal values of the regularization parameters :math:`\alpha` and
-:math:`\lambda`.  To find the optimal values, H2O allows you to perform a grid search over :math:`\alpha` and a special form of grid search called "lambda search" over :math:`\lambda`.
+To get the best possible model, we need to find the optimal values of the regularization parameters :math:`\alpha` and :math:`\lambda`.  To find the optimal values, H2O-3 allows you to perform a grid search over :math:`\alpha` and a special form of grid search called "lambda search" over :math:`\lambda`.
 
-The recommended way to find optimal regularization settings on H2O is to do a grid search over a few :math:`\alpha` values with an automatic lambda search for each :math:`\alpha`. 
+The recommended way to find optimal regularization settings on H2O-3 is to do a grid search over a few :math:`\alpha` values with an automatic lambda search for each :math:`\alpha`. 
 
-- **Alpha**
+``alpha``
+'''''''''
 
- The ``alpha`` parameter controls the distribution between the :math:`\ell{_1}` (LASSO) and :math:`\ell{_2}` (ridge regression) penalties. A value of 1.0 for ``alpha`` represents LASSO, and an ``alpha`` value of 0.0 produces ridge reguression. 
+The ``alpha`` parameter controls the distribution between the :math:`\ell{_1}` (LASSO) and :math:`\ell{_2}` (ridge regression) penalties. A value of 1.0 for ``alpha`` represents LASSO, and an ``alpha`` value of 0.0 produces ridge reguression. 
 
-- **Lambda**
+``lambda``
+''''''''''
 
- The ``lambda`` parameter controls the amount of regularization applied. If ``lambda`` is 0.0, no regularization is applied, and the ``alpha`` parameter is ignored. The default value for ``lambda`` is calculated by H2O using a heuristic based on the training data. If you allow H2O to calculate the value for ``lambda``, you can see the chosen value in the model output. 
+The ``lambda`` parameter controls the amount of regularization applied. If ``lambda`` is 0.0, no regularization is applied, and the ``alpha`` parameter is ignored. The default value for ``lambda`` is calculated by H2O-3 using a heuristic based on the training data. If you allow H2O-3 to calculate the value for ``lambda``, you can see the chosen value in the model output. 
 
 Lambda search
 ~~~~~~~~~~~~~
 
-If the ``lambda_search`` option is set, GLM will compute models for full regularization path similar to glmnet. (See the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__.) Regularization path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
+If the ``lambda_search`` option is set, GLM will compute models for a full regularization path similar to glmnet (see the `glmnet paper for more information <https://core.ac.uk/download/pdf/6287975.pdf>`__). A regularization path starts at lambda max (which is the highest lambda values which makes sense, or the lowest value driving all coefficients to zero) and goes down to lambda min on the logarithmic scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
 
 When looking for a sparse solution (``alpha`` > 0), lambda search can also be used to efficiently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A possible use case for lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value. 
 
@@ -1299,25 +1307,29 @@ Lambda search can be configured along with the following arguments:
 - ``alpha``: Regularization distribution between :math:`\ell_1` and :math:`\ell_2`.
 - ``validation_frame`` and/or ``nfolds``: Used to select the best lambda based on the cross-validation performance or the validation or training data. If available, cross-validation performance takes precedence. If no validation data is available, the best lambda is selected based on training data performance and is therefore guaranteed to always be the minimal lambda computed since GLM cannot overfit on a training dataset.
 
- **Note**: If running lambda search with a validation dataset and cross-validation disabled, the chosen lambda value corresponds to the lambda with the lowest validation error. The validation dataset is used to select the model, and the model performance should be evaluated on another independent test dataset.
+ .. note:: 
+
+   If running lambda search with a validation dataset and cross-validation disabled, the chosen lambda value corresponds to the lambda with the lowest validation error. The validation dataset is used to select the model, and the model performance should be evaluated on another independent test dataset.
 
 - ``lambda_min_ratio`` and ``nlambdas``: The sequence of the :math:`\lambda` values is automatically generated as an exponentially decreasing sequence. It ranges from :math:`\lambda_{max}` (the smallest :math:`\lambda` so that the solution is a model with all 0s) to :math:`\lambda_{min} =` ``lambda_min_ratio`` :math:`\times` :math:`\lambda_{max}`.
 
- H2O computes :math:`\lambda` models sequentially and in decreasing order, warm-starting the model (using the previous solutin as the initial prediction) for :math:`\lambda_k` with the solution for :math:`\lambda_{k-1}`. By warm-starting the models, we get better performance. Typically models for subsequent :math:`\lambda` values are close to each other, so only a few iterations per :math:`\lambda` are needed (two or three). This also achieves greater numerical stability because models with a higher penalty are easier to compute. This method starts with an easy problem and then continues to make small adjustments. 
+ H2O-3 computes :math:`\lambda` models sequentially and in decreasing order, warm-starting the model (using the previous solution as the initial prediction) for :math:`\lambda_k` with the solution for :math:`\lambda_{k-1}`. By warm-starting the models, we get better performance. Typically models for subsequent :math:`\lambda` values are close to each other, so only a few iterations per :math:`\lambda` are needed (two or three). This also achieves greater numerical stability because models with a higher penalty are easier to compute. This method starts with an easy problem and then continues to make small adjustments. 
 
- **Note**: ``lambda_min_ratio`` and ``nlambdas`` also specify the relative distance of any two lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are "close" to each other. The default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, and the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. For best results when using strong rules, keep the ratio close to this default.
+ .. note:: 
+
+   ``lambda_min_ratio`` and ``nlambdas`` also specify the relative distance of any two lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are "close" to each other. The default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, and the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. For the best results when using strong rules, keep the ratio close to this default.
 
 - ``max_active_predictors``: This limits the number of active predictors. (The actual number of non-zero predictors in the  model is going to be slightly  lower.) It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
 Full regularization path
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-It can sometimes be useful to see the coefficients for all lambda values or to override default lambda selection. Full regularization path can be extracted from both R and python clients (currently not from Flow). It returns coefficients (and standardized coefficients) for all computed lambda values and also the explained deviances on both train and validation. Subsequently, the makeGLMModel call can be used to create an H2O GLM model with selected coefficients.
+It can sometimes be useful to see the coefficients for all lambda values or to override default lambda selection. A full regularization path can be extracted from both R and Python clients. It returns coefficients (and standardized coefficients) for all computed lambda values and also the explained deviances on both train and validation. Subsequently, the ``makeGLMModel`` call can be used to create an H2O-3 GLM model with selected coefficients.
 
-To extract the regularization path from R or python:
+To extract the regularization path from Python or R:
 
-- R: call h2o.getGLMFullRegularizationPath. This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
-- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method). This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
+- Python: ``H2OGeneralizedLinearEstimator.getGLMRegularizationPath`` (static method). This takes the model as an argument. `An example is available here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
+- R: call ``h2o.getGLMFullRegularizationPath``. This takes the model as an argument. `An example is available here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
 
 .. _solvers:
 
@@ -1328,45 +1340,50 @@ This section provides general guidelines for best performance from the GLM imple
 
 In GLM, you can specify one of the following solvers:
 
-- IRLSM: Iteratively Reweighted Least Squares Method (default)
-- L_BFGS: Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm
-- AUTO: Sets the solver based on given data and parameters.
-- COORDINATE_DESCENT: Coordinate Decent (not available when ``family=multinomial``)
-- COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive
-- GRADIENT_DESCENT_LH: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
-- GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
+- ``IRLSM``: Iteratively Reweighted Least Squares Method (default)
+- ``L_BFGS``: Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm
+- ``AUTO``: Sets the solver based on given data and parameters
+- ``COORDINATE_DESCENT``: Coordinate Descent (not available when ``family=multinomial``)
+- ``COORDINATE_DESCENT_NAIVE``: Coordinate Descent Naive
+- ``GRADIENT_DESCENT_LH``: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
+- ``GRADIENT_DESCENT_SQERR``: Gradient Descent Squared Error (available for Ordinal family only)
 
 IRLSM and L-BFGS
 ~~~~~~~~~~~~~~~~
 
-IRLSM (the default) uses a `Gram Matrix <https://en.wikipedia.org/wiki/Gramian_matrix>`__ approach, which is efficient for tall and narrow datasets and when running lambda search via a sparse solution. For wider and dense datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than 500 predictors (or so) in the data, then use the default solver (IRLSM). For larger numbers of predictors, we recommend running IRLSM with a lambda search, and then comparing it to L-BFGS with just one :math:`\ell_2` penalty. For advanced users, we recommend the following general guidelines:
+IRLSM (the default solver) uses a `Gram Matrix <https://en.wikipedia.org/wiki/Gramian_matrix>`__ approach, which is efficient for tall and narrow datasets and when running lambda search through a sparse solution. For wider and dense datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than 500 predictors (or so) in the data, then use the default solver (IRLSM). For larger numbers of predictors, we recommend running IRLSM with a lambda search, and then comparing it to L-BFGS with just one :math:`\ell_2` penalty. 
+
+Solver guidelines for advanced users
+''''''''''''''''''''''''''''''''''''
+
+For advanced users, we recommend the following general guidelines:
 
 - For a dense solution and a dense dataset, use IRLSM if there are fewer than 500 predictors in the data; otherwise, use L-BFGS. Set ``alpha=0`` to include :math:`\ell_2` regularization in the elastic net penalty term to avoid inducing sparsity in the model.
 
-- For a dense solution with a sparse dataset, use IRLSM if there are fewer than 2000 predictors in the data; otherwise, use L-BFGS. Set ``alpha=0``.
+- For a dense solution with a sparse dataset, use IRLSM if there are fewer than 2000 predictors in the data; otherwise, use L-BFGS and set ``alpha=0``.
 
 - For a sparse solution with a dense dataset, use IRLSM with ``lambda_search=TRUE`` if fewer than 500 active predictors in the solution are expected; otherwise, use L-BFGS. Set ``alpha`` to be greater than 0 to add in an :math:`\ell_1` penalty to the elastic net regularization, which induces sparsity in the estimated coefficients.
 
-- For a sparse solution with a sparse dataset, use IRLSM with ``lambda_search=TRUE`` if you expect less than 5000 active predictors in the solution; otherwise, use L-BFGS. Set ``alpha`` to be greater than 0.
+- For a sparse solution with a sparse dataset, use IRLSM with ``lambda_search=TRUE`` if you expect less than 5000 active predictors in the solution; otherwise, use L-BFGS and set ``alpha`` greater than 0.
 
 If you are unsure whether the solution should be sparse or dense, try both along with a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively, based on the performance in cross-validation when not enough data is available to have a separate validation dataset).
 
 Coordinate Descent
 ~~~~~~~~~~~~~~~~~~
 
-In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coordinate Descent. Cyclical Coordinate Descent is able to handle large datasets well and deals efficiently with sparse features. It can improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. 
+In addition to IRLSM and L-BFGS, H2O-3's GLM includes options for specifying Coordinate Descent. Cyclical Coordinate Descent is able to handle large datasets well and deals efficiently with sparse features. It can improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. 
 
 - Coordinate Descent is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. This version is faster when :math:`N > p` and :math:`p` ~ :math:`500`.
 - Coordinate Descent Naive is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
 - Coordinate Descent provides much better results if lambda search is enabled. Also, with bounds, it tends to get higher accuracy.
 - Coordinate Descent cannot be used with ``family=multinomial``. 
 
-Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
+`See more about the Coordinate Descent and Coordinate Descent Naive methods in the glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
 
 Gradient Descent
 ~~~~~~~~~~~~~~~~
 
-For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
+For Ordinal regression problems, H2O-3 provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O-3's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 .. _coefficients_table: 
 
