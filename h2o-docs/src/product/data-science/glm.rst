@@ -1390,23 +1390,39 @@ For Ordinal regression problems, H2O-3 provides options for `Gradient Descent <h
 Coefficients Table
 ------------------
 
-A Coefficients Table is outputted in a GLM model. This table provides the following information: Column names, Coefficients, Standard Error, z-value, p-value, and Standardized Coefficients.
+A Coefficients Table is outputted in a GLM model. This table provides the following information: 
+
+- Column names
+- Coefficients
+- Standard Error
+- z-value
+- p-value
+- Standardized Coefficients
+
+Here is more information on the table information:
 
 - Coefficients are the predictor weights (i.e. the weights used in the actual model used for prediction) in a GLM model. 
 
 - Standard error, z-values, and p-values are classical statistical measures of model quality. p-values are essentially hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable (insiginificant) while a low p-value suggest that the coefficient is statistically significant.
 
-- The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes (e.g. to compare relative variable importance). In this case, the "normal" coefficients are obtained from the standardized coefficients by reversing the data standardization process (de-scaled, with the intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e.  no standardization prior to scoring). **Note**: These are not the same as coefficients of a model built on non-standardized data. 
+- The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes (e.g. to compare relative variable importance). In this case, the "normal" coefficients are obtained from the standardized coefficients by reversing the data standardization process (de-scaled, with the intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e.  no standardization prior to scoring). 
+   
+.. note::
+
+   These are not the same as coefficients of a model built on non-standardized data. 
 
 Extracting Coefficients Table information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can extract the columns in the Coefficients Table by specifying ``names``, ``coefficients``, ``std_error``, ``z_value``, ``p_value``, ``standardized_coefficients`` in a retrieve/print statement. (Refer to the example that follows.) In addition, H2O provides the following built-in methods for retrieving standard and non-standard coefficients:
+You can extract the columns in the Coefficients Table by specifying ``names``, ``coefficients``, ``std_error``, ``z_value``, ``p_value``, ``standardized_coefficients`` in a retrieve/print statement. In addition, H2O-3 provides the following built-in methods for retrieving standard and non-standard coefficients:
 
 - ``coef()``: Coefficients that can be applied to non-standardized data
 - ``coef_norm()``: Coefficients that can be fitted on the standardized data (requires ``standardized=TRUE``, which is the default)
 
-For an example, refer `here <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples>`__.
+Extracting Coefficients Table example
+'''''''''''''''''''''''''''''''''''''
+
+`See the following example for more information <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples>`__.
 
 GLM likelihood
 --------------
@@ -1414,36 +1430,46 @@ GLM likelihood
 Maximum likelihood estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For an initial rough estimate of the parameters :math:`\hat{\beta}` you use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`
+For an initial rough estimate of the parameter :math:`\hat{\beta}`, you use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`.
 
-Let :math:`z` be a working dependent variable such that :math:`z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}`,
+To start, let :math:`z` be a working dependent variable such that :math:`z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}`
 
- where :math:`\frac{d\eta_{i}}{d\mu_{i}}` is the derivative of the link function evaluated at the trial estimate.
+where: 
 
-Calculate the iterative weights: :math:`w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`
+- :math:`\frac{d\eta_{i}}{d\mu_{i}}` is the derivative of the link function evaluated at the trial estimate.
 
- where :math:`b^{\prime\prime}` is the second derivative of :math:`b(\theta_{i})` evaluated at the trial estimate.
+Then, calculate the iterative weights: :math:`w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`
 
-Assume :math:`a_{i}(\phi)` is of the form :math:`\frac{\phi}{p_{i}}`. The weight :math:`w_{i}` is inversely proportional to the variance of the working dependent variable :math:`z_{i}` for current parameter estimates and proportionality factor :math:`\phi`.
+where: 
 
-Regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w_{i}` to obtain new estimates of :math:`\beta`. 
+- :math:`b^{\prime\prime}` is the second derivative of :math:`b(\theta_{i})` evaluated at the trial estimate.
 
-  :math:`\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}`
+We then assume :math:`a_{i}(\phi)` is of the form :math:`\frac{\phi}{p_{i}}`. The weight :math:`w_{i}` is inversely proportional to the variance of the working dependent variable :math:`z_{i}` for current parameter estimates and proportionality factor :math:`\phi`.
 
- where :math:`\mathbf{X}` is the model matrix, :math:`\mathbf{W}` is a diagonal matrix of :math:`w_{i}`, and :math:`\mathbf{z}` is a vector of the working response variable :math:`z_{i}`.
+Finally, regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w_{i}` to obtain new estimates of :math:`\beta`:
+
+.. math::
+   
+   \hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}
+
+where:
+
+- :math:`\mathbf{X}` is the model matrix.
+- :math:`\mathbf{W}` is a diagonal matrix of :math:`w_{i}`.
+- :math:`\mathbf{z}` is a vector of the working response variable :math:`z_{i}`.
 
 This process is repeated until the estimates :math:`\hat{\beta}` change by less than the specified amount.
 
 Likelihood and AIC
 ~~~~~~~~~~~~~~~~~~
 
-During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log likelihood and full AIC values. The full formula is used to calculate the output of the full log likelihood and full AIC values if the parameter ``calc_like`` is set to ``True``.
+During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log-likelihood and full AIC values. The full formula is used to calculate the output of the full log-likelihood and full AIC values if the parameter ``calc_like`` is set to ``True``.
 
 .. note::
    
-   The log likelihood value is not available in the cross-validation metrics. The AIC value is available and is calculated using the original simplified formula independent of the log likelihood.
+   The log-likelihood value is not available in the cross-validation metrics. The AIC value is available and is calculated using the original simplified formula independent of the log-likelihood.
 
-The following are the supported GLM families and formulae (the log likelihood is calculated for the *i* th observation).
+The following are the supported GLM families and formulae (the log-likelihood is calculated for the *i* th observation).
 
 **Gaussian**: 
 
@@ -1451,15 +1477,15 @@ The following are the supported GLM families and formulae (the log likelihood is
    
    l(\mu_i (\beta); y_i, w_i) = - \frac{1}{2} \Big[ \frac{w_i (y_i - \mu_i)^2}{\phi} + \log \big(\frac{\phi}{w_i} \big) + \log (2 \pi) \Big]
    
-where 
+where:
 
-- :math:`\phi` is the dispersion parameter estimation 
-- :math:`\mu_i` is the prediction
-- :math:`y_i` is the real value of the target variable
+- :math:`\phi` is the dispersion parameter estimation.
+- :math:`\mu_i` is the prediction.
+- :math:`y_i` is the real value of the target variable.
 
 .. note::
    
-   For Gaussian family, you need the dispersion parameter estimate in order to calculate the full log likelihood and AIC. Hence, when ``calc_like`` is set to ``True``, the parameters ``compute_p_values`` and ``remove_collinear_columns`` are set to ``True``. The parameter ``dispersion_parameter_method`` is set to ``"pearson"`` by default. However, you can set the ``dispersion_parameter_method`` to ``deviance`` if you prefer.
+   For Gaussian family, you need the dispersion parameter estimate in order to calculate the full log-likelihood and AIC. Therefore, when ``calc_like`` is set to ``True``, the parameters ``compute_p_values`` and ``remove_collinear_columns`` are set to ``True``. The parameter ``dispersion_parameter_method`` is set to ``"pearson"`` by default. However, you can set the ``dispersion_parameter_method`` to ``deviance`` if you prefer.
 
 **Binomial**:
 
@@ -1467,19 +1493,19 @@ where
    
    l \big(\mu_i (\beta); y_i, w_i \big) = w_i \big(y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1-\mu_i \} \big)
 
-where
+where:
 
-- :math:`\mu_i` is the probability of 1
-- :math:`y_i` is the real value of the target variable
+- :math:`\mu_i` is the probability of 1.
+- :math:`y_i` is the real value of the target variable.
 
 **Quasibinomial**:
 
-- If the predicted value equals :math:`y_i`, log likelihood is 0
-- If :math:`\mu_i >1` then :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \}`
-- Otherwise, :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1- \mu_i \}` where
+- If the predicted value equals :math:`y_i`, log-likelihood is 0.
+- If :math:`\mu_i >1`, then :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \}`.
+- Otherwise, :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1- \mu_i \}` where:
    
-   - :math:`\mu_i` is the probability of 1
-   - :math:`y_i` is the real value of the target variable
+   - :math:`\mu_i` is the probability of 1.
+   - :math:`y_i` is the real value of the target variable.
 
 **Fractional Binomial**:
 
@@ -1487,10 +1513,10 @@ where
    
    l(\mu_i (\beta); y_i) = w_i \Big(y_i \times \log \big(\frac{y_i}{\mu_i} \big) + (1-y_i) \times \log \big(\frac{1-y_i}{1-\mu_i} \big) \Big)
 
-where
+where:
 
-- :math:`\mu_i` is the probability of 1
-- :math:`y_i` is the real value of the target variable
+- :math:`\mu_i` is the probability of 1.
+- :math:`y_i` is the real value of the target variable.
 
 **Poisson**:
 
@@ -1498,10 +1524,10 @@ where
    
    l(\mu_i (\beta); y_i) = w_i \big(y_i \times \log (\mu_i) - \mu_i - \log (\Gamma (y_i +1)) \big)
 
-where
+where:
 
-- :math:`\mu_i` is the prediction
-- :math:`y_i` is the real value of the target variable
+- :math:`\mu_i` is the prediction.
+- :math:`y_i` is the real value of the target variable.
 
 **Negative Binomial**:
 
@@ -1509,11 +1535,11 @@ where
    
    l(\mu_i (\beta); y_i, w_i) = y_i \log \big(\frac{k \mu}{w_i} \big) - \big(y_i + \frac{w_i}{k} \big) \log \big(1 + \frac{k \mu}{w_i} \big) + \log \Big(\frac{\Gamma \big( y_i + \frac{w_i}{k} \big)} {\Gamma (y_i +1) \Gamma \big(\frac{w_i}{k}\big)} \Big)
 
-where
+where:
 
-- :math:`\mu_i` is the prediction
-- :math:`y_i` is the real value of the target variable
-- :math:`k = \frac{1}{\phi}` is the dispersion parameter estimation
+- :math:`\mu_i` is the prediction.
+- :math:`y_i` is the real value of the target variable.
+- :math:`k = \frac{1}{\phi}` is the dispersion parameter estimation.
 
 .. note::
    
@@ -1525,11 +1551,11 @@ where
    
    l(\mu_i (\beta); y_i, w_i) = \frac{w_i}{\phi} \log \big( \frac{w_i y_i}{\phi \mu_i} \big) - \frac{w_i y_i}{\phi \mu_i} - \log (y_i) - \log \big(\Gamma \big(\frac{w_i}{\phi} \big) \big)
 
-where
+where:
 
-- :math:`\mu_i` is the prediction
-- :math:`y_i` is the real value of the target variable
-- :math:`\phi` is the dispersion parameter estimation
+- :math:`\mu_i` is the prediction.
+- :math:`y_i` is the real value of the target variable.
+- :math:`\phi` is the dispersion parameter estimation.
 
 .. note::
    
@@ -1541,7 +1567,7 @@ where
    
    l(\mu_i(\beta); y_i) = w_i \log (\mu_i)
 
-where :math:`\mu_i` is the predicted probability of the actual class :math:`y_i`
+where :math:`\mu_i` is the predicted probability of the actual class :math:`y_i`.
 
 **Tweedie**:
 
@@ -1549,23 +1575,23 @@ The Tweedie calculation is located in the section `Tweedie Likelihood Calculatio
 
 .. note::
    
-   For Tweedie family, you need the dispersion parameter estimate. When the parameter ``calc_like`` is set to ``True``, the ``dispersion_parameter_method`` is set to ``"ml"`` which provides you with the best log likelihood estimation.
+   For Tweedie family, you need the dispersion parameter estimate. When the parameter ``calc_like`` is set to ``True``, the ``dispersion_parameter_method`` is set to ``"ml"`` which provides you with the best log-likelihood estimation.
 
 Final AIC calculation
 '''''''''''''''''''''
 
-The final AIC in the output metric is calculated using the standard formula, utilizing the previously computed log likelihood.
+The final AIC in the output metric is calculated using the standard formula, utilizing the previously computed log-likelihood.
 
 .. math::
    
    \text{AIC} = -2LL + 2p
 
-where
+where:
 
-- :math:`p` is the number of non-zero coefficients estimated in the model
-- :math:`LL` is the log likelihood
+- :math:`p` is the number of non-zero coefficients estimated in the model.
+- :math:`LL` is the log-likelihood.
 
-To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` and the parameter ``HGLM`` to ``False`` to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
+To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` and the parameter ``HGLM`` to ``False`` to enable the calculation of the full log-likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
 
 Tweedie likelihood calculation
 ''''''''''''''''''''''''''''''
@@ -1576,17 +1602,17 @@ There are three different estimations you calculate Tweedie likelihood for:
 - when you fix the dispersion parameter and estimate the variance power; or
 - when you estimate both the variance power and dispersion parameter.
 
-The calculation in this section is used to estimate the full log likelihood. When you fix the Tweedie variance power, you will use a simpler formula (unless you are estimating dispersion). When fixing the Tweedie variance power for dispersion estimation, you use the Series method.
+The calculation in this section is used to estimate the full log-likelihood. When you fix the Tweedie variance power, you will use a simpler formula (unless you are estimating dispersion). When fixing the Tweedie variance power for dispersion estimation, you use the Series method.
 
 When you fix the variance power and estimate the dispersion parameter, the Series method is used to perform the estimation. In this case, you can actually separate the GLM coefficient estimation and the dispersion parameter estimation at the end of the GLM model building process. Standard Newton's method is used to estimate the dispersion parameter using the Series method which is an approximation of the Tweedie likelihood function.
 
-Depending on :math:`p`, :math:`y`, and :math:`\phi`, different methods are used for this log likelihood estimation. To start, let:
+Depending on :math:`p`, :math:`y`, and :math:`\phi`, different methods are used for this log-likelihood estimation. To start, let:
 
 .. math::
    
    \xi = \frac{\phi}{y^{2-p}}
 
-If :math:`p=2`, then it will use the log likelihood of the Gamma distribution:
+If :math:`p=2`, then it will use the log-likelihood of the Gamma distribution:
 
 .. math::
 
@@ -1604,7 +1630,10 @@ If :math:`p>2` and :math:`\xi \geq 1`, then it will also use the Fourier inversi
 
 Everything else will use the Series method. However, if the Series method fails (output of ``NaN``), then it will try the Fourier inversion method instead.
 
-If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the :math:`\xi` criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
+If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the :math:`\xi` criterium and it failed, it will then estimate the log-likelihood using the Saddlepoint approximation.
+
+Tweedie variance power general usages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Here are the general usages for Tweedie variance power and dispersion parameter estimation using maximum likelihood:
 
@@ -1612,9 +1641,10 @@ Here are the general usages for Tweedie variance power and dispersion parameter 
 - ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will use the dispersion parameter value in parameter ``init_dispersion_parameter`` and estimate the Tweedie variance power starting with the value set in parameter ``tweedie_variance_power``;
 - ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will estimate both the variance power and dispersion parameter using the values set in ``tweedie_variance_power`` and ``init_dispersion_parameter`` respectively.
 
-*Optimization Procedure*
+Optimization procedure
+^^^^^^^^^^^^^^^^^^^^^^
 
-When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power :math:`p>1+10^{-10}` and dispersion :math:`\phi >10^{-10}`. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the ``dispersion_learning_rate``.
+When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, it then switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power :math:`p>1+10^{-10}` and dispersion :math:`\phi >10^{-10}`. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the ``dispersion_learning_rate``.
 
 .. note::
    
@@ -1627,15 +1657,40 @@ The variable inflation factor (VIF) quantifies the inflation of the variable. Va
 
 The VIF is constructed by:
 
-- setting a numerical predictor *x* as the response while using the remaining predictors except for *y*,
-- building a GLM regression model,
-- calculating the VIF as :math:`\frac{1.0}{(1.0-R^2)}` where :math:`R^2` is taken from the GLM regression model built in the prior step, and
-- repeating this process for all remaining numerical predictors to retrieve their VIF.
+- Setting a numerical predictor *x* as the response while using the remaining predictors except for *y*,
+- Building a GLM regression model,
+- Calculating the VIF as :math:`\frac{1.0}{(1.0-R^2)}` where :math:`R^2` is taken from the GLM regression model built in the prior step, and
+- Repeating this process for all remaining numerical predictors to retrieve their VIF.
 
 Variable inflation factor example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tabs::
+   .. code-tab:: python
+
+      # Import the GLM estimator:
+      from h2o.estimators import H2OGeneralizedLinearEstimator
+
+      # Import the training data:
+      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+
+      # Set the predictors and response:
+      predictors = ["abs.C1.","abs.C2.","abs.C3.","abs.C4.","abs.C5.""]
+      response = "resp"
+
+      # Build and train the model:
+      vif_glm = H2OGeneralizedLinearEstimator(family="gamma", 
+                                              lambda_=0, 
+                                              generate_variable_inflation_factors=True, 
+                                              fold_assignment="modulo", 
+                                              nfolds=3, 
+                                              keep_cross_validation_models=True)
+      vif_glm.train(x=predictors, y=response, training_frame=training_data)
+
+      # Retrieve the variable inflation factors:
+      vif_glm.get_variable_inflation_factors()
+      {'Intercept': nan, 'abs.C1.': 1.0003341467438167, 'abs.C2.': 1.0001734204183244, 'abs.C3.': 1.0007846189027745, 'abs.C4.': 1.0005388379729434, 'abs.C5.': 1.0005349427184604}
+      
    .. code-tab:: r R
 
       # Import the training data:
@@ -1661,30 +1716,7 @@ Variable inflation factor example
        abs.C1.  abs.C2.  abs.C3.  abs.C4.  abs.C5. 
       1.000334 1.000173 1.000785 1.000539 1.000535 
 
-   .. code-tab:: python
 
-      # Import the GLM estimator:
-      from h2o.estimators import H2OGeneralizedLinearEstimator
-
-      # Import the training data:
-      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
-
-      # Set the predictors and response:
-      predictors = ["abs.C1.","abs.C2.","abs.C3.","abs.C4.","abs.C5.""]
-      response = "resp"
-
-      # Build and train the model:
-      vif_glm = H2OGeneralizedLinearEstimator(family="gamma", 
-                                              lambda_=0, 
-                                              generate_variable_inflation_factors=True, 
-                                              fold_assignment="modulo", 
-                                              nfolds=3, 
-                                              keep_cross_validation_models=True)
-      vif_glm.train(x=predictors, y=response, training_frame=training_data)
-
-      # Retrieve the variable inflation factors:
-      vif_glm.get_variable_inflation_factors()
-      {'Intercept': nan, 'abs.C1.': 1.0003341467438167, 'abs.C2.': 1.0001734204183244, 'abs.C3.': 1.0007846189027745, 'abs.C4.': 1.0005388379729434, 'abs.C5.': 1.0005349427184604}
 
 Modifying or creating a custom GLM model
 ----------------------------------------
