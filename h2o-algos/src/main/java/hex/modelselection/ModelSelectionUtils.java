@@ -1063,10 +1063,10 @@ public class ModelSelectionUtils {
         }
         // grab min z-values for numerical and categorical columns
         PredNameMinZVal numericalPred = findNumMinZVal(numPredNames, zValList, coeffNames);
-       PredNameMinZVal categoricalPred = findCatMaxZVal(model, zValList);
+       PredNameMinZVal categoricalPred = findCatMaxZVal(model, zValList); // null if all predictors are inactive
         
         // choose the min z-value from numerical and categorical predictors and return its index in predNames
-        if (categoricalPred._minZVal >= 0 && categoricalPred._minZVal < numericalPred._minZVal) { // categorical pred has minimum z-value
+        if (categoricalPred != null && categoricalPred._minZVal >= 0 && categoricalPred._minZVal < numericalPred._minZVal) { // categorical pred has minimum z-value
             return predNames.indexOf(categoricalPred._predName);
         } else {    // numerical pred has minimum z-value
             return predNames.indexOf(numericalPred._predName);
@@ -1110,15 +1110,13 @@ public class ModelSelectionUtils {
     public static PredNameMinZVal findCatMaxZVal(GLMModel model, List<Double> zValList) {
         String[] columnNames = model.names(); // column names of dinfo._adaptedFrame
         int[] catOffsets = model._output.getDinfo()._catOffsets;
-        double maxCatLevel = -1;
-        String catPredMinZ = null;
+        List<Double> bestZValues = new ArrayList<>();
+        List<String> catPredNames = new ArrayList<>();
         if (catOffsets != null) {
-            maxCatLevel = Double.MIN_VALUE;
             int numCatCol = catOffsets.length - 1;
-
             int numNaN = (int) zValList.stream().filter(x -> Double.isNaN(x)).count();
             if (numNaN == zValList.size()) {    // if all levels are NaN, this predictor is redundant
-                new PredNameMinZVal(catPredMinZ, Double.POSITIVE_INFINITY);
+                return null;
             } else {
                 for (int catInd = 0; catInd < numCatCol; catInd++) {    // go through each categorical column
                     List<Double> catZValues = new ArrayList<>();
@@ -1134,15 +1132,17 @@ public class ModelSelectionUtils {
                     }
                     if (catZValues.size() > 0) {
                         double oneCatMinZ = catZValues.stream().max(Double::compare).get(); // choose the best z-value here
-                        if (oneCatMinZ > maxCatLevel) {
-                            maxCatLevel = oneCatMinZ;
-                            catPredMinZ = columnNames[catInd];
-                        }
+                        bestZValues.add(oneCatMinZ);
+                        catPredNames.add(columnNames[catInd]);
                     }
                 }
             }
         }
-        return new PredNameMinZVal(catPredMinZ, maxCatLevel);
+        if (bestZValues.size() < 1)
+            return null;
+        double maxCatLevel = bestZValues.stream().min(Double::compare).get();
+        String catPredBestZ = catPredNames.get(bestZValues.indexOf(maxCatLevel));
+        return new PredNameMinZVal(catPredBestZ, maxCatLevel);
     }
     
     static class PredNameMinZVal {
