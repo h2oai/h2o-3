@@ -1690,7 +1690,7 @@ Variable inflation factor example
       # Retrieve the variable inflation factors:
       vif_glm.get_variable_inflation_factors()
       {'Intercept': nan, 'abs.C1.': 1.0003341467438167, 'abs.C2.': 1.0001734204183244, 'abs.C3.': 1.0007846189027745, 'abs.C4.': 1.0005388379729434, 'abs.C5.': 1.0005349427184604}
-      
+
    .. code-tab:: r R
 
       # Import the training data:
@@ -1721,17 +1721,79 @@ Variable inflation factor example
 Modifying or creating a custom GLM model
 ----------------------------------------
 
-In R and Python, the ``makeGLMModel`` call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or Python:
+In Python and R, the ``makeGLMModel`` call can be used to create an H2O-3 model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from Python or R:
 
-- **R**: call ``h2o.makeGLMModel``. This takes a model, a vector of coefficients, and (optional) decision threshold as parameters.
 - **Python**: ``H2OGeneralizedLinearEstimator.makeGLMModel`` (static method) takes a model, a dictionary containing coefficients, and (optional) decision threshold as parameters.
+- **R**: call ``h2o.makeGLMModel``. This takes a model, a vector of coefficients, and (optional) decision threshold as parameters.
 
 Examples
 --------
 
-Below is a simple example showing how to build a Generalized Linear model.
+The following is a simple example showing how to build a Generalized Linear model.
 
 .. tabs::
+   .. code-tab:: python
+
+    import h2o
+    h2o.init()
+    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
+    prostate = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+    prostate['RACE'] = prostate['RACE'].asfactor()
+    prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+    prostate['DPROS'] = prostate['DPROS'].asfactor()
+
+    predictors = ["AGE", "RACE", "VOL", "GLEASON"]
+    response_col = "CAPSULE"
+
+    prostate_glm = H2OGeneralizedLinearEstimator(family= "binomial", 
+                                              lambda_ = 0, 
+                                              compute_p_values = True,
+                                              generate_scoring_history = True)
+    prostate_glm.train(predictors, response_col, training_frame= prostate)
+    
+    # Coefficients that can be applied to the non-standardized data.
+    print(prostate_glm.coef())
+    {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
+    print(prostate_glm.coef_norm())
+    {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Print the Coefficients table
+    prostate_glm._model_json['output']['coefficients_table']
+    Coefficients: glm coefficients
+    names      coefficients    std_error    z_value    p_value      standardized_coefficients
+    ---------  --------------  -----------  ---------  -----------  ---------------------------
+    Intercept  -6.67516        1.93176      -3.45548   0.000549318  -0.0761001
+    RACE.1     -0.442788       1.32423      -0.334373  0.738098     -0.442788
+    RACE.2     -0.589923       1.37347      -0.429514  0.667549     -0.589923
+    AGE        -0.0178887      0.0187019    -0.956516  0.338812     -0.116761
+    VOL        -0.0127833      0.00751435   -1.70119   0.0889072    -0.234544
+    GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
+
+    # Print the Standard error
+    print(prostate_glm._model_json['output']['coefficients_table']['std_error'])
+    [1.9317603626604352, 1.3242308316851008, 1.3734657932878116, 0.01870193337051072, 0.007514353657915356, 0.15615627100850296]
+
+    # Print the p values
+    print(prostate_glm._model_json['output']['coefficients_table']['p_value'])
+    [0.0005493180609459358, 0.73809783692024, 0.6675489550762566, 0.33881164088847204, 0.0889071809658667, 1.2212453270876722e-15]
+
+    # Print the z values
+    print(prostate_glm._model_json['output']['coefficients_table']['z_value'])
+    [-3.4554779791058787, -0.3343733631736653, -0.42951434726559384, -0.9565159284557886, -1.7011907141473064, 8.007103260414265]
+
+    # Retrieve a graphical plot of the standardized coefficient magnitudes
+    prostate_glm.std_coef_plot()
+
+    # Since you generated the scoring history, you can access the average objective and negative log likelihood:
+    print("average objective: {0}.".format(prostate_glm.average_objective()))
+    average objective: 0.5406879877388551.
+    print("negative log likelihood: {0}.".format(prostate_glm.negative_log_likelihood()))
+    negative log likelihood: 205.46143534076492.
+
    .. code-tab:: r R
 
     library(h2o)
@@ -1797,74 +1859,26 @@ Below is a simple example showing how to build a Generalized Linear model.
     print(h2o.negative_log_likelihood(prostate_glm))
     [1] 205.4614
 
-   .. code-tab:: python
-
-    import h2o
-    h2o.init()
-    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-
-    prostate = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
-    prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
-    prostate['RACE'] = prostate['RACE'].asfactor()
-    prostate['DCAPS'] = prostate['DCAPS'].asfactor()
-    prostate['DPROS'] = prostate['DPROS'].asfactor()
-
-    predictors = ["AGE", "RACE", "VOL", "GLEASON"]
-    response_col = "CAPSULE"
-
-    prostate_glm = H2OGeneralizedLinearEstimator(family= "binomial", 
-                                              lambda_ = 0, 
-                                              compute_p_values = True,
-                                              generate_scoring_history = True)
-    prostate_glm.train(predictors, response_col, training_frame= prostate)
-    
-    # Coefficients that can be applied to the non-standardized data.
-    print(prostate_glm.coef())
-    {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
-
-    # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
-    print(prostate_glm.coef_norm())
-    {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
-
-    # Print the Coefficients table
-    prostate_glm._model_json['output']['coefficients_table']
-    Coefficients: glm coefficients
-    names      coefficients    std_error    z_value    p_value      standardized_coefficients
-    ---------  --------------  -----------  ---------  -----------  ---------------------------
-    Intercept  -6.67516        1.93176      -3.45548   0.000549318  -0.0761001
-    RACE.1     -0.442788       1.32423      -0.334373  0.738098     -0.442788
-    RACE.2     -0.589923       1.37347      -0.429514  0.667549     -0.589923
-    AGE        -0.0178887      0.0187019    -0.956516  0.338812     -0.116761
-    VOL        -0.0127833      0.00751435   -1.70119   0.0889072    -0.234544
-    GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
-
-    # Print the Standard error
-    print(prostate_glm._model_json['output']['coefficients_table']['std_error'])
-    [1.9317603626604352, 1.3242308316851008, 1.3734657932878116, 0.01870193337051072, 0.007514353657915356, 0.15615627100850296]
-
-    # Print the p values
-    print(prostate_glm._model_json['output']['coefficients_table']['p_value'])
-    [0.0005493180609459358, 0.73809783692024, 0.6675489550762566, 0.33881164088847204, 0.0889071809658667, 1.2212453270876722e-15]
-
-    # Print the z values
-    print(prostate_glm._model_json['output']['coefficients_table']['z_value'])
-    [-3.4554779791058787, -0.3343733631736653, -0.42951434726559384, -0.9565159284557886, -1.7011907141473064, 8.007103260414265]
-
-    # Retrieve a graphical plot of the standardized coefficient magnitudes
-    prostate_glm.std_coef_plot()
-
-    # Since you generated the scoring history, you can access the average objective and negative log likelihood:
-    print("average objective: {0}.".format(prostate_glm.average_objective()))
-    average objective: 0.5406879877388551.
-    print("negative log likelihood: {0}.".format(prostate_glm.negative_log_likelihood()))
-    negative log likelihood: 205.46143534076492.
-
 Calling model attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 While not all model attributes have their own callable APIs, you can still retrieve their information. Using the previous example, here is how to call a model's attributes:
 
 .. tabs::
+   .. code-tab:: python
+
+      # Retrieve all model attributes:
+      prostate_glm._model_json["output"]['model_summary']
+      GLM Model: summary
+          family    link    regularization    number_of_predictors_total    number_of_active_predictors    number_of_iterations    training_frame
+      --  --------  ------  ----------------  ----------------------------  -----------------------------  ----------------------  ----------------
+          binomial  logit   None              5                             5                              4                       py_4_sid_9981
+
+
+      # Retrieve a specific model attribute (for example, the number of active predictors):
+      prostate_glm._model_json["output"]['model_summary']['number_of_active_predictors']
+      ['5']
+
    .. code-tab:: r R
 
       # Retrieve all model attributes:
@@ -1881,21 +1895,6 @@ While not all model attributes have their own callable APIs, you can still retri
       1                         5
 
 
-   .. code-tab:: python
-
-      # Retrieve all model attributes:
-      prostate_glm._model_json["output"]['model_summary']
-      GLM Model: summary
-          family    link    regularization    number_of_predictors_total    number_of_active_predictors    number_of_iterations    training_frame
-      --  --------  ------  ----------------  ----------------------------  -----------------------------  ----------------------  ----------------
-          binomial  logit   None              5                             5                              4                       py_4_sid_9981
-
-
-      # Retrieve a specific model attribute (for example, the number of active predictors):
-      prostate_glm._model_json["output"]['model_summary']['number_of_active_predictors']
-      ['5']
-
-
 FAQ
 ---
 
@@ -1905,7 +1904,7 @@ FAQ
 
 -  **How does the algorithm handle missing values during testing?** 
 
-  Same as during training. If the missing value handling is set to Skip and we are generating predictions, skipped rows will have Na (missing) prediction.
+  Same as during training. If the missing value handling is set to Skip and we are generating predictions, skipped rows will have NA (missing) prediction.
 
 -  **What happens if the response has missing values?**
 
@@ -1913,11 +1912,11 @@ FAQ
 
 -  **What happens during prediction if the new sample has categorical levels not seen in training?** 
    
-  The value will be filled with either 0 or replaced by the most frequent level present in training (if ``missing_value_handling`` was set to **MeanImputation**).
+  The value will be filled with either 0 or replaced by the most frequent level present in training (if ``missing_value_handling`` was set to ``"MeanImputation"``).
 
 -  **How are unseen categorical values treated during scoring?**
 
-  Unseen categorical levels are treated based on the missing values handling during training. If your missing value handling was set to Mean Imputation, the unseen levels are replaced by the most frequent level present in training (mod). If your missing value treatment was Skip, the variable is ignored for the given observation.
+  Unseen categorical levels are treated based on the missing values handling during training. If your missing value handling was set to ``"MeanImputation"``, the unseen levels are replaced by the most frequent level present in training (mod). If your missing value treatment was ``"Skip"``, the variable is ignored for the given observation.
 
 -  **Does it matter if the data is sorted?**
 
@@ -1934,7 +1933,7 @@ FAQ
 
 -  **What if there are a large number of columns?**
 
-  IRLS will get quadratically slower with the number of columns. Try L-BFGS for datasets with more than 5-10 thousand columns.
+  ``IRLSM`` will get quadratically slower with the number of columns. Try ``L-BFGS`` for datasets with more than 5-10 thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
@@ -1943,18 +1942,24 @@ FAQ
 -  **When building the model, does GLM use all features or a selection
    of the best features?**
 
-  Typically, GLM picks the best predictors, especially if lasso is used (``alpha = 1``). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors.
+  Typically, GLM picks the best predictors, especially if LASSO is used (``alpha = 1``). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors.
 
 -  **When running GLM, is it better to create a cluster that uses many
    smaller nodes or fewer larger nodes?**
 
   A rough heuristic would be:
 
-   :math:`nodes ~=M *N^2/(p * 1e8)`
+  .. math::
 
-  where :math:`M` is the number of observations, :math:`N` is the number of columns (categorical columns count as a single column in this case), and :math:`p` is the number of CPU cores per node.
+   nodes \cong M \times N^2/(p \times 1e8)
 
-  For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula :math:`250^2 *1000000/(32* 1e8) = 19.5 ~= 20)`.
+  where:
+
+  - :math:`M` is the number of observations.
+  - :math:`N` is the number of columns (categorical columns count as a single column in this case).
+  - :math:`p` is the number of CPU cores per node.
+
+  For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula :math:`250^2 \times 1000000/(32\times 1e8) = 19.5 \cong 20)`.
 
 -  **How is variable importance calculated for GLM?**
 
@@ -1964,30 +1969,30 @@ FAQ
 
   GLM includes three convergence criteria outside of max iterations:
   	
-  	- ``beta_epsilon``: beta stops changing. This is used mostly with IRLSM. 
-  	- ``gradient_epsilon``: gradient is too small. This is used mostly with L-BFGS.
+  	- ``beta_epsilon``: beta stops changing. This is used mostly with ``IRLSM``. 
+  	- ``gradient_epsilon``: gradient is too small. This is used mostly with ``L-BFGS``.
   	- ``objective_epsilon``: relative objective improvement is too small. This is used by all solvers.
 
-  The default values below are based on a heuristic:
+  The following default values are based on a heuristic:
 
-   - The default for ``beta_epsilon`` is 1e-4.  
-   - The default for ``gradient_epsilon`` is 1e-6 if there is no regularization (``lambda = 0``) or you are running with ``lambda_search``; 1e-4 otherwise.
-   - The default for ``objective_epsilon`` is 1e-6 if ``lambda = 0``; 1e-4 otherwise.
+   - The default for ``beta_epsilon`` is ``1e-4``.  
+   - The default for ``gradient_epsilon`` is ``1e-6`` if there is no regularization (``lambda = 0``) or you are running with ``lambda_search``; ``1e-4`` otherwise.
+   - The default for ``objective_epsilon`` is ``1e-6`` if ``lambda = 0``; ``1e-4`` otherwise.
 
   The default for ``max_iterations`` depends on the solver type and whether you run with lambda search:
  
-   - for IRLSM, the default is 50 if no lambda search; 10* number of lambdas otherwise 
-   - for LBFGS, the default is number of classes (1 if not classification) * max(20, number of predictors /4 ) if no lambda search; it is number of classes * 100 * n-lambdas with lambda search.
+   - for ``IRLSM``, the default is ``50`` if no lambda search; 10 :math:`\times` number of lambdas otherwise.
+   - for ``L-BFGS``, the default is number of classes (1 if not classification) :math:`\times` max(20, number of predictors /4 ) if no lambda search; it is number of classes :math:`\times` 100 :math:`\times` n-lambdas with lambda search.
    
-  You will receive a warning if you reach the maximum number of iterations. In some cases, GLM  can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
+  You will receive a warning if you reach the maximum number of iterations. In some cases, GLM  can end prematurely if it can not progress forward through line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
 
--  **Why do I receive different results when I run R's glm and H2O's glm?**
+-  **Why do I receive different results when I run R's GLM and H2O-3's GLM?**
 
-  H2O's glm and R's glm do not run the same way and, thus, will provide different results. This is mainly due to the fact that H2O’s glm uses H2O math, H2O objects, and H2O distributed computing. Additionally, H2O's glm by default adds regularization, so it is essentially solving a different problem.
+  H2O-'s GLM and R's GLM do not run the same way and, thus, will provide different results. This is mainly due to the fact that H2O-3’s GLM uses H2O-3 math, H2O-3 objects, and H2O-3 distributed computing. Additionally, H2O-3's GLM by default adds regularization, so it is essentially solving a different problem.
 
--  **How can I get H2O's GLM to match R's `glm()` function?**
+-  **How can I get H2O-3's GLM to match R's** ``glm()`` **function?**
 
-  There are a few arguments you need to set in order to get H2O's GLM to match R's GLM because by default, they do not function the same way. To match R's GLM, you must set the following in H2O's GLM:
+  There are a few arguments you need to set in order to get H2O-3's GLM to match R's GLM because by default, they do not function the same way. To match R's GLM, you must set the following in H2O-3's GLM:
 
   ::
 
@@ -1996,7 +2001,9 @@ FAQ
    remove_collinear_columns = TRUE
    compute_p_values = TRUE
 
-  **Note:** ``beta_constraints`` must not be set.
+  .. note:: 
+
+   ``beta_constraints`` can't be set.
 
 
 GLM algorithm
