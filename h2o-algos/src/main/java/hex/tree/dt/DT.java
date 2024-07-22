@@ -290,9 +290,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             if (!_response.isCategorical()) {
                 error("_response", "Only categorical response is supported");
             }
-            if (!_response.isBinary()) {
-                error("_response", "Only binary response is supported");
-            }
         }
 
         @Override
