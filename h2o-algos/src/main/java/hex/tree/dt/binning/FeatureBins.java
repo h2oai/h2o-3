@@ -124,7 +124,7 @@ public class FeatureBins {
     }
 
     private void rec(Set<boolean[]> masks, String current, String categories, int stepsToGo) {
-        if (stepsToGo == 0) {
+        if (stepsToGo == 0 || categories.isEmpty()) {
             masks.add(createMaskFromString(current));
             return;
         }
