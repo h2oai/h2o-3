@@ -152,10 +152,10 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     /**
      * Calculates probabilities of each class for a leaf.
      *
-     * @param countsByClass counts of 0 and 1 in a leaf
-     * @return probabilities of 0 or 1
+     * @param countsByClass counts of each class in a leaf
+     * @return probabilities of each class
      */
-    private double[] calculateProbability(int[] countsByClass) {
+    private double[] calculateProbabilities(int[] countsByClass) {
         int samplesCount = Arrays.stream(countsByClass).sum();
         return Arrays.stream(countsByClass).asDoubleStream().map(n -> n / samplesCount).toArray();
     }
@@ -168,7 +168,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      * @param nodeIndex     node index
      */
     public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
-        _tree[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbability(countsByClass)[0]);
+        _tree[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbabilities(countsByClass));
         _leavesCount++;
         // nothing to return, node is modified inplace
     }
