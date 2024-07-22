@@ -82,7 +82,7 @@ public class FeatureBins {
         // as now the max supported category is 9 and for the bigger number the faster sequential approach should be used
         // init list with empty instances
         String categories = _bins.stream().map(b -> String.valueOf(((CategoricalBin) b)._category))
-                .collect(Collectors.joining("")); // is it always 0 to _bins.size()?
+                .collect(Collectors.joining(""));
         Set<boolean[]> splits = findAllCategoricalSplits(categories);
         List<SplitStatistics> statistics = new ArrayList<>();
         for (boolean[] splitMask : splits) {

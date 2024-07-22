@@ -218,7 +218,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             return;
         }
 
-        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH, _nclass/*, minNumSamplesInBin - todo consider*/);
+        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH, _nclass);
 
         AbstractSplittingRule bestSplittingRule = findBestSplit(histogram);
         double criterionForTheParentNode = entropyMulticlass(countsByClass, Arrays.stream(countsByClass).sum());
