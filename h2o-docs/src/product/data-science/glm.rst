@@ -2009,56 +2009,61 @@ FAQ
 GLM algorithm
 -------------
 
-Following the definitive text by P. McCullagh and J.A. Nelder (1989) on
-the generalization of linear models to non-linear distributions of the
-response variable Y, H2O fits GLM models based on the maximum likelihood
-estimation via iteratively reweighed least squares.
+Following the definitive text by P. McCullagh and J.A. Nelder (1989) on the generalization of linear models to non-linear distributions of the response variable Y, H2O-3 fits GLM models based on the maximum likelihood estimation through iteratively reweighed least squares.
 
-Let :math:`y_{1},…,y_{n}` be n observations of the independent, random
+Let :math:`y_{1},…,y_{n}` be :math:`n` observations of the independent, random
 response variable :math:`Y_{i}`.
 
 Assume that the observations are distributed according to a function
 from the exponential family and have a probability density function of
 the form:
 
-  :math:`f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)} + c(y_{i}; \phi)]` where :math:`\theta` and :math:`\phi` are location and scale parameters, and :math:`a_{i}(\phi)`, :math:`b_{i}(\theta{i})`, and :math:`c_{i}(y_{i}; \phi)` are known functions.
+.. math::
+   
+   f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)} + c(y_{i}; \phi)] 
 
-  :math:`a_{i}` is of the form :math:`a_{i}= \frac{\phi}{p_{i}}` where :math:`p_{i}` is a known prior weight.
+where:
+
+- :math:`\theta` and :math:`\phi` are location and scale parameters.
+- :math:`a_{i}(\phi)`, :math:`b_{i}(\theta{i})`, and :math:`c_{i}(y_{i}; \phi)` are known functions.
+- :math:`a_{i}` is of the form :math:`a_{i}= \frac{\phi}{p_{i}}` where :math:`p_{i}` is a known prior weight.
 
 When :math:`Y` has a pdf from the exponential family:
 
- :math:`E(Y_{i})=\mu_{i}=b^{\prime} var(Y_{i})=\sigma_{i}^2=b^{\prime\prime}(\theta_{i})a_{i}(\phi)`
+.. math::
+   
+   E(Y_{i})=\mu_{i}=b^{\prime} var(Y_{i})=\sigma_{i}^2=b^{\prime\prime}(\theta_{i})a_{i}(\phi)
 
-Let :math:`g(\mu_{i})=\eta_{i}` be a monotonic, differentiable transformation of the expected value of :math:`y_{i}`. The function :math:`\eta_{i}` is the link function and follows a
-linear model.
+Let :math:`g(\mu_{i})=\eta_{i}` be a monotonic, differentiable transformation of the expected value of :math:`y_{i}`. The function :math:`\eta_{i}` is the link function and follows a linear model:
 
-  :math:`g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta`
+.. math::
+   
+   g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta
 
-When inverted: :math:`\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)`
+When inverted, the function is as follows: 
+   
+   .. math::
+
+      \mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)
 
 Cost of computation
 ~~~~~~~~~~~~~~~~~~~
 
-H2O can process large data sets because it relies on parallel processes.
-Large data sets are divided into smaller data sets and processed
-simultaneously and the results are communicated between computers as
-needed throughout the process.
+H2O-3 can process large data sets because it relies on parallel processes. Large datasets are divided into smaller datasets and processed simultaneously, and the results are communicated between computers as needed throughout the process.
 
-In GLM, data are split by rows but not by columns, because the predicted
-Y values depend on information in each of the predictor variable
-vectors. If O is a complexity function, N is the number of observations
-(or rows), and P is the number of predictors (or columns) then
+In GLM, data are split by rows but not by columns, because the predicted Y values depend on information in each of the predictor variable vectors. If :math:`O` is a complexity function, :math:`N` is the number of observations (or rows), and :math:`p` is the number of predictors (or columns) then:
 
-  :math:`Runtime \propto p^3+\frac{(N*p^2)}{CPUs}`
+.. math::
+   
+   \text{Runtime} \propto p^3+\frac{(N*p^2)}{\text{CPUs}}
 
-Distribution reduces the time it takes an algorithm to process because
-it decreases N.
+Distribution reduces the time it takes an algorithm to process because it decreases :math:`N`.
 
-Relative to P, the larger that (N/CPUs) becomes, the more trivial p
-becomes to the overall computational cost. However, when p is greater
-than (N/CPUs), O is dominated by p.
+Relative to :math:`p`, the larger that (:math:`\frac{N}{\text{CPUs}}`) becomes, the more trivial :math:`p` becomes to the overall computational cost. However, when :math:`p` is greater than (:math:`\frac{N}{\text{CPUs}}`), :math:`O` is dominated by :math:`p`.
 
-  :math:`Complexity = O(p^3 + N*p^2)`
+.. math::
+   
+   \text{Complexity} = O(p^3 + N \times p^2)
 
 References
 ----------
