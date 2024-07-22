@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplitMultinomial;
+import static hex.tree.dt.binning.SplitStatistics.entropyMulticlass;
 
 /**
  * Decision Tree
@@ -124,8 +124,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
 
     private static double calculateCriterionOfSplit(SplitStatistics binStatistics) {
-        // if(binStatistics.() == 2) // todo - fix bin statistics first, they are binomial-only now
-        return binStatistics.binaryEntropy();
+        return binStatistics.splitEntropy();
     }
 
     /**
@@ -215,7 +214,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH, _nclass/*, minNumSamplesInBin - todo consider*/);
 
         AbstractSplittingRule bestSplittingRule = findBestSplit(histogram);
-        double criterionForTheParentNode = entropyBinarySplitMultinomial(countsByClass, Arrays.stream(countsByClass).sum());
+        double criterionForTheParentNode = entropyMulticlass(countsByClass, Arrays.stream(countsByClass).sum());
         // if no split could be found, make a list from current node
         // if the information gain is low, make a leaf from current node
         if (bestSplittingRule == null
