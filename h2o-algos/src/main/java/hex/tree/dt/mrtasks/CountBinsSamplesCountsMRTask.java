@@ -88,7 +88,6 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
                 }
             }
         }
-        System.out.println(Arrays.deepToString(_bins));
     }
 
     private boolean isNumerical(int feature) {
@@ -117,6 +116,5 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
                 _bins[i][c] += mrt._bins[i][c];
             }
         }
-        System.out.println("Reduce " + Arrays.deepToString(_bins));
     }
 }

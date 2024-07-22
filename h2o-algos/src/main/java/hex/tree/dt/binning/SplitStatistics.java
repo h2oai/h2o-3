@@ -1,7 +1,6 @@
 package hex.tree.dt.binning;
 
 import hex.tree.dt.AbstractSplittingRule;
-import org.apache.commons.math3.util.Precision;
 
 import java.util.Arrays;
 

@@ -4,7 +4,6 @@ import hex.*;
 import org.apache.log4j.Logger;
 import water.*;
 
-import java.util.Arrays;
 
 public class DTModel extends Model<DTModel, DTModel.DTParameters, DTModel.DTOutput> {
 

@@ -89,7 +89,7 @@ public enum BinningStrategy {
     },
 
     /**
-     * Equal height: bins have approximately the same size - todo
+     * Equal height: bins have approximately the same size (not implemented yet)
      * - probably too costly to do it with MR task, better leave equal-width
      */
     EQUAL_HEIGHT {
@@ -101,7 +101,7 @@ public enum BinningStrategy {
     },
 
     /**
-     * Custom bins: works with provided bins limits - todo
+     * Custom bins: works with provided bins limits (not implemented yet)
      */
     CUSTOM_BINS {
         @Override

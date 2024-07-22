@@ -35,7 +35,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
      */
     public DTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
         boolean isALeaf = _nodes[actualNodeIndex] instanceof CompressedLeaf;
-        // first value 1 means that the node is list, return prediction for the list
+        // first value 1 means that the node is a leaf, return prediction for the leaf
         if (isALeaf) {
             double decisionValue = ((CompressedLeaf) _nodes[actualNodeIndex]).getDecisionValue();
             double probability = ((CompressedLeaf) _nodes[actualNodeIndex]).getProbabilities();
@@ -46,7 +46,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
             ruleExplanation += " and ";
         }
         AbstractSplittingRule splittingRule = ((CompressedNode) _nodes[actualNodeIndex]).getSplittingRule();
-        // splitting rule is true - left, false - right
+        // splitting rule is: true - left, false - right
         if(splittingRule.routeSample(rowValues)) {
             return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1, 
                     ruleExplanation + splittingRule.toString());

@@ -48,8 +48,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
     private DTModel _model;
     transient Random _rand;
-
-    //    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
     public final static double EPSILON = 1e-6;
     public final static double MIN_IMPROVEMENT = 1e-6;
     private static final Logger LOG = Logger.getLogger(DT.class);
@@ -110,7 +108,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
                 ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex, _nclass)
                 : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex, _nclass))
                 .stream()
-                // todo - consider setting min count of samples in bin instead of filtering splits
                 .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
                         && (binStatistics._rightCount >= _min_rows)))
                 .peek(binStatistics -> Log.debug("split: " + binStatistics._splittingRule + ", counts: "

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 public class FeatureBins {
 
     private List<AbstractBin> _bins;
-    private final boolean _isConstant;  // todo - test this
+    private final boolean _isConstant;
     private int _numOfCategories;
 
     public FeatureBins(List<AbstractBin> bins) {
