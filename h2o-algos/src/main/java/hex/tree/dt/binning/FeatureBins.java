@@ -65,14 +65,16 @@ public class FeatureBins {
     }
 
     public List<SplitStatistics> calculateSplitStatisticsForCategoricalFeature(int nclass) {
-        // for binomial classification sort bins by the frequency of one class and split similarly to the sequential feature
-        return calculateStatisticsForCategoricalFeatureBinomialClassification(nclass);
-        
-        // full approach for binomial/multinomial/regression, works fpr up to 10 categories
-//        return calculateStatisticsForCategoricalFeatureFullApproach();
+        if(nclass == 2) {
+            // for binomial classification sort bins by the frequency of one class and split similarly to the sequential feature
+            return calculateStatisticsForCategoricalFeatureBinomialClassification(nclass);
+        } else {
+            // full approach for binomial/multinomial/regression, works for up to 10 categories
+             return calculateStatisticsForCategoricalFeatureFullApproach(nclass);
+        }
     }
 
-    private List<SplitStatistics> calculateStatisticsForCategoricalFeatureFullApproach() {
+    private List<SplitStatistics> calculateStatisticsForCategoricalFeatureFullApproach(int nclass) {
         // calculate accumulative statistics for each subset of categories: 
         // left split - categories included in the subset; 
         // right split - categories not included in subset.
@@ -84,7 +86,7 @@ public class FeatureBins {
         Set<boolean[]> splits = findAllCategoricalSplits(categories);
         List<SplitStatistics> statistics = new ArrayList<>();
         for (boolean[] splitMask : splits) {
-            SplitStatistics splitStatistics = new SplitStatistics(2); // binary classification
+            SplitStatistics splitStatistics = new SplitStatistics(nclass);
             for (AbstractBin bin : _bins) {
                 // if bin category is in the mask, it belongs to the left split, otherwise it belongs to the right split
                 if (splitMask[((CategoricalBin) bin)._category]) {

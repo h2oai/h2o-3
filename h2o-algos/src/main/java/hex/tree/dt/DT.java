@@ -196,12 +196,19 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         // [count0, count1, ...]
         int[] countsByClass = countClasses(actualLimits);
         if (nodeIndex == 0) {
-            Log.info("Classes counts in dataset: 0 - " + countsByClass[0] + ", 1 - " + countsByClass[1]);
+            Log.info(IntStream.range(0, countsByClass.length)
+                    .mapToObj(i -> i + " - " + countsByClass[i])
+                    .collect(Collectors.joining(", ", "Classes counts in dataset: ", "")));
         }
         // compute node depth
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
-        // stop building from this node, the node will be a leaf
-        if ((nodeDepth >= _parms._max_depth) || Arrays.stream(countsByClass).anyMatch(c -> c <= _min_rows)) {
+        // stop building from this node, the node will be a leaf if: 
+        // - max depth is reached 
+        // - there is only one non-zero count in the countsByClass 
+        // - there are not enough data points in the node
+        if ((nodeDepth >= _parms._max_depth) 
+                || Arrays.stream(countsByClass).filter(c -> c > 0).count() < 2 
+                || Arrays.stream(countsByClass).sum() < _min_rows) {
             // add imaginary left and right children to imitate valid tree structure
             // left child
             limitsQueue.add(null);
