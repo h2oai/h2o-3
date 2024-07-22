@@ -273,6 +273,48 @@ public class DTTest extends TestUtil {
         Scope.exit();
 }
     
+    @Ignore // uses local dataset
+    @Test
+    public void testMultinomialSmallDataLocal() {
+        Scope.enter();
+        Frame train = Scope.track(parseTestFile("smalldata/sdt/sdt_3EnumCols_10kRows_multinomial.csv"))
+                .toCategoricalCol(3);
+        Frame test = Scope.track(parseTestFile("smalldata/sdt/sdt_3EnumCols_10kRows_multinomial.csv"))
+                .toCategoricalCol(3);
+        
+        DTModel.DTParameters p =
+                new DTModel.DTParameters();
+        p._train = train._key;
+        p._valid = train._key;
+        p._seed = 0xDECAF;
+        p._max_depth = 5;
+        p._response_column = "response";
+
+        testDataset(test, p);
+        Scope.exit();
+    }
+
+    @Test
+    public void testMultinomialSmallDataGAMData() {
+        Scope.enter();
+        Frame train = Scope.track(parseTestFile("smalldata/predictMultinomialGAM3.csv"))
+                .toCategoricalCol(0);
+        Frame test = Scope.track(parseTestFile("smalldata/predictMultinomialGAM3.csv"))
+                .toCategoricalCol(0);
+
+
+        DTModel.DTParameters p =
+                new DTModel.DTParameters();
+        p._train = train._key;
+        p._valid = train._key;
+        p._seed = 0xDECAF;
+        p._max_depth = 5;
+        p._response_column = "C1";
+
+        testDataset(test, p);
+        Scope.exit();
+    }
+
 
     @Test
     public void testBigDataCreditCard() {
