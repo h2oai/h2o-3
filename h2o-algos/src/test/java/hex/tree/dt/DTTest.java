@@ -24,7 +24,7 @@ public class DTTest extends TestUtil {
 
 
     @Test
-    public void testBasicData() {
+    public void testBasicDataBinomial() {
         try {
             Scope.enter();
             Frame train = new TestFrameBuilder()
@@ -83,7 +83,7 @@ public class DTTest extends TestUtil {
             assertEquals(1, prediction.vec(0).at(6), 0.1);
             assertEquals(1, prediction.vec(0).at(7), 0.1);
             assertEquals(1, prediction.vec(0).at(8), 0.1);
-            assertEquals(1, prediction.vec(0).at(9), 0.1); // the only one false positive
+            assertEquals(0, prediction.vec(0).at(9), 0.1);
 
         } finally {
             Scope.exit();
