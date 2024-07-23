@@ -1063,7 +1063,7 @@ public class ModelSelectionUtils {
         }
         // grab min z-values for numerical and categorical columns
         PredNameMinZVal numericalPred = findNumMinZVal(numPredNames, zValList, coeffNames);
-       PredNameMinZVal categoricalPred = findCatMaxZVal(model, zValList); // null if all predictors are inactive
+       PredNameMinZVal categoricalPred = findCatMinOfMaxZScore(model, zValList); // null if all predictors are inactive
         
         // choose the min z-value from numerical and categorical predictors and return its index in predNames
         if (categoricalPred != null && categoricalPred._minZVal >= 0 && categoricalPred._minZVal < numericalPred._minZVal) { // categorical pred has minimum z-value
@@ -1095,7 +1095,7 @@ public class ModelSelectionUtils {
     }
 
     /***
-     * This method extracts the categorical coefficient z-value by using the following method:
+     * This method extracts the categorical coefficient z-score (abs(z-value)) by using the following method:
      * 1. From GLMModel model, it extracts the column names of the dinfo._adaptedFrame that is used to build the glm 
      * model and generate the glm coefficients.  The column names will be in exactly the same order as the coefficient
      * names with the exception that each enum levels will not be given a name in the column names.
@@ -1107,7 +1107,7 @@ public class ModelSelectionUtils {
      * performing enum levels.  We will remove the enum predictor if its best z-score is not good enough when compared
      * to the z-score of other predictors.
      */
-    public static PredNameMinZVal findCatMaxZVal(GLMModel model, List<Double> zValList) {
+    public static PredNameMinZVal findCatMinOfMaxZScore(GLMModel model, List<Double> zValList) {
         String[] columnNames = model.names(); // column names of dinfo._adaptedFrame
         int[] catOffsets = model._output.getDinfo()._catOffsets;
         List<Double> bestZValues = new ArrayList<>();
