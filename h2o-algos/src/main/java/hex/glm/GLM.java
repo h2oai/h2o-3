@@ -4609,6 +4609,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double[] coeffs = _parms._standardize ? _model._output.getNormBeta() :_model._output.beta();
       if (coeffs == null)
         return;
+      if (bc._betaLB == null && bc._betaUB == null)
+        return;
       int coeffsLen = bc._betaLB != null ? bc._betaLB.length : bc._betaUB.length;
       StringBuffer errorMessage = new StringBuffer();
       boolean lowerBoundNull = bc._betaLB == null;
