@@ -1,4 +1,7 @@
 import sys
+
+from sklearn.metrics import accuracy_score
+
 sys.path.insert(1, "../../../")
 
 import h2o
@@ -18,6 +21,17 @@ def test_dt_multinomial():
     dt.train(x=predictors, y=response_col, training_frame=data)
 
     dt.show()
+
+    pred_train = dt.predict(data).as_data_frame(use_pandas=True)['predict']
+    pred_test = dt.predict(data).as_data_frame(use_pandas=True)['predict']
+
+    train_accuracy = accuracy_score(data[response_col], pred_train, average="macro")
+    test_accuracy = accuracy_score(data[response_col], pred_test, average="macro")
+
+    print(train_accuracy, test_accuracy)
+
+    assert (1 - train_accuracy) < 3e-1
+    assert (1 - test_accuracy) < 3e-1
 
 
 if __name__ == "__main__":
