@@ -3,9 +3,24 @@ deprecated_params = dict(Lambda='lambda_')
 def class_extensions():
     def rule_importance(self):
         """
-        Retrieve rule importances for a Rulefit model
+Retrieve rule importances for a Rulefit model
 
         :return: H2OTwoDimTable
+        
+        :examples:
+        >>> import h2o
+        >>> h2o.init()
+        >>> from h2o.estimators import H2ORuleFitEstimator
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+        >>> df = h2o.import_file(path=f, col_types={'pclass': "enum", 'survived': "enum"})
+        >>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
+        >>> y = "survived"
+        >>> rfit = H2ORuleFitEstimator(max_rule_length=10,
+        ...                            max_num_rules=100,
+        ...                            algorithm="gbm",
+        ...                            seed=1)
+        >>> rfit.train(training_frame=df, x=x, y=y)
+        >>> print(rfit.rule_importance())
         """
         if self._model_json["algo"] != "rulefit":
             raise H2OValueError("This function is available for Rulefit models only")
@@ -23,6 +38,23 @@ def class_extensions():
         :param frame: H2OFrame on which rule validity is to be evaluated
         :param rule_ids: string array of rule ids to be evaluated against the frame
         :return: H2OFrame with a column per each input ruleId, representing a flag whether given rule is applied to the observation or not.
+        
+        :examples:
+        >>> import h2o
+        >>> h2o.init()
+        >>> from h2o.estimators import H2ORuleFitEstimator
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+        >>> df = h2o.import_file(path=f, col_types={'pclass': "enum", 'survived': "enum"})
+        >>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
+        >>> y = "survived"
+        >>> rfit = H2ORuleFitEstimator(max_rule_length=10,
+        ...                            max_num_rules=100,
+        ...                            rule_generation_ntrees=60,
+        ...                            seed=1)
+        >>> rfit.train(training_frame=df, x=x, y=y)
+        >>> rules_to_predict = ['rule_1', 'rule_2']  # Replace with actual rule IDs
+        >>> predictions = rfit.predict_rules(frame=df, rule_ids=rules_to_predict)
+        >>> print(predictions)
         """
         from h2o.frame import H2OFrame
         from h2o.utils.typechecks import assert_is_type
@@ -161,36 +193,6 @@ examples = dict(
 >>> print(rfit.rule_importance())
 """,
     rule_generation_ntrees="""
->>> import h2o
->>> h2o.init()
->>> from h2o.estimators import H2ORuleFitEstimator
->>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
->>> df = h2o.import_file(path=f, col_types={'pclass': "enum", 'survived': "enum"})
->>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
->>> y = "survived"
->>> rfit = H2ORuleFitEstimator(max_rule_length=10,
-...                            max_num_rules=100,
-...                            rule_generation_ntrees=60,
-...                            seed=1)
->>> rfit.train(training_frame=df, x=x, y=y)
->>> print(rfit.rule_importance())
-""",
-    rule_importance="""
->>> import h2o
->>> h2o.init()
->>> from h2o.estimators import H2ORuleFitEstimator
->>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
->>> df = h2o.import_file(path=f, col_types={'pclass': "enum", 'survived': "enum"})
->>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
->>> y = "survived"
->>> rfit = H2ORuleFitEstimator(max_rule_length=10,
-...                            max_num_rules=100,
-...                            rule_generation_ntrees=60,
-...                            seed=1)
->>> rfit.train(training_frame=df, x=x, y=y)
->>> print(rfit.rule_importance())
-""",
-    predict_rules="""
 >>> import h2o
 >>> h2o.init()
 >>> from h2o.estimators import H2ORuleFitEstimator
