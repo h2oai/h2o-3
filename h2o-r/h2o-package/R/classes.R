@@ -726,28 +726,8 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("RMSE:  ", object@metrics$RMSE, "\n", sep="")
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
   cat("RMSLE:  ", object@metrics$rmsle, "\n", sep="")
-  if(!is.null(object@algorithm) && object@algorithm %in% c("glm") && exists("sefe", where=object@metrics)) {
-      cat("sefe:  ", object@metrics$sefe, "\n", sep="")
-      cat("sere:  ", object@metrics$sere, "\n", sep="")
-      cat("fixedf:  ", object@metrics$fixedf, "\n", sep="")
-      cat("ranef:  ", object@metrics$ranef, "\n", sep="")
-      cat("randc:  ", object@metrics$randc, "\n", sep="")
-      cat("varfix:  ", object@metrics$varfix, "\n", sep="")
-      cat("varranef:  ", object@metrics$varranef, "\n", sep="")
-      cat("converge:  ", object@metrics$converge, "\n", sep="")
-      cat("dfrefe:  ", object@metrics$dfrefe, "\n", sep="")
-      cat("summvc1:  ", object@metrics$summvc1, "\n", sep="")
-      cat("summvc2:  ", object@metrics$summvc2, "\n", sep="")
-      cat("bad:  ", object@metrics$bad, "\n", sep="")
-      if (exists("hlik", where=object@metrics) && !is.null(object@metrics$hlik)) {
-      cat("hlik:  ", object@metrics$hlik, "\n", sep="")
-      cat("pvh:  ", object@metrics$pvh, "\n", sep="")
-      cat("pbvh:  ", object@metrics$pbvh, "\n", sep="")
-      cat("caic:  ", object@metrics$caic, "\n", sep="")
-      }
-  } else {
-      cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
-  }
+  cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
+  
   if(!is.null(object@algorithm) && object@algorithm %in% c("gam","glm","generic") && exists("r2", where=object@metrics)) {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
     null_dev <- h2o.null_deviance(object)

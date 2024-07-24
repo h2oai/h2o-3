@@ -2,7 +2,6 @@ package hex.api;
 
 import hex.ModelBuilder;
 import hex.anovaglm.ANOVAGLM;
-import hex.modelselection.ModelSelection;
 import hex.psvm.PSVM;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
@@ -39,6 +38,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.modelselection.ModelSelection (true),
             new hex.isotonic    .IsotonicRegression(true),
             new hex.tree.dt      .DT         (true),
+            new hex.hglm        .HGLM        (true),
             new hex.adaboost.     AdaBoost   (true)
     };
 

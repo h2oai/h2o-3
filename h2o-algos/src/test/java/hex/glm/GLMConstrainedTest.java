@@ -1,7 +1,6 @@
 package hex.glm;
 
 import Jama.Matrix;
-import hex.gam.MatrixFrameUtils.GamUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +30,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 import static water.fvec.Vec.T_NUM;
 import static water.fvec.Vec.T_STR;
+import static water.util.ArrayUtils.copy2DArray;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -917,7 +917,7 @@ public class GLMConstrainedTest extends TestUtil {
     Matrix initMat = Matrix.random(11, 11);
     double[][] doubleValsOrig = (initMat.plus(initMat.transpose())).getArray();
     double[][] doubleVals = new double[doubleValsOrig.length][doubleValsOrig.length];
-    GamUtils.copy2DArray(doubleValsOrig, doubleVals);
+    copy2DArray(doubleValsOrig, doubleVals);
     // no zero columns
     int[] numZeroCol = findZeroCols(doubleVals);
     assertTrue("number of zero columns is zero in this case but is not.", numZeroCol.length==0);

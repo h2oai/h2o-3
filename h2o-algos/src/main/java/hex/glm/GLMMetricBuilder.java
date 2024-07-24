@@ -5,7 +5,6 @@ import hex.ModelMetrics.MetricBuilder;
 import hex.ModelMetricsBinomial.MetricBuilderBinomial;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
 import hex.ModelMetricsBinomialGLM.ModelMetricsOrdinalGLM;
-import hex.ModelMetricsHGLM.MetricBuilderHGLM;
 import hex.ModelMetricsMultinomial.MetricBuilderMultinomial;
 import hex.ModelMetricsOrdinal.MetricBuilderOrdinal;
 import hex.ModelMetricsRegression.MetricBuilderRegression;
@@ -18,7 +17,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
-;import java.util.Arrays;
+import java.util.Arrays;
 
 /**
  * Class for GLMValidation.
@@ -51,28 +50,24 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
             : Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial, Family.quasibinomial, 
                     Family.fractionalbinomial, Family.poisson, Family.negativebinomial, Family.gamma, Family.tweedie)
             .contains(_glmf._family);
-    if(_computeMetrics) {
-      if (domain!=null && domain.length==1 && domain[0].contains("HGLM")) {
-        _metricBuilder = new MetricBuilderHGLM(domain);
-      } else {
-        switch (_glmf._family) {
-          case binomial:
-          case quasibinomial:
-          case fractionalbinomial:
-            _metricBuilder = new MetricBuilderBinomial(domain);
-            break;
-          case multinomial:
-            _metricBuilder = new MetricBuilderMultinomial(domain.length, domain, aucType);
-            ((MetricBuilderMultinomial) _metricBuilder)._priorDistribution = ymu;
-            break;
-          case ordinal:
-            _metricBuilder = new MetricBuilderOrdinal(domain.length, domain);
-            ((MetricBuilderOrdinal) _metricBuilder)._priorDistribution = ymu;
-            break;
-          default:
-            _metricBuilder = new MetricBuilderRegression();
-            break;
-        }
+    if (_computeMetrics) {
+      switch (_glmf._family) {
+        case binomial:
+        case quasibinomial:
+        case fractionalbinomial:
+          _metricBuilder = new MetricBuilderBinomial(domain);
+          break;
+        case multinomial:
+          _metricBuilder = new MetricBuilderMultinomial(domain.length, domain, aucType);
+          ((MetricBuilderMultinomial) _metricBuilder)._priorDistribution = ymu;
+          break;
+        case ordinal:
+          _metricBuilder = new MetricBuilderOrdinal(domain.length, domain);
+          ((MetricBuilderOrdinal) _metricBuilder)._priorDistribution = ymu;
+          break;
+        default:
+          _metricBuilder = new MetricBuilderRegression();
+          break;
       }
     }
   }
@@ -222,45 +217,34 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     }
   }
 
-  @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+  @Override
+  public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
     GLMModel gm = (GLMModel) m;
-    if (!gm._parms._HGLM)
-      computeAIC(gm);
+    computeAIC(gm);
     ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
-    if (gm._parms._HGLM) { // HGLM 
-      ModelMetricsHGLM.MetricBuilderHGLM metricsBDHGLM = (ModelMetricsHGLM.MetricBuilderHGLM) _metricBuilder;
-      metrics = new ModelMetricsHGLMGaussianGaussian(m, f, metricsBDHGLM._nobs, 0,
-              ((ModelMetricsHGLM) metrics)._domain, 0, 
-              metrics._custom_metric, metricsBDHGLM._sefe, metricsBDHGLM._sere, metricsBDHGLM._varfix, 
-              metricsBDHGLM._varranef, metricsBDHGLM._converge,metricsBDHGLM._dfrefe, metricsBDHGLM._summvc1, 
-              metricsBDHGLM._summvc2,metricsBDHGLM._hlik, metricsBDHGLM._pvh, metricsBDHGLM._pbvh, metricsBDHGLM._caic, 
-              metricsBDHGLM._bad, metricsBDHGLM._sumetadiffsquare, metricsBDHGLM._convergence, metricsBDHGLM._randc, 
-              metricsBDHGLM._fixef, metricsBDHGLM._ranef, metricsBDHGLM._iterations);
-    } else {
-      if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial || 
-              _glmf._family == Family.fractionalbinomial) {
-        ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
-        GainsLift gl = null;
-        if (preds != null) {
-          Vec resp = f.vec(m._parms._response_column);
-          Vec weights = f.vec(m._parms._weights_column);
-          if (resp != null && Family.fractionalbinomial != _glmf._family) { // don't calculate for frac binomial
-            gl = new GainsLift(preds.lastVec(), resp, weights);
-            gl._groups = m._parms._gainslift_bins;
-            gl.exec(m._output._job);
-          }
+    if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
+            _glmf._family == Family.fractionalbinomial) {
+      ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
+      GainsLift gl = null;
+      if (preds != null) {
+        Vec resp = f.vec(m._parms._response_column);
+        Vec weights = f.vec(m._parms._weights_column);
+        if (resp != null && Family.fractionalbinomial != _glmf._family) { // don't calculate for frac binomial
+          gl = new GainsLift(preds.lastVec(), resp, weights);
+          gl._groups = m._parms._gainslift_bins;
+          gl.exec(m._output._job);
         }
-        metrics = new ModelMetricsBinomialGLM(m, f, metrics._nobs, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), gl, _customMetric, _log_likelihood);
-      } else if (_glmf._family == Family.multinomial) {
-        ModelMetricsMultinomial metricsMultinomial = (ModelMetricsMultinomial) metrics;
-        metrics = new ModelMetricsMultinomialGLM(m, f, metricsMultinomial._nobs, metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), metricsMultinomial._auc, _customMetric, _log_likelihood);
-      } else if (_glmf._family == Family.ordinal) { // ordinal should have a different resDOF()
-        ModelMetricsOrdinal metricsOrdinal = (ModelMetricsOrdinal) metrics;
-        metrics = new ModelMetricsOrdinalGLM(m, f, metricsOrdinal._nobs, metricsOrdinal._MSE, metricsOrdinal._domain, metricsOrdinal._sigma, metricsOrdinal._cm, metricsOrdinal._hit_ratios, metricsOrdinal._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), _customMetric, _log_likelihood);
-      } else {
-        ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
-        metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._nobs, metricsRegression._MSE, metricsRegression._sigma, metricsRegression._mean_absolute_error, metricsRegression._root_mean_squared_log_error, residualDeviance(), residualDeviance() / _wcount, null_devince, _aic, nullDOF(), resDOF(), _customMetric, _log_likelihood);
       }
+      metrics = new ModelMetricsBinomialGLM(m, f, metrics._nobs, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), gl, _customMetric, _log_likelihood);
+    } else if (_glmf._family == Family.multinomial) {
+      ModelMetricsMultinomial metricsMultinomial = (ModelMetricsMultinomial) metrics;
+      metrics = new ModelMetricsMultinomialGLM(m, f, metricsMultinomial._nobs, metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), metricsMultinomial._auc, _customMetric, _log_likelihood);
+    } else if (_glmf._family == Family.ordinal) { // ordinal should have a different resDOF()
+      ModelMetricsOrdinal metricsOrdinal = (ModelMetricsOrdinal) metrics;
+      metrics = new ModelMetricsOrdinalGLM(m, f, metricsOrdinal._nobs, metricsOrdinal._MSE, metricsOrdinal._domain, metricsOrdinal._sigma, metricsOrdinal._cm, metricsOrdinal._hit_ratios, metricsOrdinal._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), _customMetric, _log_likelihood);
+    } else {
+      ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
+      metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._nobs, metricsRegression._MSE, metricsRegression._sigma, metricsRegression._mean_absolute_error, metricsRegression._root_mean_squared_log_error, residualDeviance(), residualDeviance() / _wcount, null_devince, _aic, nullDOF(), resDOF(), _customMetric, _log_likelihood);
     }
     return gm.addModelMetrics(metrics); // Update the metrics in-place with the GLM version, do DKV.put
   }
