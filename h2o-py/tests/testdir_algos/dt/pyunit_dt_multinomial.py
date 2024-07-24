@@ -23,15 +23,12 @@ def test_dt_multinomial():
     dt.show()
 
     pred_train = dt.predict(data).as_data_frame(use_pandas=True)['predict']
-    pred_test = dt.predict(data).as_data_frame(use_pandas=True)['predict']
 
-    train_accuracy = accuracy_score(data[response_col], pred_train, average="macro")
-    test_accuracy = accuracy_score(data[response_col], pred_test, average="macro")
+    train_accuracy = accuracy_score(data[response_col].as_data_frame(use_pandas=True), pred_train)
 
-    print(train_accuracy, test_accuracy)
+    print(train_accuracy)
 
-    assert (1 - train_accuracy) < 3e-1
-    assert (1 - test_accuracy) < 3e-1
+    assert train_accuracy >= 0.8555
 
 
 if __name__ == "__main__":
