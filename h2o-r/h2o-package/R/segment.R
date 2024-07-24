@@ -11,7 +11,7 @@
 #'
 #' Start Segmented-Data bulk Model Training for a given algorithm and parameters.
 #'
-#' @param algorithm  Name of algorithm to use in training segment models (gbm, randomForest, kmeans, glm, deeplearning, naivebayes, psvm,
+#' @param algorithm  Name of algorithm to use in training segment models (gbm, randomForest, kmeans, glm, hglm, deeplearning, naivebayes, psvm,
 #'        xgboost, pca, svd, targetencoder, aggregator, word2vec, coxph, isolationforest, kmeans, stackedensemble, glrm, gam, anovaglm, modelselection).
 #' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
 #'        and train a separate model for each segment (group of rows).

@@ -31,14 +31,12 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "fold_column",
             "response_column",
             "ignored_columns",
-            "random_columns", // HGLM denote random columns, array
             "ignore_const_cols",
             "score_each_iteration",
             "score_iteration_interval",
             "offset_column",
             "weights_column",
             "family",
-            "rand_family", // distribution of random component, array
             "tweedie_variance_power",
             "tweedie_link_power",
             "theta", // equals to 1/r and should be > 0 and <=1, used by negative binomial
@@ -62,10 +60,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "beta_epsilon",
             "gradient_epsilon",
             "link",
-            "rand_link", // link function for random components, array
-            "startval",  // initial starting values for fixed and randomized coefficients, double array
+            "startval",  // initial starting values for coefficients, double array
             "calc_like", // true will return likelihood function value
-            "HGLM",  // boolean: true - enabled HGLM, false - normal GLM
             "prior",
             "cold_start", // if true, will start GLM model from initial values and conditions
             "lambda_min_ratio",
@@ -115,11 +111,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
                     "poisson", "gamma", "tweedie", "negativebinomial"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
-    
-    @API(help = "Random Component Family array.  One for each random component. Only support gaussian for now.",
-            values ={"[gaussian]"},
-            level = Level.critical, gridable=true)
-    public GLMParameters.Family[] rand_family;
 
     @API(help = "Tweedie variance power", level = Level.critical, gridable = true)
     public double tweedie_variance_power;
@@ -225,18 +216,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only.",
             level = Level.secondary, values={"deviance", "pearson", "ml"})
     public GLMParameters.DispersionMethod dispersion_parameter_method;
-    
-    @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},
-            level = Level.secondary, gridable=true)   
-    public GLMParameters.Link[] rand_link; // link function for random components
 
-    @API(help = "double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If " +
-            "standardize is true, the standardized coefficients should be used.  Otherwise, use the regular " +
-            "coefficients.", gridable=true)
+    @API(help = "double array to initialize coefficients for GLM.  If standardize is true, the standardized " +
+            "coefficients should be used.  Otherwise, use the regular coefficients.", gridable=true)
     public double[] startval;
-    
-    @API(help = "random columns indices for HGLM.")
-    public int[] random_columns;
 
     @API(help = "if true, will return likelihood function value.") // not gridable
     public boolean calc_like;
@@ -260,9 +243,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "parameter.  If fix_dispersion_parameter is set, this value will be used in the calculation of p-values.",
             level=Level.expert, gridable=true)
     public double init_dispersion_parameter;
-
-    @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.", level = Level.critical)
-    public boolean HGLM;
     
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and" +
             " the mean of response does not reflect reality.", level = Level.expert)

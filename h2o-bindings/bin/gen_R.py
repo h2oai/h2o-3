@@ -272,6 +272,7 @@ def algo_to_modelname(algo):
     if algo == "modelselection": return "Model Selection"
     if algo == "infogram": return "Infogram"
     if algo == "adaboost": return "AdaBoost Model"
+    if algo == "hglm": return "HGLM Model"
     return algo
 
 
@@ -350,6 +351,7 @@ def main():
         if name == "pca": module = "prcomp"
         if name == "modelselection": module = "modelSelection"
         if name == "adaboost": module = "adaBoost"
+        if name == "hglm": model = "hglm"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
 
