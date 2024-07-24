@@ -16,9 +16,11 @@ test_dt_multinomial <- function() {
   
   # Train the model
   dt <- h2o.decision_tree(max_depth = 3, x = predictors, y = response_col, training_frame = data)
+  pred <- predict(dt, data)
   
   # Print model summary
   print(dt)
+  expect_equal(nrow(unique(as.data.frame(pred$predict))), 3)
 }
 
 doTest("Decision tree: multinomial classification", test_dt_multinomial)
