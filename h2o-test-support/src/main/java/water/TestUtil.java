@@ -32,6 +32,7 @@ import java.net.URLConnection;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static water.util.ArrayUtils.gaussianVector;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
@@ -189,6 +190,19 @@ public class TestUtil extends Iced {
     new KeyCleaner(objectType).doAllNodes();
   }
 
+  public static double[][] genRandomMatrix(int row, int col, long seedValue) {
+    double[][] randomMat = new double[row][];
+    Random random = new Random(seedValue);
+    for (int rInd = 0; rInd < row; rInd++)
+      randomMat[rInd] = gaussianVector(col, random);
+    return randomMat;
+  }
+
+  public static double[] genRandomArray(int length, long seedValue) {
+    Random random = new Random(seedValue);
+    return gaussianVector(length, random);
+  }
+
   public static void checkArrays(double[] expected, double[] actual, double threshold) {
     for (int i = 0; i < actual.length; i++) {
       if (!Double.isNaN(expected[i]) && !Double.isNaN(actual[i])) // only compare when both are not NaN
@@ -203,6 +217,14 @@ public class TestUtil extends Iced {
     for (int ind = 0; ind < len1; ind++) {
       assertEquals(expected[ind].length, actual[ind].length);
       checkArrays(expected[ind], actual[ind], threshold);
+    }
+  }
+  
+  public static void check3DArrays(double[][][] expected, double[][][] actual, double threshold) {
+    int len = expected.length;
+    assertEquals(len, actual.length);
+    for (int ind=0; ind < len; ind++) {
+      checkDoubleArrays(expected[ind], actual[ind], threshold);
     }
   }
   

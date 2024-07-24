@@ -98,7 +98,8 @@ def _estimator_supports_predict_proba(cls):
                                 'H2OModelSelectionEstimator',
                                 'H2OPrincipalComponentAnalysisEstimator',
                                 'H2OSingularValueDecompositionEstimator',
-                                'H2OTargetEncoderEstimator']
+                                'H2OTargetEncoderEstimator'
+                                'H2OHGLMestimator']
 
 
 def _estimator_supports_score(cls):
@@ -112,7 +113,8 @@ def _estimator_supports_score(cls):
                                 'H2OModelSelectionEstimator',
                                 'H2OPrincipalComponentAnalysisEstimator',
                                 'H2OSingularValueDecompositionEstimator',
-                                'H2OTargetEncoderEstimator']
+                                'H2OTargetEncoderEstimator'
+                                'H2OHGLMEstimator']
 
 
 def _estimator_supports_transform(cls):
@@ -201,6 +203,7 @@ _excluded_estimators = (  # e.g. abstract classes
     'H2OANOVAGLMEstimator',  # fully disabled as it does not support `predict` method.
     'H2OModelSelectionEstimator',  # fully disabled as it does no support `predict` method.
     'H2OIsotonicRegressionEstimator',  # specific in behavior (no classification, just "one feature" in regression)
+    'H2OHGLMEstimator'
 )
 _generic_only_estimators = (  # e.g. unsupervised and misc estimators
     # 'H2OANOVAGLMEstimator',
