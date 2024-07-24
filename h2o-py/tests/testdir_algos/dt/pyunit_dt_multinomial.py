@@ -1,9 +1,9 @@
 import sys
+sys.path.insert(1, "../../../")
+
 import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2ODecisionTreeEstimator
-
-sys.path.insert(1, "../../../")
 
 
 def test_dt_multinomial():
@@ -20,7 +20,7 @@ def test_dt_multinomial():
     dt.show()
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     pyunit_utils.standalone_test(test_dt_multinomial)
 else:
     test_dt_multinomial()
