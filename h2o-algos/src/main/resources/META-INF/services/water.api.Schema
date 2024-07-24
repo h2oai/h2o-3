@@ -114,6 +114,10 @@ hex.schemas.UpliftDRFModelV3
 hex.schemas.UpliftDRFModelV3$UpliftDRFModelOutputV3
 hex.schemas.UpliftDRFV3
 hex.schemas.UpliftDRFV3$UpliftDRFParametersV3
+hex.schemas.HGLMModelV3
+hex.schemas.HGLMModelV3$HGLMModelOutputV3
+hex.schemas.HGLMV3
+hex.schemas.HGLMV3$HGLMParametersV3
 hex.schemas.AdaBoostModelV3
 hex.schemas.AdaBoostModelV3$AdaBoostModelOutputV3
 hex.schemas.AdaBoostV3

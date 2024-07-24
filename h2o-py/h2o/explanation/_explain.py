@@ -2541,8 +2541,6 @@ def learning_curve_plot(
         if model.actual_params["lambda_search"]:
             import h2o.two_dim_table
             allowed_timesteps = ["iteration"]
-        elif model.actual_params.get("HGLM"):
-            allowed_timesteps = ["iterations", "duration"]
         else:
             allowed_timesteps = ["iterations", "duration"]
 
@@ -2592,7 +2590,6 @@ def learning_curve_plot(
 
     if ("deviance" == metric
             and model.algo in ["glm", "gam"]
-            and not model.actual_params.get("HGLM", False)
             and "deviance_train" in scoring_history.col_header):
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
