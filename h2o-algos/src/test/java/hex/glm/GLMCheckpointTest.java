@@ -133,12 +133,12 @@ public class GLMCheckpointTest extends TestUtil {
                     "deviance_test", "alpha"}
             : new String[]{"iteration", "timestamp", "negative_log_likelihood", "objective", "sum(etai-eta0)^2",
             "convergence"};
-    int num2Copy = parms._HGLM || parms._lambda_search ? colHeaders2Restore.length : colHeaders2Restore.length-2;
+    int num2Copy = parms._lambda_search ? colHeaders2Restore.length : colHeaders2Restore.length-2;
     int[] colHeadersIndex = grabHeaderIndex(scoringHistory, num2Copy, colHeaders2Restore);
     if (parms._lambda_search)
       lscHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
     else
-      scHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex, parms._HGLM);
+      scHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
     return colHeadersIndex;
   }
 
