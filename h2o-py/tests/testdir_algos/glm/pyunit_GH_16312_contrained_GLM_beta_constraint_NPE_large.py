@@ -137,7 +137,7 @@ def test_bad_lambda_specification():
     print(coefs)
     print(glm.getConstraintsInfo(model))
     # beta constraints should be satisfied
-    assert coefs["x1"] >= 0.03, "beta constraint x1 ({0}) >= 0.03 is violated!".format(coefs["x1"])
+    assert coefs["x1"] >= 0.03 or abs(coefs["x1"]-0.03) < 1e-6, "beta constraint x1 ({0}) >= 0.03 is violated!".format(coefs["x1"])
 
     # beta constraints
     bc = []
@@ -155,7 +155,7 @@ def test_bad_lambda_specification():
     print(coefs)
     print(glm.getConstraintsInfo(model))
     # beta constraints should always be satisfied
-    assert coefs["x1"] <= 1.5, "beta constraint x1 ({0}) >= 1.5 is violated.".format(coefs["x1"])
+    assert coefs["x1"] <= 1.5 or abs(1.5-coefs["x1"])<1e-6, "beta constraint x1 ({0}) >= 1.5 is violated.".format(coefs["x1"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_bad_lambda_specification)

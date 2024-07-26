@@ -324,15 +324,16 @@ public class GLMConstrainedTest extends TestUtil {
                     _coeffNames1.get(19), _coeffNames1.get(20), _coeffNames1.get(21), _coeffNames1.get(22), "constant",
                     _coeffNames1.get(4), _coeffNames1.get(5), _coeffNames1.get(6), "constant", _coeffNames1.get(6),
                     _coeffNames1.get(33), _coeffNames1.get(7), _coeffNames1.get(24), _coeffNames1.get(25), "constant",
-                    _coeffNames1.get(1), _coeffNames1.get(coefLen-3), "constant"})
+                    _coeffNames1.get(1), _coeffNames1.get(coefLen-3), "constant", _coeffNames1.get(0), _coeffNames1.get(1), "constant"})
             .withDataForCol(1, new double [] {-0.3, 0.5, 1.0, -3.0, 3, -4, 0.5, 0.1, -0.2, 2.0, -0.1, -0.4,
-                    0.8, 0.1, -0.5, 0.7, -1.1, 2.0, 0.5, -0.3, 0.5, -1.5, -0.3, -1.0, 1.0, -9.0})
+                    0.8, 0.1, -0.5, 0.7, -1.1, 2.0, 0.5, -0.3, 0.5, -1.5, -0.3, -1.0, 1.0, -9.0,-1, -1, 0})
             .withDataForCol(2, new String[] {"lessthanequal", "lessthanequal", "lessthanequal", "lessthanequal",
                     "lessthanequal", "lessthanequal", "lessthanequal", "equal", "equal", "lessthanequal",
                     "lessthanequal", "lessthanequal", "lessthanequal", "equal", "equal", "equal", "equal", "equal",
-                    "equal", "equal", "equal", "equal", "equal", "lessthanequal", "lessthanequal", "lessthanequal"})
+                    "equal", "equal", "equal", "equal", "equal", "lessthanequal", "lessthanequal", "lessthanequal", 
+                    "lessthanequal", "lessthanequal", "lessthanequal"})
             .withDataForCol(3, new int[]{0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6,
-                    6, 7, 7 ,7}).build();
+                    6, 7, 7 ,7, 8, 8, 8}).build();
     Scope.track(_linearConstraint4);
   }
 
