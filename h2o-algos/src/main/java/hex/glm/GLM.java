@@ -1440,13 +1440,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     String[] constraintCoefficientNames = constraintNames.toArray(new String[0]);
     if (countNumConst(_state) > coefNames.length)
       warn("number of constraints", " exceeds the number of coefficients.  The system is" +
-              " over-constraints, and probably may not yield a valid solution due to possible conflicting " +
-              "constraints.  Consider reducing the number of constraints.");
+              " over-constraints with duplicated constraints.  Consider reducing the number of constraints.");
     List<String> redundantConstraints = foundRedundantConstraints(_state, initConstraintMatrix);
     if (redundantConstraints != null) {
       int numRedundant = redundantConstraints.size();
       for (int index = 0; index < numRedundant; index++)
-        error("redundant and possibly conflicting linear constraints", redundantConstraints.get(index));
+        error("redundant linear constraints", redundantConstraints.get(index));
     } else {
       _state._csGLMState = new ConstraintGLMStates(constraintCoefficientNames, initConstraintMatrix, _parms);
     }
