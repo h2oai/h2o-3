@@ -92,6 +92,7 @@ dependencies {
             because 'Fixes SNYK-JAVA-DNSJAVA-7547403'
             because 'Fixes SNYK-JAVA-DNSJAVA-7547404'
             because 'Fixes SNYK-JAVA-DNSJAVA-7547405'
+            because 'Fixes CVE-2024-25638'
         }
     }
 }
