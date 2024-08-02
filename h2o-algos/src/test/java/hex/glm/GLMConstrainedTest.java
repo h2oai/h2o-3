@@ -642,7 +642,7 @@ public class GLMConstrainedTest extends TestUtil {
       Scope.track_generic(glm2);
       assert 1==2 : "Should have thrown an error due to duplicated constraints.";
     } catch(IllegalArgumentException ex) {
-      assert ex.getMessage().contains("rredundant linear constraints:") : "Wrong error message.  Error should be about" +
+      assert ex.getMessage().contains("redundant linear constraints") : "Wrong error message.  Error should be about" +
               " redundant linear constraints";
     } finally {
       Scope.exit();
