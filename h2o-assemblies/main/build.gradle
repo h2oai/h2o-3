@@ -88,6 +88,12 @@ dependencies {
         api('org.apache.commons:commons-configuration2:2.10.1') {
             because 'Fixes CVE-2024-29131'
         }
+        api('dnsjava:dnsjava:3.6.0') {
+            because 'Fixes SNYK-JAVA-DNSJAVA-7547403'
+            because 'Fixes SNYK-JAVA-DNSJAVA-7547404'
+            because 'Fixes SNYK-JAVA-DNSJAVA-7547405'
+            because 'Fixes CVE-2024-25638'
+        }
     }
 }
 
