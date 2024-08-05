@@ -55,10 +55,11 @@ dependencies {
     api "com.google.protobuf:protobuf-java:3.21.7"
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.16.1') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.17.2') {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
             because 'Fixes CVE-2023-35116'
+            because 'Fixes sonatype-2024-0171'
         }
         api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
             because 'Fixes CVE-2020-29582'
