@@ -1371,6 +1371,7 @@ class TestGLMBinomial:
             pyunit_utils.show_test_results("test7_missing_enum_values_lambda_search", num_test_failed, self.test_failed)
         self.test_num += 1
 
+
     def sklearn_binomial_result(self, training_data_file, test_data_file, has_categorical, true_one_hot,
                                 validation_data_file=""):
         """
