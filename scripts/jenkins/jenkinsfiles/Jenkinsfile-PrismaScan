@@ -3,6 +3,7 @@
 @Library('test-shared-library') _
 
 def dockerImage
+def trivyVersion = "0.54.1"
 
 def setPrismaScanningStages(assemblyType, stageIndex) {
     branchName = "${env.BRANCH_NAME}".replace('/', '-')
@@ -15,7 +16,7 @@ def setPrismaScanningStages(assemblyType, stageIndex) {
     }
     stage ("${stageIndex}.B. Scan ${assemblyType} jar using Trivy") {
         script {
-            sh "./trivy image --pkg-types library ${assemblyImage} --output ${assemblyImage}-trivy.out"
+            sh "./trivy image ${assemblyImage} --output ${assemblyImage}-trivy.out"
         }
         archiveArtifacts artifacts: "${assemblyImage}-trivy.out"
     }
@@ -60,8 +61,8 @@ pipeline {
                     dir("docker/prisma"){
                         dockerImage = docker.build("node-java","-f Dockerfile .")
                     }
-                    sh "wget https://github.com/aquasecurity/trivy/releases/download/v0.54.1/trivy_0.54.1_Linux-64bit.tar.gz"
-                    sh "tar -zxvf trivy_0.54.1_Linux-64bit.tar.gz"
+                    sh "wget https://github.com/aquasecurity/trivy/releases/download/v${trivyVersion}/trivy_${trivyVersion}_Linux-64bit.tar.gz"
+                    sh "tar -zxvf trivy_${trivyVersion}_Linux-64bit.tar.gz"
                     sh "chmod +x ./trivy"
                 }
                 
