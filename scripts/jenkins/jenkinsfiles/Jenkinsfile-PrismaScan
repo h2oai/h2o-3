@@ -5,7 +5,7 @@
 def dockerImage
 def trivyVersion = "0.54.1"
 
-def setPrismaScanningStages(assemblyType, stageIndex) {
+def setScanningStages(assemblyType, stageIndex) {
     branchName = "${env.BRANCH_NAME}".replace('/', '-')
     assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
     
@@ -80,14 +80,14 @@ pipeline {
                 }
             }
         }
-        stage('2. Steam assembly jar (Prisma)') {
+        stage('2. Steam assembly jar') {
             steps {
-                setPrismaScanningStages("steam", 2)
+                setScanningStages("steam", 2)
             }
         }
-        stage('3. Main assembly jar (Prisma)') {
+        stage('3. Main assembly jar') {
             steps {
-                setPrismaScanningStages("main", 3)
+                setScanningStages("main", 3)
             }
         }
     }
