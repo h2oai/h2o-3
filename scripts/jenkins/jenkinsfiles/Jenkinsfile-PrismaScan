@@ -17,6 +17,20 @@ def setScanningStages(assemblyType, stageIndex) {
     stage ("${stageIndex}.B. Scan ${assemblyType} jar using Trivy") {
         script {
             sh "./trivy image ${assemblyImage} --output ${assemblyImage}-trivy.out"
+            // Replace special characters with * in order to show it directly in browser
+            sh """
+                sed -i 's/─/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/│/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┤/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/├/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┼/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┐/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┌/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/└/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┘/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┬/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┴/*/g' ${assemblyImage}-trivy.out
+            """
         }
         archiveArtifacts artifacts: "${assemblyImage}-trivy.out"
     }
