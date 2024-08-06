@@ -3,8 +3,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 # add test from Erin Ledell
 glmBetaConstraints <- function() {
-  df <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-  test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+  df <- h2o.importFile(locate("smalldata/higgs/higgs_train_10k.csv"))
+  test <- h2o.importFile(locate("smalldata/higgs/higgs_test_5k.csv"))
 
   y <- "response"
   x <- setdiff(names(df), y)
