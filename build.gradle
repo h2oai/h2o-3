@@ -25,7 +25,7 @@ buildscript {
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
         classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0'
-        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
+        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.3'
         classpath 'org.testng:testng:6.8'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.5.2'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
