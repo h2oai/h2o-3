@@ -2,6 +2,7 @@ package hex.hglm;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -13,15 +14,21 @@ import water.runner.H2ORunner;
 public class HGLMBasicTestHGLM extends TestUtil {
   
   @Test
-  public void testHGLMModelIris() {
+  public void testHGLMModelProstate() {
     Scope.enter();
     try {
-      Frame iris = parseAndTrackTestFile("smalldata/iris/iris_train.csv");
+      Frame prostate = parseAndTrackTestFile("smalldata/prostate/prostate.csv");
+      prostate.replace(3, prostate.vec(3).toCategoricalVec()).remove();
+      prostate.replace(4, prostate.vec(4).toCategoricalVec()).remove();
+      prostate.replace(5, prostate.vec(5).toCategoricalVec()).remove();
+      DKV.put(prostate);
       HGLMModel.HGLMParameters params = new HGLMModel.HGLMParameters();
-      params._train = iris._key;
-      params._response_column = "petal_len";
-      params._group_column = "species";
-      params._random_columns = new String[]{"sepal_len", "sepal_wid"};
+      params._train = prostate._key;
+      params._response_column = "VOL";
+      params._ignored_columns = new String[]{"ID"};
+      params._group_column = "DPROS";
+      params._use_all_factor_levels = true;
+      params._random_columns = new String[]{"RACE", "DCAPS", "GLEASON"};
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
       

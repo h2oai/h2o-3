@@ -4,23 +4,20 @@ import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.glm.GLMModel;
-import water.*;
+import water.DKV;
+import water.H2O;
+import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.Log;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling.MeanImputation;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling.Skip;
 import static hex.hglm.HGLMModel.HGLMParameters.Method.EM;
-import static hex.hglm.HGLMUtils.readRandomEffectInitFrame;
-import static water.util.ArrayUtils.gaussianVector;
 
 public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLMModel.HGLMModelOutput> {
   long _startTime;  // model building start time;
@@ -146,6 +143,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
     String[] _fixedCoeffNames;
     String[] _randomCoefNames;
     String[] _level2UnitNames;
+    int _groupColIndex;   // store which cat column index the group_column is in _dinfo._adaptedFrame
 
     @Override
     public void computeImpl() {
@@ -164,9 +162,15 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
          * 2. Initialize the coefficient values (fixed and random)
          * 3. Set modelOutput fields.
          */
-        initDinfoColumnNames();
-        initComputationStateHGLM();
-
+        // _dinfo._adaptedFrame will contain group_column.  Check and make sure clients will pass that along as well.
+        _dinfo = new DataInfo(_train.clone(), null, 1, _parms._use_all_factor_levels,  _parms._standardize ?
+                DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
+                _parms.missingValuesHandling() == Skip,
+                _parms.missingValuesHandling() == MeanImputation
+                        || _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.PlugValues,
+                _parms.makeImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), null);
+        DKV.put(_dinfo._key, _dinfo);
+        
         model = new HGLMModel(dest(), _parms, new HGLMModel.HGLMModelOutput(HGLM.this, _dinfo));
         model.write_lock(_job);
         _job.update(1, "Starting to build HGLM model...");
@@ -180,93 +184,16 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
         model.unlock(_job);
       }
     }
-    
-    void initDinfoColumnNames() {
-      // _dinfo._adaptedFrame will contain group_column.  Check and make sure clients will pass that along as well.
-      _dinfo = new DataInfo(_train.clone(), null, 1, _parms._use_all_factor_levels,  _parms._standardize ?
-              DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
-              _parms.missingValuesHandling() == Skip,
-              _parms.missingValuesHandling() == MeanImputation
-                      || _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.PlugValues,
-              _parms.makeImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), null);
-      DKV.put(_dinfo._key, _dinfo);
-      // assign coefficient names for fixed, random and group column
-      List<String> allCoeffNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
-      String groupCoeffStarts = _parms._group_column+".";
-      List<String> groupCoeffNames =allCoeffNames.stream().filter(x -> x.startsWith(groupCoeffStarts)).collect(Collectors.toList());
-      _level2UnitNames = groupCoeffNames.stream().toArray(String[]::new);
-      
-      // fixed Coefficients are all coefficient names excluding group_column
-      List<String> fixedCoeffNames = allCoeffNames.stream().filter(x -> !groupCoeffNames.contains(x)).collect(Collectors.toList());
-      fixedCoeffNames.add("intercept");
-      _fixedCoeffNames = fixedCoeffNames.stream().toArray(String[]::new);
-      List<String> randomPredictorNames = new ArrayList<>();
-      // random coefficients names
-      for (String coefName : _parms._random_columns) {
-        String startCoef = coefName + ".";
-        randomPredictorNames.addAll(allCoeffNames.stream().filter(x -> x.startsWith(startCoef) || x.equals(coefName)).collect(Collectors.toList()));
-      }
-      if (_parms._random_intercept)
-        randomPredictorNames.add("intercept");  // set intercept to be the last element
-      _randomCoefNames = randomPredictorNames.stream().toArray(String[]::new);
-    }
-    
-    void initComputationStateHGLM() {
-      // need to initialize the coefficients, fixed and random
-      if (_parms._seed == -1)
-        _parms._seed = new Random().nextLong();
-      Log.info("Random seed: "+_parms._seed);
-      
-      double[][] ubeta = new double[_level2UnitNames.length][_randomCoefNames.length];
-      double[] beta;
-      Random random = new Random(_parms._seed);
-      if ( null != _parms._initial_random_effects) {  // read in initial random values
-        List<String> randomCoeffNames = Arrays.stream(_randomCoefNames).collect(Collectors.toList());
-        
-        Frame randomEffects = DKV.getGet(_parms._initial_random_effects);
-        Scope.track(randomEffects);
-        if (randomEffects.numRows() != ubeta.length || randomEffects.numCols() != ubeta[0].length)
-          error("initial_random_effects", "Initial random coefficients must be a double[][] array" +
-                  " of size "+randomEffects.numRows()+" rows and "+randomEffects.numCols()+" columns but is not.");
-        if (error_count() > 0)
-          throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(HGLM.this);
-
-        readRandomEffectInitFrame(randomEffects, ubeta, randomCoeffNames);
-      } else {  // randomly generating random initial values
-         gaussianVector(random, ubeta, _level2UnitNames.length, _randomCoefNames.length);
-      }
-      // copy over initial fixed coefficient values
-      if (null != _parms._initial_fixed_effects) {
-        if (_parms._initial_fixed_effects.length != _fixedCoeffNames.length)
-          error("initial_fixed_effects", " must be an double[] array of size "+_fixedCoeffNames.length);
-        if (error_count() > 0)
-          throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(HGLM.this);
-        beta = _parms._initial_fixed_effects;  
-      } else {
-        beta = new double[_fixedCoeffNames.length];
-        beta[beta.length-1] = train().vec(_parms._response_column).mean();
-      }
-      
-      double tauEVar, tauUVar;
-      if (_parms._tau_e_var_init != 0.0)
-        tauEVar = _parms._tau_e_var_init;
-      else
-        tauEVar = Math.abs(random.nextGaussian());
-      
-      if (_parms._tau_u_var_init != 0.0)
-        tauUVar = _parms._tau_u_var_init;
-      else
-        tauUVar = Math.abs(random.nextGaussian());
-        
-      _state = new ComputationStateHGLM(_job, _parms, _dinfo, beta, ubeta, tauUVar, tauEVar, _fixedCoeffNames, 
-              _randomCoefNames, _level2UnitNames, 0);
-    }
 
     /**
      * Build HGLM model using EM (Expectation Maximization).
      */
     void fitEM(HGLMModel model) {
       int iteration = 0;
+      // form fixed arrays and matrices whose values do not change
+      ComputationEngineTask engineTask = new ComputationEngineTask(_parms, _dinfo);
+      engineTask.doAll(_dinfo._adaptedFrame);
+      _state = new ComputationStateHGLM(_job, _parms, _dinfo, engineTask, iteration);
       
       try {
         // grab current value of fixed beta, tauEVar, tauUVar
