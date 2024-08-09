@@ -84,7 +84,7 @@ public class ConstrainedGLMUtils {
     double _ckCS;
     double _ckCSHalf; // = ck/2
     double _epsilonkCS;
-    double _epsilonkCSSquare;
+    public double _epsilonkCSSquare;
     double _etakCS;
     double _etakCSSquare;
     double _epsilon0;
@@ -137,30 +137,35 @@ public class ConstrainedGLMUtils {
     List<LinearConstraints> equalityC = new ArrayList<>();
     List<LinearConstraints> lessThanEqualToC = new ArrayList<>();
     List<Integer> betaIndexOnOff = new ArrayList<>();
-    if (betaC._betaLB != null) {
-      int numCons = betaC._betaLB.length-1;
-      for (int index=0; index<numCons; index++) {
-        if (!Double.isInfinite(betaC._betaUB[index]) && (betaC._betaLB[index] == betaC._betaUB[index])) { // equality constraint
-          addBCEqualityConstraint(equalityC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-        } else if (!Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index]) && 
-                (betaC._betaLB[index] < betaC._betaUB[index])) { // low < beta < high, generate two lessThanEqualTo constraints
-          addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-          betaIndexOnOff.add(0);
-        } else if (Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index])) {  // low < beta < infinity
-          addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-        } else if (!Double.isInfinite(betaC._betaUB[index]) && Double.isInfinite(betaC._betaLB[index])) { // -infinity < beta < high
-          addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
-          betaIndexOnOff.add(1);
-        }
+    boolean bothEndsPresent = (betaC._betaUB != null) && (betaC._betaLB != null);
+    boolean lowerEndPresentOnly = (betaC._betaUB == null) && (betaC._betaLB != null);
+    boolean upperEndPresentOnly = (betaC._betaUB != null) && (betaC._betaLB == null);
+
+    int numCons = betaC._betaLB != null ? betaC._betaLB.length - 1 : betaC._betaUB.length - 1;
+    for (int index = 0; index < numCons; index++) {
+      if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && (betaC._betaLB[index] == betaC._betaUB[index])) { // equality constraint
+        addBCEqualityConstraint(equalityC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
+      } else if (bothEndsPresent && !Double.isInfinite(betaC._betaUB[index]) && !Double.isInfinite(betaC._betaLB[index]) &&
+              (betaC._betaLB[index] < betaC._betaUB[index])) { // low < beta < high, generate two lessThanEqualTo constraints
+        addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
+        betaIndexOnOff.add(0);
+      } else if ((lowerEndPresentOnly || (betaC._betaUB != null && Double.isInfinite(betaC._betaUB[index]))) &&
+              betaC._betaLB != null && !Double.isInfinite(betaC._betaLB[index])) {  // low < beta < infinity
+        addBCGreaterThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
+      } else if ((upperEndPresentOnly || (betaC._betaLB != null && Double.isInfinite(betaC._betaLB[index]))) &&
+              betaC._betaUB != null && !Double.isInfinite(betaC._betaUB[index])) { // -infinity < beta < high
+        addBCLessThanConstraint(lessThanEqualToC, betaC, coefNames, index);
+        betaIndexOnOff.add(1);
       }
     }
+
     state.setLinearConstraints(equalityC.toArray(new LinearConstraints[0]),
             lessThanEqualToC.toArray(new LinearConstraints[0]), true);
-    return betaIndexOnOff.size()==0 ? null : betaIndexOnOff.stream().mapToInt(x->x).toArray();
+    return betaIndexOnOff.size() == 0 ? null : betaIndexOnOff.stream().mapToInt(x -> x).toArray();
   }
 
   /***
@@ -506,11 +511,10 @@ public class ConstrainedGLMUtils {
   
   public static List<String> foundRedundantConstraints(ComputationState state, final double[][] initConstraintMatrix) {
     Matrix constMatrix = new Matrix(initConstraintMatrix);
-    Matrix constMatrixLessConstant = constMatrix.getMatrix(0, constMatrix.getRowDimension() -1, 1, constMatrix.getColumnDimension()-1);
-    Matrix constMatrixTConstMatrix = constMatrixLessConstant.times(constMatrixLessConstant.transpose());
-    int rank = constMatrixLessConstant.rank();
+    Matrix matrixSquare = constMatrix.times(constMatrix.transpose());
+    int rank = matrixSquare.rank();
     if (rank < constMatrix.getRowDimension()) { // redundant constraints are specified
-      double[][] rMatVal = constMatrixTConstMatrix.qr().getR().getArray();
+      double[][] rMatVal = matrixSquare.qr().getR().getArray();
       List<Double> diag = IntStream.range(0, rMatVal.length).mapToDouble(x->Math.abs(rMatVal[x][x])).boxed().collect(Collectors.toList());
       int[] sortedIndices = IntStream.range(0, diag.size()).boxed().sorted((i, j) -> diag.get(i).compareTo(diag.get(j))).mapToInt(ele->ele).toArray();
       List<Integer> duplicatedEleIndice = IntStream.range(0, diag.size()-rank).map(x -> sortedIndices[x]).boxed().collect(Collectors.toList());
@@ -645,6 +649,16 @@ public class ConstrainedGLMUtils {
     }
   }
   
+  public static void adjustLambda(LinearConstraints[] constraints, double[] lambda) {
+    int numC = constraints.length;
+    LinearConstraints oneC;
+    for (int index=0; index<numC; index++) {
+      oneC = constraints[index];
+      if (!oneC._active)
+        lambda[index]=0.0;
+    }
+  }
+  
   
   public static double[][] sumGramConstribution(ConstraintsGram[] gramConstraints, int numCoefs) {
     if (gramConstraints == null)
@@ -714,8 +728,8 @@ public class ConstrainedGLMUtils {
                                                 LinearConstraints[] equalConst, LinearConstraints[] lessThanConst, 
                                                 GLMModel.GLMParameters parms) {
     // calculate ||h(beta)|| square, ||gradient|| square
-    double hBetaMag = state._csGLMState._constraintMagSquare;
-    if (hBetaMag <= state._csGLMState._etakCSSquare) {  // implement line 26 to line 29 of Algorithm 19.1
+    double hBetaMagSquare = state._csGLMState._constraintMagSquare;
+    if (hBetaMagSquare <= state._csGLMState._etakCSSquare) {  // implement line 26 to line 29 of Algorithm 19.1
       if (equalConst != null)
         updateLambda(lambdaEqual, state._csGLMState._ckCS, equalConst);
       if (lessThanConst != null)
@@ -723,7 +737,7 @@ public class ConstrainedGLMUtils {
       state._csGLMState._epsilonkCS = state._csGLMState._epsilonkCS/state._csGLMState._ckCS;
       state ._csGLMState._etakCS = state._csGLMState._etakCS/Math.pow(state._csGLMState._ckCS, parms._constraint_beta);
     } else {  // implement line 31 to 34 of Algorithm 19.1
-      state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau;
+      state._csGLMState._ckCS = state._csGLMState._ckCS*parms._constraint_tau; // tau belongs to [4,10]
       state._csGLMState._ckCSHalf = state._csGLMState._ckCS*0.5;
       state._csGLMState._epsilonkCS = state._csGLMState._epsilon0/state._csGLMState._ckCS;
       state._csGLMState._etakCS = parms._constraint_eta0/Math.pow(state._csGLMState._ckCS, parms._constraint_alpha);
@@ -813,13 +827,14 @@ public class ConstrainedGLMUtils {
     if (equalityConstraints != null) // equality constraints
       Arrays.stream(equalityConstraints).forEach(constraint -> {
         evalOneConstraint(constraint, betaCnd, coefNames);
-        constraint._active = (Math.abs(constraint._constraintsVal) > EPS2);
+       // constraint._active = (Math.abs(constraint._constraintsVal) > EPS2);
+        constraint._active = true;
       });
 
     if (lessThanEqualToConstraints != null) // less than or equal to constraints
       Arrays.stream(lessThanEqualToConstraints).forEach(constraint -> {
         evalOneConstraint(constraint, betaCnd, coefNames);
-        constraint._active = constraint._constraintsVal > 0;
+        constraint._active = constraint._constraintsVal >= 0;
       });
   }
   

@@ -554,6 +554,7 @@ public class OptimizationUtils {
                              ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
                              GLM.GLMGradientSolver gradientSolver) {
       if (_currGradDirIP > 0) {
+        _newBeta = _originalBeta;
         return false;
       }
       GLM.GLMGradientInfo newGrad;
@@ -563,6 +564,8 @@ public class OptimizationUtils {
       boolean firstWolfe;
       boolean secondWolfe;
       boolean alphaiChange;
+      double gradMagSquare;
+      boolean gradSmallEnough;
       for (int index=0; index<_maxIteration; index++) {
         ArrayUtils.mult(_direction, tempDirection, _alphai);    // tempCoef=alpha_i*direction
         newCoef = ArrayUtils.add(tempDirection, _originalBeta); // newCoef = coef + alpha_i*direction
@@ -575,6 +578,8 @@ public class OptimizationUtils {
         // calculate new gradient and objective function for new coefficients newCoef
         newGrad =  calGradient(newCoef, state, gradientSolver, lambdaEqual, lambdaLessThan,
                 equalityConstraints, lessThanEqualToConstraints);
+        gradMagSquare = ArrayUtils.innerProduct(newGrad._gradient, newGrad._gradient);
+        gradSmallEnough = gradMagSquare <= state._csGLMState._epsilonkCSSquare;
         // evaluate if first Wolfe condition is satisfied;
         firstWolfe = evaluateFirstWolfe(newGrad);
         // evaluate if second Wolfe condition is satisfied;
@@ -589,7 +594,11 @@ public class OptimizationUtils {
         // set alphai if first Wolfe condition is not satisfied, set alpha i if second Wolfe condition is not satisfied;
         alphaiChange = setAlphai(firstWolfe, secondWolfe);
         if (!alphaiChange || _alphar < EPS_CS_SQUARE) { // if alphai, alphar value are not changed and alphar is too small, quit
-          return false;
+          if (gradSmallEnough) {
+            _newBeta = newCoef;
+            _ginfoOriginal = newGrad;            
+          }
+           return false;
         }
       }
       return false;
