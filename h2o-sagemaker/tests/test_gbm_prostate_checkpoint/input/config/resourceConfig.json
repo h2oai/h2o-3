@@ -1,0 +1,6 @@
+{"current_host": "localhost",
+  "current_instance_type": "ml.c4.2xlarge",
+  "current_group_name": "homogeneousCluster",
+  "hosts": ["localhost"],
+  "instance_groups": [{"instance_group_name": "homogeneousCluster", "instance_type": "ml.c4.2xlarge", "hosts": ["localhost"]}],
+  "network_interface_name": "eth0"}
