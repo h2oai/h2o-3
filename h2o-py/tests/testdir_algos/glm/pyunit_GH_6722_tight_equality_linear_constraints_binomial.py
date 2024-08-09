@@ -225,7 +225,7 @@ def test_tight_equality_linear_constraints_binomial():
     print(glm.getConstraintsInfo(h2o_glm_random_init))
     print("All constraints satisfied: {0}".format(glm.allConstraintsPassed(h2o_glm_random_init)))
 
-    assert logloss <= optimal_init_logloss, "logloss from optimal GLM {0} should be lower than logloss from GLM with light tight" \
+    assert abs(logloss - optimal_init_logloss)<1e-6, "logloss from optimal GLM {0} should be close to logloss from GLM with light tight" \
                                      " constraints and initialized with optimal GLM {1} but is not.".format(logloss, optimal_init_logloss)
 
     assert logloss <= default_init_logloss, "logloss from optimal GLM {0} should be lower than logloss from GLM with light tight" \

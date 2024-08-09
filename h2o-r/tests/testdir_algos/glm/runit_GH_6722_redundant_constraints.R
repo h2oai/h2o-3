@@ -24,7 +24,7 @@ test_constraints_redundant <- function() {
   }, error = function(e) {
     print("***")
     print(e)
-    expect_true(grepl("redundant and possibly conflicting linear constraints:", e))
+    expect_true(grepl("redundant linear constraints:", e))
   })
 }
 
