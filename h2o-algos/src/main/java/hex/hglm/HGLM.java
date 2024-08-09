@@ -6,6 +6,7 @@ import hex.ModelCategory;
 import hex.glm.GLMModel;
 import water.DKV;
 import water.H2O;
+import water.Job;
 import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -175,7 +176,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
         model.write_lock(_job);
         _job.update(1, "Starting to build HGLM model...");
         if (EM == _parms._method)     
-          fitEM(model);
+          fitEM(model, _job);
         model._output.setModelOutputFields(_state);
         model._output._start_time = _startTime;
         model._output._training_time_ms = System.currentTimeMillis()-_startTime;
@@ -188,11 +189,12 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
     /**
      * Build HGLM model using EM (Expectation Maximization).
      */
-    void fitEM(HGLMModel model) {
+    void fitEM(HGLMModel model, Job job) {
       int iteration = 0;
       // form fixed arrays and matrices whose values do not change
-      ComputationEngineTask engineTask = new ComputationEngineTask(_parms, _dinfo);
+      ComputationEngineTask engineTask = new ComputationEngineTask(_parms, _dinfo, job);
       engineTask.doAll(_dinfo._adaptedFrame);
+      
       _state = new ComputationStateHGLM(_job, _parms, _dinfo, engineTask, iteration);
       
       try {
@@ -205,5 +207,26 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
         
       }
     }
+    
+/*    public void checkPSD() {
+      // calculate _AfjTAfjSumInverse
+      double[][] afjTAFJSum = MemoryManager.malloc8d(_numFixedCoeffs, _numFixedCoeffs);
+      for (int level2UnitInd = 0; level2UnitInd < _numLevel2Units; level2UnitInd++)
+        ArrayUtils.add(afjTAFJSum, _AfjTAfj[level2UnitInd]);
+      List<Integer> ignoredColumns = new ArrayList<>();
+      ComputationState.GramGrad gram = new ComputationState.GramGrad(null, null, null, 0,
+              0, null); // dummy instantiation to access Cholesky
+      _chol = gram.qrCholesky(ignoredColumns, afjTAFJSum, _parms._standardize);
+      // check if there is ignored columns, warn users to remove those predictors
+      if (!ignoredColumns.isEmpty()) {
+        String collinearColNames = Arrays.toString(ArrayUtils.select(_fixedCoeffNames,
+                ignoredColumns.stream().mapToInt(x -> x).toArray()));
+        throw new Gram.CollinearColumnsException("Found collinear columns in the dataset.  Please remove these collinear" +
+                "columns before model building can begin."+collinearColNames);
+      }
+      // check if chol is non-negative definite
+      if (!_chol.isSPD())
+        throw new Gram.NonSPDMatrixException();
+    }*/
   }
 }

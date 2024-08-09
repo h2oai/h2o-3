@@ -40,7 +40,7 @@ public class ComputationStateHGLM {
     _fixedCofficientNames = engTask._fixedCoeffNames;
     _level2UnitNames = engTask._level2UnitNames;
     _randomCoefficientNames = engTask._randomCoeffNames;
-    _groupColIndex = engTask._groupColIndex;
+    _groupColIndex = engTask._level2UnitIndex;
     initComputationStateHGLM(engTask);
     _nFixedBetas = _beta.length;
     _nRandomBetas = _ubeta[0].length;

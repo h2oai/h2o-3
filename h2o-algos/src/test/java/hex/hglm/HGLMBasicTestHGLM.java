@@ -26,9 +26,9 @@ public class HGLMBasicTestHGLM extends TestUtil {
       params._train = prostate._key;
       params._response_column = "VOL";
       params._ignored_columns = new String[]{"ID"};
-      params._group_column = "DPROS";
+      params._group_column = "RACE";
       params._use_all_factor_levels = true;
-      params._random_columns = new String[]{"RACE", "DCAPS", "GLEASON"};
+      params._random_columns = new String[]{"GLEASON", "DPROS", "DCAPS"};
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
       

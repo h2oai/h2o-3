@@ -6,7 +6,10 @@ import hex.ModelMetrics;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import water.AutoBuffer;
+import water.Futures;
 import water.Key;
+import water.Keyed;
 import water.fvec.Frame;
 
 import java.io.Serializable;
@@ -140,5 +143,21 @@ public class HGLMModel extends Model<HGLMModel, HGLMModel.HGLMParameters, HGLMMo
       _tauUVar = state.get_tauUVar();
       _tauEVar = state.get_tauEVar();
     }
+  }
+  
+  @Override
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    super.remove_impl(fs, cascade);
+    return fs;
+  }
+
+  @Override
+  protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    return super.writeAll_impl(ab);
+  }
+
+  @Override
+  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    return super.readAll_impl(ab, fs);
   }
 }

@@ -1,9 +1,9 @@
 package hex.hglm;
 
 import hex.DataInfo;
-import hex.glm.ComputationState;
-import hex.gram.Gram;
+import water.Job;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
 
@@ -23,7 +23,6 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
   double[][][] _AfjTAfj;
   double[][][] _ArjTArj;
   double[][][] _AfjTArj;
-  Gram.Cholesky _chol;
   int _numFixedCoeffs;
   int _numRandomCoeffs;
   String[] _fixedCoeffNames;
@@ -34,7 +33,7 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
   int _nobs;
   double _weightedSum;
   final DataInfo _dinfo;
-  int _groupColIndex;
+  int _level2UnitIndex;
   int[] _randomPredXInterceptIndices;
   int[] _randomCatIndices;
   int[] _randomNumIndices;
@@ -43,8 +42,10 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
   int[] _fixedNumIndices;
   String[] _fixedPredNames;
   String[] _randomPredNames;
+  Job _job;
   
-  public ComputationEngineTask(HGLMModel.HGLMParameters parms, DataInfo dinfo) {
+  public ComputationEngineTask(HGLMModel.HGLMParameters parms, DataInfo dinfo, Job job) {
+    _job = job;
     _parms = parms;
     _dinfo = dinfo;
     extractNamesNIndices();
@@ -68,10 +69,14 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
         randomNumPredList.add(_randomPredXInterceptIndices[index]);
       randomPredNames.add(predictorNames.get(_randomPredXInterceptIndices[index]));
     }
-    if (randomCatPredList.size() > 0)
+    if (randomCatPredList.size() > 0) {
       _randomCatIndices = randomCatPredList.stream().mapToInt(x -> x).toArray();
-    if (randomNumPredList.size() > 0)
+      Arrays.sort(_randomCatIndices);
+    }
+    if (randomNumPredList.size() > 0) {
       _randomNumIndices = randomNumPredList.stream().mapToInt(x -> x).toArray();
+      Arrays.sort(_randomNumIndices);
+    }
     for (int index=0; index<_fixedPredXInterceptIndices.length; index++) {
       String predName = predictorNames.get(index);
       if (!predName.equals(_parms._group_column)) {
@@ -82,22 +87,27 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
         fixedPredNames.add(predName);
       }
     }
-    if (fixedCatPredList.size() > 0)
+    if (fixedCatPredList.size() > 0) {
       _fixedCatIndices = fixedCatPredList.stream().mapToInt(x -> x).toArray();
-    if (fixedNumPredList.size() > 0)
+      Arrays.sort(_fixedCatIndices);
+    }
+    if (fixedNumPredList.size() > 0) {
       _fixedNumIndices = fixedNumPredList.stream().mapToInt(x -> x).toArray();
+      Arrays.sort(_fixedNumIndices);
+    }
+   
     _fixedPredNames = fixedPredNames.stream().toArray(String[]::new);
     _randomPredNames = randomPredNames.stream().toArray(String[]::new);
   }
   
   void extractNamesNIndices() {
     List<String> predictorNames = Arrays.stream(_dinfo._adaptedFrame.names()).collect(Collectors.toList());
-    _groupColIndex = predictorNames.indexOf(_parms._group_column);
+    _level2UnitIndex = predictorNames.indexOf(_parms._group_column);
     
     // assign coefficient names for fixed, random and group column
     List<String> allCoeffNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
     String groupCoeffStarts = _parms._group_column+".";
-    List<String> groupCoeffNames =allCoeffNames.stream().filter(x -> x.startsWith(groupCoeffStarts)).collect(Collectors.toList());
+    List<String> groupCoeffNames = allCoeffNames.stream().filter(x -> x.startsWith(groupCoeffStarts)).collect(Collectors.toList());
     _level2UnitNames = groupCoeffNames.stream().toArray(String[]::new);
 
     // fixed Coefficients are all coefficient names excluding group_column
@@ -106,7 +116,10 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
     _fixedCoeffNames = fixedCoeffNames.stream().toArray(String[]::new);
     List<String> randomPredictorNames = new ArrayList<>();
     // random coefficients names
-    for (String coefName : _parms._random_columns) {
+    int[] randomColumnsIndicesSorted = Arrays.stream(_parms._random_columns).mapToInt(x -> predictorNames.indexOf(x)).toArray();
+    Arrays.sort(randomColumnsIndicesSorted);
+    _parms._random_columns = Arrays.stream(randomColumnsIndicesSorted).mapToObj(x -> predictorNames.get(x)).toArray(String[]::new);
+    for (String coefName :  _parms._random_columns) {
       String startCoef = coefName + ".";
       randomPredictorNames.addAll(allCoeffNames.stream().filter(x -> x.startsWith(startCoef) || x.equals(coefName)).collect(Collectors.toList()));
     }
@@ -120,9 +133,12 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
   @Override
   public void map(Chunk[] chks) {
     initializeArraysVar();
-    DataInfo.Row r = _dinfo.newDenseRow();
-    int chkLen = chks[0].len();
     double y;
+    double[] xji = MemoryManager.malloc8d(_numFixedCoeffs);
+    double[] zji = MemoryManager.malloc8d(_numRandomCoeffs);
+    int level2Index;
+    int chkLen = chks[0].len();
+    DataInfo.Row r = _dinfo.newDenseRow();
     for (int rowInd = 0; rowInd < chkLen; rowInd++) {
       _dinfo.extractDenseRow(chks, rowInd, r);
       if (!r.isBad() && !(r.weight == 0)) {
@@ -130,6 +146,7 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
         _YjTYjSum += y*y;
         _nobs++;
         _weightedSum += r.weight;
+        level2Index = r.binIds[_level2UnitIndex];
         for (int catInd = 0; catInd < r.nBins; catInd++) {
           
         }
@@ -144,11 +161,11 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
     _YjTYjSum = 0;
     _nobs = 0;
     _weightedSum = 0.0;
-    _AfjTYj = new double[_numLevel2Units][_numFixedCoeffs];
-    _ArjTYj = new double[_numLevel2Units][_numRandomCoeffs];
-    _AfjTAfj = new double[_numLevel2Units][_numFixedCoeffs][_numFixedCoeffs];
-    _ArjTArj = new double[_numLevel2Units][_numRandomCoeffs][_numRandomCoeffs];
-    _AfjTArj = new double[_numLevel2Units][_numFixedCoeffs][_numRandomCoeffs];
+    _AfjTYj = MemoryManager.malloc8d(_numLevel2Units, _numFixedCoeffs);
+    _ArjTYj = MemoryManager.malloc8d(_numLevel2Units, _numRandomCoeffs);
+    _AfjTAfj = MemoryManager.malloc8d(_numLevel2Units, _numFixedCoeffs, _numFixedCoeffs);
+    _ArjTArj = MemoryManager.malloc8d(_numLevel2Units, _numRandomCoeffs, _numRandomCoeffs);
+    _AfjTArj = MemoryManager.malloc8d(_numLevel2Units, _numFixedCoeffs, _numRandomCoeffs);
   }
   
   @Override
@@ -161,27 +178,5 @@ public class ComputationEngineTask extends MRTask<ComputationEngineTask> {
     ArrayUtils.add(_AfjTAfj, otherTask._AfjTAfj);
     ArrayUtils.add(_ArjTArj, otherTask._ArjTArj);
     ArrayUtils.add(_AfjTArj, otherTask._AfjTArj);
-  }
-  
-  @Override 
-  public void postGlobal() {
-    // calculate _AfjTAfjSumInverse
-    double[][] afjTAFJSum = new double[_numFixedCoeffs][_numFixedCoeffs];
-    for (int level2UnitInd = 0; level2UnitInd < _numLevel2Units; level2UnitInd++)
-      ArrayUtils.add(afjTAFJSum, _AfjTAfj[level2UnitInd]);
-    List<Integer> ignoredColumns = new ArrayList<>();
-    ComputationState.GramGrad gram = new ComputationState.GramGrad(null, null, null, 0, 
-            0, null); // dummy instantiation to access Cholesky
-    _chol = gram.qrCholesky(ignoredColumns, afjTAFJSum, _parms._standardize);
-    // check if there is ignored columns, warn users to remove those predictors
-    if (!ignoredColumns.isEmpty()) {
-      String collinearColNames = Arrays.toString(ArrayUtils.select(_fixedCoeffNames, 
-              ignoredColumns.stream().mapToInt(x -> x).toArray()));
-      throw new Gram.CollinearColumnsException("Found collinear columns in the dataset.  Please remove these collinear" +
-              "columns before model building can begin."+collinearColNames);
-    }
-    // check if chol is non-negative definite
-    if (!_chol.isSPD())
-      throw new Gram.NonSPDMatrixException();
   }
 }
