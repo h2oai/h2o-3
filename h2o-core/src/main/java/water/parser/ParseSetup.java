@@ -44,6 +44,7 @@ public class ParseSetup extends Iced {
   int[] _parse_columns_indices; // store column indices to be parsed into the final file
   byte[] _nonDataLineMarkers;
   boolean _force_col_types = false; // at end of parsing, change column type to users specified ones
+  boolean _tz_adjustment = false;
   String[] _orig_column_types;  // copy over the original column type setup before translating to byte[]
 
   String[] _synthetic_column_names; // Columns with constant values to be added to parsed Frame
@@ -95,13 +96,13 @@ public class ParseSetup extends Iced {
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
                     int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers, byte escapeChar) {
     this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, 
-            chunkSize, decrypt_tool, skipped_columns, nonDataLineMarkers, escapeChar, false);
+            chunkSize, decrypt_tool, skipped_columns, nonDataLineMarkers, escapeChar, false, false);
   }
 
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
                     int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers,
-                    byte escapeChar, boolean force_col_types) {
+                    byte escapeChar, boolean force_col_types, boolean tz_adjustment) {
     _parse_type = parse_type;
     _separator = sep;
     _nonDataLineMarkers = nonDataLineMarkers;
@@ -119,6 +120,7 @@ public class ParseSetup extends Iced {
     _skipped_columns = skipped_columns;
     _escapechar = escapeChar;
     _force_col_types = force_col_types;
+    _tz_adjustment = tz_adjustment;
     setParseColumnIndices(ncols, _skipped_columns);
   }
 
@@ -172,7 +174,7 @@ public class ParseSetup extends Iced {
         ps.chunk_size,
         ps.decrypt_tool != null ? ps.decrypt_tool.key() : null, ps.skipped_columns,
         ps.custom_non_data_line_markers != null ? ps.custom_non_data_line_markers.getBytes() : null,
-        ps.escapechar, ps.force_col_types);
+        ps.escapechar, ps.force_col_types, ps.tz_adjustment);
     this._force_col_types = ps.force_col_types;
     this._orig_column_types = this._force_col_types ? (ps.column_types == null ? null : ps.column_types.clone()) : null;
   }
@@ -257,6 +259,10 @@ public class ParseSetup extends Iced {
   
   public boolean getForceColTypes() {
     return _force_col_types;
+  }
+
+  public boolean getTzAdjustment() {
+    return _tz_adjustment;
   }
   
   public byte[] getColumnTypes() { return _column_types; }
@@ -875,6 +881,11 @@ public class ParseSetup extends Iced {
   
   public ParseSetup setForceColTypes(boolean force_col_types) {
     this._force_col_types = force_col_types;
+    return this;
+  }
+
+  public ParseSetup setTzAdjustment(boolean tz_adjustment) {
+    this._tz_adjustment = tz_adjustment;
     return this;
   }
 

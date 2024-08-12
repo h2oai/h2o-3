@@ -49,7 +49,7 @@ public class ParquetParser extends Parser {
     }
 
     final WriterDelegate w = new WriterDelegate(dout, _setup.getColumnTypes().length);
-    final VecParquetReader reader = new VecParquetReader(vec, metadata, w, _setup.getColumnTypes(), _keepColumns);
+    final VecParquetReader reader = new VecParquetReader(vec, metadata, w, _setup.getColumnTypes(), _keepColumns, _setup.getTzAdjustment());
 
     StreamParseWriter nextChunk = dout;
     try {
@@ -100,7 +100,7 @@ public class ParquetParser extends Parser {
       return dout;
     }
     Log.info("Processing ", metadata.getBlocks().size(), " blocks of chunk #", cidx);
-    VecParquetReader reader = new VecParquetReader(vec, metadata, dout, _setup.getColumnTypes(), _keepColumns, _setup.get_parse_columns_indices().length);
+    VecParquetReader reader = new VecParquetReader(vec, metadata, dout, _setup.getColumnTypes(), _keepColumns, _setup.get_parse_columns_indices().length, _setup.getTzAdjustment());
     try {
       Long recordNumber;
       do {
@@ -256,7 +256,7 @@ public class ParquetParser extends Parser {
     }
     ParquetMetadata startMetadata = new ParquetMetadata(metadata.getFileMetaData(), blockMetaData);
     ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(initSetup);
-    VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes, keepcolumns,initSetup.get_parse_columns_indices().length);
+    VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes, keepcolumns,initSetup.get_parse_columns_indices().length, initSetup.getTzAdjustment());
     try {
       int recordCnt = 0;
       Long recordNum;
