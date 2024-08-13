@@ -37,7 +37,7 @@ public abstract class ParserProvider {
    */
   protected ParseSetup guessSetup_impl(ByteVec v, byte[] bits, ParseSetup userSetup) {
     ParseSetup ps = guessInitSetup(v, bits, userSetup);
-    return guessFinalSetup(v, bits, ps);
+    return guessFinalSetup(v, bits, ps).setTzAdjustment(userSetup._tz_adjustment);
   }
 
   /**

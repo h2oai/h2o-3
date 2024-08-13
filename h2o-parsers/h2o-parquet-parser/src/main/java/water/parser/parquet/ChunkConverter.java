@@ -141,8 +141,9 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
           if (_adjustTimezone) {
-            long currentTimeMillisInGMT = new DateTime(DateTimeZone.UTC).getMillis();
-            long timestampAdjustmentMillis = ParseTime.getTimezone().getOffset(currentTimeMillisInGMT);
+            DateTimeZone parsingTimezone = ParseTime.getTimezone();
+            long currentTimeMillisInParsingTimezone = new DateTime(parsingTimezone).getMillis();
+            long timestampAdjustmentMillis = parsingTimezone.getOffset(currentTimeMillisInParsingTimezone);
             return new TimestampConverter(colIdx, _writer, timestampAdjustmentMillis);
           } else {
             return new TimestampConverter(colIdx, _writer, 0L);
@@ -327,14 +328,18 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addLong(long value) {
-      _writer.addNumCol(_colIdx, value + timestampAdjustmentMillis, 0);
+      _writer.addNumCol(_colIdx, adjustTimeStamp(value), 0);
     }
 
     @Override
     public void addBinary(Binary value) {
       final long timestampMillis = ParquetInt96TimestampConverter.getTimestampMillis(value);
 
-      _writer.addNumCol(_colIdx, timestampMillis + timestampAdjustmentMillis);
+      _writer.addNumCol(_colIdx, adjustTimeStamp(timestampMillis));
+    }
+
+    private long adjustTimeStamp(long ts) {
+      return ts - timestampAdjustmentMillis;
     }
 
   }

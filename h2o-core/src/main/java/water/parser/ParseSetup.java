@@ -74,29 +74,29 @@ public class ParseSetup extends Iced {
             ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
             ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data,
             new ParseWriter.ParseErr[0], ps._chunk_size, ps._decrypt_tool, ps._skipped_columns,
-            ps._nonDataLineMarkers, ps._escapechar);
+            ps._nonDataLineMarkers, ps._escapechar, ps._tz_adjustment);
   }
 
   public static ParseSetup makeSVMLightSetup(){
     return new ParseSetup(SVMLight_INFO, ParseSetup.GUESS_SEP,
         false,ParseSetup.NO_HEADER,1,null,new byte[]{Vec.T_NUM},null,null,null, new ParseWriter.ParseErr[0],
-            null);
+            null, false);
   }
 
   // This method was called during guess setup, lot of things are null, like ctypes.
   // when it is called again, it either contains the guess column types or it will have user defined column types
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
-                    int chunkSize, byte[] nonDataLineMarkers, byte escapeChar) {
+                    int chunkSize, byte[] nonDataLineMarkers, byte escapeChar, boolean tzAdjustment) {
     this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs,
-        chunkSize, null, null, nonDataLineMarkers, escapeChar);
+        chunkSize, null, null, nonDataLineMarkers, escapeChar, tzAdjustment);
   }
 
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
-                    int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers, byte escapeChar) {
+                    int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers, byte escapeChar, boolean tzAdjustment) {
     this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, 
-            chunkSize, decrypt_tool, skipped_columns, nonDataLineMarkers, escapeChar, false, false);
+            chunkSize, decrypt_tool, skipped_columns, nonDataLineMarkers, escapeChar, false, tzAdjustment);
   }
 
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
@@ -187,9 +187,9 @@ public class ParseSetup extends Iced {
    */
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
-                    String[][] domains, String[][] naStrings, String[][] data, byte[] nonDataLineMarkers, byte escapeChar) {
+                    String[][] domains, String[][] naStrings, String[][] data, byte[] nonDataLineMarkers, byte escapeChar, boolean tzAdjustment) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, nonDataLineMarkers, escapeChar);
+        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, nonDataLineMarkers, escapeChar, tzAdjustment);
   }
 
   /**
@@ -200,30 +200,30 @@ public class ParseSetup extends Iced {
    */
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
-                    String[][] domains, String[][] naStrings, String[][] data, byte escapeChar) {
+                    String[][] domains, String[][] naStrings, String[][] data, byte escapeChar, boolean tzAdjustment) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null, escapeChar);
+        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null, escapeChar, tzAdjustment);
   }
 
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
-                    String[][] domains, String[][] naStrings, String[][] data) {
+                    String[][] domains, String[][] naStrings, String[][] data, boolean tzAdjustment) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR);
+        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR,tzAdjustment);
   }
 
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
-                    String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs, byte[] nonDataLineMarkers) {
+                    String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs, byte[] nonDataLineMarkers, boolean tzAdjustment) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-        domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, nonDataLineMarkers, ParseSetup.DEFAULT_ESCAPE_CHAR);
+        domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, nonDataLineMarkers, ParseSetup.DEFAULT_ESCAPE_CHAR, tzAdjustment);
   }
 
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
                     String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-        domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR);
+        domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR, false);
   }
 
   /**
@@ -232,7 +232,7 @@ public class ParseSetup extends Iced {
    * Typically used by file type parsers for returning final invalid results
    */
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[][] data, ParseWriter.ParseErr[] errs) {
-    this(parseType, sep, singleQuotes, checkHeader, ncols, null, null, null, null, data, errs, FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR);
+    this(parseType, sep, singleQuotes, checkHeader, ncols, null, null, null, null, data, errs, FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR, false);
   }
 
   /**
@@ -564,6 +564,7 @@ public class ParseSetup extends Iced {
       }
       if (_gblSetup==null)
         throw new RuntimeException("This H2O node couldn't find the file(s) to parse. Please check files and/or working directories.");
+      _gblSetup.setTzAdjustment(_userSetup.getTzAdjustment());
       _gblSetup.setFileName(FileUtils.keyToFileName(key));
     }
 
@@ -593,6 +594,7 @@ public class ParseSetup extends Iced {
         else
           _gblSetup._na_strings = _userSetup._na_strings;
       }
+      _gblSetup._tz_adjustment = _gblSetup._tz_adjustment || _userSetup._tz_adjustment;
 //      if(_gblSetup._errs != null)
         for(ParseWriter.ParseErr err:_gblSetup._errs)
           Log.warn("ParseSetup: " + err.toString());
@@ -606,6 +608,7 @@ public class ParseSetup extends Iced {
       }
       ParseSetup mergedSetup = setupA;
 
+      mergedSetup._tz_adjustment = setupA._tz_adjustment || setupB._tz_adjustment;
       mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
 
       mergedSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
@@ -713,7 +716,7 @@ public class ParseSetup extends Iced {
    */
   private ParseSetup toInitialSetup() {
     return new ParseSetup(_parse_type, _separator, _single_quotes, _check_header, GUESS_COL_CNT, _column_names,
-            _column_types, null, null, null, _nonDataLineMarkers, _escapechar);
+            _column_types, null, null, null, _nonDataLineMarkers, _escapechar, false);
   }
 
   /**

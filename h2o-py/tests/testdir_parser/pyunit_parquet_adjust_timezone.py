@@ -12,10 +12,11 @@ Adjust timestamp parquet
 
 def adjust_timestamp_parquet():
     with tempfile.TemporaryDirectory() as dir:
-        timestamp_df = H2OFrame({"timestamp": '2024-08-02 23:37:06'})
+        input_timestamp = '2024-08-02 12:00:00'
+        timestamp_df = H2OFrame({"timestamp": input_timestamp})
         h2o.export_file(timestamp_df, path=dir, format="parquet", write_checksum=False)
-        expected_df = H2OFrame({"timestamp": '2024-08-02 19:37:06'})
-        h2o.rapids(expr='(setTimeZone "America/New_York")')
+        h2o.rapids(expr='(setTimeZone "America/Los_Angeles")')
+        expected_df = H2OFrame({"timestamp": '2024-08-02 12:00:00'})
         imported_df = h2o.import_file(dir, tz_adjustment=True)
         assert imported_df[0, 0] == expected_df[0, 0]
 
