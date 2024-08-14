@@ -33,7 +33,7 @@ public class AstRunTool extends AstPrimitive<AstRunTool> {
         try {
             // only allow to run approved tools (from our package), not just anything on classpath
             Class<?> clazz = Class.forName(TOOLS_PACKAGE + toolClassName);
-            Method mainMethod = clazz.getDeclaredMethod("main", String[].class);
+            Method mainMethod = clazz.getDeclaredMethod("mainInternal", String[].class);
             mainMethod.invoke(null, new Object[]{args});
         } catch (Exception e) {
             throw new RuntimeException(e);
