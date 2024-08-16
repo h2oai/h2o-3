@@ -781,7 +781,7 @@ This kind of SHAP plot can be obtained using ``model.fair_shap_plot``/``h2o.fair
    .. code-tab:: python
 
         # Import HDMA dataset
-        f = "https://h2o-public-test-data.s3.amazonaws.com/admissibleml_test/hmda_lar_2018_sample.csv"
+        f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/admissibleml_test/hmda_lar_2018_sample.csv"
         col_types = {'high_priced': "enum"}
         df = h2o.import_file(path=f, col_types=col_types)
 
