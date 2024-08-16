@@ -167,7 +167,7 @@ The code below generates an infogram, and we plot the infogram and view the data
         h2o.init()
                 
         # Import credit dataset
-        f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/admissibleml_test/taiwan_credit_card_uci_prep.csv"
         col_types <- list(by.col.name = c("SEX", "MARRIAGE", "default_payment_next_month"), 
                           types = c("factor", "factor", "factor"))
         df <- h2o.importFile(path = f, col.types = col_types)
@@ -201,7 +201,7 @@ The code below generates an infogram, and we plot the infogram and view the data
         h2o.init()
 
         # Import credit dataset
-        f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/admissibleml_test/taiwan_credit_card_uci_prep.csv"
         col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
         df = h2o.import_file(path=f, col_types=col_types)
 
@@ -781,7 +781,7 @@ This kind of SHAP plot can be obtained using ``model.fair_shap_plot``/``h2o.fair
    .. code-tab:: python
 
         # Import HDMA dataset
-        f = "https://h2o-public-test-data.s3.amazonaws.com/admissibleml_testhmda_lar_2018_sample.csv"
+        f = "https://h2o-public-test-data.s3.amazonaws.com/admissibleml_test/hmda_lar_2018_sample.csv"
         col_types = {'high_priced': "enum"}
         df = h2o.import_file(path=f, col_types=col_types)
 
