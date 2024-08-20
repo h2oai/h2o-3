@@ -26,7 +26,7 @@ Common
 Supervised
 ----------
 
-In supervised learning, the dataset is labeled with the answer that algorithm should come up with. Supervised learning takes input variables (x) along with an output variable (y). The output variable represents the column that you want to predict on. The algorithm then uses these variables to learn and approximate the mapping function from the input to the output. Supervised learning algorithms support classification and regression problems.
+In supervised learning, the dataset is labeled with the answer that the chosen algorithm should come up with. Supervised learning takes input variables (x) along with an output variable (y). The output variable represents the column that you want to predict on. The algorithm then uses these variables to learn and approximate the mapping function from the input to the output. Supervised learning algorithms support classification and regression problems.
 
 H2O-3 supports the following supervised algorithms:
 
