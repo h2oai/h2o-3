@@ -157,7 +157,7 @@ Spark is only required if you want to run Sparkling Water. Supported spark versi
 User support
 ------------
 
-H2O-3 supports many different types of users. 
+H2O-3 supports many different types of users.
 
 .. toctree::
     :maxdepth: 1
