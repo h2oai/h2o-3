@@ -83,7 +83,7 @@ Example
 From Anaconda
 ~~~~~~~~~~~~~
 
-This section describes how run H2O-3 in an Anaconda Cloud environment. This section assumes that you have installed H2O-3 on Anaconda using the instructions in the `Install on Anaconda Cloud <downloading.html#install-on-anaconda-cloud>`__ section. 
+This section describes how to run H2O-3 in an Anaconda Cloud environment. This section assumes that you have installed H2O-3 on Anaconda using the instructions in the `Install on Anaconda Cloud <downloading.html#install-on-anaconda-cloud>`__ section. 
 
 Launching Jupyter Notebook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -305,7 +305,7 @@ The following are the available H2O options:
 - ``-log_dir <fileSystemPath>``: Specify the directory where H2O-3 writes logs to disk. (This usually has a good default that you need not change.
 - ``-log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>``: Specify to write messages at this logging level, or above. The default is INFO.
 - ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows`` (where ``<H2OUserName>`` is your user name).
-- ``-file_deny_glob <GLOB pattern>``: Specify the `glob <https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob>`__ pattern to deny access to certain files. The default is ``{/bin/*,/etc/*,/var/*,/usr/*,/proc/*,**/.**}``.
+- ``-file_deny_glob <GLOB pattern>``: Specify the `glob <https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob>`__ pattern to deny access to certain certain directories. This parameter is added to remove vulnerabilities CVE-2023-6038, CVE-2023-6569 and CVE-2024-5986. The default is ``{/bin/*,/etc/*,/var/*,/usr/*,/proc/*,**/.**}``.
 - ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
 - ``-client``: Launch H2O-3 node in client mode (this is used mostly for running Sparkling Water).
 - ``-notify_local <fileSystemPath>``: Specifies a file to write to when the node is up. The file system path contains a single line with the IP and port of the embedded web server. For example, 192.168.1.100:54321. 
