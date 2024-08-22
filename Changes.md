@@ -32,7 +32,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index
 - [[#16213]](https://github.com/h2oai/h2o-3/issues/16213) - Updating user guide - Getting data into your H2O cluster.
 
 #### Security
-- [[#15748]](https://github.com/h2oai/h2o-3/issues/15748) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2. Addressed PRISMA-2023-0067 by upgrading jackson-databind.
+- [[#15748]](https://github.com/h2oai/h2o-3/issues/15748) - Addressed PRISMA-2023-0067 by upgrading jackson-databind.
 
 ### 3.46.0.3 - 6/11/2024
 
