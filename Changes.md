@@ -2,6 +2,26 @@
 
 ## H2O
 
+### 3.46.0.5 - 8/28/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html</a>
+
+#### Bug
+- [[#16328]](https://github.com/h2oai/h2o-3/issues/16328) - Updated how ModelSelection handles categorical predictors to preserve the best categorical predictor when the best categorical level performs well relative to other predictors.
+- [[#16312]](https://github.com/h2oai/h2o-3/issues/16312) - Fixed several constrained GLM issues: constrained GLM no longer finishes before constraint conditions are satisfied, NPE no longer thrown when specifying a beta constraint with only lower bounds, and linear constraints are no longer evaluated as duplicates/conflicting when they are neither.
+- [[#16120]](https://github.com/h2oai/h2o-3/issues/16120) - Resolved that MOJO is working for Isolation Forest and Extended Isolation forest for implemented versions.
+
+#### New Feature
+- [[#16327]](https://github.com/h2oai/h2o-3/issues/16327) - Ensured H2O-3 can load data from Snowflake using JDBC connector.
+
+#### Docs
+- [[#16215]](https://github.com/h2oai/h2o-3/issues/16215) - Updated the following user guide pages to adhere to style guide updates: Algorithms, Supported data types, Quantiles, and Early stopping.
+- [[#16207]](https://github.com/h2oai/h2o-3/issues/16207) - Updated the Starting H2O user guide page to adhere to style guide updates.
+
+#### Security
+- [[#16349]](https://github.com/h2oai/h2o-3/issues/16349) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2.
+- [[#16342]](https://github.com/h2oai/h2o-3/issues/16342) - Addressed SNYK-JAVA-DNSJAVA-7547403, SNYK-JAVA-DNSJAVA-7547404, SNYK-JAVA-DNSJAVA-7547405, and CVE-2024-25638 by upgrading dnsjava to 3.6.0. 
+
 ### 3.46.0.4 - 7/9/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html</a>
@@ -12,7 +32,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index
 - [[#16213]](https://github.com/h2oai/h2o-3/issues/16213) - Updating user guide - Getting data into your H2O cluster.
 
 #### Security
-- [[#15748]](https://github.com/h2oai/h2o-3/issues/15748) - Addressed PRISMA-2023-0067 by upgrading jackson-databind.
+- [[#15748]](https://github.com/h2oai/h2o-3/issues/15748) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2. Addressed PRISMA-2023-0067 by upgrading jackson-databind.
 
 ### 3.46.0.3 - 6/11/2024
 
