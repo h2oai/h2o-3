@@ -17,6 +17,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index
 #### Docs
 - [[#16215]](https://github.com/h2oai/h2o-3/issues/16215) - Updated the following user guide pages to adhere to style guide updates: Algorithms, Supported data types, Quantiles, and Early stopping.
 - [[#16207]](https://github.com/h2oai/h2o-3/issues/16207) - Updated the Starting H2O user guide page to adhere to style guide updates.
+- [[#15989]](https://github.com/h2oai/h2o-3/issues/15989) - Updated Python documentation for Decision Tree algorithm.
 
 #### Security
 - [[#16349]](https://github.com/h2oai/h2o-3/issues/16349) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2.
