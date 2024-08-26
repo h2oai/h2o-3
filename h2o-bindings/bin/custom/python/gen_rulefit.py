@@ -17,9 +17,9 @@ Retrieve rule importances for a Rulefit model
         >>> y = "survived"
         >>> rfit = H2ORuleFitEstimator(max_rule_length=10,
         ...                            max_num_rules=100,
-        ...                            algorithm="gbm",
         ...                            seed=1)
         >>> rfit.train(training_frame=df, x=x, y=y)
+        >>> rule_importance = rfit.rule_importance()
         >>> print(rfit.rule_importance())
         """
         if self._model_json["algo"] != "rulefit":
@@ -49,12 +49,10 @@ Retrieve rule importances for a Rulefit model
         >>> y = "survived"
         >>> rfit = H2ORuleFitEstimator(max_rule_length=10,
         ...                            max_num_rules=100,
-        ...                            rule_generation_ntrees=60,
         ...                            seed=1)
         >>> rfit.train(training_frame=df, x=x, y=y)
-        >>> rules_to_predict = ['rule_1', 'rule_2']  # Replace with actual rule IDs
-        >>> predictions = rfit.predict_rules(frame=df, rule_ids=rules_to_predict)
-        >>> print(predictions)
+        >>> predictions = rfit.predict(test)
+        >>> print("Predictions:\n", predictions)
         """
         from h2o.frame import H2OFrame
         from h2o.utils.typechecks import assert_is_type
@@ -127,7 +125,7 @@ examples = dict(
 >>> x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
 >>> y = "survived"
 >>> rfit = H2ORuleFitEstimator(max_rule_length=10,
-...                            max_num_rules=-2,
+...                            max_num_rules=3,
 ...                            seed=1)
 >>> rfit.train(training_frame=df, x=x, y=y)
 >>> print(rfit.rule_importance())
