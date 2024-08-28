@@ -8,7 +8,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index
 
 #### Bug
 - [[#16328]](https://github.com/h2oai/h2o-3/issues/16328) - Updated how ModelSelection handles categorical predictors to preserve the best categorical predictor when the best categorical level performs well relative to other predictors.
-- [[#16312]](https://github.com/h2oai/h2o-3/issues/16312) - Fixed several constrained GLM issues: constrained GLM no longer finishes before constraint conditions are satisfied, NPE no longer thrown when specifying a beta constraint with only lower bounds, and linear constraints are no longer evaluated as duplicates/conflicting when they are neither.
 - [[#16120]](https://github.com/h2oai/h2o-3/issues/16120) - Resolved that MOJO is working for Isolation Forest and Extended Isolation forest for implemented versions.
 
 #### New Feature
