@@ -2,6 +2,26 @@
 
 ## H2O
 
+### 3.46.0.5 - 8/28/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html</a>
+
+#### Bug
+- [[#16328]](https://github.com/h2oai/h2o-3/issues/16328) - Updated how ModelSelection handles categorical predictors to preserve the best categorical predictor when the best categorical level performs well relative to other predictors.
+- [[#16120]](https://github.com/h2oai/h2o-3/issues/16120) - Resolved that MOJO is working for Isolation Forest and Extended Isolation forest for implemented versions.
+
+#### New Feature
+- [[#16327]](https://github.com/h2oai/h2o-3/issues/16327) - Ensured H2O-3 can load data from Snowflake using JDBC connector.
+
+#### Docs
+- [[#16215]](https://github.com/h2oai/h2o-3/issues/16215) - Updated the following user guide pages to adhere to style guide updates: Algorithms, Supported data types, Quantiles, and Early stopping.
+- [[#16207]](https://github.com/h2oai/h2o-3/issues/16207) - Updated the Starting H2O user guide page to adhere to style guide updates.
+- [[#15989]](https://github.com/h2oai/h2o-3/issues/15989) - Updated Python documentation for Decision Tree algorithm.
+
+#### Security
+- [[#16349]](https://github.com/h2oai/h2o-3/issues/16349) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2.
+- [[#16342]](https://github.com/h2oai/h2o-3/issues/16342) - Addressed SNYK-JAVA-DNSJAVA-7547403, SNYK-JAVA-DNSJAVA-7547404, SNYK-JAVA-DNSJAVA-7547405, and CVE-2024-25638 by upgrading dnsjava to 3.6.0. 
+
 ### 3.46.0.4 - 7/9/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html</a>
