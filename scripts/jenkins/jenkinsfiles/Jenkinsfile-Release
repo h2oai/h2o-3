@@ -139,9 +139,6 @@ try {
                                     chmod -w \$GRADLE_USER_HOME/gradle.properties
                                 fi
                                 ./gradlew build -x test
-                                if [ \$DO_RELEASE ]; then
-                                    ./gradlew -PdoRelease publish
-                                fi
                                 ./gradlew -PvalidateRelease buildH2oDevDist
                             """
                             }
