@@ -77,7 +77,6 @@ fi
 
 # Run some required gradle tasks to produce final build output.
 ./gradlew booklets
-./gradlew $DO_RELEASE publish
 # TODO improve (gradle calls script which then calls gradle, that creates problems with gradle daemon)
 
 # Generate Py Docs
