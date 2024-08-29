@@ -84,7 +84,7 @@ try {
                                 # Stop on error.
                                 set -e
 
-                                export BUILD_HADOOP=true
+                                export BUILD_HADOOP=false
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -138,6 +138,7 @@ try {
                                     echo "signing.secretKeyRingFile=${RING_FILE_PATH}" >> \$GRADLE_USER_HOME/gradle.properties
                                     chmod -w \$GRADLE_USER_HOME/gradle.properties
                                 fi
+                                cat \$GRADLE_USER_HOME/gradle.properties
                                 ./gradlew build -x test
                                 if [ \$DO_RELEASE ]; then
                                     ./gradlew -PdoRelease publish
