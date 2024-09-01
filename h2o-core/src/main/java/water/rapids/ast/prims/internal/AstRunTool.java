@@ -36,7 +36,9 @@ public class AstRunTool extends AstPrimitive<AstRunTool> {
             Method mainMethod = clazz.getDeclaredMethod("mainInternal", String[].class);
             mainMethod.invoke(null, new Object[]{args});
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            RuntimeException exceptionWithShortStacktrace = new RuntimeException(e.getMessage());
+            exceptionWithShortStacktrace.setStackTrace(new StackTraceElement[]{e.getStackTrace()[0]});
+            throw exceptionWithShortStacktrace;
         }
         return new ValStr("OK");
     }

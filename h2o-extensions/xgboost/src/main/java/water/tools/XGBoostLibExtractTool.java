@@ -13,7 +13,7 @@ public class XGBoostLibExtractTool {
         try {
             mainInternal(args);
         } catch (IllegalArgumentException e) {
-            System.err.println((e.getMessage());
+            System.err.println((e.getMessage()));
             System.exit(1);
         }
     }
