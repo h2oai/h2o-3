@@ -452,13 +452,13 @@ class H2OFrame(Keyed, H2ODisplay):
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
                       skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None,
-                      quotechar=None, escapechar=None, tz_adjustment=False):
+                      quotechar=None, escapechar=None, tz_adjust_to_local=False):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. https://github.com/h2oai/h2o-3/issues/12573
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
                     skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, 
-                    escapechar, tz_adjustment)
+                    escapechar, tz_adjust_to_local)
         return self
 
     def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, 
@@ -471,9 +471,9 @@ class H2OFrame(Keyed, H2ODisplay):
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
                na_strings=None, skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
-               escapechar=None, tz_adjustment=False):
+               escapechar=None, tz_adjust_to_local=False):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar, tz_adjustment)
+                                skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar, tz_adjust_to_local)
         return self._parse_raw(setup)
 
     def _parse_raw(self, setup):
@@ -493,7 +493,7 @@ class H2OFrame(Keyed, H2ODisplay):
              "partition_by": None,
              "single_quotes": None,
              "escapechar": None,
-             "tz_adjustment": False
+             "tz_adjust_to_local": False
              }
 
         if setup["column_names"]: p["column_names"] = None

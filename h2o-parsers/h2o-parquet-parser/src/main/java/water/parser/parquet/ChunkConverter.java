@@ -10,12 +10,15 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import water.fvec.Vec;
+import water.logging.Logger;
 import water.parser.BufferedString;
 import water.parser.ParseTime;
 import water.parser.parquet.ext.DecimalUtils;
 import water.util.StringUtils;
 
 import java.time.Instant;
+
+import static water.parser.parquet.TypeUtils.getTimestampAdjustmentFromUtcToLocalInMillis;
 
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
@@ -141,9 +144,7 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
           if (_adjustTimezone) {
-            DateTimeZone parsingTimezone = ParseTime.getTimezone();
-            long currentTimeMillisInParsingTimezone = new DateTime(parsingTimezone).getMillis();
-            long timestampAdjustmentMillis = parsingTimezone.getOffset(currentTimeMillisInParsingTimezone);
+            long timestampAdjustmentMillis = getTimestampAdjustmentFromUtcToLocalInMillis();
             return new TimestampConverter(colIdx, _writer, timestampAdjustmentMillis);
           } else {
             return new TimestampConverter(colIdx, _writer, 0L);
@@ -339,7 +340,7 @@ class ChunkConverter extends GroupConverter {
     }
 
     private long adjustTimeStamp(long ts) {
-      return ts - timestampAdjustmentMillis;
+      return ts + timestampAdjustmentMillis;
     }
 
   }

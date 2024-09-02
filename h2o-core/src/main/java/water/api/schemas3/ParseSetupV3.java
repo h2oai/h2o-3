@@ -91,7 +91,7 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
   public boolean force_col_types;
 
   @API(help="Adjust the imported time from GMT timezone to cluster timezone.", direction=API.Direction.INPUT)
-  public boolean tz_adjustment;
+  public boolean tz_adjust_to_local;
 
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {
