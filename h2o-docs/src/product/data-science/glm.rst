@@ -63,6 +63,8 @@ Algorithm-specific parameters
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
+**max_iterations**: For GLM, must be :math:`\geq` 1 to obtain a proper model (or -1 for unlimited which is the default setting). Setting it to 0 will only return the correct coefficient names and empty.
+
 - **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``1000000``.
 
 -  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
