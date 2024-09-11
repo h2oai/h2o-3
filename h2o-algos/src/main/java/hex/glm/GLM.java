@@ -1403,7 +1403,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     // no regularization for constrainted GLM except during testing
     if ((notZeroLambdas(_parms._lambda) || _parms._lambda_search) && !_parms._testCSZeroGram) {
-      error("lambda or lambda_search", "Regularization is not allowed for constrained GLM.");
+      error("lambda or lambda_search", "Regularization is not allowed for constrained GLM.  Set" +
+              " lambda to 0.0.");
       return;
     }
     if ("multinomial".equals(_parms._solver) || "ordinal".equals(_parms._solver)) {
@@ -1439,16 +1440,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     String[] constraintCoefficientNames = constraintNames.toArray(new String[0]);
     if (countNumConst(_state) > coefNames.length)
       warn("number of constraints", " exceeds the number of coefficients.  The system is" +
-              " over-constraints, and probably may not yield a valid solution due to possible conflicting " +
-              "constraints.  Consider reducing the number of constraints.");
+              " over-constraints with duplicated constraints.  Consider reducing the number of constraints.");
     List<String> redundantConstraints = foundRedundantConstraints(_state, initConstraintMatrix);
     if (redundantConstraints != null) {
       int numRedundant = redundantConstraints.size();
       for (int index = 0; index < numRedundant; index++)
-        error("redundant and possibly conflicting linear constraints", redundantConstraints.get(index));
+        error("redundant linear constraints", redundantConstraints.get(index));
     } else {
       _state._csGLMState = new ConstraintGLMStates(constraintCoefficientNames, initConstraintMatrix, _parms);
-      _state._hasConstraints = true;
     }
   }
   
@@ -2352,9 +2351,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * This method fits the constraint GLM for IRLSM.  We implemented the algorithm depicted in the document (H2O 
      * Constrained GLM Implementation.pdf) attached to this issue: https://github.com/h2oai/h2o-3/issues/6722.  We will
      * hereby use the word the doc to refere to this document.  In particular, we following the algorithm described in
-     * Section VII (and table titled Algorithm 19.1) of the doc.
+     * Section VII (and table titled Algorithm 19.1) of the doc.  Not as good as when considering magnitude of gradient.
      */
-    private void fitIRLSMCS() {
+    private void fitIRLSMCS9() {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
       List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
@@ -2389,7 +2388,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms, 
               _dinfo, 0, _state.activeBC(), _betaInfo);
       GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan, 
-              equalityConstraints, lessThanEqualToConstraints);
+              equalityConstraints, lessThanEqualToConstraints); // add dpenalty/dx to gradient from penalty term
       _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);  // update state ginfo with contributions from GLMGradientInfo
       boolean predictorSizeChange;
       boolean applyBetaConstraints = _parms._separate_linear_beta && _betaConstraintsOn;
@@ -2398,8 +2397,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
         return;
       }
-      double gradMagSquare;
+      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      boolean done;
+      boolean gradSmallEnough = (gradMagSquare <= _state._csGLMState._epsilonkCSSquare);
       int origIter = iterCnt+1;
+      boolean lineSearchSuccess;
       try {
         while (true) {
           do { // implement Algorithm 11.8 of the doc to find coefficients with epsilon k as the precision
@@ -2440,11 +2442,162 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             else
               ls.reset(betaCnd, _state, coefNames);
 
-            if (ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints, ginfo)) {
-              gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+            // line search can fail when the gradient is close to zero.  In this case, we need to update the 
+            // constraint parameters.
+            lineSearchSuccess = ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints, 
+                    lessThanEqualToConstraints, ginfo);
+            gradMagSquare = ArrayUtils.innerProduct(ls._ginfoOriginal._gradient, ls._ginfoOriginal._gradient);
+            gradSmallEnough = gradMagSquare <= _state._csGLMState._epsilonkCSSquare;
+            if (lineSearchSuccess) {
               betaCnd = ls._newBeta;
               gradientInfo = ls._ginfoOriginal;
-            } else {  // ls failed, reset to 
+            } else {  // ls failed, reset to
+                if (applyBetaConstraints) // separate beta and linear constraints
+                  bc.applyAllBounds(_state.beta());
+                ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
+                        ginfo, _state.beta());
+                Log.info(LogMsg("Line search failed " + ls));
+                return;
+            }
+
+            if (applyBetaConstraints) { // if beta constraints are applied, may need to update constraints, derivatives, gradientInfo
+              System.arraycopy(betaCnd, 0, tempBeta, 0, betaCnd.length);
+              bc.applyAllBounds(betaCnd);
+              ArrayUtils.subtract(betaCnd, tempBeta, tempBeta);
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, 
+                      lessThanEqualToConstraints, ginfo, betaCnd);
+              gradientInfo = ls._ginfoOriginal;
+            }
+            
+            // check for stopping conditions which also updates the variables in state.
+            // stopping condition is to stop us getting stuck in improvements that are too insignificant.
+            // However, we will only exit the while loop when the gradMagSquare is still too high.  There is no hope
+            // for improvement here anymore since the beta values and gradient values are not changing much anymore.
+            done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
+            if (!progress(betaCnd, gradientInfo)) {
+              checkKKTConditions(betaCnd, gradientInfo, iterCnt);
+              return;
+            }
+            
+            Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + 
+                    ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } while (!gradSmallEnough);
+          // update constraint parameters, ck, lambdas and others
+           updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, 
+                  lessThanEqualToConstraints, _parms);
+          // update gradient calculation with new value (lambda and/or ck).
+          gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+                  equalityConstraints, lessThanEqualToConstraints);
+          _state.updateState(betaCnd, gradientInfo); // update computation state with new info
+        }
+      } catch (NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+      }
+    }
+
+    // original algo, set lambda = 0 for inactive constraints, no good effect.
+    private void fitIRLSMCS8() {
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
+      List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
+      LinearConstraints[] equalityConstraints;
+      LinearConstraints[] lessThanEqualToConstraints;
+      final BetaConstraint bc = _state.activeBC();
+      if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
+        equalityConstraints = _state._equalityConstraintsLinear;
+        lessThanEqualToConstraints = _state._lessThanEqualToConstraintsLinear;
+      } else {  // combine beta and linear constraints together
+        equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
+        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta,
+                _state._lessThanEqualToConstraintsLinear);
+      }
+      boolean hasEqualityConstraints = equalityConstraints != null;
+      boolean hasLessConstraints = lessThanEqualToConstraints != null;
+      double[] lambdaEqual = hasEqualityConstraints ? new double[equalityConstraints.length] : null;
+      double[] lambdaLessThan = hasLessConstraints ? new double[lessThanEqualToConstraints.length] : null;
+      Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
+      Random randObj = new Random(startSeed);
+      updateConstraintValues(betaCnd, coefNames, equalityConstraints, lessThanEqualToConstraints);
+      if (hasEqualityConstraints) // set lambda values for constraints
+        genInitialLambda(randObj, equalityConstraints, lambdaEqual);
+      if (hasLessConstraints) {
+        genInitialLambda(randObj, lessThanEqualToConstraints, lambdaLessThan);
+        adjustLambda(lessThanEqualToConstraints, lambdaLessThan);
+      }
+      
+      ExactLineSearch ls = null;
+      int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
+      // contribution to gradient and hessian from constraints
+      _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coefNames);
+
+      GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
+              _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+              _dinfo, 0, _state.activeBC(), _betaInfo);
+      GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+              equalityConstraints, lessThanEqualToConstraints); // add dpenalty/dx to gradient from penalty term
+      _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);  // update state ginfo with contributions from GLMGradientInfo
+      boolean predictorSizeChange;
+      boolean applyBetaConstraints = _parms._separate_linear_beta && _betaConstraintsOn;
+      // short circuit check here: if gradient magnitude is small and all constraints are satisfied, quit right away
+      if (constraintsStop(gradientInfo, _state)) {
+        Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
+        return;
+      }
+      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      boolean done;
+      boolean gradSmallEnough = (gradMagSquare <= _state._csGLMState._epsilonkCSSquare);
+      int origIter = iterCnt+1;
+      boolean lineSearchSuccess;
+      try {
+        while (true) {
+          do { // implement Algorithm 11.8 of the doc to find coefficients with epsilon k as the precision
+            iterCnt++;
+            long t1 = System.currentTimeMillis();
+            ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
+            if (iterCnt == origIter) {
+              Matrix gramMatrix = new Matrix(gram._gram);
+              if (gramMatrix.cond() >= BAD_CONDITION_NUMBER)
+                if (_parms._init_optimal_glm) {
+                  warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
+                          " singular.  Please re-run with init_optimal_glm set to false.");
+                }
+            }
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[coefNames.size()];
+            }
+            // solve for GLM coefficients
+            betaCnd = constraintGLM_solve(gram);  // beta_k+1 = beta_k+dk where dk = beta_k+1-beta_k   
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[betaCnd.length];
+            }
+            // add exact line search for GLM coefficients.  Refer to the doc, Algorithm 11.5
+            if (ls == null)
+              ls = new ExactLineSearch(betaCnd, _state, coefNames);
+            else
+              ls.reset(betaCnd, _state, coefNames);
+
+            // line search can fail when the gradient is close to zero.  In this case, we need to update the 
+            // constraint parameters.
+            lineSearchSuccess = ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints,
+                    lessThanEqualToConstraints, ginfo);
+            gradMagSquare = ArrayUtils.innerProduct(ls._ginfoOriginal._gradient, ls._ginfoOriginal._gradient);
+            gradSmallEnough = gradMagSquare <= _state._csGLMState._epsilonkCSSquare;
+            if (lineSearchSuccess) {
+              betaCnd = ls._newBeta;
+              gradientInfo = ls._ginfoOriginal;
+            } else {  // ls failed, reset to
               if (applyBetaConstraints) // separate beta and linear constraints
                 bc.applyAllBounds(_state.beta());
               ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
@@ -2457,19 +2610,329 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               System.arraycopy(betaCnd, 0, tempBeta, 0, betaCnd.length);
               bc.applyAllBounds(betaCnd);
               ArrayUtils.subtract(betaCnd, tempBeta, tempBeta);
-              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, 
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints,
                       lessThanEqualToConstraints, ginfo, betaCnd);
               gradientInfo = ls._ginfoOriginal;
             }
-            
-            // check for stopping conditions
-            if (checkIterationDone(betaCnd, gradientInfo, iterCnt)) // ratio of objective drops.
+
+            // check for stopping conditions which also updates the variables in state.
+            // stopping condition is to stop us getting stuck in improvements that are too insignificant.
+            // However, we will only exit the while loop when the gradMagSquare is still too high.  There is no hope
+            // for improvement here anymore since the beta values and gradient values are not changing much anymore.
+            done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
+            if (!progress(betaCnd, gradientInfo)) {
+              checkKKTConditions(betaCnd, gradientInfo, iterCnt);
               return;
-            Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt + 
+            }
+
+            Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt +
                     ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-          } while (gradMagSquare > _state._csGLMState._epsilonkCSSquare);
+          } while (!gradSmallEnough);
           // update constraint parameters, ck, lambdas and others
-          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints, lessThanEqualToConstraints, _parms);
+          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints,
+                  lessThanEqualToConstraints, _parms);
+          if (hasLessConstraints)
+            adjustLambda(lessThanEqualToConstraints, lambdaLessThan);
+          // update gradient calculation with new value (lambda and/or ck).
+          gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+                  equalityConstraints, lessThanEqualToConstraints);
+          _state.updateState(betaCnd, gradientInfo); // update computation state with new info
+        }
+      } catch (NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+      }
+    }
+
+    // original implementation but will not quit when magnitude of gradient is small.  If exit condition is triggered 
+    // (either ls failed or no progress is made, if the magnitude of gradient is small, we will exit thw while loop
+    // but will arrive at the part to change the constrained parameters.  This seems to help.
+    private void fitIRLSMCS() {
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
+      List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
+      LinearConstraints[] equalityConstraints;
+      LinearConstraints[] lessThanEqualToConstraints;
+      final BetaConstraint bc = _state.activeBC();
+      if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
+        equalityConstraints = _state._equalityConstraintsLinear;
+        lessThanEqualToConstraints = _state._lessThanEqualToConstraintsLinear;
+      } else {  // combine beta and linear constraints together
+        equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
+        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta,
+                _state._lessThanEqualToConstraintsLinear);
+      }
+      boolean hasEqualityConstraints = equalityConstraints != null;
+      boolean hasLessConstraints = lessThanEqualToConstraints != null;
+      double[] lambdaEqual = hasEqualityConstraints ? new double[equalityConstraints.length] : null;
+      double[] lambdaLessThan = hasLessConstraints ? new double[lessThanEqualToConstraints.length] : null;
+      Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
+      Random randObj = new Random(startSeed);
+      updateConstraintValues(betaCnd, coefNames, equalityConstraints, lessThanEqualToConstraints);
+      if (hasEqualityConstraints) // set lambda values for constraints
+        genInitialLambda(randObj, equalityConstraints, lambdaEqual);
+      if (hasLessConstraints)
+        genInitialLambda(randObj, lessThanEqualToConstraints, lambdaLessThan);
+      ExactLineSearch ls = null;
+      int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
+      // contribution to gradient and hessian from constraints
+      _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coefNames);
+
+      GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
+              _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+              _dinfo, 0, _state.activeBC(), _betaInfo);
+      GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+              equalityConstraints, lessThanEqualToConstraints); // add dpenalty/dx to gradient from penalty term
+      _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);  // update state ginfo with contributions from GLMGradientInfo
+      boolean predictorSizeChange;
+      boolean applyBetaConstraints = _parms._separate_linear_beta && _betaConstraintsOn;
+      // short circuit check here: if gradient magnitude is small and all constraints are satisfied, quit right away
+      if (constraintsStop(gradientInfo, _state)) {
+        Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
+        return;
+      }
+      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      boolean done;
+      boolean gradSmallEnough = (gradMagSquare <= _state._csGLMState._epsilonkCSSquare);
+      int origIter = iterCnt+1;
+      boolean lineSearchSuccess;
+      try {
+        while (true) {
+          do { // implement Algorithm 11.8 of the doc to find coefficients with epsilon k as the precision
+            iterCnt++;
+            long t1 = System.currentTimeMillis();
+            ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
+            if (iterCnt == origIter) {
+              Matrix gramMatrix = new Matrix(gram._gram);
+              if (gramMatrix.cond() >= BAD_CONDITION_NUMBER)
+                if (_parms._init_optimal_glm) {
+                  warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
+                          " singular.  Please re-run with init_optimal_glm set to false.");
+                }
+            }
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[coefNames.size()];
+            }
+            // solve for GLM coefficients
+            betaCnd = constraintGLM_solve(gram);  // beta_k+1 = beta_k+dk where dk = beta_k+1-beta_k   
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[betaCnd.length];
+            }
+            // add exact line search for GLM coefficients.  Refer to the doc, Algorithm 11.5
+            if (ls == null)
+              ls = new ExactLineSearch(betaCnd, _state, coefNames);
+            else
+              ls.reset(betaCnd, _state, coefNames);
+
+            // line search can fail when the gradient is close to zero.  In this case, we need to update the 
+            // constraint parameters.
+            lineSearchSuccess = ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints,
+                    lessThanEqualToConstraints, ginfo);
+            gradMagSquare = ArrayUtils.innerProduct(ls._ginfoOriginal._gradient, ls._ginfoOriginal._gradient);
+            gradSmallEnough = gradMagSquare <= _state._csGLMState._epsilonkCSSquare;
+            if (lineSearchSuccess ||gradSmallEnough) {
+              betaCnd = ls._newBeta;
+              gradientInfo = ls._ginfoOriginal;
+            } else {  // ls failed, reset to
+              if (_betaConstraintsOn) // separate beta and linear constraints
+                bc.applyAllBounds(_state.beta());
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
+                      ginfo, _state.beta());
+              Log.info(LogMsg("Line search failed " + ls));
+              return;
+            }
+
+            if (applyBetaConstraints) { // if beta constraints are applied separately, may need to update constraints, derivatives, gradientInfo
+              System.arraycopy(betaCnd, 0, tempBeta, 0, betaCnd.length);
+              bc.applyAllBounds(betaCnd);
+              ArrayUtils.subtract(betaCnd, tempBeta, tempBeta);
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints,
+                      lessThanEqualToConstraints, ginfo, betaCnd);
+              gradientInfo = ls._ginfoOriginal;
+            }
+
+            // check for stopping conditions which also updates the variables in state.
+            // stopping condition is to stop us getting stuck in improvements that are too insignificant.
+            // However, we will only exit the while loop when the gradMagSquare is still too high.  There is no hope
+            // for improvement here anymore since the beta values and gradient values are not changing much anymore.
+            done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
+            if ((!progress(betaCnd, gradientInfo) && !gradSmallEnough) || done) {
+              checkKKTConditions(betaCnd, gradientInfo, iterCnt);
+              if (_betaConstraintsOn)
+                bc.applyAllBounds(_state.beta());
+              return;
+            }
+
+            Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt +
+                    ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } while (!gradSmallEnough);
+          // update constraint parameters, ck, lambdas and others
+          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints,
+                  lessThanEqualToConstraints, _parms);
+          // update gradient calculation with new value (lambda and/or ck).
+          gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+                  equalityConstraints, lessThanEqualToConstraints);
+          _state.updateState(betaCnd, gradientInfo); // update computation state with new info
+        }
+      } catch (NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+      }
+    }
+
+    // only has penalty and no constrained multipliers, original algorithm
+    private void fitIRLSMCS2() {
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      double[] tempBeta = _parms._separate_linear_beta ? new double[betaCnd.length] : null;
+      List<String> coefNames = Arrays.stream(_state.activeData()._coefNames).collect(Collectors.toList());
+      LinearConstraints[] equalityConstraints;
+      LinearConstraints[] lessThanEqualToConstraints;
+      final BetaConstraint bc = _state.activeBC();
+      if (_parms._separate_linear_beta) { // keeping linear and beta constraints separate in this case
+        equalityConstraints = _state._equalityConstraintsLinear;
+        lessThanEqualToConstraints = _state._lessThanEqualToConstraintsLinear;
+      } else {  // combine beta and linear constraints together
+        equalityConstraints = combineConstraints(_state._equalityConstraintsBeta, _state._equalityConstraintsLinear);
+        lessThanEqualToConstraints = combineConstraints(_state._lessThanEqualToConstraintsBeta,
+                _state._lessThanEqualToConstraintsLinear);
+      }
+      boolean hasEqualityConstraints = equalityConstraints != null;
+      boolean hasLessConstraints = lessThanEqualToConstraints != null;
+      double[] lambdaEqual = hasEqualityConstraints ? new double[equalityConstraints.length] : null;
+      double[] lambdaLessThan = hasLessConstraints ? new double[lessThanEqualToConstraints.length] : null;
+      Long startSeed = _parms._seed == -1 ? new Random().nextLong() : _parms._seed;
+      Random randObj = new Random(startSeed);
+      updateConstraintValues(betaCnd, coefNames, equalityConstraints, lessThanEqualToConstraints);
+/*
+      if (hasEqualityConstraints) // set lambda values for constraints
+        genInitialLambda(randObj, equalityConstraints, lambdaEqual);
+      if (hasLessConstraints)
+        genInitialLambda(randObj, lessThanEqualToConstraints, lambdaLessThan);
+*/
+      ExactLineSearch ls = null;
+      int iterCnt = (_checkPointFirstIter ? _state._iter : 0)+_initIter;
+      // contribution to gradient and hessian from constraints
+      _state.initConstraintDerivatives(equalityConstraints, lessThanEqualToConstraints, coefNames);
+
+      GLMGradientSolver ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0,
+              _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+              _dinfo, 0, _state.activeBC(), _betaInfo);
+      GLMGradientInfo gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+              equalityConstraints, lessThanEqualToConstraints); // add dpenalty/dx to gradient from penalty term
+      _state.setConstraintInfo(gradientInfo, equalityConstraints, lessThanEqualToConstraints, lambdaEqual, lambdaLessThan);  // update state ginfo with contributions from GLMGradientInfo
+      boolean predictorSizeChange;
+      boolean applyBetaConstraints = _parms._separate_linear_beta && _betaConstraintsOn;
+      // short circuit check here: if gradient magnitude is small and all constraints are satisfied, quit right away
+      if (constraintsStop(gradientInfo, _state)) {
+        Log.info(LogMsg("GLM with constraints model building completed successfully!!"));
+        return;
+      }
+      double gradMagSquare = ArrayUtils.innerProduct(gradientInfo._gradient, gradientInfo._gradient);
+      boolean done;
+      boolean gradSmallEnough = (gradMagSquare <= _state._csGLMState._epsilonkCSSquare);
+      int origIter = iterCnt+1;
+      boolean lineSearchSuccess;
+      try {
+        while (true) {
+          do { // implement Algorithm 11.8 of the doc to find coefficients with epsilon k as the precision
+            iterCnt++;
+            long t1 = System.currentTimeMillis();
+            ComputationState.GramGrad gram = _state.computeGram(betaCnd, gradientInfo);  // calculate gram (hessian), xy, objective values
+            if (iterCnt == origIter) {
+              Matrix gramMatrix = new Matrix(gram._gram);
+              if (gramMatrix.cond() >= BAD_CONDITION_NUMBER)
+                if (_parms._init_optimal_glm) {
+                  warn("init_optimal_glm", " should be disabled.  This lead to gram matrix being close to" +
+                          " singular.  Please re-run with init_optimal_glm set to false.");
+                }
+            }
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[coefNames.size()];
+            }
+            // solve for GLM coefficients
+            betaCnd = constraintGLM_solve(gram);  // beta_k+1 = beta_k+dk where dk = beta_k+1-beta_k   
+            predictorSizeChange = !coefNames.equals(Arrays.asList(_state.activeData().coefNames()));
+            if (predictorSizeChange) {  // reset if predictors changed
+              coefNames = changeCoeffBetainfo(_state.activeData()._coefNames);
+              _state.resizeConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+              ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _state.activeData(), 0,
+                      _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) : new GLMGradientSolver(_job, _parms,
+                      _state.activeData(), 0, _state.activeBC(), _betaInfo);
+              tempBeta = new double[betaCnd.length];
+            }
+            // add exact line search for GLM coefficients.  Refer to the doc, Algorithm 11.5
+            if (ls == null)
+              ls = new ExactLineSearch(betaCnd, _state, coefNames);
+            else
+              ls.reset(betaCnd, _state, coefNames);
+
+            // line search can fail when the gradient is close to zero.  In this case, we need to update the 
+            // constraint parameters.
+            lineSearchSuccess = ls.findAlpha(lambdaEqual, lambdaLessThan, _state, equalityConstraints,
+                    lessThanEqualToConstraints, ginfo);
+            if (lineSearchSuccess) {
+              betaCnd = ls._newBeta;
+              gradientInfo = ls._ginfoOriginal;
+              gradMagSquare = ArrayUtils.innerProduct(ls._ginfoOriginal._gradient, ls._ginfoOriginal._gradient);
+              gradSmallEnough = gradMagSquare <= _state._csGLMState._epsilonkCSSquare;
+            } else {  // ls failed, reset to
+              if (applyBetaConstraints) // separate beta and linear constraints
+                bc.applyAllBounds(_state.beta());
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints, lessThanEqualToConstraints,
+                      ginfo, _state.beta());
+              Log.info(LogMsg("Line search failed " + ls));
+              return;
+            }
+
+            if (applyBetaConstraints) { // if beta constraints are applied, may need to update constraints, derivatives, gradientInfo
+              System.arraycopy(betaCnd, 0, tempBeta, 0, betaCnd.length);
+              bc.applyAllBounds(betaCnd);
+              ArrayUtils.subtract(betaCnd, tempBeta, tempBeta);
+              ls.setBetaConstraintsDeriv(lambdaEqual, lambdaLessThan, _state, equalityConstraints,
+                      lessThanEqualToConstraints, ginfo, betaCnd);
+              gradientInfo = ls._ginfoOriginal;
+            }
+
+            // check for stopping conditions which also updates the variables in state.
+            // stopping condition is to stop us getting stuck in improvements that are too insignificant.
+            // However, we will only exit the while loop when the gradMagSquare is still too high.  There is no hope
+            // for improvement here anymore since the beta values and gradient values are not changing much anymore.
+            done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
+            if (!progress(betaCnd, gradientInfo)) {
+              checkKKTConditions(betaCnd, gradientInfo, iterCnt);
+              return;
+            }
+
+            Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt +
+                    ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } while (!gradSmallEnough);
+          // update constraint parameters, ck, lambdas and others
+          updateConstraintParameters(_state, lambdaEqual, lambdaLessThan, equalityConstraints,
+                  lessThanEqualToConstraints, _parms);
+          // update gradient calculation with new value (lambda and/or ck).
+          // set lambda to all zeros
+          lambdaEqual = hasEqualityConstraints ? new double[lambdaEqual.length] : null;
+          lambdaLessThan = hasLessConstraints ? new double[lambdaLessThan.length] : null;
+          
+          gradientInfo = calGradient(betaCnd, _state, ginfo, lambdaEqual, lambdaLessThan,
+                  equalityConstraints, lessThanEqualToConstraints);
+          _state.updateState(betaCnd, gradientInfo); // update computation state with new info
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
@@ -2477,25 +2940,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     /***
-     * This method will first check if enough progress has been made with progress method.
-     * If no more progress is made, we will check it the constraint stopping conditions are met. 
-     * The model building process will stop if no more progress is made regardless of whether the constraint stopping
-     * conditions are met or not.
+     * We will check it the constraint stopping conditions are met.
      */
-    public boolean checkIterationDone(double[] betaCnd, GLMGradientInfo gradientInfo, int iterCnt) {
+    public void checkKKTConditions(double[] betaCnd, GLMGradientInfo gradientInfo, int iterCnt) {
       // check for stopping conditions
-      boolean done = !progress(betaCnd, gradientInfo); // no good change in coeff, time-out or max_iteration reached
-      if (done) {
-        _model._betaCndCheckpoint = betaCnd;
-        boolean kktAchieved = constraintsStop(gradientInfo, _state);
-        if (kktAchieved)
-          Log.info("KKT Conditions achieved after " + iterCnt + " iterations ");
-        else
-          Log.warn("KKT Conditions not achieved but no further progress made due to time out or no changes" +
-                  " to coefficients after " + iterCnt + " iterations");
-        return true;
-      }
-      return false;
+      _model._betaCndCheckpoint = betaCnd;
+      boolean kktAchieved = constraintsStop(gradientInfo, _state);
+      if (kktAchieved)
+        Log.info("KKT Conditions achieved after " + iterCnt + " iterations ");
+      else
+        Log.warn("KKT Conditions not achieved but no further progress made due to time out or no changes" +
+                " to coefficients after " + iterCnt + " iterations");
     }
     
     public List<String> changeCoeffBetainfo(String[] coefNames) {
@@ -4151,14 +4606,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get())
               : new BetaConstraint(); // bounds for columns _dinfo.fullN()+1 only
       double[] coeffs = _parms._standardize ? _model._output.getNormBeta() :_model._output.beta();
-      if (bc._betaLB == null || bc._betaUB == null || coeffs == null)
+      if (coeffs == null)
         return;
-      int coeffsLen = bc._betaLB.length;
+      if (bc._betaLB == null && bc._betaUB == null)
+        return;
+      int coeffsLen = bc._betaLB != null ? bc._betaLB.length : bc._betaUB.length;
       StringBuffer errorMessage = new StringBuffer();
+      boolean lowerBoundNull = bc._betaLB == null;
+      boolean upperBoundNull = bc._betaUB == null;
       for (int index=0; index < coeffsLen; index++) {
-        if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
-          errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
-                  +bc._betaLB[index]+", upper: "+bc._betaUB[index]+"\n");
+        if (coeffs[index] != 0) {
+          if (lowerBoundNull && !Double.isInfinite(bc._betaUB[index]) && (coeffs[index] > bc._betaUB[index])) {
+            errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint upper bounds: " +
+                    "upper: "+bc._betaUB[index]+"\n");
+          } else if (upperBoundNull && !Double.isInfinite(bc._betaLB[index]) &&  (coeffs[index] < bc._betaLB[index])) {
+            errorMessage.append("GLM model coefficient " + coeffs[index]+" falls below beta constraint lower bounds: " +
+                    "upper: "+bc._betaLB[index]+"\n");
+          } else if (!lowerBoundNull && !upperBoundNull && (coeffs[index] < bc._betaLB[index] && coeffs[index] > bc._betaUB[index])) {
+            errorMessage.append("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
+                    +bc._betaLB[index]+", upper: "+bc._betaUB[index]+"\n");
+          }
+        }
       }
       if (errorMessage.length() > 0)
         throw new H2OFailException("\n"+errorMessage.toString());
