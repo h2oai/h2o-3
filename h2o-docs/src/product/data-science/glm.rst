@@ -1623,6 +1623,137 @@ Variable Inflation Factor Example
       vif_glm.get_variable_inflation_factors()
       {'Intercept': nan, 'abs.C1.': 1.0003341467438167, 'abs.C2.': 1.0001734204183244, 'abs.C3.': 1.0007846189027745, 'abs.C4.': 1.0005388379729434, 'abs.C5.': 1.0005349427184604}
 
+Constrained GLM
+---------------
+
+We've implemented the algorithm from Bierlaire's *Optimization: Priciples and Algorithms, Chapter 19* [ref: whatever] where we are basically trying to solve the following optimization problem:
+
+.. math::
+   
+   \min{X\in R^n} f(x), \text{subject to } h(x) = 0, g(x) \leq 0 \quad \text{ equation 1}
+
+where:
+   - :math:`f: R^n \to R,h: R^n \to R^m,g: R^n \to R^p` 
+   - the constraints :math:`h,g` are linear.
+
+However, the actual problem we are solving is:
+
+.. math::
+   
+   \min{X\in R^n} f(x) \text{ subject to } h(x)=0 \quad \text{ equation 2}
+
+The inequalities constraints can be easily converted to equalities constraints through simple reasoning and using active constraints. We solve the constrained optimization problem by solving the augmented Lagrangian function using the quadratic penalty:
+
+.. math::
+   
+   L_c(x,\lambda) = f(x) + \lambda^T h(x) + \frac{c}{2} \| h(x) \|^2 \quad \text{ equation 3}
+
+The basic ideas used to solve the constrained GLM consist of:
+
+a. transforming a constrained problem into a sequence of unconstrained problems;
+b. penalizing more and more the possible violation of the constraints during the sequence by continuously increasing the value of :math:`c` at each iteration.
+
+Converting to standard form
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A standard form of :math:`g(x) \leq 0` are the only acceptable form of inequality constraints. For example, if you have a constraint of :math:`2x_1 - 4x_2 \geq 10` where :math:`x_1 \text{ and } x_4` are coefficient names, then you must convert it to :math:`10-2x_1 + 4x_2 \leq 0`. 
+
+Treatment of strict inequalities
+''''''''''''''''''''''''''''''''
+
+To convert a strict inequality, just add a small number to it. For example, :math:`2x_1 - 4x_2 < 0` can be converted to :math:`2x_1 - 4x_2 - 10^{-12} \leq 0`.
+
+Transforming inequality constraints to equality constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This transformation is going to use slack variables which is introduced to replace an inequality constraint by an equality constraint. The slack variable should be non-negative. To transform inequality constraints to equality constraints, we proceed as follows:
+
+a. For each inequality constraint of :math:`g(x)`, a slack variable is added to it such that you will have: :math:`g_i(x) - s_i^2 = 0`;
+b. Let :math:`s = \begin{bmatrix} s_1^2 \\ \vdots \\ s_p^2 \\\end{bmatrix}` and :math:`g_{aug}(x) = g(x) - s`;
+c. When :math:`g_i(x) \leq 0`, the constraint is satisfied and can therefore be ignored and declared inactive;
+d. The inequality constraints are violated only when :math:`g_i(x) - s_i^2 \geq 0`. This is because it implies that :math:`g_i(x) \geq s_i^2 \geq 0` and this isn't allowed. Therefore, :math:`geq(x)` only includes the :math:`g_i(x)` when you have :math:`g_i(x) \geq 0`;
+e. Therefore, you have :math:`h_a(x) = \begin{bmatrix} h(x) \\ geq(x) \\\end{bmatrix}`, where :math:`h(x)` is the original equality constraint and :math:`geq(x)` contains the inequality constraints that satisfied the condition :math:`g_i(x) \geq 0`;
+f. The optimization problem in *equation 1* can now be rewritten as:
+
+.. math::
+   
+   \min{X\in R^n} f(x), \text{ subject to } h_a(x) = 0 \quad \text{ equation 4}
+
+g. The augmented Lagrangian function you will solve from *equation 4* becomes:
+
+.. math::
+   
+   L_c(x, \lambda) = f(x) + \lambda^T h_a(x) + \frac{c}{2} \|h_a(x)\|^2 \quad \text{ equation 5}
+
+In the following discussion, we will replace the notation :math:`h_a(x) \text{ with } h(x)`.
+
+Augmented Langrangian algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following theories guarantee that the solution the the augmented Lagrangian function (*equation 5*) are the solution to the optimization in *equation 1*.
+
+Theorem 1: Let :math:`f:R^n \to R \text{ and } h:R^n \to R^m` be two continuous functions. Let :math:`X \subset R^n` be a closet subset of :math:`R^n` such that the set :math:`\{ x \in R^n | h(x) =0 \}` is nonempty. Consider a sequence :math:`(c_k)_k` such that for all :math:`k, c_k \in R < c_k < c_{k+1} \text{ and } \lim{k\to \infty} c_k = +\infty`. Consider a bounded sequence :math:`(\lambda_k)_k` such that :math:`\lambda_k \in R^m` for all :math:`k`. Let :math:`x_k` be the global minimum of the augmented Lagrangian, that is
+
+.. math::
+   
+   x_k \in \argmin{x \in X} L_{ck} (x, \lambda{k}) = f(x) + \lambda^T_k H(x) + \frac{c_k}{2} \|h(x)\|^2 \quad \text{ equation 6}
+
+Here, given :math:`\lambda_k, c_k,` each limit point of the sequence :math:`(x_k)_k` is a global minimum of the problem in *equation 1* for those particular :math:`\lambda_k, c_k`.
+
+Theroem 2 (Approximation of Lagrange multipliers): Let :math:`f,g` be continuously differentiable. Consider a sequence :math:`(c_k)_k` such that for all :math:`k, c_k \in R, 0 < c_k < c_{k+1} \text{ and } \lim{k \to \infty} c_k = +\infty`. Let :math:`(\lambda_k)_k` be a bounded sequence such that :math:`\lambda_k \in R^m` for all :math:`k`. Let :math:`(\varepsilon_k)_k` be a sequence such that :math:`\varepsilon_K > 0` for all :math:`k \text{ and } \lim{k \to \infty} \varepsilon_k = 0`. Let :math:`(x_k)_k` be a sequence such that 
+
+.. math::
+   
+   \| \nabla_x L_{ck} (x_k, \lambda_k) \| \leq \varepsilon_k \quad \text{ equation 7}
+
+Let :math:`(x_k)_{k \in K}` be a subsequence of the sequence :math:`(x_k)_k` convergin toward :math:`x^*`. If :math:`\nabla h(x^*)` is of full rank, then
+
+.. math::
+
+   \lim{k \in K, k \to \infty} \lambda_k + c_k h(x_k) = \lambda^* \quad \text{ equation 8}
+
+where :math:`x^*, \lambda^*` satisfy the necessary first-order optimality conditions, i.e.,
+
+.. math::
+   
+   \nabla f(x^*) + \nabla h(x^*)lambda^* = 0, h(x^*) = 0 \quad \text{ equation 9}
+
+The above result lets us define the sequence :math:`(\lambda_k)_k` as follows:
+
+.. math::
+   
+   \lambda_k+1 = \lambda_k + c_k h(x_k) \quad \text{ equation 10}
+
+Derivatives and 2nd derivatives of linear constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Contribution from :math:`\lambda^T_k h(x)`
+''''''''''''''''''''''''''''''''''''''''''
+
+For :math:`\lambda^T_k h(x)`, the first-order derivative is :math:`\frac{d\lambda^T_kh(x)}{dx_j} = \sum^p_{l=0}\lambda^l_k \frac{dh_l(x)}{dx_j} where :math:h_l(x) = \sum^m_{i=0}a_ix_i \text{ and } a_i` is a constant. Therefore, :math:`\frac{dh_l(x)}{dx_j}` is a constant value and we can calculate ahead of time the first order derivatives of all the constraints and the coefficients. In addition, :math:`\lambda_k^Th(x)` doesn't contribute to the 2nd derivatives off linear constraints.
+
+
+Contribution from :math:`\|h(x)\|^2`
+''''''''''''''''''''''''''''''''''''
+
+Rewrite :math:`\|h(x)\|^2 \text{ as } \sum_{l=0}^p (h_l(x))^2 = \sum^p_{l=0}(\sum^m_{i,k=0}a_i^l a_k^l x_j x_k)`. The first-order derivative can be calculated as: :math:`frac{d\|h(x)\|^2}{dx_j} = \sum^p_l=0 2h_l(x) \frac{dh_l(x)}{dx_j} \text{ where } \frac{dh_l(x)}{dx_j}` is calculated earlier in the previous section. However, :math:`h_l(x)` changes with the GLM coefficient values denoted by :math:`x` and cannot be calculated ahead of time.
+
+The second-order derivative of :math:`\|h(x)\|^2` can be calculated as:
+
+.. math::
+   
+   \frac{d^2\|h(x)\|^2}{dx_jdx_n} = \sum^p_{l=0} \Big( 2h_l(x) \frac{d^2h_l(x)}{dx_jdx_n} + 2 \frac{dh_l(x)}{dx_j} \frac{dh_l(x)}{dx_n} \Big) = \sum^p_{l=0} \Big( 2 \frac{dh_l(x)}{dx_j}\frac{dh_l(x)}{dx_n} \Big) \quad \text{ equation 11}
+
+Since :math:`\frac{dh_l(x)}{dx_j}\frac{dh_l(x)}{dx_n}` are the product of two constant values, the can be calculated just once at the beginning and reused in later calculations. We are ignoring the constant :math:`2`. However, in the end, the final contribution added to the gradient is: :math:`c_k \Big( \sum^p_{l=0}h_l(x) \frac{dh_l(x)}{dx_j} \Big)`, and the final contribution added to the hessian is: :math:`c_k \Big( \sum^p_{l=0} \Big( \frac{dh_l(x)}{dx_j} \frac{dh_l(x)}{dx_n} \Big) \Big).
+
+Solving the augmented Lagrangian algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The objective here is to find and approximation of the optimal solution :math:`(x^*,\lambda^*)` for the optimization problem in *equation 5*.
+
+
+
+
 Modifying or Creating a Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
