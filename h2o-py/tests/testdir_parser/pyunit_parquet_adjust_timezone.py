@@ -3,6 +3,7 @@ import sys
 sys.path.insert(1, "../../../")
 from tests import pyunit_utils
 from h2o.frame import H2OFrame
+from datetime import datetime, timezone, timedelta
 import tempfile
 import h2o
 
@@ -11,6 +12,7 @@ Adjust timestamp parquet
 '''
 
 test_local_user_timezone = "America/Chicago"
+time_format = '%Y-%m-%d %H:%M:%S'
 
 
 def adjust_timestamp_parquet():
@@ -22,7 +24,8 @@ def adjust_timestamp_parquet():
 
         # import the file and see tz_adjust_to_local works
         imported_df = h2o.import_file(dir + "/import", tz_adjust_to_local=True)
-        expected_df = H2OFrame({"timestamp": '2024-08-02 07:00:00'})
+        expected_timestamp = datetime.strptime(input_timestamp, time_format).replace(tzinfo=timezone.utc)
+        expected_df = H2OFrame({"timestamp": expected_timestamp.astimezone().strftime(time_format)})
         assert imported_df[0, 0] == expected_df[0, 0]
 
         # export the file and see tz_adjust_from_local works
@@ -32,8 +35,6 @@ def adjust_timestamp_parquet():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(adjust_timestamp_parquet, init_options={"jvm_custom_args": [
-        ("-Duser.timezone=%s" % test_local_user_timezone)]})
-
+    pyunit_utils.standalone_test(adjust_timestamp_parquet)
 else:
     adjust_timestamp_parquet()
