@@ -239,7 +239,7 @@ Common parameters
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This options defaults to ``-1``.
 
-- `max_runtime_secs <algo-params/max-runtime-secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable. 
+- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable. 
 
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values. One of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``.
 
