@@ -124,8 +124,9 @@ def test_equality_constraints_only_binomial():
           "".format(default_init_logloss, h2o_glm_default_init._model_json["output"]["model_summary"].cell_values[0][6]))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
     
-    assert init_random_logloss >= logloss, "Random initialization logloss with constraints should be worst than GLM " \
-                                           "without constraints but is not."
+    assert abs(init_random_logloss - logloss) < 1e-6, \
+        "Random initialization logloss {0} with constraints should be similary to than GLM without constraints {1} but" \
+        " is not.".format(init_random_logloss, logloss)
  
 
 if __name__ == "__main__":

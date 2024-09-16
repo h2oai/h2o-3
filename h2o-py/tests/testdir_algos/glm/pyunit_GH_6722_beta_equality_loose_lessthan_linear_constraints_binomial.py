@@ -195,13 +195,13 @@ def test_constraints_binomial():
     print(glm.getConstraintsInfo(h2o_glm_default_init))
 
 
-    assert abs(logloss-init_logloss)<2e-6, "logloss from optimal GLM {0} and logloss from GLM with loose constraints " \
+    assert abs(logloss-init_logloss)<1e-6, "logloss from optimal GLM {0} and logloss from GLM with loose constraints " \
                                            "and initialized with optimal GLM {1} should equal but is not." \
                                            "".format(logloss, init_logloss)
-    assert logloss <= init_random_logloss, "logloss from optimal GLM {0} should be less than GLM with constraints " \
+    assert abs(logloss-init_random_logloss)<1e-6, "logloss from optimal GLM {0} should be close to GLM with constraints " \
                                                    "and with random initial coefficients {1} but is" \
                                                    " not.".format(logloss, init_random_logloss)
-    assert logloss <= default_init_logloss, "logloss from optimal GLM {0} should be less than GLM with constraints " \
+    assert abs(logloss-default_init_logloss)<1e-6, "logloss from optimal GLM {0} should be close to GLM with constraints " \
                                             "and with default initial coefficients {1} but is" \
                                             " not.".format(logloss, default_init_logloss)
 
