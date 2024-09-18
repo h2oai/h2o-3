@@ -69,6 +69,8 @@ Once the aggregation operations are complete, calling the GroupBy object with a 
 Examples
 --------
 
+The following examples in Python and R show how to find the months with the highest cancellation using ``group_by``.
+
 .. tabs::
    .. code-tab:: python
 
@@ -213,9 +215,12 @@ Examples
         5    AMA      317                4                6
         6    ANC      100                0                1
 
+The following R code shows the options by-variable with ``gb.control``.
 
 .. tabs::
   .. code-tab:: python
+
+    blah
 
   .. code-tab:: r R
 
@@ -224,23 +229,23 @@ Examples
     h2o.init()
 
     # Import the airlines dataset:
-    airlines.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.csv")
+    airlines.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"")
 
     # View quantiles and histograms:
     quantile(x = airlines.hex$ArrDelay, na.rm = TRUE)
     h2o.hist(airlines.hex$ArrDelay)
 
     # Find the number of flights by airport:
-    originFlights = h3o.group_by(data = airlines.hex, by = "Origin", nrow("Origin"), gb.control = list(na.methods = "rm"))
+    originFlights = h2o.group_by(data = airlines.hex, by = "Origin", nrow("Origin"), gb.control = list(na.methods = "rm"))
     originFlights.R = as.data.frame(originFlights)
 
     # Find the number of flights per month:
-    flightsByMonth = h3o.group_by(data = airlines.hex, by = "Month", nrow("Month"), gb.control = list(na.methods = "rm"))
+    flightsByMonth = h2o.group_by(data = airlines.hex, by = "Month", nrow("Month"), gb.control = list(na.methods = "rm"))
     flightsByMonth.R = as.data.frame(flightsByMonth)
 
     # Find months with the highest cancellation ratio:
     which(colnames(airlines.hex)=="Cancelled")
-    cancellationsByMonth = h2o.group_by(data = airlines, by = "Month", sum("Cancelled"), gb.control = list(na.methods = "rm"))
+    cancellationsByMonth = h2o.group_by(data = airlines.hex, by = "Month", sum("Cancelled"), gb.control = list(na.methods = "rm"))
     cancellation_rate = cancellationsByMonth$sum_Cancelled/flightsByMonth$nrow
     rates_table = h2o.cbind(flightsByMonth$Month, cancellation_rate)
     rates_table.R = as.data.frame(rates_table)
@@ -269,11 +274,3 @@ Examples
 
     # Look at the summary of predictions (probability of TRUE class p1):
     summary(pred$p1)
-
-
-
-
-
-
-
-
