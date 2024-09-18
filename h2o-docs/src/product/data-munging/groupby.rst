@@ -66,8 +66,8 @@ In addition to the above parameters, any number of the following aggregations ca
 
 Once the aggregation operations are complete, calling the GroupBy object with a new set of aggregations will yield no effect. You must generate a new GroupBy object in order to apply a new aggregation on it. In addition, certain aggregations are only defined for numerical or categorical columns. An error will be thrown for calling aggregation on the wrong data types.
 
-Example
--------
+Examples
+--------
 
 .. tabs::
    .. code-tab:: python
@@ -212,3 +212,63 @@ Example
         4    ALB     3646               49               50
         5    AMA      317                4                6
         6    ANC      100                0                1
+
+
+.. tabs::
+  .. code-tab:: python
+
+  .. code-tab:: r R
+
+    # Import H2O-3:
+    library(h2o)
+    h2o.init()
+
+    # Import the airlines dataset:
+    airlines.hex -> h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.csv")
+
+    # View quantiles and histograms:
+    quantile(x = airlines.hex$ArrDelay, na.rm = TRUE)
+    h2o.hist(airlines.hex$ArrDelay)
+
+    # Find the number of flights by airport:
+    originFlights = h3o.group_by(data = airlines.hex, by = "Origin", nrow("Origin"), gb.control = list(na.methods = "rm"))
+    originFlights.R = as.data.frame(originFlights)
+
+    # Find the number of flights per month:
+    flightsByMonth = h3o.group_by(data = airlines.hex, by = "Month", nrow("Month"), gb.control = list(na.methods = "rm"))
+    flightsByMonth.R = as.data.frame(flightsByMonth)
+
+    # Find months with the highest cancellation ratio:
+    which(colnames(airlines.hex)=="Cancelled")
+    cancellationsByMonth = h2o.group_by(data = airlines, by = "Month", sum("Cancelled"), gb.control = list(na.methods = "rm"))
+    cancellation_rate = cancellationsByMonth$sum_Cancelled/flightsByMonth$nrow
+    rates_table = h2o.cbind(flightsByMonth$Month, cancellation_rate)
+    rates_table.R = as.data.frame(rates_table)
+
+    # Construct test and train sets using sampling:
+    airlines.split = h2o.splitFrame(data = airlines.hex, ratio = 0.85)
+    airlines.train = airlines.split[[1]]
+    airlines.test = airlines.split[[2]]
+
+    # Display a summary using table-like functions: 
+    h2o.table(airlines.train$Cancelled)
+    h2o.table(airlines.test$Cancelled)
+
+    # Set the predictor and response variables:
+    Y = "IsDepDelayed"
+    X = c("Origin", "Dest", "DayofMonth", "Year", "UniqueCarrier", "DayOfWeek", "Month", "DepTime", "ArrTime", "Distance")
+
+    # Define the data for the model and display the results:
+    airlines.glm <- h2o.glm(training_frame = airlines.train, x = X, y = Y, family = "binomial", alpha = 0.5)
+
+    # View the model information (training statistics, performance, important variables):
+    summary(airlines.glm)
+    
+
+
+
+
+
+
+
+
