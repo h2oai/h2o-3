@@ -224,7 +224,7 @@ Examples
     h2o.init()
 
     # Import the airlines dataset:
-    airlines.hex -> h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.csv")
+    airlines.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.csv")
 
     # View quantiles and histograms:
     quantile(x = airlines.hex$ArrDelay, na.rm = TRUE)
@@ -263,7 +263,12 @@ Examples
 
     # View the model information (training statistics, performance, important variables):
     summary(airlines.glm)
-    
+
+    # Predict using the GLM model:
+    pred = h2o.predict(object = airlines.glm, newdata = airlines.test)
+
+    # Look at the summary of predictions (probability of TRUE class p1):
+    summary(pred$p1)
 
 
 
