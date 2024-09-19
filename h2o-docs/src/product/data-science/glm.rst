@@ -1688,68 +1688,6 @@ g. The augmented Lagrangian function you will solve from *equation 4* becomes:
    
    L_c(x, \lambda) = f(x) + \lambda^T h_a(x) + \frac{c}{2} \|h_a(x)\|^2 \quad \text{ equation 5}
 
-In the following discussion, we will replace the notation :math:`h_a(x) \text{ with } h(x)`.
-
-Augmented Langrangian algorithm
-'''''''''''''''''''''''''''''''
-
-The following theories guarantee that the solution the the augmented Lagrangian function (*equation 5*) are the solution to the optimization in *equation 1*.
-
-**Theorem 1**: Let :math:`f:R^n \to R \text{ and } h:R^n \to R^m` be two continuous functions. Let :math:`X \subset R^n` be a closet subset of :math:`R^n` such that the set :math:`\{ x \in R^n | h(x) =0 \}` is nonempty. Consider a sequence :math:`(c_k)_k` such that for all :math:`k, c_k \in R,0 < c_k < c_{k+1} \text{ and } \lim\limits_{k\to \infty} c_k = +\infty`. Consider a bounded sequence :math:`(\lambda_k)_k` such that :math:`\lambda_k \in R^m` for all :math:`k`. Let :math:`x_k` be the global minimum of the augmented Lagrangian, that is
-
-.. math::
-   
-   x_k \in \arg \min_{x \in X} L_{c_{k}} (x, \lambda_{k}) = f(x) + \lambda^T_k h(x) + \frac{c_k}{2} \|h(x)\|^2 \quad \text{ equation 6}
-
-Here, given :math:`\lambda_k, c_k,` each limit point of the sequence :math:`(x_k)_k` is a global minimum of the problem in *equation 1* for those particular :math:`\lambda_k, c_k`.
-
-**Theroem 2** (Approximation of Lagrange multipliers): Let :math:`f,g` be continuously differentiable. Consider a sequence :math:`(c_k)_k` such that for all :math:`k, c_k \in R, 0 < c_k < c_{k+1} \text{ and } \lim\limits_{k \to \infty} c_k = +\infty`. Let :math:`(\lambda_k)_k` be a bounded sequence such that :math:`\lambda_k \in R^m` for all :math:`k`. Let :math:`(\varepsilon_k)_k` be a sequence such that :math:`\varepsilon_K > 0` for all :math:`k \text{ and } \lim\limits_{k \to \infty} \varepsilon_k = 0`. Let :math:`(x_k)_k` be a sequence such that 
-
-.. math::
-   
-   \| \nabla_x L_{c_{k}} (x_k, \lambda_k) \| \leq \varepsilon_k \quad \text{ equation 7}
-
-Let :math:`(x_k)_{k \in K}` be a subsequence of the sequence :math:`(x_k)_k` converging toward :math:`x^*`. If :math:`\nabla h(x^*)` is of full rank, then
-
-.. math::
-
-   \lim\limits_{k \in K, k \to \infty} \lambda_k + c_k h(x_k) = \lambda^* \quad \text{ equation 8}
-
-where :math:`x^*, \lambda^*` satisfy the necessary first-order optimality conditions, i.e.,
-
-.. math::
-   
-   \nabla f(x^*) + \nabla h(x^*)\lambda^* = 0, h(x^*) = 0 \quad \text{ equation 9}
-
-The above result lets us define the sequence :math:`(\lambda_k)_k` as follows:
-
-.. math::
-   
-   \lambda_{k+1} = \lambda_k + c_k h(x_k) \quad \text{ equation 10}
-
-Derivatives and 2nd derivatives of linear constraints
-'''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Contribution from :math:`\lambda^T_k h(x)`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For :math:`\lambda^T_k h(x)`, the first-order derivative is :math:`\frac{d\lambda^T_kh(x)}{dx_j} = \sum^p_{l=0}\lambda^l_k \frac{dh_l(x)}{dx_j}` where :math:`h_l(x) = \sum^m_{i=0}a_ix_i \text{ and } a_i` is a constant. Therefore, :math:`\frac{dh_l(x)}{dx_j}` is a constant value and we can calculate ahead of time the first order derivatives of all the constraints and the coefficients. In addition, :math:`\lambda_k^Th(x)` doesn't contribute to the 2nd derivatives off linear constraints.
-
-
-Contribution from :math:`\|h(x)\|^2`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Rewrite :math:`\|h(x)\|^2 \text{ as } \sum_{l=0}^p (h_l(x))^2 = \sum^p_{l=0}(\sum^m_{i,k=0}a_i^l a_k^l x_i x_k)`. The first-order derivative can be calculated as: :math:`\frac{d\|h(x)\|^2}{dx_j} = \sum^p_{l=0} 2h_l(x) \frac{dh_l(x)}{dx_j} \text{ where } \frac{dh_l(x)}{dx_j}` is calculated earlier in the previous section. However, :math:`h_l(x)` changes with the GLM coefficient values denoted by :math:`x` and cannot be calculated ahead of time.
-
-The second-order derivative of :math:`\|h(x)\|^2` can be calculated as:
-
-.. math::
-   
-   \frac{d^2\|h(x)\|^2}{dx_jdx_n} = \sum^p_{l=0} \Big( 2h_l(x) \frac{d^2h_l(x)}{dx_jdx_n} + 2 \frac{dh_l(x)}{dx_j} \frac{dh_l(x)}{dx_n} \Big) = \sum^p_{l=0} \Big( 2 \frac{dh_l(x)}{dx_j}\frac{dh_l(x)}{dx_n} \Big) \quad \text{ equation 11}
-
-Since :math:`\frac{dh_l(x)}{dx_j}\frac{dh_l(x)}{dx_n}` are the product of two constant values, the can be calculated just once at the beginning and reused in later calculations. We are ignoring the constant :math:`2`. However, in the end, the final contribution added to the gradient is: :math:`c_k \Big( \sum^p_{l=0}h_l(x) \frac{dh_l(x)}{dx_j} \Big)`, and the final contribution added to the hessian is: :math:`c_k \Big( \sum^p_{l=0} \Big( \frac{dh_l(x)}{dx_j} \frac{dh_l(x)}{dx_n} \Big) \Big)`.
-
-
 Modifying or Creating a Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
