@@ -104,6 +104,7 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
+  exclude 'javax/servlet/jsp/resources/*.*'
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
     attributes 'Add-Opens': 'java.base/java.lang java.base/java.util java.base/java.lang.reflect'
