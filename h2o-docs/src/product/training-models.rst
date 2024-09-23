@@ -428,7 +428,7 @@ This example uses the :ref:`isoforest` algorithm to detect anomalies in the Elec
 Dimensionality Reduction Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This code demonstrates how to apply the :ref:`GLRM <glrm>` algorithm for dimensionality reduction on the USArrests dataset using H2O-3. It includes examples in both R and Python for importing data, splitting it into training and validation sets, training the GLRM model, evaluating its performance, and generating predictions. The purpose of this example is to show how GLRM can reduce data dimensionality while preserving essential information, making it useful for feature extraction and data preprocessing.
+This code demonstrates how to apply the :ref:`GLRM <glrm>` algorithm for dimensionality reduction on the USArrests dataset using H2O-3. It includes examples in both R and Python for importing data, splitting it into training and validation sets, training the GLRM model, evaluating its performance, and reconstructing the dataset when predict is called. The purpose of this example is to show how GLRM can reduce data dimensionality while preserving essential information, making it useful for feature extraction and data preprocessing.
 
 .. tabs::
    .. code-tab:: r R

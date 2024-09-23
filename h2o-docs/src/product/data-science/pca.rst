@@ -246,7 +246,7 @@ Left singular vectors: :math:`QU \in \rm \Bbb I \!\Bbb R^{n \times k}`
 Examples
 ~~~~~~~~
 
-This example demonstrates how to build a Principal Component Analysis (PCA) model using H2O-3 for dimensionality reduction. The model is trained on the birds dataset, with the dataset split into training and validation sets. The PCA is configured to retain five principal components, standardize the data, and handle missing values. After training, predictions can be generated on the validation set.
+This example demonstrates how to build a Principal Component Analysis (PCA) model using H2O-3 for dimensionality reduction. The model is trained on the birds dataset, which is split into training and validation sets. The PCA is configured to retain five principal components, standardize the data, and handle missing values. After training, coefficients are expanded to each row of the dataset using the principal components that are generated when the predict function is called.
 
 .. tabs::
    .. code-tab:: r R

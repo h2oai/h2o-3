@@ -374,7 +374,7 @@ You can see how it used in the `Examples section <#examples>`__.
 Examples
 ~~~~~~~~
 
-This code demonstrates how to build a Gradient Boosting Machine (GBM) model using H2O-3. The model is trained on the prostate dataset to predict the likelihood of prostate cancer. It performs cross-validation, extracts feature interactions, and calculates Friedman and Popescu's H statistics for feature analysis.
+This code demonstrates how to build a Gradient Boosting Machine (GBM) model using H2O-3. The model is trained on the prostate dataset to predict the likelihood of prostate cancer. It uses cross-validation, extracts feature interactions, and calculates Friedman and Popescu's H statistics for feature analysis.
 
 .. tabs::
    .. code-tab:: r R
