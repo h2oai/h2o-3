@@ -1634,7 +1634,7 @@ In R and Python, the ``makeGLMModel`` call can be used to create an H2O model fr
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Generalized Linear model.
+This code demonstrates how to build a Generalized Linear Model (GLM) using H2O-3 with a binomial family for binary classification. The model is trained on the prostate dataset and computes p-values, standardized coefficients, and generates a scoring history. Additionally, it shows how to obtain the coefficients and the standardized coefficients, evaluates model performance, and retrieves model attributes like the number of active predictors.
 
 .. tabs::
    .. code-tab:: r R

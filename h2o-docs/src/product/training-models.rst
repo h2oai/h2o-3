@@ -428,7 +428,7 @@ This example uses the :ref:`isoforest` algorithm to detect anomalies in the Elec
 Dimensionality Reduction Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Below is a simple example showing how to use the :ref:`GLRM <glrm>` algorithm for dimensionality reduction of the USArrests dataset.
+This code demonstrates how to apply the :ref:`GLRM <glrm>` algorithm for dimensionality reduction on the USArrests dataset using H2O-3. It includes examples in both R and Python for importing data, splitting it into training and validation sets, training the GLRM model, evaluating its performance, and reconstructing the dataset when predict is called. The purpose of this example is to show how GLRM can reduce data dimensionality while preserving essential information, making it useful for feature extraction and data preprocessing.
 
 .. tabs::
    .. code-tab:: r R
@@ -592,7 +592,7 @@ The ``train_segments()`` function accepts the following parameters:
 Segmented Model Example
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Below is a simple example describing how to train a segmented model. A more detailed example is available in the `H2O Segment Model Building <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/segment_model_building/h2o-segment-model-building.ipynb>`__ demo. 
+This code provides an example of training a segmented model using the Titanic dataset, with the goal of predicting survival across different passenger classes. It includes both R and Python implementations for data preparation, model training, and conversion of segmented models to an H2OFrame. A more detailed example is available in the `H2O Segment Model Building <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/segment_model_building/h2o-segment-model-building.ipynb>`__ demo. 
 
 .. tabs::
    .. code-tab:: r R

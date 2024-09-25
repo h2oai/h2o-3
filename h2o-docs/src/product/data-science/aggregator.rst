@@ -76,7 +76,8 @@ The output of the aggregation is a new aggregated frame that can be accessed in 
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Aggregator model.
+
+This code illustrates how to build an Aggregator model using H2O-3 in both R and Python, including data frame creation, aggregation with eigen categorical encoding, and viewing the resulting aggregated data.
 
 .. tabs::
    .. code-tab:: r R
