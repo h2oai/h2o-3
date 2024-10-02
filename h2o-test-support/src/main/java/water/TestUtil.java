@@ -2050,6 +2050,28 @@ public class TestUtil extends Iced {
     return vec;
   }
 
+
+  /**
+   * @param len Length of the resulting vector
+   * @param type Type of column. Possible options are Vec.T_NUM, Vec.T_STR, Vec.T_UUID
+   * @return id column vec
+   */
+  public static Vec createIdVec(final long len,  byte type) {
+    assert type == Vec.T_UUID || type == Vec.T_STR || type == Vec.T_NUM: "Unsupported type for id vec creation: "+type;
+    final Vec vec = Vec.makeZero(len, type);
+    for (int i = 0; i < vec.length(); i++) {
+      switch (type) {
+        case Vec.T_STR:
+          vec.set(i, String.valueOf(i));
+        case Vec.T_UUID:   
+          vec.set(i, UUID.fromString(String.valueOf(i)));
+        default:
+          vec.set(i, i);
+      }
+    }
+    return vec;
+  }
+
   @SuppressWarnings("rawtypes")
   public static GenModel toMojo(Model model, String testName, boolean readModelMetaData) {
     final String filename = testName + ".zip";
