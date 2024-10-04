@@ -785,6 +785,7 @@ Ard Kelmendi
 Yuliia Syzon
 Adam Valenta
 Marek Novotny
+Zuzana Olajcova
 ```
 
 <a name="Advisors"></a>
