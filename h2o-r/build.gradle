@@ -105,12 +105,22 @@ task setPackageFiles {
 }
 
 task buildPackageDocumentation(type: Exec) {
+    String outputFilePrefix = "${buildDir}/tmp/h2o-r_buildPackageDocumentation"
+    String stdOutFile = outputFilePrefix + ".out"
+    String stdErrFile = outputFilePrefix + ".err"
     doFirst {
         new File("${buildDir}/tmp").mkdirs()
-        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.out")
-        errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.err")
+        standardOutput = new FileOutputStream(stdOutFile)
+        errorOutput = new FileOutputStream(stdErrFile)
     }
     commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document('h2o-package');"])
+    ignoreExitValue true
+    doLast {
+        if (execResult.getExitValue() != 0) {
+            def errorMsgText = new File(stdOutFile).getText() + new File(stdErrFile).getText()
+            throw new GradleException("R execution failed: " + errorMsgText)
+        }
+    }
 }
 
 task genPDF(type: Exec) {
