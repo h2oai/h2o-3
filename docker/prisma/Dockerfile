@@ -8,6 +8,4 @@ RUN for dir in $DIRECTORIES; do \
       chown -R 2117:2117 /$dir; \
     done 
 
-RUN npm install snyk -g
-
 CMD ["/bin/bash"]

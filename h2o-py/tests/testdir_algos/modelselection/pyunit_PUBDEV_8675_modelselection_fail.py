@@ -8,7 +8,8 @@ from h2o.estimators.model_selection import H2OModelSelectionEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 # Megan Kurka found that categorical columns do not work with modelselection backward mode.  I fixed the bug and 
-# extended her test to check that each time a predictor is dropped, it must has the smallest z-value magnitude.
+# extended her test to check that each time a predictor is dropped, the best performing level is compared to other 
+# predictors.  If the best level is not good enough, the whole enum predictor is dropped.
 def test_megan_failure():
     df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
     y = "y"
@@ -28,7 +29,6 @@ def test_megan_failure():
     best_predictor_subset = backward_model.get_best_model_predictors()
 
     counter = 0
-    back_coef = backward_model.coef()
     for ind in list(range(num_models-1, 0, -1)):
         pred_large = coefficient_orders[ind]
         pred_small = coefficient_orders[ind-1]
@@ -40,11 +40,11 @@ def test_megan_failure():
         
         # assert z-values removed has smallest magnitude
         x = best_predictor_subset[ind]
-        assert_smallest_z_removed(back_coef[ind], z_values_list, z_values_removed, pred_large, predictor_removed, x, y, df)
+        assert_correct_z_removed(z_values_list, z_values_removed, pred_large, predictor_removed, x, y, df)
         
         counter += 1
 
-def assert_smallest_z_removed(back_coef, z_values_backward, z_values_removed, coeff_backward, predictor_removed, x, y, df):
+def assert_correct_z_removed(z_values_backward, z_values_removed, coeff_backward, predictor_removed, x, y, df):
     glm_model = H2OGeneralizedLinearEstimator(seed=1234, remove_collinear_columns=True, lambda_=0.0, compute_p_values=True)
     glm_model.train(x=x, y=y, training_frame=df)
     cat_predictors = extractCatCols(df, x)
@@ -53,11 +53,21 @@ def assert_smallest_z_removed(back_coef, z_values_backward, z_values_removed, co
     model_z_values = glm_model._model_json["output"]["coefficients_table"]["z_value"]
     model_coeffs = glm_model._model_json["output"]["coefficients_table"]["names"]
     
-    assert_equal_z_values(back_coef, glm_model.coef(), z_values_backward, coeff_backward, model_z_values, model_coeffs)
-    min_z_value = min(z_values_removed)
+    assert_equal_z_values(z_values_backward, coeff_backward, model_z_values, model_coeffs)
+    
+    num_predictor_removed = False
+    for one_value in predictor_removed:
+        if one_value in num_predictors:
+            num_predictor_removed = True
+            break
+    if num_predictor_removed:
+        min_z_value = min(z_values_removed)
+    else:    
+        min_z_value = max(z_values_removed)
+        
     # check that predictor with smallest z-value magnitude is removed
-    assert_smallest_z_value_numerical(num_predictors, min_z_value, model_coeffs, model_z_values)
-    assert_smallest_z_value_categorical(cat_predictors, min_z_value, model_coeffs, model_z_values)
+    assert_correct_z_value_numerical(num_predictors, min_z_value, model_coeffs, model_z_values)
+    assert_correct_z_value_categorical(cat_predictors, min_z_value, model_coeffs, model_z_values)
 
     for name in cat_predictors:
         for coeff_name in predictor_removed:
@@ -66,7 +76,7 @@ def assert_smallest_z_removed(back_coef, z_values_backward, z_values_removed, co
                 return
     x.remove(predictor_removed[0])   # numerical predictor is removed
 
-def assert_smallest_z_value_categorical(cat_predictors, min_z_value, model_coeffs, model_z_values):
+def assert_correct_z_value_categorical(cat_predictors, min_z_value, model_coeffs, model_z_values):
     for name in cat_predictors:
         model_z = []
         for coeff_name in model_coeffs:
@@ -80,7 +90,7 @@ def assert_smallest_z_value_categorical(cat_predictors, min_z_value, model_coeff
                                             "than mininum_z_values {2}".format(name, model_z, min_z_value)
                 
     
-def assert_smallest_z_value_numerical(num_predictors, min_z_value, model_coeffs, model_z_values):
+def assert_correct_z_value_numerical(num_predictors, min_z_value, model_coeffs, model_z_values):
     for name in num_predictors:
         pred_ind = model_coeffs.index(name)
         val = model_z_values[pred_ind]
@@ -96,7 +106,7 @@ def extractCatCols(df, x):
             cat_pred.append(name)
     return cat_pred
     
-def assert_equal_z_values(back_coef, curr_coef, z_values_backward, coeff_backward, model_z_values, glm_coeff):
+def assert_equal_z_values(z_values_backward, coeff_backward, model_z_values, glm_coeff):
     for coeff in glm_coeff:
         backward_z_value = z_values_backward[coeff_backward.index(coeff)]
         model_z_value = model_z_values[glm_coeff.index(coeff)]

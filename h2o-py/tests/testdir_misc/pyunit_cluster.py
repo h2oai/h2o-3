@@ -11,9 +11,9 @@ def test_cluster_status():
 
 def test_cluster_properties():
     cl = h2o.cluster()
-    assert len(cl._schema_attrs_) == 24 
+    assert len(cl._schema_attrs_) == 25
     for k in cl._schema_attrs_.keys():
-        assert getattr(cl, k) is not None
+        assert getattr(cl, k) is not None or k == "web_ip"
     
 
 def test_exception_on_unknown_cluster_property():

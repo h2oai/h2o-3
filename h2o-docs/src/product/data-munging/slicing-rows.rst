@@ -1,9 +1,54 @@
-Slicing Rows
-------------
+Slice rows
+==========
 
-H2O lazily slices out rows of data and will only materialize a shared copy upon IO. This example shows how to slice rows from a frame of data.
+H2O-3 lazily slices out rows of data and will only materialize a shared copy upon IO. This example shows how to slice rows from a frame of data.
 
 .. tabs::
+   .. code-tab:: python
+
+        import h2o
+        h2o.init()
+
+        # Import the iris with headers dataset
+        path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
+        df = h2o.import_file(path=path)
+
+        # Slice 1 row by index
+        c1 = df[15,:]
+        c1.describe
+
+        # Slice a range of rows
+        c1_1 = df[range(25,50,1),:]
+        c1_1.describe
+
+        # Slice using a boolean mask. The output dataset will include rows with a sepal length
+        # less than 4.6.
+        mask = df["sepal_len"] < 4.6
+        cols = df[mask,:]
+        cols.describe
+
+        # Filter out rows that contain missing values in a column. Note the use of '~' to 
+        # perform a logical not.
+        mask = df["sepal_len"].isna()
+        cols = df[~mask,:]
+        cols.describe
+         sepal_len   sepal_wid   petal_len    petal_wid  clas
+        ----------  ----------  ----------  -----------  -----------
+               5.1         3.5         1.4          0.2  Iris-setosa
+               4.9         3           1.4          0.2  Iris-setosa
+               4.7         3.2         1.3          0.2  Iris-setosa
+               4.6         3.1         1.5          0.2  Iris-setosa
+               5           3.6         1.4          0.2  Iris-setosa
+               5.4         3.9         1.7          0.4  Iris-setosa
+               4.6         3.4         1.4          0.3  Iris-setosa
+               5           3.4         1.5          0.2  Iris-setosa
+               4.4         2.9         1.4          0.2  Iris-setosa
+               4.9         3.1         1.5          0.1  Iris-setosa
+
+
+
+        [150 rows x 3 columns]
+
    .. code-tab:: r R
    
         library(h2o)
@@ -59,49 +104,5 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
 
         [150 rows x 5 columns] 
 
-   .. code-tab:: python
-
-        import h2o
-        h2o.init()
-
-        # Import the iris with headers dataset
-        path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
-        df = h2o.import_file(path=path)
-
-        # Slice 1 row by index
-        c1 = df[15,:]
-        c1.describe
-
-        # Slice a range of rows
-        c1_1 = df[range(25,50,1),:]
-        c1_1.describe
-
-        # Slice using a boolean mask. The output dataset will include rows with a sepal length
-        # less than 4.6.
-        mask = df["sepal_len"] < 4.6
-        cols = df[mask,:]
-        cols.describe
-
-        # Filter out rows that contain missing values in a column. Note the use of '~' to 
-        # perform a logical not.
-        mask = df["sepal_len"].isna()
-        cols = df[~mask,:]
-        cols.describe
-         sepal_len   sepal_wid   petal_len    petal_wid  clas
-        ----------  ----------  ----------  -----------  -----------
-               5.1         3.5         1.4          0.2  Iris-setosa
-               4.9         3           1.4          0.2  Iris-setosa
-               4.7         3.2         1.3          0.2  Iris-setosa
-               4.6         3.1         1.5          0.2  Iris-setosa
-               5           3.6         1.4          0.2  Iris-setosa
-               5.4         3.9         1.7          0.4  Iris-setosa
-               4.6         3.4         1.4          0.3  Iris-setosa
-               5           3.4         1.5          0.2  Iris-setosa
-               4.4         2.9         1.4          0.2  Iris-setosa
-               4.9         3.1         1.5          0.1  Iris-setosa
-
-
-
-        [150 rows x 3 columns]
 
 

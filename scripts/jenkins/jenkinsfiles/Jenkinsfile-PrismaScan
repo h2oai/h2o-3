@@ -3,8 +3,9 @@
 @Library('test-shared-library') _
 
 def dockerImage
+def trivyVersion = "0.54.1"
 
-def setPrismaScanningStages(assemblyType, stageIndex) {
+def setScanningStages(assemblyType, stageIndex) {
     branchName = "${env.BRANCH_NAME}".replace('/', '-')
     assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
     
@@ -13,13 +14,25 @@ def setPrismaScanningStages(assemblyType, stageIndex) {
             sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
         }
     }
-    stage ("${stageIndex}.B. Scan ${assemblyType} jar using Snyk") {
-        withCredentials([string(credentialsId: 'H2O_3_SNYK_TOKEN_JENKINS_TEXT', variable: 'SNYK_TOKEN')]) {
-            script {
-                sh "./snyk container test ${assemblyImage} --file=./docker/prisma/Dockerfile.${assemblyType}jars --severity-threshold=medium --app-vulns --nested-jars-depth=4 | tee ${assemblyImage}-snyk.out || true"
-            }
-            archiveArtifacts artifacts: "${assemblyImage}-snyk.out"
+    stage ("${stageIndex}.B. Scan ${assemblyType} jar using Trivy") {
+        script {
+            sh "./trivy image ${assemblyImage} --output ${assemblyImage}-trivy.out"
+            // Replace special characters with * in order to show it directly in browser
+            sh """
+                sed -i 's/─/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/│/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┤/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/├/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┼/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┐/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┌/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/└/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┘/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┬/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┴/*/g' ${assemblyImage}-trivy.out
+            """
         }
+        archiveArtifacts artifacts: "${assemblyImage}-trivy.out"
     }
     stage("${stageIndex}.C. Scan ${assemblyType} jar using Prisma") {
         script {
@@ -62,8 +75,9 @@ pipeline {
                     dir("docker/prisma"){
                         dockerImage = docker.build("node-java","-f Dockerfile .")
                     }
-                    sh "curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk"
-                    sh "chmod +x ./snyk"
+                    sh "wget https://github.com/aquasecurity/trivy/releases/download/v${trivyVersion}/trivy_${trivyVersion}_Linux-64bit.tar.gz"
+                    sh "tar -zxvf trivy_${trivyVersion}_Linux-64bit.tar.gz"
+                    sh "chmod +x ./trivy"
                 }
                 
             }
@@ -80,14 +94,14 @@ pipeline {
                 }
             }
         }
-        stage('2. Steam assembly jar (Prisma)') {
+        stage('2. Steam assembly jar') {
             steps {
-                setPrismaScanningStages("steam", 2)
+                setScanningStages("steam", 2)
             }
         }
-        stage('3. Main assembly jar (Prisma)') {
+        stage('3. Main assembly jar') {
             steps {
-                setPrismaScanningStages("main", 3)
+                setScanningStages("main", 3)
             }
         }
     }

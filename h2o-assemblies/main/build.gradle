@@ -55,8 +55,11 @@ dependencies {
     api "com.google.protobuf:protobuf-java:3.21.7"
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.17.2') {
             because 'Fixes CVE-2022-42003'
+            because 'Fixes PRISMA-2023-0067'
+            because 'Fixes CVE-2023-35116'
+            because 'Fixes sonatype-2024-0171'
         }
         api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
             because 'Fixes CVE-2020-29582'
@@ -86,6 +89,12 @@ dependencies {
         api('org.apache.commons:commons-configuration2:2.10.1') {
             because 'Fixes CVE-2024-29131'
         }
+        api('dnsjava:dnsjava:3.6.0') {
+            because 'Fixes SNYK-JAVA-DNSJAVA-7547403'
+            because 'Fixes SNYK-JAVA-DNSJAVA-7547404'
+            because 'Fixes SNYK-JAVA-DNSJAVA-7547405'
+            because 'Fixes CVE-2024-25638'
+        }
     }
 }
 
@@ -93,10 +102,6 @@ shadowJar {
   zip64 true
   mergeServiceFiles()
   classifier = ''
-  // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
-  if (!project.hasProperty("jacocoCoverage")) {
-    relocate 'org.joda.time', 'ai.h2o.org.joda.time'
-  }
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'
@@ -104,6 +109,7 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
+  exclude 'javax/servlet/jsp/resources/*.*'
     
   // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
   // Excluding other classes of org.apache.hive.shims:hive-shims-common.

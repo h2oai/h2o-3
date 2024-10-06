@@ -2,6 +2,60 @@
 
 ## H2O
 
+### 3.46.0.5 - 8/28/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html</a>
+
+#### Bug
+- [[#16328]](https://github.com/h2oai/h2o-3/issues/16328) - Updated how ModelSelection handles categorical predictors to preserve the best categorical predictor when the best categorical level performs well relative to other predictors.
+- [[#16120]](https://github.com/h2oai/h2o-3/issues/16120) - Resolved that MOJO is working for Isolation Forest and Extended Isolation forest for implemented versions.
+
+#### New Feature
+- [[#16327]](https://github.com/h2oai/h2o-3/issues/16327) - Ensured H2O-3 can load data from Snowflake using JDBC connector.
+
+#### Docs
+- [[#16215]](https://github.com/h2oai/h2o-3/issues/16215) - Updated the following user guide pages to adhere to style guide updates: Algorithms, Supported data types, Quantiles, and Early stopping.
+- [[#16207]](https://github.com/h2oai/h2o-3/issues/16207) - Updated the Starting H2O user guide page to adhere to style guide updates.
+- [[#15989]](https://github.com/h2oai/h2o-3/issues/15989) - Updated Python documentation for Decision Tree algorithm.
+
+#### Security
+- [[#16349]](https://github.com/h2oai/h2o-3/issues/16349) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2.
+- [[#16342]](https://github.com/h2oai/h2o-3/issues/16342) - Addressed SNYK-JAVA-DNSJAVA-7547403, SNYK-JAVA-DNSJAVA-7547404, SNYK-JAVA-DNSJAVA-7547405, and CVE-2024-25638 by upgrading dnsjava to 3.6.0. 
+
+### 3.46.0.4 - 7/9/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html</a>
+
+#### Docs
+- [[#16212]](https://github.com/h2oai/h2o-3/issues/16212) - Updating user guide - H2O Clients.
+- [[#16214]](https://github.com/h2oai/h2o-3/issues/16214) - Updating user guide - Data Manipulation.
+- [[#16213]](https://github.com/h2oai/h2o-3/issues/16213) - Updating user guide - Getting data into your H2O cluster.
+
+#### Security
+- [[#15748]](https://github.com/h2oai/h2o-3/issues/15748) - Addressed PRISMA-2023-0067 by upgrading jackson-databind.
+
+### 3.46.0.3 - 6/11/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index.html</a>
+
+#### Bug Fix
+- [[#16274]](https://github.com/h2oai/h2o-3/issues/16274) - Fixed plotting for H2O Explainabilty by resolving issue in the matplotlib wrapper.
+- [[#16192]](https://github.com/h2oai/h2o-3/issues/16192) - Fixed `h2o.findSynonyms` failing if the `word` parameter is unknown to the Word2Vec model.
+- [[#15947]](https://github.com/h2oai/h2o-3/issues/15947) - Fixed `skipped_columns` error caused by mismatch during the call to `parse_setup` when constructing an `H2OFrame`.
+
+#### Improvement
+- [[#16278]](https://github.com/h2oai/h2o-3/issues/16278) - Added flag to enable `use_multi_thread` automatically when using `as_data_frame`.
+
+#### New Feature
+- [[#16284]](https://github.com/h2oai/h2o-3/issues/16284) - Added support for Websockets to steam.jar.
+
+#### Docs
+- [[#16189]](https://github.com/h2oai/h2o-3/issues/16189) - Updating user guide - Downloading & Installing H2O.
+- [[#16288]](https://github.com/h2oai/h2o-3/issues/16288) - Fixed GBM Python example in user guide.
+- [[#16188]](https://github.com/h2oai/h2o-3/issues/16188) - Updated API-related changes page to adhere to style guide requirements.
+- [[#16016]](https://github.com/h2oai/h2o-3/issues/16016) - Added examples to Python documentation for Uplift DRF.
+- [[#15988]](https://github.com/h2oai/h2o-3/issues/15988) - Added examples to Python documentation for Isotonic Regression.
+
 ### 3.46.0.2 - 5/13/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html</a>
