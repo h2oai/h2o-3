@@ -968,6 +968,11 @@ h2o.clusterInfo <- function() {
   if (res$build_too_old) {
     warning(sprintf("\nYour H2O cluster version is (%s) old. There may be a newer version available.\nPlease download and install the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html", res$build_age))
   }
+    
+  if (is.null(res$web_ip)){
+     warning("SECURITY_WARNING: web_ip is not specified. H2O Rest API is listening on all available interfaces.")
+  }
+
 }
 
 .h2o.translateJobType <- function(type) {

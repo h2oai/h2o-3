@@ -40,7 +40,7 @@ class CloudHandler extends Handler {
     cloud.consensus = Paxos._commonKnowledge;
     cloud.locked = Paxos._cloudLocked;
     cloud.internal_security_enabled = H2OSecurityManager.instance().securityEnabled;
-
+    cloud.web_ip = H2O.ARGS.web_ip;
 
     // set leader
     H2ONode leader = H2O.CLOUD.leaderOrNull(); // leader might be null in client mode if clouding didn't finish yet

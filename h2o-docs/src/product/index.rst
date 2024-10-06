@@ -6,19 +6,19 @@
 Overview
 ========
 
-Welcome to the H2O documentation site! Select a learning path from the sidebar or browse through the full content outline below.
+Welcome to the H2O-3 documentation site! Select a learning path from the sidebar or browse through the full content outline below.
 
-We're excited you're interesting in learning more about H2O. If you have questions or ideas to share, please post them to the H2O community site on `Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
+We're excited you're interesting in learning more about H2O-3. If you have questions or ideas to share, please post them to the H2O community site on `Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
 
 Additional resources
 --------------------
 
-The following are additional resources to learn more information about H2O:
+The following are additional resources to learn more information about H2O-3:
 
-- `See how customers are using H2O <https://www.h2o.ai/customers/>`__.
-- Keep up to date with `the latest H2O blogs <https://www.h2o.ai/blog/>`__.
-- `Explore Awesome H2O <https://github.com/h2oai/awesome-h2o>`__ to review projects, applications, research papers, tutorials, courses, and books that use H2O.
-- Learn about securing your installation by following `H2O's security guidelines <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html>`__.
+- `See how customers are using H2O-3 <https://www.h2o.ai/customers/>`__.
+- Keep up to date with `the latest H2O-3 blogs <https://www.h2o.ai/blog/>`__.
+- `Explore Awesome H2O <https://github.com/h2oai/awesome-h2o>`__ to review projects, applications, research papers, tutorials, courses, and books that use H2O-3.
+- Learn about securing your installation by following `H2O-3's security guidelines <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html>`__.
 
 .. toctree::
    :maxdepth: 2

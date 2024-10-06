@@ -109,6 +109,7 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
+  exclude 'javax/servlet/jsp/resources/*.*'
     
   // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
   // Excluding other classes of org.apache.hive.shims:hive-shims-common.
