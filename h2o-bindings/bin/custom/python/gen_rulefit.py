@@ -3,7 +3,7 @@ deprecated_params = dict(Lambda='lambda_')
 def class_extensions():
     def rule_importance(self):
         """
-Retrieve rule importances for a Rulefit model
+        Retrieve rule importances for a Rulefit model
 
         :return: H2OTwoDimTable
         
@@ -87,7 +87,6 @@ overrides = dict(
 )
 
 examples = dict(
-
     algorithm="""
 >>> import h2o
 >>> h2o.init()
