@@ -509,7 +509,7 @@ class H2ORuleFitEstimator(H2OEstimator):
 
     def rule_importance(self):
         """
-Retrieve rule importances for a Rulefit model
+        Retrieve rule importances for a Rulefit model
 
         :return: H2OTwoDimTable
 
