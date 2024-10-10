@@ -103,3 +103,13 @@ Common parameters
    -  For a regression model, this column must be numeric (**Real** or **Int**).
    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset cannot contain more than two levels.
 
+References
+----------
+
+David Ruppert, M. P. Wand and R. J. Carroll, Semiparametric Regression, Chapter 4, Cambridge University Press, 2003.
+
+Stephen w. Raudenbush, Anthony S. Bryk, Hierarchical Linear Models Applications and Data Analysis Methods, Second Edition, Sage Publications, 2002.
+
+Rao, C. R. (1973). Linear Statistical Inference and Its Applications. New York: Wiley. 
+
+Dempster, A. P., Laird, N. M., & Rubin, D. B. (1977). Maximum likelihood from incomplete data via the EM algorithm. Journal of the Royal Statistical Society, Seires B, 39, 1-8.
