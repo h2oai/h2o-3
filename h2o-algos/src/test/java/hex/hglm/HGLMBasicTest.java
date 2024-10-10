@@ -647,7 +647,7 @@ public class HGLMBasicTest extends TestUtil {
     tMatInit = f2a2.doAll(tMat).getArray();
     checkDoubleArrays(tMatInit, model._output._tmat, 1e-6);
     // check sigma epsilon initializaiton
-    assertEquals(sigmaEpsilon, model._output._tauEVar, 1e-6);
+    assertEquals(sigmaEpsilon, model._output._tau_e_var, 1e-6);
   }
 
   /**

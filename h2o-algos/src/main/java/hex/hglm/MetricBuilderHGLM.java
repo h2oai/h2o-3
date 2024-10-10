@@ -72,7 +72,7 @@ public class MetricBuilderHGLM extends ModelMetricsSupervised.MetricBuilderSuper
     if (forTraining) {
       mm = new ModelMetricsRegressionHGLM(m, f, hglmM._output._nobs, this._domain, this.weightedSigma(),
               this._customMetric, hglmM._output._iterations, hglmM._output._beta, hglmM._output._ubeta,
-              tmat, hglmM._output._tauEVar, mse, this._yMinusfixPredSquare / hglmM._output._nobs, 
+              tmat, hglmM._output._tau_e_var, mse, this._yMinusfixPredSquare / hglmM._output._nobs, 
               hglmM._output._yminusxtimesz, hglmM._output._arjtarj_score);
     } else {
       List<String> colNames = Arrays.asList(f.names());
@@ -88,7 +88,7 @@ public class MetricBuilderHGLM extends ModelMetricsSupervised.MetricBuilderSuper
       engineTask.doAll(dinfo._adaptedFrame);
       mm = new ModelMetricsRegressionHGLM(m, f, engineTask._nobs, this._domain, this.weightedSigma(), 
               this._customMetric, hglmM._output._iterations, hglmM._output._beta, hglmM._output._ubeta,
-              tmat, hglmM._output._tauEVar,this._sse/engineTask._nobs, 
+              tmat, hglmM._output._tau_e_var,this._sse/engineTask._nobs, 
               this._yMinusfixPredSquare/engineTask._nobs, hglmM._output._yminusxtimesz_valid, 
               engineTask._ArjTArj);
       hglmM._output._nobs_valid = engineTask._nobs;

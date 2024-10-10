@@ -244,7 +244,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
       TwoDimTable summary = new TwoDimTable("HGLM Model", "summary", new String[]{""}, names, types, formats, "");
       summary.set(0, 0, modelOutput._iterations);
       summary.set(0, 1, modelOutput._log_likelihood);
-      summary.set(0, 2, modelOutput._tauEVar);
+      summary.set(0, 2, modelOutput._tau_e_var);
       return summary;
     }
     
@@ -267,7 +267,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
         ModelMetricsRegressionHGLM mvalid = (ModelMetricsRegressionHGLM) ModelMetrics.getFromDKV(model, _parms.valid());
         model._output._validation_metrics = mvalid;
         model._output._log_likelihood_valid = ((ModelMetricsRegressionHGLM) model._output._validation_metrics).llg();
-        sc.addIterationScore(_state._iter, model._output._log_likelihood_valid, model._output._tauEVar);
+        sc.addIterationScore(_state._iter, model._output._log_likelihood_valid, model._output._tau_e_var);
       }
     }
 
@@ -328,14 +328,14 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
       _state._iter++;
       double[] betaDiff = new double[beta.length];
       minus(betaDiff, beta, _state.get_beta());
-      double maxBetaDiff = maxMag(betaDiff);
+      double maxBetaDiff = maxMag(betaDiff)/maxMag(beta);
       double[][] tmatDiff = new double[tmat.length][tmat[0].length];
       minus(tmatDiff, tmat, _state.get_T());
-      double maxTmatDiff = maxMag(tmatDiff);
+      double maxTmatDiff = maxMag(tmatDiff)/maxMag(tmat);
       double[][] ubetaDiff = new double[ubeta.length][ubeta[0].length];
       minus(ubetaDiff, ubeta, _state.get_ubeta());
-      double maxUBetaDiff = maxMag(ubetaDiff);
-      double tauEVarDiff = Math.abs(tauEVar - _state.get_tauEVar());
+      double maxUBetaDiff = maxMag(ubetaDiff)/maxMag(ubeta);
+      double tauEVarDiff = Math.abs(tauEVar - _state.get_tauEVar())/tauEVar;
       // calculate log likelihood with current parameter settings
       double logLikelihood = calHGLMllg(model._output._nobs, tmat, tauEVar, model._output._arjtarj, rLlh2._sse_fixed, 
               rLlh2._yMinusXTimesZ);
@@ -356,7 +356,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
           scTrain.addIterationScore(_state._iter, model._output._log_likelihood, tauEVar);
         }
       }
-      return !stop_requested() && !converged && (_state._iter < _parms._max_iterations);
+      return !stop_requested() || !converged || (_state._iter < _parms._max_iterations);
     }
   }
 }

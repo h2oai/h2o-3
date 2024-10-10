@@ -59,6 +59,9 @@ public class HGLMModelV3 extends ModelSchemaV3<HGLMModel,
             " variance).")
     double[] icc;
     
+    @API(help="residual noise variance")
+    double residual_variance;
+    
     @Override
     public HGLMModelOutputV3 fillFromImpl(HGLMModel.HGLMModelOutput impl) {
       super.fillFromImpl(impl);
@@ -78,6 +81,7 @@ public class HGLMModelV3 extends ModelSchemaV3<HGLMModel,
               "HGLM random effect coefficients", ubeta, ubeta_normalized, random_coefficient_names, 
               random_coefficient_names_normalized, impl._group_column_names));
       icc = impl._icc;
+      residual_variance = impl._tau_e_var;
       return this;
     }
   }

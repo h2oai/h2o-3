@@ -183,7 +183,7 @@ public class HGLMModel extends Model<HGLMModel, HGLMModel.HGLMParameters, HGLMMo
     public double[][] _ubeta_normalized;
     public double[][] _tmat;
     double _tauUVar;
-    public double _tauEVar;
+    public double _tau_e_var;
     // test parameters
     public double[][] _afjtyj;
     public double[][] _arjtyj;
@@ -254,7 +254,7 @@ public class HGLMModel extends Model<HGLMModel, HGLMModel.HGLMParameters, HGLMMo
       _random_coefficient_names = state.get_randomCoefficientNames();
       _group_column_names = state.get_groupColumnNames();
       _tauUVar = state.get_tauUVar();
-      _tauEVar = state.get_tauEVar();
+      _tau_e_var = state.get_tauEVar();
       _tmat = state.get_T();
       _num_fixed_coeffs = state.get_numFixedCoeffs();
       _num_random_coeffs = state.get_numRandomCoeffs();
@@ -286,6 +286,7 @@ public class HGLMModel extends Model<HGLMModel, HGLMModel.HGLMParameters, HGLMMo
       _num_random_coeffs_normalized = _ubeta_normalized[0].length;
       _num_random_coeffs = _ubeta[0].length;
       _iterations = state._iter;
+      _tau_e_var = state._tauEVar;
     }
     
     public static String[] copyCoefAddIntercept(String[] originalNames) {

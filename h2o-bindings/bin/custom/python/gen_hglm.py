@@ -9,7 +9,7 @@ def class_extensions():
         """
         Get the random coefficients of the model.
         """
-        random_coef_names = self._model_json["output"]["_random_coefficient_names"]
+        random_coef_names = self._model_json["output"]["random_coefficient_names"]
         random_coefs = self._model_json["output"]["ubeta"]
         return dict(zip(random_coef_names, random_coefs))
 
@@ -52,9 +52,9 @@ def class_extensions():
         :return: residual variance estiamte as a double
         """
         model = self._model_json["output"]
-        return model["tauEVar"]
+        return model["residual_variance"]
 
-    def residual_variance(self):
+    def icc(self):
         """
         retrieve the icc from the model building process.
             
