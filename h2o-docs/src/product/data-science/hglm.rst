@@ -1,8 +1,7 @@
 Hierarchical Generalized Linear Model (HGLM) 
 ============================================
 
-Hierarchical linear models (HLM) is used in situations where measurements are taken with clusters of data and there are effects of the cluster that can affect the coefficient values of GLM. For instance, if we measure the students' performances from multiple schools along with other predictors like family annual incomes, students' health, school type (public, private, religious, etc.), and etc., we suspect that students from the same school will have similar performances than students from different schools. Therefore, we can denote a coefficient for predictor :math:`m \text{ as } \beta_{mj}` where :math:`j` denotes the school index in our example. :math:`\beta_{0j}` denotes the intercept associated with school :math:`j`.
-
+HGLM fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, gaussian). HGLM lets you specify both fixed and random effects, which allows for fitting correlation to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects.
 
 Defining an HGLM model
 ----------------------
@@ -102,6 +101,11 @@ Common parameters
 
    -  For a regression model, this column must be numeric (**Real** or **Int**).
    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset cannot contain more than two levels.
+
+Definining an HLM
+-----------------
+
+Hierarchical linear models (HLM) is used in situations where measurements are taken with clusters of data and there are effects of the cluster that can affect the coefficient values of GLM. For instance, if we measure the students' performances from multiple schools along with other predictors like family annual incomes, students' health, school type (public, private, religious, etc.), and etc., we suspect that students from the same school will have similar performances than students from different schools. Therefore, we can denote a coefficient for predictor :math:`m \text{ as } \beta_{mj}` where :math:`j` denotes the school index in our example. :math:`\beta_{0j}` denotes the intercept associated with school :math:`j`.
 
 References
 ----------
