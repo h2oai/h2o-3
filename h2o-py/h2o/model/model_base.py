@@ -548,7 +548,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     break
             return self._metrics_class_valid(raw_metrics, algo=self._model_json["algo"])
 
-    def scoring_history(self):
+    def scoring_history(self, as_data_frame=True):
         """
         Retrieve Model Score History.
 
@@ -556,7 +556,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         model = self._model_json["output"]
         if "scoring_history" in model and model["scoring_history"] is not None:
-            return model["scoring_history"].as_data_frame()
+            if as_data_frame:
+                return model["scoring_history"].as_data_frame()
+            else:
+                return model["scoring_history"]
         print("No score history for this model")
         
     def negative_log_likelihood(self):

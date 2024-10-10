@@ -168,6 +168,7 @@ reference:
       - h2o.group_by
       - h2o.gsub
       - h2o.head
+      - h2o.hglm
       - h2o.hist
       - h2o.hit_ratio_table
       - h2o.hour
