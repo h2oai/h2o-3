@@ -340,7 +340,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
       double logLikelihood = calHGLMllg(model._output._nobs, tmat, tauEVar, model._output._arjtarj, rLlh2._sse_fixed, 
               rLlh2._yMinusXTimesZ);
       boolean converged = ((maxBetaDiff < _parms._em_epsilon) && (maxTmatDiff < _parms._em_epsilon) && (maxUBetaDiff
-              < _parms._em_epsilon) && (tauEVarDiff < _parms._em_epsilon) && (logLikelihood > model._output._log_likelihood));
+              < _parms._em_epsilon) && (tauEVarDiff < _parms._em_epsilon) && (logLikelihood < model._output._log_likelihood));
       if (!converged) { // update values in _state
         _state.set_beta(beta);
         _state.set_ubeta(ubeta);
@@ -356,7 +356,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
           scTrain.addIterationScore(_state._iter, model._output._log_likelihood, tauEVar);
         }
       }
-      return !stop_requested() || !converged || (_state._iter < _parms._max_iterations);
+      return !stop_requested() && !converged && (_state._iter < _parms._max_iterations);
     }
   }
 }
