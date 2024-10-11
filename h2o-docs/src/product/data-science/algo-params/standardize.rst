@@ -1,7 +1,7 @@
 ``standardize``
 ---------------
 
-- Available in: Deep Learning, GLM, GAM, K-Means
+- Available in: Deep Learning, GLM, GAM, HGLM, K-Means
 - Hyperparameter: yes
 
 Description
