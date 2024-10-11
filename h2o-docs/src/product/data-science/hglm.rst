@@ -272,6 +272,54 @@ with
 Generate a random positive definite matrix
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+To randomly generate a symmetric positive definite matrix, do the following
+
+1. Generate :math:`n \text{ by } n \text{ matrix } B` with uniform numbers from -1 to 1;
+2. Set :math:`A = 0.5 * (B + B^T)`;
+
+The final symmetric mpositive definite matrix is :math:`T = A + 2 * I_n`.
+
+Log-likelihood for HGLM
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The model for level-2 unit :math:`j` can be written as:
+
+.. math::
+   
+   Y_j = A_{fj} \theta_f + d_j = X_j \theta_f + d_j, \quad d_j \sim N(0,V_j)
+
+where:
+
+- :math:`Y_j \text{ is an } n_j` by 1 outcome vector;
+- :math:`A_{fj} / X_j = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_{j}} \\\end{bmatrix}` is a known :math:`n_j \text{ by } p` matrix of level-1 predictors and :math:`x_{ji} = \begin{bmatrix} x^1_{ji} \\ x^2_{ji} \\ \vdots \\ x^{p-1}_{ji} \\ 1 \\\end{bmatrix}`;
+- :math:`\theta_f \text{ is a } p` by 1 vector of fixed effects;
+- :math:`d_j = A_{rj} \theta_{rj} + r_j = Z_j \theta_{rj} + r_j , A_{rj} / Z_j \text{ is } n_j \text{ by } q`;
+- :math:`\theta_{rj} \sim N(0,T), \theta_{rj} \text{ is } q` by 1, :math:`T \text{ is } q \text{ by } q`;
+- :math:`r_j \sim N(0, \sigma^2 I_{n_j}), I_{n_j} \text{ is } n_j \text{ by } n_j`;
+- :math:`V_j = A_{rj} TA^T_{rj} + \sigma^2 I_{n_j} = Z_j TZ^T_j + \sigma^2 I_{n_j}, \text{ is } n_j \text{ by } n)j`.
+
+For each level-2 value :math:`j`, the likelihood can be written as:
+
+.. math::
+   
+   L(Y_j; \theta_f, \sigma^2, T_j) = (2 \pi)^{-n_{j} /2} |V_j |^{-1/2} \exp \{ -\frac{1}{2} d^T_j V^{-1}_j d_j\}
+
+The log-likelihood is:
+
+.. math::
+   
+   ll(Y_j; \theta_f, \sigma^2 , T_j) = -\frac{1}{2} \Big( n_j \log{(2 \pi)} + \log{(|V_j|)} + (Y_j - X_j \theta_f)^T V^{-1}_j (Y_j - X_j \theta_f) \Big)
+
+Since we assume that random effects are i.i.d., the total log-likelihood is just the sum of the log-likelihood for each level-2 value. Let :math:`T=T_j`:
+
+.. math::
+   
+   ll(Y; \theta_f, \sigma^2, T) \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad
+
+   = \sum^J_{j=1} \Big\{ - \frac{1}{2} \big( n_j \log{(2 \pi)} + \log{(|V_j|)} + (Y_j - X_j \theta_f)^T V^{-1}_j (Y_j - X_j \theta_f) \big) \Big\} =
+
+   -\frac{1}{2} n \log{(2 \pi)} -\frac{1}{2} \Big\{ \sum^J_{j=1} \big( \log{(|V_j|)} + (Y_j - X_j \theta_f)^T V^{-1}_j (Y_j - X_j \theta_f) \big) \Big\}
+
 
 
 References
