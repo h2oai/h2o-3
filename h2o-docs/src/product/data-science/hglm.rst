@@ -203,6 +203,50 @@ where:
 - :math:`j` denotes the level-2 units where :math:`j = 1,2, \cdots , J`;
 - :math:`T_j` is a symmetric positive definite matrix of size :math:`n_j \text{ by } n_j`. For simplicity, all :math:`T_j` are the same. We assume that :math:`T_j` is the same for all :math:`j = 1,2, \cdots , J`. However, we can assume that the fixed coefficients are i.i.d. :math:`\sim N (0, \sigma^2_u I_{n_j \times n_j})` for simplicity initially and keep :math:`T_j` to be symmetric positive definite matrix as the iteration continues.
 
+M step
+~~~~~~
+
+Expectation-Maximization (EM) conceives of :math:`Y_j` as the observed data with :math:`\theta_{rj}` as the missing data. Therefore, the complete data are :math:`(Y_j, \theta_{rj}), j=1, \cdots, J \text{ while } \theta_f, \sigma^2, \text{ and } T_j` are the parameters that need to be estimated. If the complete data were observed, finding the ML estimates will be simple. To estimate :math:`\theta_f`, subtract :math:`A_{rj} \theta_{rj}` from both sides of *equation 6*:
+
+.. math::
+   
+   Y_j - A_{rj} \theta_{rj} = A_{fj} \theta_f + r_f \quad \text{ equation 7}
+
+and justifying the ordinary least squares (OLS) estimate:
+
+.. math::
+   
+   \hat{\theta_f} = \Big( \sum^J_{j=1} A^T_{fj} A_{fj} \Big)^{-1} \sum^J_{j=1} A^T_{fj} (Y_j - A_{rj} \theta_{rj}) \quad \text{ equation 8}
+
+*Equation 8* can also be solved by multipying *equation 7* with :math:`A^T_{fj}` and sum across the level-2 unit :math:`j`. 
+
+.. note::
+   
+   :math:`\sum^J_{j=1} A^T_{fj} r_j \sim 0` and rearrange the terms and you get *equation 8*.
+
+Next, ML estimators for :math:`T_j` and :math:`\sigma^2` are straightforward:
+
+.. math::
+   
+   \hat{T_j} = J^{-1} \sum^J_{j=1} \theta_{rj} \theta^T_{rj} \quad \text{ equation 9}
+
+.. math::
+   
+   \hat{\sigma^2} = N^{-1} \sum^J_{j=1} \hat{r^T_j} \hat{r_j} = N^{-1} \sum^J_{j=1} \big( Y_j - A_{fj} \hat{\theta_f} - A_{rj} \theta_{rj} \big)^T \big( Y_j - A_{fj} \hat{\theta_{f}} - A_{rj} \theta_{rj} \big) \quad \text{ equation 10}
+
+where :math:`N = \sum^J_{j=1} n_j`.
+
+.. note::
+   
+   This reasoning defines certain complete-data sufficent statistics (CDSS), that is, statistics that would be sufficient to estimate :math:`\theta_f, T, \text{ and } \sigma^2` if the complete data were observed. These are:
+
+   .. math::
+
+      \sum^J_{j=1} A^T_{fj} A_{rj} \theta_{rj}, \sum^J_{j=1} \theta_{rj} \theta^T_{rj}, \sum^J_{j=1} Y^T_j A_{rj} \theta_{rj}, \sum^J_{j=1} \theta^T_{rj} A^T_{rj} A_{rj} \theta_{rj} \quad \text{ equation 11}.
+
+E step
+~~~~~~
+
 References
 ----------
 
