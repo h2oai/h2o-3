@@ -146,9 +146,9 @@ We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_
 
 where:
 
-- :math:`Y = \begin{bmatrix} y_{11} \\ y_{21} \\ \vdots \\ y_{n_{1}1} \\ y_{12} \\ y_{22} \\ \vdots \y_{n_{2}2} \\ \vdots \\ y_{1J} \\ y_{2J} \\ \vdots \\ y_{n_{J}J} \\\end{bmatrix}` is a :math:`n(= \sum^J_{j=1} n_j)` by 1 vector where :math:`n` is the number of all independent and identically distributed (i.i.d.) observations across all clusters;
+- :math:`Y = \begin{bmatrix} y_{11} \\ y_{21} \\ \vdots \\ y_{n_{1}1} \\ y_{12} \\ y_{22} \\ \vdots \\ y_{n_{2}2} \\ \vdots \\ y_{1J} \\ y_{2J} \\ \vdots \\ y_{n_{J}J} \\\end{bmatrix}` is a :math:`n(= \sum^J_{j=1} n_j)` by 1 vector where :math:`n` is the number of all independent and identically distributed (i.i.d.) observations across all clusters;
 - :math:`X = \begin{bmatrix} X_1 \\ X_2 \\ \vdots \\ X_J \\\end{bmatrix}` where :math:`X_j = \begin{bmatrix} 1 & x_{11j} & x_{21j} & \cdots & x_{(p-1)1j} \\ 1 & x_{12j} & x_{22j} & \cdots & x_{(p-1)2j} \\ 1 & x_{13j} & x_{23j} & \cdots & x_{(p-1)3j} \\ \vdots & \vdots & \ddots & \cdots & \vdots \\ 1 & x_{1n_{j}j} & x_{2n_{j}j} & \cdots & x_{(p-1)n_{j}j} \\\end{bmatrix} = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_j} \\\end{bmatrix}`. We are just stacking all the :math:`X_j` across all the clusters;
-- :math:`\beta = \start{bmatrix} \beta_{00} \\ \beta_{10} \\ \vdots \\ \beta_{(p-1)0}` is a :math:`p` by 1 fixed coefficients vector including the intercept;
+- :math:`\beta = \begin{bmatrix} \beta_{00} \\ \beta_{10} \\ \vdots \\ \beta_{(p-1)0} \\\end{bmatrix}` is a :math:`p` by 1 fixed coefficients vector including the intercept;
 - :math:`Z = \begin{bmatrix} Z_1 & 0_{12} & 0_{13} & \cdots & 0_{1J} \\ 0_{21} & Z_2 & 0_{23} & \cdots & 0_{2J} \\ 0_{31} & 0_{32} & Z_3 & \cdots & 0_{3J} \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0_{J1} & 0_{J2} & 0_{J3} & \cdots & Z_J \\\end{bmatrix}` where :math:`Z_J \text{ is a } n_j \times q` matrix, and :math:`0_{ij} n_i \times q` is a zero matrix. Therefore, :math:`Z` is a :math:`n \times (J * q)` matrix containing blocks of non-zero sub-matrices across its diagonal;
 - :math:`u = \begin{bmatrix} u_{01} \\ u_{11} \\ u_{(q-1)1} \\ u_{02} \\ u_{12} \\ \vdots \\ u_{(q-1)2} \\ \vdots \\ u_{0J} \\ u_{1J} \\ \vdots \\ u_{(q-1)J} \\\end{bmatrix} \text{ is a } J * q` by 1 random effects vector and some coefficients may not have a random effect;
 - :math:`e \sim N(0, \delta^2_e I_n), u \sim N (0, \delta^2_u I_{(J*q)}) \text{ where } I_n \text{ is an } n \times n \text{ and } I_{(J*q)} \text{ is an } (J*q) \times (J*q)` identity matrix;
@@ -199,7 +199,7 @@ where:
       We included a term for the random intercept here. However, there are cases where we do not have a random intercept, and the last element of 1 will not be there for :math:`z_{ji}`.
 
 - :math:`\theta_{rj}` represents the random coefficient and is a :math:`q` by 1 vector;
-- :math:`r_j \text{ is an } n_j`by 1 vector of level-1 random effects assumed multivariate normal in distribution with 0 mean vector, covariance matrix :math:`\sigma^2 I_n_{j\times nj} \text{ where } I_n_{j \times nj}` is the identity matrix, :math:`n_j \text{ by } n_j`;
+- :math:`r_j \text{ is an } n_j` by 1 vector of level-1 random effects assumed multivariate normal in distribution with 0 mean vector, covariance matrix :math:`\sigma^2 I_{n_{j\times nj}} \text{ where } I_{n_{j \times nj}}` is the identity matrix, :math:`n_j \text{ by } n_j`;
 - :math:`j` denotes the level-2 units where :math:`j = 1,2, \cdots , J`;
 - :math:`T_j` is a symmetric positive definite matrix of size :math:`n_j \text{ by } n_j`. For simplicity, all :math:`T_j` are the same. We assume that :math:`T_j` is the same for all :math:`j = 1,2, \cdots , J`. However, we can assume that the fixed coefficients are i.i.d. :math:`\sim N (0, \sigma^2_u I_{n_j \times n_j})` for simplicity initially and keep :math:`T_j` to be symmetric positive definite matrix as the iteration continues.
 
@@ -246,6 +246,10 @@ where :math:`N = \sum^J_{j=1} n_j`.
 
 E step
 ~~~~~~
+
+
+
+
 
 References
 ----------
