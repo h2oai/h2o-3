@@ -172,7 +172,7 @@ We solve for :math:`\beta, u, \delta^2_u, \text{ and } \delta^2_e`.
 Estimation of parameters using machine learning estimation via EM
 -----------------------------------------------------------------
 
-The EM algorithm addresses the problem of maximizing the likelihood by conceiving this as a problem with missing data.
+The Expectation-Maximization (EM) algorithm addresses the problem of maximizing the likelihood by conceiving this as a problem with missing data.
 
 Model setup
 ~~~~~~~~~~~
@@ -203,10 +203,10 @@ where:
 - :math:`j` denotes the level-2 units where :math:`j = 1,2, \cdots , J`;
 - :math:`T_j` is a symmetric positive definite matrix of size :math:`n_j \text{ by } n_j`. For simplicity, all :math:`T_j` are the same. We assume that :math:`T_j` is the same for all :math:`j = 1,2, \cdots , J`. However, we can assume that the fixed coefficients are i.i.d. :math:`\sim N (0, \sigma^2_u I_{n_j \times n_j})` for simplicity initially and keep :math:`T_j` to be symmetric positive definite matrix as the iteration continues.
 
-M step
+M-step
 ~~~~~~
 
-Expectation-Maximization (EM) conceives of :math:`Y_j` as the observed data with :math:`\theta_{rj}` as the missing data. Therefore, the complete data are :math:`(Y_j, \theta_{rj}), j=1, \cdots, J \text{ while } \theta_f, \sigma^2, \text{ and } T_j` are the parameters that need to be estimated. If the complete data were observed, finding the ML estimates will be simple. To estimate :math:`\theta_f`, subtract :math:`A_{rj} \theta_{rj}` from both sides of *equation 6*:
+EM conceives of :math:`Y_j` as the observed data with :math:`\theta_{rj}` as the missing data. Therefore, the complete data are :math:`(Y_j, \theta_{rj}), j=1, \cdots, J \text{ while } \theta_f, \sigma^2, \text{ and } T_j` are the parameters that need to be estimated. If the complete data were observed, finding the ML estimates will be simple. To estimate :math:`\theta_f`, subtract :math:`A_{rj} \theta_{rj}` from both sides of *equation 6*:
 
 .. math::
    
@@ -244,10 +244,33 @@ where :math:`N = \sum^J_{j=1} n_j`.
 
       \sum^J_{j=1} A^T_{fj} A_{rj} \theta_{rj}, \sum^J_{j=1} \theta_{rj} \theta^T_{rj}, \sum^J_{j=1} Y^T_j A_{rj} \theta_{rj}, \sum^J_{j=1} \theta^T_{rj} A^T_{rj} A_{rj} \theta_{rj} \quad \text{ equation 11}.
 
-E step
+E-step
 ~~~~~~
 
+While the CDSS are not observed, they can be estimated by their conditional expectations given the data :math:`Y` and parameter estimates from the previous iterations. `Dempster et al. <#references>`__ showed that substituting the expected CDSS for the M-step formulas would produce new parameter estimates having a higher likelihood than the current estimates.
 
+To find :math:`E(CDSS | Y, \theta_f, T, \sigma^2)` requires deriving the conditional distribution of the missing data :math:`\theta_r`, given :math:`Y, \theta_f, T, \sigma^2`. From *equation  6*, the joint distribution of the complete data is:
+
+.. math::
+   
+   \begin{pmatrix} Y_j \\ \theta_{rj} \\\end{pmatrix} \sim N \Bigg[ \begin{pmatrix} A_{fj} \theta_{f} \\ 0 \\\end{pmatrix} , \begin{pmatrix} A_{rj}T_jA^T_{rj} + \sigma^2 & A_{rj}T_j \\ T_j A^T_{rj} & T_j \\\end{pmatrix} \Bigg] \quad \text{ equation 12}
+
+From *equation 12*, we can dervie the conditional distribution of the missing data given the complete data as follows:
+
+.. math::
+   
+   \theta_{rj} | Y, \theta_f, T_j, \sigma^2 \sim N (\theta^*_{rj}, \sigma^2 C_j^{-1}) \quad \text{ equation 13} 
+
+with
+
+.. math::
+   
+   \theta^*_{rj} = C^{-1}_j A^T_{rj} (Y_j - A_{fj} \theta_f) \quad \text{ equation 14}
+
+   C_j = A^T_{rj} A_{rj} + \sigma^2 T^{-1}_j \quad \text{ equation 15}
+
+Generate a random positive definite matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
