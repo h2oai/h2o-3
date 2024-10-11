@@ -81,7 +81,9 @@ Common parameters
 
 -  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``.
    
-     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+     .. note:: 
+
+      Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
 - score_values_handling
@@ -93,7 +95,9 @@ Common parameters
    
     *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
    
-    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+    .. note:: 
+
+      Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
@@ -142,11 +146,11 @@ We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_
 
 where:
 
-- :math:`Y = \begin{bmatrix} y_{11} \\ y_{21} \\ \vdots \\ y_{n_{1}1} \\ y_{12} \\ y_{22} \\ \vdots \y_{n_{2}2} \\ \vdots \\ y_{1J} \\ y_{2J} \\ \vdots \\ y_{n_{J}J} \\\end{bmatrix}` is a :math:`n(= \sum^J_{j=1} n_j)` by 1 vector where :math:`n` is the number of all independent and identically distributed observations across all clusters;
+- :math:`Y = \begin{bmatrix} y_{11} \\ y_{21} \\ \vdots \\ y_{n_{1}1} \\ y_{12} \\ y_{22} \\ \vdots \y_{n_{2}2} \\ \vdots \\ y_{1J} \\ y_{2J} \\ \vdots \\ y_{n_{J}J} \\\end{bmatrix}` is a :math:`n(= \sum^J_{j=1} n_j)` by 1 vector where :math:`n` is the number of all independent and identically distributed (i.i.d.) observations across all clusters;
 - :math:`X = \begin{bmatrix} X_1 \\ X_2 \\ \vdots \\ X_J \\\end{bmatrix}` where :math:`X_j = \begin{bmatrix} 1 & x_{11j} & x_{21j} & \cdots & x_{(p-1)1j} \\ 1 & x_{12j} & x_{22j} & \cdots & x_{(p-1)2j} \\ 1 & x_{13j} & x_{23j} & \cdots & x_{(p-1)3j} \\ \vdots & \vdots & \ddots & \cdots & \vdots \\ 1 & x_{1n_{j}j} & x_{2n_{j}j} & \cdots & x_{(p-1)n_{j}j} \\\end{bmatrix} = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_j} \\\end{bmatrix}`. We are just stacking all the :math:`X_j` across all the clusters;
-- :math:`\beta = \start{bmatrix} \beta_{00} \\ \beta_{10} \\ \vdots \\ \beta_{(p-1)0}` is :math:`p` by 1 fixed coefficients vector including the intercept;
+- :math:`\beta = \start{bmatrix} \beta_{00} \\ \beta_{10} \\ \vdots \\ \beta_{(p-1)0}` is a :math:`p` by 1 fixed coefficients vector including the intercept;
 - :math:`Z = \begin{bmatrix} Z_1 & 0_{12} & 0_{13} & \cdots & 0_{1J} \\ 0_{21} & Z_2 & 0_{23} & \cdots & 0_{2J} \\ 0_{31} & 0_{32} & Z_3 & \cdots & 0_{3J} \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0_{J1} & 0_{J2} & 0_{J3} & \cdots & Z_J \\\end{bmatrix}` where :math:`Z_J \text{ is a } n_j \times q` matrix, and :math:`0_{ij} n_i \times q` is a zero matrix. Therefore, :math:`Z` is a :math:`n \times (J * q)` matrix containing blocks of non-zero sub-matrices across its diagonal;
-- :math:`u = \begin{bmatrix} u_{01} \\ u_{11} \\ u_{(q-1)1} \\ u_{02} \\ u_{12} \\ \vdots \\ u_{(q-1)2} \\ \vdots \\ u_{0J} \\ u_{1J} \\ \vdots \\ u_{(q-1)J} \\\end{bmatrix} \text{ if } J * q` by 1 random effects vector and some coefficients may not have a random effect;
+- :math:`u = \begin{bmatrix} u_{01} \\ u_{11} \\ u_{(q-1)1} \\ u_{02} \\ u_{12} \\ \vdots \\ u_{(q-1)2} \\ \vdots \\ u_{0J} \\ u_{1J} \\ \vdots \\ u_{(q-1)J} \\\end{bmatrix} \text{ is a } J * q` by 1 random effects vector and some coefficients may not have a random effect;
 - :math:`e \sim N(0, \delta^2_e I_n), u \sim N (0, \delta^2_u I_{(J*q)}) \text{ where } I_n \text{ is an } n \times n \text{ and } I_{(J*q)} \text{ is an } (J*q) \times (J*q)` identity matrix;
 - :math:`e,u` are independent;
 - :math:`E \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} 0 \\ 0 \\\end{bmatrix} , cov \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} G & 0 \\ 0 & R \\\end{bmatrix} , G = \delta^2_u I_{(J*q)} , R = \delta^2_e I_{n \cdot} E \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a size } (J * q + n) \text{ vector }, cov \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a } (J * q + n) \times (J * q + n)` matrix. 
@@ -168,7 +172,36 @@ We solve for :math:`\beta, u, \delta^2_u, \text{ and } \delta^2_e`.
 Estimation of parameters using machine learning estimation via EM
 -----------------------------------------------------------------
 
-The EM algorithm addresses 
+The EM algorithm addresses the problem of maximizing the likelihood by conceiving this as a problem with missing data.
+
+Model setup
+~~~~~~~~~~~
+
+Consider a combined model for each unit :math:`j`:
+
+.. math::
+   
+   Y_j = A_{fj} \theta_f + A_{rj} \theta_{rj} + r_j, \theta_{rj} \sim N(0,T_j), r_j \sim N(0, \sigma^2I) \quad \text{ equation 6}
+
+where:
+
+- :math:`Y_j = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_j} \\\end{bmatrix}` is a known :math:`n_j \text{ by } p` matrix of level-1 predictors and :math:`x_{ji} = \begin{bmatrix} x^1_{ji} \\ x^2_{ji} \\ \vdots \\ x^{p-1}_{ji} \\ 1 \\\end{bmatrix}`;
+   
+   .. note::
+
+      In general, you can place the intercept at the beginning or the end of each row of data, but we chose to put it at the end for our implementation.
+
+- :math:`\theta_f \text{ is a } p` by 1 vector of fixed coefficients;
+- :math:`A_{rj}` is usually denoted by :math:`Z_j \text{ where } Z_j = \begin{bmatrix} z^T_{j1} \\ z^T_{j2} \\ z^T_{j3} \\ \vdots \\ z^T_{jn_j} \\\end{bmatrix}`;
+   
+   .. note::
+
+      We included a term for the random intercept here. However, there are cases where we do not have a random intercept, and the last element of 1 will not be there for :math:`z_{ji}`.
+
+- :math:`\theta_{rj}` represents the random coefficient and is a :math:`q` by 1 vector;
+- :math:`r_j \text{ is an } n_j`by 1 vector of level-1 random effects assumed multivariate normal in distribution with 0 mean vector, covariance matrix :math:`\sigma^2 I_n_{j\times nj} \text{ where } I_n_{j \times nj}` is the identity matrix, :math:`n_j \text{ by } n_j`;
+- :math:`j` denotes the level-2 units where :math:`j = 1,2, \cdots , J`;
+- :math:`T_j` is a symmetric positive definite matrix of size :math:`n_j \text{ by } n_j`. For simplicity, all :math:`T_j` are the same. We assume that :math:`T_j` is the same for all :math:`j = 1,2, \cdots , J`. However, we can assume that the fixed coefficients are i.i.d. :math:`\sim N (0, \sigma^2_u I_{n_j \times n_j})` for simplicity initially and keep :math:`T_j` to be symmetric positive definite matrix as the iteration continues.
 
 References
 ----------
