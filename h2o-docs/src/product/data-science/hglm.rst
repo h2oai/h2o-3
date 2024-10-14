@@ -314,7 +314,7 @@ Since we assume that random effects are i.i.d., the total log-likelihood is just
 
 .. math::
    
-   ll(Y; \theta_f, \sigma^2, T) \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad
+   ll(Y; \theta_f, \sigma^2, T) \\
 
    = \sum^J_{j=1} \Big\{ - \frac{1}{2} \big( n_j \log{(2 \pi)} + \log{(|V_j|)} + (Y_j - X_j \theta_f)^T V^{-1}_j (Y_j - X_j \theta_f) \big) \Big\} =
 
@@ -338,9 +338,7 @@ The final log-likelihood is:
 
 .. math::
    
-   ll(Y; \theta_f, \sigma^2, T) = - \frac{1}{2} n \log{(2 \pi)} - \frac{1}{2} \Big\{ \sum^J_{j=1} \big( \log{(|V_j|)} + \frac{1}{\sigma^2} (Y_j - X_j \theta_f)^T (Y_j - X_j \theta_f) 
-
-   - \frac{1}{\sigma^4} (Y_j - X_j \theta_f)^T Z_j \big(T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \big)^{-1} Z^T_j (Y_j - X_j \theta_f) \big) \Big\} \quad \quad \quad \quad
+   ll(Y; \theta_f, \sigma^2, T) = - \frac{1}{2} n \log{(2 \pi)} - \frac{1}{2} \Big\{ \sum^J_{j=1} \big( \log{(|V_j|)} + \frac{1}{\sigma^2} (Y_j - X_j \theta_f)^T (Y_j - X_j \theta_f) \\ - \frac{1}{\sigma^4} (Y_j - X_j \theta_f)^T Z_j \big(T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \big)^{-1} Z^T_j (Y_j - X_j \theta_f) \big) \Big\} \quad \quad \quad
 
 Alternate log-likelihood for HGLM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -396,6 +394,17 @@ During the calculation process, you need to calculate the following:
    
    - where :math:`\sum^J_{i=1} n_i = n`.
 
+Complete the EM algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The complete EM algorithm is as follows:
+
+1. Initialization: randomly assign some small values to :math:`\theta_f, \sigma^2, T_j`;
+2. Estimation: estimate the CDSS:
+   
+   .. math::
+
+      E \big( \sum^J_{j=1} A^T_{fj} \theta_{rj} \theta_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} A^T_{fj} A_{rj} \theta^*_{rj} \\ E \big( \sum^J_{j=1} \theta_{rj} \theta^T_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} \theta^*_{rj} \theta^{*T}_{rj} + \sigma^2 \sum^J_{j=1} C^{-1}_j & \quad \text{ equation 17} \\ E \big( \sum^J_{j=1} r^T_j r_j \big) = \sum^J_{j=1} r^{*T}_j r^*_j + \sigma^2 \sum^J_{j=1} tr(C^{-1}_j A^T_{rj} A_{rj})
 
 References
 ----------
