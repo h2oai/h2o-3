@@ -87,7 +87,12 @@ Shared GLM family parameters
    :scale: 5%
    :align: middle
 
-**GLM Family**: |GAM| `Generalized Additive Models <gam.html#defining-a-gam-model>`__ (GAM) |MS| `ModelSelection <model_selection.html#defining-a-modelselection-model>`__ |ANOVA| `ANOVA GLM <anova_glm.#defining-an-anova-glm-model>`__
+.. |HGLM| image:: ../images/HGLM.png
+   :alt: HGLM
+   :scale: 5%
+   :align: middle
+
+**GLM Family**: |GAM| `Generalized Additive Models <gam.html#defining-a-gam-model>`__ (GAM) |MS| `ModelSelection <model_selection.html#defining-a-modelselection-model>`__ |ANOVA| `ANOVA GLM <anova_glm.#defining-an-anova-glm-model>`__ |HGLM| `Hierarchical Generalized Linear Model <hglm.html>`__ (HGLM)
 
 -  `alpha <algo-params/alpha.html>`__: |GAM| |MS| |ANOVA| Specify the regularization distribution between L1 and L2. A value of ``1`` produces LASSO regression; a value of ``0`` produces Ridge regression. The default value of ``alpha`` is ``0`` when ``SOLVER = 'L-BFGS'``; otherwise it is ``0.5`` to specify a mixing between LASSO and Ridge regression.
 
@@ -101,7 +106,7 @@ Shared GLM family parameters
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: |GAM| |MS| |ANOVA| Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
--  `family <algo-params/family.html>`__: |GAM| |MS| |ANOVA| Specify the model type.
+-  `family <algo-params/family.html>`__: |GAM| |MS| |ANOVA| |HGLM| Specify the model type.
 
    -  If the family is ``gaussian``, the response must be numeric (**Real** or **Int**).
    -  If the family is ``binomial``, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
@@ -161,7 +166,7 @@ Shared GLM family parameters
 
 -  `objective_epsilon <algo-params/objective_epsilon.html>`__: |GAM| If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, the default value of ``objective_epsilon`` is set to ``.0001``. The default value is ``-1``.
 
--  `plug_values <algo-params/plug_values.html>`__: |GAM| |MS| |ANOVA| (Applicable only if ``missing_values_handling="PlugValues"``) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
+-  `plug_values <algo-params/plug_values.html>`__: |GAM| |MS| |ANOVA| |HGLM| (Applicable only if ``missing_values_handling="PlugValues"``) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
 
 -  `prior <algo-params/prior.html>`__: |GAM| |MS| |ANOVA| Specify prior probability for :math:`p(y==1)`. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to ``-1`` and must be a value in the range (0,1).
    
@@ -169,7 +174,7 @@ Shared GLM family parameters
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: |GAM| |MS| Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This option defaults to ``False`` (disabled).
 
-- **score_iteration_interval**: |MS| Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
+- **score_iteration_interval**: |MS| |HGLM| Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
 
 -  `solver <algo-params/solver.html>`__: |GAM| |MS| |ANOVA| Specify the solver to use. One of: 
    

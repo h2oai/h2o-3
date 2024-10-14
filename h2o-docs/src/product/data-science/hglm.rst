@@ -30,37 +30,13 @@ Algorithm-specific parameters
 
 - `random_columns <algo-params/random_columns.html>`__: An array of random column indices to be used for ``HGLM``.
 
+-  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
+
 - **random_intercept**: If enabled, will allow random component to the GLM coefficients (defaults to ``True``).
 
 - **tau_e_var_init**: Initial varience of random noise. If set, this should provide a value of > 0.0. If not set, this will be randomly set during the model building process (defaults to ``0.0``).
 
 - **tau_u_var_init**: Initial variance of random coefficient effects. If set, should provide a value > 0.0. If not set, this will be randomly set during the model building process (defaults to ``0.0``).
-
-GLM-family parameters
-~~~~~~~~~~~~~~~~~~~~~
-
--  `family <algo-params/family.html>`__: Specify the model type.
-
-   -  If the family is ``gaussian``, the response must be numeric (**Real** or **Int**).
-   -  If the family is ``binomial``, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
-   -  If the family is ``fractionalbinomial``, the response must be a numeric between 0 and 1.
-   -  If the family is ``multinomial``, the response can be categorical with more than two levels/classes (**Enum**).
-   -  If the family is ``ordinal``, the response must be categorical with at least 3 levels.
-   -  If the family is ``quasibinomial``, the response must be numeric.
-   -  If the family is ``poisson``, the response must be numeric and non-negative (**Int**).
-   -  If the family is ``negativebinomial``, the response must be numeric and non-negative (**Int**).
-   -  If the family is ``gamma``, the response must be numeric and continuous and positive (**Real** or **Int**).
-   -  If the family is ``tweedie``, the response must be numeric and continuous (**Real**) and non-negative.
-   -  If the family is ``AUTO`` (default),
-
-      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as ``binomial``.
-      - and the response is **Enum** with cardinality > 2, then the family is automatically determined as ``multinomial``.
-      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as ``gaussian``.
-
--  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
-
--  `plug_values <algo-params/plug_values.html>`__: (Applicable only if ``missing_values_handling="PlugValues"``) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
-
 
 Common parameters
 ~~~~~~~~~~~~~~~~~
@@ -86,11 +62,15 @@ Common parameters
       Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
-- score_values_handling
+
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
+
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``True`` (enabled).
+
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+
 -  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
    
     *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
@@ -405,6 +385,29 @@ The complete EM algorithm is as follows:
    .. math::
 
       E \big( \sum^J_{j=1} A^T_{fj} \theta_{rj} \theta_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} A^T_{fj} A_{rj} \theta^*_{rj} \\ E \big( \sum^J_{j=1} \theta_{rj} \theta^T_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} \theta^*_{rj} \theta^{*T}_{rj} + \sigma^2 \sum^J_{j=1} C^{-1}_j & \quad \text{ equation 17} \\ E \big( \sum^J_{j=1} r^T_j r_j \big) = \sum^J_{j=1} r^{*T}_j r^*_j + \sigma^2 \sum^J_{j=1} tr(C^{-1}_j A^T_{rj} A_{rj})
+
+   where: :math:`r^*_j = Y_j - A_{fj} \theta_f - A_{fj} \theta^*_{rj}, \theta^*_{rj} = C^{-1}_j A^T_{rj} (Y_j - A_{fj} \theta_f), C_j = A^T_{rj} A_{rj} + \sigma^2 T^{-1} \text{ and } \theta_f, \sigma^2, T` are based on the previous iteration or from initialization;
+
+3. Substitution: substitute the estimated CDSS from *equation 17* into the M-step forumulas (*equations 8, 9,* and *10*);
+4. Processing: feed the new estimates of :math:`\theta_f, \sigma^2, T_j` into step 2;
+5. Cycling: continue steps 2, 3, and 4 until the following stopping conditions are satisfied:
+   
+   a. Changes in the log-likelihood (*equation 16*) become sufficiently small, or
+   b. The largest change in the value of any of the parameters is sufficiently small.
+
+Examples
+--------
+
+The following are simple HGLM examples in Python and R.
+
+.. tabs::
+   .. code-tab:: python
+
+      blah
+
+   .. code-tab:: r R
+
+      blah
 
 References
 ----------
