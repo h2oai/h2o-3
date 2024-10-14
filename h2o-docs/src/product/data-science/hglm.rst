@@ -320,7 +320,27 @@ Since we assume that random effects are i.i.d., the total log-likelihood is just
 
    -\frac{1}{2} n \log{(2 \pi)} -\frac{1}{2} \Big\{ \sum^J_{j=1} \big( \log{(|V_j|)} + (Y_j - X_j \theta_f)^T V^{-1}_j (Y_j - X_j \theta_f) \big) \Big\}
 
+:math:`|V_j|` can be calculated as:
 
+.. math::
+   
+   |V_j| = \Big|Z_j TZ^T_j + \sigma^2 I_{n_j} \Big| = \Big|T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \Big| |T| \Big| \sigma^2 I_{n_j} \Big| = \sigma^2 \Big| T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \Big| |T|
+
+where: :math:`V^{-1}_j = \frac{1}{\sigma^2} I_{n_j} - \frac{1}{\sigma^4} Z_j \Big( T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \Big)^{-1} Z^T_j`
+
+:math:`(Y_j - X_j \theta_f)^T V_j^{-1} (Y_j - X_j \theta_f)` can be calculated as:
+
+.. math::
+   
+   (Y_j - X_j \theta_f)^T V_j^{-1} (Y_j - X_j \theta_f) = \frac{1}{\sigma^2} (Y_j - X_j \theta_f)^T (Y_j - X_j \theta_f) - \frac{1}{\sigma^4} (Y_j - X_j \theta_f)^T Z_j (T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j)^{-1} Z^T_j (Y_j - X_J \theta_f)
+
+The final log-likelihood is:
+
+.. math::
+   
+   ll(Y; \theta_f, \sigma^2, T) = - \frac{1}{2} n \log{(2 \pi)} - \frac{1}{2} \Big\{ \sum^J_{j=1} \big( \log{(|V_j|)} + \frac{1}{\sigma^2} (Y_j - X_j \theta_f)^T (Y_j - X_j \theta_f) 
+
+   - \frac{1}{\sigma^4} (Y_j - X_j \theta_f)^T Z_j \big(T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \big)^{-1} Z^T_j (Y_j - X_j \theta_f) \big) \Big\} \quad \quad \quad \quad
 
 References
 ----------
