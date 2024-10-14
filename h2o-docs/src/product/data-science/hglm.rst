@@ -342,13 +342,72 @@ The final log-likelihood is:
 
    - \frac{1}{\sigma^4} (Y_j - X_j \theta_f)^T Z_j \big(T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \big)^{-1} Z^T_j (Y_j - X_j \theta_f) \big) \Big\} \quad \quad \quad \quad
 
+Alternate log-likelihood for HGLM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+According to *equation 3*, f you write :math:`Y = X \beta + e^* \text{ where } e^* = ZU + \varepsilon`, then you will have :math:`cov(Y) = cov(e^*) = V = ZGZ^T + R = ZGZ^T + \delta^2_e I_n \text{ and } E(Y) = X\beta`. Note that:
+
+.. math::
+   
+   G_{Jq \times Jq} = \begin{bmatrix} T_j & 0_{q \times q} & 0_{q \times q} & \cdots & 0_{q \times q} \\ 0_{q \times q} & T_j & 0_{q \times q} & \cdots & 0_{q \times q} \\ 0_{q \times q} & \cdots & T_j & \cdots & 0_{q \times q} \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0_{q \times q} & 0_{q \times q} & 0_{q \times q} & \cdots & T_j \\\end{bmatrix}
+
+The log-likelihood is:
+
+.. math::
+   
+   l(\theta_f, V) = - \frac{1}{2} \Big\{ n \log{(n \pi)} + \log{(|V|)} + (Y - X \theta_f)^T V^{-1} (Y -X \theta_f) \Big\} \quad \text{ equation 16}
+
+.. note::
+   
+   You need to find :math:`|V| \text{ and } V^{-1}` (which are gigantic matrices). Therefore, you need to use the matrix determinant lemma to calculate :math:`|V|` and the Woodbury matrix identity to calculate :math:`V^{-1}`.
+
+Matrix determinant lemma
+''''''''''''''''''''''''
+
+From `[5] <#references>`__, :math:`|V|` can be calculated as:
+
+.. math::
+   
+   |V| = |ZGZ^T + R| = |G^{-1} + Z^T R^{-1}Z| |G| |R| = \sigma^2_e \Big| G^{-1} + \frac{1}{\sigma^2_e} Z^T Z \Big| |G|
+
+Woodbury matrix identity
+''''''''''''''''''''''''
+
+From `[6] <#references>`__, :math:`V^{-1}` can be calculated as:
+
+.. math::
+   
+   V^{-1} = R^{-1} - R^{-1} Z(G^{-1} + Z^T R^{-1}Z)^{-1} Z^T R^{-1} = \frac{1}{\sigma^2_e} I_{n \times n} - \frac{1}{\sigma^4_e} Z \Big( G^{-1} + {1}{\sigma^2_e} Z^T Z \Big)^{-1} Z^T
+
+Combine the Woodbury matrix identity and matrix determinant lemma
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Substitute these two equations into *equation 16* to be able to calculate the log-likelihood. Let's walk through the most difficult part to calculate: :math:`(Y - X\theta_f)^T V^{-1} (Y - X\theta_f)`:
+
+.. math::
+   
+   (Y - X\theta_f)^T V^{-1} (Y - X \theta_f) = \frac{1}{\sigma^2_e} (Y - X \theta_f)^T (Y - X\theta_f) - \frac{1}{\sigma^4_e} (Y - X\theta_f)^T Z \Big( G^{-1} + \frac{1}{\sigma^2_e} Z^T Z \Big)^{-1} Z^T (Y - X \theta_f)
+
+During the calculation process, you need to calculate the following:
+
+- :math:`(Y - X\theta_f)^T (Y - X\theta_f) = \sum^n_{i=1} (y_i - x^T_i \theta_f)^2`;
+- :math:`(Y - X\theta_f)^T Z = \Big[ \sum^{n_1}_{i=1} \big( y_{1i} - x^T_{1i} \theta_f \big) z^T_{1i} \sum^{n_2}_{i=1} \big( y_{2i} - x^T_{2i} \theta_f \big) z^T_{2i} \sum^{n_3}_{i=1} \big( y_{3i} - x^T_{3i} \theta_f \big) z^T_{3i} \cdots \sum^{n_J}_{i=1} \big( y_{Ji} - X^T_{Jj} \theta_f \big) z^T_{Jj} \Big]`;
+- :math:`Z^TZ = \begin{bmatrix} \sum^{n1}_{i=1} z_{1i} z^T_{1i} & 0_{q \times q} & \cdots & 0_{q \times q} \\ 0_{q \times q} & \sum^{n_2}_{i=1} z_{2i} z^T_{2i} & \cdots & 0_{q \times q} \\ \vdots & \vdots & \ddots & \vdots \\ 0_{q \times q} & 0_{q \times q} & 0_{q \times q} & \sum^{n_J}_{i=1} z_{Ji}Z^T_{Ji} \\\end{bmatrix}`
+   
+   - where :math:`\sum^J_{i=1} n_i = n`.
+
+
 References
 ----------
 
-David Ruppert, M. P. Wand and R. J. Carroll, Semiparametric Regression, Chapter 4, Cambridge University Press, 2003.
+[1] David Ruppert, M. P. Wand and R. J. Carroll, Semiparametric Regression, Chapter 4, Cambridge University Press, 2003.
 
-Stephen w. Raudenbush, Anthony S. Bryk, Hierarchical Linear Models Applications and Data Analysis Methods, Second Edition, Sage Publications, 2002.
+[2] Stephen w. Raudenbush, Anthony S. Bryk, Hierarchical Linear Models Applications and Data Analysis Methods, Second Edition, Sage Publications, 2002.
 
-Rao, C. R. (1973). Linear Statistical Inference and Its Applications. New York: Wiley. 
+[3] Rao, C. R. (1973). Linear Statistical Inference and Its Applications. New York: Wiley. 
 
-Dempster, A. P., Laird, N. M., & Rubin, D. B. (1977). Maximum likelihood from incomplete data via the EM algorithm. Journal of the Royal Statistical Society, Seires B, 39, 1-8.
+[4] Dempster, A. P., Laird, N. M., & Rubin, D. B. (1977). Maximum likelihood from incomplete data via the EM algorithm. Journal of the Royal Statistical Society, Seires B, 39, 1-8.
+
+[5] Matrix determinant lemma: https://en.wikipedia.org/wiki/Matrix_determinant_lemma.
+
+[6] Woodbury matrix identity: https://en.wikipedia.org/wiki/Woodbury_matrix_identity.
