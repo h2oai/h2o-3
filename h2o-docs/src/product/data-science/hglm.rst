@@ -3,6 +3,71 @@ Hierarchical Generalized Linear Model (HGLM)
 
 HGLM fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, gaussian). HGLM lets you specify both fixed and random effects, which allows for fitting correlation to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects.
 
+Introduction
+------------
+
+Hierarchical linear models (HLM) are used in situations where measurements are taken with clusters of data and there are effects of the cluster that can affect the coefficient values of GLM. 
+
+For instance, if we measure the performance of students from multiple schools along with other predictors like family annual incomes, students' health, school type (public, private, religious, etc.), and etc., we would suspect that students from the same school will have similar performances than students from different schools. Therefore, we can denote a coefficient for predictor :math:`m \text{ as } \beta_{mj}` where :math:`j` denotes the school index in our example. :math:`\beta_{0j}` denotes the intercept associated with school :math:`j`.
+
+A level-1 HLM can be expressed as:
+
+.. math::
+   
+   y_{ij} = \beta_{0j} + \sum_{m=1}^{p-1} x_{mij} \beta{mj} + \varepsilon_{ij} \quad \text{ equation 1}
+
+The level-2 model can be expressed as:
+   
+.. math::
+   
+   \beta_{0j} = \beta_{00} + u_{0j}, \beta_{mj} = \beta_{m0} + u_{mj} \quad \text{ equation 2}
+
+where:
+
+- :math:`j(=[1,2,...,J])` denotes the cluster (level-2 variable) the measurement is taken from (e.g. the school index);
+- :math:`i(=1,2,...,n_j)` denotes the data index taken from within cluster :math:`j`;
+- :math:`\beta_{00}` is the fixed intercept;
+- :math:`\beta_{0j}` is the random intercept;
+- :math:`\beta_{m0}` is the fixed coefficient for predictor :math:`m`;
+- The dimension of fixed effect coefficients is :math:`p` which includes the intercept;
+- :math:`u_{mj}` is the random coefficient for predictor :math:`m`. For predictors without a random coefficient, :math:`u_{mj} = 0`;
+- The dimension of the random effect coefficients is :math:`q` which can include the intercept. Note that :math:`q \leq p`;
+- :math:`\varepsilon_{ij} \sim N(0, \delta_e^2)`;
+- :math:`u_{ij} \sim N(0, \delta_u^2)`:
+- :math:`\varepsilon_{ij}, u_{mj}` are independent;
+- :math:`u_{mj}, u_{m,j}` are independent if :math:`m \neq m`.
+
+We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_{m0}, u_{mj}, \delta_e^2, \delta_u^2`. To do this, we use the standard linear mixed model expressed with vectors and matrices:
+
+.. math::
+   
+   Y = X\beta + Z u + e \quad \text{ equation 3}
+
+where:
+
+- :math:`Y = \begin{bmatrix} y_{11} \\ y_{21} \\ \vdots \\ y_{n_{1}1} \\ y_{12} \\ y_{22} \\ \vdots \\ y_{n_{2}2} \\ \vdots \\ y_{1J} \\ y_{2J} \\ \vdots \\ y_{n_{J}J} \\\end{bmatrix}` is an :math:`n(= \sum^J_{j=1} n_j)` by 1 vector where :math:`n` is the number of all independent and identically distributed (i.i.d.) observations across all clusters;
+- :math:`X = \begin{bmatrix} X_1 \\ X_2 \\ \vdots \\ X_J \\\end{bmatrix}` where :math:`X_j = \begin{bmatrix} 1 & x_{11j} & x_{21j} & \cdots & x_{(p-1)1j} \\ 1 & x_{12j} & x_{22j} & \cdots & x_{(p-1)2j} \\ 1 & x_{13j} & x_{23j} & \cdots & x_{(p-1)3j} \\ \vdots & \vdots & \ddots & \cdots & \vdots \\ 1 & x_{1n_{j}j} & x_{2n_{j}j} & \cdots & x_{(p-1)n_{j}j} \\\end{bmatrix} = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_j} \\\end{bmatrix}`. We are just stacking all the :math:`X_j` across all the clusters;
+- :math:`\beta = \begin{bmatrix} \beta_{00} \\ \beta_{10} \\ \vdots \\ \beta_{(p-1)0} \\\end{bmatrix}` is a :math:`p` by 1 fixed coefficients vector including the intercept;
+- :math:`Z = \begin{bmatrix} Z_1 & 0_{12} & 0_{13} & \cdots & 0_{1J} \\ 0_{21} & Z_2 & 0_{23} & \cdots & 0_{2J} \\ 0_{31} & 0_{32} & Z_3 & \cdots & 0_{3J} \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0_{J1} & 0_{J2} & 0_{J3} & \cdots & Z_J \\\end{bmatrix}` where :math:`Z_J \text{ is an } n_j \times q` matrix, and :math:`0_{ij} n_i \times q` is a zero matrix. Therefore, :math:`Z` is an :math:`n \times (J * q)` matrix containing blocks of non-zero sub-matrices across its diagonal;
+- :math:`u = \begin{bmatrix} u_{01} \\ u_{11} \\ u_{(q-1)1} \\ u_{02} \\ u_{12} \\ \vdots \\ u_{(q-1)2} \\ \vdots \\ u_{0J} \\ u_{1J} \\ \vdots \\ u_{(q-1)J} \\\end{bmatrix} \text{ is a } J * q` by 1 random effects vector and some coefficients may not have a random effect;
+- :math:`e \sim N(0, \delta^2_e I_n), u \sim N (0, \delta^2_u I_{(J*q)}) \text{ where } I_n \text{ is an } n \times n \text{ and } I_{(J*q)} \text{ is a } (J*q) \times (J*q)` identity matrix;
+- :math:`e,u` are independent;
+- :math:`E \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} 0 \\ 0 \\\end{bmatrix} , cov \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} G & 0 \\ 0 & R \\\end{bmatrix} , G = \delta^2_u I_{(J*q)} , R = \delta^2_e I_{n \cdot} E \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a size } (J * q + n) \text{ vector }, cov \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a } (J * q + n) \times (J * q + n)` matrix. 
+
+In addition, we also consider the following alternate form:
+
+.. math::
+   
+   Y = X\beta + e^*, e^* = Zu + e \quad \text{ equation 4}
+
+where:
+
+.. math::
+   
+   cov(e^*) = V = ZGZ^T + R = \delta^2_u ZZ^T + \delta^2_e I_n \quad \text{ equation 5}
+
+We solve for :math:`\beta, u, \delta^2_u, \text{ and } \delta^2_e`.
+
 Defining an HGLM model
 ----------------------
 Parameters are optional unless specified as *required*.
@@ -18,11 +83,11 @@ Algorithm-specific parameters
 
 - **initial_fixed_effects**: An array that contains the initial values of the fixed effects coefficient (defaults to ``None``).
 
-- **initial_random_effects**: An H2OFrame ID tht contains the initial values of the random effects coefficietn. The row names should be the random coefficient names (defaults to ``None``).
+- **initial_random_effects**: An H2OFrame ID that contains the initial values of the random effects coefficient. The row names should be the random coefficient names (defaults to ``None``).
 	
 	.. note::
 
-		If you aren't sure wha the random coefficient names are, then build the HGLM model with ``max_iterations=0`` and check out the model output field ``random_coefficient_names``. The number of rows of this frame should be the number of level 2 units. To figure this out, build the HGLM model with ``max_iterations=0`` and check out the model output field ``group_column_names``. The number of rows should equal the length of the ``group_column_names``.
+		If you aren't sure what the random coefficient names are, then build the HGLM model with ``max_iterations=0`` and check out the model output field ``random_coefficient_names``. The number of rows of this frame should be the number of level 2 units. To figure this out, build the HGLM model with ``max_iterations=0`` and check out the model output field ``group_column_names``. The number of rows should equal the length of the ``group_column_names``.
 
 - **initial_t_matrix**: An H2OFrame ID that contains the initial values of the T matrix. It should be a positive symmetric matrix (defaults to ``None``).
 
@@ -86,68 +151,6 @@ Common parameters
    -  For a regression model, this column must be numeric (**Real** or **Int**).
    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset cannot contain more than two levels.
 
-Definining an HLM
------------------
-
-Hierarchical linear models (HLM) is used in situations where measurements are taken with clusters of data and there are effects of the cluster that can affect the coefficient values of GLM. For instance, if we measure the students' performances from multiple schools along with other predictors like family annual incomes, students' health, school type (public, private, religious, etc.), and etc., we suspect that students from the same school will have similar performances than students from different schools. Therefore, we can denote a coefficient for predictor :math:`m \text{ as } \beta_{mj}` where :math:`j` denotes the school index in our example. :math:`\beta_{0j}` denotes the intercept associated with school :math:`j`.
-
-A level-1 HLM can be expressed as:
-
-.. math::
-	
-	y_{ij} = \beta_{0j} + \sum_{m=1}^{p-1} x_{mij} \beta{mj} + \varepsilon_{ij} \quad \text{ equation 1}
-
-The level-2 model can be expressed as:
-	
-.. math::
-	
-	\beta_{0j} = \beta_{00} + u_{0j}, \beta_{mj} = \beta_{m0} + u_{mj} \quad \text{ equation 2}
-
-where:
-
-- :math:`j(=[1,2,...,J])` denotes the cluster (level-2 variable) the measurement is taken from (e.g. the school index);
-- :math:`i(=1,2,...,n_j)` denotes the data index taken from within cluster :math:`j`;
-- :math:`\beta_{00}` is the fixed intercept;
-- :math:`\beta_{0j}` is the random intercept;
-- :math:`\beta_{m0}` is the fixed coefficient for predictor :math:`m`;
-- The dimension of fixed effect coefficients is :math:`p` which includes the intercept;
-- :math:`u_{mj}` is the random coefficient for predictor :math:`m`. For predictors without a random coefficient, :math:`u_{mj} = 0`;
-- The dimension of the random effect coefficients is :math:`q` which can include the intercept. Note that :math:`q \leq p`;
-- :math:`\varepsilon_{ij} \sim N(0, \delta_e^2)`;
-- :math:`u_{ij} \sim N(0, \delta_u^2)`:
-- :math:`\varepsilon_{ij}, u_{mj}` are independent;
-- :math:`u_{mj}, u_{m,j}` are independent if :math:`m \neq m`.
-
-We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_{m0}, u_{mj}, \delta_e^2, \delta_u^2`. To do this, we use the standard linear mixed model expressed with vectors and matrices:
-
-.. math::
-	
-	Y = X\beta + Z u + e \quad \text{ equation 3}
-
-where:
-
-- :math:`Y = \begin{bmatrix} y_{11} \\ y_{21} \\ \vdots \\ y_{n_{1}1} \\ y_{12} \\ y_{22} \\ \vdots \\ y_{n_{2}2} \\ \vdots \\ y_{1J} \\ y_{2J} \\ \vdots \\ y_{n_{J}J} \\\end{bmatrix}` is a :math:`n(= \sum^J_{j=1} n_j)` by 1 vector where :math:`n` is the number of all independent and identically distributed (i.i.d.) observations across all clusters;
-- :math:`X = \begin{bmatrix} X_1 \\ X_2 \\ \vdots \\ X_J \\\end{bmatrix}` where :math:`X_j = \begin{bmatrix} 1 & x_{11j} & x_{21j} & \cdots & x_{(p-1)1j} \\ 1 & x_{12j} & x_{22j} & \cdots & x_{(p-1)2j} \\ 1 & x_{13j} & x_{23j} & \cdots & x_{(p-1)3j} \\ \vdots & \vdots & \ddots & \cdots & \vdots \\ 1 & x_{1n_{j}j} & x_{2n_{j}j} & \cdots & x_{(p-1)n_{j}j} \\\end{bmatrix} = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_j} \\\end{bmatrix}`. We are just stacking all the :math:`X_j` across all the clusters;
-- :math:`\beta = \begin{bmatrix} \beta_{00} \\ \beta_{10} \\ \vdots \\ \beta_{(p-1)0} \\\end{bmatrix}` is a :math:`p` by 1 fixed coefficients vector including the intercept;
-- :math:`Z = \begin{bmatrix} Z_1 & 0_{12} & 0_{13} & \cdots & 0_{1J} \\ 0_{21} & Z_2 & 0_{23} & \cdots & 0_{2J} \\ 0_{31} & 0_{32} & Z_3 & \cdots & 0_{3J} \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0_{J1} & 0_{J2} & 0_{J3} & \cdots & Z_J \\\end{bmatrix}` where :math:`Z_J \text{ is a } n_j \times q` matrix, and :math:`0_{ij} n_i \times q` is a zero matrix. Therefore, :math:`Z` is a :math:`n \times (J * q)` matrix containing blocks of non-zero sub-matrices across its diagonal;
-- :math:`u = \begin{bmatrix} u_{01} \\ u_{11} \\ u_{(q-1)1} \\ u_{02} \\ u_{12} \\ \vdots \\ u_{(q-1)2} \\ \vdots \\ u_{0J} \\ u_{1J} \\ \vdots \\ u_{(q-1)J} \\\end{bmatrix} \text{ is a } J * q` by 1 random effects vector and some coefficients may not have a random effect;
-- :math:`e \sim N(0, \delta^2_e I_n), u \sim N (0, \delta^2_u I_{(J*q)}) \text{ where } I_n \text{ is an } n \times n \text{ and } I_{(J*q)} \text{ is an } (J*q) \times (J*q)` identity matrix;
-- :math:`e,u` are independent;
-- :math:`E \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} 0 \\ 0 \\\end{bmatrix} , cov \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} G & 0 \\ 0 & R \\\end{bmatrix} , G = \delta^2_u I_{(J*q)} , R = \delta^2_e I_{n \cdot} E \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a size } (J * q + n) \text{ vector }, cov \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a } (J * q + n) \times (J * q + n)` matrix. 
-
-In addition, we also consider the following alternate form:
-
-.. math::
-   
-   Y = X\beta + e^*, e^* = Zu + e \quad \text{ equation 4}
-
-where:
-
-.. math::
-   
-   cov(e^*) = V = ZGZ^T + R = \delta^2_u ZZ^T + \delta^2_e I_n \quad \text{ equation 5}
-
-We solve for :math:`\beta, u, \delta^2_u, \text{ and } \delta^2_e`.
 
 Estimation of parameters using machine learning estimation via EM
 -----------------------------------------------------------------
@@ -249,15 +252,26 @@ with
 
    C_j = A^T_{rj} A_{rj} + \sigma^2 T^{-1}_j \quad \text{ equation 15}
 
-Generate a random positive definite matrix
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Complete the EM algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To randomly generate a symmetric positive definite matrix, do the following
+The complete EM algorithm is as follows:
 
-1. Generate :math:`n \text{ by } n \text{ matrix } B` with uniform numbers from -1 to 1;
-2. Set :math:`A = 0.5 * (B + B^T)`;
+1. Initialization: randomly assign some small values to :math:`\theta_f, \sigma^2, T_j`;
+2. Estimation: estimate the CDSS:
+   
+   .. math::
 
-The final symmetric mpositive definite matrix is :math:`T = A + 2 * I_n`.
+      E \big( \sum^J_{j=1} A^T_{fj} \theta_{rj} \theta_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} A^T_{fj} A_{rj} \theta^*_{rj} \\ E \big( \sum^J_{j=1} \theta_{rj} \theta^T_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} \theta^*_{rj} \theta^{*T}_{rj} + \sigma^2 \sum^J_{j=1} C^{-1}_j & \quad \text{ equation 17} \\ E \big( \sum^J_{j=1} r^T_j r_j \big) = \sum^J_{j=1} r^{*T}_j r^*_j + \sigma^2 \sum^J_{j=1} tr(C^{-1}_j A^T_{rj} A_{rj})
+
+   where: :math:`r^*_j = Y_j - A_{fj} \theta_f - A_{fj} \theta^*_{rj}, \theta^*_{rj} = C^{-1}_j A^T_{rj} (Y_j - A_{fj} \theta_f), C_j = A^T_{rj} A_{rj} + \sigma^2 T^{-1} \text{ and } \theta_f, \sigma^2, T` are based on the previous iteration or from initialization;
+
+3. Substitution: substitute the estimated CDSS from *equation 17* into the M-step forumulas (*equations 8, 9,* and *10*);
+4. Processing: feed the new estimates of :math:`\theta_f, \sigma^2, T_j` into step 2;
+5. Cycling: continue steps 2, 3, and 4 until the following stopping conditions are satisfied:
+   
+   a. Changes in the log-likelihood (*equation 16*) become sufficiently small, or
+   b. The largest change in the value of any of the parameters is sufficiently small.
 
 Log-likelihood for HGLM
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -320,81 +334,6 @@ The final log-likelihood is:
    
    ll(Y; \theta_f, \sigma^2, T) = - \frac{1}{2} n \log{(2 \pi)} - \frac{1}{2} \Big\{ \sum^J_{j=1} \big( \log{(|V_j|)} + \frac{1}{\sigma^2} (Y_j - X_j \theta_f)^T (Y_j - X_j \theta_f) \\ - \frac{1}{\sigma^4} (Y_j - X_j \theta_f)^T Z_j \big(T^{-1} + \frac{1}{\sigma^2} Z^T_j Z_j \big)^{-1} Z^T_j (Y_j - X_j \theta_f) \big) \Big\} \quad \quad \quad
 
-Alternate log-likelihood for HGLM
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-According to *equation 3*, f you write :math:`Y = X \beta + e^* \text{ where } e^* = ZU + \varepsilon`, then you will have :math:`cov(Y) = cov(e^*) = V = ZGZ^T + R = ZGZ^T + \delta^2_e I_n \text{ and } E(Y) = X\beta`. Note that:
-
-.. math::
-   
-   G_{Jq \times Jq} = \begin{bmatrix} T_j & 0_{q \times q} & 0_{q \times q} & \cdots & 0_{q \times q} \\ 0_{q \times q} & T_j & 0_{q \times q} & \cdots & 0_{q \times q} \\ 0_{q \times q} & \cdots & T_j & \cdots & 0_{q \times q} \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0_{q \times q} & 0_{q \times q} & 0_{q \times q} & \cdots & T_j \\\end{bmatrix}
-
-The log-likelihood is:
-
-.. math::
-   
-   l(\theta_f, V) = - \frac{1}{2} \Big\{ n \log{(n \pi)} + \log{(|V|)} + (Y - X \theta_f)^T V^{-1} (Y -X \theta_f) \Big\} \quad \text{ equation 16}
-
-.. note::
-   
-   You need to find :math:`|V| \text{ and } V^{-1}` (which are gigantic matrices). Therefore, you need to use the matrix determinant lemma to calculate :math:`|V|` and the Woodbury matrix identity to calculate :math:`V^{-1}`.
-
-Matrix determinant lemma
-''''''''''''''''''''''''
-
-From `[5] <#references>`__, :math:`|V|` can be calculated as:
-
-.. math::
-   
-   |V| = |ZGZ^T + R| = |G^{-1} + Z^T R^{-1}Z| |G| |R| = \sigma^2_e \Big| G^{-1} + \frac{1}{\sigma^2_e} Z^T Z \Big| |G|
-
-Woodbury matrix identity
-''''''''''''''''''''''''
-
-From `[6] <#references>`__, :math:`V^{-1}` can be calculated as:
-
-.. math::
-   
-   V^{-1} = R^{-1} - R^{-1} Z(G^{-1} + Z^T R^{-1}Z)^{-1} Z^T R^{-1} = \frac{1}{\sigma^2_e} I_{n \times n} - \frac{1}{\sigma^4_e} Z \Big( G^{-1} + {1}{\sigma^2_e} Z^T Z \Big)^{-1} Z^T
-
-Combine the Woodbury matrix identity and matrix determinant lemma
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Substitute these two equations into *equation 16* to be able to calculate the log-likelihood. Let's walk through the most difficult part to calculate: :math:`(Y - X\theta_f)^T V^{-1} (Y - X\theta_f)`:
-
-.. math::
-   
-   (Y - X\theta_f)^T V^{-1} (Y - X \theta_f) = \frac{1}{\sigma^2_e} (Y - X \theta_f)^T (Y - X\theta_f) - \frac{1}{\sigma^4_e} (Y - X\theta_f)^T Z \Big( G^{-1} + \frac{1}{\sigma^2_e} Z^T Z \Big)^{-1} Z^T (Y - X \theta_f)
-
-During the calculation process, you need to calculate the following:
-
-- :math:`(Y - X\theta_f)^T (Y - X\theta_f) = \sum^n_{i=1} (y_i - x^T_i \theta_f)^2`;
-- :math:`(Y - X\theta_f)^T Z = \Big[ \sum^{n_1}_{i=1} \big( y_{1i} - x^T_{1i} \theta_f \big) z^T_{1i} \sum^{n_2}_{i=1} \big( y_{2i} - x^T_{2i} \theta_f \big) z^T_{2i} \sum^{n_3}_{i=1} \big( y_{3i} - x^T_{3i} \theta_f \big) z^T_{3i} \cdots \sum^{n_J}_{i=1} \big( y_{Ji} - X^T_{Jj} \theta_f \big) z^T_{Jj} \Big]`;
-- :math:`Z^TZ = \begin{bmatrix} \sum^{n1}_{i=1} z_{1i} z^T_{1i} & 0_{q \times q} & \cdots & 0_{q \times q} \\ 0_{q \times q} & \sum^{n_2}_{i=1} z_{2i} z^T_{2i} & \cdots & 0_{q \times q} \\ \vdots & \vdots & \ddots & \vdots \\ 0_{q \times q} & 0_{q \times q} & 0_{q \times q} & \sum^{n_J}_{i=1} z_{Ji}Z^T_{Ji} \\\end{bmatrix}`
-   
-   - where :math:`\sum^J_{i=1} n_i = n`.
-
-Complete the EM algorithm
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The complete EM algorithm is as follows:
-
-1. Initialization: randomly assign some small values to :math:`\theta_f, \sigma^2, T_j`;
-2. Estimation: estimate the CDSS:
-   
-   .. math::
-
-      E \big( \sum^J_{j=1} A^T_{fj} \theta_{rj} \theta_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} A^T_{fj} A_{rj} \theta^*_{rj} \\ E \big( \sum^J_{j=1} \theta_{rj} \theta^T_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} \theta^*_{rj} \theta^{*T}_{rj} + \sigma^2 \sum^J_{j=1} C^{-1}_j & \quad \text{ equation 17} \\ E \big( \sum^J_{j=1} r^T_j r_j \big) = \sum^J_{j=1} r^{*T}_j r^*_j + \sigma^2 \sum^J_{j=1} tr(C^{-1}_j A^T_{rj} A_{rj})
-
-   where: :math:`r^*_j = Y_j - A_{fj} \theta_f - A_{fj} \theta^*_{rj}, \theta^*_{rj} = C^{-1}_j A^T_{rj} (Y_j - A_{fj} \theta_f), C_j = A^T_{rj} A_{rj} + \sigma^2 T^{-1} \text{ and } \theta_f, \sigma^2, T` are based on the previous iteration or from initialization;
-
-3. Substitution: substitute the estimated CDSS from *equation 17* into the M-step forumulas (*equations 8, 9,* and *10*);
-4. Processing: feed the new estimates of :math:`\theta_f, \sigma^2, T_j` into step 2;
-5. Cycling: continue steps 2, 3, and 4 until the following stopping conditions are satisfied:
-   
-   a. Changes in the log-likelihood (*equation 16*) become sufficiently small, or
-   b. The largest change in the value of any of the parameters is sufficiently small.
-
 Examples
 --------
 
@@ -403,7 +342,52 @@ The following are simple HGLM examples in Python and R.
 .. tabs::
    .. code-tab:: python
 
-      blah
+      # Initialize H2O-3 and import the HGLM estimator:
+      import h2o
+      h2o.init()
+      from h2o.estimators import H2OHGLMEstimator as hglm
+
+      # Import the Gaussian wintercept dataset:
+      h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/hglm_test/gaussian_0GC_678R_6enum_5num_p05oise_p08T_wIntercept_standardize.gz")
+
+      # Split the data into training and validation sets:
+      train, valid = h2o_data.split_frame(ratios = [.8], seed = 1234)
+
+      # Define the predictors and response:
+      y = "response"
+      x = h2o_data.names
+      x.remove("response")
+      x.remove("C1")
+
+      # Set the random columns:
+      random_columns = ["C10","C20","C30"]
+
+      # Build and train the model:
+      hglm_model = hglm(random_columns=random_columns, 
+                        group_column = "C1", 
+                        score_each_iteration=True, 
+                        seed=12345, 
+                        em_epsilon = 0.000005)
+      hglm_model.train(x=x, y=y, training_frame=train, validation_frame=valid)
+
+      # Grab various metrics (model metrics, scoring history coefficients, etc.):
+      modelMetrics = hglm_model.training_model_metrics()
+      scoring_history = hglm_model.scoring_history(as_data_frame=False)
+      scoring_history_valid = hglm_model.scoring_history_valid(as_data_frame=False)
+      model_summary = hglm_model.summary()
+      coef = hglm_model.coef()
+      coef_norm = hglm_model.coef_norm()
+      coef_names = hglm_model.coef_names()
+      coef_random = hglm_model.coefs_random()
+      coef_random_names = hglm_model.coefs_random_names()
+      coef_random_norm = hglm_model.coefs_random_norm()
+      coef_random_names_norm = hglm_model.coefs_random_names_norm()
+      t_mat = hglm_model.matrix_T()
+      residual_var = hglm_model.residual_variance()
+      mse = hglm_model.mse()
+      mse_fixed = hglm_model.mean_residual_fixed()
+      mse_fixed_valid = hglm_model.mean_residual_fixed(train=False)
+      icc = hglm_model.icc()
 
    .. code-tab:: r R
 
