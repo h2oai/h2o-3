@@ -1,8 +1,6 @@
 Hierarchical Generalized Linear Model (HGLM) 
 ============================================
 
-HGLM fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, gaussian). HGLM lets you specify both fixed and random effects, which allows for fitting correlation to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects.
-
 Introduction
 ------------
 
