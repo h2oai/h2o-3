@@ -2831,7 +2831,7 @@ h2o.get_variable_inflation_factors <- function(object) {
 #' @export
 h2o.coef <- function(object, predictorSize = -1) {
   if (is(object, "H2OModel") &&
-      object@algorithm %in% c("glm", "gam", "coxph", "modelselection")) {
+      object@algorithm %in% c("glm", "gam", "coxph", "modelselection", "hglm")) {
     if ((object@algorithm == "glm" ||
          object@algorithm == "gam") &&
         (object@allparameters$family %in% c("multinomial", "ordinal"))) {
@@ -2893,7 +2893,7 @@ h2o.coef <- function(object, predictorSize = -1) {
       }
     }
   } else {
-    stop("Can only extract coefficients from GAM, GLM and CoxPH models")
+    stop("Can only extract coefficients from GAM, GLM, HGLM and CoxPH models")
   }
 }
 
@@ -3117,7 +3117,7 @@ h2o.coef_names <- function(object) {
 #' @export
 h2o.coef_norm <- function(object, predictorSize=-1) {
   if (is(object, "H2OModel") &&
-      (object@algorithm %in% c("glm", "gam", "coxph", "modelselection"))) {
+      (object@algorithm %in% c("glm", "gam", "coxph", "modelselection", "hglm"))) {
     if (object@algorithm == "modelselection") {
       if (object@allparameters$mode == "maxrsweep" &&
           !object@allparameters$build_glm_model) {
@@ -3187,7 +3187,7 @@ h2o.coef_norm <- function(object, predictorSize=-1) {
       )
     }
   } else {
-    stop("Can only extract coefficients from GAMs/GLMs")
+    stop("Can only extract coefficients from GAMs/GLMs/HGLMs/CoxPHs/ModelSelections")
   }
 }
 

@@ -147,7 +147,7 @@ public class HGLMUtilTest extends TestUtil {
       sigmaTrace += cJINV.times(arJTARJ).trace();
     }
     double newTauEVarMat = (sigmaTrace*tauEVar+residualSquare)*oneOverN;
-    double newTauEVar =  calTauEvar(residualSquare, tauEVar, cjInv, arjTArj, oneOverN);
+    double newTauEVar =  calTauEvarEq17(residualSquare, tauEVar, cjInv, arjTArj, oneOverN);
     assertEquals(newTauEVar, newTauEVarMat, 1e-6);
   }
   

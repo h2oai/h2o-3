@@ -25,6 +25,7 @@ public class ComputationStateHGLM {
   private final Job _job;
   double _tauUVar = 0; // variance of random coefficients effects;
   double _tauEVar = 0; // variance of random noise
+  double _tauEVar2 = 0;
   String[] _fixedCofficientNames; // include intercept if enabled
   String[] _randomCoefficientNames; // include intercept only if random effect is in intercept
   String[] _level2UnitNames; // enum levels of group column
@@ -111,6 +112,7 @@ public class ComputationStateHGLM {
   public double[][] get_ubeta() { return _ubeta; }
   public double get_tauUVar() { return _tauUVar; }
   public double get_tauEVar() { return _tauEVar; }
+  public double get_tauEVar2() { return _tauEVar2;}
   public String[] get_fixedCofficientNames() { return _fixedCofficientNames; }
   public String[] get_randomCoefficientNames() { return _randomCoefficientNames; }
   public String[] get_groupColumnNames() { return _level2UnitNames; }
@@ -130,6 +132,9 @@ public class ComputationStateHGLM {
   }
   public void set_tauEVar(double tEVar) {
     _tauEVar = tEVar;
+  }
+  public void set_tauEVar2(double tEVar) {
+    _tauEVar2 = tEVar;
   }
   
   public static class ComputationStateSimple {

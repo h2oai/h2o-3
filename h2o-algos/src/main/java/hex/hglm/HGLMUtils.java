@@ -127,7 +127,7 @@ public class HGLMUtils {
     return tmat;
   }
   
-  public static double calTauEvar(double residualSquare, double tauEVar, double[][][] cjInv, double[][][] arjTArj, double oneOverN) {
+  public static double calTauEvarEq17(double residualSquare, double tauEVar, double[][][] cjInv, double[][][] arjTArj, double oneOverN) {
     int numLevel2 = cjInv.length;
     int numRandCoef = arjTArj[0].length;
     double[][] cInvArjTArj = new double[numRandCoef][numRandCoef];

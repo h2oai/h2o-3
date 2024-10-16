@@ -34,7 +34,7 @@ def test_scoring_history_model_summary():
     mse_fixed = hglm_model.mean_residual_fixed()
     mse_fixed_valid = hglm_model.mean_residual_fixed(train=False)
     icc = hglm_model.icc()
-    level2_names = hglm_model.level2_names()
+    level2_names = hglm_model.level_2_names()
     # check to make sure metrics/coefficients make sense
     # residual_var = 0.05
     assert abs(residual_var-0.05) < 1.0e-3, "Expected variance: 0.05, actual: {0}.  The difference is too big."

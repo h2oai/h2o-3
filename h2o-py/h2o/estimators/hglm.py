@@ -628,7 +628,7 @@ class H2OHGLMEstimator(H2OEstimator):
         self._parms["gen_syn_data"] = gen_syn_data
 
 
-    def level2_names(self):
+    def level_2_names(self):
         """
         Get the level 2 column values.
         """

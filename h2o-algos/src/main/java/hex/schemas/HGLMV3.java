@@ -106,7 +106,7 @@ public class HGLMV3 extends ModelBuilderSchema<HGLM, HGLMV3, HGLMV3.HGLMParamete
             , level = Level.expert, gridable = true)
     public double tau_e_var_init;
 
-    @API(help = "random columns indices for HGLM.")
+    @API(help = "random columns indices for HGLM.", gridable=true)
     public String[] random_columns;
 
     @API(help = "We only implemented EM as a method to obtain the fixed, random coefficients and the various variances.", 
@@ -120,7 +120,7 @@ public class HGLMV3 extends ModelBuilderSchema<HGLM, HGLMV3, HGLMV3.HGLMParamete
     @API(help="if true, will allow random component to the GLM coefficients.", direction=Direction.INPUT, gridable=true)
     public boolean random_intercept;
     
-    @API(help="group_column is the column that is categorical and used to generate the groups in HGLM")
+    @API(help="group_column is the column that is categorical and used to generate the groups in HGLM", gridable=true)
     public String group_column;
 
     @API(help="if true, add gaussian noise with variance specified in parms._tau_e_var_init.", 

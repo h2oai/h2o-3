@@ -290,6 +290,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
           double[] beta = _state.get_beta().clone();
           double[][] ubeta = copy2DArray(_state.get_ubeta()); // keep to generate synthetic data.
           double tauEVar = _state.get_tauEVar();
+          double tauEVar2 = _state.get_tauEVar2();
           double[][] tMat = copy2DArray(_state.get_T());
           double[][][] cjInv;
           double[][] tMatInv;
@@ -305,18 +306,19 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
             tMat = estimateNewtMat(ubeta, tauEVar, cjInv, engineTask._oneOverJ);  // new tMat
             // estimate new tauEVar, 
             HGLMTask.ResidualLLHTask rLlh = new HGLMTask.ResidualLLHTask(_job, _parms, _dinfo, ubeta, _state.get_beta(),
-                    engineTask);
+                    engineTask);  // use equation 17 of the doc
             rLlh.doAll(_dinfo._adaptedFrame);
+            tauEVar2 = calTauEvarEq17(rLlh._residualSquare, _state.get_tauEVar2(), cjInv, engineTask._ArjTArj, engineTask._oneOverN);
 
             HGLMTask.ResidualLLHTask rLlh2 = new HGLMTask.ResidualLLHTask(_job, _parms, _dinfo, ubeta, beta, engineTask);
             rLlh2.doAll(_dinfo._adaptedFrame);
             tauEVar = rLlh2._residualSquare * engineTask._oneOverN; // from equation 10 of the doc
-
+            Log.info("tauEVar equation 10: "+tauEVar + ", tauEVar equation 17: "+tauEVar2);
             // check to make sure determinant of V is positive, see section II.V of the doc
             if (!checkPositiveG(engineTask._numLevel2Units, tMat))
               Log.info("HGLM model building is stopped due to matrix G in section II.V of the doc is no longer PSD");
             // check if stopping conditions are satisfied
-            if (!progress(beta, ubeta, tMat, tauEVar, scTrain, scValid, model, rLlh2))
+            if (!progress(beta, ubeta, tMat, tauEVar2, scTrain, scValid, model, rLlh2))
               return;
           }
         }

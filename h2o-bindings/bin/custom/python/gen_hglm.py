@@ -5,7 +5,7 @@ def update_param(name, param):
     return None
 
 def class_extensions():
-    def level2_names(self):
+    def level_2_names(self):
         """
         Get the level 2 column values.
         """
