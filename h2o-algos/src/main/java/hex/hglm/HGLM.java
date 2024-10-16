@@ -308,6 +308,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
             HGLMTask.ResidualLLHTask rLlh = new HGLMTask.ResidualLLHTask(_job, _parms, _dinfo, ubeta, _state.get_beta(),
                     engineTask);  // use equation 17 of the doc
             rLlh.doAll(_dinfo._adaptedFrame);
+            // equation 17
             tauEVar2 = calTauEvarEq17(rLlh._residualSquare, _state.get_tauEVar2(), cjInv, engineTask._ArjTArj, engineTask._oneOverN);
 
             HGLMTask.ResidualLLHTask rLlh2 = new HGLMTask.ResidualLLHTask(_job, _parms, _dinfo, ubeta, beta, engineTask);
@@ -317,8 +318,14 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
             // check to make sure determinant of V is positive, see section II.V of the doc
             if (!checkPositiveG(engineTask._numLevel2Units, tMat))
               Log.info("HGLM model building is stopped due to matrix G in section II.V of the doc is no longer PSD");
+            double logLikelihood = calHGLMllg(_state._nobs, tMat, tauEVar, model._output._arjtarj, rLlh2._sse_fixed,
+                    rLlh2._yMinusXTimesZ);  // equation 10
+            double logLikelihood2 = calHGLMllg(_state._nobs, tMat, tauEVar2, model._output._arjtarj, rLlh._sse_fixed,
+                    rLlh2._yMinusXTimesZ);    // equation 17
+            Log.info("likelihood use tauEVar from equation 10 " + logLikelihood + ", likelihood use tauEVar" +
+                    " from equation 17 "+logLikelihood2);
             // check if stopping conditions are satisfied
-            if (!progress(beta, ubeta, tMat, tauEVar2, scTrain, scValid, model, rLlh2))
+            if (!progress(beta, ubeta, tMat, tauEVar2, scTrain, scValid, model, rLlh))
               return;
           }
         }
@@ -332,43 +339,36 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
       _state._iter++;
       double[] betaDiff = new double[beta.length];
       minus(betaDiff, beta, _state.get_beta());
-      double maxBetaDiff = maxMag(betaDiff)/maxMag(beta);
+      double maxBetaDiff = maxMag(betaDiff) / maxMag(beta);
       double[][] tmatDiff = new double[tmat.length][tmat[0].length];
       minus(tmatDiff, tmat, _state.get_T());
-      double maxTmatDiff = maxMag(tmatDiff)/maxMag(tmat);
+      double maxTmatDiff = maxMag(tmatDiff) / maxMag(tmat);
       double[][] ubetaDiff = new double[ubeta.length][ubeta[0].length];
       minus(ubetaDiff, ubeta, _state.get_ubeta());
-      double maxUBetaDiff = maxMag(ubetaDiff)/maxMag(ubeta);
-      double tauEVarDiff = Math.abs(tauEVar - _state.get_tauEVar())/tauEVar;
+      double maxUBetaDiff = maxMag(ubetaDiff) / maxMag(ubeta);
+      double tauEVarDiff = Math.abs(tauEVar - _state.get_tauEVar()) / tauEVar;
       // calculate log likelihood with current parameter settings, standardize if parms._standardize and vice versa
-      double logLikelihood = calHGLMllg(_state._nobs, tmat, tauEVar, model._output._arjtarj, rLlh2._sse_fixed, 
+      double logLikelihood = calHGLMllg(_state._nobs, tmat, tauEVar, model._output._arjtarj, rLlh2._sse_fixed,
               rLlh2._yMinusXTimesZ);
-      boolean converged = ((maxBetaDiff < _parms._em_epsilon) && (maxTmatDiff < _parms._em_epsilon) && (maxUBetaDiff
-              < _parms._em_epsilon) && (tauEVarDiff < _parms._em_epsilon) && (logLikelihood < model._output._log_likelihood));
+      boolean converged = ((maxBetaDiff <= _parms._em_epsilon) && (maxTmatDiff <= _parms._em_epsilon) && (maxUBetaDiff
+              <= _parms._em_epsilon) && (tauEVarDiff <= _parms._em_epsilon));
       ComputationStateHGLM.ComputationStateSimple simpleState = new ComputationStateHGLM.ComputationStateSimple(_state.get_beta(), _state.get_ubeta(),
               _state.get_T(), _state.get_tauEVar());
       if (!converged) { // update values in _state
-        try {
-          _state.set_beta(beta);
-          _state.set_ubeta(ubeta);
-          _state.set_T(tmat);
-          _state.set_tauEVar(tauEVar);
-          model._output._log_likelihood = logLikelihood;
-          if (_parms._score_each_iteration || _parms._score_iteration_interval / _state._iter == 0) {
-            model._output.setModelOutputFields(_state);
-            scoreAndUpdateModel(model, true, scTrain); // perform scoring and updating scoring history
-            if (_parms.valid() != null)
-              scoreAndUpdateModel(model, false, scValid);
-          } else {
-            scTrain.addIterationScore(_state._iter, model._output._log_likelihood, tauEVar);
-          }
-        } catch(Exception ex) {
-          _state.set_beta(simpleState._beta);
-          _state.set_ubeta(simpleState._ubeta);
-          _state.set_T(simpleState._tmat);
-          _state.set_tauEVar(tauEVar);
-          return false; // stop execution when calculation of loglikelihood is bad due to matrix inverse failure
+        _state.set_beta(beta);
+        _state.set_ubeta(ubeta);
+        _state.set_T(tmat);
+        _state.set_tauEVar(tauEVar);
+        model._output._log_likelihood = logLikelihood;
+        if (_parms._score_each_iteration || _parms._score_iteration_interval / _state._iter == 0) {
+          model._output.setModelOutputFields(_state);
+          scoreAndUpdateModel(model, true, scTrain); // perform scoring and updating scoring history
+          if (_parms.valid() != null)
+            scoreAndUpdateModel(model, false, scValid);
+        } else {
+          scTrain.addIterationScore(_state._iter, model._output._log_likelihood, tauEVar);
         }
+
       }
       return !stop_requested() && !converged && (_state._iter < _parms._max_iterations);
     }

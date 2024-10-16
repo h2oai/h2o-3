@@ -8,7 +8,7 @@ extensions = dict(
     } else {
         stop("random_columns is required.")
     }
-    if (!missing(group_column) {
+    if (!missing(group_column)) {
         parms$group_column <- group_column
     } else {
         stop("group_column is required.")

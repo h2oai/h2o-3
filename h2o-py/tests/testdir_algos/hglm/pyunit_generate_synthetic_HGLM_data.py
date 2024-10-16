@@ -90,9 +90,10 @@ def generate_dataset(family, trainData, group_column, random_columns):
     startVal = [-1.4313612,  0.6795744,  1.9795154, -3.1187255,  0.2058840, -1.6596187,  0.3460812, -0.7809777,
                 1.6617960, -0.5174034, 1.8273497, -2.4161541,  0.9474324,  2.3616221,  0.7710148,  0.2706556,  1.0541668]
     # hglm_test/gaussian_0GC_allRC_2enum2numeric_p05oise_p08T_wIntercept_standardize
+    # hglm_test/gaussian_0GC_allRC_2enum2numeric_2p0noise_p5T_wIntercept
     m = hglm(family=family, max_iterations=0, random_columns=random_columns, group_column=group_column, 
-             tau_u_var_init = 0.08, tau_e_var_init = 0.05, random_intercept = True, gen_syn_data=True, 
-             seed = 12345, standardize = True, initial_fixed_effects=startVal)
+             tau_u_var_init = 0.5, tau_e_var_init = 2, random_intercept = True, gen_syn_data=True, 
+             seed = 12345, standardize = False, initial_fixed_effects=startVal)
     m.train(training_frame=trainData, y = "response", x =myX)
     f2 = m.predict(trainData)   
     finalDataset = trainData[names_without_response]
