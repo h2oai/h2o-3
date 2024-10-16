@@ -1661,6 +1661,155 @@ Converting to standard form
 
 A standard form of :math:`g(x) \leq 0` is the only acceptable form of inequality constraints. For example, if you have a constraint of :math:`2x_1 - 4x_2 \geq 10` where :math:`x_1 \text{ and } x_4` are coefficient names, then you must convert it to :math:`10-2x_1 + 4x_2 \leq 0`. 
 
+Example of constrained GLM
+''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the Gaussian 10,000 rows dataset:
+      h2o_data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+      # Set the predictors, response, and enum columns:
+      enum_columns = c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
+      for (cname in enum_columns)
+      h2o.asfactor(h2o_data[cname])
+      myY = "C21"
+      col_names <- names(h2o_data)
+      myX <- col_names[1:20]
+
+      # Set the constraints:
+      constraints <- data.frame(names <- c("C1.2", "C11", "constant", "C5.2", "C12", "C15", "constant"),
+      values <- c(1, 1, 13.56, 1, 1, 1, -5),
+      types <- c("Equal", "Equal", "Equal", "LessThanEqual", "LessThanEqual", "LessThanEqual", "LessThanEqual"),
+      constraint_numbers <- c(0, 0, 0, 1, 1, 1, 1))
+      constraints_h2o <- as.h2o(constraints)
+
+      # Set the beta constraints:
+      bc <- data.frame(names <- c("C1.1", "C5.2", "C11", "C15"), 
+                       lower_bounds <- c(-36, -14, 25, 14), 
+                       upper_bounds <- c(-35, -13, 26, 15))
+      bc_h2o <- as.h2o(bc)
+
+      # Build and train your model:
+      m_sep <- h2o.glm(x=myX, 
+                       y=myY, 
+                       training_frame=h2o.data, 
+                       family='gaussian', 
+                       linear_constraints=constraints, 
+                       solver="irlsm", 
+                       lambda=0.0, 
+                       beta_constraints=bc_h2o, 
+                       constraint_eta0=0.1, 
+                       constraint_tau=10, 
+                       constraint_alpha=0.01, 
+                       constraint_beta=0.9, 
+                       constraint_c0=100)
+
+      # Find your coefficients:
+      h2o.coef(m_sep)
+
+   .. code-tab:: python
+
+      # Import the Gaussian 10,000 rows dataset:
+      h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+      # Set the predictors, response, and enum columns:
+      enum_columns = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"]
+      for cname in enum_columns:
+      h2o_data[cname] = h2o_data[cname].asfactor()
+      myY = "C21"
+      myX = h2o_data.names.remove(myY)
+
+      # Set the linear constraints:
+      linear_constraints = [] # this constraint is satisfied by default coefficient initialization
+      name = "C1.2"
+      values = 1
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C11"
+      values = 1
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "constant"
+      values = 13.56 
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C5.2"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C12"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C15"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "constant"
+      values = -5
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      linear_constraints2 = h2o.H2OFrame(linear_constraints)
+      linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
+
+      # Set the beta constraints:
+      bc = []
+      name = "C1.1"
+      c1p1LowerBound = -36
+      c1p1UpperBound=-35
+      bc.append([name, c1p1LowerBound, c1p1UpperBound])
+
+      name = "C5.2"
+      c5p2LowerBound=-14
+      c5p2UpperBound=-13
+      bc.append([name, c5p2LowerBound, c5p2UpperBound])
+
+      name = "C11"
+      c11LowerBound=25
+      c11UpperBound=26
+      bc.append([name, c11LowerBound, c11UpperBound])
+
+      name = "C15"
+      c15LowerBound=14
+      c15UpperBound=15
+      bc.append([name, c15LowerBound, c15UpperBound])
+
+      beta_constraints = h2o.H2OFrame(bc)
+      beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])
+
+      # Build and train your model:
+      m_sep = glm(family='gaussian', 
+                  linear_constraints=linear_constraints2, 
+                  solver="irlsm", 
+                  lambda_=0.0, 
+                  beta_constraints=beta_constraints, 
+                  constraint_eta0=0.1, 
+                  constraint_tau=10, 
+                  constraint_alpha=0.01, 
+                  constraint_beta=0.9, 
+                  constraint_c0=100)
+      m_sep.train(training_frame=h2o_data,x=myX, y=myY)
+
+      # Find your coefficients:
+      coef_sep = m_sep.coef()
+
+
 Treatment of strict inequalities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
