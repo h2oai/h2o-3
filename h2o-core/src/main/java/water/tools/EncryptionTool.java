@@ -47,6 +47,9 @@ public class EncryptionTool {
     }
 
     public static void main(String[] args) throws GeneralSecurityException, IOException {
+        mainInternal(args);
+    }
+    public static void mainInternal(String[] args) throws GeneralSecurityException, IOException {
         EncryptionTool et = new EncryptionTool();
         et._keystore_file = new File(args[0]);
         et._keystore_type = args[1];
