@@ -53,6 +53,9 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
   @API(help="Specifies if checksum should be written next to data files on export (if supported by export format).")
   public boolean write_checksum = true;
 
+  @API(help="Specifies if the timezone should be adjusted from local to UTC timezone (parquet only).")
+  public boolean tz_adjust_from_local = false;
+
   @API(help="Field separator (default ',')")
   public byte separator = Frame.CSVStreamParams.DEFAULT_SEPARATOR;
 
