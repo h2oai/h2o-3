@@ -63,7 +63,7 @@ Algorithm-specific parameters
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
-**max_iterations**: For GLM, must be :math:`\geq` 1 to obtain a proper model (or -1 for unlimited which is the default setting). Setting it to 0 will only return the correct coefficient names and empty.
+**max_iterations**: For GLM, must be :math:`\geq` 1 to obtain a proper model (or -1 for unlimited which is the default setting). Setting it to 0 will only return the correct coefficient names and an empty model.
 
 - **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``1000000``.
 
@@ -1672,8 +1672,9 @@ Example of constrained GLM
 
       # Set the predictors, response, and enum columns:
       enum_columns = c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
-      for (cname in enum_columns)
+      for (cname in enum_columns) {
       h2o.asfactor(h2o_data[cname])
+      }
       myY = "C21"
       col_names <- names(h2o_data)
       myX <- col_names[1:20]
@@ -1716,7 +1717,7 @@ Example of constrained GLM
 
       # Set the predictors, response, and enum columns:
       enum_columns = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"]
-      for cname in enum_columns:
+      ffor cname in enum_columns:
       h2o_data[cname] = h2o_data[cname].asfactor()
       myY = "C21"
       myX = h2o_data.names.remove(myY)
