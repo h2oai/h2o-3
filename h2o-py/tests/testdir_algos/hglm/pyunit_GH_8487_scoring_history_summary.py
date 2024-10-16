@@ -20,20 +20,13 @@ def test_scoring_history_model_summary():
     x.remove("C1")
     random_columns = ["C2", "C3", "C10", "C20"]
     hglm_model = hglm(random_columns=random_columns, group_column = "C1", score_each_iteration=True, seed=12345,
-                      em_epsilon = 0.0001, random_intercept = True, standardize = False)
+                      em_epsilon = 0.001, random_intercept = True, standardize = False)
     hglm_model.train(x=x, y=y, training_frame=train, validation_frame=valid)
-    hglm_model2 = hglm(random_columns=random_columns, group_column = "C1", seed=12345, em_epsilon = 0.0001,
-                       random_intercept = True, standardize = False) # loglikelihood calculated in training and not with scoring
-    hglm_model2.train(x=x, y=y, training_frame=train, validation_frame=valid)
     # grab various metrics
-    modelMetrics = hglm_model.training_model_metrics()
+    model_metrics = hglm_model.training_model_metrics()
     scoring_history = hglm_model.scoring_history(as_data_frame=False)
     scoring_history_valid = hglm_model.scoring_history_valid(as_data_frame=False)
     model_summary = hglm_model.summary()
-    modelMetrics2 = hglm_model2.training_model_metrics()
-    scoring_history2 = hglm_model2.scoring_history(as_data_frame=False)
-    scoring_history_valid2 = hglm_model2.scoring_history_valid(as_data_frame=False)
-    model_summary2 = hglm_model2.summary()    
     coef_random_names = hglm_model.coefs_random_names()
     t_mat = hglm_model.matrix_T()
     residual_var = hglm_model.residual_variance()
@@ -57,9 +50,33 @@ def test_scoring_history_model_summary():
     assert len(t_mat) == len(coef_random_names), "expected T matrix size: {0}, actual: {1} and they are not " \
                                           "equal.".format(len(coef_random_names), len(t_mat))
     utils_for_glm_hglm_tests.check_icc_calculation(t_mat, residual_var, icc)
-    # make sure contents in model summary, model history and model metrics are consistent with each other
-    
-    print("Done")
+    # check model summary and model metrics if contain the same information should equal to each other
+    model_iterations = model_metrics["iterations"]
+    assert model_iterations == model_summary.cell_values[0][1], \
+        "model metrics iterations {0} should equal model_summary iterations {1}".format(model_iterations, model_summary.cell_values[0][1])
+    last_mse = model_metrics["MSE"]
+    assert abs(last_mse - model_summary.cell_values[0][3]) < 1e-6, \
+        "model metrics MSE {0} should equal to model summary MSE {1}.".format(last_mse, model_summary.cell_values[0][3])
+    last_llg = model_metrics["log_likelihood"]
+    assert abs(last_llg - model_summary.cell_values[0][2]) < 1e-6,\
+        "model metrics llg {0} should equal to model summary llg {1}.".format(last_llg, model_summary.cell_values[0][2])
+    # check scoring history last entry with model metric values
+    assert len(scoring_history.cell_values) == model_iterations, \
+        "length of scoring history {0} should equal to number of model iterations {1}".format(len(scoring_history.cell_values), model_iterations)
+    last_sc_index = model_iterations-1
+    assert abs(scoring_history.cell_values[last_sc_index][3] - last_llg) < 1e-6, \
+        "last scoring history llg {0} should equal to model metrics llg {1}".format(scoring_history.cell_values[last_sc_index][3], last_llg)
+    assert abs(scoring_history.cell_values[last_sc_index][4] - last_mse) < 1e-6, \
+        "last scoring history MSE {0} should equal to model metrics MSE {1}.".format(scoring_history.cell_values[last_sc_index][4], last_mse)
+    # check and make sure the llg from training and validation frame should be increasing in values
+    # for ind in list(range(1, model_iterations)):
+    #     p_ind = ind-1
+    #     assert scoring_history.cell_values[p_ind][3] <= scoring_history.cell_values[ind][3], \
+    #         "training llg {0} from iteration {1} should be smaller than training llg {2} from iteration " \
+    #         "{3}".format(scoring_history.cell_values[p_ind][3], p_ind, scoring_history.cell_values[ind][3], ind)
+    #     assert scoring_history_valid.cell_values[p_ind][3] <= scoring_history_valid.cell_values[ind][3], \
+    #         "validation llg {0} from iteration {1} should be smaller than validation llg {2} from iteration " \
+    #         "{3}".format(scoring_history_valid.cell_values[p_ind][3], p_ind, scoring_history_valid.cell_values[ind][3], ind)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_scoring_history_model_summary)

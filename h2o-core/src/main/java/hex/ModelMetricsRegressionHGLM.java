@@ -39,8 +39,7 @@ public class ModelMetricsRegressionHGLM extends ModelMetricsSupervised {
 
   /**
    *
-   * This method calculates the log-likelihood as described in section II.V of the doc.  I surround the method with
-   * try catch because it seems like the Matrix toolbox can crash h2o-3 otherwise.
+   * This method calculates the log-likelihood as described in section II.V of the doc.
    */
   public static double calHGLMllg(long nobs, double[][] tmat, double varResidual, double[][][] zjTTimesZj,
                                    double yMinsXFixSquared, double[][] yMinusXFixTimesZ) {
