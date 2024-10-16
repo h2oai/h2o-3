@@ -5,7 +5,7 @@ description = "H2O Persist GCS"
 dependencies {
     api project(":h2o-core")
     api ('com.google.cloud:google-cloud-storage:2.13.1') {
-        transitive = false
+        exclude group: "com.google.protobuf"
     }
 
     testImplementation project(":h2o-test-support")
