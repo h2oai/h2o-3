@@ -5,6 +5,8 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
         # noinspection PyUnresolvedReferences
         import matplotlib
         if server:
+            import matplotlib.pyplot as plt
+            plt.close('all')
             matplotlib.use("Agg")
         try:
             # noinspection PyUnresolvedReferences
