@@ -1,6 +1,7 @@
 from h2o.estimators import H2OGeneralizedLinearEstimator as glm
 from h2o.exceptions import H2OValueError
 from h2o.grid.grid_search import H2OGridSearch
+from tests import pyunit_utils
 
 
 def gen_constraint_glm_model(training_dataset, x, y, solver="AUTO", family="gaussian", linear_constraints=None, 
@@ -75,7 +76,7 @@ def grid_models_analysis(grid_models, hyper_parameters, metric="logloss", epsilo
     [best_equality_constraints, best_lessthan_constraints] = grab_constraint_values(
         base_constraints_table, cond_index, len(base_constraints_table.cell_values))
 
-    base_iteration = find_glm_iterations(grid_models[0])
+    base_iteration = find_model_iterations(grid_models[0])
     num_models = len(grid_models)
     best_model_ind = 0
     model_indices = []
@@ -93,13 +94,13 @@ def grid_models_analysis(grid_models, hyper_parameters, metric="logloss", epsilo
             # conditions used to choose the best model
             if (sum(equality_constraints_values) < sum(best_equality_constraints)) and (sum(lessthan_constraints_values) < sum(best_lessthan_constraints)):
                 best_model_ind = ind
-                base_iteration = find_glm_iterations(curr_model)
+                base_iteration = find_model_iterations(curr_model)
                 best_equality_constraints = equality_constraints_values
                 best_lessthan_constraints = lessthan_constraints_values
             model_equality_constraints_values.append(equality_constraints_values)
             model_lessthan_constraints_values.append(lessthan_constraints_values)
             model_indices.append(ind)
-            iterations.append(find_glm_iterations(curr_model))
+            iterations.append(find_model_iterations(curr_model))
     print("Maximum iterations: {0} and it is from model index: {1}".format(base_iteration, best_model_ind))
     print_model_hyperparameters(grid_models[best_model_ind], hyper_parameters)
     return grid_models[best_model_ind]
@@ -137,7 +138,7 @@ def is_always_lower_than(original_tuple, new_tuple):
                                                   "different".format(len(original_tuple), len(new_tuple))
     return all(abs(orig) > abs(new) for orig, new in zip(original_tuple, new_tuple))
            
-def find_glm_iterations(glm_model):
+def find_model_iterations(glm_model):
     """
     Given a glm constrainted model, this method will obtain the number of iterations from the model summary.
     """
@@ -145,3 +146,109 @@ def find_glm_iterations(glm_model):
     lengths = len(cell_values)
     iteration_index = glm_model._model_json["output"]["model_summary"].col_header.index("number_of_iterations")
     return cell_values[lengths-1][iteration_index]
+
+def normalize_denormalize_random_coefs(random_coefs, random_coefs_names, level_2_names, numerical_cols, training_frame, normalize = True):
+    """
+    Given a random effect coefficients dict, this method will standardize/normalize the coefficients
+    
+    :param random_coefs: python dict with random column names and a list of random coefficients for each level 2 index
+    :param random_coefs_names: python list of random coefficient name
+    :param level_2_names: python string list of level 2 values
+    :param numerical_cols: numerical columns of the frame
+    :param training_frame: h2o frame used to build the model
+    :return: python dict with random columns names and a list of normalized/standardized random coefficients
+    """
+    normalized_coefs = dict()
+    # extract random coefficients for each level 2 value
+    for level2_val in level_2_names:
+        # extract dict for one level 2 value
+        dictLevel2 = extract_coef_dict(random_coefs, level2_val, random_coefs_names)
+        if normalize:
+            transform_one_coef = normalize_coefs(dictLevel2, numerical_cols, training_frame)
+        else:
+            transform_one_coef = denormalize_coefs(dictLevel2, numerical_cols, training_frame)
+            
+        add_to_random_coef_dict(normalized_coefs, transform_one_coef, level2_val, random_coefs_names)
+    return normalized_coefs
+        
+def add_to_random_coef_dict(normalized_coefs, normalized_one_coefs, level2_val, random_coefs_names):
+    one_list = []
+    for one_name in random_coefs_names:
+        one_list.append(normalized_one_coefs[one_name])
+    normalized_coefs[level2_val] = one_list
+
+def extract_coef_dict(random_coeffs, level2_name, random_coefs_names):
+    random_coef_level2 = dict()
+    index = 0
+    for cname in random_coefs_names:
+        random_coef_level2[cname] = random_coeffs[level2_name][index]
+        index = index+1
+    return random_coef_level2    
+    
+    
+
+def normalize_coefs(coefs, numerical_cols, training_frame):
+    """
+    Given a coefficient as a dict, the method will normalized/standardized the given coefficents and return it in another
+    dict.
+    
+    :param coefs: coefficients as a dict without normalization/standardization
+    :param numerical_cols: column names of numerical columns
+    :param training_frame: H2O frame used to train the model
+    :return: a python dict with normalized/standardized coefficients
+    """
+    intercept_adjust = 0
+    all_coefs_names = coefs.keys()
+    normalized_coefs = coefs.copy()
+    # only numerical coefficients are changed.
+    for cname in numerical_cols:
+        if cname in all_coefs_names:
+            cmean = training_frame[cname].mean()[0,0]
+            csigma = training_frame[cname].sd()[0]
+            normalized_coefs[cname] = coefs[cname] * csigma
+            intercept_adjust = intercept_adjust + normalized_coefs[cname]*cmean/csigma
+    if "intercept" in all_coefs_names:
+        normalized_coefs["intercept"] = coefs["intercept"]+intercept_adjust
+    else:
+        normalized_coefs["intercept"] = intercept_adjust
+    return normalized_coefs
+    
+def denormalize_coefs(coefs_normalized, numerical_cols, training_frame):
+    intercept_adjust = 0
+    all_coefs_names = coefs_normalized.keys()
+    denormalize_coefs = coefs_normalized.copy()
+    for cname in numerical_cols:
+        if cname in all_coefs_names:
+            cmean = training_frame[cname].mean()[0,0]
+            csigma = training_frame[cname].sd()[0]
+            denormalize_coefs[cname] = coefs_normalized[cname] / csigma
+            intercept_adjust = intercept_adjust - cmean * coefs_normalized[cname] / csigma
+        
+    if "intercept" in all_coefs_names:
+        denormalize_coefs["intercept"] = denormalize_coefs["intercept"] + intercept_adjust
+    else:
+        denormalize_coefs["intercept"] = intercept_adjust
+    return denormalize_coefs
+
+def compare_dicts_with_tupple(dict1, dict2, tolerance=1e-6):
+    keys = dict1.keys()
+    for cname in keys:
+        pyunit_utils.equal_two_arrays(dict1[cname], dict2[cname], tolerance = tolerance, throw_error=True)
+        
+def compare_list_h2o_frame(one_list, h2oframe, col_name_start):
+    list_len = len(one_list)
+    for index in range(list_len):
+        assert col_name_start+h2oframe[index, 0] in one_list, "Value: {0} is not found in the list.".format(h2oframe[index, 0])
+        
+def check_icc_calculation(tmat, varEVar, icc, tolerance=1e-6):
+    t_size = len(icc)
+    varSum = varEVar
+    for ind in range(t_size):
+        varSum = varSum + tmat[ind][ind]
+    oneOVarSum = 1.0/varSum
+        
+    for ind in range(t_size):
+        one_icc = tmat[ind][ind]*oneOVarSum
+        assert abs(one_icc - icc[ind]) < tolerance, "Expected ICC value {0} for coef {1}, actual ICC value {2}.  " \
+                                                    "They are not equal or close.".format(one_icc, icc[ind], ind)
+        

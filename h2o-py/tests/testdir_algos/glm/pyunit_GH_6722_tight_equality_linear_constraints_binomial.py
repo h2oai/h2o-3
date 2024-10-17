@@ -1,7 +1,7 @@
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
-from tests.pyunit_utils import utils_for_glm_tests
+from tests.pyunit_utils import utils_for_glm_hglm_tests
 
 def test_tight_equality_linear_constraints_binomial():
     '''
@@ -173,7 +173,7 @@ def test_tight_equality_linear_constraints_binomial():
                                                                          return_best=False)
     optimal_init_logloss = h2o_glm_optimal_init.model_performance()._metric_json['logloss']
     print("logloss with optimal GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
-          "{1}".format(optimal_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_optimal_init)))
+          "{1}".format(optimal_init_logloss, utils_for_glm_tests.find_model_iterations(h2o_glm_optimal_init)))
     print(glm.getConstraintsInfo(h2o_glm_optimal_init))
     print("All constraints satisfied: {0}".format(glm.allConstraintsPassed(h2o_glm_optimal_init)))
     
@@ -189,7 +189,7 @@ def test_tight_equality_linear_constraints_binomial():
                                                                          return_best=False)
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with default GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
-          "{1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))
+          "{1}".format(default_init_logloss, utils_for_glm_tests.find_model_iterations(h2o_glm_default_init)))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
     print("All constraints satisfied: {0}".format(glm.allConstraintsPassed(h2o_glm_default_init)))
     
@@ -221,7 +221,7 @@ def test_tight_equality_linear_constraints_binomial():
                                                                         return_best=False)
     random_init_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with random GLM coefficient initializaiton: {0}, number of iterations taken to build the model: "
-          "{1}".format(random_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))
+          "{1}".format(random_init_logloss, utils_for_glm_tests.find_model_iterations(h2o_glm_random_init)))
     print(glm.getConstraintsInfo(h2o_glm_random_init))
     print("All constraints satisfied: {0}".format(glm.allConstraintsPassed(h2o_glm_random_init)))
 

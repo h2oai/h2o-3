@@ -3155,11 +3155,8 @@ h2o.learning_curve_plot <- function(model,
 
   sh <- .preprocess_scoring_history(model, sh)
   if (model@algorithm %in% c("glm", "gam")) {
-    hglm <- !is.null(model@parameters$HGLM) && model@parameters$HGLM
     if (model@allparameters$lambda_search) {
       allowed_timesteps <- "iteration"
-    } else if (!is.null(hglm) && hglm) {
-      allowed_timesteps <- "iterations"
     } else {
       allowed_timesteps <- "iterations"
     }
@@ -3213,7 +3210,6 @@ h2o.learning_curve_plot <- function(model,
     validation_metric <- "UNDEFINED"
   } else if ("deviance" == metric &&
     model@algorithm %in% c("gam", "glm") &&
-    !hglm &&
     "deviance_train" %in% names(sh)) {
     training_metric <- "deviance_train"
     validation_metric <- "deviance_test"

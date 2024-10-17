@@ -358,17 +358,7 @@ h2o.getModel <- function(model_id) {
     }
   }
 
-  if (identical("glm", json$algo) && allparams$HGLM) {
-    .newH2OModel(Class         = Class,
-                 model_id      = model_id,
-                 algorithm     = json$algo,
-                 parameters    = parameters,
-                 allparameters = allparams,
-                 params        = params,
-                 have_pojo     = FALSE,
-                 have_mojo     = FALSE,
-                 model         = model)
-  } else {
+  if (identical("glm", json$algo)) {
   .newH2OModel(Class         = Class,
                model_id      = model_id,
                algorithm     = json$algo,
