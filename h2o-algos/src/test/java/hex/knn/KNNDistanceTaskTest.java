@@ -1,10 +1,10 @@
 package hex.knn;
 
-import org.apache.commons.lang.math.LongRange;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.TwoDimTable;
@@ -23,20 +23,22 @@ public class KNNDistanceTaskTest extends TestUtil {
             String response = "class";
             int frRows = (int) fr.numRows();
             fr.add(idColumn, createIdVec(fr.numRows(), Vec.T_NUM));
-            int k = 3;
-            Frame query = fr.deepSlice(new LongRange(0, frRows-1).toArray(), null);      
             Scope.track(fr);
-            KNNDistanceTask mrt = new KNNDistanceTask(k, query, new EuclideanDistance(), idColumn, response);
+            int k = 3;
+            int nCols = fr.numCols();
+            Chunk[] query = new Chunk[nCols];
+            for (int j = 0; j < nCols; j++) {
+                query[j] = fr.vec(j).chunkForChunkIdx(0);
+            }
+            KNNDistanceTask mrt = new KNNDistanceTask(k, query, new EuclideanDistance(), fr.find(idColumn), idColumn, fr.vec(idColumn).get_type(), fr.find(response), response);
             mrt.doAll(fr);
             Frame result = mrt.outputFrame();
             Scope.track(result);
-            TwoDimTable queryTable = query.toTwoDimTable(0, frRows);
-            System.out.println(queryTable.toString());
             TwoDimTable resultTable = result.toTwoDimTable(0, frRows);
             System.out.println(resultTable.toString());
         }
         finally {
-           Scope.exit();
+            Scope.exit();
         }
     }
 
@@ -50,15 +52,17 @@ public class KNNDistanceTaskTest extends TestUtil {
             String response = "class";
             int frRows = (int) fr.numRows();
             fr.add(idColumn, createIdVec(fr.numRows(), Vec.T_NUM));
-            int k = 3;
-            Frame query = fr.deepSlice(new LongRange(0, frRows-1).toArray(), null);
             Scope.track(fr);
-            KNNDistanceTask mrt = new KNNDistanceTask(k, query, new ManhattanDistance(), idColumn, response);
+            int k = 3;
+            int nCols = fr.numCols();
+            Chunk[] query = new Chunk[nCols];
+            for (int j = 0; j < nCols; j++) {
+                query[j] = fr.vec(j).chunkForChunkIdx(0);
+            }
+            KNNDistanceTask mrt = new KNNDistanceTask(k, query, new ManhattanDistance(), fr.find(idColumn), idColumn, fr.vec(idColumn).get_type(), fr.find(response), response);
             mrt.doAll(fr);
             Frame result = mrt.outputFrame();
             Scope.track(result);
-            TwoDimTable queryTable = query.toTwoDimTable(0, frRows);
-            System.out.println(queryTable.toString());
             TwoDimTable resultTable = result.toTwoDimTable(0, frRows);
             System.out.println(resultTable.toString());
         }
@@ -76,16 +80,18 @@ public class KNNDistanceTaskTest extends TestUtil {
             String idColumn = "id";
             String response = "class";
             int frRows = (int) fr.numRows();
-            fr.add(idColumn, createIdVec(frRows, Vec.T_NUM));
-            int k = 3;
-            Frame query = fr.deepSlice(new LongRange(0, frRows-1).toArray(), null);
+            fr.add(idColumn, createIdVec(fr.numRows(), Vec.T_NUM));
             Scope.track(fr);
-            KNNDistanceTask mrt = new KNNDistanceTask(k, query, new CosineDistance(), idColumn, response);
+            int k = 3;
+            int nCols = fr.numCols();
+            Chunk[] query = new Chunk[nCols];
+            for (int j = 0; j < nCols; j++) {
+                query[j] = fr.vec(j).chunkForChunkIdx(0);
+            }
+            KNNDistanceTask mrt = new KNNDistanceTask(k, query, new CosineDistance(), fr.find(idColumn), idColumn, fr.vec(idColumn).get_type(), fr.find(response), response);
             mrt.doAll(fr);
             Frame result = mrt.outputFrame();
             Scope.track(result);
-            TwoDimTable queryTable = query.toTwoDimTable(0, frRows);
-            System.out.println(queryTable.toString());
             TwoDimTable resultTable = result.toTwoDimTable(0, frRows);
             System.out.println(resultTable.toString());
         }

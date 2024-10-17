@@ -5,8 +5,8 @@ import java.util.Objects;
 /**
  * Class to save id and distance value for KNN calculation.
  * The key can be String or Integer. The value should be Double or class extends Double.
- * @param <K>
- * @param <V>
+ * @param <K> String of Integer
+ * @param <V> Double or class extends Double
  */
 public class KNNKey<K, V extends Double> implements Comparable<KNNKey<K, V>>{
     
