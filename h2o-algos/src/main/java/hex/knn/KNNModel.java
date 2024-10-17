@@ -3,6 +3,7 @@ package hex.knn;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 
@@ -21,6 +22,7 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
         
         public int _k = 3;
         public KNNDistance _distance;
+        public boolean _compute_metrics;
 
         @Override
         public long progressUnits() {
@@ -33,7 +35,7 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
         public KNNOutput(KNN b) {
             super(b);
         }
-        Frame _distances;
+        Key<Frame> _distances_key;
         
 
         @Override
@@ -43,6 +45,10 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
             } else {
                 return ModelCategory.Binomial;
             }
+        }
+        
+        public Frame getDistances(){
+            return DKV.get(_distances_key).get();
         }
     }
 

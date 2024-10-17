@@ -2,12 +2,15 @@ package hex.knn;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import water.DKV;
+import water.Job;
+import water.fvec.Chunk;
+import water.fvec.Frame;
 
 public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.KNNOutput> {
-
-    protected KNN(KNNModel.KNNParameters params){
-        super(params);
-    }
+    
+    public KNN(KNNModel.KNNParameters parms         ) { super(parms    ); init(false); }
+    public KNN(KNNModel.KNNParameters parms, Job job) { super(parms,job); init(false); }
 
     @Override
     protected KNNDriver trainModelImpl() {
@@ -28,11 +31,55 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
         super.init(expensive);
     }
 
-    class KNNDriver extends Driver{
-
+    class KNNDriver extends Driver {
+        
         @Override
         public void computeImpl() {
-            
+            KNNModel model = null;
+            Frame result = null;
+            Frame tmpResult = null;
+            try {
+                init(true);   // Initialize parameters
+                if (error_count() > 0) {
+                    throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+                }
+                model = new KNNModel(dest(), _parms, new KNNModel.KNNOutput(KNN.this));
+                model.delete_and_lock(_job);
+                Frame train = _parms.train();
+                String idColumn = _parms._id_column;
+                int idColumnIndex = train.find(idColumn);
+                byte idType = train.vec(idColumnIndex).get_type();
+                String responseColumn = _parms._response_column;
+                int responseColumnIndex = train.find(responseColumn);
+                int nChunks = train.anyVec().nChunks();
+                int nCols = train.numCols();
+                for (int i = 0; i < nChunks; i++) {
+                    Chunk[] query = new Chunk[nCols];
+                    for (int j = 0; j < nCols; j++) {
+                        query[j] = train.vec(j).chunkForChunkIdx(i).deepCopy();
+                    }
+                    KNNDistanceTask task = new KNNDistanceTask(_parms._k, query, _parms._distance, idColumnIndex, idColumn, idType, responseColumnIndex, responseColumn);
+                    tmpResult = task.doAll(train).outputFrame();
+                    if (result == null) {
+                        result = tmpResult;
+                    } else {
+                        result = result.add(tmpResult);
+                    }
+                }
+                result = result.deepCopy("KNN_distances");
+                DKV.put(result._key, result);
+                model._output._distances_key = result._key;
+                model.update(_job);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                if (model != null) {
+                    model.unlock(_job);
+                }
+                if (tmpResult != null) {
+                    tmpResult.remove();
+                }
+            }
         }
     }
 }

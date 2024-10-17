@@ -449,6 +449,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _offset_column;
     public String _fold_column;
     public String _treatment_column;
+    public String _id_column;
 
     // Check for constant response
     public boolean _check_constant_response = true;
@@ -573,7 +574,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
 
     public String[] getNonPredictors() {
-        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column, _treatment_column})
+        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column, _treatment_column, _id_column})
                 .filter(Objects::nonNull)
                 .toArray(String[]::new);
     }
