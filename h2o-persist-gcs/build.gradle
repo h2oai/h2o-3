@@ -4,18 +4,10 @@ description = "H2O Persist GCS"
 
 dependencies {
     api project(":h2o-core")
-    api ('com.google.cloud:google-cloud-storage:2.13.1') {
-        exclude group: "com.google.protobuf"
-    }
+    api ('com.google.cloud:google-cloud-storage:2.43.2')
 
     testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
-
-    constraints {
-        api('com.google.protobuf:protobuf-java:3.25.5') {
-
-        }
-    }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
