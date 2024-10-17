@@ -21,7 +21,7 @@ When running H2O in standalone mode using the simple Java launch command, we can
 H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SECRET ACCESS KEY) and temporary authentication using Session token
 (a triplet consisting of AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN).
 
--  You can pass in AWS Credentials in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_.
+-  You can pass in AWS Credentials in standalone mode by creating a ``core-site.xml`` file. For an example ``core-site.xml`` file, refer to `Core-site.xml`_.
 
    1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
 
@@ -42,7 +42,7 @@ H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SEC
 
      ::
 
-       java -jar h2o.jar -hdfs_config core-site.xml
+       java -jar h2o.jar core-site.xml
 
    3. Set the credentials dynamically before accessing the bucket (where ``AWS_ACCESS_KEY`` represents your user name, and ``AWS_SECRET_KEY`` represents your password).
 
@@ -62,7 +62,7 @@ H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SEC
         h2o.import_file(path = "s3://bucket/path/to/file.csv")
 
         
--  Just like regular AWS credentials, temporary credentials using AWS SESSION TOKEN can be passed in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_. The only difference lies in specifying a triplet of (AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN) and defining a credentials provider capable of resolving temporary credentials.
+-  Just like regular AWS credentials, temporary credentials using AWS SESSION TOKEN can be passed in standalone mode by creating a ``core-site.xml`` file. For an example ``core-site.xml`` file, refer to `Core-site.xml`_. The only difference lies in specifying a triplet of (AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN) and defining a credentials provider capable of resolving temporary credentials.
 
    1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
 
@@ -93,7 +93,7 @@ H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SEC
 
      ::
 
-       java -jar h2o.jar -hdfs_config core-site.xml
+       java -jar h2o.jar core-site.xml
 
    3. Set the credentials dynamically before accessing the bucket (where ``AWS_ACCESS_KEY`` represents your user name, ``AWS_SECRET_KEY`` represents your password and ``AWS_SESSION_TOKEN`` represents temporary session token).
 
@@ -211,7 +211,7 @@ Minio Cloud Storage is an alternative to Amazon AWS S3. When connecting to a Min
 
 - ``enable.path.style``: Specifies to override the default S3 behavior to expose every bucket as a full DNS enabled path. Note that this is a Minio recommendation.
 
-To pass in credentials, create a ``core-site.xml`` file that contains your Access Key ID and Secret Access Key and use the flag ``-hdfs_config`` flag when launching:
+To pass in credentials, create a ``core-site.xml`` file that contains your Access Key ID and Secret Access Key:
 
 ::
 
@@ -229,7 +229,7 @@ To pass in credentials, create a ``core-site.xml`` file that contains your Acces
 
   ::
 
-      java -Dsys.ai.h2o.persist.s3.endPoint=https://play.min.io:9000 -Dsys.ai.h2o.persist.s3.enable.path.style=true -jar h2o.jar -hdfs_config core-site.xml
+      java -Dsys.ai.h2o.persist.s3.endPoint=https://play.min.io:9000 -Dsys.ai.h2o.persist.s3.enable.path.style=true -jar h2o.jar core-site.xml
 
   **Note**: https://play.min.io:9000 is an example Minio server URL.
 
