@@ -33,6 +33,7 @@ dependencies {
         exclude group: "org.apache.curator"
         exclude group: "org.apache.zookeeper"
         exclude group: "org.eclipse.jetty"
+        exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
 
     // Upgrade dependencies of h2o-jetty-9
@@ -52,7 +53,7 @@ dependencies {
 
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
     api "org.apache.commons:commons-compress:1.26.0"
-    api "com.google.protobuf:protobuf-java:3.21.7"
+    api "com.google.protobuf:protobuf-java:3.25.5"
 
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.17.2') {

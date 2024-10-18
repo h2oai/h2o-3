@@ -4,7 +4,7 @@ description = "H2O Persist GCS"
 
 dependencies {
     api project(":h2o-core")
-    api 'com.google.cloud:google-cloud-storage:2.13.1'
+    api ('com.google.cloud:google-cloud-storage:2.43.2')
 
     testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
