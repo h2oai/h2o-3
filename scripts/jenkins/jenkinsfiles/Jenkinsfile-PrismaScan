@@ -14,26 +14,26 @@ def setScanningStages(assemblyType, stageIndex) {
             sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
         }
     }
-    stage ("${stageIndex}.B. Scan ${assemblyType} jar using Trivy") {
-        script {
-            sh "./trivy image ${assemblyImage} --output ${assemblyImage}-trivy.out"
-            // Replace special characters with * in order to show it directly in browser
-            sh """
-                sed -i 's/─/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/│/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┤/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/├/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┼/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┐/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┌/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/└/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┘/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┬/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┴/*/g' ${assemblyImage}-trivy.out
-            """
-        }
-        archiveArtifacts artifacts: "${assemblyImage}-trivy.out"
-    }
+//    stage ("${stageIndex}.B. Scan ${assemblyType} jar using Trivy") {
+//        script {
+//            sh "./trivy image ${assemblyImage} --output ${assemblyImage}-trivy.out"
+//            // Replace special characters with * in order to show it directly in browser
+//            sh """
+//                sed -i 's/─/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/│/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/┤/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/├/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/┼/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/┐/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/┌/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/└/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/┘/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/┬/*/g' ${assemblyImage}-trivy.out
+//                sed -i 's/┴/*/g' ${assemblyImage}-trivy.out
+//            """
+//        }
+//        archiveArtifacts artifacts: "${assemblyImage}-trivy.out"
+//    }
     stage("${stageIndex}.C. Scan ${assemblyType} jar using Prisma") {
         script {
             // scan the image
