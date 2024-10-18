@@ -265,6 +265,7 @@ abstract public class Log {
     return fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", maximumPidLength() + 2);
   }
 
+  // set sys.ai.h2o.log.max.pid.length to avoid h2o-3 trimming PID in the logs
   private static int maximumPidLength() {
     String maxPidPropertyValue = System.getProperty(PROP_MAX_PID_LENGTH);
     return maxPidPropertyValue != null
