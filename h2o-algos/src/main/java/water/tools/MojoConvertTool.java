@@ -33,25 +33,28 @@ public class MojoConvertTool {
         Files.write(pojoPath, pojo.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static void usage() {
-        System.err.println("java -cp h2o.jar " + MojoConvertTool.class.getName() + " source_mojo.zip target_pojo.java");
+    public static void main(String[] args) throws IOException {
+        try {
+            mainInternal(args);
+        }
+        catch (IllegalArgumentException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
     }
 
-    public static void main(String[] args) throws IOException {
-        if (args.length < 2) {
-            usage();
-            System.exit(1);
+    public static void mainInternal(String[] args) throws IOException {
+        if (args.length < 2 || args[0] == null || args[1] == null) {
+            throw new IllegalArgumentException("java -cp h2o.jar " + MojoConvertTool.class.getName() + " source_mojo.zip target_pojo.java");
         }
 
         File mojoFile = new File(args[0]);
-        if (!mojoFile.isFile()) {
-            System.err.println("Specified MOJO file (" + mojoFile.getAbsolutePath() + ") doesn't exist!");
-            System.exit(2);
+        if (!mojoFile.exists() || !mojoFile.isFile()) {
+            throw new IllegalArgumentException("Specified MOJO file (" + mojoFile.getAbsolutePath() + ") doesn't exist!");
         }
         File pojoFile = new File(args[1]);
         if (pojoFile.isDirectory() || (pojoFile.getParentFile() != null && !pojoFile.getParentFile().isDirectory())) {
-            System.err.println("Invalid target POJO file (" + pojoFile.getAbsolutePath() + ")! Please specify a file in an existing directory.");
-            System.exit(3);
+            throw new IllegalArgumentException("Invalid target POJO file (" + pojoFile.getAbsolutePath() + ")! Please specify a file in an existing directory.");
         }
 
         System.out.println();
