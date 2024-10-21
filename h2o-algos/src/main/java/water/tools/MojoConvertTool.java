@@ -44,12 +44,12 @@ public class MojoConvertTool {
     }
 
     public static void mainInternal(String[] args) throws IOException {
-        if (args.length < 2) {
+        if (args.length < 2 || args[0] == null || args[1] == null) {
             throw new IllegalArgumentException("java -cp h2o.jar " + MojoConvertTool.class.getName() + " source_mojo.zip target_pojo.java");
         }
 
         File mojoFile = new File(args[0]);
-        if (!mojoFile.isFile()) {
+        if (!mojoFile.exists() || !mojoFile.isFile()) {
             throw new IllegalArgumentException("Specified MOJO file (" + mojoFile.getAbsolutePath() + ") doesn't exist!");
         }
         File pojoFile = new File(args[1]);
