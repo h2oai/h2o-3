@@ -707,7 +707,6 @@ public class GenericModelTest extends TestUtil {
             parms._train = trainingFrame._key;
             parms._distribution = AUTO;
             parms._response_column = trainingFrame._names[1];
-            parms._rand_family = new GLMModel.GLMParameters.Family[] {GLMModel.GLMParameters.Family.AUTO};
 
             GLM job = new GLM(parms);
             final GLMModel originalModel = job.trainModel().get();

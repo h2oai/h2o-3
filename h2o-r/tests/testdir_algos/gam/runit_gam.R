@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 test.model.gam <- function() {
-    data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
+    data <- h2o.importFile('/Users/wendycwong/h2o-3/smalldata/testng/airlines_train.csv')
     cols <- c("Distance")
     original_model <- h2o.gam(x=cols, y = "IsDepDelayed", gam_columns = cols, training_frame = data, family = "binomial")
     print(original_model)
@@ -10,6 +10,7 @@ test.model.gam <- function() {
     
     prostate = h2o.importFile(locate("smalldata/prostate/prostate.csv"))
     prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+    browser()
     h2o.gam(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), gam_columns = c("AGE"), training_frame = prostate,
     family = "binomial", alpha = 0.5, lambda_search = FALSE)
 }

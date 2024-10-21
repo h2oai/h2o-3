@@ -27,6 +27,7 @@ def link_functions_gaussian():
   print("Create models with canonical link: IDENTITY")
   h2o_model = H2OGeneralizedLinearEstimator(family="gaussian", link="identity",alpha=0.5, Lambda=0)
   h2o_model.train(x=myX, y=myY, training_frame=h2o_data)
+  print(h2o_model)
   sm_model = sm.GLM(endog=sm_data_response, exog=sm_data_features,
                     family=sm.families.Gaussian(sm.families.links.identity())).fit()
 
