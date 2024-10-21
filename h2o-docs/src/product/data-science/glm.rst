@@ -63,6 +63,8 @@ Algorithm-specific parameters
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
+**max_iterations**: For GLM, must be :math:`\geq` 1 to obtain a proper model (or -1 for unlimited which is the default setting). Setting it to 0 will only return the correct coefficient names and an empty model.
+
 - **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``1000000``.
 
 -  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
@@ -1623,6 +1625,219 @@ Variable Inflation Factor Example
       vif_glm.get_variable_inflation_factors()
       {'Intercept': nan, 'abs.C1.': 1.0003341467438167, 'abs.C2.': 1.0001734204183244, 'abs.C3.': 1.0007846189027745, 'abs.C4.': 1.0005388379729434, 'abs.C5.': 1.0005349427184604}
 
+Constrained GLM
+~~~~~~~~~~~~~~~
+
+We've implemented the algorithm from Bierlaire's *Optimization: Priciples and Algorithms, Chapter 19* [:ref:`8<ref8>`] where we're basically trying to solve the following optimization problem:
+
+.. math::
+   
+   \min_{X\in R^n} f(x), \text{subject to } h(x) = 0, g(x) \leq 0 \quad \text{ equation 1}
+
+where:
+
+   - :math:`f: R^n \to R,h: R^n \to R^m,g: R^n \to R^p` 
+   - the constraints :math:`h,g` are linear.
+
+However, the actual problem we are solving is:
+
+.. math::
+   
+   \min_{X\in R^n} f(x) \text{ subject to } h(x)=0 \quad \text{ equation 2}
+
+The inequalities constraints can be easily converted to equalities constraints through simple reasoning and using active constraints. We solve the constrained optimization problem by solving the augmented Lagrangian function using the quadratic penalty:
+
+.. math::
+   
+   L_c(x,\lambda) = f(x) + \lambda^T h(x) + \frac{c}{2} \| h(x) \|^2 \quad \text{ equation 3}
+
+The basic ideas used to solve the constrained GLM consist of:
+
+a. transforming a constrained problem into a sequence of unconstrained problems;
+b. penalizing more and more the possible violation of the constraints during the sequence by continuously increasing the value of :math:`c` at each iteration.
+
+Converting to standard form
+'''''''''''''''''''''''''''
+
+A standard form of :math:`g(x) \leq 0` is the only acceptable form of inequality constraints. For example, if you have a constraint of :math:`2x_1 - 4x_2 \geq 10` where :math:`x_1 \text{ and } x_4` are coefficient names, then you must convert it to :math:`10-2x_1 + 4x_2 \leq 0`. 
+
+Example of constrained GLM
+''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the Gaussian 10,000 rows dataset:
+      h2o_data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+      # Set the predictors, response, and enum columns:
+      enum_columns = c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
+      for (cname in enum_columns) {
+      h2o.asfactor(h2o_data[cname])
+      }
+      myY = "C21"
+      col_names <- names(h2o_data)
+      myX <- col_names[1:20]
+
+      # Set the constraints:
+      constraints <- data.frame(names <- c("C1.2", "C11", "constant", "C5.2", "C12", "C15", "constant"),
+      values <- c(1, 1, 13.56, 1, 1, 1, -5),
+      types <- c("Equal", "Equal", "Equal", "LessThanEqual", "LessThanEqual", "LessThanEqual", "LessThanEqual"),
+      constraint_numbers <- c(0, 0, 0, 1, 1, 1, 1))
+      constraints_h2o <- as.h2o(constraints)
+
+      # Set the beta constraints:
+      bc <- data.frame(names <- c("C1.1", "C5.2", "C11", "C15"), 
+                       lower_bounds <- c(-36, -14, 25, 14), 
+                       upper_bounds <- c(-35, -13, 26, 15))
+      bc_h2o <- as.h2o(bc)
+
+      # Build and train your model:
+      m_sep <- h2o.glm(x=myX, 
+                       y=myY, 
+                       training_frame=h2o.data, 
+                       family='gaussian', 
+                       linear_constraints=constraints, 
+                       solver="irlsm", 
+                       lambda=0.0, 
+                       beta_constraints=bc_h2o, 
+                       constraint_eta0=0.1, 
+                       constraint_tau=10, 
+                       constraint_alpha=0.01, 
+                       constraint_beta=0.9, 
+                       constraint_c0=100)
+
+      # Find your coefficients:
+      h2o.coef(m_sep)
+
+   .. code-tab:: python
+
+      # Import the Gaussian 10,000 rows dataset:
+      h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+      # Set the predictors, response, and enum columns:
+      enum_columns = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"]
+      ffor cname in enum_columns:
+      h2o_data[cname] = h2o_data[cname].asfactor()
+      myY = "C21"
+      myX = h2o_data.names.remove(myY)
+
+      # Set the linear constraints:
+      linear_constraints = [] # this constraint is satisfied by default coefficient initialization
+      name = "C1.2"
+      values = 1
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C11"
+      values = 1
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "constant"
+      values = 13.56 
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C5.2"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C12"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C15"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "constant"
+      values = -5
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      linear_constraints2 = h2o.H2OFrame(linear_constraints)
+      linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
+
+      # Set the beta constraints:
+      bc = []
+      name = "C1.1"
+      c1p1LowerBound = -36
+      c1p1UpperBound=-35
+      bc.append([name, c1p1LowerBound, c1p1UpperBound])
+
+      name = "C5.2"
+      c5p2LowerBound=-14
+      c5p2UpperBound=-13
+      bc.append([name, c5p2LowerBound, c5p2UpperBound])
+
+      name = "C11"
+      c11LowerBound=25
+      c11UpperBound=26
+      bc.append([name, c11LowerBound, c11UpperBound])
+
+      name = "C15"
+      c15LowerBound=14
+      c15UpperBound=15
+      bc.append([name, c15LowerBound, c15UpperBound])
+
+      beta_constraints = h2o.H2OFrame(bc)
+      beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])
+
+      # Build and train your model:
+      m_sep = glm(family='gaussian', 
+                  linear_constraints=linear_constraints2, 
+                  solver="irlsm", 
+                  lambda_=0.0, 
+                  beta_constraints=beta_constraints, 
+                  constraint_eta0=0.1, 
+                  constraint_tau=10, 
+                  constraint_alpha=0.01, 
+                  constraint_beta=0.9, 
+                  constraint_c0=100)
+      m_sep.train(training_frame=h2o_data,x=myX, y=myY)
+
+      # Find your coefficients:
+      coef_sep = m_sep.coef()
+
+
+Treatment of strict inequalities
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To convert a strict inequality, just add a small number to it. For example, :math:`2x_1 - 4x_2 < 0` can be converted to :math:`2x_1 - 4x_2 - 10^{-12} \leq 0`.
+
+Transforming inequality constraints to equality constraints
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+This transformation is going to use slack variables which are introduced to replace an inequality constraint by an equality constraint. The slack variable should be non-negative. To transform inequality constraints to equality constraints, we proceed as follows:
+
+a. For each inequality constraint of :math:`g(x)`, a slack variable is added to it such that you will have: :math:`g_i(x) - s_i^2 = 0`;
+b. Let :math:`s = \begin{bmatrix} s_1^2 \\ \vdots \\ s_p^2 \\\end{bmatrix}` and :math:`g_{aug}(x) = g(x) - s`;
+c. When :math:`g_i(x) \leq 0`, the constraint is satisfied and can therefore be ignored and declared inactive;
+d. The inequality constraints are violated only when :math:`g_i(x) - s_i^2 \geq 0`. This is because it implies that :math:`g_i(x) \geq s_i^2 \geq 0` and this isn't allowed. Therefore, :math:`geq(x)` only includes the :math:`g_i(x)` when you have :math:`g_i(x) \geq 0`;
+e. Therefore, you have :math:`h_a(x) = \begin{bmatrix} h(x) \\ geq(x) \\\end{bmatrix}`, where :math:`h(x)` is the original equality constraint and :math:`geq(x)` contains the inequality constraints that satisfied the condition :math:`g_i(x) \geq 0`;
+f. The optimization problem in *equation 1* can now be rewritten as:
+
+.. math::
+   
+   \min_{X\in R^n} f(x), \text{ subject to } h_a(x) = 0 \quad \text{ equation 4}
+
+g. The augmented Lagrangian function you will solve from *equation 4* becomes:
+
+.. math::
+   
+   L_c(x, \lambda) = f(x) + \lambda^T h_a(x) + \frac{c}{2} \|h_a(x)\|^2 \quad \text{ equation 5}
+
 Modifying or Creating a Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2006,3 +2221,7 @@ Technometrics 19.4 (1977): 415-428.
 `Ronnegard, Lars. HGLM course at the Roslin Institute, http://users.du.se/~lrn/DUweb/Roslin/RoslinCourse_hglmAlgorithm_Nov13.pdf. <http://users.du.se/~lrn/DUweb/Roslin/RoslinCourse_hglmAlgorithm_Nov13.pdf>`__
 
 `Balzer, Laura B, and van der Laan, Mark J. "Estimating Effects on Rare Outcomes: Knowledge is Power." U.C. Berkeley Division of Biostatistics Working Paper Series (2013) <http://biostats.bepress.com/ucbbiostat/paper310/>`__.
+
+.. _ref8:
+
+Michel Bierlaire, Optimization: Principles and Algorithms, Chapter 19, EPEL Press, second edition, 2018
