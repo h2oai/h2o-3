@@ -35,36 +35,7 @@ where:
 - :math:`\varepsilon_{ij}, u_{mj}` are independent;
 - :math:`u_{mj}, u_{m,j}` are independent if :math:`m \neq m`.
 
-We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_{m0}, u_{mj}, \delta_e^2, \delta_u^2`. To do this, we use the standard linear mixed model expressed with vectors and matrices:
-
-.. math::
-   
-   Y = X\beta + Z u + e \quad \text{ equation 3}
-
-where:
-
-- :math:`Y = \begin{bmatrix} y_{11} \\ y_{21} \\ \vdots \\ y_{n_{1}1} \\ y_{12} \\ y_{22} \\ \vdots \\ y_{n_{2}2} \\ \vdots \\ y_{1J} \\ y_{2J} \\ \vdots \\ y_{n_{J}J} \\\end{bmatrix}` is an :math:`n(= \sum^J_{j=1} n_j)` by 1 vector where :math:`n` is the number of all independent and identically distributed (i.i.d.) observations across all clusters;
-- :math:`X = \begin{bmatrix} X_1 \\ X_2 \\ \vdots \\ X_J \\\end{bmatrix}` where :math:`X_j = \begin{bmatrix} 1 & x_{11j} & x_{21j} & \cdots & x_{(p-1)1j} \\ 1 & x_{12j} & x_{22j} & \cdots & x_{(p-1)2j} \\ 1 & x_{13j} & x_{23j} & \cdots & x_{(p-1)3j} \\ \vdots & \vdots & \ddots & \cdots & \vdots \\ 1 & x_{1n_{j}j} & x_{2n_{j}j} & \cdots & x_{(p-1)n_{j}j} \\\end{bmatrix} = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_j} \\\end{bmatrix}`. We are just stacking all the :math:`X_j` across all the clusters;
-- :math:`\beta = \begin{bmatrix} \beta_{00} \\ \beta_{10} \\ \vdots \\ \beta_{(p-1)0} \\\end{bmatrix}` is a :math:`p` by 1 fixed coefficients vector including the intercept;
-- :math:`Z = \begin{bmatrix} Z_1 & 0_{12} & 0_{13} & \cdots & 0_{1J} \\ 0_{21} & Z_2 & 0_{23} & \cdots & 0_{2J} \\ 0_{31} & 0_{32} & Z_3 & \cdots & 0_{3J} \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0_{J1} & 0_{J2} & 0_{J3} & \cdots & Z_J \\\end{bmatrix}` where :math:`Z_J \text{ is an } n_j \times q` matrix, and :math:`0_{ij} n_i \times q` is a zero matrix. Therefore, :math:`Z` is an :math:`n \times (J * q)` matrix containing blocks of non-zero sub-matrices across its diagonal;
-- :math:`u = \begin{bmatrix} u_{01} \\ u_{11} \\ u_{(q-1)1} \\ u_{02} \\ u_{12} \\ \vdots \\ u_{(q-1)2} \\ \vdots \\ u_{0J} \\ u_{1J} \\ \vdots \\ u_{(q-1)J} \\\end{bmatrix} \text{ is a } J * q` by 1 random effects vector and some coefficients may not have a random effect;
-- :math:`e \sim N(0, \delta^2_e I_n), u \sim N (0, \delta^2_u I_{(J*q)}) \text{ where } I_n \text{ is an } n \times n \text{ and } I_{(J*q)} \text{ is a } (J*q) \times (J*q)` identity matrix;
-- :math:`e,u` are independent;
-- :math:`E \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} 0 \\ 0 \\\end{bmatrix} , cov \begin{bmatrix} u \\ e \\\end{bmatrix} = \begin{bmatrix} G & 0 \\ 0 & R \\\end{bmatrix} , G = \delta^2_u I_{(J*q)} , R = \delta^2_e I_{n \cdot} E \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a size } (J * q + n) \text{ vector }, cov \begin{bmatrix} u \\ e \\\end{bmatrix} \text{ is a } (J * q + n) \times (J * q + n)` matrix. 
-
-In addition, we also consider the following alternate form:
-
-.. math::
-   
-   Y = X\beta + e^*, e^* = Zu + e \quad \text{ equation 4}
-
-where:
-
-.. math::
-   
-   cov(e^*) = V = ZGZ^T + R = \delta^2_u ZZ^T + \delta^2_e I_n \quad \text{ equation 5}
-
-We solve for :math:`\beta, u, \delta^2_u, \text{ and } \delta^2_e`.
+We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_{m0}, u_{mj}, \delta_e^2, \delta_u^2`.
 
 Defining an HGLM model
 ----------------------
@@ -75,9 +46,9 @@ Algorithm-specific parameters
 
 - **em_epsilon**: (Only available for EM method) Converge if beta/ubeta/tmat/tauEVar changes less (using L-infinity norm) than EM epsilon (defaults to ``0.001``).
 
-- **gen_syn_data**: If enabled, will add gaussian noise with variance specified in ``tau_e_var_init`` (defaults to ``False``).
+- **gen_syn_data**: If enabled, it will generate synthetic HGLM data with the fixed coefficients specified in ``initial_fixed_effects`` and the random coefficients taken from ``initial_random_effects`` or the random effects are randomly generated. In particular, it will generate the folowing output: :math:`Y_j = A_{fj} \theta_f + A_{rj} \theta_{rj} + r_j`. The gaussian noise is generated with variance that's specified in ``tau_e_var_init``. If the random coefficients are to be randomly generated, they are generated with gaussian distribution with variance that's specified in ``tau_u_var_init``.
 
-- **group_column**: The column that is categorical and used to generate the groups in HGLM (defaults to ``None``).
+- **group_column**: Specify the level-2 variable name which is categorical and used to generate the groups in HGLM (defaults to ``None``).
 
 - **initial_fixed_effects**: An array that contains the initial values of the fixed effects coefficient (defaults to ``None``).
 
@@ -85,7 +56,7 @@ Algorithm-specific parameters
 	
 	.. note::
 
-		If you aren't sure what the random coefficient names are, then build the HGLM model with ``max_iterations=0`` and check out the model output field ``random_coefficient_names``. The number of rows of this frame should be the number of level 2 units. To figure this out, build the HGLM model with ``max_iterations=0`` and check out the model output field ``group_column_names``. The number of rows should equal the length of the ``group_column_names``.
+		If you aren't sure what the random coefficient names are, then build the HGLM model with ``max_iterations=0`` and check out the model output field ``random_coefficient_names``. The number of rows of this frame should be the number of level 2 units. Check out the model output field ``group_column_names``. The number of rows should equal the length of the ``group_column_names``.
 
 - **initial_t_matrix**: An H2OFrame ID that contains the initial values of the T matrix. It should be a positive symmetric matrix (defaults to ``None``).
 
@@ -93,13 +64,13 @@ Algorithm-specific parameters
 
 - `random_columns <algo-params/random_columns.html>`__: An array of random column indices to be used for ``HGLM``.
 
--  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
+-  `rand_family <algo-params/rand_family.html>`__: Specify the distribution of the random effects. Currently only ``rand_family=["gaussisan"]`` is supported.
 
-- **random_intercept**: If enabled, will allow random component to the GLM coefficients (defaults to ``True``).
+- **random_intercept**: If enabled, will generate a random intercept as part of the random effects coefficients (defaults to ``True``).
 
-- **tau_e_var_init**: Initial varience of random noise. If set, this should provide a value of > 0.0. If not set, this will be randomly set during the model building process (defaults to ``0.0``).
+- **tau_e_var_init**: Initial variance estimate of random noise (residual noise). If set, this should provide a value of > 0.0. If not set, this will be randomly set during the model building process (defaults to ``0.0``).
 
-- **tau_u_var_init**: Initial variance of random coefficient effects. If set, should provide a value > 0.0. If not set, this will be randomly set during the model building process (defaults to ``0.0``).
+- **tau_u_var_init**: Initial variance estimate of random effects. If set, should provide a value > 0.0. If not set, this will be randomly set during the model building process (defaults to ``0.0``).
 
 Common parameters
 ~~~~~~~~~~~~~~~~~
@@ -182,7 +153,7 @@ where:
 - :math:`\theta_{rj}` represents the random coefficient and is a :math:`q` by 1 vector;
 - :math:`r_j \text{ is an } n_j` by 1 vector of level-1 random effects assumed multivariate normal in distribution with 0 mean vector, covariance matrix :math:`\sigma^2 I_{n_{j\times nj}} \text{ where } I_{n_{j \times nj}}` is the identity matrix, :math:`n_j \text{ by } n_j`;
 - :math:`j` denotes the level-2 units where :math:`j = 1,2, \cdots , J`;
-- :math:`T_j` is a symmetric positive definite matrix of size :math:`n_j \text{ by } n_j`. For simplicity, all :math:`T_j` are the same. We assume that :math:`T_j` is the same for all :math:`j = 1,2, \cdots , J`. However, we can assume that the fixed coefficients are i.i.d. :math:`\sim N (0, \sigma^2_u I_{n_j \times n_j})` for simplicity initially and keep :math:`T_j` to be symmetric positive definite matrix as the iteration continues.
+- :math:`T_j` is a symmetric positive definite matrix of size :math:`n_j \text{ by } n_j`. We assume that :math:`T_j` is the same for all :math:`j = 1,2, \cdots , J`, and it is kept to be symmetric positive definite throughout the whole model building process.
 
 M-step
 ~~~~~~

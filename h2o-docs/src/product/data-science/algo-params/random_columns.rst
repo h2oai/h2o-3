@@ -2,7 +2,7 @@
 ------------------
 
 - Available in: HGLM
-- Hyperparameter: no
+- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
