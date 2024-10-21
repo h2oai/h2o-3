@@ -3,7 +3,7 @@
 ``score_each_iteration``
 ------------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Isolation Forest, Extended Isolation Forest, Uplift DRF
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, HGLM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Isolation Forest, Extended Isolation Forest, Uplift DRF, ANOVAGLM, ModelSelection
 - Hyperparameter: no
 
 

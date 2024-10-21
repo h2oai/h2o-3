@@ -1,7 +1,7 @@
 ``x``
 -----
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, Stacked Ensembles, AutoML, XGBoost, Uplift DRF, AdaBoost
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, HGLM, PCA, GLRM, Naïve-Bayes, K-Means, Stacked Ensembles, AutoML, XGBoost, Uplift DRF, AdaBoost, Decision Tree, ANOVAGLM, ModelSelection
 - Hyperparameter: no
 
 Description
