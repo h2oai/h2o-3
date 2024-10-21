@@ -80,7 +80,7 @@ public abstract class HGLMTask {
       double residualFixed;
       DataInfo.Row r = _dinfo.newDenseRow();
       for (int rowInd = 0; rowInd < chkLen; rowInd++) {
-        _dinfo.extractDenseRow(chks, rowInd, r); // numerical values are standardized automatically if standardize=true
+        _dinfo.extractDenseRow(chks, rowInd, r);
         if (!r.isBad() && !(r.weight == 0)) {
           y = r.response(0);
           level2Index = _parms._use_all_factor_levels ? r.binIds[_level2UnitIndex] - _dinfo._catOffsets[_level2UnitIndex] :
@@ -266,7 +266,7 @@ public abstract class HGLMTask {
       int chkLen = chks[0].len();
       DataInfo.Row r = _dinfo.newDenseRow();
       for (int rowInd = 0; rowInd < chkLen; rowInd++) {
-        _dinfo.extractDenseRow(chks, rowInd, r); // numerical values are standardized automatically if standardize=true
+        _dinfo.extractDenseRow(chks, rowInd, r);
         if (!r.isBad() && !(r.weight == 0)) {
           y = r.response(0);
           _YjTYjSum += y * y;

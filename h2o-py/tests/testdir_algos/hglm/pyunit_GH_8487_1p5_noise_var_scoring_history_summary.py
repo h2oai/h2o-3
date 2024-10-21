@@ -5,7 +5,7 @@ from tests import pyunit_utils
 from h2o.estimators.hglm import H2OHGLMEstimator as hglm
 from tests.pyunit_utils import utils_for_glm_hglm_tests
 
-# in this test, want to check the following with standardization and with random intercept:
+# in this test, want to check the following with random intercept:
 # 1.scoring history (both training and valid)
 # 2. the model summary
 # 3. Fixed effect coefficients, normal and standardized
@@ -20,7 +20,7 @@ def test_scoring_history_model_summary():
     x.remove("C1")
     random_columns = ["C2", "C3", "C4"]
     hglm_model = hglm(random_columns=random_columns, group_column = "C1", score_each_iteration=True, seed=12345,
-                      max_iterations = 20, random_intercept = False, standardize=False)
+                      max_iterations = 20, random_intercept = False)
     hglm_model.train(x=x, y=y, training_frame=train, validation_frame=valid)
     # grab various metrics
     model_metrics = hglm_model.training_model_metrics()

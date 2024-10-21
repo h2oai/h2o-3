@@ -112,10 +112,9 @@ public class HGLMBasicTest extends TestUtil {
       params._random_columns = new String[]{"enum6", "enum4", "enum2", "num1", "num3"};
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum1, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum1, params._group_column, 
               new String[]{"enum2", "enum3", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum2", "enum4", "enum6"}, new String[]{"num1", "num3"});
     } finally {
@@ -136,10 +135,9 @@ public class HGLMBasicTest extends TestUtil {
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
       params._random_intercept = true;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum1, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum1, params._group_column, 
               new String[]{"enum2", "enum3", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum2", "enum4", "enum6"}, new String[]{"num1", "num3"});
     } finally {
@@ -158,11 +156,10 @@ public class HGLMBasicTest extends TestUtil {
       params._use_all_factor_levels = false;
       params._random_columns = new String[]{"enum6", "enum4", "enum2", "num1", "num3"};
       params._showFixedMatVecs = true;
-      params._standardize = false;
       params._max_iterations = 0;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum1, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum1, params._group_column, 
               new String[]{"enum2", "enum3", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum2", "enum4", "enum6"}, new String[]{"num1", "num3"});
     } finally {
@@ -182,11 +179,10 @@ public class HGLMBasicTest extends TestUtil {
       params._use_all_factor_levels = true;
       params._random_columns = new String[]{"enum1", "enum4", "enum6", "num3", "num2"};
       params._showFixedMatVecs = true;
-      params._standardize = false;
       params._max_iterations = 0;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum2, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum2, params._group_column, 
               new String[]{"enum1", "enum3", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"}, 
               new String[]{"enum1", "enum4", "enum6"}, new String[]{"num2", "num3"});
     } finally {
@@ -205,11 +201,10 @@ public class HGLMBasicTest extends TestUtil {
       params._use_all_factor_levels = false;
       params._random_columns = new String[]{"enum1", "enum4", "enum6", "num3", "num2"};
       params._showFixedMatVecs = true;
-      params._standardize = false;
       params._max_iterations = 0;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum2, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum2, params._group_column, 
               new String[]{"enum1", "enum3", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum4", "enum6"}, new String[]{"num2", "num3"});
     } finally {
@@ -228,12 +223,11 @@ public class HGLMBasicTest extends TestUtil {
       params._use_all_factor_levels = false;
       params._random_columns = new String[]{"enum1", "enum4", "enum6", "num3", "num2"};
       params._showFixedMatVecs = true;
-      params._standardize = false;
       params._max_iterations = 0;
       params._random_intercept = false;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum2, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum2, params._group_column, 
               new String[]{"enum1", "enum3", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum4", "enum6"}, new String[]{"num2", "num3"});
     } finally {
@@ -254,10 +248,9 @@ public class HGLMBasicTest extends TestUtil {
       params._random_columns = new String[]{"enum4", "enum1", "num1", "num2"};
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum3, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum3, params._group_column, 
               new String[]{"enum1", "enum2", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum4"}, new String[]{"num1", "num2"});
     } finally {
@@ -277,10 +270,9 @@ public class HGLMBasicTest extends TestUtil {
       params._random_columns = new String[]{"enum4", "enum1", "num1", "num2"};
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum3, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum3, params._group_column, 
               new String[]{"enum1", "enum2", "enum4", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum4"}, new String[]{"num1", "num2"});
     } finally {
@@ -301,10 +293,9 @@ public class HGLMBasicTest extends TestUtil {
       params._random_columns = new String[]{"enum3", "enum1", "enum2", "enum6", "num1", "num2"};
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum4, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum4, params._group_column, 
               new String[]{"enum1", "enum2", "enum3", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"}, 
               new String[]{"enum1", "enum2", "enum3", "enum6"}, new String[]{"num1", "num2"});
     } finally {
@@ -324,10 +315,9 @@ public class HGLMBasicTest extends TestUtil {
       params._random_columns = new String[]{"enum3", "enum1", "enum2", "enum6", "num1", "num2"};
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum4, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum4, params._group_column, 
               new String[]{"enum1", "enum2", "enum3", "enum5", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum2", "enum3", "enum6"}, new String[]{"num1", "num2"});
     } finally {
@@ -347,10 +337,9 @@ public class HGLMBasicTest extends TestUtil {
       params._random_columns = new String[]{"enum3", "enum1", "enum2", "enum6", "num1", "num3"};
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum5, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum5, params._group_column, 
               new String[]{"enum1", "enum2", "enum3", "enum4", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum2", "enum3", "enum6"}, new String[]{"num1", "num3"});
     } finally {
@@ -370,10 +359,9 @@ public class HGLMBasicTest extends TestUtil {
       params._random_columns = new String[]{"enum3", "enum1", "enum2", "enum6", "num1", "num3"};
       params._showFixedMatVecs = true;
       params._max_iterations = 0;
-      params._standardize = true;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum5, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum5, params._group_column, 
               new String[]{"enum1", "enum2", "enum3", "enum4", "enum6"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum2", "enum3", "enum6"}, new String[]{"num1", "num3"});
     } finally {
@@ -392,11 +380,10 @@ public class HGLMBasicTest extends TestUtil {
       params._use_all_factor_levels = true;
       params._random_columns = new String[]{"enum3", "enum1", "enum2", "enum5", "num1", "num3"};
       params._showFixedMatVecs = true;
-      params._standardize = false;
       params._max_iterations = 0;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum6, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum6, params._group_column, 
               new String[]{"enum1", "enum2", "enum3", "enum4", "enum5"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum2", "enum3", "enum5"}, new String[]{"num1", "num3"});
     } finally {
@@ -416,10 +403,9 @@ public class HGLMBasicTest extends TestUtil {
       params._use_all_factor_levels = false;
       params._random_columns = new String[]{"enum3", "enum1", "enum2", "enum5", "num1", "num3"};
       params._showFixedMatVecs = true;
-      params._standardize = false;
       HGLMModel model = new HGLM(params).trainModel().get();
       Scope.track_generic(model);
-      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum6, params._group_column, params._standardize,
+      checkWithManualResults1(model, params._response_column, _simpleFrame1, _simpleFrameSortEnum6, params._group_column,
               new String[]{"enum1", "enum2", "enum3", "enum4", "enum5"}, new String[]{"num1", "num2", "num3"},
               new String[]{"enum1", "enum2", "enum3", "enum5"}, new String[]{"num1", "num3"});
     } finally {
@@ -429,8 +415,7 @@ public class HGLMBasicTest extends TestUtil {
   
   // todo: add check _yMinusXTimesZ and _yMinusfixPredSquare
   public void checkWithManualResults1(HGLMModel model, String response, Frame fr, Frame frSorted, String level2Name, 
-                                      boolean standardize, String[] enumFixed, String[] numFixed, String[] enumRandom, 
-                                      String[] numRandom) {
+                                      String[] enumFixed, String[] numFixed, String[] enumRandom, String[] numRandom) {
     double[] fixedRowValues;
     double[] randomRowValues;
     double[] randomRowValuesS;
@@ -443,7 +428,7 @@ public class HGLMBasicTest extends TestUtil {
     //double[][] zTTimesZ = new double[model._output._zttimesz.length][model._output._zttimesz.length];
     double[][] tempZTTZ = new double[model._output._arjtarj[0].length][model._output._arjtarj[0].length];
     double yMinusfixPredSquare = 0;
-    double[][] yMinusXTimesZ = new double[numLevel2Vals][model._output._yminusxtimesz_score[0].length];
+    double[][] yMinusXTimesZ = new double[numLevel2Vals][model._output._yminusxtimesz[0].length];
     double[] beta = model._output._beta;
 
     int numRow = (int) fr.numRows();
@@ -454,9 +439,9 @@ public class HGLMBasicTest extends TestUtil {
     double respMinusFix;
     
     for (int rowInd = 0; rowInd < numRow; rowInd++) {
-      fixedRowValues = grabRow2Arrays(enumFixed, numFixed, true, rowInd, fr, standardize, model._parms._use_all_factor_levels);
-      randomRowValues = grabRow2Arrays(enumRandom, numRandom, model._parms._random_intercept, rowInd, fr, standardize, model._parms._use_all_factor_levels);
-      randomRowValuesS = grabRow2Arrays(enumRandom, numRandom, model._parms._random_intercept, rowInd, frSorted, standardize, model._parms._use_all_factor_levels);
+      fixedRowValues = grabRow2Arrays(enumFixed, numFixed, true, rowInd, fr, model._parms._use_all_factor_levels);
+      randomRowValues = grabRow2Arrays(enumRandom, numRandom, model._parms._random_intercept, rowInd, fr, model._parms._use_all_factor_levels);
+      randomRowValuesS = grabRow2Arrays(enumRandom, numRandom, model._parms._random_intercept, rowInd, frSorted, model._parms._use_all_factor_levels);
       responseVal = fr.vec(response).at(rowInd);
       unit2LevelS = (int) frSorted.vec(level2Name).at(rowInd);
       unit2Level = (int) fr.vec(level2Name).at(rowInd);
@@ -480,7 +465,7 @@ public class HGLMBasicTest extends TestUtil {
     check3DArrays(model._output._afjtarj, afjTArj, 1e-6);
     check3DArrays(model._output._arjtarj, arjTArj, 1e-6);
   //  checkDoubleArrays(model._output._zttimesz, zTTimesZ, 1e-6);
-    checkDoubleArrays(model._output._yminusxtimesz_score, yMinusXTimesZ, 1e-6);
+    checkDoubleArrays(model._output._yminusxtimesz, yMinusXTimesZ, 1e-6);
     assertEquals(model._output._yMinusfixPredSquare, yMinusfixPredSquare, 1e-6);
   }
   
@@ -520,7 +505,7 @@ public class HGLMBasicTest extends TestUtil {
   }
   
   public double[] grabRow2Arrays(String[] enumPredNames, String[] numPredNames, boolean hasIntercept, int rowInd, 
-                                 Frame fr, boolean standardize, boolean useAllFactorLevels) {
+                                 Frame fr, boolean useAllFactorLevels) {
     List<Double> rowValues = new ArrayList<>();
     int catVal;
     for (String enumName : enumPredNames) {
@@ -535,10 +520,7 @@ public class HGLMBasicTest extends TestUtil {
     }
     for (String numName:numPredNames) {
       double val = fr.vec(numName).at(rowInd);
-      if (standardize)
-        rowValues.add((val - fr.vec(numName).mean())/fr.vec(numName).sigma());
-      else
-        rowValues.add(val);
+      rowValues.add(val);
     }
     
     if (hasIntercept)
@@ -629,7 +611,6 @@ public class HGLMBasicTest extends TestUtil {
       params._initial_fixed_effects = initBetas;
       params._initial_t_matrix = tMat._key;
       params._initial_random_effects = ubetaFrame._key;
-      params._standardize = false;
       params._tau_e_var_init = sigmaEpsilon;
       params._max_iterations = 0;
       HGLMModel model = new HGLM(params).trainModel().get();
@@ -678,7 +659,6 @@ public class HGLMBasicTest extends TestUtil {
       params._group_column = "RACE";
       params._use_all_factor_levels = true;
       params._random_columns = new String[]{"GLEASON", "DPROS", "DCAPS"};
-      params._standardize = false;
       params._tau_u_var_init = sigmaU;
       params._max_iterations = 0;
       HGLMModel model = new HGLM(params).trainModel().get();
@@ -694,190 +674,6 @@ public class HGLMBasicTest extends TestUtil {
     for (int ind=0; ind<correctTMat.length; ind++)
       correctTMat[ind][ind] = sigmaU;
     checkDoubleArrays(correctTMat, model._output._tmat, 1e-6);
-  }
-
-  /***
-   * In this test, I check and make sure the normalization (standardization) and de-normalization (de-standardization)
-   * of coefficients are done correctly. First, I setup initial coefficient values to build a model that has 
-   * standardize = true.  In this case, the initial coefficients are treated as normalized coefficients.  
-   * 
-   * model1 is built and the following should be true:
-   * 1. model1._output._beta_normalized should equal initBetaStandardize;
-   * 2. model1._output._ubeta_normalized should equal to the transpose of initUBetaStandardize;
-   * 
-   * Next, we build a model2 with standardize = false and the initial coefficients are set to model1._output._beta and
-   * model1._output._ubeta.  If the normalization and de-normalization is done correctly, the following should be true:
-   * 1. model2._output._beta == model1._output._beta;
-   * 2. model2._output._ubeta == model1._output._ubeta;
-   * 3. model2._output._beta_normalized = model1._output._beta_normalized == initBetaStandardize;
-   * 4. model2._output._ubeta_normalized = model1._output._ubeta_normalized == transpose of initUBetaStandardize;
-   * 
-   * We will be checking all the statements.
-   */
-  @Test
-  public void testCoeffDeNNormalizationWithRandomIntercept() {
-    try {
-      Scope.enter();
-      double[] initBetaStandardize = new double[]{0.57305, 0.95066, 0.4277, 0.2814, 0.3727};
-      double[][] initUBetaStandardize = new double[][]{{-1.4257393174908208, 1.9459515904358207, -1.5121424866231998,
-              0.757565557144771, 1.6454093526843507, 0.521525656276774, 0.15102292603863332,
-              -0.5629664504958487, 0.39941437871543806, -0.17666156140184344, -0.9012256565441157,
-              0.4013361512547679, -0.7655048415710769, 0.9625031349421274, -1.6916150004681492, 0.8967295711861796},
-              {0.7307560306666573, -0.43350728257793125, 0.761204681372934,
-                      -0.9665905711121056, -0.0485193797802151, -0.6595712372715338, -0.4616825414753406,
-                      0.7886590178655907, 0.27241373557806586, -0.04301812863182515, -0.10936899265127145,
-                      0.8173502195208687, -0.1473779447485634, -2.1395714941712223, -0.9096112739244531, -1.8557521580762681},
-              {-1.818395521031121, 0.3423166377645478, 2.803250124441809,
-                      0.36788162518520634, 0.2854761765342526, 1.9802144801614998, 1.0295144701971513,
-                      -0.0195871711309739, -0.04015765623938129, -0.22232686097490753, -1.1551081071985216,
-                      0.4799532222692264, 0.1858090583440908, -0.25703386958964214, 1.3293865207793107, -0.6641399983332995}};
-      Frame ubetaFrameStandardize = new TestFrameBuilder()
-              .withColNames("x1", "x3", "intercept")
-              .withVecTypes(T_NUM, T_NUM, T_NUM)
-              .withDataForCol(0, initUBetaStandardize[0])
-              .withDataForCol(1, initUBetaStandardize[1])
-              .withDataForCol(2, initUBetaStandardize[2])
-              .build();
-      Scope.track(ubetaFrameStandardize);
-      
-      Frame fr = parseTestFile("smalldata/hglm_test/semiconductor.csv");
-      fr.replace(0, fr.vec(0).toCategoricalVec()).remove();
-      DKV.put(fr);
-      Scope.track(fr);
-      HGLMModel.HGLMParameters parms = new HGLMModel.HGLMParameters();
-      parms._train = fr._key;
-      parms._response_column = "y";
-      parms._ignored_columns = new String[]{"x2", "x4"};
-      parms._ignore_const_cols = true;
-      parms._family = GLMModel.GLMParameters.Family.gaussian;
-      parms._random_columns = new String[]{"x1", "x3"};
-      parms._group_column = "Device";
-      parms._max_iterations = 0;
-      parms._seed = 1234;
-      parms._initial_fixed_effects = initBetaStandardize;
-      parms._initial_random_effects = ubetaFrameStandardize._key;
-      parms._random_intercept = true;
-      parms._standardize = true;
-
-      // just make sure it runs
-      HGLMModel model1 = new HGLM(parms).trainModel().get();
-      Scope.track_generic(model1);
-      // the initial coefficients are set to model as standardized coefficients, get the denormalized coefficients here
-      Frame uinitBetaFrame = makeUBetaFrame(model1._output._ubeta);
-      Scope.track(uinitBetaFrame);
-      // build model 2 that is not standardized
-      parms._standardize = false;
-      parms._initial_fixed_effects = model1._output._beta;
-      parms._initial_random_effects = uinitBetaFrame._key;
-      HGLMModel model2 = new HGLM(parms).trainModel().get();
-      Scope.track_generic(model2);
-      // if all the normalization and de-normalization is done correctly, we should have
-      TestUtil.checkArrays(model1._output._beta_normalized, initBetaStandardize, 1e-12);
-      TestUtil.checkDoubleArrays(model1._output._ubeta_normalized, new Matrix(initUBetaStandardize).transpose().getArray(),
-              1e-12);
-      TestUtil.checkArrays(model1._output._beta, model2._output._beta, 1e-12);
-      TestUtil.checkArrays(model1._output._beta_normalized, model2._output._beta_normalized, 1e-12);
-      TestUtil.checkDoubleArrays(model1._output._ubeta, model2._output._ubeta, 1e-12);
-      TestUtil.checkDoubleArrays(model1._output._ubeta_normalized, model2._output._ubeta_normalized, 1e-12);
-      // manually check a few cases to make sure things are actually running okay
-      assertEquals(model1._output._ubeta[0][0], model1._output._ubeta_normalized[0][0]/fr.vec("x1").sigma(),  1e-6);
-      assertEquals(model1._output._ubeta_normalized[1][2], 
-              model1._output._ubeta[1][2]+fr.vec("x1").mean()*model1._output._ubeta[1][0]/fr.vec("x1").sigma() +
-                      fr.vec("x2").mean()*model1._output._ubeta[1][1]/fr.vec("x2").sigma(), 1e-6);
-      assertEquals(model2._output._beta_normalized[3], model2._output._beta[3]*fr.vec("x6").sigma(), 1e-6);
-      assertEquals(model2._output._beta_normalized[4], model2._output._beta[4]+
-              fr.vec("x1").mean()*model2._output._beta_normalized[0]/fr.vec("x1").sigma()+
-              fr.vec("x3").mean()*model2._output._beta_normalized[1]/fr.vec("x3").sigma()+
-              fr.vec("x5").mean()*model2._output._beta_normalized[2]/fr.vec("x5").sigma()+
-              fr.vec("x6").mean()*model2._output._beta_normalized[3]/fr.vec("x6").sigma(), 1e-6);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  /***
-   * This test is exactly like the one in testCoeffDeNNormalizationWithRandomIntercept with the exception that there
-   * is no random intercept.
-   */
-  @Test
-  public void testCoeffDeNNormalizationWORandomIntercept() {
-    try {
-      Scope.enter();
-      double[] initBetaStandardize = new double[]{0.57305, 0.95066, 0.4277, 0.2814, 0.3727};
-      double[][] initUBetaStandardize = new double[][]{{-1.4257393174908208, 1.9459515904358207, -1.5121424866231998,
-              0.757565557144771, 1.6454093526843507, 0.521525656276774, 0.15102292603863332,
-              -0.5629664504958487, 0.39941437871543806, -0.17666156140184344, -0.9012256565441157,
-              0.4013361512547679, -0.7655048415710769, 0.9625031349421274, -1.6916150004681492, 0.8967295711861796},
-              {0.7307560306666573, -0.43350728257793125, 0.761204681372934,
-                      -0.9665905711121056, -0.0485193797802151, -0.6595712372715338, -0.4616825414753406,
-                      0.7886590178655907, 0.27241373557806586, -0.04301812863182515, -0.10936899265127145,
-                      0.8173502195208687, -0.1473779447485634, -2.1395714941712223, -0.9096112739244531, -1.8557521580762681}};
-      Frame ubetaFrameStandardize = new TestFrameBuilder()
-              .withColNames("x1", "x3")
-              .withVecTypes(T_NUM, T_NUM)
-              .withDataForCol(0, initUBetaStandardize[0])
-              .withDataForCol(1, initUBetaStandardize[1])
-              .build();
-      Scope.track(ubetaFrameStandardize);
-
-      Frame fr = parseTestFile("smalldata/hglm_test/semiconductor.csv");
-      fr.replace(0, fr.vec(0).toCategoricalVec()).remove();
-      DKV.put(fr);
-      Scope.track(fr);
-      HGLMModel.HGLMParameters parms = new HGLMModel.HGLMParameters();
-      parms._train = fr._key;
-      parms._response_column = "y";
-      parms._ignored_columns = new String[]{"x2", "x4"};
-      parms._ignore_const_cols = true;
-      parms._family = GLMModel.GLMParameters.Family.gaussian;
-      parms._random_columns = new String[]{"x1", "x3"};
-      parms._group_column = "Device";
-      parms._max_iterations = 0;
-      parms._seed = 1234;
-      parms._initial_fixed_effects = initBetaStandardize;
-      parms._initial_random_effects = ubetaFrameStandardize._key;
-      parms._random_intercept = false;
-      parms._standardize = true;
-
-      // just make sure it runs
-      HGLMModel model1 = new HGLM(parms).trainModel().get();
-      Scope.track_generic(model1);
-      // the initial coefficients are set to model as standardized coefficients, get the denormalized coefficients here
-      Frame uinitBetaFrame = makeUBetaFrame(model1._output._ubeta);
-      Scope.track(uinitBetaFrame);
-      // build model 2 that is not standardized
-      parms._standardize = false;
-      parms._random_intercept = true;
-      parms._initial_fixed_effects = model1._output._beta;
-      parms._initial_random_effects = uinitBetaFrame._key;
-      HGLMModel model2 = new HGLM(parms).trainModel().get();
-      Scope.track_generic(model2);
-      // If all the normalization and de-normalization is done correctly, we should have
-      TestUtil.checkArrays(model1._output._beta_normalized, initBetaStandardize, 1e-12);
-      TestUtil.checkDoubleArrays(model1._output._ubeta_normalized, new Matrix(initUBetaStandardize).transpose().getArray(),
-              1e-12);
-      TestUtil.checkArrays(model1._output._beta, model2._output._beta, 1e-12);
-      TestUtil.checkDoubleArrays(model1._output._ubeta, model2._output._ubeta, 1e-12);
-      TestUtil.checkArrays(model1._output._beta_normalized, model2._output._beta_normalized, 1e-12);
-      // Again, an intercept term is added when you normalize beta.  model2 will have an extra column in its ubeta.
-      // The last column contains value close to 0.
-      double[][] temp = new Matrix(model2._output._ubeta_normalized).transpose().getArray();
-      double[][] model2ubetaN = new Matrix(new double[][] {temp[0], temp[1]}).transpose().getArray();
-      TestUtil.checkDoubleArrays(model1._output._ubeta_normalized, model2ubetaN, 1e-12);
-      // manually check a few cases to make sure things are actually running okay
-      assertEquals(model1._output._ubeta[0][0], model1._output._ubeta_normalized[0][0]/fr.vec("x1").sigma(),  1e-6);
-      assertEquals(0,
-              fr.vec("x1").mean()*model1._output._ubeta[1][0]/fr.vec("x1").sigma() +
-                      fr.vec("x2").mean()*model1._output._ubeta[1][1]/fr.vec("x2").sigma(), 1e-6);
-      assertEquals(model2._output._beta_normalized[3], model2._output._beta[3]*fr.vec("x6").sigma(), 1e-6);
-      assertEquals(model2._output._beta_normalized[4], model2._output._beta[4]+
-              fr.vec("x1").mean()*model2._output._beta_normalized[0]/fr.vec("x1").sigma()+
-              fr.vec("x3").mean()*model2._output._beta_normalized[1]/fr.vec("x3").sigma()+
-              fr.vec("x5").mean()*model2._output._beta_normalized[2]/fr.vec("x5").sigma()+
-              fr.vec("x6").mean()*model2._output._beta_normalized[3]/fr.vec("x6").sigma(), 1e-6);
-    } finally {
-      Scope.exit();
-    }
   }
   
   public static Frame makeUBetaFrame(double[][] initUBeta) {
@@ -915,7 +711,6 @@ public class HGLMBasicTest extends TestUtil {
       parms._random_intercept = true;
       parms._group_column = "Device";
       parms._max_iterations = 1;
-      parms._standardize = true;
       
       // just make sure it runs
       HGLMModel model = new HGLM(parms).trainModel().get();
@@ -986,16 +781,6 @@ public class HGLMBasicTest extends TestUtil {
       parms._initial_fixed_effects = initBeta;
       parms._initial_random_effects = ubetaInitFrame._key;
       parms._random_intercept = true;
-      parms._standardize = true;
-      // check prediction with standardize = true
-      HGLMModel model = new HGLM(parms).trainModel().get();
-      Scope.track_generic(model);
-      Frame predFrame = model.score(fr);
-      Scope.track(predFrame);
-      checkPrediction(fr, predFrame, model, 0.0);
-      
-      // check prediction again with standardize = false
-      parms._standardize = false;
       HGLMModel modelNS = new HGLM(parms).trainModel().get();
       Scope.track_generic(modelNS);
       Frame predFrameNS = modelNS.score(fr);
@@ -1052,17 +837,7 @@ public class HGLMBasicTest extends TestUtil {
       parms._initial_fixed_effects = initBeta;
       parms._initial_random_effects = ubetaInitFrame._key;
       parms._random_intercept = false;
-      parms._standardize = true;
-
-      // check prediction without random intercept and with standardization
-      HGLMModel model = new HGLM(parms).trainModel().get();
-      Scope.track_generic(model);
-      Frame predFrame = model.score(fr);
-      Scope.track(predFrame);
-      checkPrediction(fr, predFrame, model, 0.0);
       
-      // check prediction without random intercept and without standardization
-      parms._standardize = false;
       HGLMModel modelNS = new HGLM(parms).trainModel().get();
       Scope.track_generic(modelNS);
       Frame predFrameNS = modelNS.score(fr);

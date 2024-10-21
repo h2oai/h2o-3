@@ -5,7 +5,7 @@ from tests import pyunit_utils
 from h2o.estimators.hglm import H2OHGLMEstimator as hglm
 from tests.pyunit_utils import utils_for_glm_hglm_tests
 
-# in this test, want to check the following with standardization and de-standardization and with random intercept:
+# in this test, want to check to make sure we are getting our coefficients
 # 1. Fixed effect coefficients;
 # 2. Random effect coefficients.
 def test_scoring_history_model_summary():
@@ -17,15 +17,12 @@ def test_scoring_history_model_summary():
     x.remove("C1")
     random_columns = ["C2", "C3", "C10", "C20"]
     hglm_model = hglm(random_columns=random_columns, group_column = "C1", score_each_iteration=True, seed=12345, 
-                      max_iterations=10, standardize=True)
+                      max_iterations=10)
     hglm_model.train(x=x, y=y, training_frame=train, validation_frame=valid)
     # grab various metrics
     coef = hglm_model.coef()
-    coef_norm = hglm_model.coef_norm()
     coef_random = hglm_model.coefs_random()
     coef_random_names = hglm_model.coefs_random_names()
-    coef_random_norm = hglm_model.coefs_random_norm()
-    coef_random_names_norm = hglm_model.coefs_random_names_norm()
     residual_var = hglm_model.residual_variance()
     mse = hglm_model.mse()
     mse_fixed = hglm_model.mean_residual_fixed()
@@ -41,17 +38,11 @@ def test_scoring_history_model_summary():
                             " not.".format(mse_fixed, mse)
     assert mse < mse_fixed_valid, "residual error with only fixed effects from validation frames {0} should exceed that" \
                                   " of mse {1} but is not.".format(mse_fixed_valid, mse)
-    # check coefficients and normalized coefficients are converted correctly.
-    numerical_columns = ["C10", "C20", "C30", "C40", "C50"]
-    coef_norm_manually = utils_for_glm_hglm_tests.normalize_coefs(coef, numerical_columns, train)
-    pyunit_utils.assertCoefDictEqual(coef_norm, coef_norm_manually, 1e-6)
-    coef_manually = utils_for_glm_hglm_tests.denormalize_coefs(coef_norm, numerical_columns, train)
-    pyunit_utils.assertCoefDictEqual(coef, coef_manually, 1e-6)
-    # check random effect coefficients and normalized random effect coefficients are converted correctly.
-    random_coeffs_norm_manually = utils_for_glm_hglm_tests.normalize_denormalize_random_coefs(coef_random, coef_random_names, level2_names, numerical_columns, train, normalize=True)
-    random_coeffs_manually = utils_for_glm_hglm_tests.normalize_denormalize_random_coefs(coef_random_norm, coef_random_names_norm, level2_names, numerical_columns, train, normalize=False)
-    utils_for_glm_hglm_tests.compare_dicts_with_tupple(coef_random, random_coeffs_manually, tolerance=1e-6)
-    utils_for_glm_hglm_tests.compare_dicts_with_tupple(coef_random_norm, random_coeffs_norm_manually, tolerance=1e-6)
+    assert len(coef) == len(coef_random_names), "fixed coefficient length {0} should equal to random coefficient names" \
+                                                " length: {1}".format(len(coef), len(coef_random_names))
+    assert len(level2_names) == len(coef_random), \
+        "expected random coefficient length: {0}, actual random coefficient names length " \
+        "{1}".format(len(level2_names),len(coef_random)) 
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_scoring_history_model_summary)

@@ -183,12 +183,6 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
         if (_parms._tau_e_var_init <= 0) 
           error("tau_e_var_init", "If gen_syn_data is true, tau_e_var_init must be > 0.");
       }
-      
-      if (!_parms._random_intercept && _parms._standardize)
-        warn("random_intercept and standardize", 
-                "If random_intercept is false and standardize is true, model building process can be unstable" +
-                        " due to the denormalization process which can create singular T matrix.  If encounter singlar" +
-                        " T matrix problem, set standardize to false in this case to ensure model building can finish.");
     }
   }
 
@@ -214,8 +208,8 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
          * 3. Set modelOutput fields.
          */
         // _dinfo._adaptedFrame will contain group_column.  Check and make sure clients will pass that along as well.
-        _dinfo = new DataInfo(_train.clone(), null, 1, _parms._use_all_factor_levels, _parms._standardize ?
-                DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
+        _dinfo = new DataInfo(_train.clone(), null, 1, _parms._use_all_factor_levels, 
+                DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
                 _parms.missingValuesHandling() == Skip,
                 _parms.missingValuesHandling() == MeanImputation
                         || _parms.missingValuesHandling() == PlugValues,
@@ -293,7 +287,6 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
       if (_parms._showFixedMatVecs)
         model._output.setModelOutputFixMatVec(engineTask);
       _state = new ComputationStateHGLM(_job, _parms, _dinfo, engineTask, iteration);
-      generateNonStandardizeZTZArjTArs(_parms, model);  // generate not standardized transpose(Z)*Z, transpose(Zj)*Zj 
       try {
         if (_parms._max_iterations > 0) {
           // grab current value of fixed beta, tauEVar, tauUVar
@@ -360,7 +353,7 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
           if (_parms.valid() != null)
             scoreAndUpdateModel(model, false, scValid);
         } else {
-          // calculate log likelihood with current parameter settings, standardize if parms._standardize and vice versa
+          // calculate log likelihood with current parameter settings
           double logLikelihood = calHGLMllg(_state._nobs, tmat, tauEVarE10, model._output._arjtarj, rLlh._sse_fixed,
                   rLlh._yMinusXTimesZ);
           scTrain.addIterationScore(_state._iter, logLikelihood, tauEVarE10);

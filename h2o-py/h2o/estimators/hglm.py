@@ -41,7 +41,6 @@ class H2OHGLMEstimator(H2OEstimator):
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  family="gaussian",  # type: Literal["gaussian"]
                  rand_family=None,  # type: Optional[Literal["gaussian"]]
-                 standardize=False,  # type: bool
                  max_iterations=-1,  # type: int
                  initial_fixed_effects=None,  # type: Optional[List[float]]
                  initial_random_effects=None,  # type: Optional[Union[None, str, H2OFrame]]
@@ -115,9 +114,6 @@ class H2OHGLMEstimator(H2OEstimator):
         :param rand_family: rand_family. Set distribution of random effects.  Only Gaussian is implemented now.
                Defaults to ``None``.
         :type rand_family: Literal["gaussian"], optional
-        :param standardize: Standardize numeric columns to have zero mean and unit variance.
-               Defaults to ``False``.
-        :type standardize: bool
         :param max_iterations: Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the
                model coefficient names and model coefficient dimensions are needed.
                Defaults to ``-1``.
@@ -185,7 +181,6 @@ class H2OHGLMEstimator(H2OEstimator):
         self.plug_values = plug_values
         self.family = family
         self.rand_family = rand_family
-        self.standardize = standardize
         self.max_iterations = max_iterations
         self.initial_fixed_effects = initial_fixed_effects
         self.initial_random_effects = initial_random_effects
@@ -428,20 +423,6 @@ class H2OHGLMEstimator(H2OEstimator):
         self._parms["rand_family"] = rand_family
 
     @property
-    def standardize(self):
-        """
-        Standardize numeric columns to have zero mean and unit variance.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("standardize")
-
-    @standardize.setter
-    def standardize(self, standardize):
-        assert_is_type(standardize, None, bool)
-        self._parms["standardize"] = standardize
-
-    @property
     def max_iterations(self):
         """
         Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model coefficient names
@@ -640,27 +621,12 @@ class H2OHGLMEstimator(H2OEstimator):
         """
         return self._model_json["output"]["random_coefficient_names"]
 
-    def coefs_random_names_norm(self):
-        """
-        Get the random effect coefficient names including the intercept if applicable for normalized/standardized
-        random effect coefficients.
-        """
-        return self._model_json["output"]["random_coefficient_names_normalized"]
-
     def coefs_random(self):
         """
         Get the random coefficients of the model.
         """
         level_2_names = self.level_2_names()
         random_coefs = self._model_json["output"]["ubeta"]
-        return dict(zip(level_2_names, random_coefs))
-
-    def coefs_random_norm(self):
-        """
-        Get the normalized/standardized random coefficients of the model.
-        """
-        level_2_names = self.level_2_names()
-        random_coefs = self._model_json["output"]["ubeta_normalized"]
         return dict(zip(level_2_names, random_coefs))
 
     def scoring_history_valid(self, as_data_frame=True):

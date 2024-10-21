@@ -147,30 +147,6 @@ def find_model_iterations(glm_model):
     iteration_index = glm_model._model_json["output"]["model_summary"].col_header.index("number_of_iterations")
     return cell_values[lengths-1][iteration_index]
 
-def normalize_denormalize_random_coefs(random_coefs, random_coefs_names, level_2_names, numerical_cols, training_frame, normalize = True):
-    """
-    Given a random effect coefficients dict, this method will standardize/normalize the coefficients
-    
-    :param random_coefs: python dict with random column names and a list of random coefficients for each level 2 index
-    :param random_coefs_names: python list of random coefficient name
-    :param level_2_names: python string list of level 2 values
-    :param numerical_cols: numerical columns of the frame
-    :param training_frame: h2o frame used to build the model
-    :return: python dict with random columns names and a list of normalized/standardized random coefficients
-    """
-    normalized_coefs = dict()
-    # extract random coefficients for each level 2 value
-    for level2_val in level_2_names:
-        # extract dict for one level 2 value
-        dictLevel2 = extract_coef_dict(random_coefs, level2_val, random_coefs_names)
-        if normalize:
-            transform_one_coef = normalize_coefs(dictLevel2, numerical_cols, training_frame)
-        else:
-            transform_one_coef = denormalize_coefs(dictLevel2, numerical_cols, training_frame)
-            
-        add_to_random_coef_dict(normalized_coefs, transform_one_coef, level2_val, random_coefs_names)
-    return normalized_coefs
-        
 def add_to_random_coef_dict(normalized_coefs, normalized_one_coefs, level2_val, random_coefs_names):
     one_list = []
     for one_name in random_coefs_names:
@@ -184,51 +160,6 @@ def extract_coef_dict(random_coeffs, level2_name, random_coefs_names):
         random_coef_level2[cname] = random_coeffs[level2_name][index]
         index = index+1
     return random_coef_level2    
-    
-    
-
-def normalize_coefs(coefs, numerical_cols, training_frame):
-    """
-    Given a coefficient as a dict, the method will normalized/standardized the given coefficents and return it in another
-    dict.
-    
-    :param coefs: coefficients as a dict without normalization/standardization
-    :param numerical_cols: column names of numerical columns
-    :param training_frame: H2O frame used to train the model
-    :return: a python dict with normalized/standardized coefficients
-    """
-    intercept_adjust = 0
-    all_coefs_names = coefs.keys()
-    normalized_coefs = coefs.copy()
-    # only numerical coefficients are changed.
-    for cname in numerical_cols:
-        if cname in all_coefs_names:
-            cmean = training_frame[cname].mean()[0,0]
-            csigma = training_frame[cname].sd()[0]
-            normalized_coefs[cname] = coefs[cname] * csigma
-            intercept_adjust = intercept_adjust + normalized_coefs[cname]*cmean/csigma
-    if "intercept" in all_coefs_names:
-        normalized_coefs["intercept"] = coefs["intercept"]+intercept_adjust
-    else:
-        normalized_coefs["intercept"] = intercept_adjust
-    return normalized_coefs
-    
-def denormalize_coefs(coefs_normalized, numerical_cols, training_frame):
-    intercept_adjust = 0
-    all_coefs_names = coefs_normalized.keys()
-    denormalize_coefs = coefs_normalized.copy()
-    for cname in numerical_cols:
-        if cname in all_coefs_names:
-            cmean = training_frame[cname].mean()[0,0]
-            csigma = training_frame[cname].sd()[0]
-            denormalize_coefs[cname] = coefs_normalized[cname] / csigma
-            intercept_adjust = intercept_adjust - cmean * coefs_normalized[cname] / csigma
-        
-    if "intercept" in all_coefs_names:
-        denormalize_coefs["intercept"] = denormalize_coefs["intercept"] + intercept_adjust
-    else:
-        denormalize_coefs["intercept"] = intercept_adjust
-    return denormalize_coefs
 
 def compare_dicts_with_tupple(dict1, dict2, tolerance=1e-6):
     keys = dict1.keys()

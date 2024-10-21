@@ -37,35 +37,7 @@ public class ModelMetricsRegressionHGLM extends ModelMetricsRegression {
     _mse_fixed = mse_fixed;
 
   }
-
-  /**
-   *
-   * This method calculates the log-likelihood as described in section II.V of the doc.
-   */
-/*  public static double calHGLMllg(long nobs, double[][] tmat, double varResidual, double[][][] zjTTimesZj,
-                                   double yMinsXFixSquared, double[][] yMinusXFixTimesZ) {
-      int numLevel2 = zjTTimesZj.length;
-      double[][] tmatInv = new Matrix(tmat).inverse().getArray();
-      double tmatDeterminant = new Matrix(tmat).det();
-      double oneOVar = 1.0 / varResidual;
-      double oneOVarSq = oneOVar * oneOVar;
-      double llg = nobs * LOG_2PI + oneOVar * yMinsXFixSquared;
-      double[][] invTPlusZjTZ;
-      Matrix yMinusXjFixed;
-      Matrix yjMinusXjFixed;
-      for (int ind2 = 0; ind2 < numLevel2; ind2++) {
-        invTPlusZjTZ = calInvTPZjTZ(tmatInv, zjTTimesZj[ind2], oneOVar);
-        llg += Math.log(varResidual * new Matrix(invTPlusZjTZ).det() * tmatDeterminant);
-        yMinusXjFixed = new Matrix(new double[][]{yMinusXFixTimesZ[ind2]});
-        yjMinusXjFixed = yMinusXjFixed.times(new Matrix(invTPlusZjTZ).inverse().times(yMinusXjFixed.transpose()));
-        llg -= oneOVarSq * yjMinusXjFixed.getArray()[0][0];
-      }
-      return -0.5 * llg;
-  }
   
-  public static double[][] calInvTPZjTZ(double[][] tmatInv, double[][] zjTTimesZj, double oneOVar) {
-   return new Matrix(tmatInv).plus(new Matrix(zjTTimesZj).times(oneOVar)).getArray();
-  }*/
 
   /***
    *

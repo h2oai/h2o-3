@@ -20,7 +20,7 @@ def test_scoring_history_model_summary():
     x.remove("C1")
     random_columns = ["C2", "C3", "C4"]
     hglm_model = hglm(random_columns=random_columns, group_column = "C1", score_each_iteration=True, seed=12345,
-                      max_iterations = 10, random_intercept = True, standardize=False)
+                      max_iterations = 10, random_intercept = True)
     hglm_model.train(x=x, y=y, training_frame=train, validation_frame=valid)
     # grab various metrics
     model_metrics = hglm_model.training_model_metrics()

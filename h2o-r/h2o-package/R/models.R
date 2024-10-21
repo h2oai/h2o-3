@@ -3104,7 +3104,7 @@ h2o.coef_names <- function(object) {
 #' @export
 h2o.coef_norm <- function(object, predictorSize=-1) {
   if (is(object, "H2OModel") &&
-      (object@algorithm %in% c("glm", "gam", "coxph", "modelselection", "hglm"))) {
+      (object@algorithm %in% c("glm", "gam", "coxph", "modelselection"))) {
     if (object@algorithm == "modelselection") {
       if (object@allparameters$mode == "maxrsweep" &&
           !object@allparameters$build_glm_model) {
@@ -3174,7 +3174,7 @@ h2o.coef_norm <- function(object, predictorSize=-1) {
       )
     }
   } else {
-    stop("Can only extract coefficients from GAMs/GLMs/HGLMs/CoxPHs/ModelSelections")
+    stop("Can only extract coefficients from GAMs/GLMs/CoxPHs/ModelSelections")
   }
 }
 

@@ -34,23 +34,14 @@ public class HGLMModelV3 extends ModelSchemaV3<HGLMModel,
     @API(help="Random Effects Coefficient Names")
     public String[] random_coefficient_names;  // include intercept only if _parms._random_intercept = true
     
-    @API(help="Random Effects Coefficient Names for when standardize=true")
-    public String[] random_coefficient_names_normalized;
-    
     @API(help="Level 2 Indice Names")
     public String[] group_column_names;
     
     @API(help="Fixed Effects Coefficients")
-    public double[] beta;   // fixed coefficients, not normalized
+    public double[] beta;   // fixed coefficients
     
     @API(help="Random Effects Coefficients")
-    public double[][] ubeta;  // random coefficients, not normalized
-    
-    @API(help="Fixed Effects Coefficients for when standardize=true")
-    double[] beta_normalized;
-    
-    @API(help="Random Effects Coefficients for when standardize=true")
-    double[][] ubeta_normalized;
+    public double[][] ubeta;  // random coefficients
     
     @API(help="Covariance Matrix for Random Effects (= Tj in section II.I of the doc")
     public double[][] tmat;
@@ -73,19 +64,15 @@ public class HGLMModelV3 extends ModelSchemaV3<HGLMModel,
       super.fillFromImpl(impl);
       coefficient_names = impl._fixed_coefficient_names;
       random_coefficient_names = impl._random_coefficient_names;
-      random_coefficient_names_normalized = impl._random_coefficient_names_normalized;
       group_column_names = impl._group_column_names;
       beta = impl._beta;
-      beta_normalized = impl._beta_normalized;
       ubeta = impl._ubeta;
-      ubeta_normalized = impl._ubeta_normalized;
       coefficients_table = new TwoDimTableV3();
       coefficients_table.fillFromImpl(generateCoeffTable("fixed effect oefficients", 
-              "HGLM fixed effect coefficients", beta, beta_normalized, coefficient_names));
+              "HGLM fixed effect coefficients", beta, coefficient_names));
       random_coefficients_table = new TwoDimTableV3();
       random_coefficients_table.fillFromImpl(generate2DCoeffTable("random effect coefficients", 
-              "HGLM random effect coefficients", ubeta, ubeta_normalized, random_coefficient_names, 
-              random_coefficient_names_normalized, impl._group_column_names));
+              "HGLM random effect coefficients", ubeta, random_coefficient_names, impl._group_column_names));
       icc = impl._icc;
       residual_variance = impl._tau_e_var;
       mean_residual_fixed = impl._yMinusfixPredSquare/impl._nobs;
@@ -95,55 +82,38 @@ public class HGLMModelV3 extends ModelSchemaV3<HGLMModel,
     }
   }
   
-  public static TwoDimTable generateCoeffTable(String title1, String title2, double[] coeffs, double[] coeffs_normalized, 
-                                 String[] coeffNames) {
-    String[] colnames = new String[] {"coefficients", "standardized_coefficients"};
-    String[] colFormats = new String[] {"%.5f", "%.5f"};
-    String[] colTypes = new String[] {"double", "double"};
+  public static TwoDimTable generateCoeffTable(String title1, String title2, double[] coeffs, String[] coeffNames) {
+    String[] colnames = new String[] {"coefficients"};
+    String[] colFormats = new String[] {"%.5f"};
+    String[] colTypes = new String[] {"double"};
     TwoDimTable tdt = new TwoDimTable(title1, title2, coeffNames, colnames, colTypes, colFormats, "names");
     int tableLen = coeffs.length;
     for (int index=0; index<tableLen; index++) {
       tdt.set(index, 0, coeffs[index]);
-      tdt.set(index, 1, coeffs_normalized[index]);
     }
     return tdt;
   }
 
-  public static TwoDimTable generate2DCoeffTable(String title1, String title2, double[][] coeffs, double[][] coeffs_normalized,
-                                 String[] coeffNames, String[] coeffNamesNormalized, String[] level2Domain) {
-    int randomCoeffNamesLen = coeffNames.length;
-    int randomCoefNameLenNorm = coeffNamesNormalized.length;
+  public static TwoDimTable generate2DCoeffTable(String title1, String title2, double[][] coeffs, String[] coeffNames,
+                                                 String[] level2Domain) {
     int numLevel2Index = level2Domain.length;
     String[] coeffNamesused;
     double[][] coeffsUsed;
-    double[][] coeffsNormalizedUsed;
-    if (randomCoefNameLenNorm > randomCoeffNamesLen) {  // model building, added intercept to coeffs_normalized, extend coeffs
-      coeffNamesused = coeffNamesNormalized;
-      coeffsUsed = addInterceptValue(coeffs); 
-      coeffsNormalizedUsed = coeffs_normalized;
-    } else if (randomCoefNameLenNorm < randomCoeffNamesLen) { // model building with standardization, added intercept to coeffs, extend coeffsNormalized
-      coeffNamesused = coeffNames;
-      coeffsUsed = coeffs;
-      coeffsNormalizedUsed = addInterceptValue(coeffs_normalized);
-    } else {
-      coeffNamesused = coeffNames;
-      coeffsUsed = coeffs;
-      coeffsNormalizedUsed = coeffs_normalized;
-    }
+    coeffNamesused = coeffNames;
+    coeffsUsed = coeffs;
+
     double[] fCoeffValues = flattenArray(coeffsUsed);
-    double[] fCoeffValuesNormalized = flattenArray(coeffsNormalizedUsed);
     String[] fCoeffNames = extendCoeffNames(coeffNamesused, numLevel2Index);
     String[] fLevel2Vals = extendLevel2Ind(level2Domain, coeffsUsed[0].length);
-    
-    String[] colnames = new String[] {"coefficient names", "coefficients", "standardized_coefficients"};
-    String[] colFormats = new String[] {"%s", "%.5f", "%.5f"};
-    String[] colTypes = new String[] {"string", "double", "double"};
+
+    String[] colnames = new String[]{"coefficient names", "coefficients"};
+    String[] colFormats = new String[]{"%s", "%.5f"};
+    String[] colTypes = new String[]{"string", "double"};
     TwoDimTable tdt = new TwoDimTable(title1, title2, fLevel2Vals, colnames, colTypes, colFormats, "names");
     int tableLen = fCoeffNames.length;
-    for (int index=0; index<tableLen; index++) {
+    for (int index = 0; index < tableLen; index++) {
       tdt.set(index, 0, fCoeffNames[index]);
       tdt.set(index, 1, fCoeffValues[index]);
-      tdt.set(index, 2, fCoeffValuesNormalized[index]);
     }
     return tdt;
   }
@@ -169,17 +139,6 @@ public class HGLMModelV3 extends ModelSchemaV3<HGLMModel,
       return extendedCoeffNames;
   }
   
-  public static double[][] addInterceptValue(double[][] coeffs) {
-    int coefLen = coeffs[0].length;
-    int coefLenNew = coeffs[0].length+1;
-    int numLevel2Index = coeffs.length;
-    double[][] coeffsExt = new double[coeffs.length][coefLenNew];
-    for (int index=0; index<numLevel2Index; index++) {
-      System.arraycopy(coeffs[index], 0, coeffsExt[index], 0, coefLen);
-      coeffsExt[index][coefLen] = 0.0;
-    }
-    return coeffsExt;
-  }
   
   public HGLMV3.HGLMParametersV3 createParametersSchema() { return new HGLMV3.HGLMParametersV3(); }
   public HGLMModelOutputV3 createOutputSchema() { return new HGLMModelOutputV3(); }

@@ -30,7 +30,6 @@ public class HGLMV3 extends ModelBuilderSchema<HGLM, HGLMV3, HGLMV3.HGLMParamete
             "plug_values",
             "family",
             "rand_family",
-            "standardize",
             "max_iterations",
             "initial_fixed_effects",
             "initial_random_effects",
@@ -69,10 +68,6 @@ public class HGLMV3 extends ModelBuilderSchema<HGLM, HGLMV3, HGLMV3.HGLMParamete
     @API(help = "rand_family. Set distribution of random effects.  Only Gaussian is implemented now.",
             values = {"gaussian"}, level = Level.critical)
     public GLMParameters.Family rand_family;
-
-    @API(help = "Standardize numeric columns to have zero mean and unit variance.", level = Level.critical,
-            gridable = true)
-    public boolean standardize;
 
     @API(help = "Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model " +
             "coefficient names and model coefficient dimensions are needed.", level = Level.secondary)

@@ -26,15 +26,6 @@ h2o.coef_random <- function(model) {
         return(model@model$ubeta)
 }
 
-#' Extracts the normalized/standardized random effects coefficients of an HGLM model.
-#'
-#' @param model is a H2O HGLM model.
-#' @export
-h2o.coef_random_norm <- function(model) {
-    if (is(model, "H2OModel") && (model@algorithm=="hglm"))
-        return(model@model$ubeta_normalized)
-}
-
 #' Extracts the group_column levels of an HGLM model.  The group_column is usually referred to as level 2 predictor.
 #'
 #' @param model is a H2O HGLM model.
@@ -51,16 +42,6 @@ h2o.level_2_names <- function(model) {
 h2o.coefs_random_names <- function(model) {
     if (is(model, "H2OModel") && (model@algorithm=="hglm"))
         return(model@model$random_coefficient_names)
-}
-
-#' Extracts the coefficient names of normalized/standardized random effect coefficients.  If no random intercept is 
-#' set, during the normalization/de-normalization process, an random intercept will be added.
-#'
-#' @param model is a H2O HGLM model.
-#' @export
-h2o.coefs_random_names_norm <- function(model) {
-    if (is(model, "H2OModel") && (model@algorithm=="hglm"))
-        return(model@model$random_coefficient_names_normalized)
 }
 
 #' Extracts scoring history of validation dataframe during training

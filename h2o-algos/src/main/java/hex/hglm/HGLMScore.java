@@ -65,7 +65,7 @@ public class HGLMScore extends MRTask<HGLMScore> {
     _randomCatArrayStartIndices = model._output._randomCatArrayStartIndices;
     _predStartIndexRandom = model._output._predStartIndexRandom;
     _randomSlopeToo = model._output._randomSlopeToo;
-    _randomIntercept = _parms._random_intercept || (_parms._standardize);
+    _randomIntercept = _parms._random_intercept;
     _tmat = model._output._tmat;  // generated from non-standardized random coefficients
     randomObj = new Random(_parms._seed);
     _noiseStd = Math.sqrt(_parms._tau_e_var_init);  // not affected by standardization/normalization

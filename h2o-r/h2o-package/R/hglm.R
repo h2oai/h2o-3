@@ -40,7 +40,6 @@
 #' @param family Family. Only gaussian is supported now. Must be one of: "gaussian". Defaults to gaussian.
 #' @param rand_family rand_family. Set distribution of random effects.  Only Gaussian is implemented now. Must be one of:
 #'        "gaussian".
-#' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance. Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model coefficient
 #'        names and model coefficient dimensions are needed. Defaults to -1.
 #' @param initial_fixed_effects An array that contains initial values of the fixed effects coefficient.
@@ -94,7 +93,6 @@ h2o.hglm <- function(x,
                      plug_values = NULL,
                      family = c("gaussian"),
                      rand_family = c("gaussian"),
-                     standardize = FALSE,
                      max_iterations = -1,
                      initial_fixed_effects = NULL,
                      initial_random_effects = NULL,
@@ -165,8 +163,6 @@ h2o.hglm <- function(x,
     parms$family <- family
   if (!missing(rand_family))
     parms$rand_family <- rand_family
-  if (!missing(standardize))
-    parms$standardize <- standardize
   if (!missing(max_iterations))
     parms$max_iterations <- max_iterations
   if (!missing(initial_fixed_effects))
@@ -214,7 +210,6 @@ h2o.hglm <- function(x,
                                      plug_values = NULL,
                                      family = c("gaussian"),
                                      rand_family = c("gaussian"),
-                                     standardize = FALSE,
                                      max_iterations = -1,
                                      initial_fixed_effects = NULL,
                                      initial_random_effects = NULL,
@@ -290,8 +285,6 @@ h2o.hglm <- function(x,
     parms$family <- family
   if (!missing(rand_family))
     parms$rand_family <- rand_family
-  if (!missing(standardize))
-    parms$standardize <- standardize
   if (!missing(max_iterations))
     parms$max_iterations <- max_iterations
   if (!missing(initial_fixed_effects))
@@ -340,15 +333,6 @@ h2o.coef_random <- function(model) {
         return(model@model$ubeta)
 }
 
-#' Extracts the normalized/standardized random effects coefficients of an HGLM model.
-#'
-#' @param model is a H2O HGLM model.
-#' @export
-h2o.coef_random_norm <- function(model) {
-    if (is(model, "H2OModel") && (model@algorithm=="hglm"))
-        return(model@model$ubeta_normalized)
-}
-
 #' Extracts the group_column levels of an HGLM model.  The group_column is usually referred to as level 2 predictor.
 #'
 #' @param model is a H2O HGLM model.
@@ -365,16 +349,6 @@ h2o.level_2_names <- function(model) {
 h2o.coefs_random_names <- function(model) {
     if (is(model, "H2OModel") && (model@algorithm=="hglm"))
         return(model@model$random_coefficient_names)
-}
-
-#' Extracts the coefficient names of normalized/standardized random effect coefficients.  If no random intercept is 
-#' set, during the normalization/de-normalization process, an random intercept will be added.
-#'
-#' @param model is a H2O HGLM model.
-#' @export
-h2o.coefs_random_names_norm <- function(model) {
-    if (is(model, "H2OModel") && (model@algorithm=="hglm"))
-        return(model@model$random_coefficient_names_normalized)
 }
 
 #' Extracts scoring history of validation dataframe during training

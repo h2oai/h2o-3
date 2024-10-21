@@ -77,8 +77,8 @@ public class MetricBuilderHGLM extends ModelMetricsSupervised.MetricBuilderSuper
     double[][] tmat = hglmM._output._tmat; // already set with non-standardized random coefficients
 
     if (forTraining) {
-      double loglikelihood = calHGLMllg(metricsRegression._nobs, tmat, hglmM._output._tau_e_var, hglmM._output._arjtarj_score,
-              this._yMinusfixPredSquare, hglmM._output._yminusxtimesz_score);
+      double loglikelihood = calHGLMllg(metricsRegression._nobs, tmat, hglmM._output._tau_e_var, hglmM._output._arjtarj,
+              this._yMinusfixPredSquare, hglmM._output._yminusxtimesz);
       mm = new ModelMetricsRegressionHGLM(m, f, metricsRegression._nobs, this.weightedSigma(), loglikelihood,
               this._customMetric, hglmM._output._iterations, hglmM._output._beta, hglmM._output._ubeta,
               tmat, hglmM._output._tau_e_var, metricsRegression._MSE, this._yMinusfixPredSquare / metricsRegression._nobs, 

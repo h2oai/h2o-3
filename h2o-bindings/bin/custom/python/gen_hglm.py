@@ -16,28 +16,13 @@ def class_extensions():
         Get the random effect coefficient names including the intercept if applicable.
         """
         return self._model_json["output"]["random_coefficient_names"]
-    
-    def coefs_random_names_norm(self):
-        """
-        Get the random effect coefficient names including the intercept if applicable for normalized/standardized
-        random effect coefficients.
-        """
-        return self._model_json["output"]["random_coefficient_names_normalized"]
-    
+        
     def coefs_random(self):
         """
         Get the random coefficients of the model.
         """
         level_2_names = self.level_2_names()
         random_coefs = self._model_json["output"]["ubeta"]
-        return dict(zip(level_2_names, random_coefs))
-
-    def coefs_random_norm(self):
-        """
-        Get the normalized/standardized random coefficients of the model.
-        """
-        level_2_names = self.level_2_names()
-        random_coefs = self._model_json["output"]["ubeta_normalized"]
         return dict(zip(level_2_names, random_coefs))
 
     def scoring_history_valid(self, as_data_frame=True):

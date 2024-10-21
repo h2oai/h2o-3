@@ -76,8 +76,6 @@ reference:
       - h2o.coef_norm
       - h2o.coef_random
       - h2o.coefs_random_names
-      - h2o.coefs_random_names_norm
-      - h2o.coef_random_norm
       - h2o.coef_with_p_values
       - h2o.colnames
       - h2o.columns_by_type
