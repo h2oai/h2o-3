@@ -9,7 +9,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.TwoDimTable;
 
-import javax.swing.*;
 
 public class KNNTest extends TestUtil {
 
