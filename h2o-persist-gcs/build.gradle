@@ -11,7 +11,9 @@ dependencies {
 
     constraints {
         api('com.google.protobuf:protobuf-java:3.25.5') {
-
+            because 'Fixes CVE-2024-7254'
+            because 'Fixes SNYK-JAVA-COMGOOGLEPROTOBUF-8055227'
+            because 'Fixes SNYK-JAVA-COMGOOGLEPROTOBUF-8055228'
         }
     }
 }
