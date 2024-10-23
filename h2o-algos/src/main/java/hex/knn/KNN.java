@@ -4,6 +4,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.DKV;
 import water.Job;
+import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 
@@ -70,6 +71,7 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
                 DKV.put(result._key, result);
                 model._output._distances_key = result._key;
                 model.update(_job);
+                Scope.untrack(result);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
