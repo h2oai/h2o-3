@@ -29,6 +29,11 @@ At a minimum, we recommend the following for compatibility with H2O:
    -  Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
+- **numpy**: H2O-3 only supports ``numpy<2``. To work around having ``numpy2`` installed, run the following command:
+   
+   ::
+
+      pip install --force-reinstall 'numpy<2'
 
 Java Requirements
 ~~~~~~~~~~~~~~~~~
