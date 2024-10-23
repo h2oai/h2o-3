@@ -360,7 +360,30 @@ The following are simple HGLM examples in Python and R.
 
    .. code-tab:: r R
 
-      blah
+      # Import the Gaussian wintercept dataset:
+      h2odata <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/hglm_test/gaussian_0GC_allRC_2enum2numeric_p5oise_p08T_wIntercept_standardize.gz")
+
+      # Set the predictors and response:
+      yresp <- "response"
+      predictor <- c("C2", "C3", "C4", "C5")
+
+      # Set the random and group columns:
+      random_columns <- c("C2", "C3", "C4", "C5")
+      group_column <- "C1"
+
+      # Build and train the model:
+      hglm_model <- h2o.hglm(x = predictor, 
+                             y = yresp, 
+                             training_frame = h2odata, 
+                             group_column = group_column, 
+                             random_columns = random_columns, 
+                             seed = 12345, 
+                             max_iterations = 10, 
+                             em_epsilon = 0.0000001, 
+                             random_intercept = TRUE)
+
+      # Find the coefficient:
+      coeff <- h2o.coef(hglm_model)
 
 References
 ----------
