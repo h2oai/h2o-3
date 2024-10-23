@@ -33,7 +33,7 @@ where:
 - :math:`\varepsilon_{ij} \sim N(0, \delta_e^2)`;
 - :math:`u_{ij} \sim N(0, \delta_u^2)`:
 - :math:`\varepsilon_{ij}, u_{mj}` are independent;
-- :math:`u_{mj}, u_{m,j}` are independent if :math:`m \neq m`.
+- :math:`u_{mj}, u_{m,j}` are independent if :math:`m \neq m'`.
 
 We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_{m0}, u_{mj}, \delta_e^2, \delta_u^2`.
 
@@ -62,7 +62,7 @@ Algorithm-specific parameters
 
 - **method**: Obtains the fixed and random coefficients as well as the various variances (defaults to ``"em"``).
 
-- `random_columns <algo-params/random_columns.html>`__: An array of random column indices to be used for ``HGLM``.
+- `random_columns <algo-params/random_columns.html>`__: An array of random column names from which random effects coefficients will be generated in the model building process.
 
 -  `rand_family <algo-params/rand_family.html>`__: Specify the distribution of the random effects. Currently only ``rand_family=["gaussisan"]`` is supported.
 
@@ -144,37 +144,31 @@ where:
       In general, you can place the intercept at the beginning or the end of each row of data, but we chose to put it at the end for our implementation.
 
 - :math:`\theta_f \text{ is a } p` by 1 vector of fixed coefficients;
-- :math:`A_{rj}` is usually denoted by :math:`Z_j \text{ where } Z_j = \begin{bmatrix} z^T_{j1} \\ z^T_{j2} \\ z^T_{j3} \\ \vdots \\ z^T_{jn_j} \\\end{bmatrix}`;
+- :math:`A_{rj}` is usually denoted by :math:`Z_{rj} \text{ where } Z_{rj} = \begin{bmatrix} z^T_{j1} \\ z^T_{j2} \\ z^T_{j3} \\ \vdots \\ z^T_{jn_j} \\\end{bmatrix}`;
    
    .. note::
 
       We included a term for the random intercept here. However, there are cases where we do not have a random intercept, and the last element of 1 will not be there for :math:`z_{ji}`.
 
 - :math:`\theta_{rj}` represents the random coefficient and is a :math:`q` by 1 vector;
-- :math:`r_j \text{ is an } n_j` by 1 vector of level-1 random effects assumed multivariate normal in distribution with 0 mean vector, covariance matrix :math:`\sigma^2 I_{n_{j\times nj}} \text{ where } I_{n_{j \times nj}}` is the identity matrix, :math:`n_j \text{ by } n_j`;
+- :math:`r_j \text{ is an } n_j` by 1 vector of level-1 residual noise assumed multivariate normal in distribution with 0 mean vector, covariance matrix :math:`\sigma^2 I_{n_{j}\times n_{j}} \text{ where } I_{n_{j \times nj}}` is the identity matrix, :math:`n_j \text{ by } n_j`;
 - :math:`j` denotes the level-2 units where :math:`j = 1,2, \cdots , J`;
 - :math:`T_j` is a symmetric positive definite matrix of size :math:`n_j \text{ by } n_j`. We assume that :math:`T_j` is the same for all :math:`j = 1,2, \cdots , J`, and it is kept to be symmetric positive definite throughout the whole model building process.
 
 M-step
 ~~~~~~
 
-EM conceives of :math:`Y_j` as the observed data with :math:`\theta_{rj}` as the missing data. Therefore, the complete data are :math:`(Y_j, \theta_{rj}), j=1, \cdots, J \text{ while } \theta_f, \sigma^2, \text{ and } T_j` are the parameters that need to be estimated. If the complete data were observed, finding the ML estimates will be simple. To estimate :math:`\theta_f`, subtract :math:`A_{rj} \theta_{rj}` from both sides of *equation 6*:
+EM conceives of :math:`Y_j` as the observed data with :math:`\theta_{rj}` as the missing data. Therefore, the complete data are :math:`(Y_j, \theta_{rj}), j=1, \cdots, J \text{ while } \theta_f, \sigma^2, \text{ and } T_j` are the parameters that need to be estimated. If the complete data were observed, finding the ML estimates will be simple. To estimate :math:`\theta_f`, subtract :math:`A_{rj} \theta_{rj}` from both sides of *equation 6* yielding:
 
 .. math::
    
    Y_j - A_{rj} \theta_{rj} = A_{fj} \theta_f + r_f \quad \text{ equation 7}
 
-and justifying the ordinary least squares (OLS) estimate:
+Next, multiply *equation 7* with :math:`A^T_{fj}` and sum across the level-2 unit :math:`j`. Note that :math:`\sum^J_{j=1} A^T_{fj} r_j \sim 0`. Re-arrange the terms and you will get *equation 8*, which is also the ordinary least squares (OLS) estimate:
 
 .. math::
-   
+
    \hat{\theta_f} = \Big( \sum^J_{j=1} A^T_{fj} A_{fj} \Big)^{-1} \sum^J_{j=1} A^T_{fj} (Y_j - A_{rj} \theta_{rj}) \quad \text{ equation 8}
-
-*Equation 8* can also be solved by multipying *equation 7* with :math:`A^T_{fj}` and sum across the level-2 unit :math:`j`. 
-
-.. note::
-   
-   :math:`\sum^J_{j=1} A^T_{fj} r_j \sim 0` and rearrange the terms and you get *equation 8*.
 
 Next, ML estimators for :math:`T_j` and :math:`\sigma^2` are straightforward:
 
@@ -199,7 +193,7 @@ where :math:`N = \sum^J_{j=1} n_j`.
 E-step
 ~~~~~~
 
-While the CDSS are not observed, they can be estimated by their conditional expectations given the data :math:`Y` and parameter estimates from the previous iterations. `Dempster et al. <#references>`__ showed that substituting the expected CDSS for the M-step formulas would produce new parameter estimates having a higher likelihood than the current estimates.
+While the CDSS are not observed, they can be estimated by their conditional expectations given the data :math:`Y` and parameter estimates from the previous iterations. `Dempster et al. [4] <#references>`__ showed that substituting the expected CDSS for the M-step formulas would produce new parameter estimates having a higher likelihood than the current estimates.
 
 To find :math:`E(CDSS | Y, \theta_f, T, \sigma^2)` requires deriving the conditional distribution of the missing data :math:`\theta_r`, given :math:`Y, \theta_f, T, \sigma^2`. From *equation  6*, the joint distribution of the complete data is:
 
@@ -207,7 +201,7 @@ To find :math:`E(CDSS | Y, \theta_f, T, \sigma^2)` requires deriving the conditi
    
    \begin{pmatrix} Y_j \\ \theta_{rj} \\\end{pmatrix} \sim N \Bigg[ \begin{pmatrix} A_{fj} \theta_{f} \\ 0 \\\end{pmatrix} , \begin{pmatrix} A_{rj}T_jA^T_{rj} + \sigma^2 & A_{rj}T_j \\ T_j A^T_{rj} & T_j \\\end{pmatrix} \Bigg] \quad \text{ equation 12}
 
-From *equation 12*, we can dervie the conditional distribution of the missing data given the complete data as follows:
+From *equation 12*, we can obtain the conditional distribution of the missing data given the complete data as follows:
 
 .. math::
    
@@ -221,7 +215,7 @@ with
 
    C_j = A^T_{rj} A_{rj} + \sigma^2 T^{-1}_j \quad \text{ equation 15}
 
-Complete the EM algorithm
+The complete EM algorithm
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The complete EM algorithm is as follows:
@@ -237,10 +231,9 @@ The complete EM algorithm is as follows:
 
 3. Substitution: substitute the estimated CDSS from *equation 17* into the M-step forumulas (*equations 8, 9,* and *10*);
 4. Processing: feed the new estimates of :math:`\theta_f, \sigma^2, T_j` into step 2;
-5. Cycling: continue steps 2, 3, and 4 until the following stopping conditions are satisfied:
-   
-   a. Changes in the log-likelihood (*equation 16*) become sufficiently small, or
-   b. The largest change in the value of any of the parameters is sufficiently small.
+5. Cycling: continue steps 2, 3, and 4 until the following stopping condition is satisfied:
+
+   - The largest change in the value of any of the parameters is sufficiently small.
 
 Log-likelihood for HGLM
 ~~~~~~~~~~~~~~~~~~~~~~~
