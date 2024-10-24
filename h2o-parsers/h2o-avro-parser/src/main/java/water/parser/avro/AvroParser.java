@@ -264,7 +264,7 @@ public class AvroParser extends Parser {
                           String[][] data,
                           byte[] header,
                           long blockSize) {
-      super(AvroParserProvider.AVRO_INFO, (byte) '|', true, HAS_HEADER , ncols, columnNames, ctypes, domains, naStrings, data);
+      super(AvroParserProvider.AVRO_INFO, (byte) '|', true, HAS_HEADER , ncols, columnNames, ctypes, domains, naStrings, data, false);
       this.header = header;
       this.blockSize = blockSize;
       this.setChunkSize((int) blockSize);

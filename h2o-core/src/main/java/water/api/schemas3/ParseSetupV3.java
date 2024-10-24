@@ -90,6 +90,9 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
           " will happen without setting this parameter.  Defaults to false.", direction=API.Direction.INPUT)
   public boolean force_col_types;
 
+  @API(help="Adjust the imported time from GMT timezone to cluster timezone.", direction=API.Direction.INPUT)
+  public boolean tz_adjust_to_local;
+
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {
     ParseSetup parseSetup = fillImpl(impl, new String[] {"parse_type"});
