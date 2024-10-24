@@ -46,8 +46,7 @@ import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
 import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.util.LinearAlgebraUtils.generateOrthogonalComplement;
 import static hex.util.LinearAlgebraUtils.generateQR;
-import static water.util.ArrayUtils.expandArray;
-import static water.util.ArrayUtils.subtract;
+import static water.util.ArrayUtils.*;
 
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {

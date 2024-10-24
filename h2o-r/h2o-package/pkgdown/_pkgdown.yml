@@ -74,6 +74,8 @@ reference:
       - h2o.coef
       - h2o.coef_names
       - h2o.coef_norm
+      - h2o.coef_random
+      - h2o.coefs_random_names
       - h2o.coef_with_p_values
       - h2o.colnames
       - h2o.columns_by_type
@@ -168,9 +170,11 @@ reference:
       - h2o.group_by
       - h2o.gsub
       - h2o.head
+      - h2o.hglm
       - h2o.hist
       - h2o.hit_ratio_table
       - h2o.hour
+      - h2o.icc
       - h2o.ice_plot
       - h2o.ifelse
       - h2o.import_hive_table
@@ -198,6 +202,7 @@ reference:
       - h2o.kolmogorov_smirnov
       - h2o.kurtosis
       - h2o.learning_curve_plot
+      - h2o.level_2_names
       - h2o.levels
       - h2o.list_all_extensions
       - h2o.list_api_extensions
@@ -221,10 +226,12 @@ reference:
       - h2o.make_metrics
       - h2o.makeGLMModel
       - h2o.match
+      - h2o.matrix_T
       - h2o.max
       - h2o.modelSelection
       - h2o.mean_per_class_error
       - h2o.mean_residual_deviance
+      - h2o.mean_residual_fixed
       - h2o.mean
       - h2o.median
       - h2o.melt
@@ -287,6 +294,7 @@ reference:
       - h2o.residual_deviance 
       - h2o.residual_dof
       - h2o.residual_analysis_plot
+      - h2o.residual_variance
       - h2o.result
       - h2o.rm 
       - h2o.rmse
@@ -303,6 +311,8 @@ reference:
       - h2o.save_frame
       - h2o.scale
       - h2o.scoreHistory
+      - h2o.scoring_history
+      - h2o.scoring_history_valid
       - h2o.scoreHistoryGAM
       - h2o.sd 
       - h2o.sdev

@@ -1,7 +1,7 @@
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
-from tests.pyunit_utils import utils_for_glm_tests
+from tests.pyunit_utils import utils_for_glm_hglm_tests
 
 def test_constraints_objective_likelihood():
     '''
@@ -94,7 +94,7 @@ def test_constraints_objective_likelihood():
     obj_optimal = h2o_glm_optimal_init.average_objective()
     print("logloss with constraints and coefficients initialized with glm model built without constraints: {0}, aic: "
           "{2}, llh: {3}, average_objective: {4}, number of iterations taken to build the model: "
-          "{1}".format(init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_optimal_init), aic_optimal,
+          "{1}".format(init_logloss, utils_for_glm_hglm_tests.find_model_iterations(h2o_glm_optimal_init), aic_optimal,
                        ll_optimal, obj_optimal))
     print(glm.getConstraintsInfo(h2o_glm_optimal_init))
 
@@ -124,7 +124,7 @@ def test_constraints_objective_likelihood():
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and coefficients initialized random initial values: {0}, aic: {2}, llh: {3}, "
           "average objective: {4}, number of iterations taken to build the model: "
-          "{1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init), aic_random,
+          "{1}".format(init_random_logloss, utils_for_glm_hglm_tests.find_model_iterations(h2o_glm_random_init), aic_random,
                        ll_random, obj_random))
     print(glm.getConstraintsInfo(h2o_glm_random_init))
 
@@ -141,7 +141,7 @@ def test_constraints_objective_likelihood():
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and default coefficients initialization: {0}, aic: {2}, llh: {3}, average objective:"
           " {4}, number of iterations taken to build the model: "
-          "{1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init), aic_default,
+          "{1}".format(default_init_logloss, utils_for_glm_hglm_tests.find_model_iterations(h2o_glm_default_init), aic_default,
                        ll_default, obj_default))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
 

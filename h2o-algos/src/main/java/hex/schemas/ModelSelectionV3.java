@@ -48,7 +48,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "objective_epsilon",
                 "beta_epsilon",
                 "gradient_epsilon",
-                "startval",  // initial starting values for fixed and randomized coefficients, double array
+                "startval",  // initial starting values for coefficients, double array
                 "prior",
                 "cold_start", // if true, will start GLM model from initial values and conditions
                 "lambda_min_ratio",
@@ -186,11 +186,11 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
         public GLMModel.GLMParameters.Link link;
 
-        @API(help = "double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.",
+        @API(help = "Double array to initialize coefficients for GLM.",
                 gridable=true)
         public double[] startval;
 
-        @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
+        @API(help = "If true, will return likelihood function value for GLM.") // not gridable
         public boolean calc_like;
         
         @API(level = API.Level.critical, direction = API.Direction.INOUT,
