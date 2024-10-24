@@ -4,10 +4,18 @@ description = "H2O Persist GCS"
 
 dependencies {
     api project(":h2o-core")
-    api ('com.google.cloud:google-cloud-storage:2.43.2')
+    api ('com.google.cloud:google-cloud-storage:2.13.1')
 
     testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
+
+    constraints {
+        api('com.google.protobuf:protobuf-java:3.25.5') {
+            because 'Fixes CVE-2024-7254'
+            because 'Fixes SNYK-JAVA-COMGOOGLEPROTOBUF-8055227'
+            because 'Fixes SNYK-JAVA-COMGOOGLEPROTOBUF-8055228'
+        }
+    }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
