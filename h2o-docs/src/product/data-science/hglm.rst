@@ -33,7 +33,7 @@ where:
 - :math:`\varepsilon_{ij} \sim N(0, \delta_e^2)`;
 - :math:`u_{ij} \sim N(0, \delta_u^2)`:
 - :math:`\varepsilon_{ij}, u_{mj}` are independent;
-- :math:`u_{mj}, u_{m,j}` are independent if :math:`m \neq m'`.
+- :math:`u_{mj}, u_{m^{'}j}` are independent if :math:`m \neq m^{'}`.
 
 We need to solve the following parameters: :math:`\beta_{00}, \beta_{0j}, \beta_{m0}, u_{mj}, \delta_e^2, \delta_u^2`.
 
@@ -64,7 +64,7 @@ Algorithm-specific parameters
 
 - `random_columns <algo-params/random_columns.html>`__: An array of random column names from which random effects coefficients will be generated in the model building process.
 
--  `rand_family <algo-params/rand_family.html>`__: Specify the distribution of the random effects. Currently only ``rand_family=["gaussisan"]`` is supported.
+-  `rand_family <algo-params/rand_family.html>`__: Specify the distribution of the random effects. Currently only ``rand_family="gaussisan"`` is supported.
 
 - **random_intercept**: If enabled, will generate a random intercept as part of the random effects coefficients (defaults to ``True``).
 
@@ -98,8 +98,6 @@ Common parameters
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
-
--  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``True`` (enabled).
 
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
