@@ -5,10 +5,20 @@ import water.fvec.*;
 import water.parser.ParseDataset;
 import water.util.Log;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.sql.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SQLManager {
 
@@ -30,6 +40,15 @@ public class SQLManager {
 
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
+  private static final String DISALLOWED_JDBC_PARAMETERS_PARAM = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.jdbc.disallowed.parameters";
+
+  private static final Pattern JDBC_PARAMETERS_REGEX_PATTERN = Pattern.compile("(?i)[?;&]([a-z]+)=");
+
+  private static final List<String> DEFAULT_JDBC_DISALLOWED_PARAMETERS = Stream.of(
+          "autoDeserialize", "queryInterceptors", "allowLoadLocalInfile", "allowMultiQueries", //mysql 
+          "allowLoadLocalInfileInPath", "allowUrlInLocalInfile", "allowPublicKeyRetrieval", //mysql 
+          "init", "script", "shutdown" //h2
+  ).map(String::toLowerCase).collect(Collectors.toList());
   private static AtomicLong NEXT_TABLE_NUM = new AtomicLong(0);
   
   static Key<Frame> nextTableKey(String prefix, String postfix) {
@@ -58,6 +77,7 @@ public class SQLManager {
       final String username, final String password, final String columns,
       final Boolean useTempTable, final String tempTableName,
       final SqlFetchMode fetchMode, final Integer numChunksHint) {
+    validateJdbcUrl(connection_url);
 
     final Key<Frame> destination_key = nextTableKey(table, "sql_to_hex");
     final Job<Frame> j = new Job<>(destination_key, Frame.class.getName(), "Import SQL Table");
@@ -533,6 +553,7 @@ public class SQLManager {
    * @throws SQLException if a database access error occurs or the url is
    */
   public static Connection getConnectionSafe(String url, String username, String password) throws SQLException {
+    validateJdbcUrl(url);
     initializeDatabaseDriver(getDatabaseType(url));
     try {
       return DriverManager.getConnection(url, username, password);
@@ -585,6 +606,30 @@ public class SQLManager {
         break;
       default:
         //nothing to do
+    }
+  }
+
+  public static void validateJdbcUrl(String jdbcUrl) throws IllegalArgumentException {
+    if (jdbcUrl == null || jdbcUrl.trim().isEmpty()) {
+      throw new IllegalArgumentException("JDBC URL is null or empty");
+    }
+
+    if (!jdbcUrl.toLowerCase().startsWith("jdbc:")) {
+      throw new IllegalArgumentException("JDBC URL must start with 'jdbc:'");
+    }
+
+    Matcher matcher = JDBC_PARAMETERS_REGEX_PATTERN.matcher(jdbcUrl);
+    String property = System.getProperty(DISALLOWED_JDBC_PARAMETERS_PARAM);
+    List<String> disallowedParameters = property == null ?
+            DEFAULT_JDBC_DISALLOWED_PARAMETERS :
+            Arrays.stream(property.split(",")).map(String::toLowerCase).collect(Collectors.toList());
+
+    while (matcher.find()) {
+      String key = matcher.group(1);
+      if (disallowedParameters.contains(key.toLowerCase())) {
+        throw new IllegalArgumentException("Potentially dangerous JDBC parameter found: " + key +
+                ". That behavior can be altered by setting " + DISALLOWED_JDBC_PARAMETERS_PARAM + " env variable to another comma separated list.");
+      }
     }
   }
 
