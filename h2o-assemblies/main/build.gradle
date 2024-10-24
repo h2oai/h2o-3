@@ -33,7 +33,6 @@ dependencies {
         exclude group: "org.apache.curator"
         exclude group: "org.apache.zookeeper"
         exclude group: "org.eclipse.jetty"
-        exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
 
     // Upgrade dependencies of h2o-jetty-9
