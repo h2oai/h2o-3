@@ -168,6 +168,22 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-python-3.12-jdk-%: dev-python-3.12
+endif
+dev-python-3.12-jdk-%:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.12-jdk-$*:$(VERSION) \
+		$(NO_CACHE) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.12 \
+		--build-arg INSTALL_JAVA_VERSION=$* \
+		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.12-jdk-$*:$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-mojocompat: dev-python-3.7
 
 endif
