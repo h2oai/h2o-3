@@ -148,21 +148,21 @@ public class SQLManagerTest {
 
   @Test
   public void testValidateJdbcConnectionStringH2() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: init");
+
     String h2MaliciousJdbc = "jdbc:h2:mem:test;MODE=MSSQLServer;init=CREATE ALIAS RBT AS '@groovy.transform.ASTTest(value={ assert java.lang.Runtime.getRuntime().exec(\"reboot\")" + "})" + "def rbt" + "'";
 
     SQLManager.validateJdbcUrl(h2MaliciousJdbc);
-
-    exception.expect(IllegalArgumentException.class);
-    exception.expectMessage("Potentially dangerous JDBC parameter found: init");
   }
 
   @Test
   public void testValidateJdbcConnectionStringMysql() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
+    
     String mysqlMaliciousJdbc = "jdbc:mysql://domain:123/test?autoDeserialize=true&queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor&user=abcd";
 
     SQLManager.validateJdbcUrl(mysqlMaliciousJdbc);
-
-    exception.expect(IllegalArgumentException.class);
-    exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
   }
 }
