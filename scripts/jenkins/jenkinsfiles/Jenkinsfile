@@ -113,9 +113,9 @@ try {
 def cancelPreviousBuilds() {
   echo "###### Cancelling all previous builds ######"
   def hi = Hudson.instance
-  def pname = env.JOB_NAME.split('/')[0]
-
-  hi.getItem(pname).getItem(env.JOB_BASE_NAME).getBuilds().each{ build ->
+  def folderPath = env.JOB_NAME
+  folderPath = folderPath.replaceAll( "$env.JOB_BASE_NAME", '' )
+  hi.getItemByFullName(folderPath).getItem(env.JOB_BASE_NAME).getBuilds().each{ build ->
     def exec = build.getExecutor()
 
     if (build.number != currentBuild.number && exec != null) {
