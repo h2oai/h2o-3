@@ -186,7 +186,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
         public GLMModel.GLMParameters.Link link;
 
-        @API(help = "double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.",
+        @API(help = "Double array to initialize coefficients for GLM.",
                 gridable=true)
         public double[] startval;
 

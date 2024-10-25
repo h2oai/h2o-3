@@ -120,8 +120,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
-      ModelCategory.Regression,
-      ModelCategory.Binomial,
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
+            ModelCategory.Multinomial,
+            ModelCategory.Ordinal
     };
   }
 

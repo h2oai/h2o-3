@@ -227,7 +227,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
                Defaults to ``-1.0``.
         :type gradient_epsilon: float
-        :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+        :param startval: Double array to initialize coefficients for GLM.
                Defaults to ``None``.
         :type startval: List[float], optional
         :param prior: Prior probability for y==1. To be used only for logistic regression iff the data has been sampled
@@ -900,7 +900,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
     @property
     def startval(self):
         """
-        double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+        Double array to initialize coefficients for GLM.
 
         Type: ``List[float]``.
         """
