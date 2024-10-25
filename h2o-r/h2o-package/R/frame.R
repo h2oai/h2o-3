@@ -4109,6 +4109,7 @@ use.package <- function(package,
 #'
 #' @param x An \code{R} object.
 #' @param destination_frame A string with the desired name for the H2OFrame
+#' @param skipped_columns A list of integer containing columns to be skipped and not parsed into the final frame
 #' @param use_datatable allow usage of data.table
 #' @param \dots arguments passed to method arguments.
 #' @export
@@ -4135,15 +4136,19 @@ use.package <- function(package,
 #'   stopifnot(is.h2o(m_hf), dim(m_hf) == dim(m))
 #' }
 #' }
-as.h2o <- function(x, destination_frame="", ...) {
+as.h2o <- function(x, destination_frame="", skipped_columns=NULL, ...) {
   .key.validate(destination_frame)
-  UseMethod("as.h2o")
+  if (is.null(skipped_columns)) {
+    UseMethod("as.h2o")
+  } else {
+    as.h2o.data.frame(x, destination_frame=destination_frame, skipped_columns=skipped_columns)
+  }
 }
 
 #' @rdname as.h2o
 #' @method as.h2o default
 #' @export
-as.h2o.default <- function(x, destination_frame="", ...) {
+as.h2o.default <- function(x, destination_frame="", skipped_columns=NULL, ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
     destination_frame <- .key.make(if(nzchar(subx)) subx else paste0(class(x), "_", collapse = ""))
@@ -4152,13 +4157,13 @@ as.h2o.default <- function(x, destination_frame="", ...) {
     data.frame(C1=x)
   else
     as.data.frame(x, ...)
-  as.h2o.data.frame(x, destination_frame=destination_frame)
+  as.h2o.data.frame(x, destination_frame=destination_frame, skipped_columns=skipped_columns)
 }
 
 #' @rdname as.h2o
 #' @method as.h2o H2OFrame
 #' @export
-as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
+as.h2o.H2OFrame <- function(x, destination_frame="", skipped_columns=NULL, ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
     destination_frame <- .key.make(if(nzchar(subx)) subx else "H2OFrame_copy")
@@ -4173,7 +4178,7 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 #' @seealso \code{\link{use.package}}
 #' @references \url{https://h2o.ai/blog/2016/fast-csv-writing-for-r/}
 #' @export
-as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) {
+as.h2o.data.frame <- function(x, destination_frame="", skipped_columns=NULL, use_datatable=TRUE, ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
     destination_frame <- .key.make(if(nzchar(subx)) subx else "data.frame")
@@ -4203,7 +4208,8 @@ as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) 
   if (verbose) cat(sprintf("writing csv to disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
   #if (verbose) pt <- proc.time()[[3]] # timings inside
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
-                        col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
+                        col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)), 
+                        skipped_columns=skipped_columns)
   #if (verbose) cat(sprintf("uploading csv to h2o using 'h2o.uploadFile' took %.2fs\n", proc.time()[[3]]-pt))
   file.remove(tmpf)
   h2f
@@ -4215,7 +4221,7 @@ as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) 
 #' To speedup execution time for large sparse matrices, use h2o datatable.  Make sure you have installed and imported data.table and slam packages.
 #' Turn on h2o datatable by options("h2o.use.data.table"=TRUE)
 #' @export
-as.h2o.Matrix <- function(x, destination_frame="", use_datatable=TRUE, ...) {
+as.h2o.Matrix <- function(x, destination_frame="", skipped_columns=NULL, use_datatable=TRUE, ...) {
   if( destination_frame=="") {
     subx <- destination_frame.guess(deparse(substitute(x)))
     destination_frame <- .key.make(if(nzchar(subx)) subx else "Matrix")

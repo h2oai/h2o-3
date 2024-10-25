@@ -9,7 +9,6 @@ source("../../../scripts/h2o-r-test-setup.R")
 test_RID_binomial_compareR <- function() {
   fat <- h2o.importFile(locate("smalldata/glm_test/bodyfat.csv"))
   bodyfat <- as.data.frame(fat)
-  browser()
   rGlmBinomial <- glm(bmi ~ neck+density+hip, data=bodyfat, family=binomial())
   dfbetasGlmB <- dfbetas(rGlmBinomial)
   hGlmBinomial <- h2o.glm(x=c("neck", "density", "hip"), y="bmi", lambda=0, family="binomial", standardize=FALSE, influence="dfbetas", training_frame=fat)

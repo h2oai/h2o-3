@@ -9,7 +9,8 @@ ENV R_VERSION=${R_VERSION}
 # In C, global variables with multiple tentative definitions now result in linker errors. With -fcommon such definitions
 # are silently merged during linking.). I tried using -fcommon but without much luck so due to the time constrain I
 # decided to use gcc-9 instead.
-RUN apt-get update && apt-get install -y gcc-9 gfortran-9 g++-9 tcl-dev tk-dev && apt-get clean && apt-get autoremove -y && \
+RUN apt-get update && apt-get install -y gcc-9 gfortran-9 g++-9 tcl-dev tk-dev tidy && \
+    apt-get clean && apt-get autoremove -y && \
     rm -rf /var/cache/apt/*  &&\
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 99 --slave /usr/bin/g++ g++ /usr/bin/g++-9 \
     --slave /usr/bin/gcov gcov /usr/bin/gcov-9 && update-alternatives --install /usr/bin/gfortran f95 /usr/bin/gfortran-9 99

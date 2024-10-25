@@ -2,8 +2,6 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 
-library(randomForest)
-
 test.DRF.smallcat <- function() {
   # Training set has 26 categories from A to Z
   # Categories A, C, E, G, ... are perfect predictors of y = 1
@@ -33,25 +31,9 @@ test.DRF.smallcat <- function() {
   print(h2o.confusionMatrix(drfmodel,alphabet.hex))
   expect_equal(h2o.auc(drfperf), 1)
   # No errors off the diagonal
-  default_cm <- h2o.confusionMatrix(drfmodel,alphabet.hex)[[1]]
-  #iexpect_equal(default_cm[1,2], 0)
-  #expect_equal(default_cm[2,1], 0)
-
-  # Train R DRF Model:
-  # Log.info("R DRF with same parameters:")
-  # drfmodel.r <- randomForest(y ~ ., data = alphabet.data, ntree = 1, nodesize = 1)
-  # drfmodel.r.pred <- predict(drfmodel.r, alphabet.data, type = "response")
-
-  # Compute confusion matrices
-  # Log.info("R Confusion Matrix:"); print(drfmodel.r$confusion)
-  # Log.info("H2O (Group Split) Confusion Matrix:"); print(drfmodel.grpsplit@model$confusion)
-
-  # Compute the AUC - need to convert factors back to numeric
-  # actual <- ifelse(alphabet.data$y == "0", 0, 1)
-  # pred <- ifelse(drfmodel.r.pred == "0", 0, 1)
-  # R.auc = gbm.roc.area(actual, pred)
-  # Log.info(paste("R AUC:", R.auc, "\tH2O (Group Split) AUC:", drfmodel.grpsplit@model$AUC))
-  
+  default_cm <- h2o.confusionMatrix(drfmodel,alphabet.hex)
+  expect_equal(default_cm[1,2], 0)
+  expect_equal(default_cm[2,1], 0)
 }
 
 doTest("DRF Test: Classification with 26 categorical level predictor", test.DRF.smallcat)

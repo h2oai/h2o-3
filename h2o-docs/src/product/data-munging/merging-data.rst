@@ -1,62 +1,14 @@
-Merging Two Datasets
---------------------
+Merge two datasets
+==================
 
-You can use the `merge` function to combine two datasets that share a common column name. By default, all columns in common are used as the merge key; uncommon will be ignored. Also, if you want to use only a subset of the columns in common, rename the other columns so the columns are unique in the merged result.
+You can use the ``merge`` function to combine two datasets that share a common column name. By default, all columns in common are used as the merge key, while uncommon column names will be ignored. Also, if you want to use only a subset of the columns in common, rename the other columns so the columns are unique in the merged result.
 
-Note that in order for a merge to work in multinode clusters, one of the datasets must be small enough to exist in every node.  
+.. note::
+	
+	In order for a merge to work in multinode clusters, one of the datasets must be small enough to exist in every node.  
 
 
 .. tabs::
-   .. code-tab:: r R
-   
-		# Currently, this function only supports `all.x = TRUE`. All other permutations will fail.
-		library(h2o)
-		h2o.init()
-		
-		# Create two simple, two-column R data frames by inputting values, ensuring that both have a common column (in this case, "fruit").
-		left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'), 
-		                   color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
-		right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'), 
-		                    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
-		
-		# Create the H2O data frames from the inputted data.
-		left_frame <- as.h2o(left)
-		print(left_frame)
-		        fruit  color
-		 1      apple    red
-		 2     orange orange
-		 3     banana yellow
-		 4      lemon yellow
-		 5 strawberry    red
-		 6  blueberry   blue
-		
-		[6 rows x 2 columns]
-		
-		right_frame <- as.h2o(right)
-		print(right_frame)
-		        fruit citrus
-		 1      apple  FALSE
-		 2     orange   TRUE
-		 3     banana  FALSE
-		 4      lemon   TRUE
-		 5 strawberry  FALSE
-		 6 watermelon  FALSE
-
-		[6 rows x 2 columns]
-		
-		# Merge the data frames. The result is a single dataset with three columns.
-		new_frame <- h2o.merge(left_frame, right_frame, all.x = TRUE)
-		print(new_frame)
-		       fruit  color citrus
-		1  blueberry   blue   <NA>
-		2      apple    red  FALSE
-		3     banana yellow  FALSE
-		4      lemon yellow   TRUE
-		5     orange orange   TRUE
-		6 strawberry    red  FALSE
-		
-		[6 rows x 3 columns] 
-   
    .. code-tab:: python
    
 		import h2o
@@ -133,4 +85,55 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
 		  3  To
 		
 		[21 rows x 2 columns]
+
+   .. code-tab:: r R
+   
+		# Currently, this function only supports `all.x = TRUE`. All other permutations will fail.
+		library(h2o)
+		h2o.init()
+		
+		# Create two simple, two-column R data frames by inputting values, ensuring that both have a common column (in this case, "fruit").
+		left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'), 
+		                   color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
+		right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'), 
+		                    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
+		
+		# Create the H2O data frames from the inputted data.
+		left_frame <- as.h2o(left)
+		print(left_frame)
+		        fruit  color
+		 1      apple    red
+		 2     orange orange
+		 3     banana yellow
+		 4      lemon yellow
+		 5 strawberry    red
+		 6  blueberry   blue
+		
+		[6 rows x 2 columns]
+		
+		right_frame <- as.h2o(right)
+		print(right_frame)
+		        fruit citrus
+		 1      apple  FALSE
+		 2     orange   TRUE
+		 3     banana  FALSE
+		 4      lemon   TRUE
+		 5 strawberry  FALSE
+		 6 watermelon  FALSE
+
+		[6 rows x 2 columns]
+		
+		# Merge the data frames. The result is a single dataset with three columns.
+		new_frame <- h2o.merge(left_frame, right_frame, all.x = TRUE)
+		print(new_frame)
+		       fruit  color citrus
+		1  blueberry   blue   <NA>
+		2      apple    red  FALSE
+		3     banana yellow  FALSE
+		4      lemon yellow   TRUE
+		5     orange orange   TRUE
+		6 strawberry    red  FALSE
+		
+		[6 rows x 3 columns] 
+   
 	

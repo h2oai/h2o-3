@@ -53,7 +53,36 @@ H2O-3 supports the following `algorithms <data-science.html>`__:
 Requirements
 ------------
 
-We recommend the following at minimum for compatibility with H2O-3:
+At a minimum, we recommend the following for compatibility with H2O-3:
+
+-  **Operating Systems**:
+
+   -  Windows 7 or later
+   -  OS X 10.9 or later
+   -  Ubuntu 12.04
+   -  RHEL/CentOS 6 or later
+
+-  **Languages**: R and Python are not required to use H2O-3 unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
+
+   -  R version 3 or later
+   -  Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x 
+
+-  **Browser**: An internet browser is required to use H2O-3's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
+-  **numpy**: H2O-3 only supports ``numpy<2``. To work around having ``numpy2`` installed, run the following command:
+   
+   ::
+
+      pip install --force-reinstall 'numpy<2'
+
+Java Requirements
+~~~~~~~~~~~~~~~~~
+
+H2O-3 runs on Java. To build H2O-3 or run H2O-3 tests, the 64-bit JDK is required. To run the H2O-3 binary using either the command line, R, or Python packages, only 64-bit JRE is required.
+
+H2O-3 supports the following versions of Java: 
+
+- Java SE 17, 16, 15, 14, 13, 12, 11, 10, 9, 8
+
 
 - **Operating systems**:
    

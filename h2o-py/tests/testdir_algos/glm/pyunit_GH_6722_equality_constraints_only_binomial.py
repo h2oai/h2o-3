@@ -3,7 +3,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-def test_constraints_binomial():
+def test_equality_constraints_only_binomial():
     '''
     This test checks and make sure the equality constraints work with binomial family.  Coefficients are initialized
     with glm coefficients built without contraints, default coefficients and random coefficients.
@@ -124,11 +124,12 @@ def test_constraints_binomial():
           "".format(default_init_logloss, h2o_glm_default_init._model_json["output"]["model_summary"].cell_values[0][6]))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
     
-    assert init_random_logloss >= logloss, "Random initialization logloss with constraints should be worst than GLM " \
-                                           "without constraints but is not."
+    assert abs(init_random_logloss - logloss) < 1e-6, \
+        "Random initialization logloss {0} with constraints should be similary to than GLM without constraints {1} but" \
+        " is not.".format(init_random_logloss, logloss)
  
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_constraints_binomial)
+    pyunit_utils.standalone_test(test_equality_constraints_only_binomial)
 else:
-    test_constraints_binomial()
+    test_equality_constraints_only_binomial()

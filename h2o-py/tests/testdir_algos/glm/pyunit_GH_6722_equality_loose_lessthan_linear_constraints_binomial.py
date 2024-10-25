@@ -3,7 +3,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
 from tests.pyunit_utils import utils_for_glm_tests
 
-def test_constraints_binomial():
+def test_equality_linear_constraints_binomial():
     '''
     This test checks and make sure the equality constraints work with binomial family.  Coefficients are initialized
     with glm coefficients built without constraints, default coefficients and random coefficients.  Note in this case,
@@ -156,18 +156,18 @@ def test_constraints_binomial():
           " taken to build the model: {1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
 
-    assert abs(logloss-init_logloss)<2e-6, "logloss from optimal GLM {0} and logloss from GLM with loose constraints " \
+    assert abs(logloss-init_logloss)<1e-6, "logloss from optimal GLM {0} and logloss from GLM with loose constraints " \
                                            "and initialized with optimal GLM {1} should equal but is not." \
                                            "".format(logloss, init_logloss)
-    assert logloss<=init_random_logloss, "logloss from optimal GLM {0} should be lower than GLM with constraints " \
+    assert abs(logloss-init_random_logloss)<1e-6, "logloss from optimal GLM {0} should be close to GLM with constraints " \
                                                    "and with random initial coefficients {1} but is" \
                                                    " not.".format(logloss, init_random_logloss)
-    assert logloss<=default_init_logloss, "logloss from optimal GLM {0} should be less than GLM with constraints " \
+    assert abs(logloss-default_init_logloss)<1e-6, "logloss from optimal GLM {0} should be close to GLM with constraints " \
                                             "and with default initial coefficients {1} but is" \
                                             " not.".format(logloss, default_init_logloss)
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_constraints_binomial)
+    pyunit_utils.standalone_test(test_equality_linear_constraints_binomial)
 else:
-    test_constraints_binomial()
+    test_equality_linear_constraints_binomial()

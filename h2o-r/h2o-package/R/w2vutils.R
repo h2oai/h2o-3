@@ -27,7 +27,10 @@ h2o.findSynonyms <- function(word2vec, word, count = 20) {
     res <- .h2o.__remoteSend(method="GET", "Word2VecSynonyms", model = word2vec@model_id,
                              word = word, count = count)
     fr <- data.frame(synonym = res$synonyms, score = res$scores)
-    fr[with(fr, order(score, decreasing = TRUE)),]
+    if (length(fr) > 0) {
+        fr[with(fr, order(score, decreasing = TRUE)),]
+    }
+    fr
 }
 
 #'

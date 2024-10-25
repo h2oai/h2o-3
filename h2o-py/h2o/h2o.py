@@ -868,14 +868,22 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             if ind in skipped_columns:
                 use_type[ind]=False
 
-    if column_names is not None:
+    if column_names is not None: 
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
         if (skipped_columns is not None) and len(skipped_columns)>0:
-            if (len(column_names)) != parse_column_len:
+          # when we are converting a python object to H2OFrame, column_names will include all columns despite
+          # skipped columns are specified.  In this case, we need to make sure that 
+          # len(column_names)-len(skipped_columns)==parse_column_len
+          # When we are importing a file with skipped columns mentioned, column_names will only contain columns that
+          # are not skipped.  Hence, in this case, we need to check len(column_names) == parse_column_len.
+          # To combine the two, correct parsing will have conditions len(column_names)-len(skipped_columns)==parse_column_len
+          # or len(column_names)==parse_column_len.  Hence, we will raise an error when 
+          # not(len(column_names)-len(skipped_columns)==parse_column_len or len(column_names)==parse_column_len happened.
+         if not((len(column_names) == parse_column_len) or ((len(column_names)-len(skipped_columns))==parse_column_len)):
                 raise ValueError(
-                    "length of col_names should be equal to the number of columns parsed: %d vs %d"
-                    % (len(column_names), parse_column_len))
-        else:
+                    "length of col_names minus length of skipped_columns should equal the number of columns parsed: "
+                    "%d vs %d" % (len(column_names), parse_column_len))
+        else: # no skipped columns here
             if len(column_names) != len(j["column_types"]): raise ValueError(
                 "length of col_names should be equal to the number of columns: %d vs %d"
                 % (len(column_names), len(j["column_types"])))
