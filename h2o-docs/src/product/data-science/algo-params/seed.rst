@@ -1,7 +1,7 @@
 ``seed``
 --------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost, Stacked Ensembles, Isolation Forest, Target Encoding, Extended Isolation Forest, Uplift DRF, AdaBoost
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, HGLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost, Stacked Ensembles, Isolation Forest, Target Encoding, Extended Isolation Forest, Uplift DRF, AdaBoost, Decision Tree, ANOVAGLM, ModelSelection
 - Hyperparameter: yes
 
 Description

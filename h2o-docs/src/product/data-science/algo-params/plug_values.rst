@@ -1,7 +1,7 @@
 ``plug_values``
 ---------------
 
-- Available in: GLM, GAM
+- Available in: GLM, GAM, HGLM, ANOVAGLM, ModelSelection
 - Hyperparameter: yes
 
 Description

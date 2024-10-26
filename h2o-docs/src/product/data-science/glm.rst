@@ -71,18 +71,6 @@ Algorithm-specific parameters
 
 - `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
-HGLM parameters
-'''''''''''''''
-
--  `HGLM <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built. If disabled (default), then a GLM model will be built. 
-
--  **rand_link**: The link function for random component in HGLM specified as an array. Available options include ``identity`` and ``family_default``. 
-
-- `random_columns <algo-params/random_columns.html>`__: An array of random column indices to be used for ``HGLM``.
-
--  **startval**: The initial starting values for fixed and randomized coefficients in ``HGLM`` specified as a double array. 
-
-
 Shared GLM family parameters
 ''''''''''''''''''''''''''''
 
@@ -101,7 +89,12 @@ Shared GLM family parameters
    :scale: 5%
    :align: middle
 
-**GLM Family**: |GAM| `Generalized Additive Models <gam.html#defining-a-gam-model>`__ (GAM) |MS| `ModelSelection <model_selection.html#defining-a-modelselection-model>`__ |ANOVA| `ANOVA GLM <anova_glm.#defining-an-anova-glm-model>`__
+.. |HGLM| image:: ../images/HGLM.png
+   :alt: HGLM
+   :scale: 5%
+   :align: middle
+
+**GLM Family**: |GAM| `Generalized Additive Models <gam.html#defining-a-gam-model>`__ (GAM) |MS| `ModelSelection <model_selection.html#defining-a-modelselection-model>`__ |ANOVA| `ANOVA GLM <anova_glm.#defining-an-anova-glm-model>`__ |HGLM| `Hierarchical Generalized Linear Model <hglm.html>`__ (HGLM)
 
 -  `alpha <algo-params/alpha.html>`__: |GAM| |MS| |ANOVA| Specify the regularization distribution between L1 and L2. A value of ``1`` produces LASSO regression; a value of ``0`` produces Ridge regression. The default value of ``alpha`` is ``0`` when ``SOLVER = 'L-BFGS'``; otherwise it is ``0.5`` to specify a mixing between LASSO and Ridge regression.
 
@@ -115,7 +108,7 @@ Shared GLM family parameters
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: |GAM| |MS| |ANOVA| Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
--  `family <algo-params/family.html>`__: |GAM| |MS| |ANOVA| Specify the model type.
+-  `family <algo-params/family.html>`__: |GAM| |MS| |ANOVA| |HGLM| Specify the model type.
 
    -  If the family is ``gaussian``, the response must be numeric (**Real** or **Int**).
    -  If the family is ``binomial``, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
@@ -175,7 +168,7 @@ Shared GLM family parameters
 
 -  `objective_epsilon <algo-params/objective_epsilon.html>`__: |GAM| If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, the default value of ``objective_epsilon`` is set to ``.0001``. The default value is ``-1``.
 
--  `plug_values <algo-params/plug_values.html>`__: |GAM| |MS| |ANOVA| (Applicable only if ``missing_values_handling="PlugValues"``) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
+-  `plug_values <algo-params/plug_values.html>`__: |GAM| |MS| |ANOVA| |HGLM| (Applicable only if ``missing_values_handling="PlugValues"``) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
 
 -  `prior <algo-params/prior.html>`__: |GAM| |MS| |ANOVA| Specify prior probability for :math:`p(y==1)`. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to ``-1`` and must be a value in the range (0,1).
    
@@ -183,7 +176,7 @@ Shared GLM family parameters
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: |GAM| |MS| Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This option defaults to ``False`` (disabled).
 
-- **score_iteration_interval**: |MS| Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
+- **score_iteration_interval**: |MS| |HGLM| Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
 
 -  `solver <algo-params/solver.html>`__: |GAM| |MS| |ANOVA| Specify the solver to use. One of: 
    
@@ -953,247 +946,6 @@ While not converged:
    b. Otherwise:
    
       i. Theta :math:`\gets` Maximum Likelihood estimate using Newton’s method with learning rate estimated using Golden section search
-
-Hierarchical GLM
-~~~~~~~~~~~~~~~~
-
-Introduced in 3.28.0.1, Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM allows you to specify both fixed and random effects, which allows fitting correlated to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects. 
-
-**Note**: The initial release of HGLM supports only the Gaussian family and random family.
-
-Gaussian Family and Random Family in HGLM
-'''''''''''''''''''''''''''''''''''''''''
-
-To build an HGLM, we need the hierarchical log-likelihood (h-likelihood) function. The h-likelihood function can be expressed as (equation 1):
-
-.. math::
-
- h(\beta, \theta, u) = \log(f (y|u)) + \log (f(u))
-
-for fixed effects :math:`\beta`, variance components :math:`\theta`, and random effects :math:`u`.
-
-A standard linar mixed model can be expressed as (equation 2):
-
-.. math::
-
-  y = X\beta + Zu + e
-
-where
-
- - :math:`e \text ~ N(0, I_n, \delta_e^2), u \text ~ N(0, I_k, \delta_u^2)`
- - :math:`e, u` are independent, and :math:`u` represents the random effects
- - :math:`n` is the number of i.i.d observations of :math:`y` with mean :math:`0`
- - :math:`q` is the number of values :math:`Z` can take
-
-Then rewriting equation 2 as :math:`e = X\beta + Zu - y` and derive the h-likelihood as:
-
-.. figure:: ../images/h-likelihood.png
-   :align: center
-
-where :math:`C_1 = - \frac{n}{2} \log(2\pi), C_2 = - \frac{q}{2} \log(2\pi)`
-
-In principal, the HGLM model building involves the following main steps:
-
-1. Set the initial values to :math:`\delta_u^2, \delta_e^2, u, \beta`
-2. Estimate the fixed (:math:`\beta`) and random effects (:math:`u`) by solving for :math:`\frac{\partial h}{\partial \beta} = 0, \frac{\partial h}{\partial u} = 0`
-3. Estimate variance components using the adjusted profile likelihood:
-
- .. math::
-
-   h_p = \big(h + \frac{1}{2} log \big| 2 \pi D^{-1}\big| \big)_{\beta=\hat \beta, u=\hat u}
-
- and solving for
-
- .. math::
-
-   \frac{\partial h_p}{\partial \theta} = 0
-
- Note that :math:`D` is the matrix of the second derivatives of :math:`h` around :math:`\beta = \hat \beta, u = \hat u, \theta = (\delta_u^2, \delta_e^2)`.
-
-H2O Implementation
-''''''''''''''''''
-
-In reality, Lee and Nelder (see References) showed that linear mixed models can be fitted using a hierarchy of GLM by using an augmented linear model.  The linear mixed model will be written as:
-
-.. math::
-
-  y = X\beta + Zu + e \\
-  v = ZZ^T\sigma_u^2 + R\sigma_e^2
-
-where :math:`R` is a diagonal matrix with elements given by the estimated dispersion model. The dispersion model refers to the variance part of the fixed effect model with error :math:`e`. There are cases where the dispersion model is modeled itself as :math:`exp(x_d, \beta_d)`. However, in our current version, the variance is just a constant :math:`\sigma_e^2`, and hence :math:`R` is just a scalar value. It is initialized to be the identity matrix.  The model can be written as an augmented weighted linear model:
-
-.. math::
-
-  y_a = T_a \delta + e_a
-
-where
-
-.. figure:: ../images/hglm_augmentation.png
-   :align: center
-
-Note that :math:`q` is the number of columns in :math:`Z, 0_q` is a vector of :math:`q` zeroes, :math:`I_q` is the :math:`qxq` identity matrix. The variance-covariance matrix of the augmented residual matrix is
-
-.. figure:: ../images/hglm_variance_covariance.png
-   :align: center
-
-Fixed and Random Coefficients Estimation
-''''''''''''''''''''''''''''''''''''''''
-
-The estimates for :math:`\delta` from weighted least squares are given by solving
-
-.. math::
-
-  T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a 
-
-where 
-
-.. math::
-
-  W= V(e_a )
-
-The two variance components are estimated iteratively by applying a gamma GLM to the residuals :math:`e_i^2,u_i^2`. Because we are not using a dispersion model, there is only an intercept terms in the linear predictors. The leverages :math:`h_i` for these models are calculated from the diagonal elements of the hat matrix: 
-
-.. math::
-
- H_a=T_a (T_a^T W^{-1} T_a )^{-1} T_a^T W^{-1}
-
-Estimation of Fixed Effect Dispersion Parameter/Variance
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-A gamma GLM is used to fit the dispersion part of the model with response
-:math:`y_{d,i}=(e_i^2)⁄(1-h_i )` where :math:`E(y_d )=u_d` and :math:`u_d≡\phi` (i.e., :math:`\delta_e^2` for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function :math:`g_d (.)` and the linear predictor :math:`X_d \beta_d` with prior weights for :math:`(1-h_i )⁄2` for :math:`g_d (u_d )=X_d \beta_d`. Because we are not using a dispersion model, :math:`X_d \beta_d` will only contain the intercept term.
-
-Estimation of Random Effect Dispersion Parameter/Variance
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e., :math:`\delta_e^2` for a GLM) for the random effect :math:`v`, with :math:`y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,…,q` and :math:`g_\alpha (u_\alpha )=\lambda`, where the prior weights are :math:`(1-h_{n+j} )⁄2`, and the estimated dispersion term for the random effect is given by :math:`\hat \alpha = g_α^{-1}(\hat \lambda)`.
-
-Fitting Algorithm Overview
-''''''''''''''''''''''''''
-
-The following fitting algorithm from "Generalized linear models with random effects" (Y. Lee, J. A. Nelder and Y. Pawitan; see References) is used to build our HGLM. Let :math:`n` be the number of observations and :math:`k` be the number of levels in the random effect. The algorithm that was implemented here at H2O will perform the following:
-
-1. Initialize starting values either from user by setting parameter startval or by the system if startval is left unspecified.  
-2. Construct an augmented model with response :math:`y_{aug}= {y \choose {E(u)}}`.
-3. Use a GLM to estimate :math:`\delta={\beta \choose u}` given the dispersion :math:`\phi` and :math:`\lambda`. Save the deviance components and leverages from the fitted model.
-4. Use a gamma GLM to estimate the dispersion parameter for :math:`\phi` (i.e. :math:`\delta_e^2` for a Gaussian response).
-5. Use a similar GLM as in step 4 to estimate :math:`\lambda` from the last :math:`k` deviance components and leverages obtained from the GLM in step 3.
-6. Iterate between steps 3-5 until convergence. Note that the convergence measure here is either a timeout event or the following condition has been met: :math:`\frac {\Sigma_i{(\text{eta}. i - \text{eta}.o)^2}} {\Sigma_i(\text{eta}.i)^2 \text{<} 1e - 6}`.
-
-A timeout event can be defined as the following:
-
-1. Maximum number of iterations have been reached
-2. Model building run time exceeds what is specified in ``max_runtime_secs``
-3. A user has clicked on stop model button or similar from Flow.
-
-For families and random families other than Gaussian, link functions are used to translate from the linear space to the model the mean output.  
-
-Linear Mixed Model with Correlated Random Effect
-''''''''''''''''''''''''''''''''''''''''''''''''
-
-Let :math:`A` be a matrix with known elements that describe the correlation among the random effects. The model is now given by:
-
-.. figure:: ../images/hglm_linear_mixed_model1.png
-   :align: center
-
-where :math:`N` is normal distribution and :math:`MVN` is multi-variable normal. This can be easily translated to:
-
-.. figure:: ../images/hglm_linear_mixed_model2.png
-   :align: center
-
-where :math:`Z^* = ZL` and :math:`L` is the Cholesky factorization of :math:`A`. Hence, if you have correlated random effects, you can first perform the transformation to your data before using our HGLM implementation here.
-
-HGLM Model Metrics
-''''''''''''''''''
-
-H2O provides the following model metrics at the end of each HGLM experiment:
-
-- fixef: fixed effects coefficients
-- ranef: random effects coefficients
-- randc: vector of random column indices
-- varfix: dispersion parameter of the mean model
-- varranef: dispersion parameter of the random effects
-- converge: true if algorithm has converge, otherwise false
-- sefe: standard errors of fixed effects
-- sere: standard errors of random effects
-- dfrefe: deviance degrees of freedom for the mean part of model
-- sumvc1: estimates and standard errors of linear predictor in the dispersion model
-- summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
-- likelihood: if ``calc_like`` is true, the following four values are returned:
-
-   - hlik: log-h-likelihood;
-   - pvh: adjusted profile log-likelihood profiled over the random effects;
-   - pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
-   - caic: conditional AIC.
-
-- bad: row index of the most influential observation.
-
-Mapping of Fitting Algorithm to the H2O-3 Implementation
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-This mapping is done in four steps:
-
-1. Initialize starting values by the system.
-2. Estimate :math:`\delta =` :math:`\beta \choose u`.
-3. Estimate :math:`\delta_e^2(\text {tau})`.
-4. Estimate :math:`\delta_u^2(\text {phi})`.
-
-**Step 1**: Initialize starting values by the system.
-
-Following the implementation from R, when a user fails to specify starting values for psi, :math:`\beta`, :math:`\mu`, :math:`\delta_e^2`, :math:`\delta_u^2`, we will do it for the users as follows: 
-
- 1. A GLM model is built with just the fixed columns and response.
- 2. Next init_sig_e(:math:`\delta_e^2`)/tau is set to 0.6*residual_deviance()/residual_degrees_of_freedom().
- 3. init_sig_u(:math:`\delta_u^2`) is set to 0.66*init_sig_e.
- 4. For numerical stability, we restrict the magnitude to init_sig_e and init_sig_u to >= 0.1.
- 5. Set phi = vector of length number of random columns of value init_sig_u/(number of random columns).
- 6. Set :math:`\beta` to the GLM model coefficients, :math:`\mu` to be a zero vector.
- 7. Set psi to be a zero vector.
-
-**Step 2**: Estimate :math:`\delta =` :math:`\beta \choose u`.
-
-Given the current values of :math:`\delta_e^2, \delta_u^2`, we will solve for :math:`\delta =` :math:`\beta \choose u`. Instead of solving :math:`\delta` from :math:`T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a`, a different set of formulae are used. A loop is used to solve for the coefficients:
-
- 1. The following variables are generated:
-
-  - :math:`v.i= g_r^{-1} (u_i)` where :math:`u_i` are the random coefficients of the random effects/columns and :math:`g_r^{-1}` can be considered as the inverse link function.
-  - :math:`tau` is a vector of length number of data containing init.sig.e;
-  - :math:`eta.i=X_i \beta+offset` and store the previous :math:`eta.i` as :math:`eta.o`.
-  - :math:`mu.i=g^{-1} (eta.i)`.
-  - dmu_deta is derivative of :math:`g^{-1} (eta.i)` with respect to :math:`eta.i`, which is 1 for identity link.
-  - :math:`z_i=eta.i-offset+(y_i-mu.i)/\text {dmu_deta}`
-  - :math:`zmi= \text{psi}`
-  - :math:`augZ =` :math:`zi \choose zmi`.
-  - du_dv is the derivative of :math:`g_r^{-1} (u_i)` with respect to :math:`v.i.`  Again, for identity link, this is 1.
-  - The weight :math:`W =` :math:`wdata \choose wpsi` where :math:`wdata = \frac {d \text{mu_deta}^2}{\text {prior_weight*family}\$\text{variance}(mu.i)*tau}` and :math:`wpsi = \frac {d \text{u_dv}^2}{\text {prior_weight*family}\$\text{variance(psi)*phi}}`
-
- 2. Finally the following formula is used to solve for the parameters: :math:`augXZ \cdot \delta=augZW` where :math:`augXZ=T_a \cdot W` and :math:`augZW=augZ \cdot W`:
-
-  - Use QR decomposition to augXZ and obtain: :math:`QR \delta = augZW`.
-  - Use backward solve to obtain the coefficients :math:`\delta` from :math:`R \delta = Q^T augZW`.
-  - Calculate :math:`hv=\text{rowsum}(Q)` of length n+number of expanded and store in returnFrame.
-  - Calculate :math:`dev =` :math:`prior weight*(y_i-mu.i)^2 \choose (psi -u_i )^2` of length n+number of expanded random columns and store in returnFrame.
-  - Calculate :math:`resid= \frac {(y-mu.i)} {\sqrt \frac {sum(dev)(1-hv)}{n-p}}` of length n and store in returnFrame.
-  - Go back to step 1 unless :math:`\Sigma_i(eta.i-eta.o)^2 / \Sigma_i(eta.i)^2<1e-6` or a timeout event has occurred. 
-
-**Step 3**: Estimate :math:`\delta_e^2(\text {tau})`
-
-With the newly estimated fixed and random coefficients, we will estimate the dispersion parameter for the fixed effects/columns by building a gamma GLM:
-
- 1. Generate a training frame with constant predictor column of 1 to force glm model to generate only the intercept term:
-
-  - Response column as :math:`dev/(1-hv)`.
-  - Weight column as :math:`(1-hv)/2`.
-  - Predictor column of ones.
-  - The length of the training frame is the number of data rows.
-
- 2. Build a gamma GLM with ``family=gamma`` and ``link=log``.
- 3. Set :math:`tau = \text {exp (intercept value)}`.
- 4. Assign estimation standard error and sigma from the GLM standard error calculation for coefficients.
-
-**Step 4**: Estimate :math:`\delta_u^2(\text {phi})`.
-
-Again, a gamma GLM model is used here. In addition, the error estimates are generated for each random column. Exactly the same steps are used here as in Step 3. The only difference is that we are looking at the :math:`dev,hv` corresponding to the expanded random columns/effects.
 
 .. _regularization:
 

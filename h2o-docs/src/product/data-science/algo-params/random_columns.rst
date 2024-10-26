@@ -1,8 +1,8 @@
 ``random_columns``
 ------------------
 
-- Available in: GLM
-- Hyperparameter: no
+- Available in: HGLM
+- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
