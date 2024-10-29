@@ -1,7 +1,7 @@
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
-from tests.pyunit_utils import utils_for_glm_tests
+from tests.pyunit_utils import utils_for_glm_hglm_tests
 
 def test_equality_constraints_only_binomial():
     '''
@@ -94,7 +94,7 @@ def test_equality_constraints_only_binomial():
     constraint_alpha = [0.01]
     constraint_beta = [0.1]
     constraint_c0 = [15, 20]
-    h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
+    h2o_glm_random_init = utils_for_glm_hglm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         linear_constraints=linear_constraints2,
                                                                         startval=random_coef,
@@ -110,7 +110,7 @@ def test_equality_constraints_only_binomial():
     print(glm.getConstraintsInfo(h2o_glm_random_init))
 
     # GLM model with GLM coefficients with default initialization
-    h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
+    h2o_glm_default_init = utils_for_glm_hglm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",
                                                                          linear_constraints=linear_constraints2,
                                                                          constraint_eta0=constraint_eta0,

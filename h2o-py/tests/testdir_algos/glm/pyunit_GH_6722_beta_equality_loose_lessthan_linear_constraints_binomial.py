@@ -1,7 +1,7 @@
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
-from tests.pyunit_utils import utils_for_glm_tests
+from tests.pyunit_utils import utils_for_glm_hglm_tests
 
 def test_constraints_binomial():
     '''
@@ -161,7 +161,7 @@ def test_constraints_binomial():
     constraint_alpha = [0.01]
     constraint_beta = [0.5, 0.9]
     constraint_c0 = [40]
-    h2o_glm_random_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
+    h2o_glm_random_init = utils_for_glm_hglm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                         family="binomial",
                                                                         linear_constraints=linear_constraints2,
                                                                         beta_constraints=beta_constraints,
@@ -174,12 +174,12 @@ def test_constraints_binomial():
                                                                         return_best=False)                                                             
     init_random_logloss = h2o_glm_random_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and coefficients initialized random initial values: {0}, number of iterations"
-          " taken to build the model: {1}".format(init_random_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_random_init)))
+          " taken to build the model: {1}".format(init_random_logloss, utils_for_glm_hglm_tests.find_model_iterations(h2o_glm_random_init)))
     print(glm.getConstraintsInfo(h2o_glm_random_init))
 
     
     # GLM model with GLM coefficients with default initialization
-    h2o_glm_default_init = utils_for_glm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
+    h2o_glm_default_init = utils_for_glm_hglm_tests.constraint_glm_gridsearch(train, predictors, response, solver="IRLSM",
                                                                          family="binomial",
                                                                          linear_constraints=linear_constraints2,
                                                                          beta_constraints=beta_constraints,
@@ -191,7 +191,7 @@ def test_constraints_binomial():
                                                                          return_best=False)
     default_init_logloss = h2o_glm_default_init.model_performance()._metric_json['logloss']
     print("logloss with constraints and default coefficients initialization: {0}, number of iterations"
-          " taken to build the model: {1}".format(default_init_logloss, utils_for_glm_tests.find_glm_iterations(h2o_glm_default_init)))
+          " taken to build the model: {1}".format(default_init_logloss, utils_for_glm_hglm_tests.find_model_iterations(h2o_glm_default_init)))
     print(glm.getConstraintsInfo(h2o_glm_default_init))
 
 

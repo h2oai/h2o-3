@@ -77,7 +77,7 @@
 #'        (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
 #'        gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True,
 #'        the conditional values above are 1E-8 and 1E-6 respectively. Defaults to -1.
-#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+#' @param startval Double array to initialize coefficients for GLM.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to 0.
 #' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values.  If false, build the next model for next set
