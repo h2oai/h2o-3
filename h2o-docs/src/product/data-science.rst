@@ -42,6 +42,7 @@ H2O-3 supports the following supervised algorithms:
    data-science/model_selection
    data-science/gam
    data-science/anova_glm
+   data-science/hglm
    data-science/gbm
    data-science/naive-bayes
    data-science/rulefit
