@@ -209,7 +209,7 @@ public class ParseSetup extends Iced {
                     int ncols, String[] columnNames, byte[] ctypes,
                     String[][] domains, String[][] naStrings, String[][] data, boolean tzAdjustToLocal) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR,tzAdjustToLocal);
+        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null, ParseSetup.DEFAULT_ESCAPE_CHAR, tzAdjustToLocal);
   }
 
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
