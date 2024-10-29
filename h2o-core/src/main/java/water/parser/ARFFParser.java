@@ -129,7 +129,7 @@ class ARFFParser extends CsvParser {
     naStrings = addDefaultNAs(naStrings, ncols);
 
     // Return the final setup
-    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data, nonDataLineMarkers, escapechar);
+    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data, nonDataLineMarkers, escapechar, false);
   }
 
   private static String[][] addDefaultNAs(String[][] naStrings, int nCols) {

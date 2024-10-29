@@ -19,6 +19,7 @@ import static org.apache.parquet.hadoop.metadata.CompressionCodecName.GZIP;
 import static org.apache.parquet.hadoop.metadata.CompressionCodecName.UNCOMPRESSED;
 import static org.apache.parquet.schema.MessageTypeParser.parseMessageType;
 import static water.fvec.Vec.*;
+import static water.parser.parquet.TypeUtils.getTimestampAdjustmentFromUtcToLocalInMillis;
 
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.hadoop.fs.Path;
@@ -30,7 +31,7 @@ import java.io.IOException;
 
 public class FrameParquetExporter  {
 
-    public void export(H2O.H2OCountedCompleter<?> completer, String path, Frame frame, boolean force, String compression, boolean writeChecksum) {
+    public void export(H2O.H2OCountedCompleter<?> completer, String path, Frame frame, boolean force, String compression, boolean writeChecksum, boolean tzAdjustFromLocal) {
         File f = new File(path);
         new FrameParquetExporter.PartExportParquetTask(
                 completer, 
@@ -41,7 +42,8 @@ public class FrameParquetExporter  {
                 frame.domains(), 
                 force, 
                 compression,
-                writeChecksum
+                writeChecksum,
+                tzAdjustFromLocal
         ).dfork(frame);
     }
 
@@ -54,10 +56,11 @@ public class FrameParquetExporter  {
         final String[][] _domains;
         final boolean _force;
         final boolean _writeChecksum;
+        final boolean _tzAdjustFromLocal;
 
         PartExportParquetTask(H2O.H2OCountedCompleter<?> completer, String path, String messageTypeString,
                               String[] colNames, byte[] colTypes, String[][] domains, 
-                              boolean force, String compression, boolean writeChecksum) {
+                              boolean force, String compression, boolean writeChecksum, boolean tzAdjustFromLocal) {
             super(completer);
             _path = path;
             _compressionCodecName = getCompressionCodecName(compression);
@@ -67,6 +70,7 @@ public class FrameParquetExporter  {
             _domains = domains;
             _force = force;
             _writeChecksum = writeChecksum;
+            _tzAdjustFromLocal = tzAdjustFromLocal;
         }
 
         CompressionCodecName getCompressionCodecName(String compression) {
@@ -100,7 +104,7 @@ public class FrameParquetExporter  {
             try (ParquetWriter<Group> writer = buildWriter(new Path(partPath), _compressionCodecName, PersistHdfs.CONF, parseMessageType(_messageTypeString), getMode(_force), _writeChecksum)) {
                 String currColName;
                 byte currColType;
-
+                long timeStampAdjustment = _tzAdjustFromLocal ? getTimestampAdjustmentFromUtcToLocalInMillis() : 0L;
                 for (int i = 0; i < anyChunk._len; i++) {
                     Group group = fact.newGroup();
                     for (int j = 0; j < cs.length; j++) {
@@ -109,7 +113,9 @@ public class FrameParquetExporter  {
                         switch (currColType) {
                             case (T_UUID):
                             case (T_TIME):
-                                group = group.append(currColName, cs[j].at8(i));
+                                long timestamp = cs[j].at8(i);
+                                long adjustedTimestamp = timestamp - timeStampAdjustment;
+                                group = group.append(currColName, adjustedTimestamp);
                                 break;
                             case (T_STR):
                                 if (!cs[j].isNA(i)) {

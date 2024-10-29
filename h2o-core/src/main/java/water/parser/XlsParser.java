@@ -80,7 +80,7 @@ class XlsParser extends Parser {
   /** Try to parse the bytes as XLS format  */
   public static ParseSetup guessSetup( byte[] bytes ) {
     XlsParser p = new XlsParser(new ParseSetup(XLS_INFO, ParseSetup.GUESS_SEP, false,
-                                ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null), null);
+                                ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null, false), null);
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     PreviewParseWriter dout = new PreviewParseWriter();
@@ -88,7 +88,7 @@ class XlsParser extends Parser {
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
       return new ParseSetup(XLS_INFO, ParseSetup.GUESS_SEP, false,
             dout.colNames()==null?ParseSetup.NO_HEADER:ParseSetup.HAS_HEADER,dout._ncols,
-                                 dout.colNames(), dout.guessTypes(),null,null,dout._data);
+                                 dout.colNames(), dout.guessTypes(),null,null,dout._data, false);
     else throw new ParseDataset.H2OParseException("Could not parse file as an XLS file.");
   }
 
