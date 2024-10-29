@@ -1,5 +1,6 @@
 package water.util;
 
+import Jama.Matrix;
 import water.*;
 import water.fvec.*;
 
@@ -16,12 +17,89 @@ public class ArrayUtils {
   public static int[] cumsum(final int[] from) {
     int arryLen = from.length;
     int[] cumsumR = new int[arryLen];
-    int result = 0;
+    int result=0;
     for (int index = 0; index < arryLen; index++) {
-      result += result+from[index];
+      result += from[index];
       cumsumR[index] = result;
     }
     return cumsumR;
+  }
+  
+  /***
+   * Given an array with first dimension J and second dimension q, this function will flatten the 2-D array into
+   * 1-D array of length J*q.  It basically concates each row of arr into one big 1-D array.
+   */
+  public static double[] flattenArray(double[][] arr) {
+    int numRandCoeff = arr[0].length;
+    int numLevel2 = arr.length;
+    int len = numRandCoeff * numLevel2;
+    double[] flatA = new double[len];
+    int longIndex;
+    for (int index2 = 0; index2 < numLevel2; index2++) {
+      for (int coefInd = 0; coefInd < numRandCoeff; coefInd++) {
+        longIndex = index2*numRandCoeff+coefInd;
+        flatA[longIndex] = arr[index2][coefInd];
+      }
+    }
+    return flatA;
+  }
+
+  public static String[] flattenArray(String[][] arr) {
+    int numRandCoeff = arr[0].length;
+    int numLevel2 = arr.length;
+    int len = numRandCoeff * numLevel2;
+    String[] flatA = new String[len];
+    int longIndex;
+    for (int index2 = 0; index2 < numLevel2; index2++) {
+      for (int coefInd = 0; coefInd < numRandCoeff; coefInd++) {
+        longIndex = index2*numRandCoeff+coefInd;
+        flatA[longIndex] = arr[index2][coefInd];
+      }
+    }
+    return flatA;
+  }
+
+  public static void copy2DArray(double[][] src_array, double[][] dest_array) {
+    int numRows = src_array.length;
+    for (int colIdx = 0; colIdx < numRows; colIdx++) { // save zMatrix for debugging purposes or later scoring on training dataset
+      System.arraycopy(src_array[colIdx], 0, dest_array[colIdx], 0,
+              src_array[colIdx].length);
+    }
+  }
+
+  // copy a square array
+  public static double[][] copy2DArray(double[][] src_array) {
+    double[][] dest_array = MemoryManager.malloc8d(src_array.length, src_array[0].length);
+    copy2DArray(src_array, dest_array);
+    return dest_array;
+  }
+
+  public static void copy2DArray(int[][] src_array, int[][] dest_array) {
+    int numRows = src_array.length;
+    for (int colIdx = 0; colIdx < numRows; colIdx++) { // save zMatrix for debugging purposes or later scoring on training dataset
+      System.arraycopy(src_array[colIdx], 0, dest_array[colIdx], 0,
+              src_array[colIdx].length);
+    }
+  }
+
+  /***
+   * This method will take a 2D array and expand it to be of size numLevel2*tmat.length.  Basically, it will copy tmat
+   * into the diagonal block a bigger matrix of size numLevel2*tmat.length.
+   */
+  public static double[][] expandMat(double[][] tmat, int numLevel2) {
+    int numRandomCoeff = tmat.length;
+    int qTimesJ = numRandomCoeff * numLevel2;
+    double[][] gMat = new double[qTimesJ][qTimesJ];
+    int colInd = 0;
+    int rowInd = 0;
+    for (int ind2 = 0; ind2 < numLevel2; ind2++) {
+      for (int ind = 0; ind < numRandomCoeff; ind++) {
+        System.arraycopy(tmat[ind], 0, gMat[rowInd], colInd, numRandomCoeff);
+        rowInd++;       
+      }
+      colInd += numRandomCoeff;
+    }
+    return gMat;
   }
   
   // Sum elements of an array
@@ -115,6 +193,28 @@ public class ArrayUtils {
         result[i][j] = x[i] * y[j];
     }
     return result;
+  }
+
+  public static double[][] outerProductCum(double[][] result, double[] x, double[] y) {
+    if (result == null)
+      result = new double[x.length][y.length];
+    for(int i = 0; i < x.length; i++) {
+      for(int j = 0; j < y.length; j++)
+        result[i][j] += x[i] * y[j];
+    }
+    return result;
+  }
+  
+  public static void outputProductSymCum(double[][] result, double[] x) {
+    if (result == null)
+      throw new IllegalArgumentException("result should have been a double[][] array of size x.length.");
+    int xLen = x.length;
+    for (int rInd = 0; rInd < xLen; rInd++)
+      for (int cInd=0; cInd <= rInd; cInd++) {
+        result[rInd][cInd] += x[rInd] * x[cInd];
+        if (rInd != cInd)
+          result[cInd][rInd] = result[rInd][cInd];
+      }
   }
 
   // return the sqrt of each element of the array.  Will overwrite the original array in this case
@@ -307,11 +407,47 @@ public class ArrayUtils {
       a[i] = b[i] + c[i];
     return a;
   }
+
+  /**
+   * Note that this add is cumulative, meaning if you have double matrices a, b, c and you do
+   * add(a, b) followed by add(a, c), you will get a+b+c.
+   */
   public static double[][] add(double[][] a, double[][] b) {
     if (a == null) return b;
     for(int i = 0; i < a.length; i++ ) a[i] = add(a[i], b[i]);
     return a;
   }
+
+  /**
+   *  This add is not cumulative.  It will simply return result = a+b.
+   */
+  public static void add(double[][] result, double[][] a, double[][] b) {
+    if (result == null || result.length != a.length || result[0].length != a[0].length || a.length != b.length || 
+            a[0].length != b[0].length)
+      throw new IllegalArgumentException("matrices must be of the same size.");
+    int numRow = a.length;
+    int numCol = a[0].length;
+    for (int rInd = 0; rInd < numRow; rInd++)
+      for (int cInd = 0; cInd < numCol; cInd++)
+        result[rInd][cInd] = a[rInd][cInd] + b[rInd][cInd];
+  }
+  
+  public static void minus(double[] result, double[] a, double[] b){
+    if (result == null || result.length != a.length || a.length != b.length)
+      throw new IllegalArgumentException("matrices must be of the same size.");
+    int numRow = a.length;
+    for (int rInd = 0; rInd < numRow; rInd++)
+        result[rInd] = a[rInd] - b[rInd];
+  }
+
+  public static void minus(double[][] result, double[][] a, double[][] b){
+    if (result == null || result.length != a.length || a.length != b.length || result[0].length != a[0].length || a[0].length != b[0].length)
+      throw new IllegalArgumentException("matrices must be of the same size.");
+    int numRow = a.length;
+    for (int rInd = 0; rInd < numRow; rInd++)
+      minus(result[rInd], a[rInd], b[rInd]);
+  }
+  
   public static double[][][] add(double[][][] a, double[][][] b) {
     for(int i = 0; i < a.length; i++ ) a[i] = add(a[i],b[i]);
     return a;
@@ -386,6 +522,21 @@ public class ArrayUtils {
         dest[i]=source[i]*n;
     return dest;
   }
+  
+  public static void mult(double[][] source, double[][] dest, double n) {
+    if (dest != null && source.length == dest.length && source[0].length == dest[0].length) {
+      int numRow = source.length;
+      for (int i=0; i<numRow; i++)
+        mult(source[i], dest[i], n);
+    }
+  }
+
+  public static double[] multCum(double[] source, double[] dest, double n) {
+    if (source != null && dest != null && source.length==dest.length)
+      for (int i=0; i<source.length; i++)
+        dest[i]+=source[i]*n;
+    return dest;
+  }
 
   public static double[] mult(double[] nums, double n) {
 //    assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
@@ -394,6 +545,32 @@ public class ArrayUtils {
     return nums;
   }
 
+  public static void matrixMult(double[][] result, double[][] op1, double[][] op2) {
+    if (result == null)
+      throw new IllegalArgumentException("Result should be a double[][] array already allocated.");
+    if (op1.length != result.length)
+      throw new IllegalArgumentException("Number of rows of result should equal to number of rows of op1.");
+
+    int numRow = op1.length;
+    int numCol = op1[0].length;
+    int resultNumCol = op2[0].length;
+    for (int rInd = 0; rInd < numRow; rInd++)
+      for (int cInd = 0; cInd < resultNumCol; cInd++)
+        for (int tempInd = 0; tempInd < numCol; tempInd++) {
+          result[rInd][cInd] += op1[rInd][tempInd]*op2[tempInd][cInd];
+        }
+  }
+  
+  public static void matrixVectorMult(double[] result, double[][] matrix, double[] vector) {
+    if (result == null)
+      throw new IllegalArgumentException("Result should be a double[] array already allocated.");
+    int numRow = matrix.length;
+    int numCol = matrix[0].length;
+    for (int rInd = 0; rInd < numRow; rInd++)
+      for (int cInd = 0; cInd < numCol; cInd++)
+        result[rInd] += matrix[rInd][cInd]*vector[cInd];
+  }
+  
   public static double[] mult(double[] nums, double[] nums2) {
     for (int i=0; i<nums.length; i++) nums[i] *= nums2[i];
     return nums;
@@ -468,6 +645,14 @@ public class ArrayUtils {
     return res;
   }
 
+  public static double trace(double[][] mat) {
+    double temp = 0;
+    int length = mat.length;
+    for (int index=0; index<length; index++)
+      temp += mat[index][index];
+    return temp;
+  }
+  
   public static double[] multVecArr(double[] nums, double[][] ary) {
     if(ary == null || nums == null) return null;
     assert nums.length == ary.length : "Inner dimensions must match: Got " + nums.length + " != " + ary.length;
@@ -939,6 +1124,30 @@ public class ArrayUtils {
       if (from[i]<result) result = from[i];
     return result;
   }
+  
+  public static double maxMag(double[] arr) {
+    int len = arr.length;
+    double maxVal = 0;
+    double oneEle; 
+    for (int index = 0; index < len; index++) {
+      oneEle = Math.abs(arr[index]);
+      if (!Double.isNaN(oneEle) && oneEle > maxVal)
+        maxVal = oneEle;
+    }
+    return maxVal;
+  }
+  
+  public static double maxMag(double[][] arr) {
+    int numRow = arr.length;
+    double maxVal = 0;
+    double oneRowMax;
+    for (int index = 0; index < numRow; index++) {
+      oneRowMax = maxMag(arr[index]);
+      if (oneRowMax > maxVal)
+        maxVal = oneRowMax;
+    }
+    return maxVal;
+  }
 
   // Find an element with linear search & return it's index, or -1
   public static <T> int find(T[] ts, T elem) {return find(ts,elem,0);}
@@ -1149,6 +1358,22 @@ public class ArrayUtils {
     int arraySize = vseed.length;
     for (int i=0; i < arraySize; i++) {
       vseed[i] = random.nextGaussian();
+    }
+    return vseed;
+  }
+
+  /** Remove the array allocation in this one */
+  public static double[][] gaussianVector(Random random, double[][] vseed, int firstInd, int secondInd) {
+    if (vseed == null) {
+      vseed = new double[firstInd][secondInd];
+    } else {
+      firstInd = vseed.length;
+      secondInd = vseed[0].length;
+    }
+    
+    for (int rowInd = 0; rowInd < firstInd; rowInd++)
+      for (int colInd=0; colInd < secondInd; colInd++) {
+        vseed[rowInd][colInd] = random.nextGaussian();
     }
     return vseed;
   }
@@ -1781,7 +2006,7 @@ public class ArrayUtils {
         _frameContent = MemoryManager.malloc8d(_rowNum, colNum);
       } else {  // make sure we are passed the correct size 2-D double array
         assert (_rowNum == frameContent.length && frameContent[0].length == colNum);
-        for (int index = 0; index < colNum; index++) { // zero fill use array
+        for (int index = 0; index < _rowNum; index++) { // zero fill use array
           Arrays.fill(frameContent[index], 0.0);
         }
         _frameContent = frameContent;

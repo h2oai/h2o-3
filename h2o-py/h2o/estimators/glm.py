@@ -52,14 +52,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  fold_column=None,  # type: Optional[str]
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
-                 random_columns=None,  # type: Optional[List[int]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
                  score_iteration_interval=-1,  # type: int
                  offset_column=None,  # type: Optional[str]
                  weights_column=None,  # type: Optional[str]
                  family="auto",  # type: Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"]
-                 rand_family=None,  # type: Optional[List[Literal["[gaussian]"]]]
                  tweedie_variance_power=0.0,  # type: float
                  tweedie_link_power=1.0,  # type: float
                  theta=1e-10,  # type: float
@@ -83,10 +81,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  beta_epsilon=0.0001,  # type: float
                  gradient_epsilon=-1.0,  # type: float
                  link="family_default",  # type: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
-                 rand_link=None,  # type: Optional[List[Literal["[identity]", "[family_default]"]]]
                  startval=None,  # type: Optional[List[float]]
                  calc_like=False,  # type: bool
-                 HGLM=False,  # type: bool
                  prior=-1.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=-1.0,  # type: float
@@ -169,9 +165,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training.
                Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param random_columns: random columns indices for HGLM.
-               Defaults to ``None``.
-        :type random_columns: List[int], optional
         :param ignore_const_cols: Ignore constant columns.
                Defaults to ``True``.
         :type ignore_const_cols: bool
@@ -199,10 +192,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type family: Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial",
                "poisson", "gamma", "tweedie", "negativebinomial"]
-        :param rand_family: Random Component Family array.  One for each random component. Only support gaussian for
-               now.
-               Defaults to ``None``.
-        :type rand_family: List[Literal["[gaussian]"]], optional
         :param tweedie_variance_power: Tweedie variance power
                Defaults to ``0.0``.
         :type tweedie_variance_power: float
@@ -293,20 +282,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param link: Link function.
                Defaults to ``"family_default"``.
         :type link: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
-        :param rand_link: Link function array for random component in HGLM.
-               Defaults to ``None``.
-        :type rand_link: List[Literal["[identity]", "[family_default]"]], optional
-        :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If
-               standardize is true, the standardized coefficients should be used.  Otherwise, use the regular
-               coefficients.
+        :param startval: double array to initialize coefficients for GLM.  If standardize is true, the standardized
+               coefficients should be used.  Otherwise, use the regular coefficients.
                Defaults to ``None``.
         :type startval: List[float], optional
         :param calc_like: if true, will return likelihood function value.
                Defaults to ``False``.
         :type calc_like: bool
-        :param HGLM: If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.
-               Defaults to ``False``.
-        :type HGLM: bool
         :param prior: Prior probability for y==1. To be used only for logistic regression iff the data has been sampled
                and the mean of response does not reflect reality.
                Defaults to ``-1.0``.
@@ -474,14 +456,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.fold_column = fold_column
         self.response_column = response_column
         self.ignored_columns = ignored_columns
-        self.random_columns = random_columns
         self.ignore_const_cols = ignore_const_cols
         self.score_each_iteration = score_each_iteration
         self.score_iteration_interval = score_iteration_interval
         self.offset_column = offset_column
         self.weights_column = weights_column
         self.family = family
-        self.rand_family = rand_family
         self.tweedie_variance_power = tweedie_variance_power
         self.tweedie_link_power = tweedie_link_power
         self.theta = theta
@@ -505,10 +485,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.beta_epsilon = beta_epsilon
         self.gradient_epsilon = gradient_epsilon
         self.link = link
-        self.rand_link = rand_link
         self.startval = startval
         self.calc_like = calc_like
-        self.HGLM = HGLM
         self.prior = prior
         self.cold_start = cold_start
         self.lambda_min_ratio = lambda_min_ratio
@@ -896,20 +874,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["ignored_columns"] = ignored_columns
 
     @property
-    def random_columns(self):
-        """
-        random columns indices for HGLM.
-
-        Type: ``List[int]``.
-        """
-        return self._parms.get("random_columns")
-
-    @random_columns.setter
-    def random_columns(self, random_columns):
-        assert_is_type(random_columns, None, [int])
-        self._parms["random_columns"] = random_columns
-
-    @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
@@ -1079,20 +1043,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def family(self, family):
         assert_is_type(family, None, Enum("auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
         self._parms["family"] = family
-
-    @property
-    def rand_family(self):
-        """
-        Random Component Family array.  One for each random component. Only support gaussian for now.
-
-        Type: ``List[Literal["[gaussian]"]]``.
-        """
-        return self._parms.get("rand_family")
-
-    @rand_family.setter
-    def rand_family(self, rand_family):
-        assert_is_type(rand_family, None, [Enum("[gaussian]")])
-        self._parms["rand_family"] = rand_family
 
     @property
     def tweedie_variance_power(self):
@@ -1765,24 +1715,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["link"] = link
 
     @property
-    def rand_link(self):
-        """
-        Link function array for random component in HGLM.
-
-        Type: ``List[Literal["[identity]", "[family_default]"]]``.
-        """
-        return self._parms.get("rand_link")
-
-    @rand_link.setter
-    def rand_link(self, rand_link):
-        assert_is_type(rand_link, None, [Enum("[identity]", "[family_default]")])
-        self._parms["rand_link"] = rand_link
-
-    @property
     def startval(self):
         """
-        double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If standardize is
-        true, the standardized coefficients should be used.  Otherwise, use the regular coefficients.
+        double array to initialize coefficients for GLM.  If standardize is true, the standardized coefficients should
+        be used.  Otherwise, use the regular coefficients.
 
         Type: ``List[float]``.
         """
@@ -1806,20 +1742,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def calc_like(self, calc_like):
         assert_is_type(calc_like, None, bool)
         self._parms["calc_like"] = calc_like
-
-    @property
-    def HGLM(self):
-        """
-        If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("HGLM")
-
-    @HGLM.setter
-    def HGLM(self, HGLM):
-        assert_is_type(HGLM, None, bool)
-        self._parms["HGLM"] = HGLM
 
     @property
     def prior(self):

@@ -1,7 +1,6 @@
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 from tests import pyunit_utils
-from tests.pyunit_utils import utils_for_glm_tests
 
 def test_separate_linear_beta_gaussian():
     '''

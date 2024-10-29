@@ -583,22 +583,6 @@ def test_learning_curve_for_algos_not_present_in_automl():
     assert isinstance(glm_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
-    # HGLM
-    h2o_data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/semiconductor.csv"))
-    y = "y"
-    x = ["x1", "x3", "x5", "x6"]
-    z = 0
-    h2o_data["Device"] = h2o_data["Device"].asfactor()
-    hglm_model = H2OGeneralizedLinearEstimator(HGLM=True,
-                                               family="gaussian",
-                                               rand_family=["gaussian"],
-                                               random_columns=[z],
-                                               rand_link=["identity"],
-                                               calc_like=True)
-    hglm_model.train(x=x, y=y, training_frame=h2o_data)
-    assert isinstance(hglm_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
-    matplotlib.pyplot.close()
-
     # GAM
     knots1 = [-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290]
     frameKnots1 = h2o.H2OFrame(python_obj=knots1)
