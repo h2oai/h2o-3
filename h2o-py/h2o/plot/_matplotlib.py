@@ -5,7 +5,10 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
         # noinspection PyUnresolvedReferences
         import matplotlib
         if server:
-            matplotlib.use("Agg")
+            if matplotlib.get_backend() != "Agg":
+                import matplotlib.pyplot as plt
+                plt.close('all')
+                matplotlib.use("Agg")
         try:
             # noinspection PyUnresolvedReferences
             import matplotlib.pyplot as plt
