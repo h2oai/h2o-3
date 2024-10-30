@@ -12,7 +12,7 @@ We located these vulnerabilites from our security scans. The following list show
 - CVE-2021-22569: `com.google.protobuf:protobuf-java (main-3.46.0.jar)`, `com.google.protobuf:protobuf-java (main.jar)`
 - CVE-2021-22570: `com.google.protobuf:protobuf-java (main-3.46.0.jar)`, `com.google.protobuf:protobuf-java (main.jar)`
 - CVE-2022-3509: `com.google.protobuf:protobuf-java (main-3.46.0.jar)`, `com.google.protobuf:protobuf-java (main.jar)`
-- CVE-2022-5310: `com.google.protobuf:protobuf-java (main-3.46.0.jar)`, `com.google.protobuf:protobuf-java (main.jar)`
+- CVE-2022-3510: `com.google.protobuf:protobuf-java (main-3.46.0.jar)`, `com.google.protobuf:protobuf-java (main.jar)`
 - CVE-2024-7254: `com.google.protobuf:protobuf-java (main-3.46.0.jar)`, `com.google.protobuf:protobuf-java (main.jar)`
 - CVE-2022-3171: `com.google.protobuf:protobuf-java (main-3.46.0.jar)`, `com.google.protobuf:protobuf-java (main.jar)`
 - CVE-2024-23454: `org.apache.hadoop:hadoop-common (main-3.46.0.jar)`, `org.apache.hadoop:hadoop-common (main.jar)`
