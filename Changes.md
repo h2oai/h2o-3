@@ -2,6 +2,38 @@
 
 ## H2O
 
+### 3.46.0.6 - 11/1/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/6/index.html</a>
+
+#### Bug
+- [[#16397]](https://github.com/h2oai/h2o-3/issues/16397) - Removed Sun license from the jps jar.
+- [[#16382]](https://github.com/h2oai/h2o-3/issues/16382) - Fixed issues with constrained GLM.
+- [[#16360]](https://github.com/h2oai/h2o-3/issues/16360) - Fixed H2O-3 R package for Windows not allowing the opening of one file by multiple processes.
+- [[#16333]](https://github.com/h2oai/h2o-3/issues/16333) - Fixed pyplot warning from `learning_curve_plot` call.
+
+#### Improvement
+- [[#15180]](https://github.com/h2oai/h2o-3/issues/15180) - Enabled users to adjust parquet imported timezone.
+
+#### New Feature
+- [[#16361]](https://github.com/h2oai/h2o-3/issues/16361) - Enabled ability to display full PIDs in logs with `sys.ai.h2o.log.max.pid.length` call.
+- [[#8487]](https://github.com/h2oai/h2o-3/issues/8487) - Implemented HGLM Gaussian as its own independent toolbox.
+
+#### Docs
+- [[#16413]](https://github.com/h2oai/h2o-3/issues/16413) - Added the HGLM algorithm page and removed HGLM as a parameter.
+- [[#16412]](https://github.com/h2oai/h2o-3/issues/16412) - Added `numpy` requirements to welcome page.
+- [[#16384]](https://github.com/h2oai/h2o-3/issues/16384) - Fixed broken links throughout the user guide.
+- [[#16338]](https://github.com/h2oai/h2o-3/issues/16338) - Clarified the `group_by` documentation by expanding the examples.
+- [[#16208]](https://github.com/h2oai/h2o-3/issues/16208) - Added documentation on constrained GLM.
+- [[#16182]](https://github.com/h2oai/h2o-3/issues/16182) - Updated the Welcome page to adhere to style guide requirements and broke it up into multiple smaller getting started pages.
+- [[#15983]](https://github.com/h2oai/h2o-3/issues/15983) - Added examples to Python documentation for Rulefit.
+
+#### Security
+- [[#16425]](https://github.com/h2oai/h2o-3/issues/16425) - Addressed CVE-2024-8862 by adding JDBC parameter validation.
+- [[#16416]](https://github.com/h2oai/h2o-3/issues/16416) - Addressed CVE-2024-47561 by upgrading avro:avro library from 1.11.3 to 1.11.4.
+- [[#16391]](https://github.com/h2oai/h2o-3/issues/16391) - Addressed sonatype-2024-3350 by using compatible versions of Apache commons-collections packages.
+- [[#16351]](https://github.com/h2oai/h2o-3/issues/16351) - Addressed CVE-2024-5979 which caused AstRunTool to crash H2O-3 if bad inputs were provided by not calling `System.exit` from `water.tools`.
+
 ### 3.46.0.5 - 8/28/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html</a>
