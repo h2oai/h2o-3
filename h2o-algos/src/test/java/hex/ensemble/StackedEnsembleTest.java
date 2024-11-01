@@ -1,9 +1,6 @@
 package hex.ensemble;
 
-import hex.GLMHelper;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.SplitFrame;
+import hex.*;
 import hex.ensemble.Metalearner.Algorithm;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.genmodel.utils.DistributionFamily;
@@ -754,6 +751,7 @@ public class StackedEnsembleTest extends TestUtil {
             stackedEnsembleParameters._base_models = new Key[] {gbm._key, drf._key};
             stackedEnsembleParameters._seed = seed;
             stackedEnsembleParameters._score_training_samples = 0; // don't subsample dataset for training metrics so we don't randomly fail the test
+            stackedEnsembleParameters._auc_type = MultinomialAucType.MACRO_OVO;
             // Invoke Stacked Ensemble and block till end
             StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
             // Get the stacked ensemble
