@@ -40,9 +40,9 @@ RUN apt-get -y install \
 COPY h2o.jar /opt/program/h2o.jar
 COPY dist/ /opt/h2o-dist
 
-RUN /usr/bin/pip3 install --upgrade --force-reinstall pip==9.0.3 && \
-    /usr/bin/pip3 install numpy scipy scikit-learn pandas flask gevent gunicorn requests tabulate colorama future && \
-    /usr/bin/pip3 install -f /opt/h2o-dist h2o --user
+RUN /usr/bin/python3 -m pip install --upgrade pip
+RUN /usr/bin/python3 -m pip install numpy scipy scikit-learn pandas flask gevent gunicorn requests tabulate colorama future
+RUN /usr/bin/python3 -m pip install /opt/h2o-dist/*
 
 # Set some environment variables. PYTHONUNBUFFERED keeps Python from buffering our standard
 # output stream, which means that logs can be delivered to the user quickly. PYTHONDONTWRITEBYTECODE
