@@ -132,7 +132,10 @@ def _train_model(hyperparameters={}):
     print("Beginning Model Training")
     try:
         response_label = training_params.get('target')
-        categorical_columns = training_params.get("categorical_columns", []).split(",")
+        categorical_columns = training_params.get("categorical_columns", [])
+        if categorical_columns:
+            categorical_columns = categorical_columns.split(",")
+            categorical_columns = [categorical_column.strip() for categorical_column in categorical_columns]
         train_data = _get_data(prefix, 'training')
 
         X = train_data.columns
