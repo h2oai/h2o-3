@@ -117,8 +117,8 @@ doc = dict(
     # build a HGLM model with prostate dataset
     prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
     prostate <- h2o.uploadFile(path = prostate_path)
-    prostate$CAPSULE <- as.factor(prostate$CAPSULE)
     prostate$RACE <- as.factor(prostate$RACE)
-    model <- h2o.hglm(y="VOL", x=c("AGE","RACE","DPROS"), random_columns = ["AGE"], group_column = "RACE", training_frame=prostate)
+    model <- h2o.hglm(y="VOL", x=c("AGE","RACE","DPROS"), random_columns = ["AGE"], 
+                      group_column = "RACE", training_frame=prostate)
     """
 )
