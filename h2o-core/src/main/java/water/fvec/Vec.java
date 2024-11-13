@@ -948,7 +948,9 @@ public class Vec extends Keyed<Vec> {
   /** A high-quality 64-bit checksum of the Vec's content, useful for
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
-  @Override protected long checksum_impl() { return rollupStats()._checksum;}
+  @Override protected long checksum_impl() {
+    return rollupStats()._checksum * (get_type() + 1);
+  }
 
   public boolean isVolatile() {return _volatile;}
 
