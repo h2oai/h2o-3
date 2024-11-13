@@ -42,7 +42,7 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.11 Smoke', target: 'test-py-smoke', pythonVersion: '3.11', timeoutValue: 8,
+      stageName: 'Py3.12 Smoke', target: 'test-py-smoke', pythonVersion: '3.12', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -556,6 +556,22 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.11 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.11',
+      timeoutValue: 600, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.12 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.12',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.12 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.12',
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.12 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.12',
+      timeoutValue: 100, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.12 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.12',
       timeoutValue: 600, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
