@@ -78,6 +78,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
 
       validateParams(builder._parms);
 
+      builder.setParams(builder._parms);
       builder.init(false);
       Job<M> j = builder.trainModel();
       while (j.isRunning()) {
