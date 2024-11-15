@@ -126,6 +126,7 @@ def _train_model(hyperparameters={}):
     training_params = json.loads(training_params_str)
     output_path = os.path.join(prefix, 'output')
     model_path = os.path.join(prefix, 'model')
+    mojo_path = model_path
 
     gbm_params['distribution'] = training_params['distribution']
 
@@ -175,6 +176,8 @@ def _train_model(hyperparameters={}):
 
         model_path = h2o.save_model(gbm_model, path=model_path)
         print("Model Path with Name: {}".format(model_path))
+        mojo_path = gbm_model.save_mojo(path=mojo_path)
+        print("Mojo Path with Name: {}".format(mojo_path))
         print('Training complete.')
     except Exception as e:
         # Write out an error file. This will be returned as the failureReason
