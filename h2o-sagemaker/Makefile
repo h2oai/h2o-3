@@ -13,11 +13,11 @@ build-local-image:
 	rm -rf ../build/dist
 
 build-official-sagemaker-from-local: build-local-image
-	docker tag h2o-gbm-local:latest $(ACCOUNTID).dkr.ecr.$(REGION).amazonaws.com/adam-test:$(VERSION)
+	docker tag h2o-gbm-local:latest $(ACCOUNTID).dkr.ecr.$(REGION).amazonaws.com/$(ECR):$(VERSION)
 	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(ACCOUNTID).dkr.ecr.$(REGION).amazonaws.com
-	docker push $(ACCOUNTID).dkr.ecr.us-east-1.amazonaws.com/adam-test:$(VERSION)
+	docker push $(ACCOUNTID).dkr.ecr.us-east-1.amazonaws.com/$(ECR):$(VERSION)
 
 build-official-sagemaker-from-latest: build-sagemaker-image
-	docker tag h2o-gbm-local:latest $(ACCOUNTID).dkr.ecr.$(REGION).amazonaws.com/adam-test:$(VERSION)
+	docker tag h2o-gbm-local:latest $(ACCOUNTID).dkr.ecr.$(REGION).amazonaws.com/$(ECR):$(VERSION)
 	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(ACCOUNTID).dkr.ecr.$(REGION).amazonaws.com
-	docker push $(ACCOUNTID).dkr.ecr.us-east-1.amazonaws.com/adam-test:$(VERSION)
+	docker push $(ACCOUNTID).dkr.ecr.us-east-1.amazonaws.com/$(ECR):$(VERSION)
