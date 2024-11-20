@@ -8,7 +8,7 @@ import java.util.Objects;
  * @param <K> String of Integer
  * @param <V> Double or class extends Double
  */
-public class KNNKey<K, V extends Double> implements Comparable<KNNKey<K, V>>{
+public class KNNKey<K extends Comparable<K>, V extends Double> implements Comparable<KNNKey<K, V>>{
     
     K key;
     V value;
@@ -39,14 +39,10 @@ public class KNNKey<K, V extends Double> implements Comparable<KNNKey<K, V>>{
      * We need this functionality for ordering in TopNTreeMap, where order of asking is important to decide top N neighbours.
      */
     public int compareTo(KNNKey<K, V> o) {
+        if (o == null) return 1;
         int sameValue = this.value.compareTo(o.value);
         if (sameValue == 0){
-            boolean sameKey = this.key.equals(o.key);
-            if (sameKey) {
-                return 0;
-            } else {
-                return -1;
-            }
+             return this.key.compareTo(o.key);
         }
         return sameValue;
     }

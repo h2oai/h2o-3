@@ -1,6 +1,8 @@
 package hex.knn;
 
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.TreeMap;
 
 /**
@@ -27,6 +29,9 @@ public class TopNTreeMap<K extends KNNKey, V> extends TreeMap<K, V> {
             V returnValue = super.put(key, value);
             if (size() > n){
                 remove(lastKey);
+                if(size() > n) {
+                    System.out.println("bla");
+                }
             }
             return returnValue;
         } else {

@@ -1,5 +1,9 @@
 package hex.knn;
 
+import hex.ModelMetrics;
+import hex.ModelMetricsClustering;
+import hex.ModelMetricsMultinomial;
+import hex.MultinomialAucType;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,6 +22,7 @@ public class KNNTest extends TestUtil {
     public void testIris() {
         KNNModel knn = null;
         Frame fr = null;
+        Frame preds = null;
         Frame distances = null;
         try {
             fr = parseTestFile("smalldata/iris/iris_wheader.csv");
@@ -33,6 +38,7 @@ public class KNNTest extends TestUtil {
             parms._distance = new EuclideanDistance();
             parms._response_column = response;
             parms._id_column = idColumn;
+            parms._auc_type = MultinomialAucType.MACRO_OVR;
 
             parms._seed = 42;
             KNN job = new KNN(parms);
@@ -42,6 +48,18 @@ public class KNNTest extends TestUtil {
             Assert.assertNotNull(distances);
             TwoDimTable distTable = distances.toTwoDimTable();
             System.out.println(distTable.toString());
+            
+            preds = knn.score(fr);
+            System.out.println(preds.toTwoDimTable());
+
+            ModelMetricsMultinomial mm = (ModelMetricsMultinomial) ModelMetrics.getFromDKV(knn, parms.train());
+            System.out.println(mm);
+            ModelMetricsMultinomial mm1 = (ModelMetricsMultinomial) knn._output._training_metrics;
+            System.out.println(mm1);
+            Assert.assertEquals(mm.auc(), mm1.auc(), 0);
+            
+            knn.testJavaScoring(fr, preds, 0);
+            
         } finally {
             if (knn != null){
                 knn.delete();
@@ -51,6 +69,9 @@ public class KNNTest extends TestUtil {
             }
             if(fr != null) {
                 fr.delete();
+            }
+            if(preds != null){
+                preds.delete();
             }
         }
     }

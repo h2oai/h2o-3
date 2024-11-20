@@ -46,6 +46,7 @@ public class ModelDescriptorBuilder {
         private final String _foldColumn;
         private final String _weightsColumn;
         private final String _treatmentColumn;
+        private final String _idColumn;
         private final String[][] _domains;
         private final String[][] _origDomains;
         private final String[] _names;
@@ -75,14 +76,15 @@ public class ModelDescriptorBuilder {
             _fullAlgoName = fullAlgorithmName;
             if (modelAttributes != null) {
                 ColumnSpecifier weightsColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("weights_column");
-                _weightsColumn = weightsColSpec != null ? weightsColSpec.getColumnName() : null; 
+                _weightsColumn = weightsColSpec != null ? weightsColSpec.getColumnName() : null;
+                ColumnSpecifier treatColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("treatment_column");
+                _treatmentColumn = treatColSpec != null ? treatColSpec.getColumnName() : null;
+                ColumnSpecifier idColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("id_column");
+                _idColumn = idColSpec != null ? idColSpec.getColumnName() : null;
             } else {
                 _weightsColumn = null;
-            }
-            if (modelAttributes != null) {
-                _treatmentColumn = (String) modelAttributes.getParameterValueByName("treatment_column");;
-            } else {
                 _treatmentColumn = null;
+                _idColumn = null;
             }
         }
 
@@ -125,6 +127,9 @@ public class ModelDescriptorBuilder {
         public String treatmentColumn() {
             return _treatmentColumn;
         }
+
+        @Override
+        public String idColumn() { return _idColumn;}
 
         @Override
         public ModelCategory getModelCategory() {
@@ -263,6 +268,9 @@ public class ModelDescriptorBuilder {
 
         @Override
         public String treatmentColumn() { return null; }
+
+        @Override
+        public String idColumn() { return null; }
 
         @Override
         public ModelCategory getModelCategory() {

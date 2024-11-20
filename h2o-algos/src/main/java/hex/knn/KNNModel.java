@@ -1,11 +1,12 @@
 package hex.knn;
 
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import water.DKV;
+import water.H2O;
 import water.Key;
+import water.Scope;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.KNNOutput> {
 
@@ -37,7 +38,6 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
         }
         Key<Frame> _distances_key;
         
-
         @Override
         public ModelCategory getModelCategory() {
             if (nclasses() > 2) {
@@ -46,7 +46,11 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
                 return ModelCategory.Binomial;
             }
         }
-        
+
+        public void setDistancesKey(Key<Frame> _distances_key) {
+            this._distances_key = _distances_key;
+        }
+
         public Frame getDistances(){
             return DKV.get(_distances_key).get();
         }
@@ -58,11 +62,24 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
 
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        return null;
+        switch(_output.getModelCategory()) {
+            case Binomial:
+                return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+            case Multinomial:
+                return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain, _parms._auc_type);
+            default: throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
+        }
     }
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        return new double[0];
+        Frame train = _parms._train.get(); 
+        int idIndex = train.find(_parms._id_column);
+        int responseIndex = train.find(_parms._response_column);
+        byte idType = train.types()[idIndex];
+        preds = new KNNScoringTask(data, _parms._k, _output.nclasses(), _parms._distance, idIndex, idType, 
+                                    responseIndex).doAll(train).score();
+        Scope.untrack(train);
+        return preds;
     }
 }

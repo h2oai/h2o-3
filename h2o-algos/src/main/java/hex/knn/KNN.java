@@ -1,17 +1,21 @@
 package hex.knn;
 
-import hex.ModelBuilder;
-import hex.ModelCategory;
+import hex.*;
 import water.DKV;
-import water.Job;
 import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 
 public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.KNNOutput> {
     
-    public KNN(KNNModel.KNNParameters parms         ) { super(parms    ); init(false); }
-    public KNN(KNNModel.KNNParameters parms, Job job) { super(parms,job); init(false); }
+    public KNN(KNNModel.KNNParameters parms) {
+        super(parms); 
+        init(false); 
+    }
+
+    public KNN(boolean startup_once) {
+        super(new KNNModel.KNNParameters(), startup_once);
+    }
 
     @Override
     protected KNNDriver trainModelImpl() {
@@ -69,9 +73,13 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
                 }
                 result = result.deepCopy("KNN_distances");
                 DKV.put(result._key, result);
-                model._output._distances_key = result._key;
-                model.update(_job);
+                model._output.setDistancesKey(result._key);
                 Scope.untrack(result);
+                
+                model.update(_job);
+                
+                model.score(_parms.train()).delete();
+                model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {

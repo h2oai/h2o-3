@@ -40,6 +40,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.dt      .DT         (true),
             new hex.hglm        .HGLM        (true),
             new hex.adaboost.     AdaBoost   (true)
+            new hex.knn          .KNN        (true)
     };
 
     // "Word2Vec", "Example", "Grep"

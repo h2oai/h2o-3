@@ -22,8 +22,6 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
 
     /**
      *
-     * @param query Frame where the first column = id, next columns are data
-     * @param distance Type of distance calculation
      */
     public KNNDistanceTask(int k, Chunk[] query, KNNDistance distance, int idIndex, String idColumn, byte idType, int responseIndex, String responseColumn){
         this._k = k;
@@ -86,9 +84,9 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
                 if(_idColumnType == Vec.T_STR){
                     vecs[_k + j].set(i, keyString);
                 } else {
-                    vecs[_k + j].set(i, Integer.valueOf(keyString));
+                    vecs[_k + j].set(i, Integer.parseInt(keyString));
                 }
-                vecs[2 * _k + j].set(i, (long)responses.next());
+                vecs[2 * _k + j].set(i, (long) responses.next());
             }
         }
         return vecs;
@@ -121,8 +119,6 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
             vecs[2*_k+i] = vecs[2*_k+i].toNumericVec();
         }
         vecs = fillVecs(vecs);
-        Frame out = new Frame(Key.make("KNN_distances_tmp"), names, vecs);
-        //DKV.put(out);
-        return out;
+        return new Frame(Key.make("KNN_distances_tmp"), names, vecs);
     }
 }
