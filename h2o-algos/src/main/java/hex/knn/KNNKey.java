@@ -32,12 +32,6 @@ public class KNNKey<K extends Comparable<K>, V extends Double> implements Compar
     }
 
     @Override
-    /**
-     * The compare method does not ensure sgn(x.compareTo(y)) == -sgn(y.compareTo(x))  for all cases:
-     * in case the this.value  and o.value are the same but the keys are not same -> order of asking matters.
-     * In this special case x.compareTo(y) == y.compareTo(x).
-     * We need this functionality for ordering in TopNTreeMap, where order of asking is important to decide top N neighbours.
-     */
     public int compareTo(KNNKey<K, V> o) {
         if (o == null) return 1;
         int sameValue = this.value.compareTo(o.value);

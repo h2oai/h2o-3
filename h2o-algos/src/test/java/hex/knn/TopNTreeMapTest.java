@@ -64,8 +64,8 @@ public class TopNTreeMapTest extends TestUtil {
         // same key same value -> both object are the same 
         Assert.assertEquals(k2.compareTo(k3), 0);
         
-        // different key same value -> the first is less
-        Assert.assertEquals(k2.compareTo(k1), -1);
+        // different key same value -> depends on key comparator
+        Assert.assertEquals(k2.compareTo(k1), 1);
         
         // same key different value -> the item with less value is less
         Assert.assertEquals(k3.compareTo(k4), -1);
