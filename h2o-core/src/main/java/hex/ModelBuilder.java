@@ -1236,8 +1236,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         ++res;
       }
     } else {
-      _treatment = null;
-      assert(!hasTreatmentCol());
+      _id = null;
+      assert(!hasIdCol());
     }
     if(isSupervised() && _parms._response_column != null) {
       _response = _train.remove(_parms._response_column);
