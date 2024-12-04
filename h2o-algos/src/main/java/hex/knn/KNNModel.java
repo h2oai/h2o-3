@@ -6,7 +6,6 @@ import water.H2O;
 import water.Key;
 import water.Scope;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.KNNOutput> {
 

@@ -1,5 +1,6 @@
 package hex.knn;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -21,7 +22,6 @@ public class KNNDistanceTaskTest extends TestUtil {
             Scope.track(fr);
             String idColumn = "id";
             String response = "class";
-            int frRows = (int) fr.numRows();
             fr.add(idColumn, createIdVec(fr.numRows(), Vec.T_NUM));
             Scope.track(fr);
             int k = 3;
@@ -34,8 +34,7 @@ public class KNNDistanceTaskTest extends TestUtil {
             mrt.doAll(fr);
             Frame result = mrt.outputFrame();
             Scope.track(result);
-            TwoDimTable resultTable = result.toTwoDimTable(0, frRows);
-            System.out.println(resultTable.toString());
+            Assert.assertNotNull(result);
         }
         finally {
             Scope.exit();
@@ -50,7 +49,6 @@ public class KNNDistanceTaskTest extends TestUtil {
             Scope.track(fr);
             String idColumn = "id";
             String response = "class";
-            int frRows = (int) fr.numRows();
             fr.add(idColumn, createIdVec(fr.numRows(), Vec.T_NUM));
             Scope.track(fr);
             int k = 3;
@@ -63,8 +61,7 @@ public class KNNDistanceTaskTest extends TestUtil {
             mrt.doAll(fr);
             Frame result = mrt.outputFrame();
             Scope.track(result);
-            TwoDimTable resultTable = result.toTwoDimTable(0, frRows);
-            System.out.println(resultTable.toString());
+            Assert.assertNotNull(result);
         }
         finally {
             Scope.exit();
@@ -92,8 +89,7 @@ public class KNNDistanceTaskTest extends TestUtil {
             mrt.doAll(fr);
             Frame result = mrt.outputFrame();
             Scope.track(result);
-            TwoDimTable resultTable = result.toTwoDimTable(0, frRows);
-            System.out.println(resultTable.toString());
+            Assert.assertNotNull(result);
         }
         finally {
             Scope.exit();

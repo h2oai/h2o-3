@@ -77,8 +77,8 @@ public class ModelDescriptorBuilder {
             if (modelAttributes != null) {
                 ColumnSpecifier weightsColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("weights_column");
                 _weightsColumn = weightsColSpec != null ? weightsColSpec.getColumnName() : null;
-                ColumnSpecifier treatColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("treatment_column");
-                _treatmentColumn = treatColSpec != null ? treatColSpec.getColumnName() : null;
+                // the treatment column should be ColumnSpecifier not String - this should be fixed in different PR
+                _treatmentColumn = (String) modelAttributes.getParameterValueByName("treatment_column");
                 ColumnSpecifier idColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("id_column");
                 _idColumn = idColSpec != null ? idColSpec.getColumnName() : null;
             } else {

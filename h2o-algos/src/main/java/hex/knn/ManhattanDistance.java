@@ -16,7 +16,7 @@ public class ManhattanDistance extends KNNDistance {
     @Override
     public double result(double[] values) {
         assert values.length == 1;
-        return Math.sqrt(values[0]);
+        return values[0];
     }
 
 }
