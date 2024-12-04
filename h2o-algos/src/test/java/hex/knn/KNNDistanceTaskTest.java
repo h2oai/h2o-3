@@ -76,7 +76,6 @@ public class KNNDistanceTaskTest extends TestUtil {
             Scope.track(fr);
             String idColumn = "id";
             String response = "class";
-            int frRows = (int) fr.numRows();
             fr.add(idColumn, createIdVec(fr.numRows(), Vec.T_NUM));
             Scope.track(fr);
             int k = 3;

@@ -1,5 +1,7 @@
 package hex.knn;
 
+import water.Iced;
+
 import java.util.Objects;
 
 /**
@@ -8,7 +10,7 @@ import java.util.Objects;
  * @param <K> String of Integer
  * @param <V> Double or class extends Double
  */
-public class KNNKey<K extends Comparable<K>, V extends Double> implements Comparable<KNNKey<K, V>>{
+public class KNNKey<K extends Comparable<K>, V extends Double> extends Iced<KNNKey> implements Comparable<KNNKey<K, V>> {
     
     K key;
     V value;
