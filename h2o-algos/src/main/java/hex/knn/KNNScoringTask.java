@@ -33,15 +33,17 @@ public class KNNScoringTask extends MRTask<KNNScoringTask> {
 
     @Override
     public void map(Chunk[] cs) {
-        int inputColNum = cs.length-2;
+        int inputColNum = cs.length;
         int inputRowNum = cs[0]._len;
-        for (int j = 0; j < inputRowNum; j++) { // go over all input data rows
-            String inputDataId = _idColumnType == Vec.T_STR ? cs[_idIndex].stringAt(j) : String.valueOf(cs[_idIndex].at8(j));
-            int inputDataCategory = (int) cs[_responseIndex].at8(j);
+        for (int i = 0; i < inputRowNum; i++) { // go over all input data rows
+            String inputDataId = _idColumnType == Vec.T_STR ? cs[_idIndex].stringAt(i) : String.valueOf(cs[_idIndex].at8(i));
+            int inputDataCategory = (int) cs[_responseIndex].at8(i);
             double[] distValues = _distance.initializeValues();
+            int j = 0;
             for (int k = 0; k < inputColNum; k++) { // go over all columns
-                double queryColData = _queryData[k];
-                double inputColData = cs[k].atd(j);
+                if(k == _idIndex || k == _responseIndex) continue; 
+                double queryColData = _queryData[j++];
+                double inputColData = cs[k].atd(i);
                 distValues = _distance.calculateValues(queryColData, inputColData, distValues);
             }
             double dist = _distance.result(distValues);
@@ -65,7 +67,7 @@ public class KNNScoringTask extends MRTask<KNNScoringTask> {
                 scores[i] = scores[i]/_k;
             }
         }
-        scores[0] = ArrayUtils.maxIndex(scores);
+        scores[0] = ArrayUtils.maxIndex(scores)-1;
         return scores;
     }
 }

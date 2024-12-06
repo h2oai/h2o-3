@@ -23,6 +23,6 @@ public class CosineDistance extends KNNDistance {
     @Override
     public double result(double[] values) {
         assert values.length == valuesLength;
-        return 1 - (values[0] / (Math.sqrt(values[1] * values[2])));
+        return 1 - (values[0] / (Math.sqrt(values[1]) * Math.sqrt(values[2])));
     }
 }
