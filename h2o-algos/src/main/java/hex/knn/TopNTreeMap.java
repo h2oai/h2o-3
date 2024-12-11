@@ -29,9 +29,6 @@ public class TopNTreeMap<K extends KNNKey, V> extends TreeMap<K, V> {
             V returnValue = super.put(key, value);
             if (size() > n){
                 remove(lastKey);
-                if(size() > n) {
-                    System.out.println("bla");
-                }
             }
             return returnValue;
         } else {
