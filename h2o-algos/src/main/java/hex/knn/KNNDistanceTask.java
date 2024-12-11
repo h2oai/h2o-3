@@ -21,7 +21,7 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
     public byte _idColumnType;
 
     /**
-     *
+     * Calculate distances dor a particular chunk
      */
     public KNNDistanceTask(int k, Chunk[] query, KNNDistance distance, int idIndex, String idColumn, byte idType, int responseIndex, String responseColumn){
         this._k = k;
@@ -70,9 +70,13 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
         this._topNNeighboursMaps.reduce(inputMap);
     }
 
+    /**
+     * Get data from maps to Frame
+     * @param vecs
+     * @return filled array of vecs with calculated data 
+     */
     public Vec[] fillVecs(Vec[] vecs){
         for (int i = 0; i < vecs[0].length(); i++) {
-            // id is on 0 index in vecs
             String id = _idColumnType == Vec.T_STR ? vecs[0].stringAt(i) : String.valueOf(vecs[0].at8(i));
             TopNTreeMap<KNNKey, Object> topNMap = _topNNeighboursMaps.get(id);
             Iterator<KNNKey> distances = topNMap.keySet().stream().iterator();
@@ -92,6 +96,10 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
         return vecs;
     }
 
+    /**
+     * Generate output frame with calculated distances.
+     * @return
+     */
     public Frame outputFrame() {
         int newVecsSize = _k*3+1;
         Vec[] vecs = new Vec[newVecsSize];
@@ -108,9 +116,10 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
         vecs[0] = id;
         names[0] = _idColumn;
         for (int i = 1; i < _k+1; i++) {
-            names[i] = "dist_"+i;
-            names[_k+i] = _idColumn+"_"+i;
-            names[2*_k+i] = _responseColumn+"_"+i;
+            // names of columns
+            names[i] = "dist_"+i; // this could be customized
+            names[_k+i] = _idColumn+"_"+i; // this could be customized
+            names[2*_k+i] = _responseColumn+"_"+i; // this could be customized
             vecs[i] = id.makeZero();
             vecs[i] = vecs[i].toNumericVec();
             vecs[_k+i] = id.makeZero();

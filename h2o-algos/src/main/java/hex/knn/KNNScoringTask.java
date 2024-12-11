@@ -18,7 +18,7 @@ public class KNNScoringTask extends MRTask<KNNScoringTask> {
     public int _domainSize;
 
     /**
-     *
+     * Go through the whole input frame to find the k near distances and score based on them.
      */
     public KNNScoringTask(double[] query, int k, int domainSize, KNNDistance distance, int idIndex, byte idType, int responseIndex){
         this._k = k;
@@ -62,11 +62,13 @@ public class KNNScoringTask extends MRTask<KNNScoringTask> {
         for (int value: _distancesMap.values()){
             scores[value+1]++;
         }
+        // normalize the result score by _k
         for (int i = 1; i < _domainSize+1; i++) {
             if(scores[i] != 0) {
                 scores[i] = scores[i]/_k;
             }
         }
+        // decide the class by the max score
         scores[0] = ArrayUtils.maxIndex(scores)-1;
         return scores;
     }

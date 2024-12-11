@@ -2,6 +2,7 @@ package hex.knn;
 
 import hex.*;
 import water.DKV;
+import water.Key;
 import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -47,7 +48,7 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
         @Override
         public void computeImpl() {
             KNNModel model = null;
-            Frame result = null;
+            Frame result = new Frame(Key.make("KNN_distances"));
             Frame tmpResult = null;
             try {
                 init(true);   // Initialize parameters
@@ -64,6 +65,7 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
                 int responseColumnIndex = train.find(responseColumn);
                 int nChunks = train.anyVec().nChunks();
                 int nCols = train.numCols();
+                // split data into chunks to calculate distances in parallel task
                 for (int i = 0; i < nChunks; i++) {
                     Chunk[] query = new Chunk[nCols];
                     for (int j = 0; j < nCols; j++) {
@@ -71,13 +73,9 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
                     }
                     KNNDistanceTask task = new KNNDistanceTask(_parms._k, query, _parms._distance, idColumnIndex, idColumn, idType, responseColumnIndex, responseColumn);
                     tmpResult = task.doAll(train).outputFrame();
-                    if (result == null) {
-                        result = tmpResult;
-                    } else {
-                        result = result.add(tmpResult);
-                    }
+                    // merge result from a chunk
+                    result = result.add(tmpResult);
                 }
-                result = result.deepCopy("KNN_distances");
                 DKV.put(result._key, result);
                 model._output.setDistancesKey(result._key);
                 Scope.untrack(result);
