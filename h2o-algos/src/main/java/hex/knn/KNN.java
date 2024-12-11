@@ -34,6 +34,12 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
 
     @Override public void init(boolean expensive) {
         super.init(expensive);
+        if( null == _parms._id_column) {
+            error("_id_column", "ID column parameter not set.");
+        }
+        if( null == _parms._distance) {
+            error("_distance", "Distance parameter not set.");
+        }
     }
 
     class KNNDriver extends Driver {

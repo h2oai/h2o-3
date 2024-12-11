@@ -12,17 +12,14 @@ public class CosineDistance extends KNNDistance {
     }
 
     @Override
-    public double[] calculateValues(double v1, double v2, double[] values) {
-        assert values.length == valuesLength;
-        values[0] += nom(v1, v2);
-        values[1] += nom(v1, v1);
-        values[2] += nom(v2, v2);
-        return values;
+    public void calculateValues(double v1, double v2) {
+        this.values[0] += nom(v1, v2);
+        this.values[1] += nom(v1, v1);
+        this.values[2] += nom(v2, v2);
     }
 
     @Override
-    public double result(double[] values) {
-        assert values.length == valuesLength;
-        return 1 - (values[0] / (Math.sqrt(values[1]) * Math.sqrt(values[2])));
+    public double result() {
+        return 1 - (this.values[0] / (Math.sqrt(this.values[1]) * Math.sqrt(this.values[2])));
     }
 }

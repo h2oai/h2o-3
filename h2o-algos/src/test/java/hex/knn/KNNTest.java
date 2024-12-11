@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
 import water.TestUtil;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -318,5 +319,62 @@ public class KNNTest extends TestUtil {
                 .withDataForCol(2, ard(-1.0, 1.0, 0.0, 1.0))
                 .withDataForCol(3, ar("1", "1", "0", "0"))
                 .build();
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testIdColumnIsNotDefined() {
+        KNNModel knn = null;
+        Frame fr = null;
+        try {
+            fr = generateSimpleFrame();
+            DKV.put(fr);
+            
+            KNNModel.KNNParameters parms = new KNNModel.KNNParameters();
+            parms._train = fr._key;
+            parms._k = 2;
+            parms._distance = new EuclideanDistance();
+            parms._response_column = "class";
+            parms._id_column = null;
+
+            parms._seed = 42;
+            KNN job = new KNN(parms);
+            knn = job.trainModel().get();
+            
+        } finally {
+            if (knn != null){
+                knn.delete();
+            }
+            if (fr != null) {
+                fr.delete();
+            }
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testDistanceIsNotDefined() {
+        KNNModel knn = null;
+        Frame fr = null;
+        try {
+            fr = generateSimpleFrame();
+            DKV.put(fr);
+
+            KNNModel.KNNParameters parms = new KNNModel.KNNParameters();
+            parms._train = fr._key;
+            parms._k = 2;
+            parms._response_column = "class";
+            parms._id_column = "id";
+
+            parms._seed = 42;
+            KNN job = new KNN(parms);
+            knn = job.trainModel().get();
+
+        } finally {
+            if (knn != null){
+                knn.delete();
+            }
+            if (fr != null) {
+                fr.delete();
+            }
+        }
     }
 }

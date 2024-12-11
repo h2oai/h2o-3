@@ -38,15 +38,15 @@ public class KNNScoringTask extends MRTask<KNNScoringTask> {
         for (int i = 0; i < inputRowNum; i++) { // go over all input data rows
             String inputDataId = _idColumnType == Vec.T_STR ? cs[_idIndex].stringAt(i) : String.valueOf(cs[_idIndex].at8(i));
             int inputDataCategory = (int) cs[_responseIndex].at8(i);
-            double[] distValues = _distance.initializeValues();
+            _distance.initializeValues();
             int j = 0;
             for (int k = 0; k < inputColNum; k++) { // go over all columns
                 if(k == _idIndex || k == _responseIndex) continue; 
                 double queryColData = _queryData[j++];
                 double inputColData = cs[k].atd(i);
-                distValues = _distance.calculateValues(queryColData, inputColData, distValues);
+                _distance.calculateValues(queryColData, inputColData);
             }
-            double dist = _distance.result(distValues);
+            double dist = _distance.result();
             _distancesMap.put(new KNNKey(inputDataId, dist), inputDataCategory);
         }
     }

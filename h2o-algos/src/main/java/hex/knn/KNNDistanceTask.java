@@ -49,14 +49,14 @@ public class KNNDistanceTask extends MRTask<KNNDistanceTask>  {
                 String inputDataId = _idColumnType == Vec.T_STR ? cs[_idIndex].stringAt(j) : String.valueOf(cs[_idIndex].at8(j));
                 long inputDataCategory =  cs[_responseIndex].at8(j);
                 // if(queryDataId.equals(inputDataId)) continue; // the same id included or not?
-                double[] distValues = _distance.initializeValues();
+                _distance.initializeValues();
                 for (int k = 0; k < inputColNum; k++) { // go over all columns
                     if (k == _idIndex || k == _responseIndex) continue;
                     double queryColData = _queryData[k].atd(i);
                     double inputColData = cs[k].atd(j);
-                    distValues = _distance.calculateValues(queryColData, inputColData, distValues);
+                    _distance.calculateValues(queryColData, inputColData);
                 }
-                double dist = _distance.result(distValues);
+                double dist = _distance.result();
 
                 distancesMap.put(new KNNKey(inputDataId, dist), inputDataCategory);
             }
