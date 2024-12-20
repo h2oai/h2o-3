@@ -106,7 +106,6 @@ class Fairness:
         if not can_use_numpy():
             raise ImportError("numpy is required for fair_pd_plot.")
         import numpy as np
-        from h2o.explanation._explain import no_progress_block
         from h2o.plot import get_matplotlib_pyplot
         from h2o.utils.typechecks import assert_is_type, is_type
 
@@ -121,7 +120,7 @@ class Fairness:
         plt.figure(figsize=figsize)
         results = []
         maxes = []
-        with no_progress_block():
+        with h2o.no_progress_block():
             for pg in pgs:
                 pg = [p[0] for p in pg]
                 filtered_hdf = frame
@@ -349,7 +348,6 @@ class Fairness:
         if not can_use_numpy():
             raise ImportError("numpy is required for fair_shap_plot.")
         import numpy as np
-        from h2o.explanation._explain import no_progress_block
         from h2o.explanation import H2OExplanation
         from h2o.explanation._explain import NumpyFrame
         from h2o.explanation._explain import _density
@@ -370,7 +368,7 @@ class Fairness:
         results = defaultdict(list)
         maxes = []
         contr_columns = [column]
-        with no_progress_block():
+        with h2o.no_progress_block():
             for pg in pgs:
                 pg = [p[0] for p in pg]
                 filtered_hdf = frame

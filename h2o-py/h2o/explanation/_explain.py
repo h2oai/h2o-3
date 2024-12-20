@@ -3,7 +3,6 @@ import os
 import random
 import warnings
 from collections import OrderedDict, Counter, defaultdict
-from contextlib import contextmanager
 
 from io import StringIO
 
@@ -184,22 +183,6 @@ class H2OExplanation(OrderedDict):
                 display(v.figure())
             else:
                 display(v)
-
-
-@contextmanager
-def no_progress_block():
-    """
-    A context manager that temporarily blocks showing the H2O's progress bar.
-    Used when a multiple models are evaluated.
-    """
-    progress = h2o.job.H2OJob.__PROGRESS_BAR__
-    if progress:
-        h2o.no_progress()
-    try:
-        yield
-    finally:
-        if progress:
-            h2o.show_progress()
 
 
 class NumpyFrame:
@@ -699,7 +682,7 @@ def shap_summary_plot(
         permutation = list(range(frame.nrow))
         random.shuffle(permutation)
 
-    with no_progress_block():
+    with h2o.no_progress_block():
         contributions = NumpyFrame(model.predict_contributions(frame, output_format="compact", background_frame=background_frame))
     frame = NumpyFrame(frame)
     contribution_names = contributions.columns
@@ -833,7 +816,7 @@ def shap_explain_row_plot(
         top_n_features = float("inf")
 
     row = frame[row_index, :]
-    with no_progress_block():
+    with h2o.no_progress_block():
         contributions = NumpyFrame(model.predict_contributions(row, output_format="compact", background_frame=background_frame))
     contribution_names = contributions.columns
     prediction = float(contributions.sum(axis=1))
@@ -842,7 +825,7 @@ def shap_explain_row_plot(
                            key=lambda pair: -abs(pair[1]))
 
     if plot_type == "barplot":
-        with no_progress_block():
+        with h2o.no_progress_block():
             prediction = model.predict(row)[0, "predict"]
         row = NumpyFrame(row)
 
@@ -1394,7 +1377,7 @@ def pd_ice_common(
 
     show_logodds = is_binomial and binary_response_scale == "logodds"
 
-    with no_progress_block():
+    with h2o.no_progress_block():
         plt.figure(figsize=figsize)
         if is_ice:
             res = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered,
@@ -1576,7 +1559,7 @@ def pd_multi_plot(
     models = [m if isinstance(m, h2o.model.ModelBase) else h2o.get_model(m) for m in models]
 
     colors = plt.get_cmap(colormap, len(models))(list(range(len(models))))
-    with no_progress_block():
+    with h2o.no_progress_block():
         plt.figure(figsize=figsize)
         is_factor = frame[column].isfactor()[0]
         if is_factor:
@@ -2332,7 +2315,7 @@ def model_correlation(
         models = list(_get_models_from_automl_or_leaderboard(models))
     is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
     predictions = []
-    with no_progress_block():
+    with h2o.no_progress_block():
         for idx, model in enumerate(models):
             predictions.append(model.predict(frame)["predict"])
 
@@ -2411,7 +2394,7 @@ def residual_analysis_plot(
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     _, y = _get_xy(model)
 
-    with no_progress_block():
+    with h2o.no_progress_block():
         predicted = NumpyFrame(model.predict(frame)["predict"])
     actual = NumpyFrame(frame[y])
 
@@ -2964,7 +2947,7 @@ def _get_leaderboard(
     if row_index is not None:
         model_ids = [m[0] for m in
                      leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
-        with no_progress_block():
+        with h2o.no_progress_block():
             preds = h2o.get_model(model_ids[0]).predict(frame[row_index, :])
             for model_id in model_ids[1:]:
                 preds = preds.rbind(h2o.get_model(model_id).predict(frame[row_index, :]))
