@@ -18,4 +18,10 @@ dependencies {
     
     testImplementation group: "junit", name: "junit", version: "4.12"
     testImplementation "org.mockito:mockito-core:2.23.0"
+
+    constraints{
+        api("org.apache.mina:mina-core:2.2.3") {
+            because 'Fixes CVE-2024-52046'
+        }
+    }
 }
