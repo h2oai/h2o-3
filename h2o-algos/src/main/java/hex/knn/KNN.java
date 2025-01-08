@@ -71,7 +71,7 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
                     for (int j = 0; j < nCols; j++) {
                         query[j] = train.vec(j).chunkForChunkIdx(i).deepCopy();
                     }
-                    KNNDistanceTask task = new KNNDistanceTask(_parms._k, query, _parms._distance, idColumnIndex, idColumn, idType, responseColumnIndex, responseColumn);
+                    KNNDistanceTask task = new KNNDistanceTask(_parms._k, query, KNNDistanceFactory.createDistance(_parms._distance), idColumnIndex, idColumn, idType, responseColumnIndex, responseColumn);
                     tmpResult = task.doAll(train).outputFrame();
                     // merge result from a chunk
                     result = result.add(tmpResult);
