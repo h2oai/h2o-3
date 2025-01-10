@@ -21,7 +21,6 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
         }
         
         public int _k = 3;
-        //public KNNDistance _distance;
         public DistanceType _distance;
         public boolean _compute_metrics;
 
