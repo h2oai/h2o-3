@@ -238,6 +238,24 @@ public final class PersistS3 extends Persist {
   }
 
   @Override
+  public String getParent(String path) {
+    String[] bk = decodePath(path);
+    String bucket = bk[0];
+    String key = bk[1];
+    if (key.endsWith("/")) {
+      key = key.substring(0, key.length() - 1);
+    }
+    if (key == null || key.isEmpty()) {
+      throw new IllegalArgumentException("No parent exists for a bucket-only path: " + path);
+    }
+    int lastSlash = key.lastIndexOf("/");
+    if (lastSlash == -1) {
+      return "s3://" + bucket;
+    }
+    return "s3://" + bucket + "/" + key.substring(0, lastSlash);
+  }
+
+  @Override
   public InputStream open(String path) {
     String[] bk = decodePath(path);
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
