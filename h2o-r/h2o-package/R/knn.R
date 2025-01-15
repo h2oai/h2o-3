@@ -3,14 +3,18 @@
 #
 # -------------------------- knn -------------------------- #
 #'
+#' Build a KNN model
+#' 
+#' Builds a K-nearest neighbour model on an H2OFrame.
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or column index of the response variable in the data. 
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param id_column Identify each record column.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
@@ -25,12 +29,16 @@
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param k Number of nearest neighbours Defaults to 3.
 #' @param distance Distance type Must be one of: "AUTO", "euclidean", "manhattan", "cosine".
+#' @param verbose \code{Logical}. Print scoring history to the console. Defaults to FALSE.
+#' @return Creates a \linkS4class{H2OModel} object of the right type.
+#' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
 h2o.knn <- function(x,
                     y,
                     training_frame,
+                    id_column,
+                    response_column,
                     model_id = NULL,
-                    id_column = NULL,
                     ignore_const_cols = TRUE,
                     seed = -1,
                     max_runtime_secs = 0,
@@ -40,7 +48,8 @@ h2o.knn <- function(x,
                     gainslift_bins = -1,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                     k = 3,
-                    distance = c("AUTO", "euclidean", "manhattan", "cosine"))
+                    distance = c("AUTO", "euclidean", "manhattan", "cosine"),
+                    verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -59,9 +68,11 @@ h2o.knn <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if (!missing(id_column)) {
+    parms$id_column <- id_column
+  } else {
+    stop("ID column is required.")  
+  }
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
 
@@ -91,13 +102,14 @@ h2o.knn <- function(x,
     parms$distance <- distance
 
   # Error check and build model
-  model <- .h2o.modelJob('knn', parms, h2oRestApiVersion=3, verbose=FALSE)
+  model <- .h2o.modelJob('knn', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
 }
 .h2o.train_segments_knn <- function(x,
                                     y,
                                     training_frame,
-                                    id_column = NULL,
+                                    id_column,
+                                    response_column,
                                     ignore_const_cols = TRUE,
                                     seed = -1,
                                     max_runtime_secs = 0,
@@ -133,9 +145,11 @@ h2o.knn <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if (!missing(id_column)) {
+    parms$id_column <- id_column
+  } else {
+    stop("ID column is required.")  
+  }
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
 

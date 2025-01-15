@@ -55,9 +55,7 @@ public class KNNTest extends TestUtil {
             ModelMetricsMultinomial mm1 = (ModelMetricsMultinomial) knn._output._training_metrics;
             Assert.assertEquals(mm.auc(), mm1.auc(), 0);
             
-            // test after KNN API will be ready
-            //knn.testJavaScoring(fr, preds, 0);
-            
+            knn.testJavaScoring(fr, preds, 0);
         } finally {
             if (knn != null){
                 knn.delete();
