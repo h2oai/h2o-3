@@ -49,7 +49,6 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
         public void computeImpl() {
             KNNModel model = null;
             Frame result = new Frame(Key.make("KNN_distances"));
-            Frame tmpResult = null;
             try {
                 init(true);   // Initialize parameters
                 if (error_count() > 0) {
@@ -72,12 +71,15 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
                         query[j] = train.vec(j).chunkForChunkIdx(i).deepCopy();
                     }
                     KNNDistanceTask task = new KNNDistanceTask(_parms._k, query, KNNDistanceFactory.createDistance(_parms._distance), idColumnIndex, idColumn, idType, responseColumnIndex, responseColumn);
-                    tmpResult = task.doAll(train).outputFrame();
+                    Frame tmpResult = task.doAll(train).outputFrame();
+                    Scope.untrack(tmpResult);
+                    
                     // merge result from a chunk
                     result = result.add(tmpResult);
                 }
-                DKV.put(result._key, result);
-                model._output.setDistancesKey(result._key);
+                Key<Frame> key = result._key;
+                DKV.put(key, result);
+                model._output.setDistancesKey(key);
                 Scope.untrack(result);
                 
                 model.update(_job);
@@ -89,9 +91,6 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
             } finally {
                 if (model != null) {
                     model.unlock(_job);
-                }
-                if (tmpResult != null) {
-                    tmpResult.remove();
                 }
             }
         }

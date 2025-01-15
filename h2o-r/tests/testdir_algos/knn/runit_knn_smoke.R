@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 knn.smoke <- function() {
     iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris.csv"))
-    iris.knn <-  h2o.knn(x=1:4, training_frame=iris.hex, k = 3, distance="euclidean", seed = 1234)
+    iris.knn <-  h2o.knn(x=1:4, y=5, training_frame=iris.hex, k=3 , distance="euclidean", seed=1234)
 
     # Score test data with different default auc_type (previous was "NONE", so no AUC calculation)
     perf <- h2o.performance(iris.knn, test.hex, auc_type="WEIGHTED_OVO")
