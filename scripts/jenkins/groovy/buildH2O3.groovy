@@ -15,7 +15,7 @@ def call(final pipelineContext) {
         try {
             // Launch docker container, build h2o-3, create test packages and archive artifacts
             def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}" + "JAVA_VERSION=${JAVA_VERSION}"
-            def timeoutMinutes = pipelineContext.getBuildConfig().getBuildHadoop() ? 50 : 15
+            def timeoutMinutes = pipelineContext.getBuildConfig().getBuildHadoop() ? 50 : 30
             stage(stageName) {
 //                pipelineContext.getUtils().stashXGBoostWheels(this, pipelineContext)
                 insideDocker(buildEnv, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), timeoutMinutes, 'MINUTES') {
