@@ -413,13 +413,14 @@ class H2OConnection(h2o_meta()):
             conn_ref = ref(conn)
             apply_session_hooks('open')
                 
-            def exit_close():
+            def exit_close(verbose=True):
                 con = conn_ref()
                 if con and con.connected:
-                    print("Closing connection %s at exit" % con.session_id)
+                    if verbose:
+                        print("Closing connection %s at exit" % con.session_id)
                     con.close()
 
-            atexit.register(exit_close)
+            atexit.register(exit_close, verbose=self.verbose)
         except Exception:
             # Reset _session_id so that we know the connection was not initialized properly.
             conn._stage = 0
