@@ -13,12 +13,13 @@ jobs:
       uses: slackapi/slack-github-action@v1.23.0
       with:
         channel-id: 'h2o-3-github-issues'
+        title: ${{ github.event.issue.title }}
         payload: |
           {
             "text": ":github: *H2O-3 GitHub Issue Opened*",
             "attachments": [
               {
-                "text": "*Title:* ${{ github.event.issue.title }}\n*Link:* ${{ github.event.issue.html_url }}",
+                "text": "*Title:* ${{ title }}\n*Link:* ${{ github.event.issue.html_url }}",
                 "color": "good",
                 "fallback": "Build Alert"
               }
