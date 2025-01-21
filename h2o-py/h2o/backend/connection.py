@@ -420,7 +420,7 @@ class H2OConnection(h2o_meta()):
                         print("Closing connection %s at exit" % con.session_id)
                     con.close()
 
-            atexit.register(exit_close, verbose=self.verbose)
+            atexit.register(exit_close, verbose=verbose)
         except Exception:
             # Reset _session_id so that we know the connection was not initialized properly.
             conn._stage = 0
