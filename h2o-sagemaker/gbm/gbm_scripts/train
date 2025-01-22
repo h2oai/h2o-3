@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+
+"""
+Simple example that integrates H2o AutoML functionality with Amazon Sagemaker.
+AutoML docs are over at:
+http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/2/docs-website/h2o-docs/automl.html
+
+This implementation works in File mode and makes no assumptions about the input
+file names. Input is specified as CSV with a data point in each row, the label
+column is specified via an optional hyperparamter - 'target', inside the
+'training_params' dictionary. If there's no target specified, we default to
+'label' as the target variable for the data.
+
+The hyperparameters.json file needs to have content similar to ->
+{
+'training': {
+                'classification': 'true',
+                'target': 'response',
+            },
+'h2o': { Insert any H2O specific parameters here },
+'aml': { Insert any parameters you want to specify for AutoML here -
+        docs: http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html}
+}
+
+"""
+
+from __future__ import print_function
+
+import json
+import os
+import sys
+import traceback
+import time
+import socket
+import requests
+from collections import Counter
+import h2o
+import helper_functions
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
+import re
+
+prefix = '/opt/ml/'
+config_prefix = 'input/config/'
+demo_prefix = '/opt/program/'
+input_prefix = 'input/data'
+checkpoints_dir = prefix + 'checkpoints'
+
+def _connect_to_cluster():
+    print("Creating Connection to H2O-3")
+    h2o_launched = False
+    i = 0
+    while h2o_launched is False:
+        try:
+            s = socket.socket()
+            s.connect(("127.0.0.1", 54321))
+            h2o_launched = True
+        except Exception as e:
+            time.sleep(6)
+            if i % 5 == 0:
+                print("Attempt {}: H2O-3 not running yet...".format(i))
+            if i > 30:
+                raise Exception("""Could not connect to H2O Cluster in {} attempts
+                                   Last Error: {}""".format(i, e))
+            i += 1
+        finally:
+            s.close()
+
+    h2o.connect(url="http://127.0.0.1:54321")
+
+
+def _extract_number(f):
+    s = re.findall("\d+$",f)
+    return int(s[0]) if s else -1, f
+
+
+def _checkpointing_enabled():
+    return os.path.isdir(checkpoints_dir)
+
+
+def _load_last_checkpoint():
+    if not _checkpointing_enabled():
+        return None
+
+    checkpoint_files = [os.path.join(checkpoints_dir, filename)
+                        for filename in os.listdir(checkpoints_dir)]
+    if len(checkpoint_files) == 0:
+        return None
+
+    print("Trying to find the latest checkpoint in: ", checkpoint_files)
+    latest_checkpoint = max(checkpoint_files, key=_extract_number)
+    print("Loading latest checkpoint:", latest_checkpoint)
+    return h2o.upload_model(latest_checkpoint)
+
+
+def _get_data(prefix, channel_name):
+    input_path = prefix + input_prefix
+    training_path = os.path.join(input_path, channel_name)
+    data_files = [os.path.join(training_path, filename)
+                  for filename in os.listdir(training_path)
+                  if not filename.startswith(".")]
+
+    if len(data_files) == 0:
+        raise ValueError(('There are no files in {}.\n' +
+                          'This usually indicates that the channel ({}) '
+                          'was incorrectly specified,\n' +
+                          'the data specification in S3 was incorrectly '
+                          'specified or the role specified\n' +
+                          'does not have permission to access the '
+                          'data.').format(training_path, channel_name))
+    elif len(data_files) == 1:
+        import_data = h2o.import_file(data_files[0])
+    else:
+        prefix = os.path.commonprefix(data_files)
+        suffix_counter = Counter()
+        for filename in data_files:
+            suffix_counter[filename.split(".")[-1]] += 1
+        suffix = suffix_counter.most_common(1)[0][0]
+        import_data = h2o.import_file(path=training_path,
+                                      pattern="{}.*\{}".format(prefix, suffix))
+
+    return import_data
+
+
+def _train_model(hyperparameters={}):
+    training_params_str, gbm_params = helper_functions._parse_hyperparameters(hyperparameters)
+    training_params = json.loads(training_params_str)
+    output_path = os.path.join(prefix, 'output')
+    model_path = os.path.join(prefix, 'model')
+    mojo_path = model_path
+
+    gbm_params['distribution'] = training_params['distribution']
+
+    print("Beginning Model Training")
+    try:
+        response_label = training_params.get('target')
+        categorical_columns = training_params.get("categorical_columns", [])
+        if categorical_columns:
+            categorical_columns = categorical_columns.split(",")
+            categorical_columns = [categorical_column.strip() for categorical_column in categorical_columns]
+        train_data = _get_data(prefix, 'training')
+
+        X = train_data.columns
+        y = response_label
+
+        # We don't want the target column present in the training
+        try:
+            X.remove(y)
+        except ValueError:
+            raise ValueError('Incorrect target - column "%s" does not exist in the data!' % response_label)
+
+        print("Setting Response Column to Categorical based on family: {}".format(training_params.get('distribution', 'AUTO')))
+        if training_params.get('distribution', 'AUTO') in ['bernoulli', 'multinomial']:
+            print("Family is {}: setting target value to categorical".format(training_params.get('distribution', 'AUTO')))
+            train_data[y] = train_data[y].asfactor()
+        else:
+            print("Family is {}: Value can be continous. Nothing to do".format(training_params.get('family', 'AUTO')))
+
+        print("Converting specified columns to categorical values:")
+        print(categorical_columns)
+        for col in categorical_columns:
+            train_data[col] = train_data[col].asfactor()
+
+        if _checkpointing_enabled():
+            if "in_training_checkpoints_dir" not in gbm_params:
+                gbm_params.update({"in_training_checkpoints_dir": checkpoints_dir})
+            checkpoint = _load_last_checkpoint()
+            if checkpoint is not None:
+                gbm_params.update({"checkpoint": checkpoint.model_id})
+
+        print("Define algorithm with attributes:")
+        print(gbm_params)
+        gbm_model = H2OGradientBoostingEstimator(**gbm_params)
+        gbm_model.train(x=X, y=y, training_frame=train_data)
+
+        print(gbm_model.model_performance())
+
+        model_path = h2o.save_model(gbm_model, path=model_path)
+        print("Model Path with Name: {}".format(model_path))
+        mojo_path = gbm_model.save_mojo(path=mojo_path)
+        print("Mojo Path with Name: {}".format(mojo_path))
+        print('Training complete.')
+    except Exception as e:
+        # Write out an error file. This will be returned as the failureReason
+        # in the DescribeTrainingJob result.
+        trc = traceback.format_exc()
+        with open(os.path.join(output_path, 'failure'), 'w') as s:
+            s.write('Exception during training: ' + str(e) + '\n' + trc)
+
+        # Printing this causes the exception to be in the training job logs
+        print('Exception during training: ' + str(e) + '\n' + trc,
+              file=sys.stderr)
+        # A non-zero exit code causes the training job to be marked as Failed.
+        sys.exit(255)
+
+
+def wait_on_master():
+    print("Wait till the algo-1 finish training")
+    at_least_one_true = False
+    counter = 0
+    while True:
+        try:
+            r = requests.get("http://algo-1:54321")
+            at_least_one_true = r.ok
+            if not r.ok:
+                break
+        except requests.exceptions.ConnectionError:
+            counter += 1
+            if at_least_one_true or counter > 100:
+                break
+        time.sleep(1)
+
+
+def wait_for_cluster_to_be_formed(resource_params):
+    cluster_up = False
+    for try_number in range(100):
+        all_nodes_running = []
+        for host in resource_params["hosts"]:
+            try:
+                r = requests.get(f"http://{host}:54321")
+                all_nodes_running.append(r.ok)
+            except requests.exceptions.ConnectionError:
+                all_nodes_running.append(False)
+        cluster_up = all(item is True for item in all_nodes_running)
+        if cluster_up:
+            break
+        else:
+            time.sleep(1)
+    if not cluster_up:
+        raise ConnectionError("Cluster cannot start because of unknown reason")
+
+
+def main():
+    hyperparameters, resource_params = helper_functions._get_parameters()
+    helper_functions._create_h2o_cluster(resource_params)
+    if resource_params["current_host"] == "algo-1":
+        wait_for_cluster_to_be_formed(resource_params)
+        _connect_to_cluster()
+        _train_model(hyperparameters)
+        h2o.cluster().shutdown()
+    else:
+        wait_on_master()
+        print("Finished")
+
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
