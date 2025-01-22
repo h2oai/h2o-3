@@ -18,7 +18,7 @@ jobs:
             "text": ":github: *H2O-3 GitHub Issue Opened*",
             "attachments": [
               {
-                "text": "*Title:* ${{ github.event.issue.title }}\n*Link:* ${{ github.event.issue.html_url }}",
+                "text": ${{ format("*Title:* {0}\n*Link:* {1}", github.event.issue.title, github.event.issue.html_url) }},
                 "color": "good",
                 "fallback": "Build Alert"
               }
