@@ -640,8 +640,6 @@ def call(final pipelineContext) {
   def distributionsToTest = [
           [ name: "cdh", version: "5.10" ], // hdp2/hive1
           [ name: "cdh", version: "6.1"  ], // hdp3/hive2
-          [ name: "hdp", version: "2.6"  ], // hdp2/hive2
-          [ name: "hdp", version: "3.1"  ]  // hdp3/hive3 - JDBC Only
   ]
   // check our config is still valid
   for (distribution in distributionsToTest) {

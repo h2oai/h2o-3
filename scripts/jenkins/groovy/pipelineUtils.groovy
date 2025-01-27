@@ -84,7 +84,7 @@ class PipelineUtils {
     }
 
     List<String> readSupportedHadoopDistributions(final context, final String buildinfoPath) {
-        final List<String> DOCKERIZED_DISTRIBUTIONS = ['cdh', 'hdp']
+        final List<String> DOCKERIZED_DISTRIBUTIONS = ['cdh']
 
         final String buildinfoContent = context.sh(script: "sed 's/SUBST_BUILD_TIME_MILLIS/\"SUBST_BUILD_TIME_MILLIS\"/g' ${buildinfoPath} | sed -e 's/SUBST_BUILD_NUMBER/\"SUBST_BUILD_NUMBER\"/g'", returnStdout: true).trim()
 
