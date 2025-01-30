@@ -2,10 +2,9 @@ import sys, os
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
-from tests import pyunit_utils, assert_equals
+from tests import pyunit_utils
 from h2o.estimators.knn import H2OKnnEstimator
 import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import kneighbors_graph
 import pandas as pd
 
@@ -15,35 +14,48 @@ def knn_sklearn_compare():
     id_column = "id"
     response_column = "class"
     x_names = ["sepal_len", "sepal_wid", "petal_len", "petal_wid"]
+    k = 3
+    metrics = ["euclidean", "manhattan", "cosine"]
 
     train = pd.read_csv(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-
-    knn = KNeighborsClassifier(n_neighbors=3)
-    knn.fit(train[x_names], train[response_column])
-    print(knn)
-    knn_score = knn.score(train[x_names], train[response_column])
-    print(knn_score)
-
-    knn_graph = kneighbors_graph(train[x_names], 3, mode='connectivity', include_self=False, metric="euclidean")
-    print(knn_graph)
-
+    
     train_h2o = h2o.H2OFrame(train)
     train_h2o[response_column] = train_h2o[response_column].asfactor()
     train_h2o[id_column] = h2o.H2OFrame(np.arange(0, train_h2o.shape[0]))
-
-    h2o_knn = H2OKnnEstimator(
-        k=3,
-        id_column=id_column,
-        distance="euclidean",
-        seed=seed,
-        auc_type="macroovr"
-    )
     
-    h2o_knn.train(y=response_column, x=x_names, training_frame=train_h2o)
-    distances_key = h2o_knn._model_json["output"]["distances"]
-    print(distances_key)
-    distances_frame = h2o.get_frame(distances_key)
-    print(distances_frame)
+    for metric in metrics:
+        print("Check results for "+metric+" metric.")
+        sklearn_knn_graph = kneighbors_graph(train[x_names],
+                                             k, 
+                                             mode='connectivity', 
+                                             include_self=True, 
+                                             metric=metric)
+
+        h2o_knn = H2OKnnEstimator(k=k,
+                                  id_column=id_column,
+                                  distance=metric,
+                                  seed=seed)
+    
+        h2o_knn.train(y=response_column, x=x_names, training_frame=train_h2o)
+        
+        distances_frame = h2o_knn.distances().as_data_frame()
+        assert distances_frame is not None
+    
+        diff = 0
+        allowed_diff = 20
+        for i in range(train.shape[0]):
+            sklearn_neighbours = sklearn_knn_graph[i].nonzero()[1]
+            for j in range(k):
+                sklearn_n = sklearn_neighbours[j]
+                h2o_n = distances_frame["id_"+str(j+1)][i]
+                if sklearn_n != h2o_n:
+                    print(distances_frame.loc[[i]])
+                    print("["+str(i)+","+str(j)+"] sklearn:h2o "+str(sklearn_n)+" == "+str(h2o_n))
+                    diff += 1
+                
+        # some neighbours should have different order due to parallelization
+        print("Number of different neighbours: "+str(diff))      
+        assert diff < allowed_diff
     
 
 if __name__ == "__main__":

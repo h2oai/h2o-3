@@ -16,8 +16,7 @@ def knn_api_smoke():
     train_h2o = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     train_h2o[response_column] = train_h2o[response_column].asfactor()
     train_h2o[id_column] = h2o.H2OFrame(np.arange(0, train_h2o.shape[0]))
-
-
+    
     model = H2OKnnEstimator(
         k=3,
         id_column=id_column,
@@ -35,6 +34,9 @@ def knn_api_smoke():
     assert_equals(perf.mse(), model.mse())
     assert_equals(perf.multinomial_auc_table(), model.multinomial_auc_table())
     
+    distances = model.distances()
+    assert distances is not None
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(knn_api_smoke)

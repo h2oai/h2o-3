@@ -1986,6 +1986,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             )
             return varimp
 
+    def distances(self):
+        """
+        Obtain the distances frame for a KNN model.
+
+        :return: H2OFrame
+        """
+        if self._model_json["algo"] != "knn":
+            raise H2OValueError("This function is available for KNN models only")
+        return h2o.get_frame(self._model_json["output"]["distances"])
+    
     # --------------------------------
     # ModelBase representation methods
     # --------------------------------
