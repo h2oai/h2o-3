@@ -74,6 +74,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OKnnEstimator`
+----------------------
+.. autoclass:: h2o.estimators.knn.H2OKnnEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OModelSelectionEstimator`
 ---------------------------------
 .. autoclass:: h2o.estimators.model_selection.H2OModelSelectionEstimator
