@@ -8,6 +8,21 @@ jobs:
   send-slack-alert:
     runs-on: ubuntu-latest
     steps:
+
+    - name: Check issue title and URL
+      id: check
+      run: |
+        if [[ ! "${{ github.event.issue.title }}" =~ ^[a-zA-Z0-9\ \-\_]+$ ]]; then
+          echo "Invalid characters in issue title"
+          exit 1
+        fi
+        if [[ ! "${{ github.event.issue.html_url }}" =~ ^https:\/\/[a-zA-Z0-9\.\-\/\_\?\=\&]+$ ]]; then
+          echo "Invalid characters in issue URL"
+          exit 1
+        fi
+        echo "TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+        echo "URL=${{ github.event.issue.html_url }}" >> $GITHUB_ENV
+
     - name: Post to a Slack channel
       id: slack
       uses: slackapi/slack-github-action@v1.23.0
@@ -18,7 +33,7 @@ jobs:
             "text": ":github: *H2O-3 GitHub Issue Opened*",
             "attachments": [
               {
-                "text": "*Title:* ${{ github.event.issue.title }}\n*Link:* ${{ github.event.issue.html_url }}",
+                "text": "*Title:* ${{ env.TITLE }}\n*Link:* ${{ env.URL }}",
                 "color": "good",
                 "fallback": "Build Alert"
               }
