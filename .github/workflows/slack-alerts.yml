@@ -11,17 +11,20 @@ jobs:
 
     - name: Check issue title and URL
       id: check
+      env:
+        ISSUE_TITLE: ${{ github.event.issue.title }}
+        ISSUE_URL: ${{ github.event.issue.html_url }}
       run: |
-        if [[ ! "${{ github.event.issue.title }}" =~ ^[a-zA-Z0-9\ \-\_]+$ ]]; then
+        if [[ ! "$ISSUE_TITLE" =~ ^[a-zA-Z0-9\ \-\_]+$ ]]; then
           echo "Invalid characters in issue title"
           exit 1
         fi
-        if [[ ! "${{ github.event.issue.html_url }}" =~ ^https:\/\/[a-zA-Z0-9\.\-\/\_\?\=\&]+$ ]]; then
+        if [[ ! "$ISSUE_URL" =~ ^https:\/\/[a-zA-Z0-9\.\-\/\_\?\=\&]+$ ]]; then
           echo "Invalid characters in issue URL"
           exit 1
         fi
-        echo "TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
-        echo "URL=${{ github.event.issue.html_url }}" >> $GITHUB_ENV
+        echo "TITLE=$ISSUE_TITLE" >> $GITHUB_ENV
+        echo "URL=$ISSUE_URL" >> $GITHUB_ENV
 
     - name: Post to a Slack channel
       id: slack
