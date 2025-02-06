@@ -126,11 +126,12 @@ private Closure makeStage(final pipelineContext, String target) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
                     deleteDir()
-                    unstash 'docker-sources'
+                    
                     // pullPreviousVersionIfRequired(pipelineContext, target)
                     // println "make ${target}"
                     dockerLoginH2OECR()
                     if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}")){
+                        unstash 'docker-sources'
                         sh """
                             make \
                                 CI=1 \
