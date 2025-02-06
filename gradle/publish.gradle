@@ -144,14 +144,14 @@ publishing {
       def isInternalBuild = Boolean.valueOf(project.findProperty("isInternalBuild") ?: "false")
       if (isInternalBuild) { // We will setup local repo only for internal builds
           maven {
-              name "LocalNexusRepo"
-              if (project.ext.isRelease) {
-                allowInsecureProtocol = true
-                url "${localNexusLocation}/releases"
-              } else {
-                allowInsecureProtocol = true
-                url "${localNexusLocation}/snapshots"
-              }
+//              name "LocalNexusRepo"
+//              if (project.ext.isRelease) {
+//                allowInsecureProtocol = true
+//                url "${localNexusLocation}/releases"
+//              } else {
+//                allowInsecureProtocol = true
+//                url "${localNexusLocation}/snapshots"
+//              }
 
               credentials {
                   username project.findProperty("local-release-maven.username") ?: "<NA>"
