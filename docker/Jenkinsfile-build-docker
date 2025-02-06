@@ -1,7 +1,7 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@dai-updated') _
 import ai.h2o.ci.buildsummary.StagesSummary
 
-DEFAULT_LABEL = 'mr-0xc10'
+DEFAULT_LABEL = 'linux'
 
 // initialize build summary
 buildSummary('https://github.com/h2oai/h2o-3', true)
@@ -17,12 +17,12 @@ properties([
     ])
 ])
 
-IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
+// IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15', '16', '17']
-JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
-PYTHON_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
-R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2', '4.4.0']
+JDK_VERSIONS = ['8']
+JDK_VERSIONS_PY_R = ['8'] // stable, last-supported, latest
+PYTHON_VERSIONS = ['3.7']
+R_VERSION = ['3.4.1']
 
 def pipelineContext
 
@@ -40,17 +40,17 @@ ansiColor('xterm') {
                 def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                if (params.publish && !params.forceBuild) {
-                    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
-                        error "Image already exists. Use forceBuild if you wish to overwrite."
-                    }
-                } else {
-                    manager.addBadge("warning.gif", "forceBuild enabled")
-                }
+                // if (params.publish && !params.forceBuild) {
+                //     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
+                //         error "Image already exists. Use forceBuild if you wish to overwrite."
+                //     }
+                // } else {
+                //     manager.addBadge("warning.gif", "forceBuild enabled")
+                // }
 
                 dir('docker') {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                        docker.image('harbor.h2o.ai/opsh2oai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                        docker.image('d3fk/s3cmd').inside("--entrypoint='' -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
@@ -77,33 +77,33 @@ ansiColor('xterm') {
         }
         buildInParallel(pipelineContext, pythonImages)
 
-        buildInParallel(pipelineContext, ['dev-r-base'])
-        def componentImages = []
-        R_VERSION.each {version ->
-            componentImages += "dev-r-${version}"
-        }
-        JDK_VERSIONS.each {version ->
-            componentImages += "dev-jdk-${version}"
-        }
-        componentImages += "dev-mojocompat"
-        buildInParallel(pipelineContext, componentImages)
+        // buildInParallel(pipelineContext, ['dev-r-base'])
+        // def componentImages = []
+        // R_VERSION.each {version ->
+        //     componentImages += "dev-r-${version}"
+        // }
+        // JDK_VERSIONS.each {version ->
+        //     componentImages += "dev-jdk-${version}"
+        // }
+        // componentImages += "dev-mojocompat"
+        // buildInParallel(pipelineContext, componentImages)
 
-        buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
-        buildInParallel(pipelineContext, ["dev-release"])
+        // buildInParallel(pipelineContext, ["dev-build-base"])
+        // buildInParallel(pipelineContext, ["dev-build-hadoop"],)
+        // buildInParallel(pipelineContext, ["dev-release"])
 
-        def componentJdkImages = []
-        PYTHON_VERSIONS.each {version ->
-            JDK_VERSIONS_PY_R.each {jdkVersion ->
-                componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
-            }
-        }
-        R_VERSION.each {version ->
-            JDK_VERSIONS_PY_R.each {jdkVersion ->
-                componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
-            }
-        }
-        buildInParallel(pipelineContext, componentJdkImages)
+        // def componentJdkImages = []
+        // PYTHON_VERSIONS.each {version ->
+        //     JDK_VERSIONS_PY_R.each {jdkVersion ->
+        //         componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
+        //     }
+        // }
+        // R_VERSION.each {version ->
+        //     JDK_VERSIONS_PY_R.each {jdkVersion ->
+        //         componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
+        //     }
+        // }
+        // buildInParallel(pipelineContext, componentJdkImages)
     }
 }
 
@@ -125,7 +125,9 @@ private Closure makeStage(final pipelineContext, String target) {
                 dir (target) {
                     deleteDir()
                     unstash 'docker-sources'
-                    pullPreviousVersionIfRequired(pipelineContext, target)
+                    // pullPreviousVersionIfRequired(pipelineContext, target)
+                    // println "make ${target}"
+                    dockerLoginH2OECR()
                     sh """
                                 make \
                                     CI=1 \
@@ -141,15 +143,25 @@ private Closure makeStage(final pipelineContext, String target) {
     }
 }
 
-def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
-    def previousVersion = pipelineContext.getBuildConfig().getDefaultImageVersion() - 1
-    // hack for first version of image
-    if (previousVersion <= 0) {
-        previousVersion = 1
-    }
-    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai", "h2o-3/${image}", "${previousVersion}")) {
-        retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
-            sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
-        }
+def dockerLoginH2OECR(){
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
+        H2O_ECR_PWD = sh(script: 'aws ecr get-login-password --region us-east-1', returnStdout: true).trim()
+        sh """
+            docker login --username AWS --password $H2O_ECR_PWD $H2O_ECR
+        """
     }
 }
+
+// def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
+//     def previousVersion = pipelineContext.getBuildConfig().getDefaultImageVersion() - 1
+//     // hack for first version of image
+//     if (previousVersion <= 0) {
+//         previousVersion = 1
+//     }
+//     println("harbor.h2o.ai/opsh2oai/h2o-3/${image}:${previousVersion}")
+//     // if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai", "h2o-3/${image}", "${previousVersion}")) {
+//     //     retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
+//     //         sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
+//     //     }
+//     // }
+// }
