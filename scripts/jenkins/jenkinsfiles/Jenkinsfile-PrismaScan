@@ -50,8 +50,8 @@ def setScanningStages(assemblyType, stageIndex) {
         }
     }
     stage("${stageIndex}.D. Export results for ${assemblyType} jar to CSV") {
-        withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-            sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}-prisma.csv"
+        withCredentials([usernamePassword(credentialsId: 'prisma-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+            sh "curl -k -u \$USERNAME:\$PASSWORD https://10.0.21.204:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}-prisma.csv"
         }
         archiveArtifacts artifacts: "${assemblyImage}-prisma.csv"
     }
