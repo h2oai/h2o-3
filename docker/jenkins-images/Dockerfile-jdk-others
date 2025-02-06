@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-ARG FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-others-base
+ARG FROM_IMAGE=353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-jdk-others-base
 FROM ${FROM_IMAGE}:${FROM_VERSION}
 
 ARG INSTALL_JAVA_VERSION

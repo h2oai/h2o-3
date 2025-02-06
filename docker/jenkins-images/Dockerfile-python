@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-python-base:${FROM_VERSION}
+FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-base:${FROM_VERSION}
 
 ARG H2O_BRANCH=master
 ARG PYTHON_VERSION
