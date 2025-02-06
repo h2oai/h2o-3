@@ -160,10 +160,14 @@ def dockerLoginH2OECR(){
 }
 
 def imageExistsH2OECR(String repository, String tag) {
-    def result = sh(
-        script: "aws ecr batch-get-image --repository-name='${repository}' --image-ids=imageTag='${tag}' --query 'images[].imageId.imageTag' --output text",
+    def result = "-1"
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
+        result = sh(
+        script: "aws ecr batch-get-image --registry-id=353750902984 --repository-name='${repository}' --image-ids=imageTag='${tag}' --query 'images[].imageId.imageTag' --output text",
         returnStdout: true
     ).trim()
+    }
+    
 
     return result == tag
 }
