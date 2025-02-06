@@ -79,33 +79,33 @@ ansiColor('xterm') {
         }
         buildInParallel(pipelineContext, pythonImages)
 
-        // buildInParallel(pipelineContext, ['dev-r-base'])
-        // def componentImages = []
-        // R_VERSION.each {version ->
-        //     componentImages += "dev-r-${version}"
-        // }
-        // JDK_VERSIONS.each {version ->
-        //     componentImages += "dev-jdk-${version}"
-        // }
-        // componentImages += "dev-mojocompat"
-        // buildInParallel(pipelineContext, componentImages)
+        buildInParallel(pipelineContext, ['dev-r-base'])
+        def componentImages = []
+        R_VERSION.each {version ->
+            componentImages += "dev-r-${version}"
+        }
+        JDK_VERSIONS.each {version ->
+            componentImages += "dev-jdk-${version}"
+        }
+        componentImages += "dev-mojocompat"
+        buildInParallel(pipelineContext, componentImages)
 
-        // buildInParallel(pipelineContext, ["dev-build-base"])
-        // buildInParallel(pipelineContext, ["dev-build-hadoop"],)
-        // buildInParallel(pipelineContext, ["dev-release"])
+        buildInParallel(pipelineContext, ["dev-build-base"])
+        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
+        buildInParallel(pipelineContext, ["dev-release"])
 
-        // def componentJdkImages = []
-        // PYTHON_VERSIONS.each {version ->
-        //     JDK_VERSIONS_PY_R.each {jdkVersion ->
-        //         componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
-        //     }
-        // }
-        // R_VERSION.each {version ->
-        //     JDK_VERSIONS_PY_R.each {jdkVersion ->
-        //         componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
-        //     }
-        // }
-        // buildInParallel(pipelineContext, componentJdkImages)
+        def componentJdkImages = []
+        PYTHON_VERSIONS.each {version ->
+            JDK_VERSIONS_PY_R.each {jdkVersion ->
+                componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
+            }
+        }
+        R_VERSION.each {version ->
+            JDK_VERSIONS_PY_R.each {jdkVersion ->
+                componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
+            }
+        }
+        buildInParallel(pipelineContext, componentJdkImages)
     }
 }
 
