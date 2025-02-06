@@ -3,6 +3,8 @@ import ai.h2o.ci.buildsummary.StagesSummary
 
 DEFAULT_LABEL = 'linux'
 
+H2O_ECR='353750902984.dkr.ecr.us-east-1.amazonaws.com'
+
 // initialize build summary
 buildSummary('https://github.com/h2oai/h2o-3', true)
 // use default StagesSummary implementation
