@@ -586,8 +586,7 @@ def call(final pipelineContext) {
   for (distribution in supportedHadoopDists) {
     def target
     def ldapConfigPath
-    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
-            (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
+    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.'))){
       target = 'test-hadoop-3-smoke'
       ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
     } else {
@@ -640,8 +639,6 @@ def call(final pipelineContext) {
   def distributionsToTest = [
           [ name: "cdh", version: "5.10" ], // hdp2/hive1
           [ name: "cdh", version: "6.1"  ], // hdp3/hive2
-          [ name: "hdp", version: "2.6"  ], // hdp2/hive2
-          [ name: "hdp", version: "3.1"  ]  // hdp3/hive3 - JDBC Only
   ]
   // check our config is still valid
   for (distribution in distributionsToTest) {
@@ -656,8 +653,7 @@ def call(final pipelineContext) {
     }
     def target
     def ldapConfigPath
-    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
-            (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
+    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.'))){
       target = 'test-kerberos-hadoop-3'
       ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
     } else {
@@ -702,14 +698,6 @@ def call(final pipelineContext) {
     def standaloneDriverKeytabStage = evaluate(stageTemplate.inspect())
     standaloneDriverKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - DRIVER KEYTAB"
     standaloneDriverKeytabStage.customData.mode = 'STANDALONE_DRIVER_KEYTAB'
-    if (distribution.name == 'hdp' && distribution.version == '2.6') {
-      // HttpClient & related classes are relocated in h2odriver for distros based on 2.x
-      // to make Hive JDBC import work in tests we add it here manually (ideally it should be in the docker image)
-      standaloneDriverKeytabStage.customData.extraClasspath =
-              "/usr/hdp/2.6.1.0-129/hive/lib/httpclient-4.4.jar:/usr/hdp/2.6.1.0-129/hive/lib/httpcore-4.4.jar"
-      // h2odriver doesn't support S3A nor S3N (since 2.x Hadoops are obsolete, we ignore the affected tests)
-      standaloneDriverKeytabStage.customData.bundledS3FileSystems = ''
-    }
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"

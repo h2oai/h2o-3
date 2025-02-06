@@ -156,7 +156,6 @@ Optional Hadoop requirements
 Hadoop is only required if you want to deploy H2O-3 on a Hadoop cluster. Supported versions are listed on the `Downloads <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__ page (when you select the Install on Hadoop tab) and include:
 
 - Cloudera CDH 5.4+
-- Hortonworks HDP 2.2+
 - MapR 4.0+
 - IBM Open Platform 4.2
 
