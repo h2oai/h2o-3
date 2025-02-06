@@ -130,15 +130,20 @@ private Closure makeStage(final pipelineContext, String target) {
                     // pullPreviousVersionIfRequired(pipelineContext, target)
                     // println "make ${target}"
                     dockerLoginH2OECR()
-                    sh """
-                                make \
-                                    CI=1 \
-                                    H2O_BRANCH=${params.h2oBranch} \
-                                    VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    PUSH=${params.publish} \
-                                    NO_CACHE=${noCache} \
-                                    ${target}
-                            """
+                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}")){
+                        sh """
+                            make \
+                                CI=1 \
+                                H2O_BRANCH=${params.h2oBranch} \
+                                VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
+                                PUSH=${params.publish} \
+                                NO_CACHE=${noCache} \
+                                ${target}
+                        """
+                    } else {
+                        println "${H2O_ECR}/h2o-3/${target} already exists"
+                    }  
+                    
                 }
             }
         }
@@ -152,6 +157,15 @@ def dockerLoginH2OECR(){
             docker login --username AWS --password $H2O_ECR_PWD $H2O_ECR
         """
     }
+}
+
+def imageExistsH2OECR(String repository, String tag) {
+    def result = sh(
+        script: "aws ecr batch-get-image --repository-name='${repository}' --image-ids=imageTag='${tag}' --query 'images[].imageId.imageTag' --output text",
+        returnStdout: true
+    ).trim()
+
+    return result == tag
 }
 
 // def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
