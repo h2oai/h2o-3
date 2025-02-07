@@ -32,14 +32,14 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
                 dockerGroupIdAdd = "--group-add ${dockerGroupId}"
               }
             }
-            // TODO add -e H2O3_GET_PROJECT_TOKEN=${H2O3_GET_PROJECT_TOKEN}
-            docker.image(image).inside("--init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY}  -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
-              sh """
-              id
-              printenv | sort
-            """
-              block()
-            }
+//            // TODO add -e H2O3_GET_PROJECT_TOKEN=${H2O3_GET_PROJECT_TOKEN}
+//            docker.image(image).inside("--init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY}  -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
+//              sh """
+//              id
+//              printenv | sort
+//            """
+//              block()
+//            }
           }
         }
       }
