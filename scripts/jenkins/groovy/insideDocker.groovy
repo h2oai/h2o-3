@@ -8,11 +8,12 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
   }
 
   retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
-    withCredentials([usernamePassword(credentialsId: registry, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
+      H2O_ECR_PWD = sh(script: 'aws ecr get-login-password --region us-east-1', returnStdout: true).trim()
       sh """
-        docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${registry}
-        docker pull ${image}
-      """
+            docker login --username AWS --password $H2O_ECR_PWD $H2O_ECR
+            docker pull ${image}
+        """
     }
   }
 
