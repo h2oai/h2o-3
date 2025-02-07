@@ -5,6 +5,10 @@
 def dockerImage
 def trivyVersion = "0.54.1"
 
+// Define parameters for IP and port
+def PRISMA_SERVER = env.PRISMA_SERVER ?: 'prisma-aws.h2o.local'
+def PRISMA_PORT = env.PRISMA_PORT ?: '8083'
+
 def setScanningStages(assemblyType, stageIndex) {
     branchName = "${env.BRANCH_NAME}".replace('/', '-')
     assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
@@ -51,7 +55,7 @@ def setScanningStages(assemblyType, stageIndex) {
     }
     stage("${stageIndex}.D. Export results for ${assemblyType} jar to CSV") {
         withCredentials([usernamePassword(credentialsId: 'prisma-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-            sh "curl -k -u \$USERNAME:\$PASSWORD https://10.0.21.204:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}-prisma.csv"
+            sh "curl -k -u \$USERNAME:\$PASSWORD https://${PRISMA_SERVER}:${PRISMA_PORT}/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}-prisma.csv"
         }
         archiveArtifacts artifacts: "${assemblyImage}-prisma.csv"
     }
@@ -66,6 +70,16 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
+    }
+
+    environment {
+        PRISMA_SERVER = "${params.PRISMA_SERVER ?: 'prisma-aws.h2o.local'}"
+        PRISMA_PORT = "${params.PRISMA_PORT ?: '8083'}"
+    }
+
+    parameters {
+        string(name: 'PRISMA_SERVER', defaultValue: 'prisma-aws.h2o.local', description: 'Prisma API Server')
+        string(name: 'PRISMA_PORT', defaultValue: '8083', description: 'Prisma API Port')
     }
 
     stages {
