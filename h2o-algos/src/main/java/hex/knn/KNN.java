@@ -41,6 +41,10 @@ public class KNN extends ModelBuilder<KNNModel,KNNModel.KNNParameters,KNNModel.K
         if( null == _parms._distance) {
             error("_distance", "Distance parameter not set.");
         }
+        if (null != _parms._categorical_encoding && Model.Parameters.CategoricalEncodingScheme.Enum != _parms._categorical_encoding 
+                && Model.Parameters.CategoricalEncodingScheme.AUTO != _parms._categorical_encoding) {
+            error("_categorical_encoding", "Only enum categorical encoding is supported.");
+        }
     }
 
     class KNNDriver extends Driver {

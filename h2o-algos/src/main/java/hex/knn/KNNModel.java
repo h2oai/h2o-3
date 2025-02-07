@@ -76,10 +76,12 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        Frame train = _parms._train.get(); 
+        Frame train = new Frame(_parms.train());
+        adaptTestForTrain(train, false, false);
         int idIndex = train.find(_parms._id_column);
         int responseIndex = train.find(_parms._response_column);
         byte idType = train.types()[idIndex];
+        
         preds = new KNNScoringTask(data, _parms._k, _output.nclasses(), KNNDistanceFactory.createDistance(_parms._distance), idIndex, idType, 
                                     responseIndex).doAll(train).score();
         Scope.untrack(train);
