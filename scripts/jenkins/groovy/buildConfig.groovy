@@ -15,8 +15,8 @@ class BuildConfig {
   private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
   public static final int DEFAULT_IMAGE_VERSION_TAG = 45
-  public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
-  public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
+  public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
+  public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
   private static final String HADOOP_IMAGE_VERSION_TAG = '84'
@@ -269,11 +269,11 @@ class BuildConfig {
     def imageVersion = DEFAULT_IMAGE_VERSION_TAG
     if (stageConfig.imageVersion)
       imageVersion = stageConfig.imageVersion
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
+    return "${DOCKER_REGISTRY}/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
   }
   
   String getDevImageReference(final specifier, final version) {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${version}"
+    return "${DOCKER_REGISTRY}/h2o-3/dev-${specifier}:${version}"
   }
 
   String getDevImageReference(final specifier) {
