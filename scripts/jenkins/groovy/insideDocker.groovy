@@ -11,7 +11,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
       H2O_ECR_PWD = sh(script: 'aws ecr get-login-password --region us-east-1', returnStdout: true).trim()
       sh """
-            docker login --username AWS --password $H2O_ECR_PWD $H2O_ECR
+            docker login --username AWS --password $H2O_ECR_PWD ${registry}
             docker pull ${image}
         """
     }
