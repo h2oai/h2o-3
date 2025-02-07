@@ -22,7 +22,7 @@ try {
           }
           String nodeLabel = DEFAULT_NODE_LABEL
           if (pipelineContext != null) {
-            nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(DEFAULT_NODE_LABEL)
+            nodeLabel = "h2o-3"
           }
           echo "######### NodeLabel: ${nodeLabel} #########"
           node(nodeLabel) {
