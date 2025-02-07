@@ -8,7 +8,7 @@ def call(final context, final String mode, final String commitMessage, final cha
 
 class BuildConfig {
 
-  public static final String DOCKER_REGISTRY = 'harbor.h2o.ai'
+  public static final String DOCKER_REGISTRY = '353750902984.dkr.ecr.us-east-1.amazonaws.com'
 
   private static final String DEFAULT_IMAGE_NAME = 'dev-build-base'
   private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
@@ -197,15 +197,15 @@ class BuildConfig {
     if (buildHadoop) {
       return getHadoopBuildImage()
     }
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopBuildImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getReleaseImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopImageVersion() {
