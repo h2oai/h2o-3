@@ -54,20 +54,12 @@ Common parameters
     - ``"MACRO_OVO"``
     - ``"WEIGHTED_OVO"``
 
-- `balance_classes <algo-params/balance_classes.html>`__: (Applicable for classification only) Specify whether to oversample the minority classes to balance the class distribution. This can increase the data frame size. Majority classes can be undersampled to satisfy the ``max_after_balance_size`` parameter. This option defaults to ``False`` (disabled).
-
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto`` or ``AUTO`` (default): Allow the algorithm to decide. In GBM, the algorithm will automatically perform ``enum`` encoding.
+  - ``auto`` or ``AUTO`` (default): Allow the algorithm to decide. In KNN, the algorithm will automatically perform ``enum`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature.
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
-  - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels.
-  - ``binary``: No more than 32 columns per categorical feature.
-  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only.
-  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.).
-  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: (Applicable only when ``balance_classes=True``) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
 
 -  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e. the loss function). The options are:
       
@@ -82,8 +74,6 @@ Common parameters
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
 -  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
-
--  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: (Applicable only when ``balance_classes=True``)  Specify the maximum relative size of the training data after balancing class counts. The value can be > 1.0 and defaults to ``5.0``.
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training.  This option defaults to ``0`` (unlimited).
 
@@ -127,7 +117,11 @@ FAQ
 
 -  **What if there are a large number of categorical factor levels?**
 
+    Only enum categorical encoding is available, so the large number of categorical factor levels does not affect the computation. 
+
 -  **How are categorical columns handled during model building?**
+
+    Categorical columns are converted to enum categorical variable. No other categorical encoding is not available. It is not recommended to mix numeric and categorical variables together. For categorical columns cosine distance can be useful. 
 
 
 KNN Algorithm
