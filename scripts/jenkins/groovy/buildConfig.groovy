@@ -369,8 +369,8 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('h2o-3'), //master or nightly build - use only this one
-    LABELS_B4('h2o-3')  //PR build - not used
+    LABELS_C1('h2o-3', 'h2o-3', 'h2o-3', 'h2o-3'), //master or nightly build - use only this one
+    LABELS_B4('h2o-3', 'h2o-3', 'h2o-3', 'h2o-3')
 
     static Map<String, NodeLabels> LABELS_MAP = [
             "c1": LABELS_C1,
