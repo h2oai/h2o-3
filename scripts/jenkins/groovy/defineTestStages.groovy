@@ -1012,7 +1012,7 @@ private void invokeStage(final pipelineContext, final body) {
               if (attempt > HEALTH_CHECK_RETRIES) {
                 error "Too many attempts to pass initial health check"
               }
-              String nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
+              String nodeLabel = "h2o-3"
               echo "######### NodeLabel: ${nodeLabel} #########"
               node(nodeLabel) {
                 echo "###### Unstash scripts. ######"
