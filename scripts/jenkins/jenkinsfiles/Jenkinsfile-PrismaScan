@@ -5,67 +5,17 @@
 def dockerImage
 def trivyVersion = "0.54.1"
 
-def setScanningStages(assemblyType, stageIndex) {
-    branchName = "${env.BRANCH_NAME}".replace('/', '-')
-    assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
-    
-    stage("${stageIndex}.A. Build image for ${assemblyType}") {
-        script {
-            sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
-        }
-    }
-    stage ("${stageIndex}.B. Scan ${assemblyType} jar using Trivy") {
-        script {
-            sh "./trivy image ${assemblyImage} --output ${assemblyImage}-trivy.out"
-            // Replace special characters with * in order to show it directly in browser
-            sh """
-                sed -i 's/─/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/│/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┤/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/├/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┼/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┐/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┌/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/└/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┘/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┬/*/g' ${assemblyImage}-trivy.out
-                sed -i 's/┴/*/g' ${assemblyImage}-trivy.out
-            """
-        }
-        archiveArtifacts artifacts: "${assemblyImage}-trivy.out"
-    }
-    stage("${stageIndex}.C. Scan ${assemblyType} jar using Prisma") {
-        script {
-            // scan the image
-            prismaCloudScanImage ca: '',
-                    cert: '',
-                    dockerAddress: 'unix:///var/run/docker.sock',
-                    image: "${assemblyImage}",
-                    key: '',
-                    logLevel: 'info',
-                    podmanPath: '',
-                    project: '',
-                    resultsFile: "prisma-${assemblyType}-scan-results.json",
-                    ignoreImageBuildTime: true
-        }
-    }
-    stage("${stageIndex}.D. Export results for ${assemblyType} jar to CSV") {
-        withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-            sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}-prisma.csv"
-        }
-        archiveArtifacts artifacts: "${assemblyImage}-prisma.csv"
-    }
-    stage("${stageIndex}.E. Publish report for ${assemblyType} jar") {
-        prismaCloudPublish resultsFilePattern: "prisma-${assemblyType}-scan-results.json"
-    }
-}
-
 pipeline {
     agent { node { label 'h2o-3' } }
 
     options {
         ansiColor('xterm')
         timestamps()
+    }
+
+    environment {
+        PRISMA_SERVER = "prisma.internal.devops.net"
+        PRISMA_PORT = "8083"
     }
 
     stages {
@@ -79,7 +29,6 @@ pipeline {
                     sh "tar -zxvf trivy_${trivyVersion}_Linux-64bit.tar.gz"
                     sh "chmod +x ./trivy"
                 }
-                
             }
         }
         stage('1. Build jars') {
@@ -109,5 +58,65 @@ pipeline {
       always {
         cleanWs()
       }
+    }
+}
+
+def setScanningStages(assemblyType, stageIndex) {
+    def branchName = "${env.BRANCH_NAME}".replace('/', '-')
+    def assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
+    
+    stage("${stageIndex}.A. Build image for ${assemblyType}") {
+        script {
+            sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
+        }
+    }
+    
+    stage ("${stageIndex}.B. Scan ${assemblyType} jar using Trivy") {
+        script {
+            sh "./trivy image ${assemblyImage} --output ${assemblyImage}-trivy.out"
+            // Replace special characters with * to display properly in browser
+            sh """
+                sed -i 's/─/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/│/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┤/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/├/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┼/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┐/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┌/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/└/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┘/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┬/*/g' ${assemblyImage}-trivy.out
+                sed -i 's/┴/*/g' ${assemblyImage}-trivy.out
+            """
+        }
+        archiveArtifacts artifacts: "${assemblyImage}-trivy.out"
+    }
+
+    stage("${stageIndex}.C. Scan ${assemblyType} jar using Prisma") {
+        script {
+            prismaCloudScanImage ca: '',
+                    cert: '',
+                    dockerAddress: 'unix:///var/run/docker.sock',
+                    image: "${assemblyImage}",
+                    key: '',
+                    logLevel: 'info',
+                    podmanPath: '',
+                    project: '',
+                    resultsFile: "prisma-${assemblyType}-scan-results.json",
+                    ignoreImageBuildTime: true
+        }
+    }
+
+    stage("${stageIndex}.D. Export results for ${assemblyType} jar to CSV") {
+        withCredentials([usernamePassword(credentialsId: 'prisma-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+            sh """
+                curl -k -u \$USERNAME:\$PASSWORD https://${env.PRISMA_SERVER}:${env.PRISMA_PORT}/api/v1/scans/download?search=${assemblyImage} -o ${assemblyImage}-prisma.csv
+            """
+        }
+        archiveArtifacts artifacts: "${assemblyImage}-prisma.csv"
+    }
+
+    stage("${stageIndex}.E. Publish report for ${assemblyType} jar") {
+        prismaCloudPublish resultsFilePattern: "prisma-${assemblyType}-scan-results.json"
     }
 }

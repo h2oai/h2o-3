@@ -10,11 +10,11 @@ buildscript {
     }
 
     repositories {
-        if (isCi) {
-            maven {
-                allowInsecureProtocol = true
-                url "${localNexusLocation}/public"
-            }
+        if (false) {
+//            maven {
+//                allowInsecureProtocol = true
+//                url "${localNexusLocation}/public"
+//            }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
             mavenCentral()
@@ -237,11 +237,11 @@ subprojects {
         if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
         }
-        if (isCi) {
-            maven {
-                allowInsecureProtocol = true
-                url "${localNexusLocation}/public"
-            }
+        if (false) {
+//            maven {
+//                allowInsecureProtocol = true
+//                url "${localNexusLocation}/public"
+//            }
             maven {
                 url "https://oss.sonatype.org/content/groups/staging/"
             }
