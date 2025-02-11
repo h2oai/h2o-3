@@ -19,7 +19,6 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
 
   docker.image(image).inside("--init -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID}") {
     sh """
-      id
       printenv | sort
     """
   }
