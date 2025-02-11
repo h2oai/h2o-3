@@ -22,7 +22,6 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
       id
       printenv | sort
     """
-    block()
   }
   
   
