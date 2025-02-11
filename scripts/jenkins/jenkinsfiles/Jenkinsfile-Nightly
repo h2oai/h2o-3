@@ -50,7 +50,7 @@ try {
               defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
             }
             healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
-            docker.image(pipelineContext.getBuildConfig().getDefaultImage()).inside("--init --entrypoint=''") {
+            docker.image("353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-base:45").inside() {
             sh """
               printenv | sort
             """
