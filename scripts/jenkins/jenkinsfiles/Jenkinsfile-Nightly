@@ -34,10 +34,6 @@ try {
                 echo "###### Checkout H2O-3 ######"
                 scmEnv = checkout scm
               }
-              sh """
-                pwd
-                git status
-              """
             }
 
             if (pipelineContext == null) {
