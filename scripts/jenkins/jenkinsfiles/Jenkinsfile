@@ -55,6 +55,8 @@ try {
                     git init
                     git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
                     git config remote.origin.url https://github.com/h2oai/h2o-3
+                    git config --add safe.directory .
+
 
                     git fetch --no-tags origin pull/${env.ghprbPullId}/head:remote-${env.ghprbSourceBranch}
                     git checkout ${env.ghprbActualCommit}

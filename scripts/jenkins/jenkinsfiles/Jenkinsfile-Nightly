@@ -34,6 +34,9 @@ try {
                 echo "###### Checkout H2O-3 ######"
                 scmEnv = checkout scm
               }
+              sh """
+                git config --add safe.directory .
+              """
             }
 
             if (pipelineContext == null) {
@@ -50,16 +53,11 @@ try {
               defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
             }
             healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
-            docker.image("353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-base:45").inside("--user=root:root --entrypoint=''") {
-            sh """
-              printenv | sort
-            """
-            }
-            // if (healthCheckPassed) {
+            if (healthCheckPassed) {
               // Load build script and execute it
               def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
               buildH2O3(pipelineContext)
-            // }
+            }
           }
         }
       }
