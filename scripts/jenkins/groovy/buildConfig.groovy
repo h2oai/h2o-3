@@ -197,7 +197,7 @@ class BuildConfig {
     if (buildHadoop) {
       return getHadoopBuildImage()
     }
-    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}-node-fix-2"
+    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopBuildImage() {
