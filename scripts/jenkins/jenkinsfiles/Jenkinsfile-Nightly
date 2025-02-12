@@ -35,6 +35,7 @@ try {
                 scmEnv = checkout scm
               }
               sh """
+                pwd
                 git config --add safe.directory .
               """
             }
