@@ -1,7 +1,7 @@
 ARG FROM_VERSION
 FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.4.1:${FROM_VERSION}
 
-ENV NODE_MAJOR '16'
+ENV NODE_MAJOR '20'
 
 RUN apt-get update && apt-get install -y ca-certificates curl gnupg &&  mkdir -p /etc/apt/keyrings && \
 curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --no-tty --yes --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
