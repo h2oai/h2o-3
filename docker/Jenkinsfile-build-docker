@@ -130,7 +130,8 @@ private Closure makeStage(final pipelineContext, String target) {
                     // pullPreviousVersionIfRequired(pipelineContext, target)
                     // println "make ${target}"
                     dockerLoginH2OECR()
-                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}")){
+                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") ||
+                       (imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") && params.forceBuild)){
                         unstash 'docker-sources'
                         sh """
                             make \
