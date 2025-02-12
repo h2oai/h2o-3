@@ -37,6 +37,7 @@ try {
               sh """
                 pwd
                 git config --global --add safe.directory .
+                git status
               """
             }
 
