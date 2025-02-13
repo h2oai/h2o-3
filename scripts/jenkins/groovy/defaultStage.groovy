@@ -24,9 +24,9 @@ def call(final pipelineContext, final stageConfig) {
             int pythonMinor = pythonVersionFull[1] as Integer
             if (pythonMajor == 3 && (pythonMinor == 7 || pythonMinor == 8)) { // For some reason python 3.9 is not supported, probably is not the wheele is not build for 3.9
                 dir(stageConfig.stageDir) {
-                    pipelineContext.getUtils().pullXGBWheels(this)
+//                    pipelineContext.getUtils().pullXGBWheels(this)
                 }
-                installXGBWheel(h2oFolder)
+//                installXGBWheel(h2oFolder)
             }
         }
 

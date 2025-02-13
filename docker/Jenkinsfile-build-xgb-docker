@@ -1,6 +1,6 @@
 #! /usr/bin/groovy
 
-final String NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
+final String NODE_LABEL = "h2o-3"
 final String DOCKER_STASH = 'h2o-3-xgb-docker-stash'
 final String BUILD_TAG = '1'
 

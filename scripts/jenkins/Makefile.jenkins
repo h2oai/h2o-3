@@ -6,6 +6,7 @@ JENKINS_MAKEFILE_PATH := scripts/jenkins/Makefile.jenkins
 build-h2o-3:
 	@echo "+--Building H2O-3--+"
 	@echo
+	git config --global --add safe.directory '*' # TODO github Find better solution
 	./gradlew --parallel clean build -x test $$ADDITIONAL_GRADLE_OPTS
 	@echo "+--Git Diff Check--+"
 	if [[ $$(git diff 2>&1) ]]; then \
@@ -30,6 +31,7 @@ warmup-caches:
 	./gradlew build compileTestJava -x test -x h2o-r:build $$ADDITIONAL_GRADLE_OPTS
 
 test-build-h2o-public:
+	git config --global --add safe.directory '*' # TODO github Find better solution
 	BUILD_HADOOP="true" ./gradlew --gradle-user-home $$HOME/.gradle_public clean build -x test -PforcePublic=true -PlocalNexusLocation=NO_NEXUS $$ADDITIONAL_GRADLE_OPTS
 
 compress-huge-logfiles:
