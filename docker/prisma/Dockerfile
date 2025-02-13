@@ -6,8 +6,8 @@ ENV DIRECTORIES=".config .npm .cache .local"
 
 RUN for dir in $DIRECTORIES; do \
       mkdir -p "/$dir"; \
-      chown -R 2117:2117 "/$dir"; \
-      chown -R 1002:1002 "/$dir"; \
+      chown -R $(id -u jenkins):$(id -g jenkins) "/$dir"; \
+      chown -R $(id -u jenkins):$(id -g jenkins) "/$dir"; \
     done
 
 CMD ["/bin/sh"]
