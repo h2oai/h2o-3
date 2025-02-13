@@ -1,7 +1,9 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@dai-updated') _
 import ai.h2o.ci.buildsummary.StagesSummary
 
-DEFAULT_LABEL = 'mr-0xc10'
+DEFAULT_LABEL = 'linux'
+
+H2O_ECR='353750902984.dkr.ecr.us-east-1.amazonaws.com'
 
 // initialize build summary
 buildSummary('https://github.com/h2oai/h2o-3', true)
@@ -17,12 +19,12 @@ properties([
     ])
 ])
 
-IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
+// IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15', '16', '17']
-JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
-PYTHON_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
-R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2', '4.4.0']
+JDK_VERSIONS = ['8']
+JDK_VERSIONS_PY_R = ['8'] // stable, last-supported, latest
+PYTHON_VERSIONS = ['3.7']
+R_VERSION = ['3.4.1']
 
 def pipelineContext
 
@@ -40,17 +42,17 @@ ansiColor('xterm') {
                 def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                if (params.publish && !params.forceBuild) {
-                    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
-                        error "Image already exists. Use forceBuild if you wish to overwrite."
-                    }
-                } else {
-                    manager.addBadge("warning.gif", "forceBuild enabled")
-                }
+                // if (params.publish && !params.forceBuild) {
+                //     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
+                //         error "Image already exists. Use forceBuild if you wish to overwrite."
+                //     }
+                // } else {
+                //     manager.addBadge("warning.gif", "forceBuild enabled")
+                // }
 
                 dir('docker') {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                        docker.image('harbor.h2o.ai/opsh2oai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                        docker.image('d3fk/s3cmd').inside("--entrypoint='' -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
@@ -124,32 +126,64 @@ private Closure makeStage(final pipelineContext, String target) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
                     deleteDir()
-                    unstash 'docker-sources'
-                    pullPreviousVersionIfRequired(pipelineContext, target)
-                    sh """
-                                make \
-                                    CI=1 \
-                                    H2O_BRANCH=${params.h2oBranch} \
-                                    VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    PUSH=${params.publish} \
-                                    NO_CACHE=${noCache} \
-                                    ${target}
-                            """
+                    
+                    // pullPreviousVersionIfRequired(pipelineContext, target)
+                    // println "make ${target}"
+                    dockerLoginH2OECR()
+                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") ||
+                       (imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") && params.forceBuild)){
+                        unstash 'docker-sources'
+                        sh """
+                            make \
+                                CI=1 \
+                                H2O_BRANCH=${params.h2oBranch} \
+                                VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
+                                PUSH=${params.publish} \
+                                NO_CACHE=${noCache} \
+                                ${target}
+                        """
+                    } else {
+                        println "${H2O_ECR}/h2o-3/${target} already exists"
+                    }  
+                    
                 }
             }
         }
     }
 }
 
-def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
-    def previousVersion = pipelineContext.getBuildConfig().getDefaultImageVersion() - 1
-    // hack for first version of image
-    if (previousVersion <= 0) {
-        previousVersion = 1
-    }
-    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai", "h2o-3/${image}", "${previousVersion}")) {
-        retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
-            sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
-        }
+def dockerLoginH2OECR(){
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
+        H2O_ECR_PWD = sh(script: 'aws ecr get-login-password --region us-east-1', returnStdout: true).trim()
+        sh """
+            docker login --username AWS --password $H2O_ECR_PWD $H2O_ECR
+        """
     }
 }
+
+def imageExistsH2OECR(String repository, String tag) {
+    def result = "-1"
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
+        result = sh(
+        script: "aws ecr batch-get-image --registry-id=353750902984 --repository-name='${repository}' --image-ids=imageTag='${tag}' --query 'images[].imageId.imageTag' --output text",
+        returnStdout: true
+    ).trim()
+    }
+    
+
+    return result == tag
+}
+
+// def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
+//     def previousVersion = pipelineContext.getBuildConfig().getDefaultImageVersion() - 1
+//     // hack for first version of image
+//     if (previousVersion <= 0) {
+//         previousVersion = 1
+//     }
+//     println("harbor.h2o.ai/opsh2oai/h2o-3/${image}:${previousVersion}")
+//     // if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai", "h2o-3/${image}", "${previousVersion}")) {
+//     //     retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
+//     //         sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
+//     //     }
+//     // }
+// }
