@@ -27,8 +27,8 @@ RUN \
    rm -rf /usr/share/man /usr/share/doc /var/cache/apt/*
 
 # Create jenkins user
-ARG JENKINS_UID=2117
-ARG JENKINS_GID=2117
+ARG JENKINS_UID=1002
+ARG JENKINS_GID=1002
 RUN \
     groupadd -g ${JENKINS_GID} jenkins && \
     adduser --uid ${JENKINS_UID} -gid ${JENKINS_GID} --disabled-password --gecos "" jenkins
