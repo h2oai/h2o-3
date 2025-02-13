@@ -6,8 +6,8 @@ ARG FROM_IMAGE
 MAINTAINER h2oai "h2o.ai"
 
 ARG H2O_BRANCH='master'
-ENV JENKINS_UID='2117'
-ENV JENKINS_GID='2117'
+ENV JENKINS_UID='1002'
+ENV JENKINS_GID='1002'
 
 COPY xgb/ubuntu/common/sbin xgb/common/sbin xgb/ubuntu/omp/sbin /usr/sbin/
 
