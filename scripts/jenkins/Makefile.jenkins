@@ -31,6 +31,7 @@ warmup-caches:
 	./gradlew build compileTestJava -x test -x h2o-r:build $$ADDITIONAL_GRADLE_OPTS
 
 test-build-h2o-public:
+    git config --global --add safe.directory '*'
 	BUILD_HADOOP="true" ./gradlew --gradle-user-home $$HOME/.gradle_public clean build -x test -PforcePublic=true -PlocalNexusLocation=NO_NEXUS $$ADDITIONAL_GRADLE_OPTS
 
 compress-huge-logfiles:
