@@ -38,7 +38,8 @@ def call(final pipelineContext, final stageConfig) {
             whoami
             pwd
             ls -al ${h2oFolder}/tests
-            ls -al ${h2oFolder}/tests/pyunitChangedTestList
+            chown -R jenkins:jenkins ${h2oFolder}
+            ls -al ${h2oFolder}/tests
             """
 
             writeFile(
