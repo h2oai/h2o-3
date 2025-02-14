@@ -31,10 +31,10 @@ def call(final pipelineContext, final stageConfig) {
         }
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY) {
-            // writeFile(
-            //         file: "${h2oFolder}/tests/pyunitChangedTestList", 
-            //         text: pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
-            // )
+            writeFile(
+                    file: "${h2oFolder}/tests/pyunitChangedTestList", 
+                    text: pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
+            )
         }
 
         if (stageConfig.installRPackage && (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R))) {
