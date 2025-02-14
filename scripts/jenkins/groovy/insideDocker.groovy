@@ -37,6 +37,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
               sh """
               id
               printenv | sort
+              ls -la
             """
               block()
             }
