@@ -36,9 +36,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
            docker.image(image).inside("--user=root:root --entrypoint='' --init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -v /home/jenkins:/home/jenkins/repos ${customArgs}") {
               sh """
               id
-              whoami
               printenv | sort
-              ls -la
             """
               block()
             }

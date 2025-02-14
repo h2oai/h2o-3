@@ -32,14 +32,6 @@ def call(final pipelineContext, final stageConfig) {
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY) {
 
-            sh """
-            echo "devops-debug"
-            id
-            whoami
-            pwd
-            ls -al ${h2oFolder}/tests
-            """
-
             def output = pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
 
             sh "echo ${output} > ${h2oFolder}/tests/pyunitChangedTestList"
