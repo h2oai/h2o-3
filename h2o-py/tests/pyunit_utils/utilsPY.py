@@ -635,7 +635,6 @@ def locate(path):
         except ValueError as e:
             url = "https://h2o-public-test-data.s3.amazonaws.com/{}".format(path)
             if url_exists(url):
-                print("Retrun url:", url)
                 return url
             raise
 

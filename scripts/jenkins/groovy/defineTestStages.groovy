@@ -416,14 +416,14 @@ def call(final pipelineContext) {
 //      stageName: 'R3.5 Datatable', target: 'test-r-datatable', rVersion: '3.5.3',
 //      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_R
 //    ],
-//    [
-//      stageName: 'Flow Headless Small', target: 'test-flow-headless-small',
-//      timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
-//    ],
-//    [
-//      stageName: 'Flow Headless Medium', target: 'test-flow-headless-medium',
-//      timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
-//    ]
+    [
+      stageName: 'Flow Headless Small', target: 'test-flow-headless-small',
+      timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
+    ],
+    [
+      stageName: 'Flow Headless Medium', target: 'test-flow-headless-medium',
+      timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
+    ]
   ]
 
   // Stages executed in addition to MASTER_STAGES, used for repeated nightly builds.
