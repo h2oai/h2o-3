@@ -620,6 +620,7 @@ def locate(path):
         possible_result = os.path.join(tmp_dir, path)
         try:
             while (True):
+                print(possible_result)
                 if (os.path.exists(possible_result)):
                     return possible_result
 
