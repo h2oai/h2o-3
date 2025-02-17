@@ -222,7 +222,7 @@ def call(final pipelineContext) {
 //      timeoutValue: 220, component: pipelineContext.getBuildConfig().COMPONENT_R
 //    ],
     [
-      stageName: 'INFO Check', target: 'test-info',
+      stageName: 'INFO Check', target: 'test-info', rVersion: '3.4.1',
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
