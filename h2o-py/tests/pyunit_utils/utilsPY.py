@@ -622,10 +622,12 @@ def locate(path):
             while (True):
                 print(possible_result)
                 if (os.path.exists(possible_result)):
+                    print("found:", possible_result)
                     return possible_result
 
                 next_tmp_dir = os.path.dirname(tmp_dir)
                 if (next_tmp_dir == tmp_dir):
+                    print("not found:", possible_result)
                     raise ValueError("File not found: " + path)
 
                 tmp_dir = next_tmp_dir
