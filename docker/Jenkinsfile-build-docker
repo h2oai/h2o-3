@@ -21,10 +21,10 @@ properties([
 
 // IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['11', '17']
+JDK_VERSIONS = []
 JDK_VERSIONS_PY_R = [] // stable, last-supported, latest
-PYTHON_VERSIONS = ['3.11', '3.10']
-R_VERSION = ['4.4.2', '4.0.2']
+PYTHON_VERSIONS = ['3.9', '3.8', '3.6']
+R_VERSION = ['3.5.3', '4.4.2']
 
 def pipelineContext
 
