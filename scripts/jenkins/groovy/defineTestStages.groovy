@@ -226,14 +226,14 @@ def call(final pipelineContext) {
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
-//    [
-//      stageName: 'Py3.7 Demo Notebooks', target: 'test-py-demos', pythonVersion: '3.7',
-//      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
-//    ],
-//    [
-//      stageName: 'Py3.7 Demo Notebooks (Scikit 1.0.2)', target: 'test-py-demos-new-scikit', pythonVersion: '3.7',
-//      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
-//    ],
+    [
+      stageName: 'Py3.7 Demo Notebooks', target: 'test-py-demos', pythonVersion: '3.7',
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Demo Notebooks (Scikit 1.0.2)', target: 'test-py-demos-new-scikit', pythonVersion: '3.7',
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
 //    [
 //      stageName: 'Py3.6 Test Demos', target: 'test-pyunit-demos', pythonVersion: '3.6',
 //      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
@@ -292,15 +292,15 @@ def call(final pipelineContext) {
 //      imageSpecifier: "mojocompat", imageVersion: 43,
 //      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
 //    ],
-//    [
-//      stageName: 'Py3.7 S3 Persist', target: 'test-py-persist-s3', pythonVersion: '3.7', timeoutValue: 8,
-//      component: pipelineContext.getBuildConfig().COMPONENT_PY,
-//      awsCredsPrefix: 'H2O_'
-//    ],
-//    [
-//      stageName: 'External XGBoost', target: 'test-external-xgboost', pythonVersion: '3.7', timeoutValue: 20,
-//      component: pipelineContext.getBuildConfig().COMPONENT_PY
-//    ]
+    [
+      stageName: 'Py3.7 S3 Persist', target: 'test-py-persist-s3', pythonVersion: '3.7', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      awsCredsPrefix: 'H2O_'
+    ],
+    [
+      stageName: 'External XGBoost', target: 'test-external-xgboost', pythonVersion: '3.7', timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ]
   ]
 
   def BENCHMARK_STAGES = [
