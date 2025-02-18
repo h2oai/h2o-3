@@ -259,7 +259,7 @@ rules) to obtain a limited set of the most important rules.
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Random Forest model.
+This code provides an example of building a Random Forest model using the H2O-3 framework. The model is trained on the cars dataset to predict whether a car's fuel economy is above 20 miles per gallon (mpg). It uses multiple predictors such as displacement, power, weight, acceleration, and year, and includes model calibration.
 
 .. tabs::
    .. code-tab:: r R

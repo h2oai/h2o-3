@@ -391,7 +391,7 @@ You can see how it used in the `Examples section <#examples>`__.
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a XGBoost model.
+This example demonstrates how to build an XGBoost model using H2O-3 with the Titanic dataset. It begins by importing the dataset and specifying the response variable, "survived," as a factor. The dataset is split into training and validation sets. The XGBoost model is trained with specific parameters, including the "dart" booster type. Performance metrics are evaluated on the validation set, and predictions can be generated as needed. Additionally, the model extracts feature interactions and computes Friedman and Popescu's H statistics to assess feature importance, providing insights into the model's behavior.
 
 .. tabs::
    .. code-tab:: r R

@@ -241,6 +241,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             final String weightsColumn = adaptFrameParameters.getWeightsColumn();
             final String responseColumn = adaptFrameParameters.getResponseColumn();
             final String treatmentColumn = adaptFrameParameters.getTreatmentColumn();
+            final String idColumn = adaptFrameParameters.getIdColumn();
             final boolean isClassifier = wrapper.getModel().isClassifier();
             final boolean isUplift = treatmentColumn != null;
             final float[] yact;
@@ -355,6 +356,9 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             }
             @Override
             public String getTreatmentColumn() {return descriptor != null ? descriptor.treatmentColumn() : null;}
+            @Override
+            public String getIdColumn() { return descriptor != null ? descriptor.idColumn() : null;}
+
             @Override
             public double missingColumnsType() {
                 return Double.NaN;
