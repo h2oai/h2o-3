@@ -31,10 +31,16 @@ def call(final pipelineContext, final stageConfig) {
         }
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY) {
-            writeFile(
-                    file: "${h2oFolder}/tests/pyunitChangedTestList", 
-                    text: pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
-            )
+
+            def output = pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
+
+            sh "echo ${output} > ${h2oFolder}/tests/pyunitChangedTestList"
+            sh "chown -R jenkins:jenkins ${h2oFolder}"
+            sh "ls -al ${h2oFolder}/tests"
+            // writeFile(
+            //         file: "${h2oFolder}/tests/pyunitChangedTestList", 
+            //         text: pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
+            // )
         }
 
         if (stageConfig.installRPackage && (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R))) {
