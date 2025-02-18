@@ -23,6 +23,9 @@ def test_set_s3_credentials_impl():
     assert access_key_id is not None
     assert secret_access_key is not None
 
+    from pprint import pprint
+    pprint(os.environ._data)
+
     # Check that we cannot connect without setting credentials (this will only work if prefix is defined,
     # otherwise H2O will just pick it up from environment variables)
     if aws_creds_prefix:
