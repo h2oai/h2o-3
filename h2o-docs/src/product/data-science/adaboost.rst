@@ -88,7 +88,7 @@ Common parameters
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build an AdaBoost model.
+This code example demonstrates how to build and train an AdaBoost model using H2O-3 in R and Python, including data import, model configuration, and prediction generation.
 
 .. tabs::
    .. code-tab:: r R

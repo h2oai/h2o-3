@@ -449,6 +449,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _offset_column;
     public String _fold_column;
     public String _treatment_column;
+    public String _id_column;
 
     // Check for constant response
     public boolean _check_constant_response = true;
@@ -573,7 +574,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
 
     public String[] getNonPredictors() {
-        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column, _treatment_column})
+        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column, _treatment_column, _id_column})
                 .filter(Objects::nonNull)
                 .toArray(String[]::new);
     }
@@ -798,6 +799,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override
     public final String getTreatmentColumn(){
       return _treatment_column;
+    }
+
+    @Override
+    public String getIdColumn() {
+      return _id_column;
     }
 
     @Override
@@ -1078,6 +1084,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasWeights = b.hasWeightCol();
       _hasFold = b.hasFoldCol();
       _hasTreatment = b.hasTreatmentCol();
+      _hasId = b.hasIdCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
       _reproducibility_information_table = createReproducibilityInformationTable(b);
@@ -1087,7 +1094,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
     public int nfeatures() {
-      return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (_hasTreatment ?1:0) - (isSupervised()?1:0);
+      return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (_hasTreatment ?1:0) - (_hasId?1:0) - (isSupervised()?1:0);
     }
     /** Returns features used by the model */
     public String[] features() {
@@ -1160,16 +1167,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     protected boolean _hasWeights;// only need to know if we have them
     protected boolean _hasFold;// only need to know if we have them
     protected boolean _hasTreatment;
+    protected boolean _hasId;
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
     public boolean hasFold () { return _hasFold;}
     public boolean hasTreatment() { return _hasTreatment;}
     public boolean hasResponse() { return isSupervised(); }
+    public boolean hasId() {return _hasId;}
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
     public String treatmentName() { return _hasTreatment ? _names[treatmentIdx()]: null;}
+    public String idName() {return _hasId ? _names[idIdx()] : null;}
+    
     public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
     // cn are predictor cols, r is response, w is weights, o is offset, f is fold and t is treatment - these are optional
@@ -1195,6 +1206,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public int treatmentIdx() {
       if(!_hasTreatment) return -1;
+      return _names.length - (isSupervised()?1:0) - 1;
+    }
+
+    public int idIdx() {
+      if(!_hasId) return -1;
       return _names.length - (isSupervised()?1:0) - 1;
     }
 
@@ -1667,6 +1683,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String getFoldColumn();
     String getResponseColumn();
     String getTreatmentColumn();
+    String getIdColumn();
     double missingColumnsType();
     int getMaxCategoricalLevels();
     default String[] getNonPredictors() {
@@ -1711,6 +1728,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String fold = parms.getFoldColumn();
     final String response = parms.getResponseColumn();
     final String treatment = parms.getTreatmentColumn();
+    final String id = parms.getIdColumn();
 
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
@@ -1730,7 +1748,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // As soon as the test frame contains at least one original pre-encoding predictor,
         // then we consider the frame as valid for predictions, and we'll later fill missing columns with NA
         Set<String> required = new HashSet<>(Arrays.asList(origNames));
-        required.removeAll(Arrays.asList(response, weights, fold, treatment));
+        required.removeAll(Arrays.asList(response, weights, fold, treatment, id));
         for (String name : test.names()) {
           if (required.contains(name)) {
             match = true;
@@ -3481,6 +3499,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       @Override
       public String foldColumn() { return _output.foldName(); }
       @Override
+      public String idColumn() { return _output.idName();}
+
+    @Override
       public ModelCategory getModelCategory() { return _output.getModelCategory(); }
       @Override
       public boolean isSupervised() { return _output.isSupervised(); }

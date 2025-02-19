@@ -406,7 +406,7 @@ The Uplift Gain is calculated based on selected `uplift_metric <algo-params/upli
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build an Uplift Random Forest model and see its metrics:
+This example demonstrates how to build and evaluate an Uplift Random Forest model using H2O-3. It involves loading an uplift dataset, defining predictors and treatment columns, splitting the data into training and validation sets, and training the model. Performance is assessed using metrics like AUUC and Qini, with additional visualizations such as uplift curves and partial dependence plots to analyze the impact of features.
 
 .. tabs::
    .. code-tab:: r R

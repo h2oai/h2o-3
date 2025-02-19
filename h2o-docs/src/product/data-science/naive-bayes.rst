@@ -118,7 +118,8 @@ By default, the following output displays:
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Naïve Bayes Classifier model.
+
+This example demonstrates how to build a Naïve Bayes Classifier using H2O-3 for classification tasks. The model is trained on the prostate dataset, with predictors defined and the response variable set as a factor. After training, the model's performance can be evaluated, and predictions can be generated on the dataset.
 
 .. tabs::
    .. code-tab:: r R
