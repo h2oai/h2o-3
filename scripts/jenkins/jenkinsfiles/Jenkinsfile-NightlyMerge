@@ -1,0 +1,23 @@
+pipeline {
+    agent {label 'linux && docker'}
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                script {                    
+                    withCredentials([usernamePassword(credentialsId: 'H2O-OPS-GH-TOKEN', usernameVariable: 'GH_USERNAME'passwordVariable: 'GH_TOKEN')]) {
+                        println env.BRANCH_NAME
+
+                        sh """
+                            git pull origin  
+                        """
+                    }
+                    
+                                  
+                }
+            }
+        }
+
+    }
+
+}
