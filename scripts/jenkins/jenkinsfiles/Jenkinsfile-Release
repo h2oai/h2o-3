@@ -106,6 +106,10 @@ try {
                                 du -h
                                 pip freeze
 
+                                # Fix git
+                                # TODO github Find better solution
+                                git config --global --add safe.directory '*'
+
                                 # Update the build number.
                                 mkdir -p ci
                                 echo "BUILD_NUMBER=${currentBuild.number}" > gradle/buildnumber.properties
