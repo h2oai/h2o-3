@@ -13,7 +13,7 @@ try {
                 def insideDocker = null
 
                 env.BUILD_NUMBER_DIR = currentBuild.number
-                env.DATA_DIR = "/home/0xdiag"
+                env.DATA_DIR = "/mnt/h2o-shared-data"
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
