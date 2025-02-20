@@ -21,7 +21,7 @@ pipeline {
                     }
 
                     sh "git checkout origin/${latestReleaseBranch}"
-                    def mergeBase = sh(script: "git merge-base origin/main HEAD", returnStdout: true).trim()
+                    def mergeBase = sh(script: "git merge-base origin/master HEAD", returnStdout: true).trim()
                     def changes = sh(script: "git diff --quiet ${mergeBase} HEAD || echo 'changed'", returnStdout: true).trim()
                     
                     if (changes == 'changed') {
