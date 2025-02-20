@@ -143,7 +143,11 @@ try {
                                     chmod -w \$GRADLE_USER_HOME/gradle.properties
                                 fi
                                 ./gradlew build -x test
-                                ./gradlew buildH2oDevDist
+                                if [ "\$TEST_RELEASE" = true ]; then
+                                    ./gradlew buildH2oDevDist
+                                else
+                                    ./gradlew -PvalidateRelease buildH2oDevDist
+                                fi
                             """
                             }
                         }
