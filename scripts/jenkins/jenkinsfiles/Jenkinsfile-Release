@@ -85,6 +85,7 @@ try {
                                     git config --global user.name "${GH_USERNAME}"
                                     git config --global user.email "${GH_EMAIL}"
                                     git remote set-url origin https://${GH_TOKEN}@github.com/h2oai/h2o-3.git
+                                    git fetch
                                 """
                             }
                             sh """
