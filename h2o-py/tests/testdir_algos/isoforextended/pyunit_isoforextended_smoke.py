@@ -10,12 +10,12 @@ def extended_isolation_forest():
 
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/single_blob.csv"))
 
-    eif_model = H2OExtendedIsolationForestEstimator(ntrees=99, seed=0xBEEF, sample_size=255, extension_level=1)
+    eif_model = H2OExtendedIsolationForestEstimator(ntrees=98, seed=0xBEEF, sample_size=255, extension_level=1)
     eif_model.train(training_frame=train)
     anomaly_score = eif_model.predict(train)
     anomaly = anomaly_score['anomaly_score'].as_data_frame(use_pandas=True)["anomaly_score"]
 
-    assert 99 == eif_model._model_json["output"]["model_summary"]["number_of_trees"][0], "Python API is not working!"
+    assert 98 == eif_model._model_json["output"]["model_summary"]["number_of_trees"][0], "Python API is not working!"
     assert 255 == eif_model._model_json["output"]["model_summary"]["size_of_subsample"][0], "Python API is not working!"
     assert 1 == eif_model._model_json["output"]["model_summary"]["extension_level"][0], "Python API is not working!"
 
