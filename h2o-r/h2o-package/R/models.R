@@ -5995,18 +5995,20 @@ h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, pl
   ## Change feature names to the original supplied, the following is okay because order is preserved
       
   pps <- res$partial_dependence_data
-  min_y <- min(pps[[1]][,2])
-  max_y <- max(pps[[1]][,2])
+  number_of_pps_columns <- ncol(pps[[1]])
+  min_y <- min(pps[[1]][,number_of_pps_columns - 2])
+  max_y <- max(pps[[1]][,number_of_pps_columns - 2])
   min_lower <- min_y
   max_upper <- max_y
   col_name_index <- 1
   for (i in 1:length(pps)) {
     pp <- pps[[i]]
     if (!all(is.na(pp))) {
-      min_y <- min(min_y, min(pp[,2])) 
-      max_y <- max(max_y, max(pp[,2]))
-      min_lower <- min(min_lower, pp[,2] - pp[,3])
-      max_upper <- max(max_upper, pp[,2] + pp[,3])
+      number_of_pps_columns <- ncol(pp)
+      min_y <- min(min_y, min(pp[,number_of_pps_columns - 2])) 
+      max_y <- max(max_y, max(pp[,number_of_pps_columns - 2]))
+      min_lower <- min(min_lower, pp[,number_of_pps_columns - 2] - pp[,number_of_pps_columns - 1])
+      max_upper <- max(max_upper, pp[,number_of_pps_columns - 2] + pp[,number_of_pps_columns - 1])
       if (i <= num_1d_pp_data) {
         if(is.null(targets)){
           col_name_index <- i
