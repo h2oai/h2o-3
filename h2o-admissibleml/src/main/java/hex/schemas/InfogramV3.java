@@ -15,12 +15,10 @@ import water.api.EnumValuesProvider;
 import water.api.SchemaServer;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
-import static hex.util.DistributionUtils.distributionToFamily;
+
 import java.util.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+
+import static hex.util.DistributionUtils.distributionToFamily;
 
 public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, InfogramV3.InfogramParametersV3> {
   public static final class InfogramParametersV3 extends ModelParametersSchemaV3<InfogramModel.InfogramParameters, InfogramParametersV3> {
@@ -134,44 +132,43 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
             level = API.Level.secondary, gridable=true)
     public String[] protected_columns;    
 
-    @API(help = "A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. " + 
+    @API(help = "A number between 0 and 1 representing a threshold for total information.  " + 
             "For a specific feature, if the total information is higher than this threshold, and the corresponding " + 
             "net information is also higher than the threshold ``net_information_threshold``, that feature will be " + 
-            "considered admissible. The total information is the x-axis of the Core Infogram. " +
-            "Default is -1 which gets set to 0.1.",
+            "considered admissible. The total information is the x-axis of the Core Infogram. ",
             level = API.Level.secondary, gridable = true)
     public double total_information_threshold;       
 
-    @API(help = "A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a " + 
+    @API(help = "A number between 0 and 1 representing a threshold for net information.  For a " + 
             "specific feature, if the net information is higher than this threshold, and the corresponding total " + 
             "information is also higher than the total_information_threshold, that feature will be considered admissible. " + 
-            "The net information is the y-axis of the Core Infogram. Default is -1 which gets set to 0.1.",
+            "The net information is the y-axis of the Core Infogram.",
             level = API.Level.secondary, gridable = true)
     public double net_information_threshold; 
 
-    @API(help = "A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is " + 
+    @API(help = "A number between 0 and 1 representing a threshold for the relevance index.  This is " + 
             "only used when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index " + 
             "value is higher than this threshold, and the corresponding safety index is also higher than the " + 
             "safety_index_threshold``, that feature will be considered admissible.  The relevance index is the x-axis " + 
-            "of the Fair Infogram. Default is -1 which gets set to 0.1.", 
+            "of the Fair Infogram.", 
             level = API.Level.secondary, gridable = true)
     public double relevance_index_threshold;    
 
-    @API(help = "A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is " + 
+    @API(help = "A number between 0 and 1 representing a threshold for the safety index.  This is " + 
             "only used when protected_columns is set by the user.  For a specific feature, if the safety index value " + 
             "is higher than this threshold, and the corresponding relevance index is also higher than the " + 
             "relevance_index_threshold, that feature will be considered admissible.  The safety index is the y-axis of " + 
-            "the Fair Infogram. Default is -1 which gets set to 0.1.",
+            "the Fair Infogram.",
             level = API.Level.secondary, gridable = true)
     public double safety_index_threshold;
 
-    @API(help = "The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value greater " + 
+    @API(help = "The fraction of training frame to use to build the infogram model. Any value greater " + 
             "than 0 and less than or equal to 1.0 is acceptable.",
             level = API.Level.secondary, gridable = true)
     public double data_fraction;
 
     @API(help = "An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by " + 
-            "variable importance, and the top N are evaluated.  Defaults to 50.",
+            "variable importance, and the top N are evaluated.",
             level = API.Level.secondary, gridable = true)
     public int top_n_features;
 
