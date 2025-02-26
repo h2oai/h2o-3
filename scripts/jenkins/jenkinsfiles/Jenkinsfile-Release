@@ -503,12 +503,12 @@ EOF
                             
                             if (params.TEST_RELEASE) {
                                 CHART_NAME = "h2o-test-3"
-                                BUCKET = "h2oai-test-charts"
+                                BUCKET = "h2oai-test-helm-charts"
                                 VERSION = THREE_DIGITS_VERSION
                             } else{
                                 if(env.NIGHTLY_BUILD){
                                     CHART_NAME = "h2o-3-nightly"
-                                    BUCKET = "h2oai-nightly-charts"
+                                    BUCKET = "h2oai-nightly-helm-charts"
                                     VERSION = THREE_DIGITS_VERSION
                                 } else {
                                     CHART_NAME = "h2o-3"
