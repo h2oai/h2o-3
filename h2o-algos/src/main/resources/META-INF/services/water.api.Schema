@@ -122,3 +122,7 @@ hex.schemas.AdaBoostModelV3
 hex.schemas.AdaBoostModelV3$AdaBoostModelOutputV3
 hex.schemas.AdaBoostV3
 hex.schemas.AdaBoostV3$AdaBoostParametersV3
+hex.schemas.KNNModelV3
+hex.schemas.KNNModelV3$KNNModelOutputV3
+hex.schemas.KNNV3
+hex.schemas.KNNV3$KNNParametersV3
