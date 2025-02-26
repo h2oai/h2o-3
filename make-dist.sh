@@ -12,7 +12,6 @@ set -x
 TOPDIR=$(cd `dirname $0` && pwd)
 ALL_HADOOP_VERSIONS="cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 cdh5.9 cdh5.10 cdh5.13 cdh5.14 cdh5.15 cdh5.16 \
 cdh6.0 cdh6.1 cdh6.2 cdh6.3 cdp7.0 cdp7.1 cdp7.2 \
-hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 hdp3.0 hdp3.1 \
 mapr4.0 mapr5.0 mapr5.1 mapr5.2 mapr6.0 mapr6.1 mapr6.2 mapr7.0 \
 iop4.2 emr6.10" 
 
