@@ -35,7 +35,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._ntrees = 110;
+            p._ntrees = 100;
             p._extension_level = train.numCols() - 1;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
