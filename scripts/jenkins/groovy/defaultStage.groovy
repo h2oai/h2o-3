@@ -34,7 +34,7 @@ def call(final pipelineContext, final stageConfig) {
 
             def output = pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
 
-            sh "echo ${output} > ${h2oFolder}/tests/pyunitChangedTestList"
+            sh "echo \"${output}\" > ${h2oFolder}/tests/pyunitChangedTestList"
             sh "chown -R jenkins:jenkins ${h2oFolder}"
             sh "ls -al ${h2oFolder}/tests"
             // writeFile(
