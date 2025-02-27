@@ -10,7 +10,7 @@ def extended_isolation_forest():
 
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/single_blob.csv"))
 
-    eif_model = H2OExtendedIsolationForestEstimator(ntrees=99, seed=0xBEEF, sample_size=255, extension_level=1)
+    eif_model = H2OExtendedIsolationForestEstimator(ntrees=98, seed=0xBEEF, sample_size=255, extension_level=1)
     eif_model.train(training_frame=train)
     anomaly_score = eif_model.predict(train)
     anomaly = anomaly_score['anomaly_score'].as_data_frame(use_pandas=True)["anomaly_score"]
