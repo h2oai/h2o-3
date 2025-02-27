@@ -1,7 +1,14 @@
 package hex.Infogram;
 
-import hex.*;
-import water.*;
+import hex.Model;
+import hex.ModelBuilder;
+import hex.ModelBuilderHelper;
+import hex.ModelCategory;
+import hex.genmodel.utils.DistributionFamily;
+import water.DKV;
+import water.H2O;
+import water.Key;
+import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -9,7 +16,7 @@ import water.util.TwoDimTable;
 
 import java.util.*;
 import java.util.stream.IntStream;
-import hex.genmodel.utils.DistributionFamily;
+
 import static hex.Infogram.InfogramModel.InfogramModelOutput.sortCMIRel;
 import static hex.Infogram.InfogramModel.InfogramParameters.Algorithm.AUTO;
 import static hex.Infogram.InfogramModel.InfogramParameters.Algorithm.gbm;
@@ -182,61 +189,29 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
     _buildCore = _parms._protected_columns == null;
     
     if (_buildCore) {
-      if (_parms._net_information_threshold == -1) { // not set
-        _parms._cmi_threshold = 0.1;
-        _parms._net_information_threshold = 0.1;
-      } else if (_parms._net_information_threshold > 1 || _parms._net_information_threshold < 0) {
+      if (_parms._net_information_threshold > 1 || _parms._net_information_threshold < 0) {
         error("net_information_threshold", " should be set to be between 0 and 1.");
       } else {
         _parms._cmi_threshold = _parms._net_information_threshold;
       }
 
-      if (_parms._total_information_threshold == -1) {  // not set
-        _parms._relevance_threshold = 0.1;
-        _parms._total_information_threshold = 0.1;
-      } else if (_parms._total_information_threshold < 0 || _parms._total_information_threshold > 1) {
+      if (_parms._total_information_threshold < 0 || _parms._total_information_threshold > 1) {
         error("total_information_threshold", " should be set to be between 0 and 1.");
       } else {
         _parms._relevance_threshold = _parms._total_information_threshold;
       }
-      
-      if (_parms._safety_index_threshold != -1) {
-        warn("safety_index_threshold", "Should not set safety_index_threshold for core infogram " +
-                "runs.  Set net_information_threshold instead.  Using default of 0.1 if not set");
-      }
-      
-      if (_parms._relevance_index_threshold != -1) {
-        warn("relevance_index_threshold", "Should not set relevance_index_threshold for core " +
-                "infogram runs.  Set total_information_threshold instead.  Using default of 0.1 if not set");
-      }
     } else { // fair infogram
-      if (_parms._safety_index_threshold == -1) {
-        _parms._cmi_threshold = 0.1;
-        _parms._safety_index_threshold = 0.1;
-      } else if (_parms._safety_index_threshold < 0 || _parms._safety_index_threshold > 1) {
+      if (_parms._safety_index_threshold < 0 || _parms._safety_index_threshold > 1) {
         error("safety_index_threshold", " should be set to be between 0 and 1.");
       } else {
         _parms._cmi_threshold = _parms._safety_index_threshold;
       }
       
-      if (_parms._relevance_index_threshold == -1) {
-        _parms._relevance_threshold = 0.1;
-        _parms._relevance_index_threshold = 0.1;
-      } else if (_parms._relevance_index_threshold < 0 || _parms._relevance_index_threshold > 1) {
+      if (_parms._relevance_index_threshold < 0 || _parms._relevance_index_threshold > 1) {
         error("relevance_index_threshold", " should be set to be between 0 and 1.");
       } else {
         _parms._relevance_threshold = _parms._relevance_index_threshold;
       }
-      
-      if (_parms._net_information_threshold != -1) {
-        warn("net_information_threshold", "Should not set net_information_threshold for fair " +
-                "infogram runs, set safety_index_threshold instead.  Using default of 0.1 if not set");
-      }
-      if (_parms._total_information_threshold != -1) {
-        warn("total_information_threshold", "Should not set total_information_threshold for fair" +
-                " infogram runs, set relevance_index_threshold instead.  Using default of 0.1 if not set");
-      }
-      
       if (AUTO.equals(_parms._algorithm))
         _parms._algorithm = gbm;
     }
