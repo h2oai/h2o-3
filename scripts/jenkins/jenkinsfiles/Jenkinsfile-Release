@@ -634,12 +634,22 @@ EOF
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, CLEANUP_STAGE_NAME, env.BUILD_NUMBER_DIR)
                         pipelineContext.getBuildSummary().setStageDetails(this, CLEANUP_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                        sh """
-                            cd ${env.BUILD_NUMBER_DIR}
-                            rm -rf target/*.zip
-                            rm -rf h2o-dist
-                            find . -name 'h2odriver-3.*.0.jar' -delete -print
-                        """
+                        docker.image("alpine:latest").inside("--user=root:root") {
+                            sh """
+                                id
+                                printenv | sort
+                                ls -la
+                                pwd
+                                ls -la ${env.BUILD_NUMBER_DIR}
+                                chown -R jenkins:jenkins ${env.BUILD_NUMBER_DIR}
+                                cd ${env.BUILD_NUMBER_DIR}
+                                ls -la ${env.BUILD_NUMBER_DIR}
+                                rm -rf target/*.zip
+                                rm -rf h2o-dist
+                                find . -name 'h2odriver-3.*.0.jar' -delete -print
+                            """
+                          
+                        }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, CLEANUP_STAGE_NAME)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, CLEANUP_STAGE_NAME)
