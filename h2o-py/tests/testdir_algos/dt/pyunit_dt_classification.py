@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(1, "../../../")
+
 import h2o
 from h2o.estimators import H2ODecisionTreeEstimator
 from tests import pyunit_utils
