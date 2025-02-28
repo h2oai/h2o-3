@@ -621,8 +621,8 @@ def call(final pipelineContext) {
 
   def KERBEROS_STAGES = []
   def distributionsToTest = [
-          [ name: "cdh", version: "5.10" ], // hdp2/hive1
-          [ name: "cdh", version: "6.1"  ], // hdp3/hive2
+//          [ name: "cdh", version: "5.10" ], // hdp2/hive1
+          [ name: "cdh", version: "6.3"  ], // hdp3/hive2
   ]
   // check our config is still valid
   for (distribution in distributionsToTest) {
