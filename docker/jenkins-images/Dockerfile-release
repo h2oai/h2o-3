@@ -10,7 +10,8 @@ RUN \
 
 # Install conda
 RUN \
-    curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
+    # Downgrade conda because conda packages cannot be converted on the latest version. If you upgrade, run test release to check if conda can be build and converted.
+    curl -sSL https://repo.continuum.io/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -o /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -bfp /usr/local && \
     rm /tmp/miniconda.sh && \
     conda install -y anaconda-client conda-build && \
