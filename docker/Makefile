@@ -2,10 +2,10 @@ SHELL := /bin/bash
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 .PHONY : all
 
-VERSION ?= 45
+VERSION ?= dev
 PUSH ?= 0
 H2O_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
-NO_CACHE ?= 
+NO_CACHE ?= --no-cache
 BASE_FROM_IMAGE := nvidia/cuda:12.1.0-devel-ubuntu22.04
 
 dev-base:
