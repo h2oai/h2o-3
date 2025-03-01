@@ -55,7 +55,7 @@ public class BinningTest extends TestUtil {
 
             DataFeaturesLimits wholeDataLimits = getInitialFeaturesLimits(basicData);
 
-            Histogram histogram = new Histogram(basicData, wholeDataLimits, BinningStrategy.EQUAL_WIDTH);
+            Histogram histogram = new Histogram(basicData, wholeDataLimits, BinningStrategy.EQUAL_WIDTH, 2);
             // count of features
             assertEquals(basicData.numCols() - 1, histogram.featuresCount());
             int numRows = (int) basicData.numRows();
@@ -67,13 +67,13 @@ public class BinningTest extends TestUtil {
                     histogram.getFeatureBins(0).stream().map(b -> b._count).collect(Collectors.toList()));
             // feature 0, count 0
             assertEquals(Arrays.asList(0, 0, 1, 0, 1, 0, 1, 0, 0, 0), 
-                    histogram.getFeatureBins(0).stream().map(b -> b._count0).collect(Collectors.toList()));
+                    histogram.getFeatureBins(0).stream().map(b -> b._classesDistribution[0]).collect(Collectors.toList()));
             // feature 1, count all
             assertEquals(Arrays.asList(4, 3, 3),
                     histogram.getFeatureBins(1).stream().map(b -> b._count).collect(Collectors.toList()));
             // feature 1, count 0
             assertEquals(Arrays.asList(1, 1, 1),
-                    histogram.getFeatureBins(1).stream().map(b -> b._count0).collect(Collectors.toList()));
+                    histogram.getFeatureBins(1).stream().map(b -> b._classesDistribution[0]).collect(Collectors.toList()));
             
         } finally {
             Scope.exit();
@@ -93,58 +93,58 @@ public class BinningTest extends TestUtil {
                     .build();
 
             DataFeaturesLimits dataLimits = getInitialFeaturesLimits(basicData);
-            Histogram histogram = new Histogram(basicData, dataLimits, BinningStrategy.EQUAL_WIDTH);
+            Histogram histogram = new Histogram(basicData, dataLimits, BinningStrategy.EQUAL_WIDTH, 2);
             
-            // extracting bins from the histogram and throwing away calculated values to test the calculation separately
+            // extracting bins from the histogram
             double[][] binsArray = histogram.getFeatureBins(0).stream()
-                    .map(bin -> new double[]{-1.0, 0, 0, ((NumericBin) bin)._min, ((NumericBin) bin)._max}).toArray(double[][]::new);
+                    .map(AbstractBin::toDoubles).toArray(double[][]::new);
             
             CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(
-                    0, dataLimits.toDoubles(), binsArray);
+                    0, dataLimits.toDoubles(), binsArray, NUM_COUNT_OFFSET);
             task.doAll(basicData);
             assertEquals(10, task._bins.length);
                     
             assert(task._bins[0][NUMERICAL_FLAG] == -1);
             assert(task._bins[0][MIN_INDEX] < basicData.vec(0).min());
             assert(task._bins[0][MAX_INDEX] < 1 && task._bins[0][MAX_INDEX] > 0.8);
-            assert(task._bins[0][COUNT] == 1.0);
-            assert(task._bins[0][COUNT_0] == 0.0);
+            assert(task._bins[0][NUM_COUNT_OFFSET] == 1.0);
+            assert(task._bins[0][NUM_COUNT_OFFSET + 1] == 0.0);
 
             assert(task._bins[1][NUMERICAL_FLAG] == -1);
             assert(task._bins[1][MIN_INDEX] == task._bins[0][MAX_INDEX]);
             assert(task._bins[1][MAX_INDEX] < 2);
-            assert(task._bins[1][COUNT] == 1.0);
-            assert(task._bins[1][COUNT_0] == 0.0);
+            assert(task._bins[1][NUM_COUNT_OFFSET] == 1.0);
+            assert(task._bins[1][NUM_COUNT_OFFSET + 1] == 0.0);
 
             assert(task._bins[2][NUMERICAL_FLAG] == -1);
             assert(task._bins[2][MIN_INDEX] == task._bins[1][MAX_INDEX]);
             assert(task._bins[2][MAX_INDEX] < 3);
-            assert(task._bins[2][COUNT] == 1.0);
-            assert(task._bins[2][COUNT_0] == 1.0);
+            assert(task._bins[2][NUM_COUNT_OFFSET] == 1.0);
+            assert(task._bins[2][NUM_COUNT_OFFSET + 1] == 1.0);
 
 
             // extracting bins from the histogram and throwing away calculated values to test the calculation separately
             binsArray = histogram.getFeatureBins(1).stream()
-                    .map(bin -> new double[]{((CategoricalBin) bin)._category, 0, 0}).toArray(double[][]::new);
+                    .map(bin -> new double[]{((CategoricalBin) bin)._category, 0, 0, 0}).toArray(double[][]::new);
 
-            task = new CountBinsSamplesCountsMRTask(1, dataLimits.toDoubles(), binsArray).doAll(basicData);
+            task = new CountBinsSamplesCountsMRTask(1, dataLimits.toDoubles(), binsArray, CAT_COUNT_OFFSET).doAll(basicData);
 
             assertEquals(3, task._bins.length);
 
             // category
             assert(task._bins[0][0] == 0);
-            assert(task._bins[0][COUNT] == 4);
-            assert(task._bins[0][COUNT_0] == 1);
+            assert(task._bins[0][CAT_COUNT_OFFSET] == 4);
+            assert(task._bins[0][CAT_COUNT_OFFSET + 1] == 1);
 
             // category
             assert(task._bins[1][0] == 1);
-            assert(task._bins[1][COUNT] == 3);
-            assert(task._bins[1][COUNT_0] == 1);
+            assert(task._bins[1][CAT_COUNT_OFFSET] == 3);
+            assert(task._bins[1][CAT_COUNT_OFFSET + 1] == 1);
 
             // category
             assert(task._bins[2][0] == 2);
-            assert(task._bins[2][COUNT] == 3);
-            assert(task._bins[2][COUNT_0] == 1);
+            assert(task._bins[2][CAT_COUNT_OFFSET] == 3);
+            assert(task._bins[2][CAT_COUNT_OFFSET + 1] == 1);
             
         } finally {
             Scope.exit();
@@ -179,7 +179,7 @@ public class BinningTest extends TestUtil {
             }
 
 
-            Histogram histogram = new Histogram(prostateData, wholeDataLimits, BinningStrategy.EQUAL_WIDTH);
+            Histogram histogram = new Histogram(prostateData, wholeDataLimits, BinningStrategy.EQUAL_WIDTH, 2);
             // count of features
             assertEquals(prostateData.numCols() - 1, histogram.featuresCount());
             int numRows = (int) prostateData.numRows();
@@ -218,7 +218,7 @@ public class BinningTest extends TestUtil {
                 assertEquals(data.vec(i).cardinality(), wholeDataLimits.getFeatureLimits(i).toDoubles().length);
             }
 
-            Histogram histogram = new Histogram(data, wholeDataLimits, BinningStrategy.EQUAL_WIDTH);
+            Histogram histogram = new Histogram(data, wholeDataLimits, BinningStrategy.EQUAL_WIDTH, 2);
             // count of features
             assertEquals(data.numCols() - 1, histogram.featuresCount());
             int numRows = (int) data.numRows();
