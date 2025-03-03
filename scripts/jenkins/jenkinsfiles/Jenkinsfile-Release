@@ -639,13 +639,10 @@ EOF
                                 id
                                 printenv | sort
                                 ls -la
-                                pwd
                                 addgroup -g 1002 jenkins
                                 adduser -D -u 1002 -G jenkins -s /bin/sh jenkins
-                                ls -la ${env.BUILD_NUMBER_DIR}
                                 chown -R jenkins:jenkins ${env.BUILD_NUMBER_DIR}
                                 cd ${env.BUILD_NUMBER_DIR}
-                                ls -la
                                 rm -rf target/*.zip
                                 rm -rf h2o-dist
                                 find . -name 'h2odriver-3.*.0.jar' -delete -print
