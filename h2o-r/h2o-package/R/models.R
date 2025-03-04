@@ -2664,6 +2664,44 @@ h2o.coef_with_p_values <- function(object) {
 }
 
 #'
+#' Return the variance-covariance matrix for GLM models
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "cylinders"
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
+#' cars_glm <- h2o.glm(seed = 1234, 
+#'                     lambda=0.0,
+#'                     compute_p_values=TRUE,
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train, 
+#'                     validation_frame = valid)
+#' h2o.vcov(cars_glm)
+#' }
+#' @export
+h2o.vcov <- function(object) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+    if (object@parameters$compute_p_values) {
+      object@model$vcov_table
+    } else {
+      stop("variance-covariance matrix not found in model.  Make sure to set compute_p_values=TRUE.")
+    }
+  } else {
+    stop("variance-covariance matrix is only found in GLM.")
+  }
+}
+    
+#'
 #' Return the GLM linear constraints descriptions, constraints values, constraints bounds and whether the constraints
 #' satisfied the bounds (true) or not (false)
 #'
