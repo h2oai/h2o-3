@@ -887,7 +887,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                                  "compute_p_values=True.")
         else:
             raise ValueError("p-values, z-values and std_error are only found in GLM.")
-        
+
+    def vcov(self):
+        if self.algo == 'glm':
+            if self.parms["compute_p_values"]["actual_value"]:
+                return self._model_json["output"]["vcov_table"]
+            else:
+                raise ValueError("The variance-covariance matrix is only calculated when compute_p_values=True.")
+        else:
+            raise ValueError("The variance-covariance matrix is only found in GLM.")
+    
     def _fillMultinomialDict(self, standardize=False):
         if self.algo == 'gam':
             tbl = self._model_json["output"]["coefficients_table"]
