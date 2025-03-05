@@ -66,10 +66,10 @@ class H2OInfogram(H2OEstimator):
                  algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
                  algorithm_params=None,  # type: Optional[dict]
                  protected_columns=None,  # type: Optional[List[str]]
-                 total_information_threshold=-1.0,  # type: float
-                 net_information_threshold=-1.0,  # type: float
-                 relevance_index_threshold=-1.0,  # type: float
-                 safety_index_threshold=-1.0,  # type: float
+                 total_information_threshold=0.1,  # type: float
+                 net_information_threshold=0.1,  # type: float
+                 relevance_index_threshold=0.1,  # type: float
+                 safety_index_threshold=0.1,  # type: float
                  data_fraction=1.0,  # type: float
                  top_n_features=50,  # type: int
                  ):
@@ -194,40 +194,38 @@ class H2OInfogram(H2OEstimator):
                response.
                Defaults to ``None``.
         :type protected_columns: List[str], optional
-        :param total_information_threshold: A number between 0 and 1 representing a threshold for total information,
-               defaulting to 0.1. For a specific feature, if the total information is higher than this threshold, and
-               the corresponding net information is also higher than the threshold ``net_information_threshold``, that
-               feature will be considered admissible. The total information is the x-axis of the Core Infogram. Default
-               is -1 which gets set to 0.1.
-               Defaults to ``-1.0``.
+        :param total_information_threshold: A number between 0 and 1 representing a threshold for total information.
+               For a specific feature, if the total information is higher than this threshold, and the corresponding net
+               information is also higher than the threshold ``net_information_threshold``, that feature will be
+               considered admissible. The total information is the x-axis of the Core Infogram.
+               Defaults to ``0.1``.
         :type total_information_threshold: float
-        :param net_information_threshold: A number between 0 and 1 representing a threshold for net information,
-               defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the
-               corresponding total information is also higher than the total_information_threshold, that feature will be
-               considered admissible. The net information is the y-axis of the Core Infogram. Default is -1 which gets
-               set to 0.1.
-               Defaults to ``-1.0``.
+        :param net_information_threshold: A number between 0 and 1 representing a threshold for net information.  For a
+               specific feature, if the net information is higher than this threshold, and the corresponding total
+               information is also higher than the total_information_threshold, that feature will be considered
+               admissible. The net information is the y-axis of the Core Infogram.
+               Defaults to ``0.1``.
         :type net_information_threshold: float
-        :param relevance_index_threshold: A number between 0 and 1 representing a threshold for the relevance index,
-               defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific
-               feature, if the relevance index value is higher than this threshold, and the corresponding safety index
-               is also higher than the safety_index_threshold``, that feature will be considered admissible.  The
-               relevance index is the x-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
-               Defaults to ``-1.0``.
+        :param relevance_index_threshold: A number between 0 and 1 representing a threshold for the relevance index.
+               This is only used when ``protected_columns`` is set by the user.  For a specific feature, if the
+               relevance index value is higher than this threshold, and the corresponding safety index is also higher
+               than the safety_index_threshold``, that feature will be considered admissible.  The relevance index is
+               the x-axis of the Fair Infogram.
+               Defaults to ``0.1``.
         :type relevance_index_threshold: float
-        :param safety_index_threshold: A number between 0 and 1 representing a threshold for the safety index,
-               defaulting to 0.1.  This is only used when protected_columns is set by the user.  For a specific feature,
-               if the safety index value is higher than this threshold, and the corresponding relevance index is also
-               higher than the relevance_index_threshold, that feature will be considered admissible.  The safety index
-               is the y-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
-               Defaults to ``-1.0``.
+        :param safety_index_threshold: A number between 0 and 1 representing a threshold for the safety index.  This is
+               only used when protected_columns is set by the user.  For a specific feature, if the safety index value
+               is higher than this threshold, and the corresponding relevance index is also higher than the
+               relevance_index_threshold, that feature will be considered admissible.  The safety index is the y-axis of
+               the Fair Infogram.
+               Defaults to ``0.1``.
         :type safety_index_threshold: float
-        :param data_fraction: The fraction of training frame to use to build the infogram model. Defaults to 1.0, and
-               any value greater than 0 and less than or equal to 1.0 is acceptable.
+        :param data_fraction: The fraction of training frame to use to build the infogram model. Any value greater than
+               0 and less than or equal to 1.0 is acceptable.
                Defaults to ``1.0``.
         :type data_fraction: float
         :param top_n_features: An integer specifying the number of columns to evaluate in the infogram.  The columns are
-               ranked by variable importance, and the top N are evaluated.  Defaults to 50.
+               ranked by variable importance, and the top N are evaluated.
                Defaults to ``50``.
         :type top_n_features: int
         """
@@ -739,12 +737,12 @@ class H2OInfogram(H2OEstimator):
     @property
     def total_information_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
-        feature, if the total information is higher than this threshold, and the corresponding net information is also
-        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
-        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1.
+        A number between 0 and 1 representing a threshold for total information.  For a specific feature, if the total
+        information is higher than this threshold, and the corresponding net information is also higher than the
+        threshold ``net_information_threshold``, that feature will be considered admissible. The total information is
+        the x-axis of the Core Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
         """
         return self._parms.get("total_information_threshold")
 
@@ -762,12 +760,12 @@ class H2OInfogram(H2OEstimator):
     @property
     def net_information_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific
-        feature, if the net information is higher than this threshold, and the corresponding total information is also
-        higher than the total_information_threshold, that feature will be considered admissible. The net information is
-        the y-axis of the Core Infogram. Default is -1 which gets set to 0.1.
+        A number between 0 and 1 representing a threshold for net information.  For a specific feature, if the net
+        information is higher than this threshold, and the corresponding total information is also higher than the
+        total_information_threshold, that feature will be considered admissible. The net information is the y-axis of
+        the Core Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
         """
         return self._parms.get("net_information_threshold")
 
@@ -785,13 +783,12 @@ class H2OInfogram(H2OEstimator):
     @property
     def relevance_index_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is only used
-        when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is higher
-        than this threshold, and the corresponding safety index is also higher than the safety_index_threshold``, that
-        feature will be considered admissible.  The relevance index is the x-axis of the Fair Infogram. Default is -1
-        which gets set to 0.1.
+        A number between 0 and 1 representing a threshold for the relevance index.  This is only used when
+        ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is higher than
+        this threshold, and the corresponding safety index is also higher than the safety_index_threshold``, that
+        feature will be considered admissible.  The relevance index is the x-axis of the Fair Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
         """
         return self._parms.get("relevance_index_threshold")
 
@@ -809,13 +806,12 @@ class H2OInfogram(H2OEstimator):
     @property
     def safety_index_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
-        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
-        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
-        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1 which
-        gets set to 0.1.
+        A number between 0 and 1 representing a threshold for the safety index.  This is only used when
+        protected_columns is set by the user.  For a specific feature, if the safety index value is higher than this
+        threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that feature
+        will be considered admissible.  The safety index is the y-axis of the Fair Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
         """
         return self._parms.get("safety_index_threshold")
 
@@ -833,8 +829,8 @@ class H2OInfogram(H2OEstimator):
     @property
     def data_fraction(self):
         """
-        The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value greater than 0
-        and less than or equal to 1.0 is acceptable.
+        The fraction of training frame to use to build the infogram model. Any value greater than 0 and less than or
+        equal to 1.0 is acceptable.
 
         Type: ``float``, defaults to ``1.0``.
         """
@@ -849,7 +845,7 @@ class H2OInfogram(H2OEstimator):
     def top_n_features(self):
         """
         An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable
-        importance, and the top N are evaluated.  Defaults to 50.
+        importance, and the top N are evaluated.
 
         Type: ``int``, defaults to ``50``.
         """
