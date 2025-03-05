@@ -200,6 +200,7 @@ failing = [
     'H2OUpliftRandomForestEstimator',  # generic part is not implemented yet
     'H2ODecisionTreeEstimator',  # generic part is not implemented yet
     'H2OAdaBoostEstimator',  # generic part is not implemented yet or test needs to be adjusted just for classification
+    'H2OKnnEstimator'  # generic part is not implemented yet
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Estimator') and name not in ['H2OAutoMLEstimator'] + failing]
