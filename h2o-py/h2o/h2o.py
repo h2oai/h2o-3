@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import warnings
 import webbrowser
+from contextlib import contextmanager
 
 from .backend import H2OConnection
 from .backend import H2OConnectionConf
@@ -1214,6 +1215,31 @@ def no_progress():
     >>> model.train(x=x, y="IsDepDelayed", training_frame=airlines)  
     """
     H2OJob.__PROGRESS_BAR__ = False
+
+
+@contextmanager
+def no_progress_block():
+    """
+    A context manager that temporarily blocks showing the H2O's progress bar.
+
+    :examples:
+
+    >>> with h2o.no_progress_block():
+    >>>     airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>>     x = ["DayofMonth", "Month"]
+    >>>     model = H2OGeneralizedLinearEstimator(family="binomial",
+    ...                                           alpha=0,
+    ...                                           Lambda=1e-5)
+    >>>     model.train(x=x, y="IsDepDelayed", training_frame=airlines) 
+    """
+    progress = H2OJob.__PROGRESS_BAR__
+    if progress:
+        no_progress()
+    try:
+        yield
+    finally:
+        if progress:
+            show_progress()
 
 
 def show_progress():
