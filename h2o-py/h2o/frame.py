@@ -3201,9 +3201,16 @@ class H2OFrame(Keyed, H2ODisplay):
         assert_is_type(y, H2OFrame, None)
         assert_is_type(na_rm, bool)
         assert_is_type(use, None, "everything", "all.obs", "complete.obs")
-        if y is None:
-            y = self
-        if use is None: use = "complete.obs" if na_rm else "everything"
+        y_categorical = any(self.types[col_name] == "enum" for col_name in y)
+
+        if y_categorical:
+            num_unique_levels = {col: len(self[col].levels()) for col in y}
+            multi_categorical = any(num_levels > 2 for num_levels in num_unique_levels.values())
+
+        if multi_categorical:
+            import warnings
+            warnings.warn("NA")
+
         if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use, method)._eager_scalar()
         return H2OFrame._expr(expr=ExprNode("cor", self, y, use, method))._frame()
 
