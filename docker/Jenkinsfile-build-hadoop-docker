@@ -89,19 +89,49 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                             repoVersion = "6.3.2" // 6.3.0 is not available in cloudera repos
                         }
 
-                        withCredentials([
-                                file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
-                                usernamePassword(credentialsId: 'H2O_CDH_DEV_CREDS', 
-                                        usernameVariable: 'cdh_APT_USERNAME', passwordVariable: 'cdh_APT_PASSWORD'),
-                                usernamePassword(credentialsId: 'H2O_HDP_DEV_CREDS', 
-                                        usernameVariable: 'hdp_APT_USERNAME', passwordVariable: 'hdp_APT_PASSWORD')
-                        ]) {
-                            dir("${imageName}.${version}") {
+                        // withCredentials([
+                        //         file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
+                        //         usernamePassword(credentialsId: 'H2O_CDH_DEV_CREDS', 
+                        //                 usernameVariable: 'cdh_APT_USERNAME', passwordVariable: 'cdh_APT_PASSWORD'),
+                        //         usernamePassword(credentialsId: 'H2O_HDP_DEV_CREDS', 
+                        //                 usernameVariable: 'hdp_APT_USERNAME', passwordVariable: 'hdp_APT_PASSWORD')
+                        // ]) {
+                        //     dir("${imageName}.${version}") {
+                        //         pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
+                        //         sh """
+                        //             cd docker
+                        //             rm -f hadoop/common/ldap/jenkins.ldif
+                        //             # cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/jenkins.ldif
+
+                        //             docker build \
+                        //                 ${noCache} \
+                        //                 -t ${REGISTRY_PREFIX}/${imageName}:${version} \
+                        //                 -f hadoop/${distribution.name}/Dockerfile \
+                        //                 --build-arg PATH_PREFIX=hadoop/${distribution.name} \
+                        //                 --build-arg H2O_BRANCH=${params.gitBranch} \
+                        //                 --build-arg PARENT_VERSION=${buildImageVersion} \
+                        //                 --build-arg VERSION=${distribution.version} \
+                        //                 --build-arg REPO_VERSION=${repoVersion} \\
+                        //                 --build-arg APT_USERNAME=\${${distribution.name}_APT_USERNAME} \
+                        //                 --build-arg APT_PASSWORD=\${${distribution.name}_APT_PASSWORD} \
+                        //                 .
+
+                        //             docker build \
+                        //                 ${noCache} \
+                        //                 -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
+                        //                 -f hadoop/${distribution.name}/Dockerfile.kerberos \
+                        //                 --build-arg PATH_PREFIX=hadoop/${distribution.name} \
+                        //                 --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${imageName}:${version} \
+                        //                 .
+                        //         """
+                        //     }
+                        // }
+                        dir("${imageName}.${version}") {
                                 pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
                                 sh """
                                     cd docker
                                     rm -f hadoop/common/ldap/jenkins.ldif
-                                    cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/jenkins.ldif
+                                    # cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/jenkins.ldif
 
                                     docker build \
                                         ${noCache} \
@@ -125,7 +155,6 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                         .
                                 """
                             }
-                        }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, buildStageName)
