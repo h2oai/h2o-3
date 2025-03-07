@@ -84,7 +84,7 @@ try {
                                 # Stop on error.
                                 set -e
 
-                                export BUILD_HADOOP=true
+                                # export BUILD_HADOOP=true
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -143,11 +143,11 @@ try {
                                     chmod -w \$GRADLE_USER_HOME/gradle.properties
                                 fi
                                 ./gradlew build -x test
-                                if [ "\$TEST_RELEASE" = true ]; then
-                                    ./gradlew buildH2oDevDist
-                                else
-                                    ./gradlew -PvalidateRelease buildH2oDevDist
-                                fi
+                                # if [ "\$TEST_RELEASE" = true ]; then
+                                #     ./gradlew buildH2oDevDist
+                                # else
+                                #     ./gradlew -PvalidateRelease buildH2oDevDist
+                                # fi
                             """
                             }
                         }
@@ -557,6 +557,24 @@ EOF
                             e.printStackTrace()
                         }
                     }    
+                }
+
+                stage("h2o-open-source-k8s") {
+                    withCredentials([
+                          usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME')
+                          ]) {
+                                env["H2O_ASSEMBLY"] = "h2o-open-source-k8s"
+                                env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-open-source-k8s-test"
+                                // Test release goes to opsh2oai namespace
+                                env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                // the most recent test build is always latest
+                                env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
+
+                                sh """
+                                  cd ${env.BUILD_NUMBER_DIR}
+                                  make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                """
+                          }
                 }
 
                 if (params.BUILD_H2O_DOCKER) {
