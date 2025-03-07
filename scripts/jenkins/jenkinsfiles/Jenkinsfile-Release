@@ -565,7 +565,7 @@ EOF
                     withCredentials([
                           usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME')
                           ]) {
-                                env["H2O_ASSEMBLY"] = "h2o-open-source-k8s"
+                                env["H2O_ASSEMBLY"] = "main"
                                 env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-open-source-k8s-test"
                                 // Test release goes to opsh2oai namespace
                                 env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
