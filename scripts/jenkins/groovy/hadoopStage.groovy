@@ -78,7 +78,9 @@ def call(final pipelineContext, final stageConfig) {
         try {
             defaultStage(pipelineContext, stageConfig)
         } finally {
-            sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
+            docker.image("alpine:latest").inside("-itu root") {
+                sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
+            }
         }
     }
 }
