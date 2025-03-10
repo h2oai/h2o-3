@@ -1005,8 +1005,9 @@ private void invokeStage(final pipelineContext, final body) {
                 healthCheckPassed = config.healthCheckSuppressed || pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
                 if (healthCheckPassed) {
                   pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
-
+                  println "Before deletion"
                   sh "rm -rf ${config.stageDir}"
+                  println "After deletion"
 
                   def script = load(config.executionScript)
                   script(pipelineContext, config)
