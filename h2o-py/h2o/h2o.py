@@ -1053,7 +1053,21 @@ def deep_copy(data, xid):
     assign(duplicate, xid)
     return duplicate
 
-def shallow_copy(data, xid):
+def shallow_copy(data, xid=None):
+    """
+    Create a shallow clone of the frame ``data``.
+
+    :param data: an H2OFrame to be cloned
+    :param xid: (internal) id to be assigned to the new frame.
+    :returns: new :class:`H2OFrame` which is the clone of the passed frame.
+
+    :examples:
+
+    >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    >>> new_name = "new_frame"
+    >>> training_copy = h2o.shallow_copy(training_data, new_name)
+    >>> training_copy
+    """
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, None, str)
     duplicate = H2OFrame._expr(expr=ExprNode("cols_py", data, slice(data.ncols)))
