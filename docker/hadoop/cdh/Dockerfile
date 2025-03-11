@@ -33,8 +33,8 @@ COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
 RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git && \
-    chmod 700 /usr/sbin/add_cdh_repo.sh && \
-    sync && \
+    # chmod 700 /usr/sbin/add_cdh_repo.sh && \
+    # sync && \
     # /usr/sbin/add_cdh_repo.sh $VERSION $REPO_VERSION $APT_USERNAME $APT_PASSWORD && \
     # rm /usr/sbin/add_cdh_repo.sh && \
     # echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
