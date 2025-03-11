@@ -10,7 +10,7 @@ final List INTERNAL_CLUSTER_HADOOPS = [
         [ distribution: "cdh-6.3", krb: true  ]  // 0xg9 cluster
 ]
 
-def REGISTRY_PREFIX = '353750902984.dkr.ecr.us-east-1.amazonaws.com'
+final String REGISTRY_PREFIX = '353750902984.dkr.ecr.us-east-1.amazonaws.com'
 
 def pipelineContext = null
 def buildImageVersion = null
