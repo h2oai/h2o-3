@@ -2,7 +2,7 @@ ARG PARENT_VERSION
 FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-hadoop:${PARENT_VERSION}
 
 # maintainer details
-MAINTAINER h2oai "h2o.ai"
+# MAINTAINER h2oai "h2o.ai"
 
 ARG VERSION
 ARG REPO_VERSION
@@ -16,7 +16,7 @@ RUN if [ -z $VERSION ]; then \
         REPO_VERSION=$VERSION; \
     fi
 ARG PATH_PREFIX='.'
-ARG PYTHON_VERSIONS='3.6'
+ARG PYTHON_VERSIONS='3.7'
 ARG AWS_ACCESS_KEY
 ARG AWS_SECRET_ACCESS_KEY
 ARG HIVE_PACKAGE='hive'
@@ -44,10 +44,12 @@ RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         postgresql libpostgresql-jdbc-java \
-        hadoop-conf-pseudo python-pip python-dev python-virtualenv \
+        # hadoop-conf-pseudo \
+        python3.7 python3.7-dev python3.7-venv \
         sudo unzip html2text slapd ldap-utils libkrb5-dev vim && \
     apt-get clean && \
-    rm -rf /var/cache/apt/*
+    rm -rf /var/cache/apt/* && \
+    curl -sS https://bootstrap.pypa.io/pip/3.7/get-pip.py | python3.7
 
 # Add Hive user
 RUN adduser --disabled-password --gecos "" hive
