@@ -3,7 +3,7 @@
 final String NODE_LABEL = "h2o-3"
 final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
 // final String REGISTRY_PREFIX = "${params.dockerRegistry}"
-final String IMAGE_NAME_PREFIX = "opsh2oai/h2o-3-hadoop"
+final String IMAGE_NAME_PREFIX = "h2o-3-hadoop"
 final List INTERNAL_CLUSTER_HADOOPS = [
         // [ distribution: "hdp-2.2", krb: false ], // 0xd6 cluster
         // [ distribution: "hdp-2.4", krb: true  ], // 0xg5 cluster
