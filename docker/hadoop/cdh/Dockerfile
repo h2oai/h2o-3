@@ -6,8 +6,8 @@ MAINTAINER h2oai "h2o.ai"
 
 ARG VERSION
 ARG REPO_VERSION
-ARG APT_USERNAME
-ARG APT_PASSWORD
+# ARG APT_USERNAME
+# ARG APT_PASSWORD
 RUN if [ -z $VERSION ]; then \
         echo "build-arg VERSION must be set"; \
         exit 1; \
@@ -35,10 +35,10 @@ RUN \
     DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git && \
     chmod 700 /usr/sbin/add_cdh_repo.sh && \
     sync && \
-    /usr/sbin/add_cdh_repo.sh $VERSION $REPO_VERSION $APT_USERNAME $APT_PASSWORD && \
-    rm /usr/sbin/add_cdh_repo.sh && \
-    echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
-        /etc/apt/auth.conf.d/cloudera.conf && \
+    # /usr/sbin/add_cdh_repo.sh $VERSION $REPO_VERSION $APT_USERNAME $APT_PASSWORD && \
+    # rm /usr/sbin/add_cdh_repo.sh && \
+    # echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
+    #     /etc/apt/auth.conf.d/cloudera.conf && \
     apt-key add archive.key && \
     add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
