@@ -241,7 +241,7 @@ def dockerLoginH2OECR(){
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
         H2O_ECR_PWD = sh(script: 'aws ecr get-login-password --region us-east-1', returnStdout: true).trim()
         sh """
-            docker login --username AWS --password $H2O_ECR_PWD $REGISTRY_PREFIX
+            docker login --username AWS --password $H2O_ECR_PWD 353750902984.dkr.ecr.us-east-1.amazonaws.com
         """
     }
 }
