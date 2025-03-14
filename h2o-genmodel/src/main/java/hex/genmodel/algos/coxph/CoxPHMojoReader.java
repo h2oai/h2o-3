@@ -28,7 +28,7 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     _model._interaction_targets = readkv("interaction_targets");
     _model._interaction_column_index = new HashSet<>();
     _model._interaction_column_domains = new HashMap<>();
-    _model._nums = readkv("num_numerical_columns");
+    _model._nums = readkv("num_numerical_columns", -1);
     _model._num_offsets = readkv("num_offsets");
     
     if (_model._interaction_targets != null) {
