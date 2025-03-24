@@ -365,7 +365,12 @@ class BuildConfig {
   }
 
   String getSmokeHadoopImageImpl(final distribution, final version, final suffix) {
-    return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
+    println "#### GET SMOKE HADOOP IMAGE IMPL ###"
+    println distribution
+    println version
+    println suffix
+    println "#### GET SMOKE HADOOP IMAGE IMPL ###"
+    return "353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-hadoop:46".toString()
   }
 
   static enum NodeLabels {
