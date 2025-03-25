@@ -678,10 +678,10 @@ h2o-k8s-docker-copy-resources:
 	cp h2o-assemblies/$(H2O_ASSEMBLY)/build/libs/$(H2O_ASSEMBLY).jar h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/h2o.jar
 	cp LICENSE h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
 
-h2o-k8s-docker-build: h2o-k8s-docker-copy-resources
+h2o-k8s-docker-build:
 	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
 
-h2o-k8s-docker-build-latest: h2o-k8s-docker-copy-resources
+h2o-k8s-docker-build-latest:
 	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
 
 h2o-k8s-docker-push:
