@@ -577,6 +577,20 @@ EOF
                                       string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
                                       ]) {
                                     env["H2O_ASSEMBLY"] = assemblyName
+
+                                    // Copy resources outside of the build task because of the permissions
+                                    insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "") {
+                                        sh """
+                                            id
+                                            printenv | sort
+                                            ls -la
+                                            cd ${env.BUILD_NUMBER_DIR}
+                                            ls -la
+
+                                            make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-copy-resources
+                                        """
+                                    }
+
                                     if (params.TEST_RELEASE) {
                                         env["DOCKER_IMAGE_NAME"] = "opsh2oai/${imageType}-test"
                                         // Test release goes to opsh2oai namespace
