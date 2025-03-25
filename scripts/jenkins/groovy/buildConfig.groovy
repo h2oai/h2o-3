@@ -370,7 +370,7 @@ class BuildConfig {
     println version
     println suffix
     println "#### GET SMOKE HADOOP IMAGE IMPL ###"
-    return "353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-hadoop:46".toString()
+    return "353750902984.dkr.ecr.us-east-1.amazonaws.com/opsh2oai/h2o-3-hadoop-cdh-6.3:84".toString()
   }
 
   static enum NodeLabels {
