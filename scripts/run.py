@@ -1985,7 +1985,15 @@ class TestRunner(object):
             elif g_kerb_principal is not None:
                 from h2o.auth import SpnegoAuth
                 auth = SpnegoAuth(service_principal=g_kerb_principal)
+            
+            print("#### CHECK HEALTH ####")
+            print("{}{}:{}/3/Cloud?skip_ticks=true".format(proto, ip, port))
+            print("#### CHECK HEALTH ####")
+
             http = requests.get("{}{}:{}/3/Cloud?skip_ticks=true".format(proto, ip, port), auth=auth, verify=False)
+            print("### CHECK HEALTH RESPONSE ####")
+            print(http.text)
+            print("### CHECK HEALTH RESPONSE ####")
             json = http.json()
             if "cloud_healthy" in json:
                 h2o_okay = json["cloud_healthy"]
