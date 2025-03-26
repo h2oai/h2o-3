@@ -35,13 +35,13 @@ def call(final pipelineContext, final stageConfig) {
             echo "Checking java version (JAVA_HOME='\$JAVA_HOME')"
             java -version
 
-            . /usr/sbin/hive_version_check.sh
+            # . /usr/sbin/hive_version_check.sh
 
             echo "Activating Python ${stageConfig.pythonVersion}"
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
 
-            echo 'Initializing Hadoop environment...'
-            sudo -E /usr/sbin/startup.sh
+            # echo 'Initializing Hadoop environment...'
+            # sudo -E /usr/sbin/startup.sh
 
             echo 'Generating SSL Certificate'
             rm -f mykeystore.jks
