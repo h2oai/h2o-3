@@ -50,6 +50,7 @@ def call(final pipelineContext, final stageConfig) {
             echo RUNNING_PWD
             pwd
             echo 'Building H2O'
+            git config --global --add safe.directory '*'
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
 
             echo 'Starting H2O on Hadoop'
