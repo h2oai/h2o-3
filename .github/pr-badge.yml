@@ -1,0 +1,5 @@
+- label: "JIRA"
+  message: "$issuePrefix"
+  color: "#0052CC"
+  url: "https://h2oai.atlassian.net/browse/$issuePrefix"
+  when: "$issuePrefix"
