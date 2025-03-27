@@ -593,7 +593,7 @@ def call(final pipelineContext) {
         ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt',
         bundledS3FileSystems: 's3a,s3n'
       ], 
-      pythonVersion: '3.7',
+      pythonVersion: '3.6',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
       image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, false)
