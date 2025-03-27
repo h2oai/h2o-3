@@ -2,7 +2,7 @@
 
 ## H2O
 
-### 3.46.0.7 - 11/1/2024
+### 3.46.0.7 - 3/27/2025
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html</a>
 
