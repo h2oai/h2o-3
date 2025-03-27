@@ -2,7 +2,19 @@
 
 ## H2O
 
-### 3.46.0.6 - 11/1/2024
+### 3.46.0.7 - 3/27/2025
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html</a>
+
+#### Bug
+- [[#16444]](https://github.com/h2oai/h2o-3/issues/16444) - Fix error in the uplift_drf_demo python notebook.
+- [[#16466]](https://github.com/h2oai/h2o-3/issues/16466) - Fix invalid escape sequences in h2o-py docstrings.
+- [[#16507]](https://github.com/h2oai/h2o-3/issues/16507) - Remove Hadoop hdp packages from the H2O-3 project because those are no longer available from the vendor.
+
+#### Security
+- [[#16472]](https://github.com/h2oai/h2o-3/issues/16472), [[#16480]](https://github.com/h2oai/h2o-3/issues/16480) - Upgrade mina-core to fix CVE-2024-52046
+
+### 3.46.0.6 - 1/11/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/6/index.html</a>
 
