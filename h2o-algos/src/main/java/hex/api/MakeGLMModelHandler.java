@@ -45,7 +45,7 @@ public class MakeGLMModelHandler extends Handler {
     dinfo.setPredictorTransform(TransformType.NONE);
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial, 
-            model._output._ordinal);
+            model._output._ordinal, model._parms._control_variables);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
