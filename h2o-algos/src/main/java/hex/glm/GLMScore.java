@@ -4,7 +4,6 @@ import hex.CMetricScoringTask;
 import hex.DataInfo;
 import hex.ModelMetrics;
 import water.Job;
-import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
@@ -53,10 +52,27 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       _beta_multinomial = m._output._global_beta_multinomial;
     } else {
       double [] beta = m.beta();
+      
+      // prepare control variable map to filter them from beta
+      int [] controlValMap = m._output._controlValuesIdxsInAdaptedFrame;
+      int [] betaControlValMap = new int[beta.length-1];
+      for (int k = 0; k < controlValMap.length; k++) {
+        int colIdx = controlValMap[k];
+        if (colIdx < dinfo._cats) {  // categorical case
+          int a = dinfo._catOffsets[colIdx];
+          int b = dinfo._catOffsets[colIdx + 1];
+          for (int i = a; i < b; i++) {
+            betaControlValMap[i] = 1;
+          }
+        } else { // numerical case
+          betaControlValMap[dinfo._numOffsets[colIdx - dinfo._cats]] = 1;
+        }
+      }
+      
       int [] ids = new int[beta.length-1];
       int k = 0;
       for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids
-        if(beta[i] != 0) ids[k++] = i;
+        if(beta[i] != 0 && betaControlValMap[i] == 0) ids[k++] = i;
       }
       if(k < beta.length-1) {
         ids = Arrays.copyOf(ids,k);
