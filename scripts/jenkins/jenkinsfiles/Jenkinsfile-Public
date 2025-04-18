@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def DEFAULT_NODE_LABEL = 'h2o-3'
+def DEFAULT_NODE_LABEL = 'ec2-fleet'
 final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null
@@ -22,7 +22,7 @@ try {
           }
           String nodeLabel = DEFAULT_NODE_LABEL
           if (pipelineContext != null) {
-            nodeLabel = "h2o-3"
+            nodeLabel = "ec2-fleet"
           }
           echo "######### NodeLabel: ${nodeLabel} #########"
           node(nodeLabel) {
