@@ -55,23 +55,25 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       
       // prepare control variable map to filter them from beta
       int [] controlValMap = m._output._controlValuesIdxsInAdaptedFrame;
-      int [] betaControlValMap = new int[beta.length-1];
-      for (int k = 0; k < controlValMap.length; k++) {
-        int colIdx = controlValMap[k];
-        if (colIdx < dinfo._cats) {  // categorical case
-          int a = dinfo._catOffsets[colIdx];
-          int b = dinfo._catOffsets[colIdx + 1];
-          for (int i = a; i < b; i++) {
-            betaControlValMap[i] = 1;
+      int[] betaControlValMap = new int[beta.length - 1];
+      if (controlValMap != null) {
+        for (int k = 0; k < controlValMap.length; k++) {
+          int colIdx = controlValMap[k];
+          if (colIdx < dinfo._cats) {  // categorical case
+            int a = dinfo._catOffsets[colIdx];
+            int b = dinfo._catOffsets[colIdx + 1];
+            for (int i = a; i < b; i++) {
+              betaControlValMap[i] = 1;
+            }
+          } else { // numerical case
+            betaControlValMap[dinfo._numOffsets[colIdx - dinfo._cats]] = 1;
           }
-        } else { // numerical case
-          betaControlValMap[dinfo._numOffsets[colIdx - dinfo._cats]] = 1;
         }
       }
       
       int [] ids = new int[beta.length-1];
       int k = 0;
-      for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids
+      for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids & that is not in control variables
         if(beta[i] != 0 && betaControlValMap[i] == 0) ids[k++] = i;
       }
       if(k < beta.length-1) {

@@ -678,8 +678,26 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           throw new IllegalArgumentException("Missing values handling should be specified as an instance of " + MissingValuesHandling.class.getName());
         }
       }
-      if(_control_variables != null && (_interactions != null || _interaction_pairs != null)){
-        throw new IllegalArgumentException("Control variables option is currently not supported with interactions."); 
+      if(_control_variables != null) {
+        if ((_interactions != null || _interaction_pairs != null)) {
+          glm.error("_control_variables", "Control variables option is not supported with interactions.");
+        }
+        for(String col: _control_variables){
+          Vec v = train().vec(col);
+          if (v == null) {
+            glm.error("_control_variables", "Control variable '"+col+"' is not in the frame.");
+          } else {
+            if (col.equals(_weights_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as _weight_column.");
+            }
+            if (col.equals(_offset_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as _offset_column.");
+            }
+            if (col.equals(_response_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as _response_column.");
+            }
+          }
+        }
       }
     }
     
@@ -2078,8 +2096,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     } else {
       double[] b = beta();
       double eta = b[b.length - 1] + o; // intercept + offset
+      boolean controlVarDisabled = _output._controlValuesIdxsInAdaptedFrame == null;
       for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
-        if(Arrays.binarySearch(_output._controlValuesIdxsInAdaptedFrame, i) < 0) {
+        if(controlVarDisabled || Arrays.binarySearch(_output._controlValuesIdxsInAdaptedFrame, i) < 0) {
           int l = _output._dinfo.getCategoricalId(i, data[i]);
           if (l >= 0) eta += b[l];
         }
@@ -2090,7 +2109,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double d = data[ncats + i];
         if (!_output._dinfo._skipMissing && Double.isNaN(d))
           d = _output._dinfo._numNAFill[i];
-        if (Arrays.binarySearch(_output._controlValuesIdxsInAdaptedFrame, ncats + i) < 0) {
+        if (controlVarDisabled || Arrays.binarySearch(_output._controlValuesIdxsInAdaptedFrame, ncats + i) < 0) {
           eta += b[numStart + i] * d;
         }
       }
