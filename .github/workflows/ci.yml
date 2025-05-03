@@ -37,9 +37,12 @@ jobs:
             pandoc
 
           mkdir -p "$HOME/R/library"
-          echo 'R_LIBS_USER="~/R/library"' >> ~/.Renviron
+          echo 'R_LIBS_USER=~/R/library' >> ~/.Renviron
 
           Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org", lib="~/R/library")'
+
+      - name: Export R_LIBS_USER globally
+        run: echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
 
       - name: Retry Health Check & Build
         id: set-status
