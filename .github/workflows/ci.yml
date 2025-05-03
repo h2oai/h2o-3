@@ -25,10 +25,13 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install 'tabulate>=0.7.5'
 
-      - name: Install R (required for h2o-r module)
+      - name: Install R and dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y r-base
+          sudo apt-get install -y r-base texlive-latex-base \
+            texlive-fonts-recommended texlive-fonts-extra \
+            texlive-latex-extra pandoc
+          Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org")'
 
       - name: Retry Health Check & Build
         id: set-status
