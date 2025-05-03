@@ -1,9 +1,10 @@
 name: H2O-3 CI Nightly
 
 on:
-  schedule:
-    - cron: '0 22 * * *'  # Nightly at 22:00 UTC
-  workflow_dispatch:
+    push:
+        branches:
+        - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
+    workflow_dispatch:
 
 jobs:
   checkout-and-build:
