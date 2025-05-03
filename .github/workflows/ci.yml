@@ -70,10 +70,13 @@ jobs:
           echo "result=failure" >> $GITHUB_OUTPUT
           exit 1
 
+      - name: Sync required test data
+        if: steps.set-status.outputs.result == 'success'
+        run: ./gradlew syncSmalldata --no-daemon --info
+
       - name: Run Build
         if: steps.set-status.outputs.result == 'success'
-        run: |
-          ./gradlew clean build -x :h2o-r:buildPackageDocumentation --no-daemon --info
+        run: ./gradlew clean build -x :h2o-r:buildPackageDocumentation --no-daemon --info
 
   run-tests:
     needs: checkout-and-build
