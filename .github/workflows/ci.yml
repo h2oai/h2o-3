@@ -1,0 +1,68 @@
+name: H2O-3 CI Nightly
+
+on:
+  schedule:
+    - cron: '0 22 * * *'  # Nightly at 22:00 UTC
+  workflow_dispatch:
+
+jobs:
+  checkout-and-build:
+    runs-on: ubuntu-latest
+    env:
+      MODE: MODE_NIGHTLY
+    outputs:
+      build-success: ${{ steps.set-status.outputs.result }}
+    steps:
+      - name: Checkout H2O-3
+        uses: actions/checkout@v4
+
+      - name: Retry Health Check & Build
+        id: set-status
+        run: |
+          echo "::group::Attempt build and health check"
+          retries=5
+          count=0
+          while [ $count -lt $retries ]; do
+            echo "Attempt #$((count+1))"
+            if ./scripts/github/init_pipeline.sh; then
+              if ./scripts/github/health_check.sh; then
+                echo "result=success" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            fi
+            count=$((count+1))
+            sleep 10
+          done
+          echo "result=failure" >> $GITHUB_OUTPUT
+          exit 1
+
+      - name: Run Build
+        if: steps.set-status.outputs.result == 'success'
+        run: |
+          ./scripts/github/build_h2o3.sh
+
+  run-tests:
+    needs: checkout-and-build
+    if: needs.checkout-and-build.outputs.build-success == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [8]
+        python: [3.6, 3.7, 3.11]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Set up Java ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Run Nightly Tests
+        run: |
+          ./scripts/github/define_test_stages.sh ${{ env.MODE }} ${{ matrix.python }} ${{ matrix.java }}
