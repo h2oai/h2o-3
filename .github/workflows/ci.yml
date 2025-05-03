@@ -34,12 +34,17 @@ jobs:
             texlive-fonts-recommended \
             texlive-fonts-extra \
             texlive-latex-extra \
+            ghostscript \
             pandoc
 
           mkdir -p "$HOME/R/library"
           echo 'R_LIBS_USER=~/R/library' >> ~/.Renviron
+          
+          # Set a known HOME path for R
+          echo "HOME=$HOME" >> $GITHUB_ENV
 
           Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org", lib="~/R/library")'
+
 
       - name: Export R_LIBS_USER globally
         run: echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
