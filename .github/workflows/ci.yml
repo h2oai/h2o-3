@@ -39,15 +39,16 @@ jobs:
 
           mkdir -p "$HOME/R/library"
           echo 'R_LIBS_USER=~/R/library' >> ~/.Renviron
-          
-          # Set a known HOME path for R
+          echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
           echo "HOME=$HOME" >> $GITHUB_ENV
 
           Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org", lib="~/R/library")'
 
-
-      - name: Export R_LIBS_USER globally
-        run: echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
+      - name: Verify R and LaTeX Setup
+        run: |
+          Rscript -e 'sessionInfo()'
+          pdflatex --version
+          Rscript -e 'roxygen2::roxygenise("h2o-r", roclets=c("rd"))' || true
 
       - name: Retry Health Check & Build
         id: set-status
@@ -71,7 +72,10 @@ jobs:
 
       - name: Run Build
         if: steps.set-status.outputs.result == 'success'
-        run: ./scripts/github/build_h2o3.sh
+        run: |
+          # To skip R doc generation temporarily, uncomment the line below and comment the one after
+          # ./gradlew clean build -x :h2o-r:buildPackageDocumentation --no-daemon --info
+          ./scripts/github/build_h2o3.sh
 
   run-tests:
     needs: checkout-and-build
