@@ -27,11 +27,16 @@ jobs:
 
       - name: Install R and dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y r-base texlive-latex-base \
+            sudo apt-get update
+            sudo apt-get install -y r-base texlive-latex-base \
             texlive-fonts-recommended texlive-fonts-extra \
             texlive-latex-extra pandoc
-          Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org")'
+        
+            mkdir -p $HOME/R/library
+            echo 'R_LIBS_USER="~/R/library"' >> ~/.Renviron
+        
+            Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org", lib="~/R/library")'
+    
 
       - name: Retry Health Check & Build
         id: set-status
