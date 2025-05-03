@@ -1,10 +1,10 @@
 name: H2O-3 CI Nightly
 
 on:
-    push:
-        branches:
-        - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
-    workflow_dispatch:
+  push:
+    branches:
+      - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
+  workflow_dispatch:
 
 jobs:
   checkout-and-build:
@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: chmod +x ./scripts/github/*.sh
 
       - name: Retry Health Check & Build
         id: set-status
@@ -39,8 +42,7 @@ jobs:
 
       - name: Run Build
         if: steps.set-status.outputs.result == 'success'
-        run: |
-          ./scripts/github/build_h2o3.sh
+        run: ./scripts/github/build_h2o3.sh
 
   run-tests:
     needs: checkout-and-build
@@ -64,6 +66,8 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
+      - name: Make test scripts executable
+        run: chmod +x ./scripts/github/*.sh
+
       - name: Run Nightly Tests
-        run: |
-          ./scripts/github/define_test_stages.sh ${{ env.MODE }} ${{ matrix.python }} ${{ matrix.java }}
+        run: ./scripts/github/define_test_stages.sh ${{ env.MODE }} ${{ matrix.python }} ${{ matrix.java }}
