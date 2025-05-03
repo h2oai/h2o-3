@@ -73,9 +73,7 @@ jobs:
       - name: Run Build
         if: steps.set-status.outputs.result == 'success'
         run: |
-          # To skip R doc generation temporarily, uncomment the line below and comment the one after
-          # ./gradlew clean build -x :h2o-r:buildPackageDocumentation --no-daemon --info
-          ./scripts/github/build_h2o3.sh
+          ./gradlew clean build -x :h2o-r:buildPackageDocumentation --no-daemon --info
 
   run-tests:
     needs: checkout-and-build
