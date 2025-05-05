@@ -87,7 +87,7 @@ jobs:
         if: steps.set-status.outputs.result == 'success'
         run: |
           mkdir -p smalldata
-          aws s3 sync s3://your-s3-bucket-name/smalldata/ ./smalldata/
+          aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
       - name: Sync required test data
         if: steps.set-status.outputs.result == 'success'
