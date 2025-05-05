@@ -21,6 +21,10 @@ jobs:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
 
+      - name: Recreate missing symlink for h2o-py-cloud-extensions
+        run: |
+          ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o || echo "Symlink already exists or source missing"
+
       - name: Make scripts executable
         run: chmod +x ./scripts/github/*.sh
 
@@ -108,6 +112,10 @@ jobs:
     steps:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
+
+      - name: Recreate missing symlink for h2o-py-cloud-extensions
+        run: |
+          ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o || echo "Symlink already exists or source missing"
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
