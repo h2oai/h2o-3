@@ -66,8 +66,8 @@ fi
 # Define classpath
 JVM_CLASSPATH="build/classes/java/main${SEP}build/classes/java/test${SEP}build/resources/main"
 JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-core/build/classes/java/main${SEP}../h2o-core/build/classes/java/test${SEP}../h2o-core/build/resources/main"
-JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-test-support/build/classes/java/main${SEP}../h2o-test-support/build/resources/main"
-JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-core/build/libs/*${SEP}../lib/*"
+JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-test-support/build/classes/java/main${SEP}../h2o-test-support/build/classes/java/test${SEP}../h2o-test-support/build/resources/main"
+JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-core/build/libs/*${SEP}../h2o-test-support/build/libs/*${SEP}../lib/*"
 
 JVM="nice $JAVA_CMD $COVERAGE -ea -Xmx${MAX_MEM} -Xms${MAX_MEM} -DcloudSize=4 -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
