@@ -70,6 +70,21 @@ jobs:
           echo "result=failure" >> $GITHUB_OUTPUT
           exit 1
 
+      - name: Configure AWS Credentials for H2O ECR Account
+        if: steps.set-status.outputs.result == 'success'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: "sts.amazonaws.com"
+          aws-region: "us-east-1"
+          role-session-name: "h2o-ecr"
+          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+
+      - name: Download smalldata from S3
+        if: steps.set-status.outputs.result == 'success'
+        run: |
+          mkdir -p smalldata
+          aws s3 sync s3://your-s3-bucket-name/smalldata/ ./smalldata/
+
       - name: Sync required test data
         if: steps.set-status.outputs.result == 'success'
         run: ./gradlew syncSmalldata --no-daemon --info
@@ -106,5 +121,3 @@ jobs:
 
       - name: Run Nightly Tests
         run: ./scripts/github/define_test_stages.sh ${{ env.MODE }} ${{ matrix.python }} ${{ matrix.java }}
-
-        
