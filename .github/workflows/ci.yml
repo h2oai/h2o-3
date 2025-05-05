@@ -77,7 +77,7 @@ jobs:
           audience: "sts.amazonaws.com"
           aws-region: "us-east-1"
           role-session-name: "h2o-ecr"
-          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+          role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
       - name: Download smalldata from S3
         if: steps.set-status.outputs.result == 'success'
