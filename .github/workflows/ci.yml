@@ -29,53 +29,53 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install 'tabulate>=0.7.5'
 
-      # - name: Install R and dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y \
-      #       r-base \
-      #       texlive-latex-base \
-      #       texlive-fonts-recommended \
-      #       texlive-fonts-extra \
-      #       texlive-latex-extra \
-      #       ghostscript \
-      #       pandoc
+      - name: Install R and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            r-base \
+            texlive-latex-base \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-latex-extra \
+            ghostscript \
+            pandoc
 
-      #     mkdir -p "$HOME/R/library"
-      #     echo 'R_LIBS_USER=~/R/library' >> ~/.Renviron
-      #     echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
-      #     echo "HOME=$HOME" >> $GITHUB_ENV
+          mkdir -p "$HOME/R/library"
+          echo 'R_LIBS_USER=~/R/library' >> ~/.Renviron
+          echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
+          echo "HOME=$HOME" >> $GITHUB_ENV
 
-      #     Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org", lib="~/R/library")'
+          Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org", lib="~/R/library")'
 
-      # - name: Verify R and LaTeX Setup
-      #   run: |
-      #     Rscript -e 'sessionInfo()'
-      #     pdflatex --version
-      #     Rscript -e 'roxygen2::roxygenise("h2o-r", roclets=c("rd"))' || true
+      - name: Verify R and LaTeX Setup
+        run: |
+          Rscript -e 'sessionInfo()'
+          pdflatex --version
+          Rscript -e 'roxygen2::roxygenise("h2o-r", roclets=c("rd"))' || true
 
-      # - name: Retry Health Check & Build
-      #   id: set-status
-      #   run: |
-      #     echo "::group::Attempt build and health check"
-      #     retries=5
-      #     count=0
-      #     while [ $count -lt $retries ]; do
-      #       echo "Attempt #$((count+1))"
-      #       if ./scripts/github/init_pipeline.sh; then
-      #         if ./scripts/github/health_check.sh; then
-      #           echo "result=success" >> $GITHUB_OUTPUT
-      #           exit 0
-      #         fi
-      #       fi
-      #       count=$((count+1))
-      #       sleep 10
-      #     done
-      #     echo "result=failure" >> $GITHUB_OUTPUT
-      #     exit 1
+      - name: Retry Health Check & Build
+        id: set-status
+        run: |
+          echo "::group::Attempt build and health check"
+          retries=5
+          count=0
+          while [ $count -lt $retries ]; do
+            echo "Attempt #$((count+1))"
+            if ./scripts/github/init_pipeline.sh; then
+              if ./scripts/github/health_check.sh; then
+                echo "result=success" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            fi
+            count=$((count+1))
+            sleep 10
+          done
+          echo "result=failure" >> $GITHUB_OUTPUT
+          exit 1
 
       - name: Configure AWS Credentials for H2O ECR Account
-        # if: steps.set-status.outputs.result == 'success'
+        if: steps.set-status.outputs.result == 'success'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           audience: "sts.amazonaws.com"
@@ -84,17 +84,17 @@ jobs:
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
       - name: Download smalldata from S3
-        # if: steps.set-status.outputs.result == 'success'
+        if: steps.set-status.outputs.result == 'success'
         run: |
           mkdir -p smalldata
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
       - name: Sync required test data
-        # if: steps.set-status.outputs.result == 'success'
+        if: steps.set-status.outputs.result == 'success'
         run: ./gradlew syncSmalldata --no-daemon --info
 
       - name: Run Build
-        # if: steps.set-status.outputs.result == 'success'
+        if: steps.set-status.outputs.result == 'success'
         run: ./gradlew clean build -x :h2o-r:buildPackageDocumentation --no-daemon --info
 
   run-tests:
