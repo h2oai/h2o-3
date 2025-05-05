@@ -17,13 +17,13 @@ jobs:
       MODE: MODE_NIGHTLY
     outputs:
       build-success: ${{ steps.set-status.outputs.result }}
+
     steps:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
 
-      - name: Recreate missing symlink for h2o-py-cloud-extensions
-        run: |
-          ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o || echo "Symlink already exists or source missing"
+      - name: Recreate symlink for h2o-py-cloud-extensions
+        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o || echo "Symlink exists or missing source"
 
       - name: Make scripts executable
         run: chmod +x ./scripts/github/*.sh
@@ -61,12 +61,12 @@ jobs:
       - name: Retry Health Check & Build
         id: set-status
         run: |
-          echo "::group::Attempt build and health check"
+          echo "::group::Health check and build"
           retries=5
           count=0
           while [ $count -lt $retries ]; do
             echo "Attempt #$((count+1))"
-            if ./scripts/github/init_pipeline.sh; then
+            if ./scripts/github/init_pipeline.sh "$MODE"; then
               if ./scripts/github/health_check.sh; then
                 echo "result=success" >> $GITHUB_OUTPUT
                 exit 0
@@ -78,7 +78,7 @@ jobs:
           echo "result=failure" >> $GITHUB_OUTPUT
           exit 1
 
-      - name: Configure AWS Credentials for H2O ECR Account
+      - name: Configure AWS Credentials for H2O ECR
         if: steps.set-status.outputs.result == 'success'
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -97,7 +97,7 @@ jobs:
         if: steps.set-status.outputs.result == 'success'
         run: ./gradlew syncSmalldata --no-daemon --info
 
-      - name: Run Build
+      - name: Run Gradle Build
         if: steps.set-status.outputs.result == 'success'
         run: ./gradlew clean build -x :h2o-r:buildPackageDocumentation --no-daemon --info
 
@@ -109,13 +109,13 @@ jobs:
       matrix:
         java: [8]
         python: [3.6, 3.7, 3.11]
+
     steps:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
 
-      - name: Recreate missing symlink for h2o-py-cloud-extensions
-        run: |
-          ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o || echo "Symlink already exists or source missing"
+      - name: Recreate symlink for h2o-py-cloud-extensions
+        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o || echo "Symlink exists or missing source"
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
