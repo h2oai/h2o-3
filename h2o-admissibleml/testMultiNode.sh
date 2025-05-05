@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 source ../multiNodeUtils.sh
 
 # Argument parsing
@@ -65,6 +66,7 @@ fi
 # Define classpath
 JVM_CLASSPATH="build/classes/java/main${SEP}build/classes/java/test${SEP}build/resources/main"
 JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-core/build/classes/java/main${SEP}../h2o-core/build/classes/java/test${SEP}../h2o-core/build/resources/main"
+JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-test-support/build/classes/java/main${SEP}../h2o-test-support/build/resources/main"
 JVM_CLASSPATH="${JVM_CLASSPATH}${SEP}../h2o-core/build/libs/*${SEP}../lib/*"
 
 JVM="nice $JAVA_CMD $COVERAGE -ea -Xmx${MAX_MEM} -Xms${MAX_MEM} -DcloudSize=4 -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
@@ -94,7 +96,20 @@ fi
 # Run main test driver
 echo Running h2o-admissibleml junit tests...
 sleep 10
-($JVM $TEST_SSL -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.1 -Dai.h2o.ip=$H2O_NODE_IP -Dai.h2o.baseport=$CLUSTER_BASEPORT_1 -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG water.junit.H2OTestRunner `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.1) 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+($JVM $TEST_SSL \
+    -Ddoonly.tests=$DOONLY \
+    -Dbuild.id=$BUILD_ID \
+    -Dignore.tests=$IGNORE \
+    -Djob.name=$JOB_NAME \
+    -Dgit.commit=$GIT_COMMIT \
+    -Dgit.branch=$GIT_BRANCH \
+    -Dai.h2o.name=$CLUSTER_NAME.1 \
+    -Dai.h2o.ip=$H2O_NODE_IP \
+    -Dai.h2o.baseport=$CLUSTER_BASEPORT_1 \
+    -Dai.h2o.ga_opt_out=yes \
+    $JACOCO_FLAG \
+    water.junit.H2OTestRunner $(cat $OUTDIR/tests.txt) 2>&1 ; echo $? > $OUTDIR/status.1) \
+    1> $OUTDIR/out.1 2>&1 & PID_1=$!
 
 wait ${PID_1} 1> /dev/null 2>&1
 grep EXECUTION $OUTDIR/out.* | sed -e "s/.*TEST \(.*\) EXECUTION TIME: \(.*\) (Wall.*/\2 \1/" | sort -gr | head -n 10 >> $OUTDIR/out.0
