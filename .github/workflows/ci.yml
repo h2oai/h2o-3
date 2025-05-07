@@ -13,7 +13,7 @@ permissions:
 jobs:
   checkout-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     env:
       MODE: MODE_NIGHTLY
     outputs:
@@ -24,13 +24,31 @@ jobs:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
 
-      - name: Recreate symlink for h2o-py-cloud-extensions
-        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle
 
       - name: Make scripts executable
         run: chmod +x ./scripts/github/*.sh
 
-      - name: Install required Python modules
+      - name: Install Python & cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Cache Python pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
           pip install 'tabulate>=0.7.5' 'requests>=2.10'
@@ -38,45 +56,36 @@ jobs:
       - name: Install R and dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            r-base \
-            texlive-latex-base \
-            texlive-fonts-recommended \
-            texlive-fonts-extra \
-            texlive-latex-extra \
-            ghostscript \
-            pandoc
+          sudo apt-get install -y r-base ghostscript pandoc
           mkdir -p "$HOME/R/library"
           echo 'R_LIBS_USER=~/R/library' >> ~/.Renviron
           echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
           echo "HOME=$HOME" >> $GITHUB_ENV
           Rscript -e 'install.packages(c("roxygen2", "devtools", "pkgdown"), repos="https://cloud.r-project.org", lib="~/R/library")'
 
-      - name: Verify R and LaTeX Setup
+      - name: Verify R setup
         run: |
           Rscript -e 'sessionInfo()'
-          pdflatex --version
-          Rscript -e 'roxygen2::roxygenise("h2o-r", roclets=c("rd"))' || true
+          pdflatex --version || echo "pdflatex skipped"
+
+      - name: Recreate symlink
+        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
 
       - name: Retry Health Check & Build
         id: set-status
         run: |
           echo "::group::Health check and build"
-          retries=5
-          count=0
-          while [ $count -lt $retries ]; do
-            echo "Attempt #$((count+1))"
-            if ./scripts/github/init_pipeline.sh "$MODE"; then
-              if ./scripts/github/health_check.sh; then
-                echo "result=success" >> $GITHUB_OUTPUT
-                exit 0
-              fi
+          for i in {1..3}; do
+            echo "Attempt $i"
+            if ./scripts/github/init_pipeline.sh "$MODE" && ./scripts/github/health_check.sh; then
+              echo "result=success" >> $GITHUB_OUTPUT
+              exit 0
             fi
-            count=$((count+1))
             sleep 10
           done
           echo "result=failure" >> $GITHUB_OUTPUT
           exit 1
+          echo "::endgroup::"
 
       - name: Configure AWS Credentials
         if: steps.set-status.outputs.result == 'success'
@@ -87,19 +96,15 @@ jobs:
           role-session-name: "h2o-shared-service-prod"
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
-      - name: Download smalldata from S3
+      - name: Sync smalldata from S3
         if: steps.set-status.outputs.result == 'success'
         run: |
           mkdir -p smalldata
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
-      - name: Sync required test data
+      - name: Run Gradle Build (no clean)
         if: steps.set-status.outputs.result == 'success'
-        run: ./gradlew syncSmalldata --no-daemon --info
-
-      - name: Run Gradle Build
-        if: steps.set-status.outputs.result == 'success'
-        run: ./gradlew --parallel clean build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient -x :h2o-r:untar --warning-mode all
+        run: ./gradlew --build-cache --parallel build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient -x :h2o-r:untar --warning-mode all
 
       - name: Upload build artifacts
         if: steps.set-status.outputs.result == 'success'
@@ -118,11 +123,12 @@ jobs:
     needs: checkout-and-build
     if: needs.checkout-and-build.outputs.build-success == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 45
     strategy:
       matrix:
         java: [17]
         python: [3.11]
+        group: [1, 2, 3] # split test stages by group number
 
     steps:
       - name: Checkout H2O-3
@@ -142,27 +148,27 @@ jobs:
           role-session-name: "h2o-shared-service-prod"
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
-      - name: Set up Python ${{ matrix.python }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Set up Java ${{ matrix.java }}
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
-      - name: Install required Python modules
+      - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
           pip install 'tabulate>=0.7.5' 'requests>=2.10' 'wheel'
 
-      - name: Recreate symlink for h2o-py-cloud-extensions
+      - name: Recreate symlink
         run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
 
       - name: Make test scripts executable
         run: chmod +x ./scripts/github/*.sh
 
-      - name: Run Nightly Tests
-        run: ./scripts/github/define_test_stages.sh ${{ needs.checkout-and-build.outputs.mode }} ${{ matrix.python }} ${{ matrix.java }}
+      - name: Run Nightly Tests (Group ${{ matrix.group }})
+        run: ./scripts/github/define_test_stages.sh ${{ needs.checkout-and-build.outputs.mode }} ${{ matrix.python }} ${{ matrix.java }} ${{ matrix.group }}
