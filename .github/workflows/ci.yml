@@ -99,7 +99,7 @@ jobs:
 
       - name: Run Gradle Build
         if: steps.set-status.outputs.result == 'success'
-        run: ./gradlew --parallel clean build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient --warning-mode all
+        run: ./gradlew --parallel clean build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient -x :h2o-r:untar --warning-mode all
 
   run-tests:
     needs: checkout-and-build
