@@ -78,7 +78,7 @@ jobs:
           echo "result=failure" >> $GITHUB_OUTPUT
           exit 1
 
-      - name: Configure AWS Credentials for H2O Shared Service Prod
+      - name: Configure AWS Credentials
         if: steps.set-status.outputs.result == 'success'
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -101,6 +101,19 @@ jobs:
         if: steps.set-status.outputs.result == 'success'
         run: ./gradlew --parallel clean build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient -x :h2o-r:untar --warning-mode all
 
+      - name: Upload build artifacts
+        if: steps.set-status.outputs.result == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-3-build
+          path: |
+            build/
+            h2o-core/build/
+            h2o-admissibleml/build/
+            h2o-py/build/
+            smalldata/
+          retention-days: 1
+
   run-tests:
     needs: checkout-and-build
     if: needs.checkout-and-build.outputs.build-success == 'success'
@@ -115,24 +128,19 @@ jobs:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials for H2O Shared Service Prod
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: h2o-3-build
+          path: .
+
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           audience: "sts.amazonaws.com"
           aws-region: "us-east-1"
           role-session-name: "h2o-shared-service-prod"
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
-
-      - name: Download smalldata from S3
-        run: |
-          mkdir -p smalldata
-          aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
-
-      - name: Sync required test data
-        run: ./gradlew syncSmalldata --no-daemon --info
-
-      - name: Recreate symlink for h2o-py-cloud-extensions
-        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
@@ -149,6 +157,9 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip install 'tabulate>=0.7.5' 'requests>=2.10' 'wheel'
+
+      - name: Recreate symlink for h2o-py-cloud-extensions
+        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
 
       - name: Make test scripts executable
         run: chmod +x ./scripts/github/*.sh
