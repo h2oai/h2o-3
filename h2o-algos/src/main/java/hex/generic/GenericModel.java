@@ -313,7 +313,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     @Override
     protected double[] score0(double[] data, double[] preds, double offset) {
-        if (offset == 0) // MOJO doesn't like when score0 is called with 0 offset for problems that were trained without offset 
+        if (!_output.hasOffset() && offset == 0) // MOJO doesn't like when score0 is called with 0 offset for problems that were trained without offset 
             return score0(data, preds);
         else
             return genModel().score0(data, offset, preds);
