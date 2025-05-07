@@ -1,0 +1,336 @@
+name: Nightly Pipeline
+
+on:
+  push:
+    branches: ['**']                 # Run on push to any branch
+  workflow_dispatch: {}              # Allow manual trigger
+
+jobs:
+  # **Build Job**: Build H2O-3 and create test packages (Python, R, JS, etc.)
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Health Check (Disk Space)
+        run: |
+          # Require at least 10 GB free on root (/):contentReference[oaicite:1]{index=1}:contentReference[oaicite:2]{index=2}
+          avail_root=$(df / --output=avail -B1G | tail -n1)
+          if [ "$avail_root" -lt 10 ]; then
+            echo "Error: Less than 10 GB free on root filesystem"
+            exit 1
+          fi
+          # (Optional) Home directory space check omitted, as runners have limited space (Jenkins required 100 GB on /home:contentReference[oaicite:3]{index=3})
+
+      - name: Docker Engine Health Check
+        run: docker run --rm hello-world || exit 1
+  
+    - name: Configure AWS Credentials for H2O ECR Account
+    uses: aws-actions/configure-aws-credentials@v4
+    with:
+        audience: "sts.amazonaws.com"
+        aws-region: "us-east-1"
+        role-session-name: "h2o-ecr"
+        role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+
+    - name: Login to H2O ECR
+    run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
+
+    - name: Select Docker image based on branch
+    id: select-image
+    run: |
+        if [[ "${GITHUB_REF##*/}" == rel-* ]]; then
+        IMAGE="353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-release:46"
+        else
+        IMAGE="353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-base:46"
+        fi
+        echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+    - name: Pull Docker image
+    run: docker pull $IMAGE
+
+    - name: Build H2O-3 (Gradle compile)
+    run: |
+        docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+        make -f scripts/jenkins/Makefile.jenkins build-h2o-3
+
+    - name: Package Python artifacts
+    run: |
+        docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+        make -f scripts/jenkins/Makefile.jenkins test-package-py
+
+      - name: Package R artifacts
+        run: |
+          docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+            make -f scripts/jenkins/Makefile.jenkins test-package-r
+        # Generates R tarball package for H2O-3:contentReference[oaicite:10]{index=10}
+
+      - name: Package JS artifacts
+        run: |
+          docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+            make -f scripts/jenkins/Makefile.jenkins test-package-js
+        # Generates JavaScript (Flow) artifacts:contentReference[oaicite:11]{index=11}
+
+      - name: Package Java artifacts
+        run: |
+          docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+            make -f scripts/jenkins/Makefile.jenkins test-package-java
+        # Packages Java component (JAR):contentReference[oaicite:12]{index=12}
+
+      - name: Package Main assembly
+        run: |
+          docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+            make -f scripts/jenkins/Makefile.jenkins test-package-main
+        # Packages main assembly (runtime):contentReference[oaicite:13]{index=13}
+
+      - name: Package Minimal distribution
+        run: |
+          docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+            make -f scripts/jenkins/Makefile.jenkins test-package-minimal
+        # Packages minimal H2O distribution:contentReference[oaicite:14]{index=14}
+
+      - name: Package Steam distribution
+        run: |
+          docker run --rm -v "$PWD":/h2o-3 -w /h2o-3 $IMAGE \
+            make -f scripts/jenkins/Makefile.jenkins test-package-steam
+        # Packages Steam driver distribution:contentReference[oaicite:15]{index=15}
+
+      - name: Fix permissions
+        # Ensure files created by root in container are owned by runner before archival
+        run: sudo chown -R $UID:$UID .
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: h2o3-build-artifacts
+          path: .
+        # Save all build outputs (h2o.jar, wheels, R package, etc.) for use in test jobs:contentReference[oaicite:16]{index=16}:contentReference[oaicite:17]{index=17}
+
+  # **JUnit Test Jobs**: Run Java JUnit tests on multiple JDK versions
+  junit-tests:
+    name: JUnit - ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Java 8 Smoke"
+            java: 8
+            target: "test-junit-smoke-jenkins"
+          - name: "Java 11 Smoke"
+            java: 11
+            target: "test-junit-smoke-jenkins"
+          - name: "Java 11 Full"
+            java: 11
+            target: "test-junit-11-jenkins"
+          - name: "Java 17 Smoke"
+            java: 17
+            target: "test-junit-17-smoke-jenkins"
+    steps:
+      - name: Health Check (Disk Space)
+        run: |
+          avail_root=$(df / --output=avail -B1G | tail -n1)
+          if [ "$avail_root" -lt 10 ]; then
+            echo "Error: Less than 10 GB free on /"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: h2o3-build-artifacts
+          path: .
+      
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+      
+      - name: Set JAVA_VERSION env
+        run: echo "JAVA_VERSION=${{ matrix.java }}" >> $GITHUB_ENV
+
+      - name: Run ${{ matrix.name }} tests
+        run: make -f scripts/jenkins/Makefile.jenkins ${{ matrix.target }}
+        # Runs JUnit tests (smoke tests on JDK8 & JDK11, full suite on JDK11, smoke on JDK17):contentReference[oaicite:18]{index=18}:contentReference[oaicite:19]{index=19}
+
+  # **PyUnit Test Jobs**: Run Python tests across multiple Python versions and suites
+  python-tests:
+    name: PyUnit - ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Py3.6 Single Node"
+            python: "3.6"
+            target: "test-pyunit-single-node"
+          - name: "Py3.6 Fault Tolerance"
+            python: "3.6"
+            target: "test-pyunit-fault-tolerance"
+          - name: "Py3.6 AutoML"
+            python: "3.6"
+            target: "test-pyunit-automl"
+          - name: "Py3.6 Medium-Large"
+            python: "3.6"
+            target: "test-pyunit-medium-large"
+          - name: "Py3.7 Explain"
+            python: "3.7"
+            target: "test-pyunit-explain"
+          - name: "Py3.11 Single Node"
+            python: "3.11"
+            target: "test-pyunit-single-node"
+          - name: "Py3.11 Fault Tolerance"
+            python: "3.11"
+            target: "test-pyunit-fault-tolerance"
+          - name: "External XGBoost (Py3.7)"
+            python: "3.7"
+            target: "test-external-xgboost"
+    steps:
+      - name: Health Check (Disk Space)
+        run: |
+          avail_root=$(df / --output=avail -B1G | tail -n1)
+          if [ "$avail_root" -lt 10 ]; then
+            echo "Error: Less than 10 GB free on /"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: h2o3-build-artifacts
+          path: .
+
+      - name: Set up JDK 8 (for H2O backend)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install numpy scipy pandas requests tabulate scikit-learn xgboost
+
+      - name: Install H2O Python wheel
+        run: pip install h2o-py/dist/h2o*.whl
+
+      - name: Run ${{ matrix.name }} tests
+        run: make -f scripts/jenkins/Makefile.jenkins ${{ matrix.target }}
+        # Runs Python test suites (single-node, fault-tolerance, AutoML, etc.):contentReference[oaicite:20]{index=20}:contentReference[oaicite:21]{index=21}
+
+  # **R Test Jobs**: Run R package tests and documentation generation
+  r-tests:
+    name: R - ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "R3.5 Datatable"
+            target: "test-r-datatable"
+          - name: "R3.5 Generate Docs"
+            target: "r-generate-docs-jenkins"
+    steps:
+      - name: Health Check (Disk Space)
+        run: |
+          avail_root=$(df / --output=avail -B1G | tail -n1)
+          if [ "$avail_root" -lt 10 ]; then
+            echo "Error: Less than 10 GB free on /"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: h2o3-build-artifacts
+          path: .
+
+      - name: Set up R 3.5.3
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '3.5.3'
+
+      - name: Install R dependencies
+        run: |
+          Rscript -e 'install.packages(c("data.table","RCurl","jsonlite"), repos="https://cloud.r-project.org")'
+
+      - name: Install H2O R package
+        run: R CMD INSTALL h2o-3/h2o-r/R/src/contrib/h2o_*.tar.gz
+
+      - name: Set up JDK 8 (for H2O backend)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+
+      - name: Run ${{ matrix.name }}
+        run: make -f scripts/jenkins/Makefile.jenkins ${{ matrix.target }}
+        # Runs R tests (data.table integration) and generates R docs:contentReference[oaicite:22]{index=22}
+
+  # **Flow UI (JS) Test Jobs**: Run H2O Flow headless tests
+  js-tests:
+    name: Flow UI - ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Flow Headless Small"
+            target: "test-flow-headless-small"
+          - name: "Flow Headless Medium"
+            target: "test-flow-headless-medium"
+    steps:
+      - name: Health Check (Disk Space)
+        run: |
+          avail_root=$(df / --output=avail -B1G | tail -n1)
+          if [ "$avail_root" -lt 10 ]; then
+            echo "Error: Less than 10 GB free on /"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: h2o3-build-artifacts
+          path: .
+
+      - name: Set up JDK 8 (for H2O backend)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+
+      - name: Set up Node.js (Flow UI tests)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Run ${{ matrix.name }} tests
+        env:
+          # Display may be required for headless browser tests (use Xvfb if needed)
+          DISPLAY: ":99"
+        run: make -f scripts/jenkins/Makefile.jenkins ${{ matrix.target }}
+        # Runs Flow headless tests for small and medium scenarios:contentReference[oaicite:23]{index=23}

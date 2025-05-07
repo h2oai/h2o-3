@@ -13,15 +13,24 @@ fi
 
 echo "Running tests for mode: $MODE, Python: $PYTHON_VERSION, Java: $JAVA_VERSION"
 
-# Example: activate environment and run pytest, gradle, or any real test script
-# Here we simulate running Python tests
-
+# Confirm runtime versions
 python3 --version
 java -version
 
-# Replace this with real test commands
-./gradlew testPy -Ppython.version=$PYTHON_VERSION --info
-./gradlew testR --info
-./gradlew testJava --info
+# Python tests
+echo "::group::Run Python tests"
+./gradlew --info :h2o-py:build
+./gradlew --info :h2o-py:test
+echo "::endgroup::"
+
+# R tests
+echo "::group::Run R tests"
+./gradlew --info :h2o-r:test
+echo "::endgroup::"
+
+# Java unit tests
+echo "::group::Run Java tests"
+./gradlew --info test
+echo "::endgroup::"
 
 exit 0
