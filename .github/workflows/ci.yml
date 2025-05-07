@@ -36,22 +36,22 @@ jobs:
       - name: Make scripts executable
         run: chmod +x ./scripts/github/*.sh
 
-      - name: Install Python & cache
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.11
 
-      - name: Cache Python pip
+      - name: Cache pip packages
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip
 
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip install 'tabulate>=0.7.5' 'requests>=2.10'
+          pip install 'tabulate>=0.7.5' 'requests>=2.10' 'wheel'
 
       - name: Install R and dependencies
         run: |
@@ -66,7 +66,7 @@ jobs:
       - name: Verify R setup
         run: |
           Rscript -e 'sessionInfo()'
-          pdflatex --version || echo "pdflatex skipped"
+          pdflatex --version || echo "pdflatex not available"
 
       - name: Recreate symlink
         run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
@@ -128,7 +128,7 @@ jobs:
       matrix:
         java: [17]
         python: [3.11]
-        group: [1, 2, 3] # split test stages by group number
+        group: [1, 2, 3]  # Split test stages to run faster
 
     steps:
       - name: Checkout H2O-3
@@ -148,12 +148,12 @@ jobs:
           role-session-name: "h2o-shared-service-prod"
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
