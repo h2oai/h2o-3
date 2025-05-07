@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 MODE="$1"
 PYTHON_VERSION="$2"
@@ -11,26 +11,37 @@ if [[ -z "$MODE" || -z "$PYTHON_VERSION" || -z "$JAVA_VERSION" ]]; then
   exit 1
 fi
 
-echo "Running tests for mode: $MODE, Python: $PYTHON_VERSION, Java: $JAVA_VERSION"
+echo "Running tests for:"
+echo "- Mode         : $MODE"
+echo "- Python       : $PYTHON_VERSION"
+echo "- Java         : $JAVA_VERSION"
 
-# Confirm runtime versions
+# Show versions
+echo "::group::Runtime Versions"
 python3 --version
 java -version
+./gradlew --version
+echo "::endgroup::"
 
-# Python tests
+# Run Python tests
 echo "::group::Run Python tests"
 ./gradlew --info :h2o-py:build
 ./gradlew --info :h2o-py:test
 echo "::endgroup::"
 
-# R tests
+# Run R tests
 echo "::group::Run R tests"
 ./gradlew --info :h2o-r:test
 echo "::endgroup::"
 
-# Java unit tests
+# Run Java unit tests
 echo "::group::Run Java tests"
-./gradlew --info test
+./gradlew --info test --continue
 echo "::endgroup::"
 
-exit 0
+# Optional: Run Multi-node Java tests (if enabled)
+# echo "::group::Run Java Multi-node tests"
+# ./gradlew --info :h2o-admissibleml:testMultiNode
+# echo "::endgroup::"
+
+echo "✅ All applicable test stages completed for MODE=$MODE"
