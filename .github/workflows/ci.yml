@@ -13,6 +13,7 @@ permissions:
 jobs:
   checkout-and-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       MODE: MODE_NIGHTLY
     outputs:
@@ -104,6 +105,7 @@ jobs:
     needs: checkout-and-build
     if: needs.checkout-and-build.outputs.build-success == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       matrix:
         java: [8, 11, 17]
