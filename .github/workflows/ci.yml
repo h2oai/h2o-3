@@ -108,8 +108,8 @@ jobs:
     timeout-minutes: 90
     strategy:
       matrix:
-        java: [8, 11, 17]
-        python: [3.6, 3.7, 3.11]
+        java: [17]
+        python: [3.11]
 
     steps:
       - name: Checkout H2O-3
