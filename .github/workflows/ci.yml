@@ -23,7 +23,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Recreate symlink for h2o-py-cloud-extensions
-        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
+        run: |
+          rm -f h2o-py-cloud-extensions/h2o
+          ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
 
       - name: Make scripts executable
         run: chmod +x ./scripts/github/*.sh
@@ -105,17 +107,21 @@ jobs:
     needs: checkout-and-build
     if: needs.checkout-and-build.outputs.build-success == 'success'
     runs-on: ubuntu-latest
+    env:
+      MODE: MODE_NIGHTLY
     strategy:
       matrix:
         java: [8]
-        python: [3.6, 3.7, 3.11]
+        python: [3.11]  # Only supported version on ubuntu-latest
 
     steps:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
 
       - name: Recreate symlink for h2o-py-cloud-extensions
-        run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
+        run: |
+          rm -f h2o-py-cloud-extensions/h2o
+          ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
