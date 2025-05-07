@@ -8,7 +8,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read   
+  contents: read
 
 jobs:
   checkout-and-build:
@@ -17,6 +17,7 @@ jobs:
       MODE: MODE_NIGHTLY
     outputs:
       build-success: ${{ steps.set-status.outputs.result }}
+      mode: ${{ env.MODE }}
 
     steps:
       - name: Checkout H2O-3
@@ -31,7 +32,7 @@ jobs:
       - name: Install required Python modules
         run: |
           python3 -m pip install --upgrade pip
-          pip install 'tabulate>=0.7.5'
+          pip install 'tabulate>=0.7.5' 'requests>=2.10'
 
       - name: Install R and dependencies
         run: |
@@ -106,7 +107,7 @@ jobs:
     strategy:
       matrix:
         java: [8]
-        python: [3.11]  # Only supported version on Ubuntu 24.04
+        python: [3.11]
 
     steps:
       - name: Checkout H2O-3
@@ -126,8 +127,13 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
+      - name: Install required Python modules
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install 'tabulate>=0.7.5' 'requests>=2.10'
+
       - name: Make test scripts executable
         run: chmod +x ./scripts/github/*.sh
 
       - name: Run Nightly Tests
-        run: ./scripts/github/define_test_stages.sh ${{ needs.checkout-and-build.outputs.MODE || 'MODE_NIGHTLY' }} ${{ matrix.python }} ${{ matrix.java }}
+        run: ./scripts/github/define_test_stages.sh ${{ needs.checkout-and-build.outputs.mode }} ${{ matrix.python }} ${{ matrix.java }}
