@@ -106,13 +106,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [8]
-        python: [3.11]
+        java: [8, 11, 17]
+        python: [3.6, 3.7, 3.11]
 
     steps:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
-     
+
       - name: Configure AWS Credentials for H2O Shared Service Prod
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -125,10 +125,10 @@ jobs:
         run: |
           mkdir -p smalldata
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
-          
+
       - name: Sync required test data
         run: ./gradlew syncSmalldata --no-daemon --info
-        
+
       - name: Recreate symlink for h2o-py-cloud-extensions
         run: ln -s ../h2o-py/h2o h2o-py-cloud-extensions/h2o
 
