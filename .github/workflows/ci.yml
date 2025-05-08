@@ -51,7 +51,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip install 'tabulate>=0.7.5' 'requests>=2.10'
+          pip install 'tabulate>=0.7.5' 'requests>=2.10' 'wheel'
 
       - name: Install R and dependencies
         run: |
