@@ -53,9 +53,6 @@ if [ -z "$TEST_JAVA_HOME" ]; then
   JAVA_CMD="java"
 else
   JAVA_CMD="$TEST_JAVA_HOME/bin/java"
-  if [[ $TEST_JAVA_HOME =~ .*1\.6.* ]]; then
-    JAVA_CMD="${JAVA_CMD}"
-  fi
 fi
 
 # Set memory
@@ -70,8 +67,15 @@ else
   COVERAGE=""
 fi
 
-# Command to invoke test
-JVM="nice $JAVA_CMD $COVERAGE -Xmx${MAX_MEM} -Xms${MAX_MEM} -ea -cp ${JVM_CLASSPATH} -Dsys.ai.h2o.rapids.checkObjectConsistency=true -Dsys.ai.h2o.activeProcessorCount=4 ${ADDITIONAL_TEST_JVM_OPTS}"
+# JVM command with required --add-opens
+JVM="nice $JAVA_CMD $COVERAGE \
+  --add-opens java.base/java.lang=ALL-UNNAMED \
+  -Xmx${MAX_MEM} -Xms${MAX_MEM} -ea \
+  -cp ${JVM_CLASSPATH} \
+  -Dsys.ai.h2o.rapids.checkObjectConsistency=true \
+  -Dsys.ai.h2o.activeProcessorCount=4 \
+  ${ADDITIONAL_TEST_JVM_OPTS}"
+
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests to run
@@ -104,7 +108,19 @@ fi
 
 # Run test runner
 echo "Running h2o-core junit tests..."
-($JVM $TEST_SSL -Dbuild.id=$BUILD_ID -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.ip=$H2O_NODE_IP -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT $(cat $OUTDIR/tests.txt) ; echo $? > $OUTDIR/status.0) > $OUTDIR/out.0 2>&1
+($JVM $TEST_SSL \
+  -Dbuild.id=$BUILD_ID \
+  -Djob.name=$JOB_NAME \
+  -Dgit.commit=$GIT_COMMIT \
+  -Dgit.branch=$GIT_BRANCH \
+  -Dai.h2o.name=$CLUSTER_NAME \
+  -Dai.h2o.ip=$H2O_NODE_IP \
+  -Dai.h2o.baseport=$CLUSTER_BASEPORT \
+  -Dai.h2o.ga_opt_out=yes \
+  $JACOCO_FLAG \
+  $JUNIT_RUNNER \
+  $JUNIT_TESTS_BOOT \
+  $(cat $OUTDIR/tests.txt) ; echo $? > $OUTDIR/status.0) > $OUTDIR/out.0 2>&1
 
 grep EXECUTION $OUTDIR/out.0 | sed -e "s/.*TEST \(.*\) EXECUTION TIME: \(.*\) (Wall.*/\2 \1/" | sort -gr | head -n 10 >> $OUTDIR/out.0
 
