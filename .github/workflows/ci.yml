@@ -172,3 +172,11 @@ jobs:
 
       - name: Run Nightly Tests (Group ${{ matrix.group }})
         run: ./scripts/github/define_test_stages.sh ${{ needs.checkout-and-build.outputs.mode }} ${{ matrix.python }} ${{ matrix.java }} ${{ matrix.group }}
+
+      - name: Upload Multi-Node Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-multinode-logs
+          path: |
+            h2o-algos/sandbox/multi/
