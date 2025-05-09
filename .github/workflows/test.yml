@@ -63,7 +63,7 @@ jobs:
           aws-region: "us-east-1"
           role-session-name: "h2o-shared-service-prd"
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
-     
+
       - name: Sync smalldata from S3
         run: |
           mkdir -p smalldata
@@ -72,8 +72,16 @@ jobs:
       - name: Sync smalldata using Gradle
         run: ./gradlew syncSmalldata
 
-      - name: Sync R packages
+      - name: Check for required R package template file
+        run: |
+          if [ ! -f h2o-r/desc/h2o-3-DESCRIPTION.template ]; then
+            echo "Missing required file: h2o-r/desc/h2o-3-DESCRIPTION.template"
+            exit 1
+          fi
+
+      - name: Sync R packages via Gradle
         run: ./gradlew syncRPackages
+        working-directory: ${{ github.workspace }}
 
       - name: Build H2O-3 (without tests)
         run: ./gradlew build -x test
