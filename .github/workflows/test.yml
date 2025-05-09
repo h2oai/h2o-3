@@ -74,8 +74,8 @@ jobs:
 
       - name: Check for required R package template file
         run: |
-          if [ ! -f h2o-r/desc/h2o-3-DESCRIPTION.template ]; then
-            echo "Missing required file: h2o-r/desc/h2o-3-DESCRIPTION.template"
+          if [ ! -f h2o-r/h2o-DESCRIPTION.template ]; then
+            echo "Missing required file: h2o-r/h2o-DESCRIPTION.template"
             exit 1
           fi
 
