@@ -6,6 +6,10 @@ on:
         - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
     workflow_dispatch:  
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-h2o3:
     name: Build & Test H2O-3
