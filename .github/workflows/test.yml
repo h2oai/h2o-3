@@ -1,10 +1,10 @@
 name: Build and Test H2O-3
 
 on:
-    push:
-      branches:
-        - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
-    workflow_dispatch:  
+  push:
+    branches:
+      - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -14,7 +14,7 @@ jobs:
   build-h2o3:
     name: Build & Test H2O-3
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
       - name: Checkout Repository
@@ -44,37 +44,34 @@ jobs:
       - name: Install R
         uses: r-lib/actions/setup-r@v2
 
+      - name: Set R_LIBS_USER and create R library folder
+        run: |
+          echo "R_LIBS_USER=$HOME/R/library" >> $GITHUB_ENV
+          mkdir -p "$HOME/R/library"
+
       - name: Install R packages
         run: |
           Rscript -e 'install.packages(c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat"), repos="https://cloud.r-project.org")'
 
       - name: Grant execute permissions to gradlew
         run: chmod +x gradlew
-  
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-            audience: "sts.amazonaws.com"
-            aws-region: "us-east-1"
-            role-session-name: "h2o-shared-service-prod"
-            role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
+          audience: "sts.amazonaws.com"
+          aws-region: "us-east-1"
+          role-session-name: "h2o-shared-service-prod"
+          role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
-      - name: Sync smalldata from S3
-        run: |
-          mkdir -p smalldata
-          aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
+      - name: Sync smalldata using Gradle
+        run: ./gradlew syncSmalldata
 
-      - name: Sync small data and R packages
-        run: |
-          ./gradlew syncSmalldata
-          ./gradlew syncRPackages
+      - name: Sync R packages
+        run: ./gradlew syncRPackages
 
       - name: Build H2O-3 (without tests)
         run: ./gradlew build -x test
 
       - name: Run H2O-3 tests
         run: ./gradlew test
-
-      # Optional: Start H2O for local-only testing
-      # - name: Start H2O locally
-      #   run: java -jar build/h2o.jar &
