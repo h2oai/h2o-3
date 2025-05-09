@@ -63,6 +63,11 @@ jobs:
           aws-region: "us-east-1"
           role-session-name: "h2o-shared-service-prd"
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
+     
+      - name: Sync smalldata from S3
+        run: |
+          mkdir -p smalldata
+          aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
       - name: Sync smalldata using Gradle
         run: ./gradlew syncSmalldata
