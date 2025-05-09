@@ -69,14 +69,18 @@ jobs:
           mkdir -p smalldata
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
-      - name: Sync smalldata using Gradle
-        run: ./gradlew syncSmalldata
+      - name: Run Gradle Build (no clean)
+        if: steps.set-status.outputs.result == 'success'
+        run: ./gradlew --build-cache --parallel build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient -x :h2o-r:untar --warning-mode all
 
-      # - name: Sync R packages via Gradle
-      #   run: ./gradlew syncRPackages -x :h2o-assemblies:main:shadowJar -x :h2o-assemblies:steam:shadowJar
-
-      - name: Build H2O-3 (without tests)
-        run: ./gradlew build -x test -x test -x :h2o-assemblies:main:shadowJar -x :h2o-assemblies:steam:shadowJar
-
-      - name: Run H2O-3 tests
-        run: ./gradlew test -x :h2o-assemblies:main:shadowJar -x :h2o-assemblies:steam:shadowJar
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+            name: h2o-3-build
+            path: |
+                build/
+                h2o-core/build/
+                h2o-admissibleml/build/
+                h2o-py/build/
+                smalldata/
+            retention-days: 1
