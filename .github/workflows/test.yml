@@ -70,7 +70,6 @@ jobs:
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
       - name: Run Gradle Build (no clean)
-        if: steps.set-status.outputs.result == 'success'
         run: ./gradlew --build-cache --parallel build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient -x :h2o-r:untar --warning-mode all
 
       - name: Upload build artifacts
