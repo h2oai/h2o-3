@@ -72,12 +72,11 @@ jobs:
       - name: Sync smalldata using Gradle
         run: ./gradlew syncSmalldata
 
-    #   - name: Sync R packages via Gradle
-    #     run: ./gradlew syncRPackages
-    #     working-directory: ${{ github.workspace }}
+      - name: Sync R packages via Gradle
+        run: ./gradlew syncRPackages -x :h2o-assemblies:main:shadowJar -x :h2o-assemblies:steam:shadowJar
 
       - name: Build H2O-3 (without tests)
-        run: ./gradlew build -x test
+        run: ./gradlew build -x test -x test -x :h2o-assemblies:main:shadowJar -x :h2o-assemblies:steam:shadowJar
 
       - name: Run H2O-3 tests
-        run: ./gradlew test
+        run: ./gradlew test -x :h2o-assemblies:main:shadowJar -x :h2o-assemblies:steam:shadowJar
