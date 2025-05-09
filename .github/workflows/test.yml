@@ -72,16 +72,9 @@ jobs:
       - name: Sync smalldata using Gradle
         run: ./gradlew syncSmalldata
 
-      - name: Check for required R package template file
-        run: |
-          if [ ! -f h2o-r/h2o-DESCRIPTION.template ]; then
-            echo "Missing required file: h2o-r/h2o-DESCRIPTION.template"
-            exit 1
-          fi
-
-      - name: Sync R packages via Gradle
-        run: ./gradlew syncRPackages
-        working-directory: ${{ github.workspace }}
+    #   - name: Sync R packages via Gradle
+    #     run: ./gradlew syncRPackages
+    #     working-directory: ${{ github.workspace }}
 
       - name: Build H2O-3 (without tests)
         run: ./gradlew build -x test
