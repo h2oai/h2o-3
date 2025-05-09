@@ -20,11 +20,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
+      # - name: Set up JDK 11
+      #   uses: actions/setup-java@v4
+      #   with:
+      #     distribution: 'temurin'
+      #     java-version: '11'
 
       # - name: Set up Node.js
       #   uses: actions/setup-node@v4
@@ -53,8 +53,8 @@ jobs:
       #   run: |
       #     Rscript -e 'install.packages(c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat"), repos="https://cloud.r-project.org")'
 
-      - name: Grant execute permissions to gradlew
-        run: chmod +x gradlew
+      # - name: Grant execute permissions to gradlew
+      #   run: chmod +x gradlew
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
