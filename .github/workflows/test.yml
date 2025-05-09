@@ -46,6 +46,21 @@ jobs:
 
       - name: Grant execute permissions to gradlew
         run: chmod +x gradlew
+  
+      - name: Configure AWS Credentials
+        if: steps.set-status.outputs.result == 'success'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+            audience: "sts.amazonaws.com"
+            aws-region: "us-east-1"
+            role-session-name: "h2o-shared-service-prod"
+            role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
+
+      - name: Sync smalldata from S3
+        if: steps.set-status.outputs.result == 'success'
+        run: |
+          mkdir -p smalldata
+          aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
       - name: Sync small data and R packages
         run: |
