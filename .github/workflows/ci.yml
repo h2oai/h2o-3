@@ -3,7 +3,7 @@ name: H2O-3 CI Nightly
 on:
   push:
     branches:
-      - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
+      - devops/rohan/mig-h2o-3-nightly
   workflow_dispatch:
 
 permissions:
