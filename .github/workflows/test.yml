@@ -1,0 +1,63 @@
+name: Build and Test H2O-3
+
+on:
+    push:
+      branches:
+        - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
+    workflow_dispatch:  
+
+jobs:
+  build-h2o3:
+    name: Build & Test H2O-3
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install grip tabulate requests wheel
+
+      - name: Install R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install R packages
+        run: |
+          Rscript -e 'install.packages(c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat"), repos="https://cloud.r-project.org")'
+
+      - name: Grant execute permissions to gradlew
+        run: chmod +x gradlew
+
+      - name: Sync small data and R packages
+        run: |
+          ./gradlew syncSmalldata
+          ./gradlew syncRPackages
+
+      - name: Build H2O-3 (without tests)
+        run: ./gradlew build -x test
+
+      - name: Run H2O-3 tests
+        run: ./gradlew test
+
+      # Optional: Start H2O for local-only testing
+      # - name: Start H2O locally
+      #   run: java -jar build/h2o.jar &
