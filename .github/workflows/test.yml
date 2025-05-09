@@ -26,10 +26,10 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+      # - name: Set up Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '18'
 
       # - name: Set up Python
       #   uses: actions/setup-python@v5
@@ -53,15 +53,15 @@ jobs:
       #   run: |
       #     Rscript -e 'install.packages(c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat"), repos="https://cloud.r-project.org")'
 
-      # - name: Grant execute permissions to gradlew
-      #   run: chmod +x gradlew
+      - name: Grant execute permissions to gradlew
+        run: chmod +x gradlew
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           audience: "sts.amazonaws.com"
           aws-region: "us-east-1"
-          role-session-name: "h2o-shared-service-prod"
+          role-session-name: "h2o-shared-service-prd"
           role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
       - name: Sync smalldata using Gradle
