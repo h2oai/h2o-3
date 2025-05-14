@@ -16,10 +16,24 @@ import java.io.*;
 
 public class RemoteXGBoostUploadServlet extends HttpServlet {
 
+    private static void validateModelKey(String key) {
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException("Model key cannot be null or empty");
+        }
+        if (key.contains("..") || key.contains("/") || key.contains("\\")) {
+            throw new IllegalArgumentException("Invalid model key: Path traversal or invalid characters detected");
+        }
+    }
+
     private static final Logger LOG = Logger.getLogger(RemoteXGBoostUploadServlet.class);
     
     public static File getUploadDir(String key) {
-        return new File(H2O.ICE_ROOT.toString(), key);
+        validateModelKey(key);
+        File uploadDir = new File(H2O.ICE_ROOT.toString(), key).toPath().normalize().toFile();
+        if (!uploadDir.toPath().startsWith(H2O.ICE_ROOT.toPath())) {
+            throw new IllegalArgumentException("Invalid model key: Path traversal detected");
+        }
+        return uploadDir;
     }
     
     public static File getCheckpointFile(String key) {
@@ -27,7 +41,7 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
         if (uploadDir.mkdirs()) {
             LOG.debug("Created temporary directory " + uploadDir);
         }
-        return new File(getUploadDir(key), "checkpoint.bin");
+        return new File(getUploadDir(key).toPath().normalize().toFile(), "checkpoint.bin");
     }
     
     public enum RequestType {
