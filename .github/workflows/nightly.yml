@@ -49,21 +49,16 @@ jobs:
         id: extract
         shell: bash
         run: |
-          # Extract Gradle version
           GRADLE_VERSION=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-bin.zip.*/\1/p')
-          # Extract XGBoost version
           XGB_VERSION=$(grep 'xgboost4jVersion' h2o-extensions/xgboost/build.gradle | sed -n 's/.*xgboost4jVersion *= *[\"\x27]*\([0-9.]*\).*/\1/p')
+          echo "gradle_version=${GRADLE_VERSION:-not_found}" >> "${GITHUB_OUTPUT}"
+          echo "xgb_version=${XGB_VERSION:-not_found}" >> "${GITHUB_OUTPUT}"
 
-          # Fallback if not found
-          GRADLE_VERSION=${GRADLE_VERSION:-"not_found"}
-          XGB_VERSION=${XGB_VERSION:-"not_found"}
-
-          # Set outputs with proper escaping
-          echo "gradle_version=${GRADLE_VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "xgb_version=${XGB_VERSION}" >> "${GITHUB_OUTPUT}"
-
-      - name: Save workspace
-        run: tar --warning=no-file-changed -czf workspace.tar.gz .
+      - name: Archive workspace safely
+        run: |
+          mkdir temp-archive
+          cp -a . temp-archive/
+          tar -czf workspace.tar.gz -C temp-archive .
 
       - name: Upload workspace artifact
         uses: actions/upload-artifact@v4
