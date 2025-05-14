@@ -57,8 +57,10 @@ jobs:
       - name: Archive workspace safely
         run: |
           mkdir temp-archive
-          cp -a . temp-archive/
+          shopt -s dotglob
+          cp -a !(temp-archive) temp-archive/
           tar -czf workspace.tar.gz -C temp-archive .
+
 
       - name: Upload workspace artifact
         uses: actions/upload-artifact@v4
