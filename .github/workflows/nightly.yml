@@ -1,11 +1,14 @@
 name: H2O-3 Nightly CI
 
 on:
-  workflow_dispatch:
-
-permissions:
-  id-token: write
-  contents: read
+    workflow_dispatch:
+    push:
+      branches:
+        - devops/**
+  
+  permissions:
+    id-token: write
+    contents: read
 
 env:
   BRANCH_NAME: devops/*
@@ -52,7 +55,7 @@ jobs:
 
       - name: Save workspace
         run: tar -czf workspace.tar.gz .
-        
+
       - name: Upload workspace artifact
         uses: actions/upload-artifact@v4
         with:
