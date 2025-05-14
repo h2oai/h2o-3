@@ -55,12 +55,12 @@ jobs:
           echo "xgb_version=${XGB_VERSION:-not_found}" >> "${GITHUB_OUTPUT}"
 
       - name: Archive workspace safely
+        shell: bash
         run: |
           mkdir temp-archive
-          shopt -s dotglob
+          shopt -s extglob dotglob
           cp -a !(temp-archive) temp-archive/
           tar -czf workspace.tar.gz -C temp-archive .
-
 
       - name: Upload workspace artifact
         uses: actions/upload-artifact@v4
