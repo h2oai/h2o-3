@@ -4,7 +4,7 @@ on:
     workflow_dispatch:
     push:
       branches:
-        - devops/**
+        - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
 
 permissions:
     id-token: write
