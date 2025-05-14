@@ -6,6 +6,10 @@ on:
     branches:
       - devops/**
 
+permissions:
+  id-token: write
+  contents: read
+  
 jobs:
   py36-smoke-test:
     name: Py3.6 Smoke Test
