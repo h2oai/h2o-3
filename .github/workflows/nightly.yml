@@ -49,13 +49,19 @@ jobs:
         id: extract
         shell: bash
         run: |
-          set -e
+          # Extract Gradle version
+          GRADLE_VERSION=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-bin.zip.*/\1/p')
+          # Extract XGBoost version
+          XGB_VERSION=$(grep 'xgboost4jVersion' h2o-extensions/xgboost/build.gradle | sed -n 's/.*xgboost4jVersion *= *[\"\x27]*\([0-9.]*\).*/\1/p')
 
-          GRADLE_VERSION=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties | grep -oP '(?<=gradle-)[0-9.]+(?=-bin.zip)' || echo "not_found")
-          XGB_VERSION=$(grep 'xgboost4jVersion' h2o-extensions/xgboost/build.gradle | grep -oP '([0-9]+\.)+[0-9]+' || echo "not_found")
+          # Fallback if not found
+          GRADLE_VERSION=${GRADLE_VERSION:-"not_found"}
+          XGB_VERSION=${XGB_VERSION:-"not_found"}
 
-          echo "gradle_version=${GRADLE_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "xgb_version=${XGB_VERSION}" >> "$GITHUB_OUTPUT"
+          # Set outputs with proper escaping
+          echo "gradle_version=${GRADLE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "xgb_version=${XGB_VERSION}" >> "${GITHUB_OUTPUT}"
+
 
 
       - name: Save workspace
