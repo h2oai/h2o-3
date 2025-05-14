@@ -5,10 +5,11 @@ on:
     push:
       branches:
         - devops/**
-  
-  permissions:
+
+permissions:
     id-token: write
     contents: read
+  
 
 env:
   BRANCH_NAME: devops/*
