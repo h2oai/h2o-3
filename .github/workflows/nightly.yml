@@ -1,18 +1,17 @@
 name: H2O-3 Nightly CI
 
 on:
-    workflow_dispatch:
-    push:
-      branches:
-        - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
+  workflow_dispatch:
+  push:
+    branches:
+      - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
 
 permissions:
-    id-token: write
-    contents: read
-  
+  id-token: write
+  contents: read
 
 env:
-  BRANCH_NAME: devops/*
+  BRANCH_NAME: devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
   DOCKER_IMAGE: 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-base:46
   AWS_REGION: us-east-1
 
@@ -44,7 +43,7 @@ jobs:
             docker login --username AWS --password-stdin ${{ env.DOCKER_IMAGE }}
 
       - name: Pull Docker Image
-        run: docker pull $DOCKER_IMAGE
+        run: docker pull ${{ env.DOCKER_IMAGE }}
 
       - name: Extract Gradle and XGBoost versions
         id: extract
@@ -86,10 +85,13 @@ jobs:
           role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
 
       - name: Run Build in Docker
+        env:
+          DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
         run: |
           docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
+            -e DRIVERLESS_AI_LICENSE_KEY=${{ secrets.DRIVERLESS_AI_LICENSE_KEY }} \
             -e GRADLE_OPTS="-Dorg.gradle.daemon=false" \
-            $DOCKER_IMAGE \
+            ${{ env.DOCKER_IMAGE }} \
             bash -c "git config --global --add safe.directory '*' && make -f scripts/jenkins/Makefile.jenkins build-h2o-3"
 
   python-tests:
@@ -119,8 +121,8 @@ jobs:
           DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
         run: |
           docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
-            -e DRIVERLESS_AI_LICENSE_KEY \
-            $DOCKER_IMAGE \
+            -e DRIVERLESS_AI_LICENSE_KEY=${{ secrets.DRIVERLESS_AI_LICENSE_KEY }} \
+            ${{ env.DOCKER_IMAGE }} \
             bash -c "make -f scripts/jenkins/Makefile.jenkins pyunit-smoke"
 
   r-tests:
@@ -146,7 +148,10 @@ jobs:
           role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
 
       - name: Run R tests inside Docker
+        env:
+          DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
         run: |
           docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
-            $DOCKER_IMAGE \
+            -e DRIVERLESS_AI_LICENSE_KEY=${{ secrets.DRIVERLESS_AI_LICENSE_KEY }} \
+            ${{ env.DOCKER_IMAGE }} \
             bash -c "make -f scripts/jenkins/Makefile.jenkins runit-smoke"
