@@ -40,7 +40,7 @@ jobs:
       - name: Login to ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
-            docker login --username AWS --password-stdin ${{ env.DOCKER_IMAGE }}
+            docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
 
       - name: Pull Docker Image
         run: docker pull ${{ env.DOCKER_IMAGE }}
