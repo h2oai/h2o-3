@@ -52,6 +52,7 @@ jobs:
 
       - name: Save workspace
         run: tar -czf workspace.tar.gz .
+        
       - name: Upload workspace artifact
         uses: actions/upload-artifact@v4
         with:
