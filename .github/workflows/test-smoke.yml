@@ -1,0 +1,97 @@
+name: Py3.6 Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - devops/**
+
+jobs:
+  py36-smoke-test:
+    name: Py3.6 Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: "sts.amazonaws.com"
+          aws-region: "us-east-1"
+          role-session-name: "h2o-shared-service-prd"
+          role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
+
+      - name: Sync smalldata from S3
+        run: |
+          mkdir -p smalldata
+          aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
+
+      - name: Sync bigdata from S3
+        run: |
+          mkdir -p bigdata
+          aws s3 sync s3://h2o-public-test-data/bigdata/ ./bigdata/
+
+      - name: Setup Python 3.6
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.6
+
+      - name: Unpack test package
+        run: |
+          mkdir -p py3.6-smoke/h2o-3
+          unzip -q -o test-package-py.zip -d py3.6-smoke/h2o-3
+          rm -v test-package-py.zip
+
+      - name: Install H2O wheel
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-deps py3.6-smoke/h2o-3/h2o-py/build/dist/*.whl
+
+      - name: Create empty pyunitChangedTestList
+        run: echo "" > py3.6-smoke/h2o-3/tests/pyunitChangedTestList
+
+      - name: Change ownership (simulated)
+        run: sudo chown -R $USER:$USER py3.6-smoke/h2o-3
+
+      - name: Link smalldata and bigdata
+        run: |
+          cd py3.6-smoke/h2o-3
+          rm -fv smalldata bigdata
+          ln -s ../../smalldata smalldata
+          ln -s ../../bigdata bigdata
+
+      - name: List test directory
+        run: ls -al py3.6-smoke/h2o-3/tests
+
+      - name: Run tests
+        run: |
+          cd py3.6-smoke/h2o-3
+          echo "Running tests..."
+          # Replace this with your actual test command
+          pytest tests --junitxml=results.xml
+
+      - name: Sanitize XML output
+        run: |
+          find py3.6-smoke/h2o-3 -type f -name '*.xml' -exec sed -i 's/&#[0-9]\+;//g' {} +
+
+      - name: Upload JUnit test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: py36-junit-results
+          path: py3.6-smoke/h2o-3/results.xml
+
+      - name: Compress huge log files (simulated)
+        run: |
+          echo "Compressing logs..."
+          mkdir -p logs
+          echo "log content" > logs/example.log
+          gzip -v logs/example.log
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: py36-logs
+          path: logs/
