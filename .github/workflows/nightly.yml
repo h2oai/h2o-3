@@ -1,0 +1,147 @@
+name: H2O-3 Nightly CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BRANCH_NAME: devops/*
+  DOCKER_IMAGE: 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-base:46
+  AWS_REGION: us-east-1
+
+jobs:
+  checkout-and-prepare:
+    name: Checkout and Prepare Workspace
+    runs-on: ubuntu-latest
+    outputs:
+      gradle_version: ${{ steps.extract.outputs.gradle_version }}
+      xgb_version: ${{ steps.extract.outputs.xgb_version }}
+
+    steps:
+      - name: Checkout H2O-3
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: "sts.amazonaws.com"
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: "h2o-ecr"
+          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | \
+            docker login --username AWS --password-stdin ${{ env.DOCKER_IMAGE }}
+
+      - name: Pull Docker Image
+        run: docker pull $DOCKER_IMAGE
+
+      - name: Extract Gradle and XGBoost versions
+        id: extract
+        run: |
+          GRADLE_VERSION=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties | grep -o '[0-9.]\+')
+          XGB_VERSION=$(grep 'xgboost4jVersion =' h2o-extensions/xgboost/build.gradle | grep -oE '([0-9]+\.)+[0-9]+')
+          echo "gradle_version=$GRADLE_VERSION" >> $GITHUB_OUTPUT
+          echo "xgb_version=$XGB_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Save workspace
+        run: tar -czf workspace.tar.gz .
+      - name: Upload workspace artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace
+          path: workspace.tar.gz
+
+  build-h2o3:
+    name: Build H2O-3
+    runs-on: ubuntu-latest
+    needs: checkout-and-prepare
+
+    steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace
+
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: "sts.amazonaws.com"
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: "h2o-ecr"
+          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+
+      - name: Run Build in Docker
+        run: |
+          docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
+            -e GRADLE_OPTS="-Dorg.gradle.daemon=false" \
+            $DOCKER_IMAGE \
+            bash -c "git config --global --add safe.directory '*' && make -f scripts/jenkins/Makefile.jenkins build-h2o-3"
+
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    needs: build-h2o3
+
+    steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace
+
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: "sts.amazonaws.com"
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: "h2o-ecr"
+          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+
+      - name: Run Python tests inside Docker
+        env:
+          DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
+        run: |
+          docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
+            -e DRIVERLESS_AI_LICENSE_KEY \
+            $DOCKER_IMAGE \
+            bash -c "make -f scripts/jenkins/Makefile.jenkins pyunit-smoke"
+
+  r-tests:
+    name: R Tests
+    runs-on: ubuntu-latest
+    needs: build-h2o3
+
+    steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace
+
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: "sts.amazonaws.com"
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: "h2o-ecr"
+          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+
+      - name: Run R tests inside Docker
+        run: |
+          docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
+            $DOCKER_IMAGE \
+            bash -c "make -f scripts/jenkins/Makefile.jenkins runit-smoke"
