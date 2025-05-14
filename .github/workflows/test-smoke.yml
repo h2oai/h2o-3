@@ -33,10 +33,10 @@ jobs:
           mkdir -p smalldata
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
-      - name: Sync bigdata from S3
-        run: |
-          mkdir -p bigdata
-          aws s3 sync s3://h2o-public-test-data/bigdata/ ./bigdata/
+      # - name: Sync bigdata from S3
+      #   run: |
+      #     mkdir -p bigdata
+      #     aws s3 sync s3://h2o-public-test-data/bigdata/ ./bigdata/
 
       - name: Setup Python 3.6
         uses: actions/setup-python@v5
@@ -65,7 +65,7 @@ jobs:
           cd py3.6-smoke/h2o-3
           rm -fv smalldata bigdata
           ln -s ../../smalldata smalldata
-          ln -s ../../bigdata bigdata
+          # ln -s ../../bigdata bigdata
 
       - name: List test directory
         run: ls -al py3.6-smoke/h2o-3/tests
