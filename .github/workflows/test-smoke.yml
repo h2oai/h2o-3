@@ -53,17 +53,17 @@ jobs:
 
       - name: Unpack test package
         run: |
-          mkdir -p py3.7-smoke/h2o-3
-          unzip -q -o test-package-py.zip -d py3.7-smoke/h2o-3
+          mkdir -p py3.6-smoke/h2o-3
+          unzip -q -o test-package-py.zip -d py3.6-smoke/h2o-3
           rm -v test-package-py.zip
 
       - name: Install H2O wheel
         run: |
           python3.7 -m pip install --upgrade pip
-          python3.7 -m pip install --no-deps py3.7-smoke/h2o-3/h2o-py/build/dist/*.whl
+          python3.7 -m pip install --no-deps py3.6-smoke/h2o-3/h2o-py/build/dist/*.whl
 
       - name: Create empty pyunitChangedTestList
-        run: echo "" > py3.7-smoke/h2o-3/tests/pyunitChangedTestList
+        run: echo "" > py3.6-smoke/h2o-3/tests/pyunitChangedTestList
 
       - name: Change ownership (simulated)
         run: sudo chown -R $USER:$USER py3.7-smoke/h2o-3
