@@ -47,11 +47,16 @@ jobs:
 
       - name: Extract Gradle and XGBoost versions
         id: extract
+        shell: bash
         run: |
-          GRADLE_VERSION=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties | grep -o '[0-9.]\+')
-          XGB_VERSION=$(grep 'xgboost4jVersion =' h2o-extensions/xgboost/build.gradle | grep -oE '([0-9]+\.)+[0-9]+')
-          echo "gradle_version=$GRADLE_VERSION" >> $GITHUB_OUTPUT
-          echo "xgb_version=$XGB_VERSION" >> $GITHUB_OUTPUT
+          set -e
+
+          GRADLE_VERSION=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties | grep -oP '(?<=gradle-)[0-9.]+(?=-bin.zip)' || echo "not_found")
+          XGB_VERSION=$(grep 'xgboost4jVersion' h2o-extensions/xgboost/build.gradle | grep -oP '([0-9]+\.)+[0-9]+' || echo "not_found")
+
+          echo "gradle_version=${GRADLE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "xgb_version=${XGB_VERSION}" >> "$GITHUB_OUTPUT"
+
 
       - name: Save workspace
         run: tar -czf workspace.tar.gz .
