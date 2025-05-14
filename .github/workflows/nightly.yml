@@ -62,10 +62,8 @@ jobs:
           echo "gradle_version=${GRADLE_VERSION}" >> "${GITHUB_OUTPUT}"
           echo "xgb_version=${XGB_VERSION}" >> "${GITHUB_OUTPUT}"
 
-
-
       - name: Save workspace
-        run: tar -czf workspace.tar.gz .
+        run: tar --warning=no-file-changed -czf workspace.tar.gz .
 
       - name: Upload workspace artifact
         uses: actions/upload-artifact@v4
