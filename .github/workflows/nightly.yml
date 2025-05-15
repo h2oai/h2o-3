@@ -107,7 +107,7 @@ jobs:
               ln -sf /usr/bin/python3 /usr/bin/python &&
               pip3 install --no-cache-dir tabulate>=0.7.5 requests>=2.10 &&
               git config --global --add safe.directory '*' &&
-              ./gradlew --stacktrace --parallel clean build -x test
+              ./gradlew --build-cache --parallel build -x test -x :h2o-r:buildPackageDocumentation -x :h2o-r:buildPKG -x :h2o-r:buildPKGClient -x :h2o-r:untar --warning-mode all
             "
 
   python-tests:
