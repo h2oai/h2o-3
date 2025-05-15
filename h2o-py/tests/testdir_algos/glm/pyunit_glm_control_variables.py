@@ -17,26 +17,20 @@ def glm_control_variables():
     
     predictions_train = glm_model.predict(cars).as_data_frame()
     metrics = glm_model.training_model_metrics()
-    mse = metrics['MSE']
-    auc = metrics['AUC']
-    r2 = metrics['r2']
 
-    glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["name", "power", "year"])
+    glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"])
     glm_model_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
     predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
     metrics_2 = glm_model_2.training_model_metrics()
-    mse_2 = metrics_2['MSE']
-    auc_2 = metrics_2['AUC']
-    r2_2 = metrics_2['r2']
-
-    assert mse != mse_2 
-    assert auc != auc_2
-    assert r2 != r2_2
     
-    assert predictions_train.iloc[0, 1] != predictions_train_2.iloc[0, 1]
-    assert predictions_train.iloc[10, 1] != predictions_train_2.iloc[10, 1]
-    assert predictions_train.iloc[100, 1] != predictions_train_2.iloc[100, 1]
+    # check model metrics are the same
+    pyunit_utils.check_model_metrics(glm_model, glm_model_2, "")
+    
+    # check predictions are different
+    pyunit_utils.assert_not_equal(predictions_train.iloc[0, 1], predictions_train_2.iloc[0, 1])
+    pyunit_utils.assert_not_equal(predictions_train.iloc[10, 1], predictions_train_2.iloc[10, 1])
+    pyunit_utils.assert_not_equal(predictions_train.iloc[100, 1], predictions_train_2.iloc[100, 1])
     
     
 if __name__ == "__main__":
