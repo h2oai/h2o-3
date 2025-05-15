@@ -103,7 +103,13 @@ jobs:
             -e DRIVERLESS_AI_LICENSE_KEY=${{ secrets.DRIVERLESS_AI_LICENSE_KEY }} \
             -e GRADLE_OPTS="-Dorg.gradle.daemon=false" \
             ${{ env.DOCKER_IMAGE }} \
-            bash -c "apt-get update && apt-get install -y python3 python3-pip && ln -s /usr/bin/python3 /usr/bin/python && git config --global --add safe.directory '*' && make -f scripts/jenkins/Makefile.jenkins build-h2o-3"
+            bash -c "
+              apt-get update && apt-get install -y python3 python3-pip &&
+              ln -sf /usr/bin/python3 /usr/bin/python &&
+              pip3 install -r h2o-py/requirements.txt || true &&
+              git config --global --add safe.directory '*' &&
+              make -f scripts/jenkins/Makefile.jenkins build-h2o-3 --stacktrace
+            "
 
   python-tests:
     name: Python Tests
