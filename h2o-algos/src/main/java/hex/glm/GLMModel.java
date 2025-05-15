@@ -1473,6 +1473,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final long      _nobs;
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
+  public boolean _useControlVariables = false;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -2096,7 +2097,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     } else {
       double[] b = beta();
       double eta = b[b.length - 1] + o; // intercept + offset
-      boolean controlVarDisabled = _output._controlValuesIdxsInAdaptedFrame == null;
+      boolean controlVarDisabled = this._useControlVariables;
       for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
         if(controlVarDisabled || Arrays.binarySearch(_output._controlValuesIdxsInAdaptedFrame, i) < 0) {
           int l = _output._dinfo.getCategoricalId(i, data[i]);

@@ -3725,6 +3725,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._finalScoring = true; // enables likelihood calculation while scoring
         scoreAndUpdateModel();
         _model._finalScoring = false; // avoid calculating likelihood in case of further updates
+        if (_model._parms._control_variables != null) {
+          _model._useControlVariables = true;
+        }
         
         if (dfbetas.equals(_parms._influence))
           genRID();

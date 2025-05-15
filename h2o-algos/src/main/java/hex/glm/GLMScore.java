@@ -56,7 +56,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       // prepare control variable map to filter them from beta
       int [] controlValMap = m._output._controlValuesIdxsInAdaptedFrame;
       int[] betaControlValMap = new int[beta.length - 1];
-      if (controlValMap != null) {
+      if (controlValMap != null && m._useControlVariables) {
         for (int k = 0; k < controlValMap.length; k++) {
           int colIdx = controlValMap[k];
           if (colIdx < dinfo._cats) {  // categorical case

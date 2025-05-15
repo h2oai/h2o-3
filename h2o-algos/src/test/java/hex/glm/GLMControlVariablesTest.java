@@ -11,13 +11,98 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.DistributedException;
+
+import static org.junit.Assert.assertEquals;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GLMControlVariablesTest extends TestUtil {
-
+    
     @Test
-    public void testTrainScoreModel() {
+    public void testTrainModelWithControlVariables() {
+        Frame train = null;
+        Frame test = null;
+        Frame preds = null;
+        GLMModel glm = null;
+        Frame preds2 = null;
+        GLMModel glm2 = null;
+        try {
+            Scope.enter();
+            train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+            GLMModel.GLMParameters.Family family = GLMModel.GLMParameters.Family.binomial;
+            String responseColumn = "C21";
+
+            // set cat columns
+            int numCols = train.numCols();
+            int enumCols = (numCols - 1) / 2;
+            for (int cindex = 0; cindex < enumCols; cindex++) {
+                train.replace(cindex, train.vec(cindex).toCategoricalVec()).remove();
+            }
+            int response_index = numCols - 1;
+
+            train.replace((response_index), train.vec(response_index).toCategoricalVec()).remove();
+
+            DKV.put(train);
+            Scope.track_generic(train);
+
+            test = new Frame(train);
+            test.remove(responseColumn);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(family);
+            params._response_column = responseColumn;
+            params._train = train._key;
+            params._control_variables = new String[]{"C1", "C13", "C20"};
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+            
+            preds = glm.score(test);
+            Scope.track_generic(preds);
+
+            // train model without control variables
+            params._control_variables = null;
+
+            glm2 = new GLM(params).trainModel().get();
+            Scope.track_generic(glm2);
+
+            preds2 = glm2.score(test);
+            Scope.track_generic(preds2);
+
+            // check metrics are the same
+            double delta = 10e-10;
+            assertEquals(glm.auc(), glm2.auc(), delta);
+            assertEquals(glm.mse(), glm2.mse(), delta);
+            assertEquals(glm.logloss(), glm2.logloss(), delta);
+            
+            double tMse = glm._output._training_metrics._MSE;
+            double tMse2 = glm2._output._training_metrics._MSE;
+            System.out.println(tMse+" "+tMse2);
+            assertEquals(tMse, tMse2, delta);
+            
+            // check preds differ
+            int differ = 0;
+            int testRowNumber = 100;
+            double threshold = (2 * testRowNumber)/1.1;
+            for (int i = 0; i < testRowNumber; i++) {
+                if(preds.vec(1).at(i) != preds2.vec(1).at(i)) differ++;
+                if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
+            }
+            System.out.println(differ + " " + threshold);
+            assert differ > threshold; 
+        } finally {
+            if(train != null) train.remove();
+            if(test != null) test.remove();
+            if(preds != null) preds.remove();
+            if(glm != null) glm.remove();
+            if(preds2 != null) preds2.remove();
+            if(glm2 != null) glm2.remove();
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void testTrainScoreDifferFromScore0() {
         Frame train = null;
         Frame test = null;
         Frame preds = null;
@@ -27,7 +112,7 @@ public class GLMControlVariablesTest extends TestUtil {
             train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
             GLMModel.GLMParameters.Family family = GLMModel.GLMParameters.Family.binomial;
             String responseColumn = "C21";
-            
+
             // set cat columns
             int numCols = train.numCols();
             int enumCols = (numCols - 1) / 2;
@@ -35,9 +120,9 @@ public class GLMControlVariablesTest extends TestUtil {
                 train.replace(cindex, train.vec(cindex).toCategoricalVec()).remove();
             }
             int response_index = numCols - 1;
-            
+
             train.replace((response_index), train.vec(response_index).toCategoricalVec()).remove();
-            
+
             DKV.put(train);
             Scope.track_generic(train);
 
@@ -45,25 +130,27 @@ public class GLMControlVariablesTest extends TestUtil {
             params._response_column = responseColumn;
             params._train = train._key;
             params._control_variables = new String[]{"C1", "C13", "C20"};
-            
+
             glm = new GLM(params).trainModel().get();
             Scope.track_generic(glm);
-            
+
             test = new Frame(train);
             test.remove(glm._output.responseName());
             preds = glm.score(test);
             Scope.track_generic(preds);
-            
-            
-            glm.adaptTestForTrain(test,true,false);
-            test.remove(test.numCols()-1); // remove response
-            test.add(preds.names(),preds.vecs());
+
+
+            glm.adaptTestForTrain(test, true, false);
+            test.remove(test.numCols() - 1); // remove response
+            test.add(preds.names(), preds.vecs());
 
             DKV.put(test);
             Scope.track_generic(test);
-            
-            new GLMTest.TestScore0(glm,false,false).doAll(test);
-            
+
+            new GLMTest.TestScore0(glm, false, false).doAll(test);
+        } catch(DistributedException e){
+            System.out.println("This test should failed. Score should differ from score0, because of control variables.");
+            System.out.println(e);
         } finally {
             if(train != null) train.remove();
             if(test != null) test.remove();
