@@ -47,6 +47,9 @@ jobs:
       - name: Pull Docker Image
         run: docker pull ${{ env.DOCKER_IMAGE }}
 
+      - name: Make pipeline scripts executable
+        run: chmod +x scripts/github/*.sh
+
       - name: Extract Gradle and XGBoost versions
         id: extract
         shell: bash
