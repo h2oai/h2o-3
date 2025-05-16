@@ -109,13 +109,21 @@ jobs:
         with:
           audience: "sts.amazonaws.com"
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: "h2o-ecr"
-          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+          role-session-name: "h2o-shared-service-prod"
+          role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
 
       - name: Sync smalldata from S3
         run: |
           mkdir -p smalldata
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: "sts.amazonaws.com"
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: "h2o-ecr"
+          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
 
       - name: Run Build in Docker
         env:
