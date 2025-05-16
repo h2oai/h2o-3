@@ -125,6 +125,11 @@ jobs:
           role-session-name: "h2o-ecr"
           role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
 
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | \
+            docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
+
       - name: Run Build in Docker
         env:
           DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
