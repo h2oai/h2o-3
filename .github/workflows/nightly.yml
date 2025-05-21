@@ -19,7 +19,7 @@ env:
 jobs:
   checkout-and-prepare:
     name: Checkout and Prepare Workspace
-    runs-on: [self-hosted, ubuntu-latest-8-cores]
+    runs-on: [self-hosted, gh-runner-1]
     outputs:
       gradle_version: ${{ steps.extract.outputs.gradle_version }}
       xgb_version: ${{ steps.extract.outputs.xgb_version }}
@@ -91,7 +91,7 @@ jobs:
 
   build-h2o3:
     name: Build H2O-3
-    runs-on: [self-hosted, ubuntu-latest-16-cores]
+    runs-on: [self-hosted, gh-runner-1]
     needs: checkout-and-prepare
     if: needs.checkout-and-prepare.outputs.build_status == 'success'
 
