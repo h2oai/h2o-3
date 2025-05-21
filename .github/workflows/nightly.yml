@@ -19,7 +19,7 @@ env:
 jobs:
   checkout-and-prepare:
     name: Checkout and Prepare Workspace
-    runs-on: ubuntu-22.04-4x
+    runs-on: [self-hosted, ubuntu-latest-8-cores]
     outputs:
       gradle_version: ${{ steps.extract.outputs.gradle_version }}
       xgb_version: ${{ steps.extract.outputs.xgb_version }}
@@ -91,7 +91,7 @@ jobs:
 
   build-h2o3:
     name: Build H2O-3
-    runs-on: ubuntu-22.04-4x
+    runs-on: [self-hosted, ubuntu-latest-16-cores]
     needs: checkout-and-prepare
     if: needs.checkout-and-prepare.outputs.build_status == 'success'
 
@@ -117,7 +117,7 @@ jobs:
           mkdir -p smalldata
           aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (again)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           audience: "sts.amazonaws.com"
@@ -154,7 +154,7 @@ jobs:
 
   python-tests:
     name: Python Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-latest-8-cores]
     needs: build-h2o3
 
     steps:
@@ -185,7 +185,7 @@ jobs:
 
   r-tests:
     name: R Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-latest-8-cores]
     needs: build-h2o3
 
     steps:
