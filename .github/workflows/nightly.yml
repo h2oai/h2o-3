@@ -91,7 +91,7 @@ jobs:
 
   build-h2o3:
     name: Build H2O-3
-    runs-on: ubuntu-latest-4x
+    runs-on: ubuntu-22.04-4x
     needs: checkout-and-prepare
     if: needs.checkout-and-prepare.outputs.build_status == 'success'
 
