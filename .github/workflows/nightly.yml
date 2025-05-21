@@ -19,7 +19,7 @@ env:
 jobs:
   checkout-and-prepare:
     name: Checkout and Prepare Workspace
-    runs-on: ubuntu-latest-16-cores
+    runs-on: h2ogpte
     timeout-minutes: 400
     outputs:
       gradle_version: ${{ steps.extract.outputs.gradle_version }}
