@@ -91,7 +91,7 @@ jobs:
 
   build-h2o3:
     name: Build H2O-3
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest-8-cores
     needs: checkout-and-prepare
     if: needs.checkout-and-prepare.outputs.build_status == 'success'
 
@@ -154,7 +154,7 @@ jobs:
 
   python-tests:
     name: Python Tests
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest-8-cores
     needs: build-h2o3
 
     steps:
@@ -185,7 +185,7 @@ jobs:
 
   r-tests:
     name: R Tests
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest-8-cores
     needs: build-h2o3
 
     steps:
