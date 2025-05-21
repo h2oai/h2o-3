@@ -19,7 +19,7 @@ env:
 jobs:
   checkout-and-prepare:
     name: Checkout and Prepare Workspace
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-4x
     outputs:
       gradle_version: ${{ steps.extract.outputs.gradle_version }}
       xgb_version: ${{ steps.extract.outputs.xgb_version }}
