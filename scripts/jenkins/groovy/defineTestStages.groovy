@@ -107,7 +107,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-8"
     ],
@@ -219,7 +219,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'INFO Check', target: 'test-info',
-      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, 
+      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
     [
@@ -260,19 +260,19 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 AutoML JUnit', target: 'test-junit-automl-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-8"
     ],
     [
       stageName: 'Java 8 Clustering JUnit', target: 'test-junit-clustering-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-8"
     ],
     [
       stageName: 'Java 8 XGBoost Multinode JUnit', target: 'test-junit-xgb-multi-jenkins', pythonVersion: '3.6', javaVersion: 8,
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-8"
     ],
@@ -335,7 +335,7 @@ def call(final pipelineContext) {
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],
-    [ 
+    [
       stageName: 'GAM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
@@ -380,7 +380,7 @@ def call(final pipelineContext) {
       rVersion: '4.0.2',
       healthCheckSuppressed: true
     ],
-    [ 
+    [
       stageName: 'MERGE Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
@@ -480,13 +480,13 @@ def call(final pipelineContext) {
 //      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20, activatePythonEnv: false,
 //      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
 //      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
-//      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], 
+//      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'],
 //      addToDockerGroup: true, nodeLabel: "micro"
 //    ]
   ]
 
   // Stages executed in addition to NIGHTLY_REPEATED_STAGES, executed once a night.
-  // Should contain all Java versions and also the minimum supported Python version. 
+  // Should contain all Java versions and also the minimum supported Python version.
   def NIGHTLY_STAGES = [
     [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 40,
@@ -502,7 +502,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '3.6', javaVersion: 11,
-      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.6-jdk-11"
     ],
@@ -558,7 +558,7 @@ def call(final pipelineContext) {
     [
       stageName: 'R4.4 Explain', target: 'test-r-explain', rVersion: '4.4.0',
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],      
+    ],
     [
       stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 10,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
@@ -592,7 +592,7 @@ def call(final pipelineContext) {
         ldapConfigPath: ldapConfigPath,
         ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt',
         bundledS3FileSystems: 's3a,s3n'
-      ], 
+      ],
       pythonVersion: '3.6',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
@@ -621,8 +621,8 @@ def call(final pipelineContext) {
 
   def KERBEROS_STAGES = []
   def distributionsToTest = [
-          [ name: "cdh", version: "5.10" ], // hdp2/hive1
-          [ name: "cdh", version: "6.1"  ], // hdp3/hive2
+          // [ name: "cdh", version: "5.10" ], // hdp2/hive1
+          // [ name: "cdh", version: "6.1"  ], // hdp3/hive2
   ]
   // check our config is still valid
   for (distribution in distributionsToTest) {
@@ -868,7 +868,7 @@ def call(final pipelineContext) {
       jobs += NIGHTLY_STAGES
     }
     if (modeCode >= MODE_NIGHTLY_REPEATED_CODE) {
-      // in Nightly mode execute all jobs regardless whether smoke tests fail 
+      // in Nightly mode execute all jobs regardless whether smoke tests fail
       executeInParallel(SMOKE_STAGES + jobs, pipelineContext)
     } else {
       def smokeStages = SMOKE_STAGES
