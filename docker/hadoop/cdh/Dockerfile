@@ -44,7 +44,7 @@ RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         postgresql libpostgresql-jdbc-java \
-        hadoop-conf-pseudo python-pip python-dev python-virtualenv \
+        hadoop-conf-pseudo python3-pip python3-dev python3-virtualenv \
         sudo unzip html2text slapd ldap-utils libkrb5-dev vim && \
     apt-get clean && \
     rm -rf /var/cache/apt/*
