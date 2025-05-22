@@ -95,8 +95,8 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                 file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
                                 usernamePassword(credentialsId: 'H2O_CDH_DEV_CREDS',
                                         usernameVariable: 'cdh_APT_USERNAME', passwordVariable: 'cdh_APT_PASSWORD'),
-                                usernamePassword(credentialsId: 'H2O_HDP_DEV_CREDS',
-                                        usernameVariable: 'hdp_APT_USERNAME', passwordVariable: 'hdp_APT_PASSWORD')
+                                // usernamePassword(credentialsId: 'H2O_HDP_DEV_CREDS',
+                                //         usernameVariable: 'hdp_APT_USERNAME', passwordVariable: 'hdp_APT_PASSWORD')
                         ]) {
                             dir("${imageName}.${version}") {
                                 pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
