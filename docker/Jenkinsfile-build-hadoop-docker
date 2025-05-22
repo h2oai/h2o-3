@@ -142,14 +142,13 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                         pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, publishStageName, env.NODE_NAME, env.WORKSPACE)
 
-                        withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                            sh """
-                                docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version}
-                                docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}-krb:${version}
-                            """
-                            echo "###### Docker image ${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version} built and pushed. ######"
-                        }
+                        dockerLoginH2OECR()
+                        sh """
+                            docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version}
+                            docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}-krb:${version}
+                        """
+                        echo "###### Docker image ${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version} built and pushed. ######"
+
                         pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, publishStageName)
