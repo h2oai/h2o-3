@@ -2,17 +2,19 @@
 
 final String NODE_LABEL = "h2o-3"
 final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
-final String REGISTRY_PREFIX = "${params.dockerRegistry}"
-final String IMAGE_NAME_PREFIX = "opsh2oai/h2o-3-hadoop"
+// final String REGISTRY_PREFIX = "${params.dockerRegistry}"
+final String IMAGE_NAME_PREFIX = "h2o-3-hadoop"
 final List INTERNAL_CLUSTER_HADOOPS = [
-        [ distribution: "hdp-2.2", krb: false ], // 0xd6 cluster
-        [ distribution: "hdp-2.4", krb: true  ], // 0xg5 cluster
+        // [ distribution: "hdp-2.2", krb: false ], // 0xd6 cluster
+        // [ distribution: "hdp-2.4", krb: true  ], // 0xg5 cluster
         [ distribution: "cdh-6.3", krb: true  ]  // 0xg9 cluster
 ]
 
 def pipelineContext = null
 def buildImageVersion = null
 def version = null
+
+final String REGISTRY_PREFIX = '353750902984.dkr.ecr.us-east-1.amazonaws.com'
 
 properties(
     [
@@ -79,11 +81,11 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                         cleanWs()
 
                         final String imageName = "${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}"
-                        final boolean conflict = pipelineContext.getUtils()
-                                .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
-                        if (conflict && !params.force) {
-                            error "Tag ${imageName}:${version} already exists in the repository"
-                        }
+                        // final boolean conflict = pipelineContext.getUtils()
+                        //         .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
+                        // if (conflict && !params.force) {
+                        //     error "Tag ${imageName}:${version} already exists in the repository"
+                        // }
                         def repoVersion = "${distribution.version}.0"
                         if (distribution.name == "cdh" && distribution.version == "6.3") {
                             repoVersion = "6.3.2" // 6.3.0 is not available in cloudera repos
@@ -225,3 +227,12 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
         }
     ]
 })
+
+def dockerLoginH2OECR(){
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
+        H2O_ECR_PWD = sh(script: 'aws ecr get-login-password --region us-east-1', returnStdout: true).trim()
+        sh """
+            docker login --username AWS --password $H2O_ECR_PWD 353750902984.dkr.ecr.us-east-1.amazonaws.com
+        """
+    }
+}
