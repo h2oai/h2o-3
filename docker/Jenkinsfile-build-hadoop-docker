@@ -19,7 +19,7 @@ properties(
         parameters(
             [
                 string(defaultValue: 'master', description: 'Branch to checkout', name: 'gitBranch'),
-                string(name: 'dockerRegistry', defaultValue: 'harbor.h2o.ai'),
+                string(name: 'dockerRegistry', defaultValue: '353750902984.dkr.ecr.us-east-1.amazonaws.com'),
                 booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.'),
                 booleanParam(name: 'noCache', defaultValue: true, description: 'If set to true, the docker image is built from scratch, with no stages used from the cache.')
             ]
@@ -91,9 +91,9 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
 
                         withCredentials([
                                 file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
-                                usernamePassword(credentialsId: 'H2O_CDH_DEV_CREDS', 
+                                usernamePassword(credentialsId: 'H2O_CDH_DEV_CREDS',
                                         usernameVariable: 'cdh_APT_USERNAME', passwordVariable: 'cdh_APT_PASSWORD'),
-                                usernamePassword(credentialsId: 'H2O_HDP_DEV_CREDS', 
+                                usernamePassword(credentialsId: 'H2O_HDP_DEV_CREDS',
                                         usernameVariable: 'hdp_APT_USERNAME', passwordVariable: 'hdp_APT_PASSWORD')
                         ]) {
                             dir("${imageName}.${version}") {
@@ -173,13 +173,13 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
                         pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
                         cleanWs()
-    
+
                         final boolean conflict = pipelineContext.getUtils()
                                 .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
                         if (conflict && !params.force) {
                             error "Tag ${imageName}:${version} already exists in the repository"
                         }
-    
+
                         dir("${imageName}.${version}") {
                             pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
                             sh """
@@ -201,13 +201,13 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
                         throw e
                     }
                 }
-    
+
                 final String publishStageName = "Publish images for Edge node ${hdp.distribution}"
                 stage (publishStageName) {
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, publishStageName, env.NODE_NAME, env.WORKSPACE)
-    
+
                         withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                             sh """
                                     docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
@@ -221,7 +221,7 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
                         throw e
                     }
                 }
-            }        
+            }
         }
     ]
 })
