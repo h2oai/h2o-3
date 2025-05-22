@@ -33,8 +33,9 @@ COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
 
 # First install libssl1.0.0 from older Ubuntu sources
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git gnupg && \
     echo "deb http://security.ubuntu.com/ubuntu bionic-security main" > /etc/apt/sources.list.d/bionic-security.list && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32 && \
     apt-get update && \
     apt-get install -y libssl1.0.0 && \
     chmod 700 /usr/sbin/add_cdh_repo.sh && \
