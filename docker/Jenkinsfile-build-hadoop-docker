@@ -30,7 +30,7 @@ properties(
 node (NODE_LABEL) {
     final String stageName = 'Checkout and Prepare'
     stage (stageName) {
-        def scmEnv = git credentialsId: 'H2O-3-GH-TOKEN',
+        def scmEnv = git credentialsId: 'H2O-OPS-GH-TOKEN',
                 poll: false,
                 url: 'https://github.com/h2oai/h2o-3',
                 branch: params.gitBranch
