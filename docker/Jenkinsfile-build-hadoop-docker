@@ -176,11 +176,12 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
                         pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
                         cleanWs()
 
-                        final boolean conflict = pipelineContext.getUtils()
-                                .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
-                        if (conflict && !params.force) {
-                            error "Tag ${imageName}:${version} already exists in the repository"
-                        }
+                        dockerLoginH2OECR()
+                        // final boolean conflict = pipelineContext.getUtils()
+                        //         .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
+                        // if (conflict && !params.force) {
+                        //     error "Tag ${imageName}:${version} already exists in the repository"
+                        // }
 
                         dir("${imageName}.${version}") {
                             pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
@@ -210,13 +211,12 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
                         pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, publishStageName, env.NODE_NAME, env.WORKSPACE)
 
-                        withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                            sh """
-                                    docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                    docker push ${REGISTRY_PREFIX}/${imageName}:${version}
-                                """
-                            echo "###### Docker image ${imageName}:${version} built and pushed. ######"
-                        }
+                        dockerLoginH2OECR()
+                        sh """
+                            docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
+                            docker push ${REGISTRY_PREFIX}/${imageName}:${version}
+                        """
+                        echo "###### Docker image ${imageName}:${version} built and pushed. ######"
                         pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, publishStageName)
