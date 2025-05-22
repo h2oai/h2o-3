@@ -100,6 +100,7 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                         ]) {
                             dir("${imageName}.${version}") {
                                 pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
+                                dockerLoginH2OECR()
                                 sh """
                                     cd docker
                                     rm -f hadoop/common/ldap/jenkins.ldif
