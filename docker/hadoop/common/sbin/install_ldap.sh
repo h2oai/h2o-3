@@ -24,6 +24,6 @@ service slapd start
 
 ldapwhoami -H ldap:// -x
 
-ldapmodify -a -x -D "cn=admin,dc=0xdata,dc=loc" -w admin -H ldap:// -f opt/ldap-scripts/users.ldif
+# ldapmodify -a -x -D "cn=admin,dc=0xdata,dc=loc" -w admin -H ldap:// -f opt/ldap-scripts/users.ldif
 ldapmodify -a -x -D "cn=admin,dc=0xdata,dc=loc" -w admin -H ldap:// -f opt/ldap-scripts/jenkins.ldif
 service slapd stop
