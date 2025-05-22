@@ -213,7 +213,6 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
 
                         dockerLoginH2OECR()
                         sh """
-                            docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
                             docker push ${REGISTRY_PREFIX}/${imageName}:${version}
                         """
                         echo "###### Docker image ${imageName}:${version} built and pushed. ######"
