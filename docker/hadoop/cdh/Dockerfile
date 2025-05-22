@@ -30,9 +30,13 @@ ENV DISTRIBUTION='cdh' \
 
 COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_python_version /usr/sbin/
 COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
-RUN \
-    apt-get update && \
+
+# First install libssl1.0.0 from older Ubuntu sources
+RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git && \
+    echo "deb http://security.ubuntu.com/ubuntu bionic-security main" > /etc/apt/sources.list.d/bionic-security.list && \
+    apt-get update && \
+    apt-get install -y libssl1.0.0 && \
     chmod 700 /usr/sbin/add_cdh_repo.sh && \
     sync && \
     /usr/sbin/add_cdh_repo.sh $VERSION $REPO_VERSION $APT_USERNAME $APT_PASSWORD && \
