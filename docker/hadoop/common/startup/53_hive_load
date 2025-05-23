@@ -6,12 +6,14 @@ cd /home/jenkins
 # Download dataset and upload it to HDFS
 unzip AirlinesTest.csv.zip
 rm AirlinesTest.csv.zip
+sudo chmod 755 AirlinesTest.csv
+sudo chmod 755 chicagoCensus.csv
 sudo chown hive:hive AirlinesTest.csv
 sudo chown hive:hive chicagoCensus.csv
 ls -al
 sed -i 's/\"//g' AirlinesTest.csv
-sudo -E -u hive hadoop fs -put -f ./AirlinesTest.csv /tmp/AirlinesTest.csv
-sudo -E -u hive hadoop fs -put -f ./chicagoCensus.csv /tmp/chicagoCensus.csv
+sudo -E -u hive hadoop fs -put -f $(pwd)/AirlinesTest.csv /tmp/AirlinesTest.csv
+sudo -E -u hive hadoop fs -put -f $(pwd)/chicagoCensus.csv /tmp/chicagoCensus.csv
 rm *.csv
 
 # Execute all hive-scripts
