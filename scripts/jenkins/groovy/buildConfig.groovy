@@ -38,7 +38,7 @@ class BuildConfig {
   public static final String COMPONENT_ANY = 'any'
   public static final String COMPONENT_HADOOP = 'hadoop'
   public static final String COMPONENT_MAIN = 'main'
-  public static final String COMPONENT_MINIMAL = 'minimal' 
+  public static final String COMPONENT_MINIMAL = 'minimal'
   public static final String COMPONENT_STEAM = 'steam'
   public static final List<String> TEST_PACKAGES_COMPONENTS = [COMPONENT_PY, COMPONENT_R, COMPONENT_JS, COMPONENT_JAVA, COMPONENT_HADOOP, COMPONENT_MINIMAL, COMPONENT_STEAM, COMPONENT_MAIN]
 
@@ -180,7 +180,7 @@ class BuildConfig {
     jobProperties += context.parameters([
       context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages')
     ])
-    
+
     if (customProperties != null) {
       jobProperties += customProperties
     }
@@ -271,14 +271,14 @@ class BuildConfig {
       imageVersion = stageConfig.imageVersion
     return "${DOCKER_REGISTRY}/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
   }
-  
+
   String getDevImageReference(final specifier, final version) {
     return "${DOCKER_REGISTRY}/h2o-3/dev-${specifier}:${version}"
   }
 
   String getDevImageReference(final specifier) {
     return getDevImageReference(specifier, DEFAULT_IMAGE_VERSION_TAG)
-  }  
+  }
 
   String getStashNameForTestPackage(final String platform) {
     return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform == 'any' ? 'java' : platform)
@@ -365,7 +365,7 @@ class BuildConfig {
   }
 
   String getSmokeHadoopImageImpl(final distribution, final version, final suffix) {
-    return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
+    return "${DOCKER_REGISTRY}/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
   }
 
   static enum NodeLabels {
