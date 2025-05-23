@@ -65,7 +65,7 @@ def call(final pipelineContext, final stageConfig) {
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}${getMakeTargetSuffix(stageConfig)} ${commandFactory(stageConfig, true)} check-leaks
         """
-        
+
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
 
         dir(stageConfig.stageDir) {
@@ -73,12 +73,14 @@ def call(final pipelineContext, final stageConfig) {
             pipelineContext.getUtils().unstashFiles(this, "git")
             sh "cd h2o-3 && git checkout ${env.GIT_SHA} && git reset --hard"
         }
-        
+
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         try {
             defaultStage(pipelineContext, stageConfig)
         } finally {
-            sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
+            docker.image("alpine:latest").inside("-itu root") {
+                sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
+            }
         }
     }
 }
@@ -117,8 +119,8 @@ private String getPostFailedBuildAction(final mode) {
                     export YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
                     echo "YARN Application ID is \${YARN_APPLICATION_ID}"
                     yarn application -kill \${YARN_APPLICATION_ID}
-                    yarn logs -applicationId \${YARN_APPLICATION_ID} > h2o_yarn.log 
-                fi   
+                    yarn logs -applicationId \${YARN_APPLICATION_ID} > h2o_yarn.log
+                fi
             """
         default:
             return ""

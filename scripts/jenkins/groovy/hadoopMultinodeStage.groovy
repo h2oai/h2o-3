@@ -9,17 +9,17 @@ def call(final pipelineContext, final stageConfig) {
         stageConfig.customBuildAction = """
             export HADOOP_CONF_DIR=/etc/hadoop/conf/
             ${downloadConfigsScript(stageConfig.customData)}
-    
+
             echo "Activating Python ${stageConfig.pythonVersion}"
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
-    
+
             echo 'Generating SSL Certificate'
             rm -f mykeystore.jks
             keytool -genkey -dname "cn=Mr. Jenkins, ou=H2O-3, o=H2O.ai, c=US" -alias h2o -keystore mykeystore.jks -storepass h2oh2o -keypass h2oh2o -keyalg RSA -keysize 2048
-    
+
             echo 'Building H2O'
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
-    
+
             echo 'Starting H2O on Hadoop'
             ${startH2OScript(stageConfig.customData, branch, buildId)}
             if [ -z \${CLOUD_IP} ]; then
@@ -31,7 +31,7 @@ def call(final pipelineContext, final stageConfig) {
                 exit 1
             fi
             echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
-    
+
             echo "Prepare workdir"
             hdfs dfs -rm -r -f $workDir
             hdfs dfs -mkdir -p $workDir
@@ -45,7 +45,7 @@ def call(final pipelineContext, final stageConfig) {
 
         stageConfig.postFailedBuildAction = getKillScript()
         stageConfig.postSuccessfulBuildAction = getKillScript()
-    
+
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
         dir(h2oFolder) {
             retryWithTimeout(60, 3) {
@@ -53,12 +53,14 @@ def call(final pipelineContext, final stageConfig) {
                 checkout scm
             }
         }
-        
+
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         try {
             defaultStage(pipelineContext, stageConfig)
         } finally {
-            sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
+            docker.image("alpine:latest").inside("-itu root") {
+                sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
+            }
         }
     }
 }
@@ -138,7 +140,7 @@ private String getKillScript() {
             yarn logs -applicationId \${YARN_APPLICATION_ID} > h2o_yarn.log
         else
             echo "No cleanup, did not find yarn application id."
-        fi        
+        fi
     """
 }
 
