@@ -7,6 +7,11 @@ cd /home/jenkins
 unzip AirlinesTest.csv.zip
 rm AirlinesTest.csv.zip
 sed -i 's/\"//g' AirlinesTest.csv
+echo "########## DEBUG ##########"
+pwd
+ls -al
+ln -s AirlinesTest.csv
+echo "########## DEBUG ##########"
 sudo -E -u hive hadoop fs -put -f ./AirlinesTest.csv /tmp/AirlinesTest.csv
 sudo -E -u hive hadoop fs -put -f ./chicagoCensus.csv /tmp/chicagoCensus.csv
 rm *.csv
