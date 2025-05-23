@@ -3,6 +3,8 @@
 source /usr/sbin/get_hive_home.sh
 
 cd /home/jenkins
+
+sudo chmod -R 777 .
 # Download dataset and upload it to HDFS
 unzip AirlinesTest.csv.zip
 rm AirlinesTest.csv.zip
