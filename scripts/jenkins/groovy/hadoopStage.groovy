@@ -47,7 +47,7 @@ def call(final pipelineContext, final stageConfig) {
             rm -f mykeystore.jks
             keytool -genkey -dname "cn=Mr. Jenkins, ou=H2O-3, o=H2O.ai, c=US" -alias h2o -keystore mykeystore.jks -storepass h2oh2o -keypass h2oh2o -keyalg RSA -keysize 2048
 
-            git config --global --add safe.directory .
+            git config --global --add safe.directory $(pwd)
 
             echo 'Building H2O'
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
