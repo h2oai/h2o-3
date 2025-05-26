@@ -1459,6 +1459,24 @@ public class TestUtil extends Iced {
     }
   }
 
+  public static void assertTwoDimTableEquals(TwoDimTable expected, TwoDimTable actual, int[] ignoredColumnsIdxs) {
+    assertEquals("tableHeader different", expected.getTableHeader(), actual.getTableHeader());
+    assertEquals("tableDescriptionDifferent", expected.getTableDescription(), actual.getTableDescription());
+    assertArrayEquals("rowHeaders different", expected.getRowHeaders(), actual.getRowHeaders());
+    assertArrayEquals("colHeaders different", expected.getColHeaders(), actual.getColHeaders());
+    assertArrayEquals("colTypes different", expected.getColTypes(), actual.getColTypes());
+    assertArrayEquals("colFormats different", expected.getColFormats(), actual.getColFormats());
+    assertEquals("colHeaderForRowHeaders different", expected.getColHeaderForRowHeaders(), actual.getColHeaderForRowHeaders());
+    for (int c = 0; c < expected.getColDim(); c++) {
+      if (ArrayUtils.find(ignoredColumnsIdxs, c) != -1) continue;
+      for (int r = 0; r < expected.getRowDim(); r++) {
+        Object ex = expected.get(r, c);
+        Object act = actual.get(r, c);
+        assertEquals("cellValues different at row " + r + ", col " + c, ex, act);
+      }
+    }
+  }
+
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
     for (int i = 0; i < actual.length; i++)
       assertEquals(expected[i], actual[i], threshold);
