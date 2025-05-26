@@ -54,7 +54,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       double [] beta = m.beta();
       
       // prepare control variable map to filter them from beta
-      int [] controlValMap = m._output._controlValuesIdxsInAdaptedFrame;
+      int [] controlValMap = m._output.getControlValsIdxs();
       int[] betaControlValMap = new int[beta.length - 1];
       if (controlValMap != null && m._useControlVariables) {
         for (int k = 0; k < controlValMap.length; k++) {
