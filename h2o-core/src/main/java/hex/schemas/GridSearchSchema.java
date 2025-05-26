@@ -83,9 +83,25 @@ public class GridSearchSchema<G extends Grid<MP>,
       Object[] arr = SUBSPACES.equals(k) ? ((List) v).stream().map(x -> paramValuesToArray((Map<String, Object>) x)).toArray(Map[]::new)
               : v instanceof List ? ((List) v).toArray()
               : new Object[]{v};
+      k = renameReservedWords(k);
       result.put(k, arr);
     }
     return result;
+  }
+
+  /**
+   * Some algorithms use reserved keywords (e.g., {@code lambda} in Python) as parameter names.
+   * To avoid conflicts, these names are suffixed with an underscore (e.g., {@code lambda} → {@code lambda_}).
+   * If the user passes these renamed parameters to GridSearch, they need to be converted back
+   * to their original form so the algorithm can recognize them.
+   *
+   * @param parm the (possibly renamed) hyperparameter name
+   * @return the original hyperparameter name with the trailing underscore removed, if present
+   */
+  private static String renameReservedWords(String parm) {
+    if (parm.endsWith("_") && parm.length() >= 2)
+      return parm.substring(0, parm.length() - 1);
+    return parm;
   }
   
   @Override public S fillFromParms(Properties parms) {
