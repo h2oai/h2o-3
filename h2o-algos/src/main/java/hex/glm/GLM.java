@@ -756,6 +756,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private transient ScoringHistory _scoringHistory;
+  private transient ScoringHistory _scoringHistoryControlVariableEnabled;
   private transient LambdaSearchScoringHistory _lambdaSearchScoringHistory;
 
   long _t0 = System.currentTimeMillis();
@@ -945,6 +946,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _parms._nlambdas = _parms._alpha[0] == 0?30:100; // fewer lambdas needed for ridge
       _lambdaSearchScoringHistory = new LambdaSearchScoringHistory(_parms._valid != null,_parms._nfolds > 1);
       _scoringHistory = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1, 
+              _parms._generate_scoring_history);
+      _scoringHistoryControlVariableEnabled = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1,
               _parms._generate_scoring_history);
       _train.bulkRollups(); // make sure we have all the rollups computed in parallel
       _t0 = System.currentTimeMillis();
@@ -1408,8 +1411,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int[] colHeadersIndex = grabHeaderIndex(scoringHistory, num2Copy, colHeaders2Restore);
       if (_parms._lambda_search)
         _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
-      else
+      else {
         _scoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
+      }
+      if (_model._parms._control_variables != null) {
+        TwoDimTable scoringHistoryControlVal = _model._output._control_val_scoring_history;
+        _scoringHistoryControlVariableEnabled.restoreFromCheckpoint(scoringHistoryControlVal, colHeadersIndex);
+      }
   }
   
   static int[] grabHeaderIndex(TwoDimTable sHist, int numHeaders, String[] colHeadersUseful) {
@@ -3352,6 +3360,40 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
       _model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
       scorePostProcessing(train, t1);
+      if(_model._parms._control_variables != null){
+        _model._useControlVariables = true;
+        long t2 = System.currentTimeMillis();
+        _model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
+        scorePostProcessingControlVal(train, t2);
+        _model._useControlVariables = false;
+      }
+    }
+
+    private void scorePostProcessingControlVal(Frame train, long t1) {
+      ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
+      long t2 = System.currentTimeMillis();
+      if (!(mtrain == null)) {
+        _model._output._control_val_training_metrics = mtrain;
+        _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time         
+        ScoreKeeper trainScore = new ScoreKeeper(Double.NaN);
+        trainScore.fillFrom(mtrain);
+        Log.info(LogMsg(mtrain.toString()));
+      } else {
+        Log.info(LogMsg("ModelMetrics mtrain is null"));
+      }
+      Log.info(LogMsg("Control values Training metrics computed in " + (t2 - t1) + "ms"));
+      if (_valid != null) {
+        Frame valid = DKV.<Frame>getGet(_parms._valid);
+        _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
+        _model._output._control_val_validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
+        ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
+        validScore.fillFrom(_model._output._control_val_validation_metrics);
+      }
+      _model.addControlValScoringInfo(_parms, nclasses(), t2, _state._iter);  // add to scoringInfo for early stopping
+      _model._output._control_val_scoring_history = _scoringHistoryControlVariableEnabled.to2dTable(_parms, null,
+                null);
+
+      _model.update(_job._key);
     }
 
     private void scorePostProcessing(Frame train, long t1) {
@@ -3397,6 +3439,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
                     mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
+          } 
+          if(_parms._control_variables != null) {
+            
           }
         } else if (!(mtrain == null)) { // only doing training deviance
           if (_parms._lambda_search) {
@@ -3739,6 +3784,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
         _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
                 scoring_history_early_stop);
+        if(_model._output._control_val_scoring_history != null) {
+          TwoDimTable control_val_scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getControlValScoringInfo(),
+                  (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
+          control_val_scoring_history_early_stop.setTableHeader("Scoring history with control variables enabled");
+          _model._output._control_val_scoring_history = control_val_scoring_history_early_stop;
+        }
         _model._output._varimp = _model._output.calculateVarimp();
         _model._output._variable_importances = calcVarImp(_model._output._varimp);
         if (_linearConstraintsOn)
