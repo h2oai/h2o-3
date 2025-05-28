@@ -38,7 +38,7 @@ def call(final pipelineContext, final stageConfig) {
             . /usr/sbin/hive_version_check.sh
 
             echo "Activating Python ${stageConfig.pythonVersion}"
-            . "/envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate"
+            . "/envs/h2o_env_python$stageConfig.pythonVersion/bin/activate"
 
             echo 'Initializing Hadoop environment...'
             sudo -E /usr/sbin/startup.sh
