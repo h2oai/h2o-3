@@ -15,7 +15,7 @@ def call(final pipelineContext, final stageConfig) {
         def pythonVersion = stageConfig.pythonVersion
         def activateCommand = "/envs/h2o_env_python" + pythonVersion + "/bin/activate"
         def commandFactory = load(stageConfig.customData.commandFactory)
-        stageConfig.customBuildAction = '''
+        stageConfig.customBuildAction = """
             if [ -n "\$HADOOP_CONF_DIR" ]; then
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
             fi
@@ -67,7 +67,7 @@ def call(final pipelineContext, final stageConfig) {
 
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}${getMakeTargetSuffix(stageConfig)} ${commandFactory(stageConfig, true)} check-leaks
-        '''
+        """
 
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
 
