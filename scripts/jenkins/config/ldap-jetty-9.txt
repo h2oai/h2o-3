@@ -5,8 +5,8 @@ ldaploginmodule {
     contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
     hostname="localhost"
     port="389"
-    bindDn="cn=admin,dc=0xdata,dc=loc"
-    bindPassword="admin"
+    bindDn="cn=tester,dc=0xdata,dc=loc"
+    bindPassword="tester"
     authenticationMethod="simple"
     forceBindingLogin="true"
     userBaseDn="ou=users,dc=0xdata,dc=loc";
