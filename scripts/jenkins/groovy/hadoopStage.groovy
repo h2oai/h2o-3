@@ -12,6 +12,7 @@ H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING='STEAM_SPARKLING'
 
 def call(final pipelineContext, final stageConfig) {
     withCredentials([usernamePassword(credentialsId: 'ldap-credentials', usernameVariable: 'LDAP_USERNAME', passwordVariable: 'LDAP_PASSWORD')]) {
+        def pythonVersion = stageConfig.pythonVersion
         def commandFactory = load(stageConfig.customData.commandFactory)
         stageConfig.customBuildAction = """
             if [ -n "\$HADOOP_CONF_DIR" ]; then
@@ -38,7 +39,7 @@ def call(final pipelineContext, final stageConfig) {
             . /usr/sbin/hive_version_check.sh
 
             echo "Activating Python ${stageConfig.pythonVersion}"
-            . "/envs/h2o_env_python$stageConfig.pythonVersion/bin/activate"
+            . '/envs/h2o_env_python${pythonVersion}/bin/activate'
 
             echo 'Initializing Hadoop environment...'
             sudo -E /usr/sbin/startup.sh
