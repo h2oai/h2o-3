@@ -1,0 +1,18 @@
+dn: ou=users,dc=0xdata,dc=loc
+objectClass: top
+objectClass: organizationalUnit
+ou: users
+
+dn: uid=tester,ou=users,dc=0xdata,dc=loc
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: tester
+sn: tester
+uid: tester
+ou: users
+displayName: tester
+userPassword: tester
+departmentNumber: 123
+mail: tester@0xdata.loc
