@@ -40,7 +40,6 @@ task untar {
 }
 
 task gitbranch(type: Exec) {
-    commandLine getOsSpecificCommandLine(["git", "config", "--global", "--add", "safe.directory", "`pwd`"])
     commandLine getOsSpecificCommandLine(["git",  "branch"])
     standardOutput = new ByteArrayOutputStream()
     ext.output = {
