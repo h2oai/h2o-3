@@ -11,7 +11,7 @@ def call(final pipelineContext, final stageConfig) {
             ${downloadConfigsScript(stageConfig.customData)}
 
             echo "Activating Python ${stageConfig.pythonVersion}"
-            . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
+            . "/envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate"
 
             echo 'Generating SSL Certificate'
             rm -f mykeystore.jks
