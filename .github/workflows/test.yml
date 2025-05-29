@@ -57,6 +57,7 @@ jobs:
           XGB_VERSION=$(grep 'xgboost4jVersion' h2o-extensions/xgboost/build.gradle | sed -n 's/.*xgboost4jVersion *= *[\"\x27]*\([0-9.]*\).*/\1/p')
           echo "gradle_version=${GRADLE_VERSION:-not_found}" >> "${GITHUB_OUTPUT}"
           echo "xgb_version=${XGB_VERSION:-not_found}" >> "${GITHUB_OUTPUT}"
+          
       - name: Retry Health Check
         id: health_check
         run: |
@@ -70,6 +71,7 @@ jobs:
           done
           echo "result=failure" >> "$GITHUB_OUTPUT"
           exit 1
+          
       - name: Archive workspace safely
         if: steps.health_check.outputs.result == 'success'
         shell: bash
@@ -78,6 +80,7 @@ jobs:
           shopt -s extglob dotglob
           cp -a !(temp-archive) temp-archive/
           tar -czf workspace.tar.gz -C temp-archive .
+          
       - name: Upload workspace artifact
         if: steps.health_check.outputs.result == 'success'
         uses: actions/upload-artifact@v4
@@ -124,6 +127,7 @@ jobs:
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
             docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
+            
       - name: Run Build in Docker
         env:
           DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
