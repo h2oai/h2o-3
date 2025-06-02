@@ -15,6 +15,7 @@ dependencies {
     }
     api("org.apache.hadoop:hadoop-aws:${defaultHadoopVersion}") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
+        exclude group: "software.amazon.awssdk", module: "bundle"
     }
     // aws-java-sdk-dynamodb is required for S3A support, S3A import throws NoClassDefFoundError (AmazonDynamoDBException)
     api("com.amazonaws:aws-java-sdk-dynamodb:${awsJavaSdkVersion}") {
