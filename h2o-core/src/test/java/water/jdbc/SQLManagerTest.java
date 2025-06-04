@@ -171,9 +171,9 @@ public class SQLManagerTest {
     exception.expect(IllegalArgumentException.class);
     exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
 
-    String jsonBody = "jdbc:mysql://(host=127.0.0.1,port=3308,autoDeserialize=true,queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
+    String jdbcConnection = "jdbc:mysql://(host=127.0.0.1,port=3308,autoDeserialize=true,queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
 
-    SQLManager.validateJdbcUrl(jsonBody);
+    SQLManager.validateJdbcUrl(jdbcConnection);
   }
 
   @Test
@@ -181,9 +181,9 @@ public class SQLManagerTest {
     exception.expect(IllegalArgumentException.class);
     exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
 
-    String jsonBody = "jdbc:mysql://(host=127.0.0.1,port=3308, autoDeserialize  =  true,queryInterceptors = com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
+    String jdbcConnection = "jdbc:mysql://(host=127.0.0.1,port=3308, autoDeserialize  =  true,queryInterceptors = com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
 
-    SQLManager.validateJdbcUrl(jsonBody);
+    SQLManager.validateJdbcUrl(jdbcConnection);
   }
 
   @Test
@@ -191,9 +191,9 @@ public class SQLManagerTest {
     exception.expect(IllegalArgumentException.class);
     exception.expectMessage("Potentially dangerous JDBC parameter found: allowLoadLocalInfile");
 
-    String jsonBody = "jdbc:mysql://127.0.0.1:3306/mydb?allowLoadLocalInfile=true&  autoDeserialize=true";
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?allowLoadLocalInfile=true&  autoDeserialize=true";
 
-    SQLManager.validateJdbcUrl(jsonBody);
+    SQLManager.validateJdbcUrl(jdbcConnection);
   }
 
   @Test
@@ -201,9 +201,9 @@ public class SQLManagerTest {
     exception.expect(IllegalArgumentException.class);
     exception.expectMessage("Potentially dangerous JDBC parameter found: allowLoadLocalInfile");
 
-    String jsonBody = "jdbc:mysql://127.0.0.1:3306/mydb?allowLoadLocalInfile=true";
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?allowLoadLocalInfile=true";
 
-    SQLManager.validateJdbcUrl(jsonBody);
+    SQLManager.validateJdbcUrl(jdbcConnection);
   }
 
   /**
@@ -211,7 +211,7 @@ public class SQLManagerTest {
    */
   @Test
   public void testValidateJdbcConnectionStringMysqlPass() {
-    String jsonBody = "jdbc:mysql://127.0.0.1:3306/mydb?allowedParameter=true";
-    SQLManager.validateJdbcUrl(jsonBody);
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?allowedParameter=true";
+    SQLManager.validateJdbcUrl(jdbcConnection);
   }
 }
