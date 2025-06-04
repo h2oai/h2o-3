@@ -165,4 +165,33 @@ public class SQLManagerTest {
 
     SQLManager.validateJdbcUrl(mysqlMaliciousJdbc);
   }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlKeyValuePairs() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
+
+    String jsonBody = "jdbc:mysql://(host=127.0.0.1,port=3308,autoDeserialize=true,queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
+
+    SQLManager.validateJdbcUrl(jsonBody);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlOneParameter() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: allowLoadLocalInfile");
+
+    String jsonBody = "jdbc:mysql://127.0.0.1:3306/mydb?allowLoadLocalInfile=true";
+
+    SQLManager.validateJdbcUrl(jsonBody);
+  }
+
+  /**
+   * Test fail if any exception is thrown therefore no assert
+   */
+  @Test
+  public void testValidateJdbcConnectionStringMysqlPass() {
+    String jsonBody = "jdbc:mysql://127.0.0.1:3306/mydb?allowedParameter=true";
+    SQLManager.validateJdbcUrl(jsonBody);
+  }
 }
