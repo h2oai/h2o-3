@@ -42,7 +42,7 @@ public class SQLManager {
 
   private static final String DISALLOWED_JDBC_PARAMETERS_PARAM = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.jdbc.disallowed.parameters";
 
-  private static final Pattern JDBC_PARAMETERS_REGEX_PATTERN = Pattern.compile("(?i)([a-zA-Z0-9_]+)=");
+  private static final Pattern JDBC_PARAMETERS_REGEX_PATTERN = Pattern.compile("(?i)([a-zA-Z0-9_]+)\\s*=\\s*");
 
   private static final List<String> DEFAULT_JDBC_DISALLOWED_PARAMETERS = Stream.of(
           "autoDeserialize", "queryInterceptors", "allowLoadLocalInfile", "allowMultiQueries", //mysql 
