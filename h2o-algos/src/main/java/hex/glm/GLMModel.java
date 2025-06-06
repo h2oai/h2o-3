@@ -1598,6 +1598,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public TwoDimTable _control_val_scoring_history;
     public ModelMetrics _control_val_training_metrics;
     public ModelMetrics _control_val_validation_metrics;
+    public String _control_val_suffix = "_control";
     
     public void mapControlVariables() {
       if(_control_values_names == null || _dinfo._adaptedFrameNames == null) {
@@ -1987,7 +1988,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         String categoricalName = name.contains(".") ? name.split("\\.")[0] : null;
         if(controlValsNames != null){
           if(ArrayUtils.find(controlValsNames, name) >-1 || (categoricalName != null && ArrayUtils.find(controlValsNames, categoricalName) >-1)) {
-            name = name+"_control_variable";
+            name = name+_control_val_suffix;
           }
         }
         namesSort[index] = name;
