@@ -1,5 +1,7 @@
 package hex.glm;
 
+import hex.genmodel.utils.DistributionFamily;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -14,6 +16,8 @@ import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.DistributedException;
 import water.util.TwoDimTable;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -106,6 +110,9 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable glm2SH = glm2._output._scoring_history;
             TwoDimTable glmSHCV = glm._output._control_val_scoring_history;
             TwoDimTable glm2SHCV = glm2._output._control_val_scoring_history;
+
+            System.out.println(glmSH);
+            System.out.println(glmSHCV);
             
             // check scoring history is the same (instead of timestamp and duration column)
             assertTwoDimTableEquals(glmSH, glm2SH, new int[]{0,1});
@@ -121,23 +128,22 @@ public class GLMControlVariablesTest extends TestUtil {
             String[] viRowHeader = vi.getRowHeaders();
             
             int numControlVariables = 0;
-            String suffix = "_control_variable";
+            String suffix = glm._output._control_val_suffix;
             for (String name : viRowHeader) {
-                if(name.contains(suffix)){
+                if(name.contains(suffix)) {
                     numControlVariables++;
                     if (name.contains(".")) {
                         String catName = name.split("\\.")[0];
                         assert ArrayUtils.find(control_variables, catName) > -1 : 
-                                "Variable "+catName+" should not be marked as _control_variable.";
+                                "Variable "+catName+" should not be marked as "+suffix;
                     } else {
                         String numericName = name.substring(0, name.length() - suffix.length());
                         assert ArrayUtils.find(control_variables, numericName) > -1 :
-                                "Variable "+numericName+" should not be marked as _control_variable.";
+                                "Variable "+numericName+" should not be marked as "+suffix;
                     }
                 }
             }
             assert numControlVariables >= control_variables.length;
-            
         } finally {
             if(train != null) train.remove();
             if(test != null) test.remove();
@@ -348,4 +354,301 @@ public class GLMControlVariablesTest extends TestUtil {
             Scope.exit();
         }
     }
+    
+    @Test
+    public void testBasicDataGaussian(){
+        /** Test against GLM in R 
+         * cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
+         * cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
+         * res <- c(1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1)
+         * data <- data.frame(cat1, cat2, res)
+         * glm <- glm(res ~ cat1 + cat2, data=data)
+         * summary(glm)
+         * predict(glm)
+         *
+         * Call:
+         * glm(formula = res ~ cat1 + cat2, data = data)
+         *
+         * Deviance Residuals: 
+         *     Min       1Q   Median       3Q      Max  
+         * -0.7586  -0.4655   0.2759   0.3103   0.5345  
+         *
+         * Coefficients:
+         *             Estimate Std. Error t value Pr(>|t|)  
+         * (Intercept)  0.46552    0.17694   2.631   0.0149 *
+         * cat11        0.22414    0.20011   1.120   0.2742  
+         * cat21        0.06897    0.20192   0.342   0.7358  
+         * ---
+         * Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+         *
+         * (Dispersion parameter for gaussian family taken to be 0.2533733)
+         *
+         *     Null deviance: 6.1538  on 25  degrees of freedom
+         * Residual deviance: 5.8276  on 23  degrees of freedom
+         * AIC: 42.902
+         *
+         *         1         2         3         4         5         6         7         8 
+         * 0.7586207 0.6896552 0.7586207 0.4655172 0.4655172 0.6896552 0.6896552 0.5344828 
+         *         9        10        11        12        13        14        15        16 
+         * 0.5344828 0.6896552 0.5344828 0.6896552 0.4655172 0.7586207 0.6896552 0.7586207 
+         *        17        18        19        20        21        22        23        24 
+         * 0.4655172 0.4655172 0.5344828 0.5344828 0.6896552 0.6896552 0.7586207 0.6896552 
+         *        25        26 
+         * 0.5344828 0.4655172 
+         */
+        
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel glmControl = null;
+        Frame preds = null;
+        Frame predsControl = null;
+        Frame predsR = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1},cat1.group().addVec());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"cat1", "cat2", "y"},new Vec[]{cat1, cat2,res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._lambda = new double[]{0};
+            params._alpha = new double[]{0};
+            params._standardize = false;
+            params._non_negative = true;
+            params._intercept = true;
+            params._objective_epsilon = 1e-10;
+            params._gradient_epsilon = 1e-6;
+            params._response_column = "y";
+            params._distribution = DistributionFamily.gaussian;
+            params._link = GLMModel.GLMParameters.Link.identity;
+            params._max_iterations = 2;
+            params._dispersion_epsilon = 0.2533733;
+            glm = new GLM(params).trainModel().get();
+            preds = glm.score(train);
+            System.out.println(preds.toTwoDimTable().toString());
+            
+            System.out.println(glm._output._variable_importances);
+            System.out.println(glm.coefficients().toString());
+            Double[] coefficients = glm.coefficients().values().toArray(new Double[0]);
+
+            params._control_variables = new String[]{"cat1"};
+            glmControl = new GLM(params).trainModel().get();
+            predsControl = glmControl.score(train);
+            System.out.println(predsControl.toTwoDimTable().toString());
+            System.out.println(glmControl._output._variable_importances);
+            System.out.println(glmControl.coefficients().toString());
+            Double[] coefficientsControl = glmControl.coefficients().values().toArray(new Double[0]);
+            
+            Double[] coefficientsR = new Double[]{0.22414, 0.06897, 0.46552};
+
+            Vec predsRVec = Vec.makeVec(new double[]{0.7586207, 0.6896552, 0.7586207, 0.4655172, 0.4655172, 0.6896552, 0.6896552,
+                    0.5344828, 0.5344828, 0.6896552, 0.5344828, 0.6896552, 0.4655172, 0.7586207, 0.6896552, 0.7586207, 0.4655172,
+                    0.4655172, 0.5344828, 0.5344828, 0.6896552, 0.6896552, 0.7586207, 0.6896552, 0.5344828, 0.4655172},Vec.newKey());
+            predsR = new Frame(Key.<Frame>make("predsR"),new String[]{"predict"},new Vec[]{predsRVec});
+            
+            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR");
+            Frame manualPredsH2o = scoreManualWithCoefficients(coefficients, train, "manualPredsH2o");
+            Frame manualPredsControl = scoreManualWithCoefficients(coefficientsControl, train, "manualPredsControl", new int[]{0});
+            Frame manualPredsRControl = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", new int[]{0});
+            
+            double tol = 1e-3;
+            for (int i = 0; i < manualPredsH2o.numRows(); i++) {
+                double h2o = preds.vec(0).at(i);
+                double manualH2o = manualPredsH2o.vec(0).at(i);
+                double r = predsR.vec(0).at(i);
+                double manualR = manualPredsR.vec(0).at(i);
+                double h2oControl = predsControl.vec(0).at(i);
+                double manualH2oControl = manualPredsControl.vec(0).at(i);
+                double manualRControl = manualPredsRControl.vec(0).at(i);
+                
+                System.out.println("h2o: "+h2o+ " h2o manual:" +manualH2o+
+                        " R: "+r+" R manual: "+manualR +
+                        " h2o control: "+h2oControl+" h2o control manual "+manualH2oControl+
+                        " R control manual: "+manualRControl);
+                
+                // glm score calculation check
+                Assert.assertEquals(h2o, manualH2o, tol);
+                Assert.assertEquals(h2o, r, tol);
+                Assert.assertEquals(h2o, manualR, tol);
+                
+                // control values calculation check
+                Assert.assertEquals(h2oControl, manualH2oControl, tol);
+                Assert.assertEquals(h2oControl, manualRControl, tol);
+            }
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmControl != null) glmControl.remove();
+            if (preds != null) preds.remove();
+            if (predsControl != null) predsControl.remove();
+            if (predsR != null) predsR.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicDataBinomial(){
+        /** Test against GLM in R 
+         * cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
+         * cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
+         * res <- factor(c(1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1))
+         * data <- data.frame(cat1, cat2, res)
+         * glm <- glm(res ~ cat1 + cat2, data=data, family = binomial)
+         * summary(glm)
+         * predict(glm)
+         *
+         * Call:
+         * glm(formula = res ~ cat1 + cat2, family = binomial, data = data)
+         *
+         * Deviance Residuals: 
+         *     Min       1Q   Median       3Q      Max  
+         * -1.6744  -1.1127   0.8047   0.8576   1.2435  
+         *
+         * Coefficients:
+         *             Estimate Std. Error z value Pr(>|z|)
+         * (Intercept)  -0.1542     0.7195  -0.214    0.830
+         * cat11         0.9651     0.8419   1.146    0.252
+         * cat21         0.3083     0.8541   0.361    0.718
+         *
+         * (Dispersion parameter for binomial family taken to be 1)
+         *
+         *     Null deviance: 34.646  on 25  degrees of freedom
+         * Residual deviance: 33.256  on 23  degrees of freedom
+         * AIC: 39.256
+         *
+         * Number of Fisher Scoring iterations: 4
+         *
+         *          1          2          3          4          5          6          7 
+         *  1.1192316  0.8109302  1.1192316 -0.1541507 -0.1541507  0.8109302  0.8109302 
+         *          8          9         10         11         12         13         14 
+         *  0.1541507  0.1541507  0.8109302  0.1541507  0.8109302 -0.1541507  1.1192316 
+         *         15         16         17         18         19         20         21 
+         *  0.8109302  1.1192316 -0.1541507 -0.1541507  0.1541507  0.1541507  0.8109302 
+         *         22         23         24         25         26 
+         *  0.8109302  1.1192316  0.8109302  0.1541507 -0.1541507 
+         */
+
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel glmControl = null;
+        Frame preds = null;
+        Frame predsControl = null;
+        Frame predsR = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"cat1", "cat2", "y"},new Vec[]{cat1, cat2,res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._lambda = new double[]{0};
+            params._alpha = new double[]{0};
+            params._standardize = false;
+            params._non_negative = true;
+            params._intercept = true;
+            params._objective_epsilon = 1e-10;
+            params._gradient_epsilon = 1e-6;
+            params._response_column = "y";
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._max_iterations = 4;
+            params._dispersion_epsilon = 1;
+            glm = new GLM(params).trainModel().get();
+            preds = glm.score(train);
+            System.out.println(preds.toTwoDimTable().toString());
+
+            System.out.println(glm._output._variable_importances);
+            System.out.println(glm.coefficients().toString());
+            Double[] coefficients = glm.coefficients().values().toArray(new Double[0]);
+
+            params._control_variables = new String[]{"cat1"};
+            glmControl = new GLM(params).trainModel().get();
+            predsControl = glmControl.score(train);
+            System.out.println(predsControl.toTwoDimTable().toString());
+            System.out.println(glmControl._output._variable_importances);
+            System.out.println(glmControl.coefficients().toString());
+            Double[] coefficientsControl = glmControl.coefficients().values().toArray(new Double[0]);
+
+            Double[] coefficientsR = new Double[]{0.9651, 0.3083, -0.1542};
+            Vec predsRVec = Vec.makeVec(new double[]{1.1192316, 0.8109302, 1.1192316,-0.1541507,-0.1541507, 0.8109302, 0.8109302, 
+                    0.1541507, 0.1541507, 0.8109302, 0.1541507, 0.8109302, -0.1541507, 1.1192316, 0.8109302, 1.1192316, -0.1541507, 
+                    -0.1541507, 0.1541507, 0.1541507, 0.8109302, 0.8109302, 1.1192316, 0.8109302, 0.1541507, -0.1541507},Vec.newKey());
+            predsR = new Frame(Key.<Frame>make("predsR"),new String[]{"predict"},new Vec[]{predsRVec});
+
+            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", null, true);
+            Frame manualPredsH2o = scoreManualWithCoefficients(coefficients, train, "manualPredsH2o", null, true);
+            Frame manualPredsControl = scoreManualWithCoefficients(coefficientsControl, train, "manualPredsControl", new int[]{0}, true);
+            Frame manualPredsRControl = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", new int[]{0}, true);
+
+            double tol = 1e-3;
+            for (int i = 0; i < manualPredsH2o.numRows(); i++) {
+                double h2o = preds.vec(2).at(i);
+                double manualH2o = manualPredsH2o.vec(0).at(i);
+                // for some reason the predict output from glm in R is not in logit
+                double r = 1.0 / (Math.exp(-predsR.vec(0).at(i)) + 1.0);
+                double manualR = manualPredsR.vec(0).at(i);
+                double h2oControl = predsControl.vec(2).at(i);
+                double manualH2oControl = manualPredsControl.vec(0).at(i);
+                double manualRControl = manualPredsRControl.vec(0).at(i);
+
+                System.out.println(i+" h2o: "+h2o+ " h2o manual:" +manualH2o+
+                        " R: "+r+" R manual: "+manualR +
+                        " h2o control: "+h2oControl+" h2o control manual "+manualH2oControl+
+                        " R control manual: "+manualRControl);
+
+                // glm score calculation check
+                Assert.assertEquals(h2o, manualH2o, tol);
+                Assert.assertEquals(h2o, r, tol);
+                Assert.assertEquals(h2o, manualR, tol);
+
+                // control values calculation check
+                Assert.assertEquals(h2oControl, manualH2oControl, tol);
+                Assert.assertEquals(h2oControl, manualRControl, tol);
+            }
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmControl != null) glmControl.remove();
+            if (preds != null) preds.remove();
+            if (predsControl != null) predsControl.remove();
+            if (predsR != null) predsR.remove();
+            Scope.exit();
+        }
+    }
+
+    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName){
+        return scoreManualWithCoefficients(coefficients, data, frameName, null, false);
+    }
+
+    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, int[] controlVariablesIdx){
+        return scoreManualWithCoefficients(coefficients, data, frameName, controlVariablesIdx, false);
+    }
+    
+    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, int[] controlVariablesIdxs, boolean binomial){
+        Vec predictions = Vec.makeZero(data.numRows(), Vec.T_NUM);
+        for (int i = 0; i < data.numRows(); i++) {
+            double prediction = 0;
+            for (int j = 0; j < data.numCols()-1; j++) {
+                if(controlVariablesIdxs == null || Arrays.binarySearch(controlVariablesIdxs, j) < 0) {
+                    double coefficient = coefficients[j];
+                    double datapoint = data.vec(j).at(i);
+                    prediction += coefficient * datapoint;
+                }
+            }
+            prediction += coefficients[coefficients.length-1];
+            if(binomial){
+                prediction = 1.0 / (Math.exp(-prediction) + 1.0);
+            }
+            predictions.set(i, prediction);
+        }
+        return new Frame(Key.<Frame>make(frameName),new String[]{"predict"},new Vec[]{predictions});
+    }
+    
 }
