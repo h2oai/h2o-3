@@ -1396,15 +1396,18 @@ class TestRunner(object):
         Start all H2O clusters.
         :return none
         """
-        if self.terminated: return
-        if self.use_cloud: return
+        if self.terminated:
+            return
+        if self.use_cloud:
+            return
 
         print("")
         print("Starting clouds...")
         print("")
 
         for cloud in self.clouds:
-            if self.terminated: return
+            if self.terminated:
+                return
             cloud.start()
 
         print("")
@@ -1412,8 +1415,15 @@ class TestRunner(object):
         print("")
 
         for cloud in self.clouds:
-            if self.terminated: return
+            if self.terminated:
+                return
             cloud.wait_for_cloud_to_be_up()
+
+        # Give the JVMs a little extra time to settle before health-checks begin
+        extra_warmup = 30
+        print(f"\nExtra warm-up: sleeping {extra_warmup}s to let JVMs fully spin up...\n")
+        time.sleep(extra_warmup)
+
 
     def run_tests(self, nopass):
         """
