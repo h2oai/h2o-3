@@ -455,7 +455,7 @@ public class GLMControlVariablesTest extends TestUtil {
             Frame manualPredsRControl = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", new int[]{0});
             
             double tol = 1e-3;
-            for (int i = 0; i < manualPredsH2o.numRows(); i++) {
+            for (long i = 0; i < manualPredsH2o.numRows(); i++) {
                 double h2o = preds.vec(0).at(i);
                 double manualH2o = manualPredsH2o.vec(0).at(i);
                 double r = predsR.vec(0).at(i);
@@ -588,7 +588,7 @@ public class GLMControlVariablesTest extends TestUtil {
             Frame manualPredsRControl = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", new int[]{0}, true);
 
             double tol = 1e-3;
-            for (int i = 0; i < manualPredsH2o.numRows(); i++) {
+            for (long i = 0; i < manualPredsH2o.numRows(); i++) {
                 double h2o = preds.vec(2).at(i);
                 double manualH2o = manualPredsH2o.vec(0).at(i);
                 // for some reason the predict output from glm in R is not in logit
