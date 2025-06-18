@@ -2802,7 +2802,7 @@ def main(argv):
 
     # If the overall regression did not pass then exit with a failure status code.
     if not g_runner.get_regression_passed():
-        sys.exit(0)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
