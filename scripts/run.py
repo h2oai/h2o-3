@@ -2778,7 +2778,7 @@ def main(argv):
 
     # If no run is specified, then do an early exit here.
     if g_no_run:
-        sys.exit(0)
+        sys.exit(1)
 
     # Handle killing the runner.
     signal.signal(signal.SIGINT, signal_handler)
