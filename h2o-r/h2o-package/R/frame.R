@@ -2903,7 +2903,7 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use, method="Pearson"){
   if (is.null(method) || is.na(method)) {
     stop("Correlation method must be specified.")
   }
-  
+
   # Eager, mostly to match prior semantics but no real reason it need to be
   expr <- .newExpr("cor",x,y,.quote(use), .quote(method))
   if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
