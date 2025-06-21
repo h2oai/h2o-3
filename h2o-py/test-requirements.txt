@@ -7,7 +7,7 @@ tabulate==0.8.10
 slam==0.6.0
 cython==0.29.34
 twine==1.10.0
-urllib3==1.26.5
+urllib3==2.5.0
 grip==4.4.0
 wheel<=0.42.0; python_version < '3.7'
 wheel==0.42.0; python_version >= '3.7'
