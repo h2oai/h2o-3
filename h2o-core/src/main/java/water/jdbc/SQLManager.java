@@ -4,6 +4,7 @@ import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -614,11 +615,29 @@ public class SQLManager {
       throw new IllegalArgumentException("JDBC URL is null or empty");
     }
 
-    if (!jdbcUrl.toLowerCase().startsWith("jdbc:")) {
+    String previous = null;
+    String jdbcUrlDecode = jdbcUrl;
+    try {
+      for (int i = 0; i < 10; i++) {
+        previous = jdbcUrlDecode;
+        jdbcUrlDecode = URLDecoder.decode(jdbcUrlDecode, "UTF-8");
+        if (previous.equals(jdbcUrlDecode)) {
+          break;
+        }
+      }
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalArgumentException("JDBC URL has wrong encoding");
+    }
+    
+    if (!previous.equals(jdbcUrlDecode)) {
+      throw new IllegalArgumentException("JDBC URL contains invalid characters");
+    }
+
+    if (!jdbcUrlDecode.toLowerCase().startsWith("jdbc:")) {
       throw new IllegalArgumentException("JDBC URL must start with 'jdbc:'");
     }
 
-    Matcher matcher = JDBC_PARAMETERS_REGEX_PATTERN.matcher(jdbcUrl);
+    Matcher matcher = JDBC_PARAMETERS_REGEX_PATTERN.matcher(jdbcUrlDecode);
     String property = System.getProperty(DISALLOWED_JDBC_PARAMETERS_PARAM);
     List<String> disallowedParameters = property == null ?
             DEFAULT_JDBC_DISALLOWED_PARAMETERS :
