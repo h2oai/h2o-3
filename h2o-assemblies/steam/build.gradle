@@ -91,6 +91,9 @@ dependencies {
             because 'Fixes SNYK-JAVA-DNSJAVA-7547405'
             because 'Fixes CVE-2024-25638'
         }
+        api('commons-beanutils:commons-beanutils:1.11.0') {
+            because 'Fixes CVE-2025-48734'
+        }
     }
 }
 
