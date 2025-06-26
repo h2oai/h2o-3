@@ -139,7 +139,12 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         DKV.put(di);
         Vec assignment;
         AggregateTask aggTask;
-        final double radiusBase = .1 / Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols()); // Lee's magic formula
+        // Lee's magic formula v2.0
+        final double radiusBase = 1.0 - 1.0 / Math.pow(orig.numRows(), 0.006789);
+        if (orig.numCols() > 5) {
+            radiusBase += 0.075 * Math.log(orig.numCols());
+        }
+        radiusBase = Math.min(radiusBase, 0.5);
         final int targetNumExemplars = (int)Math.min((long)_parms._target_num_exemplars, orig.numRows());
 
         // Increase radius until we have low enough number of exemplars
