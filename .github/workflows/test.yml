@@ -183,6 +183,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y libkrb5-dev gcc g++ python3-dev
+          
       - name: Cache conda environment
         uses: actions/cache@v3
         with:
@@ -190,6 +191,7 @@ jobs:
           key: ${{ runner.os }}-conda-py38-${{ matrix.make_target }}
           restore-keys: |
             ${{ runner.os }}-conda-py38-
+            
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -222,6 +224,7 @@ jobs:
           mkdir -p h2o-3-src/h2o-assemblies/minimal/build/libs
           mkdir -p h2o-3-src/h2o-assemblies/steam/build/libs
           mkdir -p h2o-3-src/h2o-assemblies/main/build/libs
+          
           cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
           cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
           cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
@@ -456,6 +459,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y libkrb5-dev gcc g++ python3-dev zip unzip
+          
       - name: Cache conda environment
         uses: actions/cache@v3
         with:
