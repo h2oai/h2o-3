@@ -45,57 +45,41 @@ jobs:
         with:
           r-version: 3.4.1
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          audience: sts.amazonaws.com
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: h2o-shared-service-prd
-          role-to-assume: arn:aws:iam::851725263148:role/GitHub-OIDC-Role
-
-      - name: Clone full H2O-3 repository (including buildSrc)
-        run: git clone https://github.com/h2oai/h2o-3.git
-
       - name: Gradle build with uBench enabled
-        working-directory: h2o-3
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon --build-cache --parallel \
             -x test \
-            -PdoUBench=true \
             build --warning-mode all
             
       - name: Prepare test-package-js.zip
-        working-directory: h2o-3
         run: make -f scripts/jenkins/Makefile.jenkins test-package-js
 
       - name: Prepare test-package-java.zip
-        working-directory: h2o-3
         run: make -f scripts/jenkins/Makefile.jenkins test-package-java
 
       - name: Prepare test-package-r.zip
-        working-directory: h2o-3
         run: make -f scripts/jenkins/Makefile.jenkins test-package-r
 
       - name: Upload test-package-js.zip
         uses: actions/upload-artifact@v4
         with:
           name: test-package-js
-          path: h2o-3/test-package-js.zip
+          path: test-package-js.zip
           retention-days: 3
 
       - name: Upload test-package-r.zip
         uses: actions/upload-artifact@v4
         with:
           name: test-package-r
-          path: h2o-3/test-package-r.zip
+          path: test-package-r.zip
           retention-days: 3
 
       - name: Upload test-package-java.zip
         uses: actions/upload-artifact@v4
         with:
           name: test-package-java
-          path: h2o-3/test-package-java.zip
+          path: test-package-java.zip
           retention-days: 3
 
       - name: Upload build artifacts
@@ -283,6 +267,7 @@ jobs:
           else
             echo "Test passed."
           fi
+          
   test-python-311:
     needs: build-h2o-3
     runs-on: ubuntu-22.04
@@ -321,6 +306,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y libkrb5-dev gcc g++ python3-dev
+          
       - name: Cache conda environment
         uses: actions/cache@v3
         with:
@@ -328,6 +314,7 @@ jobs:
           key: ${{ runner.os }}-conda-py311-${{ matrix.make_target }}
           restore-keys: |
             ${{ runner.os }}-conda-py311-
+            
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -344,6 +331,7 @@ jobs:
           if ! conda env list | grep -q "^py311env"; then
             conda create -y -n py311env python=3.11 pip
           fi
+          
       - name: Install Python deps & H2O wheel (in py38env)
         shell: bash -l {0}
         run: |
@@ -352,6 +340,7 @@ jobs:
           pip install -r h2o-py/ci-test-requirements-py311.txt
           pip install --upgrade pip wheel grip tabulate requests
           pip install "$(find artifacts -name '*.whl' | head -n 1)"
+          
       - name: Restore smalldata
         uses: actions/cache@v4
         with:
@@ -361,6 +350,7 @@ jobs:
       - name: Link smalldata and bigdata
         run: |
           ln -s -f smalldata/ smalldata
+          
       - name: Copy build outputs into source tree
         run: |
           mkdir -p h2o-3-src/build
@@ -371,6 +361,7 @@ jobs:
           cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
           cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
           cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/main.jar
+          
       - name: Run ${{ matrix.label }} test and save output
         shell: bash -l {0}
         working-directory: h2o-3-src
@@ -381,6 +372,7 @@ jobs:
           set -o pipefail
           make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }} 2>&1 | tee full_output.log
           echo "${PIPESTATUS[0]}" > test_exit_code.txt
+          
       - name: Extract section from 'Starting clouds' to end of file
         working-directory: h2o-3-src
         run: |
