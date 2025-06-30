@@ -10,9 +10,6 @@ permissions:
   contents: read
   id-token: write
 
-env:
-  AWS_REGION: us-east-1
-
 jobs:
   build-h2o-3:
     runs-on: ubuntu-latest-16-cores
@@ -209,22 +206,7 @@ jobs:
           if ! conda env list | grep -q "^py38env"; then
             conda create -y -n py38env python=3.8 pip
           fi
-      - name: Restore smalldata
-        uses: actions/cache@v4
-        with:
-          path: smalldata
-          key: smalldata-v1
 
-      - name: Restore bigdata
-        uses: actions/cache@v4
-        with:
-          path: bigdata
-          key: bigdata-v1
-
-      - name: Link smalldata and bigdata
-        run: |
-          ln -s -f smalldata/ smalldata
-          ln -s -f bigdata/ bigdata
       - name: Install Python deps & H2O wheel (in py38env)
         shell: bash -l {0}
         run: |
@@ -233,6 +215,7 @@ jobs:
           pip install -r h2o-py/ci-test-requirements-py38.txt
           pip install --upgrade pip wheel grip tabulate requests
           pip install "$(find artifacts -name '*.whl' | head -n 1)"
+          
       - name: Copy build outputs into source tree
         run: |
           mkdir -p h2o-3-src/build
@@ -243,6 +226,7 @@ jobs:
           cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
           cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
           cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/main.jar
+          
       - name: Run ${{ matrix.label }} test and save output
         shell: bash -l {0}
         working-directory: h2o-3-src
@@ -253,6 +237,7 @@ jobs:
           set -o pipefail
           make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }} 2>&1 | tee full_output.log
           echo "${PIPESTATUS[0]}" > test_exit_code.txt
+          
       - name: Extract section from 'Starting clouds' to end of file
         working-directory: h2o-3-src
         run: |
@@ -268,6 +253,7 @@ jobs:
           else
             echo "No result file found." > summary.txt
           fi
+          
       - name: Upload test summary and log
         uses: actions/upload-artifact@v4
         with:
@@ -366,22 +352,13 @@ jobs:
           pip install --upgrade pip wheel grip tabulate requests
           pip install "$(find artifacts -name '*.whl' | head -n 1)"
           
-      - name: Restore smalldata
-        uses: actions/cache@v4
-        with:
-          path: smalldata
-          key: smalldata-v1
-
-      - name: Link smalldata and bigdata
-        run: |
-          ln -s -f smalldata/ smalldata
-          
       - name: Copy build outputs into source tree
         run: |
           mkdir -p h2o-3-src/build
           mkdir -p h2o-3-src/h2o-assemblies/minimal/build/libs
           mkdir -p h2o-3-src/h2o-assemblies/steam/build/libs
           mkdir -p h2o-3-src/h2o-assemblies/main/build/libs
+          
           cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
           cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
           cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
@@ -413,6 +390,7 @@ jobs:
           else
             echo "No result file found." > summary.txt
           fi
+          
       - name: Upload test summary and log
         uses: actions/upload-artifact@v4
         with:
@@ -437,6 +415,7 @@ jobs:
           else
             echo "Test passed."
           fi
+          
   test-flow-headless:
     needs: build-h2o-3
     runs-on: ubuntu-latest-16-cores
@@ -504,6 +483,7 @@ jobs:
         run: |
           source "$(conda info --base)/etc/profile.d/conda.sh"
           conda env list | grep -q "^py38env" || conda create -y -n py38env python=3.8 pip
+          
       - name: Install Python dependencies & H2O wheel
         shell: bash -l {0}
         run: |
@@ -512,15 +492,19 @@ jobs:
           pip install -r h2o-py/ci-test-requirements-py38.txt
           pip install --upgrade pip wheel grip tabulate requests
           pip install "$(find artifacts -name '*.whl' | head -n 1)"
+          
       - name: Integrate build artifacts and JS test package
         run: |
           mkdir -p h2o-3-src/{build,h2o-assemblies/minimal/build/libs,h2o-assemblies/steam/build/libs,h2o-assemblies/main/build/libs}
+          
           cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
           cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/
           cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/
           cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/
+          
           unzip -q temp-js-package/test-package-js.zip -d extracted-js
           cp -r extracted-js/{h2o-web,tests,scripts} h2o-3-src/
+          
       - name: Run ${{ matrix.label }} test and save output
         shell: bash -l {0}
         working-directory: h2o-3-src
@@ -531,6 +515,7 @@ jobs:
           set -o pipefail
           make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }} 2>&1 | tee full_output.log
           echo "${PIPESTATUS[0]}" > test_exit_code.txt
+          
       - name: Extract section from 'Starting clouds' to end of file
         working-directory: h2o-3-src
         run: |
@@ -546,6 +531,7 @@ jobs:
           else
             echo "No result file found." > summary.txt
           fi
+          
       - name: Upload test summary and log
         uses: actions/upload-artifact@v4
         with:
@@ -570,116 +556,102 @@ jobs:
           else
             echo "Test passed."
           fi
-  # test-r:
-  #   needs: build-h2o-3
-  #   runs-on: ubuntu-latest-16-cores
-  #   continue-on-error: true
-  #   timeout-minutes: 240
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       include:
-  #         - label: r-smoke
-  #           make_target: test-r-smoke
-  #         - label: r-init
-  #           make_target: test-r-init
-  #         - label: r-small
-  #           make_target: test-r-small
-  #         - label: r-explain
-  #           make_target: test-r-explain
-  #         - label: r-automl
-  #           make_target: test-r-automl
-  #         - label: r-automl-smoke-noxgb
-  #           make_target: test-r-automl-smoke-noxgb
-  #         - label: r-medium-large
-  #           make_target: test-r-medium-large
-  #         - label: r-datatable
-  #           make_target: test-r-datatable
-  #         - label: r-cmd-check
-  #           make_target: test-r-cmd-check
-  #         - label: r-cmd-check-as-cran
-  #           make_target: test-r-cmd-check-as-cran
-  #         - label: r-booklets
-  #           make_target: test-r-booklets
-  #         - label: r-demos-small
-  #           make_target: test-r-demos-small
-  #         - label: r-demos-ml
-  #           make_target: test-r-demos-medium-large
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+          
+  test-r:
+    needs: build-h2o-3
+    runs-on: ubuntu-latest-16-cores
+    continue-on-error: true
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: r-smoke
+            make_target: test-r-smoke
+          - label: r-init
+            make_target: test-r-init
+          - label: r-small
+            make_target: test-r-small
+          - label: r-explain
+            make_target: test-r-explain
+          - label: r-automl
+            make_target: test-r-automl
+          - label: r-automl-smoke-noxgb
+            make_target: test-r-automl-smoke-noxgb
+          - label: r-medium-large
+            make_target: test-r-medium-large
+          - label: r-datatable
+            make_target: test-r-datatable
+          - label: r-cmd-check
+            make_target: test-r-cmd-check
+          - label: r-cmd-check-as-cran
+            make_target: test-r-cmd-check-as-cran
+          - label: r-booklets
+            make_target: test-r-booklets
+          - label: r-demos-small
+            make_target: test-r-demos-small
+          - label: r-demos-ml
+            make_target: test-r-demos-medium-large
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  #     - name: Set up Java
-  #       uses: actions/setup-java@v4
-  #       with:
-  #         distribution: temurin
-  #         java-version: 11
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
 
-  #     - name: Set up R
-  #       uses: r-lib/actions/setup-r@v2
+      - name: Set up R 4.2.2
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 4.2.2
 
-  #     - name: Install system libraries
-  #       run: |
-  #         sudo apt-get update -q
-  #         sudo apt-get install -y libcurl4-openssl-dev libxml2-dev \
-  #                                  libssl-dev libkrb5-dev gcc g++ make
+      - name: Install R system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libfreetype6-dev \
+            libtiff5-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            r-base \
+            r-cran-xml2
 
-  #     - name: Install base R packages
-  #       run: |
-  #         echo "R_LIBS_USER=$HOME/R/library" >> "$GITHUB_ENV"
-  #         mkdir -p "$HOME/R/library"
-  #         Rscript -e 'install.packages(
-  #             c("RCurl","jsonlite","statmod","devtools","roxygen2","testthat","data.table","knitr"),
-  #             repos="https://cloud.r-project.org",
-  #             Ncpus=2
-  #         )'
+      - name: Install core R packages for documentation
+        run: |
+          Rscript -e 'install.packages(c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
 
-  #     - name: Download build artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: h2o-3-build
-  #         path: artifacts
+      - name: Install extended R packages
+        run: |
+          Rscript -e 'install.packages(c("ggplot2", "mlbench", "slam", "bit64", "data.table", "rgl", "plot3Drgl", "IRdisplay", "plotly", "repr"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
 
-  #     - name: Download test-package-r
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: test-package-r
-  #         path: temp-r-package
+      - name: Download test-package-r
+        uses: actions/download-artifact@v4
+        with:
+          name: test-package-r
+          path: temp-r-package
 
-  #     - name: Clone H2O-3 source
-  #       run: git clone --depth 1 https://github.com/h2oai/h2o-3.git h2o-3-src
+      - name: Clone h2o-3 source
+        run: git clone --depth 1 https://github.com/h2oai/h2o-3.git h2o-3-src
 
-  #     - name: Copy build outputs into source tree
-  #       run: |
-  #         mkdir -p h2o-3-src/build
-  #         mkdir -p h2o-3-src/h2o-assemblies/minimal/build/libs
-  #         mkdir -p h2o-3-src/h2o-assemblies/steam/build/libs
-  #         mkdir -p h2o-3-src/h2o-assemblies/main/build/libs
+      - name: Extract R package and prepare source
+        run: |
+          unzip -q temp-r-package/test-package-r.zip -d extracted-r
+          mv extracted-r/h2o-r ./h2o-3-src
 
-  #         cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
-  #         cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
-  #         cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
-  #         cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/main.jar
-
-  #         unzip -q temp-r-package/test-package-r.zip -d extracted-r
-  #         cp -r extracted-r/h2o-r h2o-3-src/
-
-  #     - name: Restore smalldata
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: smalldata
-  #         key: smalldata-v1
-
-  #     - name: Link smalldata and bigdata
-  #       run: |
-  #         ln -s -f smalldata/ smalldata
-
-  #     - name: Run ${{ matrix.label }} target
-  #       working-directory: h2o-3-src
-  #       run: |
-  #         ls h2o-r/R/src/contrib
-  #         R CMD INSTALL h2o-r/R/src/contrib/*.tar.gz  
-  #         make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }}
+      - name: Run ${{ matrix.label }} target
+        working-directory: h2o-3-src
+        run: |
+          make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }}
 
   # test-java:
   #   needs: build-h2o-3
