@@ -70,12 +70,6 @@ jobs:
         run: |
           Rscript -e 'install.packages(c("ggplot2", "mlbench", "slam", "bit64", "data.table", "rgl", "plot3Drgl", "IRdisplay", "plotly", "repr"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
 
-      - name: Run devtools::document
-        working-directory: h2o-r
-        continue-on-error: true
-        run: |
-          Rscript -e "devtools::document()"
-
       - name: Gradle build with uBench enabled
         run: |
           chmod +x gradlew
