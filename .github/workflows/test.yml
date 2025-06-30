@@ -50,6 +50,7 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --build-cache --parallel \
             -x test \
+            -PdoUBench=true \
             build --stacktrace --warning-mode all
             
       - name: Prepare test-package-js.zip
