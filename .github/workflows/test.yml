@@ -73,7 +73,7 @@ jobs:
       - name: Run devtools::document
         working-directory: h2o-r
         run: |
-          Rscript -e "library(devtools); document('h2o-package')"
+          Rscript -e "devtools::document()"
 
       - name: Gradle build with uBench enabled
         run: |
