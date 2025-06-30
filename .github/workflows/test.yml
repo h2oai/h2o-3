@@ -40,11 +40,11 @@ jobs:
       - name: Install Python build tools
         run: python -m pip install --upgrade pip wheel grip tabulate requests
 
-      - name: Set up R 3.4.1
+      - name: Set up R 4.2.2
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: 3.4.1
-          
+          r-version: 4.2.2
+
       - name: Install R system dependencies
         run: |
           sudo apt-get update
@@ -58,19 +58,32 @@ jobs:
             libfreetype6-dev \
             libtiff5-dev \
             libjpeg-dev \
-            libpng-dev
+            libpng-dev \
+            r-base \
+            r-cran-xml2
 
-      - name: Install R packages required for h2o-r
+      - name: Install core R packages for documentation
         run: |
-          Rscript -e 'install.packages(c("RCurl","jsonlite","statmod","devtools","roxygen2","testthat","ggplot2", "mlbench", "slam", "bit64", "data.table", "rgl", "plot3Drgl", "IRdisplay", "plotly", "repr"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
+          Rscript -e 'install.packages(c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
+
+      - name: Install extended R packages
+        run: |
+          Rscript -e 'install.packages(c("ggplot2", "mlbench", "slam", "bit64", "data.table", "rgl", "plot3Drgl", "IRdisplay", "plotly", "repr"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
+
+      - name: Run devtools::document
+        working-directory: h2o-r
+        run: |
+          Rscript -e "library(devtools); document('h2o-package')"
 
       - name: Gradle build with uBench enabled
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon --build-cache --parallel \
             -x test \
+            -x :h2o-r:untar \
+            -PdoUBench=true \
             build --stacktrace --warning-mode all
-            
+
       - name: Prepare test-package-js.zip
         run: make -f scripts/jenkins/Makefile.jenkins test-package-js
 
