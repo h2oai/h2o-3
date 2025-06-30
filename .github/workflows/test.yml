@@ -49,7 +49,8 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon --build-cache --parallel \
-            -x test \
+            -x test \ 
+            -x :h2o-r:untar \
             -PdoUBench=true \
             build --stacktrace --warning-mode all
             
