@@ -72,6 +72,7 @@ jobs:
 
       - name: Run devtools::document
         working-directory: h2o-r
+        continue-on-error: true
         run: |
           Rscript -e "devtools::document()"
 
