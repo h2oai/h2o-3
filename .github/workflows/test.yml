@@ -112,11 +112,11 @@ jobs:
         with:
           name: h2o-3-build
           path: |
-            h2o-3/h2o-py/build/dist/*.whl
-            h2o-3/build/h2o.jar
-            h2o-3/h2o-assemblies/minimal/build/libs/minimal.jar
-            h2o-3/h2o-assemblies/steam/build/libs/steam.jar
-            h2o-3/h2o-assemblies/main/build/libs/main.jar
+            h2o-py/build/dist/*.whl
+            build/h2o.jar
+            h2o-assemblies/minimal/build/libs/minimal.jar
+            h2o-assemblies/steam/build/libs/steam.jar
+            h2o-assemblies/main/build/libs/main.jar
           if-no-files-found: error
           retention-days: 1
       
