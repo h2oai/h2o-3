@@ -1,4 +1,4 @@
-name: H2O-3 Nightly CI
+name: H2O-3 Nightly Tests
 
 on:
   workflow_dispatch:
@@ -7,216 +7,779 @@ on:
       - devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
 
 permissions:
-  id-token: write
   contents: read
+  id-token: write
 
 env:
-  BRANCH_NAME: devops/rohan/mig-h2o-3-nightly-pipeline-to-gha
-  DOCKER_IMAGE: 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-base:46
   AWS_REGION: us-east-1
-  MODE: MODE_NIGHTLY
 
 jobs:
-  checkout-and-prepare:
-    name: Checkout and Prepare Workspace
+  build-h2o-3:
     runs-on: ubuntu-latest-16-cores
-    outputs:
-      gradle_version: ${{ steps.extract.outputs.gradle_version }}
-      xgb_version: ${{ steps.extract.outputs.xgb_version }}
-      build_status: ${{ steps.health_check.outputs.result }}
-
+    timeout-minutes: 100
     steps:
-      - name: Checkout H2O-3
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.BRANCH_NAME }}
 
-      - name: Configure AWS Credentials (OIDC)
+      - name: Set up Java 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+
+      - name: Install Python build tools
+        run: python -m pip install --upgrade pip wheel grip tabulate requests
+
+      - name: Set up R 3.4.1
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 3.4.1
+
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          audience: "sts.amazonaws.com"
+          audience: sts.amazonaws.com
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: "h2o-ecr"
-          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+          role-session-name: h2o-shared-service-prd
+          role-to-assume: arn:aws:iam::851725263148:role/GitHub-OIDC-Role
 
-      - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region $AWS_REGION | \
-            docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
-      - name: Pull Docker Image
-        run: docker pull ${{ env.DOCKER_IMAGE }}
+      - name: Clone full H2O-3 repository (including buildSrc)
+        run: git clone https://github.com/h2oai/h2o-3.git
 
-      - name: Make pipeline scripts executable
-        run: chmod +x scripts/github/*.sh
+      - name: Gradle build with uBench enabled
+        working-directory: h2o-3
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --build-cache --parallel \
+            -x test \
+            -PdoUBench=true \
+            build --warning-mode all
+            
+      - name: Prepare test-package-js.zip
+        working-directory: h2o-3
+        run: make -f scripts/jenkins/Makefile.jenkins test-package-js
 
-      - name: Extract Gradle and XGBoost versions
-        id: extract
-        shell: bash
-        run: |
-          GRADLE_VERSION=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-bin.zip.*/\1/p')
-          XGB_VERSION=$(grep 'xgboost4jVersion' h2o-extensions/xgboost/build.gradle | sed -n 's/.*xgboost4jVersion *= *[\"\x27]*\([0-9.]*\).*/\1/p')
-          echo "gradle_version=${GRADLE_VERSION:-not_found}" >> "${GITHUB_OUTPUT}"
-          echo "xgb_version=${XGB_VERSION:-not_found}" >> "${GITHUB_OUTPUT}"
-          
-      - name: Retry Health Check
-        id: health_check
-        run: |
-          for i in {1..3}; do
-            echo "Health check attempt $i"
-            if ./scripts/github/init_pipeline.sh "$MODE" && ./scripts/github/health_check.sh; then
-              echo "result=success" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "result=failure" >> "$GITHUB_OUTPUT"
-          exit 1
-          
-      - name: Archive workspace safely
-        if: steps.health_check.outputs.result == 'success'
-        shell: bash
-        run: |
-          mkdir temp-archive
-          shopt -s extglob dotglob
-          cp -a !(temp-archive) temp-archive/
-          tar -czf workspace.tar.gz -C temp-archive .
-          
-      - name: Upload workspace artifact
-        if: steps.health_check.outputs.result == 'success'
+      - name: Prepare test-package-java.zip
+        working-directory: h2o-3
+        run: make -f scripts/jenkins/Makefile.jenkins test-package-java
+
+      - name: Prepare test-package-r.zip
+        working-directory: h2o-3
+        run: make -f scripts/jenkins/Makefile.jenkins test-package-r
+
+      - name: Upload test-package-js.zip
         uses: actions/upload-artifact@v4
         with:
-          name: workspace
-          path: workspace.tar.gz
+          name: test-package-js
+          path: h2o-3/test-package-js.zip
+          retention-days: 3
 
-  build-h2o3:
-    name: Build H2O-3
+      - name: Upload test-package-r.zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-package-r
+          path: h2o-3/test-package-r.zip
+          retention-days: 3
+
+      - name: Upload test-package-java.zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-package-java
+          path: h2o-3/test-package-java.zip
+          retention-days: 3
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-3-build
+          path: |
+            h2o-3/h2o-py/build/dist/*.whl
+            h2o-3/build/h2o.jar
+            h2o-3/h2o-assemblies/minimal/build/libs/minimal.jar
+            h2o-3/h2o-assemblies/steam/build/libs/steam.jar
+            h2o-3/h2o-assemblies/main/build/libs/main.jar
+          if-no-files-found: error
+          retention-days: 1
+      
+  test-python-38:
+    needs: build-h2o-3
     runs-on: ubuntu-latest-16-cores
-    needs: checkout-and-prepare
-    if: needs.checkout-and-prepare.outputs.build_status == 'success'
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: python-3-8-single-node
+            make_target: test-pyunit-single-node
+          - label: python-3-8-xgboost-stress
+            make_target: test-pyunit-xgboost-stress
+          - label: python-3-8-automl-noxgb
+            make_target: test-pyunit-automl-smoke-noxgb
+          - label: python-3-8-automl
+            make_target: test-pyunit-automl
+          - label: python-3-8-fault-tolerance
+            make_target: test-pyunit-fault-tolerance
+          - label: python-3-8-medium-large
+            make_target: test-pyunit-medium-large
+          - label: python-3-8-pyunit-xlarge
+            make_target: test-pyunit-xlarge
+          - label: python-3-8-pyunit-mojo2
+            make_target: test-pyunit-mojo2
+          - label: python-3-8-pyunit-explain
+            make_target: test-pyunit-explain
+          - label: python-3-8-pyunit-demos
+            make_target: test-pyunit-demos
+          - label: python-3-8-demos-new-scikit
+            make_target: test-py-demos-new-scikit
+          - label: python-3-8-py-persist-s3
+            make_target: test-py-persist-s3
+          - label: python-3-8-pyunit-small
+            make_target: test-pyunit-small
+          - label: python-3-8-py-smoke
+            make_target: test-py-smoke
+          - label: python-3-8-py-smoke-main
+            make_target: test-py-smoke-main
+          - label: python-3-8-py-smoke-minimal
+            make_target: test-py-smoke-minimal
+          - label: python-3-8-py-smoke-steam
+            make_target: test-py-smoke-steam
 
     steps:
-      - name: Download workspace
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.8
+          auto-activate-base: false
+          auto-update-conda: false
+          channels: conda-forge,defaults
+          channel-priority: strict
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y libkrb5-dev gcc g++ python3-dev
+      - name: Cache conda environment
+        uses: actions/cache@v3
+        with:
+          path: ~/miniconda/envs/py38env
+          key: ${{ runner.os }}-conda-py38-${{ matrix.make_target }}
+          restore-keys: |
+            ${{ runner.os }}-conda-py38-
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: workspace
+          name: h2o-3-build
+          path: artifacts
 
-      - name: Extract workspace
-        run: tar -xzf workspace.tar.gz
+      - name: Clone H2O-3 source
+        run: git clone --depth 1 https://github.com/h2oai/h2o-3.git h2o-3-src
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Create conda env
+        shell: bash -l {0}
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          if ! conda env list | grep -q "^py38env"; then
+            conda create -y -n py38env python=3.8 pip
+          fi
+      - name: Restore smalldata
+        uses: actions/cache@v4
         with:
-          audience: "sts.amazonaws.com"
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: "h2o-shared-service-prod"
-          role-to-assume: "arn:aws:iam::851725263148:role/GitHub-OIDC-Role"
+          path: smalldata
+          key: smalldata-v1
 
-      - name: Sync smalldata from S3
-        run: |
-          mkdir -p smalldata
-          aws s3 sync s3://h2o-public-test-data/smalldata/ ./smalldata/
-      - name: Configure AWS Credentials (again)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Restore bigdata
+        uses: actions/cache@v4
         with:
-          audience: "sts.amazonaws.com"
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: "h2o-ecr"
-          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+          path: bigdata
+          key: bigdata-v1
 
-      - name: Login to ECR
+      - name: Link smalldata and bigdata
         run: |
-          aws ecr get-login-password --region $AWS_REGION | \
-            docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
-            
-      - name: Run Build in Docker
-        env:
-          DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
+          ln -s -f smalldata/ smalldata
+          ln -s -f bigdata/ bigdata
+      - name: Install Python deps & H2O wheel (in py38env)
+        shell: bash -l {0}
         run: |
-          docker run --rm -u 0:0 \
-            -v ${{ github.workspace }}:/ws -w /ws \
-            -e DRIVERLESS_AI_LICENSE_KEY=${{ secrets.DRIVERLESS_AI_LICENSE_KEY }} \
-            ${{ env.DOCKER_IMAGE }} \
-            bash -c "
-              apt-get update && apt-get install -y python3 python3-pip &&
-              ln -sf /usr/bin/python3 /usr/bin/python || true &&
-              python3 -m pip install --upgrade pip &&
-              pip install --no-cache-dir 'tabulate>=0.7.5' 'requests>=2.10' &&
-              git config --global --add safe.directory '*' &&
-              rm -f gradle/ubench.gradle || true &&
-              ./gradlew --build-cache --parallel build \
-                -x test \
-                -x :h2o-r:buildPackageDocumentation \
-                -x :h2o-r:buildPKG \
-                -x :h2o-r:buildPKGClient \
-                -x :h2o-r:untar \
-                -x :h2o-r:runRTests \
-                --warning-mode all
-            "
-  python-tests:
-    name: Python Tests
-    runs-on: ubuntu-latest-16-cores
-    needs: build-h2o3
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate py38env
+          pip install -r h2o-py/ci-test-requirements-py38.txt
+          pip install --upgrade pip wheel grip tabulate requests
+          pip install "$(find artifacts -name '*.whl' | head -n 1)"
+      - name: Copy build outputs into source tree
+        run: |
+          mkdir -p h2o-3-src/build
+          mkdir -p h2o-3-src/h2o-assemblies/minimal/build/libs
+          mkdir -p h2o-3-src/h2o-assemblies/steam/build/libs
+          mkdir -p h2o-3-src/h2o-assemblies/main/build/libs
+          cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
+          cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
+          cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
+          cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/main.jar
+      - name: Run ${{ matrix.label }} test and save output
+        shell: bash -l {0}
+        working-directory: h2o-3-src
+        continue-on-error: true
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate py38env
+          set -o pipefail
+          make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }} 2>&1 | tee full_output.log
+          echo "${PIPESTATUS[0]}" > test_exit_code.txt
+      - name: Extract section from 'Starting clouds' to end of file
+        working-directory: h2o-3-src
+        run: |
+          RESULTS_FILE="full_output.log"
+          if [[ -f "$RESULTS_FILE" ]]; then
+            START_LINE=$(grep -n "^Starting clouds\.\.\." "$RESULTS_FILE" | cut -d: -f1 | head -n 1)
+            if [[ -n "$START_LINE" ]]; then
+              tail -n +"$START_LINE" "$RESULTS_FILE" > summary.txt
+            else
+              echo "Could not find 'Starting clouds...'. Dumping full log." > summary.txt
+              cat "$RESULTS_FILE" >> summary.txt
+            fi
+          else
+            echo "No result file found." > summary.txt
+          fi
+      - name: Upload test summary and log
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-${{ matrix.label }}
+          path: |
+            h2o-3-src/summary.txt
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Fail if test step failed
+        shell: bash -l {0}
+        working-directory: h2o-3-src
+        run: |
+          if [[ ! -f test_exit_code.txt ]]; then
+            echo "Missing test_exit_code.txt! Marking as failed."
+            exit 1
+          fi
+          EXIT_CODE=$(cat test_exit_code.txt)
+          if [[ "$EXIT_CODE" -ne 0 ]]; then
+            echo "Test failed. Failing the job now."
+            exit $EXIT_CODE
+          else
+            echo "Test passed."
+          fi
+  test-python-311:
+    needs: build-h2o-3
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: python-3-11-single-node
+            make_target: test-pyunit-single-node
+          - label: python-3-11-fault-tolerance
+            make_target: test-pyunit-fault-tolerance
+          - label: python-3-11-py-smoke
+            make_target: test-py-smoke
 
     steps:
-      - name: Download workspace
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.11
+          auto-activate-base: false
+          auto-update-conda: false
+          channels: conda-forge,defaults
+          channel-priority: strict
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y libkrb5-dev gcc g++ python3-dev
+      - name: Cache conda environment
+        uses: actions/cache@v3
+        with:
+          path: ~/miniconda/envs/py38env
+          key: ${{ runner.os }}-conda-py311-${{ matrix.make_target }}
+          restore-keys: |
+            ${{ runner.os }}-conda-py311-
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: workspace
+          name: h2o-3-build
+          path: artifacts
 
-      - name: Extract workspace
-        run: tar -xzf workspace.tar.gz
+      - name: Clone H2O-3 source
+        run: git clone --depth 1 https://github.com/h2oai/h2o-3.git h2o-3-src
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Create conda env
+        shell: bash -l {0}
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          if ! conda env list | grep -q "^py311env"; then
+            conda create -y -n py311env python=3.11 pip
+          fi
+      - name: Install Python deps & H2O wheel (in py38env)
+        shell: bash -l {0}
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate py311env
+          pip install -r h2o-py/ci-test-requirements-py311.txt
+          pip install --upgrade pip wheel grip tabulate requests
+          pip install "$(find artifacts -name '*.whl' | head -n 1)"
+      - name: Restore smalldata
+        uses: actions/cache@v4
         with:
-          audience: "sts.amazonaws.com"
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: "h2o-ecr"
-          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+          path: smalldata
+          key: smalldata-v1
 
-      - name: Login to ECR
+      - name: Link smalldata and bigdata
         run: |
-         aws ecr get-login-password --region $AWS_REGION | \
-         docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
-      - name: Run Python tests inside Docker
-        env:
-          DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
+          ln -s -f smalldata/ smalldata
+      - name: Copy build outputs into source tree
         run: |
-          docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
-            -e DRIVERLESS_AI_LICENSE_KEY=${{ secrets.DRIVERLESS_AI_LICENSE_KEY }} \
-            ${{ env.DOCKER_IMAGE }} \
-            bash -c "make -f scripts/jenkins/Makefile.jenkins pyunit-smoke"
-  r-tests:
-    name: R Tests
+          mkdir -p h2o-3-src/build
+          mkdir -p h2o-3-src/h2o-assemblies/minimal/build/libs
+          mkdir -p h2o-3-src/h2o-assemblies/steam/build/libs
+          mkdir -p h2o-3-src/h2o-assemblies/main/build/libs
+          cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
+          cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
+          cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
+          cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/main.jar
+      - name: Run ${{ matrix.label }} test and save output
+        shell: bash -l {0}
+        working-directory: h2o-3-src
+        continue-on-error: true
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate py311env
+          set -o pipefail
+          make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }} 2>&1 | tee full_output.log
+          echo "${PIPESTATUS[0]}" > test_exit_code.txt
+      - name: Extract section from 'Starting clouds' to end of file
+        working-directory: h2o-3-src
+        run: |
+          RESULTS_FILE="full_output.log"
+          if [[ -f "$RESULTS_FILE" ]]; then
+            START_LINE=$(grep -n "^Starting clouds\.\.\." "$RESULTS_FILE" | cut -d: -f1 | head -n 1)
+            if [[ -n "$START_LINE" ]]; then
+              tail -n +"$START_LINE" "$RESULTS_FILE" > summary.txt
+            else
+              echo "Could not find 'Starting clouds...'. Dumping full log." > summary.txt
+              cat "$RESULTS_FILE" >> summary.txt
+            fi
+          else
+            echo "No result file found." > summary.txt
+          fi
+      - name: Upload test summary and log
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-${{ matrix.label }}
+          path: |
+            h2o-3-src/summary.txt
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Fail if test step failed
+        shell: bash -l {0}
+        working-directory: h2o-3-src
+        run: |
+          if [[ ! -f test_exit_code.txt ]]; then
+            echo "Missing test_exit_code.txt! Marking as failed."
+            exit 1
+          fi
+          EXIT_CODE=$(cat test_exit_code.txt)
+          if [[ "$EXIT_CODE" -ne 0 ]]; then
+            echo "Test failed. Failing the job now."
+            exit $EXIT_CODE
+          else
+            echo "Test passed."
+          fi
+  test-flow-headless:
+    needs: build-h2o-3
     runs-on: ubuntu-latest-16-cores
-    needs: build-h2o3
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: flow-headless-default
+            make_target: test-flow-headless
+          - label: flow-headless-smoke
+            make_target: test-flow-headless-smoke
+          - label: flow-headless-small
+            make_target: test-flow-headless-small
+          - label: flow-headless-medium
+            make_target: test-flow-headless-medium
 
     steps:
-      - name: Download workspace
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+
+      - name: Set up Conda (Python 3.8)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.8
+          auto-activate-base: false
+          auto-update-conda: false
+          channels: conda-forge,defaults
+          channel-priority: strict
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y libkrb5-dev gcc g++ python3-dev zip unzip
+      - name: Cache conda environment
+        uses: actions/cache@v3
+        with:
+          path: ~/miniconda/envs/py38env
+          key: ${{ runner.os }}-conda-py38-${{ matrix.make_target }}
+          restore-keys: ${{ runner.os }}-conda-py38-
+
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: workspace
+          name: h2o-3-build
+          path: artifacts
 
-      - name: Extract workspace
-        run: tar -xzf workspace.tar.gz
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Download test-package-js
+        uses: actions/download-artifact@v4
         with:
-          audience: "sts.amazonaws.com"
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: "h2o-ecr"
-          role-to-assume: "arn:aws:iam::353750902984:role/GitHub-OIDC-Role"
+          name: test-package-js
+          path: temp-js-package
 
-      - name: Login to ECR
+      - name: Clone h2o-3 source
+        run: git clone --depth 1 https://github.com/h2oai/h2o-3.git h2o-3-src
+
+      - name: Create Conda environment
+        shell: bash -l {0}
         run: |
-         aws ecr get-login-password --region $AWS_REGION | \
-         docker login --username AWS --password-stdin 353750902984.dkr.ecr.us-east-1.amazonaws.com
-      - name: Run R tests inside Docker
-        env:
-          DRIVERLESS_AI_LICENSE_KEY: ${{ secrets.DRIVERLESS_AI_LICENSE_KEY }}
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda env list | grep -q "^py38env" || conda create -y -n py38env python=3.8 pip
+      - name: Install Python dependencies & H2O wheel
+        shell: bash -l {0}
         run: |
-          docker run --rm -u 0:0 -v ${{ github.workspace }}:/ws -w /ws \
-            -e DRIVERLESS_AI_LICENSE_KEY=${{ secrets.DRIVERLESS_AI_LICENSE_KEY }} \
-            ${{ env.DOCKER_IMAGE }} \
-            bash -c "make -f scripts/jenkins/Makefile.jenkins runit-smoke"
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate py38env
+          pip install -r h2o-py/ci-test-requirements-py38.txt
+          pip install --upgrade pip wheel grip tabulate requests
+          pip install "$(find artifacts -name '*.whl' | head -n 1)"
+      - name: Integrate build artifacts and JS test package
+        run: |
+          mkdir -p h2o-3-src/{build,h2o-assemblies/minimal/build/libs,h2o-assemblies/steam/build/libs,h2o-assemblies/main/build/libs}
+          cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
+          cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/
+          cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/
+          cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/
+          unzip -q temp-js-package/test-package-js.zip -d extracted-js
+          cp -r extracted-js/{h2o-web,tests,scripts} h2o-3-src/
+      - name: Run ${{ matrix.label }} test and save output
+        shell: bash -l {0}
+        working-directory: h2o-3-src
+        continue-on-error: true
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate py38env
+          set -o pipefail
+          make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }} 2>&1 | tee full_output.log
+          echo "${PIPESTATUS[0]}" > test_exit_code.txt
+      - name: Extract section from 'Starting clouds' to end of file
+        working-directory: h2o-3-src
+        run: |
+          RESULTS_FILE="full_output.log"
+          if [[ -f "$RESULTS_FILE" ]]; then
+            START_LINE=$(grep -n "^Starting clouds\.\.\." "$RESULTS_FILE" | cut -d: -f1 | head -n 1)
+            if [[ -n "$START_LINE" ]]; then
+              tail -n +"$START_LINE" "$RESULTS_FILE" > summary.txt
+            else
+              echo "Could not find 'Starting clouds...'. Dumping full log." > summary.txt
+              cat "$RESULTS_FILE" >> summary.txt
+            fi
+          else
+            echo "No result file found." > summary.txt
+          fi
+      - name: Upload test summary and log
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-${{ matrix.label }}
+          path: |
+            h2o-3-src/summary.txt
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Fail if test step failed
+        shell: bash -l {0}
+        working-directory: h2o-3-src
+        run: |
+          if [[ ! -f test_exit_code.txt ]]; then
+            echo "Missing test_exit_code.txt! Marking as failed."
+            exit 1
+          fi
+          EXIT_CODE=$(cat test_exit_code.txt)
+          if [[ "$EXIT_CODE" -ne 0 ]]; then
+            echo "Test failed. Failing the job now."
+            exit $EXIT_CODE
+          else
+            echo "Test passed."
+          fi
+  # test-r:
+  #   needs: build-h2o-3
+  #   runs-on: ubuntu-latest-16-cores
+  #   continue-on-error: true
+  #   timeout-minutes: 240
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - label: r-smoke
+  #           make_target: test-r-smoke
+  #         - label: r-init
+  #           make_target: test-r-init
+  #         - label: r-small
+  #           make_target: test-r-small
+  #         - label: r-explain
+  #           make_target: test-r-explain
+  #         - label: r-automl
+  #           make_target: test-r-automl
+  #         - label: r-automl-smoke-noxgb
+  #           make_target: test-r-automl-smoke-noxgb
+  #         - label: r-medium-large
+  #           make_target: test-r-medium-large
+  #         - label: r-datatable
+  #           make_target: test-r-datatable
+  #         - label: r-cmd-check
+  #           make_target: test-r-cmd-check
+  #         - label: r-cmd-check-as-cran
+  #           make_target: test-r-cmd-check-as-cran
+  #         - label: r-booklets
+  #           make_target: test-r-booklets
+  #         - label: r-demos-small
+  #           make_target: test-r-demos-small
+  #         - label: r-demos-ml
+  #           make_target: test-r-demos-medium-large
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Java
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: temurin
+  #         java-version: 11
+
+  #     - name: Set up R
+  #       uses: r-lib/actions/setup-r@v2
+
+  #     - name: Install system libraries
+  #       run: |
+  #         sudo apt-get update -q
+  #         sudo apt-get install -y libcurl4-openssl-dev libxml2-dev \
+  #                                  libssl-dev libkrb5-dev gcc g++ make
+
+  #     - name: Install base R packages
+  #       run: |
+  #         echo "R_LIBS_USER=$HOME/R/library" >> "$GITHUB_ENV"
+  #         mkdir -p "$HOME/R/library"
+  #         Rscript -e 'install.packages(
+  #             c("RCurl","jsonlite","statmod","devtools","roxygen2","testthat","data.table","knitr"),
+  #             repos="https://cloud.r-project.org",
+  #             Ncpus=2
+  #         )'
+
+  #     - name: Download build artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: h2o-3-build
+  #         path: artifacts
+
+  #     - name: Download test-package-r
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: test-package-r
+  #         path: temp-r-package
+
+  #     - name: Clone H2O-3 source
+  #       run: git clone --depth 1 https://github.com/h2oai/h2o-3.git h2o-3-src
+
+  #     - name: Copy build outputs into source tree
+  #       run: |
+  #         mkdir -p h2o-3-src/build
+  #         mkdir -p h2o-3-src/h2o-assemblies/minimal/build/libs
+  #         mkdir -p h2o-3-src/h2o-assemblies/steam/build/libs
+  #         mkdir -p h2o-3-src/h2o-assemblies/main/build/libs
+
+  #         cp "$(find artifacts -name h2o.jar | head -n1)" h2o-3-src/build/h2o.jar
+  #         cp "$(find artifacts -name minimal.jar | head -n1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
+  #         cp "$(find artifacts -name steam.jar | head -n1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
+  #         cp "$(find artifacts -name main.jar | head -n1)" h2o-3-src/h2o-assemblies/main/build/libs/main.jar
+
+  #         unzip -q temp-r-package/test-package-r.zip -d extracted-r
+  #         cp -r extracted-r/h2o-r h2o-3-src/
+
+  #     - name: Restore smalldata
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: smalldata
+  #         key: smalldata-v1
+
+  #     - name: Link smalldata and bigdata
+  #       run: |
+  #         ln -s -f smalldata/ smalldata
+
+  #     - name: Run ${{ matrix.label }} target
+  #       working-directory: h2o-3-src
+  #       run: |
+  #         ls h2o-r/R/src/contrib
+  #         R CMD INSTALL h2o-r/R/src/contrib/*.tar.gz  
+  #         make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }}
+
+  # test-java:
+  #   needs: build-h2o-3
+  #   runs-on: ubuntu-22.04
+  #   continue-on-error: true
+  #   timeout-minutes: 240
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - label: test-junit-11-smoke-jenkins
+  #           make_target: test-junit-16-smoke
+
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Java 11
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: temurin
+  #         java-version: 11
+
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
+
+  #     - name: Set up Python 3.7
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: 3.7
+
+  #     - name: Install Python build tools
+  #       run: python -m pip install --upgrade pip wheel grip tabulate requests
+
+  #     - name: Set up R 3.4.1
+  #       uses: r-lib/actions/setup-r@v2
+  #       with:
+  #         r-version: 3.4.1
+
+  #     - name: Download build artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: h2o-3-build
+  #         path: artifacts
+
+  #     - name: Download test-package-js
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: test-package-js
+  #         path: temp-js-package
+
+  #     - name: Download test-package-java
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: test-package-java
+  #         path: temp-java-package
+
+  #     - name: Clone H2O-3 source
+  #       run: git clone --depth 1 https://github.com/h2oai/h2o-3.git h2o-3-src
+
+  #     - name: Copy h2o.jar and assembly jars
+  #       run: |
+  #         mkdir -p h2o-3-src/build
+  #         mkdir -p h2o-3-src/h2o-assemblies/minimal/build/libs
+  #         mkdir -p h2o-3-src/h2o-assemblies/steam/build/libs
+  #         mkdir -p h2o-3-src/h2o-assemblies/main/build/libs
+  #         cp "$(find artifacts -name h2o.jar | head -n 1)" h2o-3-src/build/h2o.jar
+  #         cp "$(find artifacts -name minimal.jar | head -n 1)" h2o-3-src/h2o-assemblies/minimal/build/libs/minimal.jar
+  #         cp "$(find artifacts -name steam.jar | head -n 1)" h2o-3-src/h2o-assemblies/steam/build/libs/steam.jar
+  #         cp "$(find artifacts -name main.jar | head -n 1)" h2o-3-src/h2o-assemblies/main/build/libs/main.jar
+  #         unzip -q temp-java-package/test-package-java.zip -d extracted-java
+  #         cp -r extracted-java/* h2o-3-src/
+
+  #     - name: Restore smalldata
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: smalldata
+  #         key: smalldata-v1
+
+  #     - name: Restore bigdata
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: bigdata
+  #         key: bigdata-v1
+
+  #     - name: Link smalldata and bigdata
+  #       run: |
+  #         ln -s -f smalldata/ smalldata
+  #         ln -s -f bigdata/ bigdata
+
+  #     - name: Run ${{ matrix.label }} target
+  #       working-directory: h2o-3-src
+  #       run: |
+  #          make -f scripts/jenkins/Makefile.jenkins ${{ matrix.make_target }}
+
+  #     - name: Extract test summary to summary.txt
+  #       working-directory: h2o-3-src
+  #       run: |
+  #         RESULTS_FILE=$(find h2o-py/tests/results -type f -name '*.out.txt' | head -n 1)
+  #         if [[ -f "$RESULTS_FILE" ]]; then
+  #           START_LINE=$(grep -n "Starting .* tests on .* clouds" "$RESULTS_FILE" | cut -d: -f1 | head -n 1)
+  #           END_LINE=$(grep -n "True fail list:" "$RESULTS_FILE" | cut -d: -f1 | head -n 1)
+  #           if [[ -n "$START_LINE" && -n "$END_LINE" && "$END_LINE" -ge "$START_LINE" ]]; then
+  #             sed -n "${START_LINE},${END_LINE}p" "$RESULTS_FILE" > summary.txt
+  #           else
+  #             echo "Summary markers not found or invalid range." > summary.txt
+  #           fi
+  #         else
+  #           echo "No result file found." > summary.txt
+  #         fi
+
+  #     - name: Upload summary.txt with job label
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: summary-${{ matrix.label }}
+  #         path: h2o-3-src/summary.txt
+  #         if-no-files-found: error
+  #         retention-days: 3
