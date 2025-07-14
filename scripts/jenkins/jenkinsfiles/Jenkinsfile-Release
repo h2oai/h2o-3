@@ -75,7 +75,7 @@ try {
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, BUILD_STAGE_NAME, env.BUILD_NUMBER_DIR)
                         pipelineContext.getBuildSummary().setStageDetails(this, BUILD_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH'), string(credentialsId: "central-portal-bearer-token", variable: "BEARER_TOKEN")]) {
                             insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
                                 printReleaseConfiguration(pipelineContext)
                                 sh """
@@ -147,6 +147,22 @@ try {
                                     ./gradlew buildH2oDevDist
                                 else
                                     ./gradlew -PvalidateRelease buildH2oDevDist
+
+                                    # Debug output - see if gradle published to OSSRH Staging API
+                                    curl -H "Authorization: Bearer ${BEARER_TOKEN}" \
+                                     'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
+
+                                    # Close and send to central portal to be able to manually publish
+                                    curl -X 'POST' \
+                                        'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
+                                        -H 'accept: */*' \
+                                        -H "Authorization: Bearer ${BEARER_TOKEN}" \
+                                        -d '' \
+                                        --connect-timeout 60 \
+                                        --max-time 360 \
+                                        --retry 5 \
+                                        --retry-delay 5 \
+                                        --retry-max-time 600
                                 fi
                             """
                             }
