@@ -42,7 +42,8 @@ extensions = [
     'sphinx-prompt', 
     'sphinx_substitution_extensions',
     'sphinx.ext.extlinks',
-    'sphinx_sitemap'
+    'sphinx_sitemap',
+    'sphinx_last_updated_by_git'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -109,7 +110,10 @@ language = None
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
-html_baseurl = "h2o.ai/"
+# Setting for sitemap.xml
+html_baseurl = "https://docs.h2o.ai/h2o/latest-stable/h2o-docs/"
+sitemap_show_lastmod = True
+sitemap_url_scheme = "{link}"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
