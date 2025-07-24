@@ -578,7 +578,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _constraint_alpha = 0.1; // eta_k = constraint_eta_0/pow(constraint_c0, constraint_alpha)
     public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
     public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
-    public String[] _control_variables; // 
+    public String[] _control_variables; // control variables definition, list of column names
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -729,13 +729,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             glm.error("_control_variables", "Control variable '"+col+"' is not in the frame.");
           } else {
             if (col.equals(_weights_column)){
-              glm.error("_control_variables", "Control variable '"+col+"' is set as _weight_column.");
+              glm.error("_control_variables", "Control variable '"+col+"' is set as weight_column.");
             }
             if (col.equals(_offset_column)){
-              glm.error("_control_variables", "Control variable '"+col+"' is set as _offset_column.");
+              glm.error("_control_variables", "Control variable '"+col+"' is set as offset_column.");
             }
             if (col.equals(_response_column)){
-              glm.error("_control_variables", "Control variable '"+col+"' is set as _response_column.");
+              glm.error("_control_variables", "Control variable '"+col+"' is set as response_column.");
             }
           }
         }
@@ -1601,13 +1601,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String _control_val_suffix = "_control";
     
     public void mapControlVariables() {
-      if(_control_values_names == null || _dinfo._adaptedFrameNames == null) {
+      if(_control_values_names == null || _names == null) {
         return;
       }
       _control_values_idxs_in_adapted_frame = new int[_control_values_names.length];
       for(int i = 0; i < _control_values_names.length; i++) {
-        for(int j = 0; j < _dinfo._adaptedFrameNames.length; j++) {
-          if(_control_values_names[i].equals(_dinfo._adaptedFrameNames[j]) ) {
+        for(int j = 0; j < _names.length; j++) {
+          if(_control_values_names[i].equals(_names[j]) ) {
             _control_values_idxs_in_adapted_frame[i] = j; break;
           }
         }
@@ -1781,7 +1781,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       super(glm);
       _dinfo = glm._dinfo.clone();
       _dinfo._adaptedFrame = null; 
-      _dinfo._adaptedFrameNames = glm._dinfo._adaptedFrameNames;
       String[] cnames = glm._dinfo.coefNames();
       String [] names = glm._dinfo._adaptedFrame._names;
       String [][] domains = glm._dinfo._adaptedFrame.domains();
@@ -2385,6 +2384,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   private boolean isFeatureUsedInPredict(int featureIdx, double[] beta){
+    if (_output._control_values_idxs_in_adapted_frame != null && Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, featureIdx) >= 0) {
+      return false;
+    }
     if (featureIdx < _output._dinfo._catOffsets.length - 1 && _output._column_types[featureIdx].equals("Enum")) {
       for (int i = _output._dinfo._catOffsets[featureIdx];
            i < _output._dinfo._catOffsets[featureIdx + 1];

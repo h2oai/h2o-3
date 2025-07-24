@@ -3439,9 +3439,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
                     mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
-          } 
-          if(_parms._control_variables != null) {
-            
           }
         } else if (!(mtrain == null)) { // only doing training deviance
           if (_parms._lambda_search) {
