@@ -55,6 +55,12 @@ dependencies {
     api "com.google.protobuf:protobuf-java:3.25.5"
 
     constraints {
+        api('com.nimbusds:nimbus-jose-jwt:10.0.2') {
+            because 'Fixes CVE-2025-53864'
+        }
+        api('commons-beanutils:commons-beanutils:1.11.0') {
+            because 'Fixes CVE-2025-48734'
+        }
         api('com.fasterxml.jackson.core:jackson-databind:2.17.2') {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
@@ -80,6 +86,60 @@ dependencies {
         api('com.squareup.okio:okio:3.5.0') {
             because 'Fixes CVE-2023-3635'
         }
+        api('io.netty:netty-buffer:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-codec:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-common:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-handler:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-resolver:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-transport:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-transport-classes-epoll:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-transport-native-epoll:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
+        api('io.netty:netty-transport-native-unix-common:4.1.118.Final') {
+            because 'Fixes CVE-2024-29025'
+            because 'Fixes CVE-2024-47535'
+            because 'Fixes CVE-2025-25193'
+            because 'Fixes CVE-2025-24970'
+        }
         api('org.xerial.snappy:snappy-java:1.1.10.5') {
             because 'Fixes CVE-2023-34455'
             because 'Fixes CVE-2023-34454'
@@ -88,6 +148,9 @@ dependencies {
         }
         api('org.apache.commons:commons-configuration2:2.10.1') {
             because 'Fixes CVE-2024-29131'
+        }
+        api('org.apache.commons:commons-lang3:3.18.0') {
+            because 'Fixes CVE-2024-48924'
         }
         api('dnsjava:dnsjava:3.6.0') {
             because 'Fixes SNYK-JAVA-DNSJAVA-7547403'
