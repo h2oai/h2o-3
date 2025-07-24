@@ -633,7 +633,7 @@ public class GLMControlVariablesTest extends TestUtil {
     
     private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, int[] controlVariablesIdxs, boolean binomial){
         Vec predictions = Vec.makeZero(data.numRows(), Vec.T_NUM);
-        for (int i = 0; i < data.numRows(); i++) {
+        for (long i = 0; i < data.numRows(); i++) {
             double prediction = 0;
             for (int j = 0; j < data.numCols()-1; j++) {
                 if(controlVariablesIdxs == null || Arrays.binarySearch(controlVariablesIdxs, j) < 0) {

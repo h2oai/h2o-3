@@ -24,18 +24,12 @@ import static water.util.ArrayUtils.findLongestCommonPrefix;
 public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
-  public String[] _adaptedFrameNames;
   public int _responses;   // number of responses
-  
-  public void updateAdaptedFrameNames(){
-    _adaptedFrameNames = _adaptedFrame.names();
-  }
 
   public Vec setWeights(String name, Vec vec) {
     if(_weights)
       return _adaptedFrame.replace(weightChunkId(),vec);
     _adaptedFrame.insertVec(weightChunkId(),name,vec);
-    updateAdaptedFrameNames();
     _weights = true;
     return null;
   }
@@ -43,7 +37,6 @@ public class DataInfo extends Keyed<DataInfo> {
   public void dropWeights() {
     if(!_weights)return;
     _adaptedFrame.remove(weightChunkId());
-    updateAdaptedFrameNames();
     _weights = false;
   }
 
@@ -53,7 +46,6 @@ public class DataInfo extends Keyed<DataInfo> {
       for(Vec v:vecs)v.remove();
       _interactions = null;
     }
-    updateAdaptedFrameNames();
   }
 
   public int[] activeCols() {
@@ -67,7 +59,6 @@ public class DataInfo extends Keyed<DataInfo> {
   public void addResponse(String [] names, Vec[] vecs) {
     _adaptedFrame.add(names,vecs);
     _responses += vecs.length;
-    updateAdaptedFrameNames();
   }
 
   public int[] catNAFill() {return _catNAFill;}
@@ -150,10 +141,10 @@ public class DataInfo extends Keyed<DataInfo> {
   public int weightChunkId(){return _cats + _nums;}
   public int outputChunkId() { return outputChunkId(0);}
   public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + (_treatment?1:0) + _responses;}
-  public void addOutput(String name, Vec v) {_adaptedFrame.add(name,v); updateAdaptedFrameNames();}
+  public void addOutput(String name, Vec v) {_adaptedFrame.add(name,v);}
   public Vec getOutputVec(int i) {return _adaptedFrame.vec(outputChunkId(i));}
   public void setResponse(String name, Vec v){ setResponse(name,v,0);}
-  public void setResponse(String name, Vec v, int n){ _adaptedFrame.insertVec(responseChunkId(n),name,v); updateAdaptedFrameNames();}
+  public void setResponse(String name, Vec v, int n){ _adaptedFrame.insertVec(responseChunkId(n),name,v);}
 
   public final boolean _skipMissing;
   public final boolean _imputeMissing;
@@ -347,7 +338,6 @@ public class DataInfo extends Keyed<DataInfo> {
       tvecs2[i] = train.vec(i);
     }
     _adaptedFrame = new Frame(names,tvecs2);
-    updateAdaptedFrameNames();
     train.restructure(names,tvecs2);
     if (valid != null)
       valid.restructure(names,valid.vecs(names));
@@ -377,7 +367,6 @@ public class DataInfo extends Keyed<DataInfo> {
       valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, false).add(valid);
     }
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
-    res.updateAdaptedFrameNames();
     res._valid = true;
     return res;
   }
@@ -463,7 +452,6 @@ public class DataInfo extends Keyed<DataInfo> {
     _skipMissing = dinfo._skipMissing;
     _imputeMissing = dinfo._imputeMissing;
     _adaptedFrame = fr;
-    updateAdaptedFrameNames();
     _catOffsets = MemoryManager.malloc4(catLevels.length + 1);
     _catMissing = new boolean[catLevels.length];
     Arrays.fill(_catMissing,!(dinfo._imputeMissing || dinfo._skipMissing));
@@ -1477,7 +1465,6 @@ public class DataInfo extends Keyed<DataInfo> {
     res._predictor_transform = TransformType.NONE;
     res._response_transform = TransformType.NONE;
     res._adaptedFrame = adaptFrame;
-    res.updateAdaptedFrameNames();
     res._weights = _weights && adaptFrame.find(names[weightChunkId()]) != -1;
     res._offset = _offset && adaptFrame.find(names[offsetChunkId()]) != -1;
     res._fold = _fold && adaptFrame.find(names[foldChunkId()]) != -1;
