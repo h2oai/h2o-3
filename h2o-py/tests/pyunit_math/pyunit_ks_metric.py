@@ -10,7 +10,8 @@ def kolmogorov_smirnov():
     model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
     model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
     verify_ks(model, airlines)
-
+    
+    # Test without Thresholds
     model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=5)
     model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
     ks = model.kolmogorov_smirnov()
@@ -19,6 +20,21 @@ def kolmogorov_smirnov():
     print(ks_verification)
     assert round(ks, 5) != round(ks_verification, 5)
 
+    # Test with specific thresholds
+    model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=5)
+    model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
+    ks = model.kolmogorov_smirnov(thresholds=[0.01, 0.5, 0.99])
+    print("KS with thresholds [0.01, 0.5, 0.99]:", ks)
+    ks_verification = ks_metric(model, airlines)
+    print("KS verification:", ks_verification)
+    assert round(ks, 5) != round(ks_verification, 5)
+
+    # Test with invalid Thresholds
+    try:
+        ks= model.kolmogorov_smirnov(thresholds= "invalid")
+    except ValueError as e:
+        print("Caught excepted exception for invalid thresholds:",e)
+        
     model = H2OXGBoostEstimator(gainslift_bins=10)
     model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
     print(model.gains_lift())
