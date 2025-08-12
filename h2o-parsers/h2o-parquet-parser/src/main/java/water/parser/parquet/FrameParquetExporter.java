@@ -113,9 +113,11 @@ public class FrameParquetExporter  {
                         switch (currColType) {
                             case (T_UUID):
                             case (T_TIME):
-                                long timestamp = cs[j].at8(i);
-                                long adjustedTimestamp = timestamp - timeStampAdjustment;
-                                group = group.append(currColName, adjustedTimestamp);
+                                if (!cs[j].isNA(i)) {
+                                    long timestamp = cs[j].at8(i);
+                                    long adjustedTimestamp = timestamp - timeStampAdjustment;
+                                    group = group.append(currColName, adjustedTimestamp);
+                                }
                                 break;
                             case (T_STR):
                                 if (!cs[j].isNA(i)) {
