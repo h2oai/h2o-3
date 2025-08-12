@@ -117,6 +117,8 @@ public class FrameParquetExporter  {
                                     long timestamp = cs[j].at8(i);
                                     long adjustedTimestamp = timestamp - timeStampAdjustment;
                                     group = group.append(currColName, adjustedTimestamp);
+                                } else {
+                                    throw new IllegalArgumentException("Empty value in Time or UUID column is not expected for Parquet export.");
                                 }
                                 break;
                             case (T_STR):
