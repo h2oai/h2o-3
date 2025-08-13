@@ -50,6 +50,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
 
+  protected ScoringInfo[] controlValScoringInfo;
+
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     _ymu = ymu;
@@ -108,6 +110,44 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       currInfo.scored_valid.fillFrom(_output._validation_metrics);
     }
     scoringInfo = ScoringInfo.prependScoringInfo(currInfo, scoringInfo);
+  }
+
+  public ScoringInfo[] getControlValScoringInfo() { return controlValScoringInfo;}
+
+  public ScoreKeeper[] controlValScoreKeepers() {
+    int size = controlValScoringInfo==null? 0: controlValScoringInfo.length;
+    ScoreKeeper[] sk = new ScoreKeeper[size];
+    for (int i=0;i<size;++i) {
+      if (controlValScoringInfo[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = controlValScoringInfo[i].scored_xval;
+      else if (controlValScoringInfo[i].validation)
+        sk[i] = controlValScoringInfo[i].scored_valid;
+      else
+        sk[i] = controlValScoringInfo[i].scored_train;
+    }
+    return sk;
+  }
+
+  public void addControlValScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (controlValScoringInfo != null && (((GLMScoringInfo) controlValScoringInfo[controlValScoringInfo.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
+    currInfo.is_classification = nclasses > 1;
+    currInfo.validation = parms.valid() != null;
+    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
+    currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
+    currInfo.total_training_time_ms = _output._training_time_ms;
+    if (_output._control_val_training_metrics != null) {
+      currInfo.scored_train = new ScoreKeeper(Double.NaN);
+      currInfo.scored_train.fillFrom(_output._control_val_training_metrics);
+    }
+    if (_output._control_val_validation_metrics != null) {
+      currInfo.scored_valid = new ScoreKeeper(Double.NaN);
+      currInfo.scored_valid.fillFrom(_output._control_val_validation_metrics);
+    }
+    controlValScoringInfo = ScoringInfo.prependScoringInfo(currInfo, controlValScoringInfo);
   }
   
   public void setVcov(double[][] inv) {_output._vcov = inv;}
@@ -537,6 +577,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _constraint_alpha = 0.1; // eta_k = constraint_eta_0/pow(constraint_c0, constraint_alpha)
     public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
     public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
+    public String[] _control_variables; //
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -675,6 +716,27 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if (!(_missing_values_handling instanceof DeepLearningModel.DeepLearningParameters.MissingValuesHandling) &&
                 !(_missing_values_handling instanceof MissingValuesHandling)) {
           throw new IllegalArgumentException("Missing values handling should be specified as an instance of " + MissingValuesHandling.class.getName());
+        }
+      }
+      if(_control_variables != null) {
+        if ((_interactions != null || _interaction_pairs != null)) {
+          glm.error("_control_variables", "Control variables option is not supported with interactions.");
+        }
+        for(String col: _control_variables){
+          Vec v = train().vec(col);
+          if (v == null) {
+            glm.error("_control_variables", "Control variable '"+col+"' is not in the frame.");
+          } else {
+            if (col.equals(_weights_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as _weight_column.");
+            }
+            if (col.equals(_offset_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as _offset_column.");
+            }
+            if (col.equals(_response_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as _response_column.");
+            }
+          }
         }
       }
     }
@@ -1451,6 +1513,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final long      _nobs;
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
+  public boolean _useControlVariables = false;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1528,6 +1591,61 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double[][] _initConstraintMatrix = null;
     public boolean hasPValues(){return _zvalues != null;}
     public boolean hasVIF() { return _vif_predictor_names != null; }
+    
+    private int[] _control_values_idxs_in_adapted_frame;
+    private String[] _control_values_names;
+    public TwoDimTable _control_val_scoring_history;
+    public ModelMetrics _control_val_training_metrics;
+    public ModelMetrics _control_val_validation_metrics;
+    public String _control_val_suffix = "_control";
+    public double[] _control_val_map;
+    
+    public void mapControlVariables() {
+      if(_control_values_names == null || _dinfo._adaptedFrameNames == null) {
+        return;
+      }
+      _control_values_idxs_in_adapted_frame = new int[_control_values_names.length];
+      for(int i = 0; i < _control_values_names.length; i++) {
+        for(int j = 0; j < _dinfo._adaptedFrameNames.length; j++) {
+          if(_control_values_names[i].equals(_dinfo._adaptedFrameNames[j]) ) {
+            _control_values_idxs_in_adapted_frame[i] = j; break;
+          }
+        }
+      }
+    }
+    
+    public int[] getControlValsIdxs(){
+      return _control_values_idxs_in_adapted_frame;
+    }
+    
+    public String[] getControlValsNames(){
+      return _control_values_names;
+    }
+
+    /**
+     * Prepare control variable map to filter them from beta
+     * @param dinfo actual data info
+     * @return mapping of control variables to beta, 1 means the beta belongs control variable
+     */
+    public int[] getControlValMap(DataInfo dinfo){
+      int[] controlValMap = getControlValsIdxs();
+      int[] betaControlValMap = new int[_totalBetaLength-1];
+      if (controlValMap != null) {
+        for (int k = 0; k < controlValMap.length; k++) {
+          int colIdx = controlValMap[k];
+          if (colIdx < dinfo._cats) {  // categorical case
+            int a = dinfo._catOffsets[colIdx];
+            int b = dinfo._catOffsets[colIdx + 1];
+            for (int i = a; i < b; i++) {
+              betaControlValMap[i] = 1;
+            }
+          } else { // numerical case
+            betaControlValMap[dinfo._numOffsets[colIdx - dinfo._cats]] = 1;
+          }
+        }
+      }
+      return betaControlValMap;
+    }
 
     public double[] stdErr() {
       return calculateStdErrFromZValues(_zvalues, _global_beta);
@@ -1652,7 +1770,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, 
-                     String[] coefficient_names, double[] beta, boolean binomial, boolean multinomial, boolean ordinal) {
+                     String[] coefficient_names, double[] beta, boolean binomial, boolean multinomial, boolean ordinal, String[] controlVarNames) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
       setNames(column_names, column_types);
@@ -1674,6 +1792,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _global_beta=beta;
       _submodels = new Submodel[]{new Submodel(0, 0, beta, -1, Double.NaN, Double.NaN,
               _totalBetaLength, null, false)};
+      _control_values_names = controlVarNames;
+      mapControlVariables();
     }
     
     public GLMOutput() {
@@ -1686,6 +1806,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       super(glm);
       _dinfo = glm._dinfo.clone();
       _dinfo._adaptedFrame = null;
+      _dinfo._adaptedFrameNames = glm._dinfo._adaptedFrameNames;
       String[] cnames = glm._dinfo.coefNames();
       String [] names = glm._dinfo._adaptedFrame._names;
       String [][] domains = glm._dinfo._adaptedFrame.domains();
@@ -1726,6 +1847,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
               Family.fractionalbinomial == glm._parms._family);
       _multinomial = glm._parms._family == Family.multinomial;
       _ordinal = glm._parms._family == Family.ordinal;
+      // setup control variables idxs from model parameters
+      _control_values_names = glm._parms._control_variables;
+      mapControlVariables();
     }
 
     /**
@@ -1880,9 +2004,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
       
+      String[] controlValsNames = getControlValsNames();
+
       for (int index = 0; index < len; index++) {
         magnitudesSort[index] = (float) magnitudes[indices[index]];
-        namesSort[index] = names[indices[index]];
+        String name = names[indices[index]];
+        String categoricalName = name.contains(".") ? name.split("\\.")[0] : null;
+        if(controlValsNames != null){
+          if(ArrayUtils.find(controlValsNames, name) >-1 || (categoricalName != null && ArrayUtils.find(controlValsNames, categoricalName) >-1)) {
+            name = name+_control_val_suffix;
+          }
+        }
+        namesSort[index] = name;
       }
       return new VarImp(magnitudesSort, namesSort);
     }
@@ -1988,6 +2121,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,0);}
   @Override protected double[] score0(double[] data, double[] preds, double o) {
+    boolean controlVarDisabled = !this._useControlVariables;
     if(_parms._family == Family.multinomial || _parms._family == Family.ordinal) {
       if (o != 0) throw H2O.unimpl("Offset is not implemented for multinomial/ordinal.");
       double[] eta = _eta.get();
@@ -2004,16 +2138,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double e = bm[c][icptInd]; // grab the intercept, replace the bm[0].length-1
         double [] b = bm[c];
         for(int i = 0; i < _output._dinfo._cats; ++i) {
-          int l = _output._dinfo.getCategoricalId(i, data[i]);
-          if (l >= 0) e += b[l];
+          if(controlVarDisabled || Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, i) < 0) {
+            int l = _output._dinfo.getCategoricalId(i, data[i]);
+            if (l >= 0) e += b[l];
+          }
         }
         int coff = _output._dinfo._cats;
         int boff = _output._dinfo.numStart();
         for(int i = 0; i < _output._dinfo._nums; ++i) {
           double d = data[coff+i];
-          if(!_output._dinfo._skipMissing && Double.isNaN(d))
-            d = _output._dinfo._numNAFill[i];
-          e += d*b[boff+i];
+          if (controlVarDisabled || Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, coff + i) < 0) {
+            if (!_output._dinfo._skipMissing && Double.isNaN(d))
+              d = _output._dinfo._numNAFill[i];
+            e += d * b[boff + i];
+          }
         }
         if(e > maxRow) maxRow = e;
         eta[c] = e;
@@ -2061,9 +2199,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int ncats = _output._dinfo._cats;
       for (int i = 0; i < _output._dinfo._nums && !Double.isNaN(eta); ++i) {
         double d = data[ncats + i];
-        if (!_output._dinfo._skipMissing && Double.isNaN(d))
-          d = _output._dinfo._numNAFill[i];
-        eta += b[numStart + i] * d;
+        if (controlVarDisabled || Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, ncats + i) < 0) {
+          if (!_output._dinfo._skipMissing && Double.isNaN(d))
+            d = _output._dinfo._numNAFill[i];
+          eta += b[numStart + i] * d;
+        }
       }
       double mu = _parms.linkInv(eta);
       if (_parms._family == Family.binomial) { // threshold for prediction
