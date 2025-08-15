@@ -35,6 +35,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help = "Variable Importances", direction = API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableV3 variable_importances;
 
+    @API(help = "Variance-Covariance Matrix")
+    TwoDimTableV3 vcov_table;
+    
     @API(help="Lambda minimizing the objective value, only applicable with lambda search or when arrays of alpha and " +
             "lambdas are provided")
     double lambda_best;
@@ -286,6 +289,36 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         }
       }
       coefficients_table.fillFromImpl(tdt);
+
+      if(impl.hasPValues()) { //vcov is only populated if p values are calculated
+        double[][] vcov;
+        vcov = impl.vcov();
+        vcov_table = new TwoDimTableV3();
+        colTypes = new String[ns.length];
+        colFormats = new String[ns.length];
+        colnames = ns.clone();
+        for(int i = 0; i < ns.length; ++i) {
+          colTypes[i] = "double";
+          colFormats[i] = "%5f";
+        }
+        tdt = new TwoDimTable("Variance-Covariance Matrix","variance-covariance matrix", ns, colnames, colTypes, colFormats, "names");
+        
+        // move intercept from last row and column to first row and column to match the reordering done with the coefficients
+        tdt.set(0, 0, vcov[ns.length - 1][ns.length - 1]);
+        for(int i = 1; i < ns.length; ++i) {
+          tdt.set(0, i, vcov[ns.length-1][i-1]);
+        }
+        for(int i = 1; i < ns.length; ++i) {
+          tdt.set(i, 0, vcov[i-1][ns.length-1]);
+        }
+        for(int i = 1; i < ns.length; ++i) {
+          for(int j = 1; j < ns.length; ++j) {
+            tdt.set(i, j, vcov[i - 1][j - 1]);
+          }
+        }
+        vcov_table.fillFromImpl(tdt);
+      }
+      
       if(impl.beta() != null) { // get varImp
         calculateVarimpBase(magnitudes, indices, impl.getNormBeta());
 
