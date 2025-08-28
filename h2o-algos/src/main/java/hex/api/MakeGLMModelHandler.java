@@ -51,6 +51,25 @@ public class MakeGLMModelHandler extends Handler {
     res.fillFromImpl(m);
     return res;
   }
+
+  public GLMModelV3 make_unrestricted_model(MakeUnrestrictedGLMModelV3 args){
+    GLMModel model = DKV.getGet(args.model.key());
+    if(model == null)
+      throw new IllegalArgumentException("missing source model " + args.model);
+    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
+            Double.NaN, Double.NaN, -1);
+    m.setInputParms(model._input_parms);
+    DataInfo dinfo = model.dinfo();
+    dinfo.setPredictorTransform(TransformType.NONE);
+    m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+            model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
+            model._output._ordinal, model._parms._control_variables);
+    DKV.put(args.dest.key(), m);
+    GLMModelV3 res = new GLMModelV3();
+    res.fillFromImpl(m);
+    return res;
+  }
+  
   
   public GLMRegularizationPathV3 extractRegularizationPath(int v, GLMRegularizationPathV3 args) {
     GLMModel model = DKV.getGet(args.model.key());

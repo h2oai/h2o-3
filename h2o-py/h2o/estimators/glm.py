@@ -2711,6 +2711,38 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return m
 
     @staticmethod
+    def make_unrestricted_glm_model(model, destination_name):
+        """
+        Create a unrestricted GLM model from model where control variables are enabled
+
+        Control variables need to be enabled. 
+
+        :param model: source model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   control_variables=[2, 3]
+        ...                                   solver='COORDINATE_DESCENT')
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,7,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(model=m)
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        """
+        model_json = h2o.api(
+            "POST /3/MakeUnrestrictedGLMModel",
+            data={"model": model._model_json["model_id"]["name"], "dest": destination_name}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        m._resolve_model(model_json["model_id"]["name"], model_json)
+        return m
+
+    @staticmethod
     def getConstraintsInfo(model):
         """
 

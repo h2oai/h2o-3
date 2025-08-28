@@ -3417,6 +3417,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         validScore.fillFrom(_model._output._validation_metrics);
       }
       _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);  // add to scoringInfo for early stopping
+      
 
       if (_parms._generate_scoring_history) { // update scoring history with deviance train and valid if available
         double xval_deviance = Double.NaN;
@@ -3453,11 +3454,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         _job.update(_workPerIteration, _state.toString());
       }
-      if (_parms._lambda_search)
+      if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
-      else
-        _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH, 
+      } else {
+        _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
+      }
       
       _model.update(_job._key);
       _model.generateSummary(_parms._train, _state._iter);
