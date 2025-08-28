@@ -50,7 +50,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
 
-  protected ScoringInfo[] controlValScoringInfo;
+  protected ScoringInfo[] _controlValScoringInfo;
 
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
@@ -112,24 +112,24 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     scoringInfo = ScoringInfo.prependScoringInfo(currInfo, scoringInfo);
   }
 
-  public ScoringInfo[] getControlValScoringInfo() { return controlValScoringInfo;}
+  public ScoringInfo[] getControlValScoringInfo() { return _controlValScoringInfo;}
 
   public ScoreKeeper[] controlValScoreKeepers() {
-    int size = controlValScoringInfo==null? 0: controlValScoringInfo.length;
+    int size = _controlValScoringInfo ==null? 0: _controlValScoringInfo.length;
     ScoreKeeper[] sk = new ScoreKeeper[size];
     for (int i=0;i<size;++i) {
-      if (controlValScoringInfo[i].cross_validation) // preference is to use xval first, then valid and last train.
-        sk[i] = controlValScoringInfo[i].scored_xval;
-      else if (controlValScoringInfo[i].validation)
-        sk[i] = controlValScoringInfo[i].scored_valid;
+      if (_controlValScoringInfo[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = _controlValScoringInfo[i].scored_xval;
+      else if (_controlValScoringInfo[i].validation)
+        sk[i] = _controlValScoringInfo[i].scored_valid;
       else
-        sk[i] = controlValScoringInfo[i].scored_train;
+        sk[i] = _controlValScoringInfo[i].scored_train;
     }
     return sk;
   }
 
   public void addControlValScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
-    if (controlValScoringInfo != null && (((GLMScoringInfo) controlValScoringInfo[controlValScoringInfo.length-1]).iterations() >= iter)) {  // no duplication
+    if (_controlValScoringInfo != null && (((GLMScoringInfo) _controlValScoringInfo[_controlValScoringInfo.length-1]).iterations() >= iter)) {  // no duplication
       return;
     }
     GLMScoringInfo currInfo = new GLMScoringInfo();
@@ -147,7 +147,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       currInfo.scored_valid = new ScoreKeeper(Double.NaN);
       currInfo.scored_valid.fillFrom(_output._control_val_validation_metrics);
     }
-    controlValScoringInfo = ScoringInfo.prependScoringInfo(currInfo, controlValScoringInfo);
+    _controlValScoringInfo = ScoringInfo.prependScoringInfo(currInfo, _controlValScoringInfo);
   }
   
   
@@ -1600,6 +1600,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public ModelMetrics _control_val_validation_metrics;
     public String _control_val_suffix = "_control";
     
+    
     public void mapControlVariables() {
       if(_control_values_names == null || _names == null) {
         return;
@@ -2433,4 +2434,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       ab.getKey(_output._regression_influence_diagnostics, fs);
     return super.readAll_impl(ab, fs);
   }  
+  
+  public void applyControlValsMetrics() {
+    this._output._training_metrics = this._output._control_val_training_metrics;
+    this._output._validation_metrics = this._output._control_val_validation_metrics;
+    this._output._scoring_history = this._output._control_val_scoring_history;
+  }
 }
