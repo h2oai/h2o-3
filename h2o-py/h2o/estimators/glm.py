@@ -94,6 +94,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
+                 control_variables=None,  # type: Optional[List[str]]
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
@@ -336,6 +337,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                is not at least this much)
                Defaults to ``0.001``.
         :type stopping_tolerance: float
+        :param control_variables: A list of predictor column indices which is used for training but removed for scoring.
+               Defaults to ``None``.
+        :type control_variables: List[str], optional
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
                Defaults to ``False``.
         :type balance_classes: bool
@@ -498,6 +502,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.stopping_rounds = stopping_rounds
         self.stopping_metric = stopping_metric
         self.stopping_tolerance = stopping_tolerance
+        self.control_variables = control_variables
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -2037,6 +2042,20 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["stopping_tolerance"] = stopping_tolerance
 
     @property
+    def control_variables(self):
+        """
+        A list of predictor column indices which is used for training but removed for scoring.
+
+        Type: ``List[str]``.
+        """
+        return self._parms.get("control_variables")
+
+    @control_variables.setter
+    def control_variables(self, control_variables):
+        assert_is_type(control_variables, None, [str])
+        self._parms["control_variables"] = control_variables
+
+    @property
     def balance_classes(self):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -2686,6 +2705,38 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                   "names": list(coefs.keys()),
                   "beta": list(coefs.values()),
                   "threshold": threshold}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        m._resolve_model(model_json["model_id"]["name"], model_json)
+        return m
+
+    @staticmethod
+    def make_unrestricted_glm_model(model, destination_name):
+        """
+        Create a unrestricted GLM model from model where control variables are enabled
+
+        Control variables need to be enabled. 
+
+        :param model: source model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   control_variables=[2, 3]
+        ...                                   solver='COORDINATE_DESCENT')
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,7,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(model=m)
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        """
+        model_json = h2o.api(
+            "POST /3/MakeUnrestrictedGLMModel",
+            data={"model": model._model_json["model_id"]["name"], "dest": destination_name}
         )
         m = H2OGeneralizedLinearEstimator()
         m._resolve_model(model_json["model_id"]["name"], model_json)
