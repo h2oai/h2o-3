@@ -123,6 +123,7 @@ shadowJar {
   exclude 'org/apache/hadoop/hive/shims/CombineHiveKey.*'
   exclude 'org/apache/hadoop/hive/shims/*Shims*.*'
   exclude 'org/apache/hadoop/hive/shims/HiveHarFileSystem.*'
+  exclude 'META-INF/maven/com.google.protobuf/protobuf-java/**'
     
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
