@@ -28,6 +28,7 @@ Decision Tree Representations
 
 The decision tree represents the process of recursively dividing the feature space with orthogonal splits. In the following image, each node (right-hand side) corresponds to a subset of the car's observations in their feature space (left-hand side). The first orthogonal split is the blue line and it corresponds to the decision tree's root node split. The brown line is the second split, which further divides the feature space within the region where weight >= 3,072 lbs.  
 
+comment: Is the following figure (data_split.png) correct? In the left hand side, I think the brown line should appear in the area in the area of weight > 3072lbs. 
 .. figure:: images/data_split.png
    :alt: Decision tree representing the division of a two dimensional feature space
 
