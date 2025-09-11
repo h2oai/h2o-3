@@ -52,7 +52,7 @@ public class MakeGLMModelHandler extends Handler {
     return res;
   }
 
-  public GLMModelV3 make_unrestricted_model(MakeUnrestrictedGLMModelV3 args){
+  public GLMModelV3 make_unrestricted_model(int version, MakeUnrestrictedGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
       throw new IllegalArgumentException("missing source model " + args.model);

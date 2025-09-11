@@ -32,6 +32,7 @@ hex.schemas.GLMModelV3$GLMModelOutputV3
 hex.schemas.GLMRegularizationPathV3
 hex.schemas.GLMV3
 hex.schemas.GLMV3$GLMParametersV3
+hex.schemas.MakeUnrestrictedGLMModelV3
 hex.schemas.GLRMModelV3
 hex.schemas.GLRMModelV3$GLRMModelOutputV3
 hex.schemas.GLRMV3
