@@ -1159,7 +1159,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (bc.hasBounds() && _parms._early_stopping)
         warn("beta constraint and early_stopping", "if both are enabled may degrade model performance.");
       _state.setBC(bc);
-
+    
+      if (hasOffsetCol() && (_parms._family.equals(poisson) ||
+              _parms._family.equals(negativebinomial) || _parms._family.equals(tweedie) || _parms._family.equals(gamma))){
+        GLMResponseMinusOffsetIsPositiveTask task = new GLMResponseMinusOffsetIsPositiveTask().doAll(_response, _offset);
+        String orZero="";
+        if (!_parms._family.equals(gamma))
+          orZero = "or zero ";
+        if (!task._isPositive)
+          error("_offset_column", "Response - offset_column produces negative "+orZero+"values which "+
+                  _parms._family.name() + " family does not support!"
+          );
+        if (task._hasZeros && _parms._family.equals(gamma))
+          error("_offset_column", "Response - offset_column produces zero values which gamma " +
+                  "family does not support!"
+          );
+      }
+      
       if(hasOffsetCol() && _parms._intercept && !ordinal.equals(_parms._family)) { // fit intercept
         GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
                 _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) 

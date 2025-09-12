@@ -2253,4 +2253,21 @@ public abstract class GLMTask  {
         ArrayUtils.add(_gram[i],gt._gram[i]);
     }
   }
+  static class GLMResponseMinusOffsetIsPositiveTask extends MRTask<GLMResponseMinusOffsetIsPositiveTask> {
+   boolean _isPositive = true;
+   boolean _hasZeros = false;
+   public void map(Chunk[] chunks){
+     assert chunks.length==2;
+     for (int i = 0; i < chunks[0]._len; i++) {
+       double diff = chunks[0].atd(i) - chunks[1].atd(i);
+       _isPositive &=  diff >= 0;
+       _hasZeros |= diff == 0;
+     }
+   }
+   
+   public void reduce(GLMResponseMinusOffsetIsPositiveTask other) {
+     this._isPositive = _isPositive && other._isPositive;
+     this._hasZeros = _hasZeros || other._hasZeros;
+   }
+  }
 }
