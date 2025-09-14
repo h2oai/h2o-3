@@ -91,9 +91,9 @@ public class GLMControlVariablesTest extends TestUtil {
             assertEquals(tMse, tMse2, delta);
 
             // check result training metrics are not the same with control val training metrics
-            assertNotEquals(glm2._output._training_metrics.auc_obj()._auc, glm._output._control_val_training_metrics.auc_obj()._auc);
-            assertNotEquals(glm2._output._training_metrics.mse(), glm._output._control_val_training_metrics.mse());
-            assertNotEquals(glm2._output._training_metrics.rmse(), glm._output._control_val_training_metrics.rmse());
+            assertNotEquals(glm2._output._training_metrics.auc_obj()._auc, glm._output._training_metrics_control_vals_enabled.auc_obj()._auc);
+            assertNotEquals(glm2._output._training_metrics.mse(), glm._output._training_metrics_control_vals_enabled.mse());
+            assertNotEquals(glm2._output._training_metrics.rmse(), glm._output._training_metrics_control_vals_enabled.rmse());
             
             // check preds differ
             int differ = 0;
@@ -108,8 +108,8 @@ public class GLMControlVariablesTest extends TestUtil {
 
             TwoDimTable glmSH = glm._output._scoring_history;
             TwoDimTable glm2SH = glm2._output._scoring_history;
-            TwoDimTable glmSHCV = glm._output._control_val_scoring_history;
-            TwoDimTable glm2SHCV = glm2._output._control_val_scoring_history;
+            TwoDimTable glmSHCV = glm._output._scoring_history_control_vals_enabled;
+            TwoDimTable glm2SHCV = glm2._output._scoring_history_control_vals_enabled;
 
             System.out.println(glmSH);
             System.out.println(glmSHCV);

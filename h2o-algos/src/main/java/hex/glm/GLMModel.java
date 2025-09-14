@@ -139,13 +139,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
-    if (_output._control_val_training_metrics != null) {
+    if (_output._training_metrics_control_vals_enabled != null) {
       currInfo.scored_train = new ScoreKeeper(Double.NaN);
-      currInfo.scored_train.fillFrom(_output._control_val_training_metrics);
+      currInfo.scored_train.fillFrom(_output._training_metrics_control_vals_enabled);
     }
-    if (_output._control_val_validation_metrics != null) {
+    if (_output._validation_metrics_control_vals_enabled != null) {
       currInfo.scored_valid = new ScoreKeeper(Double.NaN);
-      currInfo.scored_valid.fillFrom(_output._control_val_validation_metrics);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_control_vals_enabled);
     }
     _controlValScoringInfo = ScoringInfo.prependScoringInfo(currInfo, _controlValScoringInfo);
   }
@@ -1595,11 +1595,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     
     private int[] _control_values_idxs_in_adapted_frame;
     private String[] _control_values_names;
-    public TwoDimTable _control_val_scoring_history;
-    public ModelMetrics _control_val_training_metrics;
-    public ModelMetrics _control_val_validation_metrics;
     public String _control_val_suffix = "_control";
-    
+
+
+    public TwoDimTable _scoring_history_control_vals_enabled;
+    public ModelMetrics _training_metrics_control_vals_enabled;
+    public ModelMetrics _validation_metrics_control_vals_enabled;
     
     public void mapControlVariables() {
       if(_control_values_names == null || _names == null) {
@@ -1613,6 +1614,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
         }
       }
+    }
+    
+    public double[] getControlValBeta(double[] beta){
+      for(int featureIdx : _control_values_idxs_in_adapted_frame) {
+        if (featureIdx < _dinfo._catOffsets.length - 1 && _column_types[featureIdx].equals("Enum")) {
+          for (int i = _dinfo._catOffsets[featureIdx];
+               i < _dinfo._catOffsets[featureIdx + 1];
+               i++) {
+            beta[i] = 0;
+          }
+        } else {
+          featureIdx += _dinfo._numOffsets[0] - _dinfo._catOffsets.length + 1;
+          beta[featureIdx] = 0;
+        }
+      }
+      return beta;
     }
     
     public int[] getControlValsIdxs(){
@@ -1772,6 +1789,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       mapControlVariables();
     }
     
+    
     public GLMOutput() {
       _isSupervised = true; 
       _nclasses = -1;
@@ -1826,6 +1844,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _control_values_names = glm._parms._control_variables;
       mapControlVariables();
     }
+    
 
     /**
      * Variance Covariance matrix accessor. Available only if odel has been built with p-values.
@@ -2162,12 +2181,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     } else {
       double[] b = beta();
       double eta = b[b.length - 1] + o; // intercept + offset
-      boolean controlVarDisabled = !this._useControlVariables;
+      
+      if (this._useControlVariables) {
+        b = _output.getControlValBeta(b); // make beta connected to control variables zero
+      }
+      
       for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
-        if(controlVarDisabled || Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, i) < 0) {
           int l = _output._dinfo.getCategoricalId(i, data[i]);
           if (l >= 0) eta += b[l];
-        }
       }
       int numStart = _output._dinfo.numStart();
       int ncats = _output._dinfo._cats;
@@ -2175,9 +2196,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double d = data[ncats + i];
         if (!_output._dinfo._skipMissing && Double.isNaN(d))
           d = _output._dinfo._numNAFill[i];
-        if (controlVarDisabled || Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, ncats + i) < 0) {
           eta += b[numStart + i] * d;
-        }
       }
       double mu = _parms.linkInv(eta);
       if (_parms._family == Family.binomial) { // threshold for prediction
@@ -2436,8 +2455,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }  
   
   public void applyControlValsMetrics() {
-    this._output._training_metrics = this._output._control_val_training_metrics;
-    this._output._validation_metrics = this._output._control_val_validation_metrics;
-    this._output._scoring_history = this._output._control_val_scoring_history;
+    this._output._training_metrics = this._output._training_metrics_control_vals_enabled;
+    this._output._validation_metrics = this._output._validation_metrics_control_vals_enabled;
+    this._output._scoring_history = this._output._scoring_history_control_vals_enabled;
   }
 }
