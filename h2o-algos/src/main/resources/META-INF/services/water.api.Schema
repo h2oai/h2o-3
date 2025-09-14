@@ -46,6 +46,7 @@ hex.schemas.KMeansModelV3$KMeansModelOutputV3
 hex.schemas.KMeansV3
 hex.schemas.KMeansV3$KMeansParametersV3
 hex.schemas.MakeGLMModelV3
+hex.schemas.MakeUnrestrictedGLMModelV3
 hex.schemas.GenericV3
 hex.schemas.GenericV3$GenericParametersV3
 hex.schemas.GenericModelV3

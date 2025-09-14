@@ -22,6 +22,7 @@ import java.util.Map;
  * Created by tomasnykodym on 3/25/15.
  */
 public class MakeGLMModelHandler extends Handler {
+  
   public GLMModelV3 make_model(int version, MakeGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
@@ -52,19 +53,24 @@ public class MakeGLMModelHandler extends Handler {
     return res;
   }
 
-  public GLMModelV3 make_unrestricted_model(MakeUnrestrictedGLMModelV3 args){
+  public GLMModelV3 make_unrestricted_model(int version, MakeUnrestrictedGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
       throw new IllegalArgumentException("missing source model " + args.model);
-    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
+    Key key = args.dest != null? Key.make(args.dest) : Key.make();
+    GLMModel m = new GLMModel(key, model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
-            model._output._ordinal, model._parms._control_variables);
-    DKV.put(args.dest.key(), m);
+            model._output._ordinal, null);
+    m._output._training_metrics = model._output._training_metrics_control_vals_enabled;
+    m._output._validation_metrics = model._output._validation_metrics_control_vals_enabled;
+    m._output._scoring_history = model._output._scoring_history_control_vals_enabled;
+    m._output._model_summary = model._output._model_summary;
+    DKV.put(key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
     return res;
