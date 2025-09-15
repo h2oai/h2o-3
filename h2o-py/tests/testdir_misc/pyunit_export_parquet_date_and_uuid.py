@@ -5,10 +5,9 @@ import h2o
 from tests import pyunit_utils
 import string
 import os
-import glob
 import random
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 import uuid
 
 
@@ -26,7 +25,7 @@ def test_export_import_date_empty_in_date():
     assert os.path.isdir(exported_filepath)
 
     imported_file = h2o.import_file(exported_filepath, "part-m-")
-    assert_frame_equal(imported_file.as_data_frame(True), hf.as_data_frame(True), check_column_type=False)
+    assert_frame_equal(imported_file.as_data_frame(True), hf.as_data_frame(True), check_column_type=True)
 
 
 def test_export_uuid_not_supported():
