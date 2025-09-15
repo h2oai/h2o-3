@@ -54,13 +54,7 @@ def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-if __name__ == "__main__":
-    pyunit_utils.run_tests([
-        test_export_import_date_empty_in_date,
-        test_export_uuid_not_supported
-    ])
-else:
-    pyunit_utils.run_tests([
-        test_export_import_date_empty_in_date,
-        test_export_uuid_not_supported
-    ])
+pyunit_utils.run_tests([
+    test_export_import_date_empty_in_date,
+    test_export_uuid_not_supported
+])
