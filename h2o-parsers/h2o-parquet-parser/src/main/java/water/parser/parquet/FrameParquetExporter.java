@@ -112,13 +112,12 @@ public class FrameParquetExporter  {
                         currColType = _colTypes[j];
                         switch (currColType) {
                             case (T_UUID):
+                                throw new IllegalArgumentException("UUID column type is not supported. You can work around this by converting the column to a String.");
                             case (T_TIME):
                                 if (!cs[j].isNA(i)) {
                                     long timestamp = cs[j].at8(i);
                                     long adjustedTimestamp = timestamp - timeStampAdjustment;
                                     group = group.append(currColName, adjustedTimestamp);
-                                } else {
-                                    throw new IllegalArgumentException("Empty value in Time or UUID column is not expected for Parquet export.");
                                 }
                                 break;
                             case (T_STR):
