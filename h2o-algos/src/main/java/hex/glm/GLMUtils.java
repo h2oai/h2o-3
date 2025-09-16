@@ -190,19 +190,21 @@ public class GLMUtils {
     List<Integer> earlyStopColIndicesContrVals = getStoppingMetricIndices(stoppingMetric, earlyStopScControlVariables.getColHeaders());
 
     int colCounter = 0;
-    String[] glmSCContrColTypes = earlyStopSc.getColTypes();
-    String[] glmSCContrColFormats = earlyStopSc.getColFormats();
+    String[] glmSCContrColTypes = glmScControlVariables.getColTypes();
+    String[] glmSCContrColFormats = glmScControlVariables.getColFormats();
     List<Integer> glmScContrValsColIndices = new ArrayList<>();
-    for(String colName: glmScControlVariables.getColHeaders()){
+    String[] glmScControlVariablesHeaders = glmScControlVariables.getColHeaders();
+    for(int i=0; i < glmScControlVariablesHeaders.length; i++){
+      String colName = glmScControlVariablesHeaders[i];
       String colNameLower = colName.toLowerCase();
       if(colNameLower.equals("negative_log_likelihood") || colNameLower.equals("objective")){
         colName = "Unrestrictive "+colName;
       }
-      if (!finalColHeaders.contains(colNameLower)) {
+      if (!finalColHeaders.contains(colName)) {
         finalColHeaders.add(colName);
         finalColTypes.add(glmSCContrColTypes[colCounter]);
         finalColFormats.add(glmSCContrColFormats[colCounter]);
-        glmScContrValsColIndices.add(colCounter);
+        glmScContrValsColIndices.add(i);
         colCounter++;
       }
     }
@@ -416,10 +418,10 @@ public class GLMUtils {
       for (int glmIndex = 0; glmIndex < glmColSize; glmIndex++)
         combined.set(rowIndex, glmIndex, glmSc.get(glmRowIndex, glmIndex));
       int start = glmColSize;
-      //for (Integer glmScContrValsColIndex : glmScContrValsColIndices) {
-      //  combined.set(rowIndex, start, glmScContrVal.get(glmRowIndex, glmScContrValsColIndex));
-      //  start++;
-      //}
+      for (Integer glmScContrValsColIndex : glmScContrValsColIndices) {
+        combined.set(rowIndex, start, glmScContrVal.get(glmRowIndex, glmScContrValsColIndex));
+        start++;
+      }
     }
     if (addEarlyStopSC) {
       for (int earlyStopIndex = 0; earlyStopIndex < earlyStopColSize; earlyStopIndex++) {
@@ -429,10 +431,10 @@ public class GLMUtils {
           combined.set(rowIndex, earlyStopIndex + glmColSize + glmScContrValsSize, earlyStopSc.get(earlyStopRowIndex,
                   earlyStopColIndices.get(earlyStopIndex)));
         }
-      int start = earlyStopColSize + glmColSize;
-      for (int earlyStopIndexContrVal=0; earlyStopIndexContrVal < glmScContrValsSize; earlyStopIndexContrVal++){
+      int start = earlyStopColSize + glmColSize + glmScContrValsSize;
+      for (Integer earlyStopColIndicesContVar : earlyStopColIndicesContVars) {
         combined.set(rowIndex, start, earlyStopScContVars.get(earlyStopRowIndex,
-                earlyStopColIndicesContVars.get(earlyStopIndexContrVal)));
+                earlyStopColIndicesContVar));
         start++;
       }
     }

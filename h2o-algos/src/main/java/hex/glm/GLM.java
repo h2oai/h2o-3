@@ -3392,8 +3392,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         validScore.fillFrom(_model._output._validation_metrics);
       }
       _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);  // add to scoringInfo for early stopping
-      _model._output._scoring_history = _scoringHistory.to2dTable(_parms, null,
-                null);
+      _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, null, null) : null;
       _model.update(_job._key);
     }
 
@@ -4016,8 +4015,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     protected void updateProgress(boolean canScore) {
       assert !_parms._lambda_search || _parms._generate_scoring_history;
       if (!_parms._generate_scoring_history && !_parms._lambda_search) { // same as before, _state._iter is not updated
-        if(_model._parms._control_variables != null){
+        if (_model._parms._control_variables != null){
           _scoringHistoryControlVariableEnabled.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
+          double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()));
+          GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_train);
+          double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
+          _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
         } else {
           _scoringHistory.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
         }
