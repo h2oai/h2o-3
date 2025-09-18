@@ -4018,7 +4018,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_model._parms._control_variables != null){
           _scoringHistoryControlVariableEnabled.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
           double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()));
-          GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_train);
+          GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_origTrain);
           double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
           _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
         } else {

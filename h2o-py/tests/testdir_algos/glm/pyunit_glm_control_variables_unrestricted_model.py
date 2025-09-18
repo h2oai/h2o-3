@@ -15,27 +15,22 @@ def glm_control_variables_unrestricted_model():
     glm_model = H2OGeneralizedLinearEstimator(family="binomial", score_each_iteration=True)
     glm_model.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
-    predictions_train = glm_model.predict(cars).as_data_frame()
     metrics = glm_model.training_model_metrics()
-    #print(metrics)
+    print(metrics)
     print("++++++++++++++++ Model without control variables")
     print(glm_model._model_json["output"]["scoring_history"])
 
     glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True)
     glm_model_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
-    predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
     metrics_2 = glm_model_2.training_model_metrics()
-    #print(metrics_2)
+    print(metrics_2)
     print("++++++++++++++++ Model with control variables and score each iteration true")
     print(glm_model_2._model_json["output"]["scoring_history"])
 
     glm_model_unrestricted = H2OGeneralizedLinearEstimator.get_unrestricted_glm_model(glm_model_2, "unrestricted")
-    #print(glm_model_unrestricted)
-
-    #predictions_train_unrestricted = glm_model_unrestricted.predict(cars).as_data_frame()
     metrics_unrestricted = glm_model_unrestricted.training_model_metrics()
-    #print(metrics_unrestricted)
+    print(metrics_unrestricted)
     print("++++++++++++++++ Unrestricted model with control variables")
     print(glm_model_unrestricted._model_json["output"]["scoring_history"])
 
@@ -44,17 +39,26 @@ def glm_control_variables_unrestricted_model():
     glm_model_3.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
     metrics_3 = glm_model_3.training_model_metrics()
-    #print(metrics_3)
+    print(metrics_3)
     print("++++++++++++++++ Model with control variables score each iteration false")
     print(glm_model_3._model_json["output"]["scoring_history"])
 
-    #glm_model_4 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True)
-    #glm_model_4.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars, validation_frame=valid)
+    glm_model_4 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True)
+    glm_model_4.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars, validation_frame=cars)
 
-    #metrics_4 = glm_model_4.training_model_metrics()
-    #print(metrics_4)
-    #print("++++++++++++++++ Model with control variables score each iteration true and validation dataset")
-    #print(glm_model_unrestricted._model_json["output"]["scoring_history"])
+    metrics_4 = glm_model_4.training_model_metrics()
+    print(metrics_4)
+    print("++++++++++++++++ Model with control variables score each iteration true and validation dataset")
+    print(glm_model_4._model_json["output"]["scoring_history"])
+
+    predictions_train = glm_model.predict(cars).as_data_frame()
+    print(predictions_train)
+
+    predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
+    print(predictions_train_2)
+
+    predictions_unrestricted = glm_model_unrestricted.predict(cars).as_data_frame()
+    print(predictions_unrestricted)
     
 
 if __name__ == "__main__":
