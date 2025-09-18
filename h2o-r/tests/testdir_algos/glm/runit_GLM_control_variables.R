@@ -2,41 +2,41 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 test.controlVariables <- function() {
-
-    Log.info("Read in prostate data.")
-    h2o.data <- h2o.uploadFile(locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")
-
-    myY <- "CAPSULE"
-    myX <- c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
-
-    Log.info("Build the model")
-    model <- h2o.glm(x=myX,
-                     y=myY,
-                     training_frame=h2o.data,
-                     family="binomial",
-                     link="logit")
-
-    #print(model)
-    res.dev <- model@model$training_metrics@metrics$residual_deviance
-    print(res.dev)
-    betas <- model@model$coefficients_table$coefficients
-    print(betas)
-
-    Log.info("Build the model with control variables")
-    model.cont <- h2o.glm(x=myX,
-                          y=myY,
-                          training_frame=h2o.data,
-                          family="binomial",
-                          link="logit",
-                          control_variables = c("PSA", "AGE"))
-    
-    #print(model.cont)
-    res.dev.cont <- model.cont@model$training_metrics@metrics$residual_deviance
-    print(res.dev.cont)
-    betas.cont <- model.cont@model$coefficients_table$coefficients
-    print(betas.cont)
-
-    expect_equal(res.dev, res.dev.cont)
+  
+  Log.info("Read in prostate data.")
+  h2o.data <- h2o.uploadFile(locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")
+  
+  myY <- "CAPSULE"
+  myX <- c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
+  
+  Log.info("Build the model")
+  model <- h2o.glm(x=myX,
+                   y=myY,
+                   training_frame=h2o.data,
+                   family="binomial",
+                   link="logit")
+  
+  #print(model)
+  res.dev <- model@model$training_metrics@metrics$residual_deviance
+  print(res.dev)
+  betas <- model@model$coefficients_table$coefficients
+  print(betas)
+  
+  Log.info("Build the model with control variables")
+  model.cont <- h2o.glm(x=myX,
+                        y=myY,
+                        training_frame=h2o.data,
+                        family="binomial",
+                        link="logit",
+                        control_variables = c("PSA", "AGE"))
+  
+  #print(model.cont)
+  res.dev.cont <- model.cont@model$training_metrics@metrics$residual_deviance
+  print(res.dev.cont)
+  betas.cont <- model.cont@model$coefficients_table$coefficients
+  print(betas.cont)
+  
+  expect_equal(res.dev, res.dev.cont)
 }
 
 #################################
@@ -165,7 +165,7 @@ test.controlVariables <- function() {
   df <- .expand_factors(as.data.frame(test_frame))
   control_variables <- .preprocess_control_variables(as.data.frame(test_frame), control_variables)
   
-  offset_column <- if ("offset_column" %in% names(other_args))
+  offset_column <- if ("offset_column" %in% names(other_args) && !is.null(other_args[["offset_column"]]))
     df[[other_args[["offset_column"]]]]
   else
     NULL
@@ -192,10 +192,6 @@ test.controlVariables <- function() {
   
   without_control_variables <- .predict_helper(df, coeffs, link_function, NULL, offset_column)
   without_control_variables_h2o <- predict(model, test_frame)
-  if (!is.null(offset_column))
-#     print(head(offset_column))
-#   print(head(without_control_variables))
-#   print(head(without_control_variables_h2o))
   h2o_res <- as.data.frame(without_control_variables_h2o)
   stopifnot(
     "Predictions without control variables don't match" = .almost_equal(h2o_res[, ncol(h2o_res)], without_control_variables)
@@ -241,14 +237,14 @@ verify_control_variables_implementation <- function(y,
   h2o_constr_res <- as.data.frame(predict(model_constr, test_frame))
   
   diff <- abs(h2o_constr_res[, ncol(h2o_constr_res)] - preds$predictions)
-#   cat(
-#     "\nAbsolute difference between H2O's control variable implementation and R implementation:\n"
-#   )
-#   print(summary(diff))
-#   stopifnot(
-#     "Predictions with control variables don't match" = .almost_equal(h2o_constr_res[, ncol(h2o_constr_res)], preds$predictions)
-#   )
-  expect_equal(h2o_constr_res[, ncol(h2o_constr_res)], preds$predictions)
+  #   cat(
+  #     "\nAbsolute difference between H2O's control variable implementation and R implementation:\n"
+  #   )
+  #   print(summary(diff))
+  #   stopifnot(
+  #     "Predictions with control variables don't match" = .almost_equal(h2o_constr_res[, ncol(h2o_constr_res)], preds$predictions)
+  #   )
+  expect_equal(h2o_constr_res[, ncol(h2o_constr_res)], preds$predictions, info = deparse(other_args))
 }
 
 
@@ -261,7 +257,7 @@ verify_control_variables_implementation <- function(y,
                           binary_response,
                           control_variables,
                           offset_column) {
-  for (off_col in c(offset_column, NULL)) {
+  for (off_col in list(offset_column, NULL)) {
     for (standardize in c(TRUE, FALSE)) {
       cat("gaussian", "; offset_column: ", off_col, "; standardize: ", standardize, "\n")
       verify_control_variables_implementation(
@@ -358,7 +354,7 @@ verify_control_variables_implementation <- function(y,
         training_frame = train_df,
         test_frame = test_df,
         control_variables = control_variables,
-        other_args = list(standardize = standardize, offset_column = off_col)
+        other_args = list(family="binomial", standardize = standardize, offset_column = off_col)
       )
       cat("poisson", "; offset_column: ", off_col, "; standardize: ", standardize, "\n")
       verify_control_variables_implementation(
@@ -408,11 +404,11 @@ test.control_variables_work_correctly <- function() {
 
 
 doSuite(
-    "Comparison of H2O GLM without and with control variables",
-    makeSuite(
-        test.controlVariables,
-        test.control_variables_work_correctly
-    )
+  "Comparison of H2O GLM without and with control variables",
+  makeSuite(
+    test.controlVariables,
+    test.control_variables_work_correctly
+  )
 )
 
 
