@@ -1619,9 +1619,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double[] getControlValBeta(double[] beta){
       for(int featureIdx : _control_values_idxs_in_adapted_frame) {
         if (featureIdx < _dinfo._catOffsets.length - 1 && _column_types[featureIdx].equals("Enum")) {
-          for (int i = _dinfo._catOffsets[featureIdx];
-               i < _dinfo._catOffsets[featureIdx + 1];
-               i++) {
+          for (int i = _dinfo._catOffsets[featureIdx]; i < _dinfo._catOffsets[featureIdx + 1]; i++) {
             beta[i] = 0;
           }
         } else {
