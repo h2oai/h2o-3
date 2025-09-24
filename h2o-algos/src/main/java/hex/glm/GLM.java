@@ -3359,14 +3359,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long t1 = System.currentTimeMillis();
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
       _model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
-      if(_model._parms._control_variables != null) {
-        _model._useControlVariables = true;
-      }
+      ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train);
       scorePostProcessing(train, t1);
       if (_model._parms._control_variables != null){
+        _model._useControlVariables = true;
         long t2 = System.currentTimeMillis();
-        _model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
-        scorePostProcessingControlVal(train, t2);
+        Frame train2 = DKV.<Frame>getGet(_parms._train).deepCopy("cv");
+        _model.score(train2, null, CFuncRef.from(_parms._custom_metric_func)).delete();
+        ModelMetrics mtrain3 = _model.scoreAndReturnMetrics(train2, null, _job, CFuncRef.from(_parms._custom_metric_func));
+        ModelMetrics mtrain2 = ModelMetrics.getFromDKV(_model, train2);
+        scorePostProcessingControlVal(train2, t2);
         _model._useControlVariables = false;
       }
     }
@@ -3417,7 +3419,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
-        if(_model._useControlVariables){
+        if(_model._parms._control_variables != null){
           _model._output._validation_metrics_control_vals_enabled = ModelMetrics.getFromDKV(_model, valid);
         } else {
           _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
@@ -3452,10 +3454,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _scoringHistoryControlVariableEnabled.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics_control_vals_enabled).residual_deviance(),
                     mtrain._nobs, _model._output._validation_metrics_control_vals_enabled._nobs, _state.lambda(), _state.alpha());
-            double[] betaContrVal = _model._output.getControlValBeta(_model.beta());
-            GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(train);
-            double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
-            _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
+            //double[] betaContrVal = _model._output.getControlValBeta(_model.beta());
+            //GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_parms.valid());
+            //double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
+            //_scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
           } else {
             _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
@@ -3470,10 +3472,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _scoringHistoryControlVariableEnabled.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),
                     _state.alpha());
-            double[] betaContrVal = _model._output.getControlValBeta(_model.beta());
-            GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(train);
-            double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
-            _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
+            //double[] betaContrVal = _model._output.getControlValBeta(_model.beta());
+            //GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(train);
+            //double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
+            //_scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
           } else {
             _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),
@@ -3485,8 +3487,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
       } else if(_model._parms._control_variables != null){
-        _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
-                _xval_sd_generate_SH);
+        //_model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
+        //        _xval_sd_generate_SH);
         _model._output._scoring_history_control_vals_enabled = _scoringHistoryControlVariableEnabled.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
       } else {
@@ -3802,9 +3804,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._finalScoring = true; // enables likelihood calculation while scoring
         scoreAndUpdateModel();
         _model._finalScoring = false; // avoid calculating likelihood in case of further updates
-        if (_model._parms._control_variables != null) {
-          _model._useControlVariables = true;
-        }
         
         if (dfbetas.equals(_parms._influence))
           genRID();
@@ -3812,7 +3811,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_parms._generate_variable_inflation_factors) {
           _model._output._vif_predictor_names = _model.buildVariableInflationFactors(_train, _dinfo);
         }// build variable inflation factors for numerical predictors
-        if(_model._output._scoring_history_control_vals_enabled != null) {
+        if(_model._parms._control_variables != null) {
           // create combination of scoring history with control variables enabled and disabled 
           // keep unrestricted model scoring history in _model._output._control_val_scoring_history
           
@@ -4018,7 +4017,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_model._parms._control_variables != null){
           _scoringHistoryControlVariableEnabled.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
           double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()));
-          GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_origTrain);
+          GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_state._dinfo._adaptedFrame);
           double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
           _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
         } else {
@@ -4037,7 +4036,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private boolean updateEarlyStop() {
-    return _earlyStop || ScoreKeeper.stopEarly(_model.scoreKeepers(),
+    ScoreKeeper[] sk = _parms._control_variables != null ? _model.controlValScoreKeepers() : _model.scoreKeepers();
+    return _earlyStop || ScoreKeeper.stopEarly(sk,
             _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric,
             _parms._stopping_tolerance, "model's last", true);
   }

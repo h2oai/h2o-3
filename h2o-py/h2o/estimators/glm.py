@@ -2835,5 +2835,5 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                   "dest": dest}
         )
         m = H2OGeneralizedLinearEstimator()
-        m._resolve_model(dest, model_json)
+        m._resolve_model(id, model_json)
         return m
