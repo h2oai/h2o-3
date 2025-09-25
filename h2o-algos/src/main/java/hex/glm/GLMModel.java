@@ -1547,6 +1547,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String[] _coefficient_names;
     public long _training_time_ms;
     public TwoDimTable _variable_importances;
+    public TwoDimTable _variable_importances_control_vals_enabled;
     public VarImp _varimp;  // should contain the same content as standardized coefficients
     int _lambda_array_size; // store number of lambdas to iterate over
     public double _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
@@ -1628,10 +1629,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         }
       }
       return beta;
-    }
-    
-    public int[] getControlValsIdxs(){
-      return _control_values_idxs_in_adapted_frame;
     }
     
     public String[] getControlValsNames(){
@@ -1976,9 +1973,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       assert submodel_index < _submodels.length : "submodel_index specified exceeds the submodels length.";
       return _submodels[submodel_index];
     }
+
+    public VarImp calculateVarimp() {
+      return calculateVarimp(false);
+    }
     
     // calculate variable importance which is derived from the standardized coefficients
-    public VarImp calculateVarimp() {
+    public VarImp calculateVarimp(boolean contrVal) {
       String[] names = coefficientNames();
       
       final double [] magnitudes = new double[names.length];
@@ -1997,18 +1998,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
       
-      String[] controlValsNames = getControlValsNames();
-      
-      for (int index = 0; index < len; index++) {
-        magnitudesSort[index] = (float) magnitudes[indices[index]];
-        String name = names[indices[index]];
-        String categoricalName = name.contains(".") ? name.split("\\.")[0] : null;
-        if(controlValsNames != null){
-          if(ArrayUtils.find(controlValsNames, name) >-1 || (categoricalName != null && ArrayUtils.find(controlValsNames, categoricalName) >-1)) {
-            name = name+_control_val_suffix;
+      if(contrVal) {
+        String[] controlValsNames = getControlValsNames();
+        for (int index = 0; index < len; index++) {
+          magnitudesSort[index] = (float) magnitudes[indices[index]];
+          String name = names[indices[index]];
+          String categoricalName = name.contains(".") ? name.split("\\.")[0] : null;
+          if (controlValsNames != null) {
+            if (ArrayUtils.find(controlValsNames, name) > -1 || (categoricalName != null && ArrayUtils.find(controlValsNames, categoricalName) > -1)) {
+              name = name + _control_val_suffix;
+            }
           }
+          namesSort[index] = name;
         }
-        namesSort[index] = name;
       }
       return new VarImp(magnitudesSort, namesSort);
     }
@@ -2194,7 +2196,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double d = data[ncats + i];
         if (!_output._dinfo._skipMissing && Double.isNaN(d))
           d = _output._dinfo._numNAFill[i];
-          eta += b[numStart + i] * d;
+        eta += b[numStart + i] * d;
       }
       double mu = _parms.linkInv(eta);
       if (_parms._family == Family.binomial) { // threshold for prediction
@@ -2401,8 +2403,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMMojoWriter(this);
   }
 
-  private boolean isFeatureUsedInPredict(int featureIdx, double[] beta){
-    if (_output._control_values_idxs_in_adapted_frame != null && Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, featureIdx) >= 0) {
+  private boolean isFeatureUsedInPredict(int featureIdx, double[] beta) {
+    if (_useControlVariables && _output._control_values_idxs_in_adapted_frame != null && Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, featureIdx) >= 0) {
       return false;
     }
     if (featureIdx < _output._dinfo._catOffsets.length - 1 && _output._column_types[featureIdx].equals("Enum")) {
