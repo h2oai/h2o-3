@@ -71,6 +71,7 @@ public class MakeGLMModelHandler extends Handler {
     m._output._scoring_history = model._output._scoring_history_control_vals_enabled;
     m._output._model_summary = model._output._model_summary;
     m._output._defaultThreshold = model._output._defaultThreshold;
+    m._output._variable_importances = model._output._variable_importances_control_vals_enabled;
     
     DKV.put(key, m);
     GLMModelV3 res = new GLMModelV3();

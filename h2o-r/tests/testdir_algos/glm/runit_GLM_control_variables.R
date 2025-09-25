@@ -34,14 +34,11 @@ test.controlVariables <- function() {
     res.dev.cont <- model.cont@model$training_metrics@metrics$residual_deviance
     print(res.dev.cont)
     betas.cont <- model.cont@model$coefficients_table$coefficients
-    print(betas.cont)
-
-    expect_equal(res.dev, res.dev.cont)
+    print(betas.cont)   
+    expect_true(res.dev != res.dev.cont)
 }
 
-#################################
-
-
+# Test all regression and binomial distributions
 
 .expand_factors <- function(df) {
     non_numeric_columns <- names(Filter(identity, lapply(df, Negate(is.numeric))))

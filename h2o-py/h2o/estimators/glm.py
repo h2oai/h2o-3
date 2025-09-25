@@ -2825,7 +2825,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> p = m.model_performance(d)
         >>> print(p)
         >>> m2 = H2OGeneralizedLinearEstimator.get_unrestricted_glm_model(model=m,
-        ...                                                               id="unrestricted_glm")
+        ...                                                               dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
         """
@@ -2835,5 +2835,5 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                   "dest": dest}
         )
         m = H2OGeneralizedLinearEstimator()
-        m._resolve_model(id, model_json)
+        m._resolve_model(dest, model_json)
         return m

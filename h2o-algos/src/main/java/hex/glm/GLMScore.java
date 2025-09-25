@@ -31,6 +31,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   final int _nclasses;
   private final double []_beta;
   private final double [][] _beta_multinomial;
+  private final double[] _beta_control_variables; 
   private final double _defaultThreshold;
 
 
@@ -50,11 +51,10 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
             _m._parms._family == GLMModel.GLMParameters.Family.ordinal){
       _beta = null;
       _beta_multinomial = m._output._global_beta_multinomial;
+      _beta_control_variables = null;
     } else {
-      double [] beta = m.beta();
-      
       // prepare control variable map to filter them from beta
-      int [] controlValMap = m._output.getControlValsIdxs();
+      /* int [] controlValMap = m._output.getControlValsIdxs();
       int[] betaControlValMap = new int[beta.length - 1];
       if (controlValMap != null && m._useControlVariables) {
         for (int k = 0; k < controlValMap.length; k++) {
@@ -69,25 +69,48 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
             betaControlValMap[dinfo._numOffsets[colIdx - dinfo._cats]] = 1;
           }
         }
+      } */
+
+      double[] beta = m.beta();
+      if (m._useControlVariables) {
+        beta = m._output.getControlValBeta(beta);
+        int[] ids = new int[beta.length - 1];
+        int k = 0;
+        for (int i = 0; i < beta.length - 1; ++i) { // pick out beta that is not zero in ids & that is not in control variables
+          if (beta[i] != 0) ids[k++] = i;
+        }
+        if (k < beta.length - 1) {
+          ids = Arrays.copyOf(ids, k);
+          dinfo = dinfo.filterExpandedColumns(ids);
+          double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
+          int l = 0;
+          for (int x : ids)
+            beta2[l++] = beta[x];
+          beta2[l] = beta[beta.length - 1];
+          beta = beta2;
+        }
+        _beta_control_variables = beta;
+      } else {
+        _beta_control_variables = null;
       }
-      
-      int [] ids = new int[beta.length-1];
+      int[] ids = new int[beta.length - 1];
       int k = 0;
-      for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids & that is not in control variables
-        if(beta[i] != 0 && betaControlValMap[i] == 0) ids[k++] = i;
+      for (int i = 0; i < beta.length - 1; ++i) { // pick out beta that is not zero in ids & that is not in control variables
+        //if(beta[i] != 0 && betaControlValMap[i] == 0) ids[k++] = i;
+        if (beta[i] != 0) ids[k++] = i;
       }
-      if(k < beta.length-1) {
-        ids = Arrays.copyOf(ids,k);
+      if (k < beta.length - 1) {
+        ids = Arrays.copyOf(ids, k);
         dinfo = dinfo.filterExpandedColumns(ids);
-        double [] beta2 = MemoryManager.malloc8d(ids.length+1);
+        double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
         int l = 0;
-        for(int x:ids)
+        for (int x : ids)
           beta2[l++] = beta[x];
-        beta2[l] = beta[beta.length-1];
+        beta2[l] = beta[beta.length - 1];
         beta = beta2;
       }
-      _beta_multinomial = null;
       _beta = beta;
+      _beta_multinomial = null;
     }
     _dinfo = dinfo;
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
@@ -125,7 +148,12 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         preds[c + 1] = eta[c] * sumExp;
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
-      double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
+      double mu;
+      if(_beta_control_variables != null){
+        mu = _m._parms.linkInv(r.innerProduct(_beta_control_variables) + o);
+      } else {
+        mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
+      }
       if (_m._parms._family == GLMModel.GLMParameters.Family.binomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction
