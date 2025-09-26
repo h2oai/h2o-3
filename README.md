@@ -8,7 +8,7 @@ For any question not answered in this file or in [H2O-3 Documentation](https://d
 
 H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular [algorithms](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science.html) such as Generalized Linear Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests, Deep Neural Networks, Stacked Ensembles, Naive Bayes, Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic machine learning algorithm ([H2O AutoML](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html)). 
 
-H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  H2O models can be [downloaded](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/save-and-load-model.html) and loaded into H2O memory for scoring, or exported into POJO or MOJO format for extemely fast scoring in [production](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html).  More information can be found in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).
+H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  H2O models can be [downloaded](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/save-and-load-model.html) and loaded into H2O memory for scoring, or exported into POJO or MOJO format for extremely fast scoring in [production](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html).  More information can be found in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).
 
 H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H2O-2](https://github.com/h2oai/h2o-2).  
 
@@ -83,7 +83,7 @@ You can browse and create new issues in our GitHub repository:  <https://github.
     * <https://gitter.im/h2oai/h2o-3>    
 *  Documentation
     * H2O User Guide (main docs): <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html>
-    * All H2O documenation links: <http://docs.h2o.ai>
+    * All H2O documentation links: <http://docs.h2o.ai>
     * Nightly build page (nightly docs linked in page): <https://s3.amazonaws.com/h2o-release/h2o/master/latest.html>
 *  Download (pre-built packages)
     * <http://h2o.ai/download>
@@ -209,7 +209,7 @@ git pull
 
  - We recommend using `./gradlew clean` after each `git pull`.
 
-- Skip tests by adding `-x test` at the end the gradle build command line.  Tests typically run for 7-10 minutes on a Macbook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
+- Skip tests by adding `-x test` at the end the Gradle build command line.  Tests typically run for 7-10 minutes on a MacBook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
 
 - Syncing smalldata is not required after each pull, but if tests fail due to missing data files, then try `./gradlew syncSmalldata` as the first troubleshooting step.  Syncing smalldata downloads data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check in these files.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
 - Running `./gradlew syncRPackages` is supported on Windows, OS X, and Linux, and is strongly recommended but not required. `./gradlew syncRPackages` ensures a complete and consistent environment with pre-approved versions of the packages required for tests and builds. The packages can be installed manually, but we recommend setting an ENV variable and using `./gradlew syncRPackages`. To set the ENV variable, use the following format (where `${WORKSPACE}` can be any path):
@@ -240,7 +240,7 @@ To build `h2o.jar` using the minimal assembly, run
 make minimal
 ```
 
-The minimal assembly is well suited for developement of H2O machine learning algorithms. It doesn't bundle some heavyweight
+The minimal assembly is well suited for development of H2O machine learning algorithms. It doesn't bundle some heavyweight
 dependencies (like Hadoop) and using it saves build time as well as need to download large libraries from Maven repositories.
 
 <a name="SetupWin"></a>
@@ -291,7 +291,7 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
-Note that this packages don't cover running tests, they for building H2O only.
+Note that this packages don't cover running tests, they are for building H2O only.
 
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
@@ -336,7 +336,7 @@ Using Homebrew:
 
     brew install node
 
-Otherwise, install from the [NodeJS website](http://nodejs.org/download/).
+Otherwise, install from the [Node.js website](http://nodejs.org/download/).
 
 ##### Step 3. Install R and the required packages:
 
@@ -636,7 +636,7 @@ Sparkling Water combines two open-source technologies: Apache Spark and the H2O 
 <a name="Documentation"></a>
 ## 8. Documentation
 
-### Documenation Homepage
+### Documentation Homepage
 
 The main H2O documentation is the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).  Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects.
 
