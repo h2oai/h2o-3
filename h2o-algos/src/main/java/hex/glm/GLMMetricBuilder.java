@@ -221,7 +221,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
     GLMModel gm = (GLMModel) m;
     computeAIC(gm);
-    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
+    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, adaptedFrame, preds);
     if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
             _glmf._family == Family.fractionalbinomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
