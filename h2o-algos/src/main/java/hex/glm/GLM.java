@@ -3403,7 +3403,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (!(mtrain == null)) {
         if (_model._parms._control_variables != null){
           _model._output._training_metrics_control_vals_enabled = mtrain;
-          _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time        
+          _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time
         } else {
           _model._output._training_metrics = mtrain;
           _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time        
@@ -3814,6 +3814,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._output._scoring_history = combineScoringHistoryControlVariables(_model._output._scoring_history, _model._output._scoring_history_control_vals_enabled,
                   scoringHistoryEarlyStop, scoringHistoryEarlyStopControlVal, sm, null != _parms._valid);
           _model._output._scoring_history_control_vals_enabled = combineScoringHistory(_model._output._scoring_history_control_vals_enabled, scoringHistoryEarlyStopControlVal);
+          // set control variables flag to true for scoring after training
+          _model._useControlVariables = true;
         } else {
           TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());

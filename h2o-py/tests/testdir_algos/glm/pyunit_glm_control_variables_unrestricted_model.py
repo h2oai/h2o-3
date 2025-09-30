@@ -52,13 +52,16 @@ def glm_control_variables_unrestricted_model():
     print(glm_model_4._model_json["output"]["scoring_history"])
 
     predictions_train = glm_model.predict(cars).as_data_frame()
-    print(predictions_train)
+
 
     predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
-    print(predictions_train_2)
 
     # predict with unrestricted model
     predictions_unrestricted = glm_model_unrestricted.predict(cars).as_data_frame()
+
+    print("")
+    print(predictions_train)
+    print(predictions_train_2)
     print(predictions_unrestricted)
 
     # check model metrics are not the same
