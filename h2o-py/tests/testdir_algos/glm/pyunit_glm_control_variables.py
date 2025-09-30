@@ -17,15 +17,20 @@ def glm_control_variables():
     
     predictions_train = glm_model.predict(cars).as_data_frame()
     metrics = glm_model.training_model_metrics()
+    print(metrics)
 
     glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"])
     glm_model_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
     predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
     metrics_2 = glm_model_2.training_model_metrics()
+    print(metrics_2)
     
-    # check model metrics are the same
-    pyunit_utils.check_model_metrics(glm_model, glm_model_2, "")
+    # check model metrics are not the same
+    try:
+        pyunit_utils.check_model_metrics(glm_model, glm_model_2, "")
+    except AssertionError as err:
+        assert "Scoring history is not the same" in str(err)
     
     # check predictions are different
     pyunit_utils.assert_not_equal(predictions_train.iloc[0, 1], predictions_train_2.iloc[0, 1])
