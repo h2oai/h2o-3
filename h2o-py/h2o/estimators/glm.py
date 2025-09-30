@@ -2803,9 +2803,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
 
     @staticmethod
-    def get_unrestricted_glm_model(model, dest=None):
+    def make_unrestricted_glm_model(model, dest=None):
         """
-        Get unrestricted GLM model when control variables are defined.
+        Make unrestricted GLM model when control variables are defined.
 
         Needs to be passed source model trained with control variables enabled. 
 
@@ -2824,7 +2824,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ...         y=1)
         >>> p = m.model_performance(d)
         >>> print(p)
-        >>> m2 = H2OGeneralizedLinearEstimator.get_unrestricted_glm_model(model=m,
+        >>> m2 = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(model=m,
         ...                                                               dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
