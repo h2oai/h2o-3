@@ -96,10 +96,11 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' H2OFrame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame"
 
+#' H2OGLM Related Constants
 .h2o.__GLMMakeModel <- "MakeGLMModel"
 .h2o.__GLMRegPath <- "GetGLMRegPath"
 .h2o.__ComputeGram <- "ComputeGram"
-
+.h2o.__GLMMakeUnrestrictedModel <- "MakeUnrestrictedGLMModel"
 
 #' Rapids Endpoint
 .h2o.__RAPIDS         <- "Rapids"
