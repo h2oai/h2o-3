@@ -34,8 +34,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   private final double[] _beta_control_variables; 
   private final double _defaultThreshold;
 
-
-
   public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions, CFuncRef customMetric) {
     super(customMetric);
     _j = j;

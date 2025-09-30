@@ -57,8 +57,15 @@ public class MakeGLMModelHandler extends Handler {
   public GLMModelV3 make_unrestricted_model(int version, MakeUnrestrictedGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
-      throw new IllegalArgumentException("missing source model " + args.model);
+      throw new IllegalArgumentException("Missing source model " + args.model);
+    if(model._parms._control_variables == null){
+      throw new IllegalArgumentException("Source model is not trained with control variables.");
+    }
     Key key = args.dest != null? Key.make(args.dest) : Key.make();
+    GLMModel modelContrVars = DKV.getGet(key);
+    if(modelContrVars != null) {
+      throw new IllegalArgumentException("Model with "+key+" already exists.");
+    }
     GLMModel m = new GLMModel(key, model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
@@ -75,7 +82,6 @@ public class MakeGLMModelHandler extends Handler {
     m._output._validation_metrics = mv;
     m._output._scoring_history = model._output._scoring_history_control_vals_enabled;
     m._output._model_summary = model._output._model_summary;
-    m._output._defaultThreshold = m.defaultThreshold();
     m.resetThreshold(m.defaultThreshold());
     m._output._variable_importances = model._output._variable_importances_control_vals_enabled;
     

@@ -1598,7 +1598,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     private String[] _control_values_names;
     public String _control_val_suffix = "_control";
 
-
     public TwoDimTable _scoring_history_control_vals_enabled;
     public ModelMetrics _training_metrics_control_vals_enabled;
     public ModelMetrics _validation_metrics_control_vals_enabled;
@@ -2452,11 +2451,5 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     if (_output._regression_influence_diagnostics!= null)
       ab.getKey(_output._regression_influence_diagnostics, fs);
     return super.readAll_impl(ab, fs);
-  }  
-  
-  public void applyControlValsMetrics() {
-    this._output._training_metrics = this._output._training_metrics_control_vals_enabled;
-    this._output._validation_metrics = this._output._validation_metrics_control_vals_enabled;
-    this._output._scoring_history = this._output._scoring_history_control_vals_enabled;
   }
 }
