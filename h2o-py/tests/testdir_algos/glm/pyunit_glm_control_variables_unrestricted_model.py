@@ -57,8 +57,20 @@ def glm_control_variables_unrestricted_model():
     predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
     print(predictions_train_2)
 
+    # predict with unrestricted model
     predictions_unrestricted = glm_model_unrestricted.predict(cars).as_data_frame()
     print(predictions_unrestricted)
+
+    # check model metrics are not the same
+    pyunit_utils.check_model_metrics(glm_model, glm_model_unrestricted, "")
+    
+    # check scoring history are the same
+    pyunit_utils.assert_equal_scoring_history(glm_model, glm_model_unrestricted, ["objective", "negative_log_likelihood"])
+
+    # check predictions are the same
+    pyunit_utils.assert_equals(predictions_train.iloc[0, 1], predictions_unrestricted.iloc[0, 1])
+    pyunit_utils.assert_equals(predictions_train.iloc[10, 1], predictions_unrestricted.iloc[10, 1])
+    pyunit_utils.assert_equals(predictions_train.iloc[100, 1], predictions_unrestricted.iloc[100, 1])
     
 
 if __name__ == "__main__":
