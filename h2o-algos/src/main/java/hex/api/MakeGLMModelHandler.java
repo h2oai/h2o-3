@@ -8,7 +8,6 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
 import hex.schemas.*;
-import jdk.internal.platform.Metrics;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -63,6 +62,8 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(key, model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
+    m._input_parms._control_variables = null;
+    m._parms._control_variables = null;
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
@@ -74,8 +75,8 @@ public class MakeGLMModelHandler extends Handler {
     m._output._validation_metrics = mv;
     m._output._scoring_history = model._output._scoring_history_control_vals_enabled;
     m._output._model_summary = model._output._model_summary;
-    m.resetThreshold(model.defaultThreshold());
     m._output._defaultThreshold = m.defaultThreshold();
+    m.resetThreshold(m.defaultThreshold());
     m._output._variable_importances = model._output._variable_importances_control_vals_enabled;
     
     DKV.put(key, m);
