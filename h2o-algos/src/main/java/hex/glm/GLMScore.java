@@ -32,6 +32,8 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   final int _nclasses;
   private final double []_beta;
   private final double [][] _beta_multinomial;
+  private final double [][] _control_beta_multinomial;
+  private final boolean _useControlVals;
   private final double _defaultThreshold;
 
 
@@ -50,9 +52,32 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
             _m._parms._family == GLMModel.GLMParameters.Family.ordinal){
       _beta = null;
-      _beta_multinomial = m._output._global_beta_multinomial;
+      if(m._useControlVariables) {
+        // set beta to 0 for control variables
+        double[][] beta = m._output._global_beta_multinomial;
+        int[] betaControlValMap = m._output.getControlValMap(dinfo);
+        int numVals = beta[0].length;
+        for (int i = 0; i < numVals; i++) {
+          if(betaControlValMap[i]==1) {
+            for (int k = 0; k < _nclasses; k++) {
+              beta[k][i] = 0;
+            }
+          }
+        }
+        _beta_multinomial = m._output._global_beta_multinomial;
+        _control_beta_multinomial = beta;
+        _useControlVals = true;
+      } else {
+        _beta_multinomial =  m._output._global_beta_multinomial;
+        _control_beta_multinomial = null;
+        _useControlVals = false;
+      }
     } else {
       double [] beta = m.beta();
+      
+      // prepare control variable map to filter them from beta
+      int[] betaControlValMap = m._output.getControlValMap(dinfo);
+      
       int [] ids = new int[beta.length-1];
       int k = 0;
       for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids
@@ -68,8 +93,9 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         beta2[l] = beta[beta.length-1];
         beta = beta2;
       }
-      _beta_multinomial = null;
+      _beta_multinomial = _control_beta_multinomial = null;
       _beta = beta;
+      _useControlVals = false;
     }
     _dinfo = dinfo;
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
@@ -79,7 +105,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   public double [] scoreRow(DataInfo.Row r, double o, double [] preds) {
     int lastClass = _nclasses-1;
     if(_m._parms._family == GLMModel.GLMParameters.Family.ordinal) {  // todo: change this to take various link func
-      final double[][] bm = _beta_multinomial;
+      final double[][] bm = _useControlVals ? _control_beta_multinomial : _beta_multinomial;
       Arrays.fill(preds,0);
       double previousCDF = 0.0;
       for (int cInd = 0; cInd < lastClass; cInd++) {
@@ -92,7 +118,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(preds)-1;
     } else if (_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {
       double[] eta = _eta;
-      final double[][] bm = _beta_multinomial;
+      final double[][] bm = _useControlVals ? _control_beta_multinomial : _beta_multinomial;
       double sumExp = 0;
       double maxRow = 0;
       for (int c = 0; c < bm.length; ++c) {
@@ -112,7 +138,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
               || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction
         preds[0] = mu >= _defaultThreshold?1:0;
-        preds[1] = 1.0 - mu; // class 0
+        preds[1] = 1.0 - mu; // class 0T
         preds[2] = mu; // class 1
       } else
         preds[0] = mu;
@@ -141,6 +167,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
     }
   }
+  
   public void map(Chunk[] chks, NewChunk[] preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
     if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
