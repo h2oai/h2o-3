@@ -3,6 +3,7 @@ package hex.api;
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.Model;
+import hex.ModelMetrics;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
@@ -22,6 +23,7 @@ import java.util.Map;
  * Created by tomasnykodym on 3/25/15.
  */
 public class MakeGLMModelHandler extends Handler {
+  
   public GLMModelV3 make_model(int version, MakeGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
@@ -45,12 +47,50 @@ public class MakeGLMModelHandler extends Handler {
     dinfo.setPredictorTransform(TransformType.NONE);
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial, 
-            model._output._ordinal);
+            model._output._ordinal, model._parms._control_variables);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
     return res;
   }
+
+  public GLMModelV3 make_unrestricted_model(int version, MakeUnrestrictedGLMModelV3 args){
+    GLMModel model = DKV.getGet(args.model.key());
+    if(model == null)
+      throw new IllegalArgumentException("Missing source model " + args.model);
+    if(model._parms._control_variables == null){
+      throw new IllegalArgumentException("Source model is not trained with control variables.");
+    }
+    Key key = args.dest != null? Key.make(args.dest) : Key.make();
+    GLMModel modelContrVars = DKV.getGet(key);
+    if(modelContrVars != null) {
+      throw new IllegalArgumentException("Model with "+key+" already exists.");
+    }
+    GLMModel m = new GLMModel(key, model._parms,null, model._ymu,
+            Double.NaN, Double.NaN, -1);
+    m.setInputParms(model._input_parms);
+    m._input_parms._control_variables = null;
+    m._parms._control_variables = null;
+    DataInfo dinfo = model.dinfo();
+    dinfo.setPredictorTransform(TransformType.NONE);
+    m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+            model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
+            model._output._ordinal, null);
+    ModelMetrics mt = model._output._training_metrics_control_vals_enabled;
+    ModelMetrics mv = model._output._validation_metrics_control_vals_enabled;
+    m._output._training_metrics = mt;
+    m._output._validation_metrics = mv;
+    m._output._scoring_history = model._output._scoring_history_control_vals_enabled;
+    m._output._model_summary = model._output._model_summary;
+    m.resetThreshold(m.defaultThreshold());
+    m._output._variable_importances = model._output._variable_importances_control_vals_enabled;
+    
+    DKV.put(key, m);
+    GLMModelV3 res = new GLMModelV3();
+    res.fillFromImpl(m);
+    return res;
+  }
+  
   
   public GLMRegularizationPathV3 extractRegularizationPath(int v, GLMRegularizationPathV3 args) {
     GLMModel model = DKV.getGet(args.model.key());

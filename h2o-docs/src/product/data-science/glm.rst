@@ -43,6 +43,8 @@ Algorithm-specific parameters
 
 -  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` while disabling ``HGLM`` will enable the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled). 
 
+- `control_variables <algo-params/control_variables.html>`__: Specify control values which will be disabled for metric calculation and during scoring. 
+
 - `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
 
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, this will break out of the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``0.0001``.
