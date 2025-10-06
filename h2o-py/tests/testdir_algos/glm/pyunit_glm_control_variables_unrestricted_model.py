@@ -12,7 +12,7 @@ def glm_control_variables_unrestricted_model():
     cars["name"] = cars["name"].asfactor()
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
-    glm_model = H2OGeneralizedLinearEstimator(family="binomial", score_each_iteration=True)
+    glm_model = H2OGeneralizedLinearEstimator(family="binomial", score_each_iteration=True, seed=0xC0FFEE)
     glm_model.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
     metrics = glm_model.training_model_metrics()
@@ -20,7 +20,7 @@ def glm_control_variables_unrestricted_model():
     print("++++++++++++++++ Model without control variables")
     print(glm_model._model_json["output"]["scoring_history"])
 
-    glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True)
+    glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True, seed=0xC0FFEE)
     glm_model_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
     metrics_2 = glm_model_2.training_model_metrics()
@@ -35,7 +35,7 @@ def glm_control_variables_unrestricted_model():
     print(glm_model_unrestricted._model_json["output"]["scoring_history"])
 
     # score each iteration false case
-    glm_model_3 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=False)
+    glm_model_3 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=False, seed=0xC0FFEE)
     glm_model_3.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
     metrics_3 = glm_model_3.training_model_metrics()
@@ -43,7 +43,7 @@ def glm_control_variables_unrestricted_model():
     print("++++++++++++++++ Model with control variables score each iteration false")
     print(glm_model_3._model_json["output"]["scoring_history"])
 
-    glm_model_4 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True)
+    glm_model_4 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True, seed=0xC0FFEE)
     glm_model_4.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars, validation_frame=cars)
 
     metrics_4 = glm_model_4.training_model_metrics()
@@ -65,14 +65,20 @@ def glm_control_variables_unrestricted_model():
     print("predict with unrestricted model")
     print(predictions_unrestricted)
 
-    # check predictions are the same
-    pyunit_utils.assert_equals(predictions_train.iloc[0, 0], predictions_unrestricted.iloc[0, 0])
-    pyunit_utils.assert_equals(predictions_train.iloc[10, 0], predictions_unrestricted.iloc[10, 0])
-    pyunit_utils.assert_equals(predictions_train.iloc[100, 0], predictions_unrestricted.iloc[100, 0])
+    print(f"glm_model.default_threshold() = {glm_model.default_threshold()}")
+    print(f"glm_model2.default_threshold() = {glm_model_2.default_threshold()}")
+    print(f"glm_model3.default_threshold() = {glm_model_3.default_threshold()}")
+    print(f"glm_model4.default_threshold() = {glm_model_4.default_threshold()}")
+    print(f"glm_model_unrestricted.default_threshold() = {glm_model_unrestricted.default_threshold()}")
 
-    pyunit_utils.assert_equals(predictions_train.iloc[0, 1], predictions_unrestricted.iloc[0, 1])
-    pyunit_utils.assert_equals(predictions_train.iloc[10, 1], predictions_unrestricted.iloc[10, 1])
-    pyunit_utils.assert_equals(predictions_train.iloc[100, 1], predictions_unrestricted.iloc[100, 1])
+    # check the coefficients
+    for k in glm_model.coef().keys():
+        pyunit_utils.assert_equals(glm_model.coef()[k], glm_model_unrestricted.coef().get(k, float("NaN")), f"Coefficient {k} differs!")
+
+    # check predictions are the same
+    for i in range(predictions_train.shape[0]):
+        pyunit_utils.assert_equals(predictions_train.iloc[i, 0], predictions_unrestricted.iloc[i, 0], f"{i}th prediction differs!")
+        pyunit_utils.assert_equals(predictions_train.iloc[i, 1], predictions_unrestricted.iloc[i, 1], f"{i}th prediction differs!")
 
     # check model metrics are not the same
     pyunit_utils.check_model_metrics(glm_model, glm_model_unrestricted, "")
