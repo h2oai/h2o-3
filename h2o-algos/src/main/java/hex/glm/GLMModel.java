@@ -1978,22 +1978,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if (nclasses() != 2 || _training_metrics == null || _training_metrics instanceof ModelMetricsBinomialUplift)
         return 0.5;
       if(_defaultThreshold == -1) {
-        if(_score_control_vals_used_but_disabled) {
-          if (_validation_metrics_control_vals_enabled != null && ((ModelMetricsBinomial) _validation_metrics_control_vals_enabled)._auc != null) {
-            return ((ModelMetricsBinomial) _validation_metrics_control_vals_enabled)._auc.defaultThreshold();
-          }
-          if (_training_metrics_control_vals_enabled != null && ((ModelMetricsBinomial) _training_metrics_control_vals_enabled)._auc != null)
-            return ((ModelMetricsBinomial) _training_metrics_control_vals_enabled)._auc.defaultThreshold();
-        } else {
-          if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
-            return ((ModelMetricsBinomial) _validation_metrics)._auc.defaultThreshold();
-          if (((ModelMetricsBinomial) _training_metrics)._auc != null)
-            return ((ModelMetricsBinomial) _training_metrics)._auc.defaultThreshold();
-        }
+        if (_validation_metrics_control_vals_enabled != null && ((ModelMetricsBinomial) _validation_metrics_control_vals_enabled)._auc != null) 
+          return ((ModelMetricsBinomial) _validation_metrics_control_vals_enabled)._auc.defaultThreshold();
+        if (_training_metrics_control_vals_enabled != null && ((ModelMetricsBinomial) _training_metrics_control_vals_enabled)._auc != null)
+          return ((ModelMetricsBinomial) _training_metrics_control_vals_enabled)._auc.defaultThreshold();
+        if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
+          return ((ModelMetricsBinomial) _validation_metrics)._auc.defaultThreshold();
+        if (((ModelMetricsBinomial) _training_metrics)._auc != null)
+          return ((ModelMetricsBinomial) _training_metrics)._auc.defaultThreshold();
+        return 0.5;
       } else {
         return _defaultThreshold;
       }
-      return 0.5;
     }
     
     // calculate variable importance which is derived from the standardized coefficients
