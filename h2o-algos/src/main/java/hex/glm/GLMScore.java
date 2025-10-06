@@ -74,7 +74,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       _beta_multinomial = null;
 
       if (m._useControlVariables) {
-        double[] betaContVar = m.beta();
+        double[] betaContVar = m.beta().clone();
         betaContVar = m._output.getControlValBeta(betaContVar);
         ids = new int[betaContVar.length - 1];
         k = 0;
@@ -210,7 +210,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       for (DataInfo.Row r : _dinfoContrValsEnabled != null ? _dinfoContrValsEnabled.extractSparseRows(chks) : _dinfo.extractSparseRows(chks))
         processRow(r,res,ps,preds,ncols);
     } else {
-      DataInfo.Row r = _dinfo.newDenseRow();
+      DataInfo.Row r = (_dinfoContrValsEnabled != null)? _dinfoContrValsEnabled.newDenseRow(): _dinfo.newDenseRow();
       for (int rid = 0; rid < chks[0]._len; ++rid) {
         if(_dinfoContrValsEnabled != null) {
           _dinfoContrValsEnabled.extractDenseRow(chks, rid, r);
