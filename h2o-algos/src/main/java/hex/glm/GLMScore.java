@@ -21,6 +21,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   final Job _j;
   ModelMetrics.MetricBuilder _mb;
   final DataInfo _dinfo;
+  final DataInfo _dinfoContrValsEnabled;
   final boolean _sparse;
   final String[] _domain;
   final boolean _computeMetrics;
@@ -50,30 +51,10 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       _beta = null;
       _beta_multinomial = m._output._global_beta_multinomial;
       _beta_control_variables = null;
+      _dinfoContrValsEnabled = null;
     } else {
       double[] beta = m.beta();
-      if (m._useControlVariables) {
-        beta = m._output.getControlValBeta(beta);
-        int[] ids = new int[beta.length - 1];
-        int k = 0;
-        for (int i = 0; i < beta.length - 1; ++i) { // pick out beta that is not zero in ids & that is not in control variables
-          if (beta[i] != 0) ids[k++] = i;
-        }
-        if (k < beta.length - 1) {
-          ids = Arrays.copyOf(ids, k);
-          dinfo = dinfo.filterExpandedColumns(ids);
-          double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
-          int l = 0;
-          for (int x : ids)
-            beta2[l++] = beta[x];
-          beta2[l] = beta[beta.length - 1];
-          beta = beta2;
-          
-        }
-        _beta_control_variables = beta;
-      } else {
-        _beta_control_variables = null;
-      }
+      DataInfo copy = dinfo.clone();
       int[] ids = new int[beta.length - 1];
       int k = 0;
       for (int i = 0; i < beta.length - 1; ++i) { // pick out beta that is not zero in ids
@@ -91,9 +72,35 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
       _beta = beta;
       _beta_multinomial = null;
+
+      if (m._useControlVariables) {
+        double[] betaContVar = m.beta();
+        betaContVar = m._output.getControlValBeta(betaContVar);
+        ids = new int[betaContVar.length - 1];
+        k = 0;
+        for (int i = 0; i < betaContVar.length - 1; ++i) { // pick out beta that is not zero in ids & that is not in control variables
+          if (betaContVar[i] != 0) ids[k++] = i;
+        }
+        if (k < betaContVar.length - 1) {
+          ids = Arrays.copyOf(ids, k);
+          copy = copy.filterExpandedColumns(ids);
+          double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
+          int l = 0;
+          for (int x : ids)
+            beta2[l++] = betaContVar[x];
+          beta2[l] = betaContVar[betaContVar.length - 1];
+          betaContVar = beta2;
+        }
+        _beta_control_variables = betaContVar;
+        _dinfoContrValsEnabled = copy;
+      } else {
+        _beta_control_variables = null;
+        _dinfoContrValsEnabled = null;
+      }
     }
     _dinfo = dinfo;
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
+    m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
     _defaultThreshold = m.defaultThreshold();
   }
 
@@ -129,7 +136,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
       double mu;
-      if(_beta_control_variables != null){
+      if (_beta_control_variables != null) {
         mu = _m._parms.linkInv(r.innerProduct(_beta_control_variables) + o);
       } else {
         mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
@@ -167,6 +174,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
     }
   }
+  
   public void map(Chunk[] chks, NewChunk[] preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
     if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
@@ -188,7 +196,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     final int nc = _m._output.nclasses();
     final int ncols = nc == 1 ? 1 : nc + 1; // Regression has 1 predict col; classification also has class distribution
     // compute
-    if (_sparse) {
+    /**if (_sparse) {
       for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
         processRow(r,res,ps,preds,ncols);
     } else {
@@ -197,7 +205,22 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         _dinfo.extractDenseRow(chks, rid, r);
         processRow(r,res,ps,preds,ncols);
       }
+    }**/
+    if (_sparse) {
+      for (DataInfo.Row r : _dinfoContrValsEnabled != null ? _dinfoContrValsEnabled.extractSparseRows(chks) : _dinfo.extractSparseRows(chks))
+        processRow(r,res,ps,preds,ncols);
+    } else {
+      DataInfo.Row r = _dinfo.newDenseRow();
+      for (int rid = 0; rid < chks[0]._len; ++rid) {
+        if(_dinfoContrValsEnabled != null) {
+          _dinfoContrValsEnabled.extractDenseRow(chks, rid, r);
+        } else {
+          _dinfo.extractDenseRow(chks, rid, r);
+        }
+        processRow(r,res,ps,preds,ncols);
+      }
     }
+    
     if (_j != null) _j.update(1);
   }
 
