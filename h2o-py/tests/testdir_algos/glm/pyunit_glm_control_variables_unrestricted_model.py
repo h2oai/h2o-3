@@ -51,18 +51,28 @@ def glm_control_variables_unrestricted_model():
     print("++++++++++++++++ Model with control variables score each iteration true and validation dataset")
     print(glm_model_4._model_json["output"]["scoring_history"])
 
+    # predictions with control variables disabled
     predictions_train = glm_model.predict(cars).as_data_frame()
-
-
+    # predictions with control variables enabled
     predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
-
     # predict with unrestricted model
     predictions_unrestricted = glm_model_unrestricted.predict(cars).as_data_frame()
 
-    print("")
+    print("predictions with control variables disabled")
     print(predictions_train)
+    print("predictions with control variables enabled")
     print(predictions_train_2)
+    print("predict with unrestricted model")
     print(predictions_unrestricted)
+
+    # check predictions are the same
+    pyunit_utils.assert_equals(predictions_train.iloc[0, 0], predictions_unrestricted.iloc[0, 0])
+    pyunit_utils.assert_equals(predictions_train.iloc[10, 0], predictions_unrestricted.iloc[10, 0])
+    pyunit_utils.assert_equals(predictions_train.iloc[100, 0], predictions_unrestricted.iloc[100, 0])
+
+    pyunit_utils.assert_equals(predictions_train.iloc[0, 1], predictions_unrestricted.iloc[0, 1])
+    pyunit_utils.assert_equals(predictions_train.iloc[10, 1], predictions_unrestricted.iloc[10, 1])
+    pyunit_utils.assert_equals(predictions_train.iloc[100, 1], predictions_unrestricted.iloc[100, 1])
 
     # check model metrics are not the same
     pyunit_utils.check_model_metrics(glm_model, glm_model_unrestricted, "")
@@ -70,11 +80,6 @@ def glm_control_variables_unrestricted_model():
     # check scoring history are the same
     pyunit_utils.assert_equal_scoring_history(glm_model, glm_model_unrestricted, ["objective", "negative_log_likelihood"])
 
-    # check predictions are the same
-    pyunit_utils.assert_equals(predictions_train.iloc[0, 1], predictions_unrestricted.iloc[0, 1])
-    pyunit_utils.assert_equals(predictions_train.iloc[10, 1], predictions_unrestricted.iloc[10, 1])
-    pyunit_utils.assert_equals(predictions_train.iloc[100, 1], predictions_unrestricted.iloc[100, 1])
-    
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_control_variables_unrestricted_model)
