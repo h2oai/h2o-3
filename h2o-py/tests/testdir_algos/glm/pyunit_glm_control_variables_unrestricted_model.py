@@ -28,7 +28,7 @@ def glm_control_variables_unrestricted_model():
     print("++++++++++++++++ Model with control variables and score each iteration true")
     print(glm_model_2._model_json["output"]["scoring_history"])
 
-    glm_model_unrestricted = H2OGeneralizedLinearEstimator.get_unrestricted_glm_model(glm_model_2, "unrestricted")
+    glm_model_unrestricted = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2, "unrestricted")
     metrics_unrestricted = glm_model_unrestricted.training_model_metrics()
     print(metrics_unrestricted)
     print("++++++++++++++++ Unrestricted model with control variables")
