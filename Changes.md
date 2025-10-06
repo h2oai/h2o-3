@@ -8,7 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/inde
 
 #### Bug
 - [[#16592]](https://github.com/h2oai/h2o-3/issues/16592) - CoxPH backward compatibility issue.
-- [[#16590]](https://github.com/h2oai/h2o-3/issues/16590) - H2O3 Mojo model scoring fails in python when offset column is used.
+- [[#16590]](https://github.com/h2oai/h2o-3/issues/16590) - H2O-3 Mojo model scoring fails in python when offset column is used.
 - [[#16603]](https://github.com/h2oai/h2o-3/issues/16603) - Change the "lambda" hyperparameter in grid search for GLM to "lambda_".
 - [[#16652]](https://github.com/h2oai/h2o-3/issues/16652) - Fix Parquet export for empty values in UUID or Time columns.
 - [[#16638]](https://github.com/h2oai/h2o-3/issues/16638) - Change release target from sonatype to ossrh.
@@ -20,6 +20,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/inde
 - [[#16622]](https://github.com/h2oai/h2o-3/issues/16622) - MySQL JDBC Driver Deserialization Vulnerability_Key-Value Bypass Parameter Inspection.
 - [[#16632]](https://github.com/h2oai/h2o-3/issues/16632) - Fix CVE-2025-48734 in commons-beanutils.
 - [[#16649]](https://github.com/h2oai/h2o-3/issues/16649) - Fix vulnerabilities from Trivy scan.
+- [[#16423]](https://github.com/h2oai/h2o-3/issues/16423) - Fix protobuf vulnerability CVE-2024-7254, SNYK-JAVA-COMGOOGLEPROTOBUF-8055227, SNYK-JAVA-COMGOOGLEPROTOBUF-8055228.
 
 ### 3.46.0.7 - 3/27/2025
 
