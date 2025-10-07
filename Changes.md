@@ -9,7 +9,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/inde
 #### Bug
 - [[#16592]](https://github.com/h2oai/h2o-3/issues/16592) – CoxPH MOJO model from version 3.32.x.x is now compatible with 3.46.0.8 and can be uploaded.
 - [[#16590]](https://github.com/h2oai/h2o-3/issues/16590) – Fixed XGBoost MOJO model scoring failure in Python when using an offset column.
-- [[#16603]](https://github.com/h2oai/h2o-3/issues/16603) – Allow the `lambda_` hyperparameter in GLM grid search, not only `lambda`.
+- [[#16603]](https://github.com/h2oai/h2o-3/issues/16603) – Allow the `lambda_` hyperparameter in GLM Grid search, not only `lambda`.
 - [[#16652]](https://github.com/h2oai/h2o-3/issues/16652) – Fixed Parquet export for empty values in UUID and Time columns. Time columns can have empty values; UUIDs cannot by definition.
 - [[#16638]](https://github.com/h2oai/h2o-3/issues/16638) – Changed release target from Sonatype to OSSRH.
 
