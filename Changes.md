@@ -15,6 +15,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/inde
 
 #### Docs
 - [[#16663]](https://github.com/h2oai/h2o-3/issues/16663) – Minor wording and typo fixes in documentation (community PR).
+- [[#16644]](https://github.com/h2oai/h2o-3/issues/16664) – Generate sitemap for H2O-3 documentation
 
 #### Security
 - [[#16599]](https://github.com/h2oai/h2o-3/issues/16599) – Do not run the Docker image as root by default.
