@@ -17,18 +17,35 @@ def glm_control_variables():
     
     predictions_train = glm_model.predict(cars).as_data_frame()
     metrics = glm_model.training_model_metrics()
-    print(metrics)
+    #print(metrics)
+    print(glm_model._model_json["output"]["scoring_history"])
 
-    glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"])
+    glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", generate_scoring_history=True)
     glm_model_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
     predictions_train_2 = glm_model_2.predict(cars).as_data_frame()
     metrics_2 = glm_model_2.training_model_metrics()
-    print(metrics_2)
+    #print(metrics_2)
+    print(glm_model_2._model_json["output"]["scoring_history"])
+
+    glm_model_cv = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"])
+    glm_model_cv.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
+
+    metrics_cv = glm_model_cv.training_model_metrics()
+    #print(metrics_cv)
+    print(glm_model_cv._model_json["output"]["scoring_history"])
+
+    glm_model_cv_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], 
+                                                   generate_scoring_history=True)
+    glm_model_cv_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
+
+    metrics_cv_2 = glm_model_cv_2.training_model_metrics()
+    #print(metrics_cv_2)
+    print(glm_model_cv_2._model_json["output"]["scoring_history"])
     
     # check model metrics are not the same
     try:
-        pyunit_utils.check_model_metrics(glm_model, glm_model_2, "")
+        pyunit_utils.check_model_metrics(glm_model, glm_model_cv, "")
     except AssertionError as err:
         assert "Scoring history is not the same" in str(err)
     
