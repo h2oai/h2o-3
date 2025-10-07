@@ -10,38 +10,21 @@ We located these vulnerabilites from our security scans. The following list show
 
 Total: 8 (UNKNOWN: 0, LOW: 2, MEDIUM: 6, HIGH: 0, CRITICAL: 0)
 
-```
-***********************************************************************************************************************************************************************************************
-*                      Library                      * Vulnerability  * Severity *  Status  * Installed Version * Fixed Version *                            Title                             *
-***********************************************************************************************************************************************************************************************
-* commons-lang:commons-lang                         * CVE-2025-48924 * MEDIUM   * affected * 2.6               *               * commons-lang/commons-lang: org.apache.commons/commons-lang3: *
-*                                                   *                *          *          *                   *               * Uncontrolled Recursion vulnerability in Apache Commons Lang  *
-*                                                   *                *          *          *                   *               * https://avd.aquasec.com/nvd/cve-2025-48924                   *
-*                                                   *                *          *          *                   *****************                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*****************************************************                *          *          *                   *****************                                                              *
-* commons-lang:commons-lang                         *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *****************                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-***********************************************************************************************************************************************************************************************
-* org.apache.hadoop:hadoop-common                   * CVE-2024-23454 * LOW      * fixed    * 3.3.6             * 3.4.0         * Apache Hadoop: Temporary File Local Information Disclosure   *
-*                                                   *                *          *          *                   *               * https://avd.aquasec.com/nvd/cve-2024-23454                   *
-*****************************************************                *          *          *                   *               *                                                              *
-* org.apache.hadoop:hadoop-common                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*********************************************************************************          ****************************************************************************************************
-* org.eclipse.jetty:jetty-http                      * CVE-2024-6763  * MEDIUM   *          * 9.4.57.v20241219  * 12.0.12       * org.eclipse.jetty:jetty-http: jetty: Jetty URI parsing of    *
-*                                                   *                *          *          *                   *               * invalid authority                                            *
-*                                                   *                *          *          *                   *               * https://avd.aquasec.com/nvd/cve-2024-6763                    *
-*****************************************************                *          *          *                   *               *                                                              *
-* org.eclipse.jetty:jetty-http                      *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-*                                                   *                *          *          *                   *               *                                                              *
-***********************************************************************************************************************************************************************************************
-```
+| Library                                 | Vulnerability     | Severity | Status   | Installed Version | Fixed Version | Title                                                                 |
+|----------------------------------------|-----------------|---------|---------|-----------------|---------------|----------------------------------------------------------------------|
+| commons-lang:commons-lang               | CVE-2025-48924  | MEDIUM  | affected | 2.6             |               | commons-lang/commons-lang: org.apache.commons/commons-lang3:        |
+|                                        |                 |         |         |                 |               | Uncontrolled Recursion vulnerability in Apache Commons Lang         |
+|                                        |                 |         |         |                 |               | [Link](https://avd.aquasec.com/nvd/cve-2025-48924)                  |
+|                                        |                 |         |         |                 |               |                                                                      |
+|                                        |                 |         |         |                 |               |                                                                      |
+|                                        |                 |         |         |                 |               |                                                                      |
+| org.apache.hadoop:hadoop-common         | CVE-2024-23454  | LOW     | fixed    | 3.3.6           | 3.4.0         | Apache Hadoop: Temporary File Local Information Disclosure          |
+|                                        |                 |         |         |                 |               | [Link](https://avd.aquasec.com/nvd/cve-2024-23454)                  |
+|                                        |                 |         |         |                 |               |                                                                      |
+|                                        |                 |         |         |                 |               |                                                                      |
+| org.eclipse.jetty:jetty-http            | CVE-2024-6763   | MEDIUM  |         | 9.4.57.v20241219| 12.0.12       | org.eclipse.jetty:jetty-http: jetty: Jetty URI parsing of           |
+|                                        |                 |         |         |                 |               | invalid authority                                                    |
+|                                        |                 |         |         |                 |               | [Link](https://avd.aquasec.com/nvd/cve-2024-6763)                  |
+|                                        |                 |         |         |                 |               |                                                                      |
+|                                        |                 |         |         |                 |               |                                                                      |
+
