@@ -22,7 +22,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/inde
 - [[#16622]](https://github.com/h2oai/h2o-3/issues/16622) – Fixed MySQL JDBC Driver deserialization vulnerability (Key-Value Bypass Parameter Inspection). Addresses CVE-2025-6544 and CVE-2025-5662.
 - [[#16632]](https://github.com/h2oai/h2o-3/issues/16632) – Fixed CVE-2025-48734 in `commons-beanutils`.
 - [[#16649]](https://github.com/h2oai/h2o-3/issues/16649) – Fixed CVE-2024-48924 in `commons-lang3` and CVE-2025-53864 in `nimbus-jose-jwt`.
-- [[#16423]](https://github.com/h2oai/h2o-3/issues/16423) – Fixed protobuf vulnerabilities CVE-2024-7254, SNYK-JAVA-COMGOOGLEPROTOBUF-8055227, and SNYK-JAVA-COMGOOGLEPROTOBUF-8055228.
+- [[#16423]](https://github.com/h2oai/h2o-3/issues/16423) – Fixed `protobuf-java` vulnerabilities CVE-2024-7254, SNYK-JAVA-COMGOOGLEPROTOBUF-8055227, and SNYK-JAVA-COMGOOGLEPROTOBUF-8055228.
 
 ### 3.46.0.7 - 3/27/2025
 
