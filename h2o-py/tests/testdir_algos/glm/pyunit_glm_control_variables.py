@@ -30,7 +30,8 @@ def glm_control_variables():
 
     glm_model_cv = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"])
     glm_model_cv.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
-
+    
+    predictions_train_cv = glm_model_cv.predict(cars).as_data_frame()
     metrics_cv = glm_model_cv.training_model_metrics()
     #print(metrics_cv)
     print(glm_model_cv._model_json["output"]["scoring_history"])
@@ -38,7 +39,7 @@ def glm_control_variables():
     glm_model_cv_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], 
                                                    generate_scoring_history=True)
     glm_model_cv_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
-
+    predictions_train_cv2 = glm_model_cv_2.predict(cars).as_data_frame()
     metrics_cv_2 = glm_model_cv_2.training_model_metrics()
     #print(metrics_cv_2)
     print(glm_model_cv_2._model_json["output"]["scoring_history"])
@@ -50,11 +51,17 @@ def glm_control_variables():
         assert "Scoring history is not the same" in str(err)
     
     # check predictions are different
-    pyunit_utils.assert_not_equal(predictions_train.iloc[0, 1], predictions_train_2.iloc[0, 1])
-    pyunit_utils.assert_not_equal(predictions_train.iloc[10, 1], predictions_train_2.iloc[10, 1])
-    pyunit_utils.assert_not_equal(predictions_train.iloc[100, 1], predictions_train_2.iloc[100, 1])
+    for i in range(predictions_train.shape[0]):
+        pyunit_utils.assert_not_equal(predictions_train.iloc[i, 1], predictions_train_cv.iloc[i, 1], f"Predictions at position {i} should differ but they don't!")
     
-    
+    # check predictions are the same with and without generate_scoring history
+    for i in range(predictions_train.shape[0]):
+        pyunit_utils.assert_equals(predictions_train.iloc[i, 1], predictions_train_2.iloc[i, 1], f"Predictions at position {i} should not differ but they do!")
+        pyunit_utils.assert_equals(predictions_train_cv.iloc[i, 1], predictions_train_cv2.iloc[i, 1], f"Predictions at position {i} should not differ but they do!")
+
+
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_control_variables)
 else:
