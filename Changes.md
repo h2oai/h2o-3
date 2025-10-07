@@ -7,20 +7,21 @@
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8/index.html</a>
 
 #### Bug
-- [[#16592]](https://github.com/h2oai/h2o-3/issues/16592) - CoxPH backward compatibility issue.
-- [[#16590]](https://github.com/h2oai/h2o-3/issues/16590) - H2O-3 Mojo model scoring fails in python when offset column is used.
-- [[#16603]](https://github.com/h2oai/h2o-3/issues/16603) - Change the "lambda" hyperparameter in grid search for GLM to "lambda_".
-- [[#16652]](https://github.com/h2oai/h2o-3/issues/16652) - Fix Parquet export for empty values in UUID or Time columns.
-- [[#16638]](https://github.com/h2oai/h2o-3/issues/16638) - Change release target from sonatype to ossrh.
-- [[#16663]](https://github.com/h2oai/h2o-3/issues/16663) - Community documentation update.
+- [[#16592]](https://github.com/h2oai/h2o-3/issues/16592) – CoxPH MOJO model from version 3.32.x.x is now compatible with 3.46.0.8 and can be uploaded.
+- [[#16590]](https://github.com/h2oai/h2o-3/issues/16590) – Fixed XGBoost MOJO model scoring failure in Python when using an offset column.
+- [[#16603]](https://github.com/h2oai/h2o-3/issues/16603) – Allow the `lambda_` hyperparameter in GLM grid search, not only `lambda`.
+- [[#16652]](https://github.com/h2oai/h2o-3/issues/16652) – Fixed Parquet export for empty values in UUID and Time columns. Time columns can have empty values; UUIDs cannot by definition.
+- [[#16638]](https://github.com/h2oai/h2o-3/issues/16638) – Changed release target from Sonatype to OSSRH.
 
+#### Docs
+- [[#16663]](https://github.com/h2oai/h2o-3/issues/16663) – Minor wording and typo fixes in documentation (community PR).
 
 #### Security
-- [[#16599]](https://github.com/h2oai/h2o-3/issues/16599) - Do not run docker image as root by default.
-- [[#16622]](https://github.com/h2oai/h2o-3/issues/16622) - MySQL JDBC Driver Deserialization Vulnerability_Key-Value Bypass Parameter Inspection.
-- [[#16632]](https://github.com/h2oai/h2o-3/issues/16632) - Fix CVE-2025-48734 in commons-beanutils.
-- [[#16649]](https://github.com/h2oai/h2o-3/issues/16649) - Fix vulnerabilities from Trivy scan.
-- [[#16423]](https://github.com/h2oai/h2o-3/issues/16423) - Fix protobuf vulnerability CVE-2024-7254, SNYK-JAVA-COMGOOGLEPROTOBUF-8055227, SNYK-JAVA-COMGOOGLEPROTOBUF-8055228.
+- [[#16599]](https://github.com/h2oai/h2o-3/issues/16599) – Do not run the Docker image as root by default.
+- [[#16622]](https://github.com/h2oai/h2o-3/issues/16622) – Fixed MySQL JDBC Driver deserialization vulnerability (Key-Value Bypass Parameter Inspection). Addresses CVE-2025-6544 and CVE-2025-5662.
+- [[#16632]](https://github.com/h2oai/h2o-3/issues/16632) – Fixed CVE-2025-48734 in `commons-beanutils`.
+- [[#16649]](https://github.com/h2oai/h2o-3/issues/16649) – Fixed CVE-2024-48924 in `commons-lang3` and CVE-2025-53864 in `nimbus-jose-jwt`.
+- [[#16423]](https://github.com/h2oai/h2o-3/issues/16423) – Fixed protobuf vulnerabilities CVE-2024-7254, SNYK-JAVA-COMGOOGLEPROTOBUF-8055227, and SNYK-JAVA-COMGOOGLEPROTOBUF-8055228.
 
 ### 3.46.0.7 - 3/27/2025
 
