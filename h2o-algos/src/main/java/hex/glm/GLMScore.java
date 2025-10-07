@@ -21,7 +21,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   final Job _j;
   ModelMetrics.MetricBuilder _mb;
   final DataInfo _dinfo;
-  final DataInfo _dinfoContrValsEnabled;
   final boolean _sparse;
   final String[] _domain;
   final boolean _computeMetrics;
@@ -32,7 +31,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   final int _nclasses;
   private final double []_beta;
   private final double [][] _beta_multinomial;
-  private final double[] _beta_control_variables; 
   private final double _defaultThreshold;
 
   public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions, CFuncRef customMetric) {
@@ -50,8 +48,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
             _m._parms._family == GLMModel.GLMParameters.Family.ordinal){
       _beta = null;
       _beta_multinomial = m._output._global_beta_multinomial;
-      _beta_control_variables = null;
-      _dinfoContrValsEnabled = null;
+      _dinfo = dinfo;
     } else {
       double[] beta = m.beta();
       DataInfo copy = dinfo.clone();
@@ -70,8 +67,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         beta2[l] = beta[beta.length - 1];
         beta = beta2;
       }
-      _beta = beta;
-      _beta_multinomial = null;
 
       if (m._useControlVariables) {
         double[] betaContVar = m.beta().clone();
@@ -91,15 +86,17 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
           beta2[l] = betaContVar[betaContVar.length - 1];
           betaContVar = beta2;
         }
-        _beta_control_variables = betaContVar;
-        _dinfoContrValsEnabled = copy;
+        _beta = betaContVar;
+        _dinfo = copy;
       } else {
-        _beta_control_variables = null;
-        _dinfoContrValsEnabled = null;
+        _beta = beta;
+        _dinfo = dinfo;
       }
+      _beta_multinomial = null;
     }
-    _dinfo = dinfo;
+
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
+
     m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
     _defaultThreshold = m.defaultThreshold();
   }
@@ -135,12 +132,8 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         preds[c + 1] = eta[c] * sumExp;
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
-      double mu;
-      if (_beta_control_variables != null) {
-        mu = _m._parms.linkInv(r.innerProduct(_beta_control_variables) + o);
-      } else {
-        mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
-      }
+      double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
+      
       if (_m._parms._family == GLMModel.GLMParameters.Family.binomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction
@@ -207,16 +200,12 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
     }**/
     if (_sparse) {
-      for (DataInfo.Row r : _dinfoContrValsEnabled != null ? _dinfoContrValsEnabled.extractSparseRows(chks) : _dinfo.extractSparseRows(chks))
+      for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
         processRow(r,res,ps,preds,ncols);
     } else {
-      DataInfo.Row r = (_dinfoContrValsEnabled != null)? _dinfoContrValsEnabled.newDenseRow(): _dinfo.newDenseRow();
+      DataInfo.Row r = _dinfo.newDenseRow();
       for (int rid = 0; rid < chks[0]._len; ++rid) {
-        if(_dinfoContrValsEnabled != null) {
-          _dinfoContrValsEnabled.extractDenseRow(chks, rid, r);
-        } else {
-          _dinfo.extractDenseRow(chks, rid, r);
-        }
+        _dinfo.extractDenseRow(chks, rid, r);
         processRow(r,res,ps,preds,ncols);
       }
     }

@@ -2196,17 +2196,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double[] b = beta();
       double eta = b[b.length - 1] + o; // intercept + offset
       double[] bcv = b.clone();
-      if (this._useControlVariables) {
+      if (this._useControlVariables)
         bcv = _output.getControlValBeta(bcv); // make beta connected to control variables zero
-      }
       
       for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
         int l = _output._dinfo.getCategoricalId(i, data[i]);
-        if (bcv != null) {
           if (l >= 0) eta += bcv[l];
-        } else {
-          if (l >= 0) eta += b[l];
-        }      
       }
       int numStart = _output._dinfo.numStart();
       int ncats = _output._dinfo._cats;
@@ -2214,11 +2209,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double d = data[ncats + i];
         if (!_output._dinfo._skipMissing && Double.isNaN(d))
           d = _output._dinfo._numNAFill[i];
-        if(bcv != null){
-          eta += bcv[numStart + i] * d;
-        } else {
-          eta += b[numStart + i] * d;
-        }
+        eta += bcv[numStart + i] * d;
       }
       double mu = _parms.linkInv(eta);
       if (_parms._family == Family.binomial) { // threshold for prediction
