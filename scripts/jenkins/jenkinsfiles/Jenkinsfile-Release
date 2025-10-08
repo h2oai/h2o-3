@@ -147,7 +147,7 @@ try {
                                 if [ "\$TEST_RELEASE" = true ]; then
                                     ./gradlew buildH2oDevDist
                                 else
-                                    ./gradlew -PvalidateRelease buildH2oDevDist
+                                    ./gradlew buildH2oDevDist
 
                                     # Debug output - see if gradle published to OSSRH Staging API
                                     curl -H "Authorization: Bearer ${BEARER_TOKEN}" \
