@@ -159,11 +159,11 @@ try {
                                         -H 'accept: */*' \
                                         -H "Authorization: Bearer ${BEARER_TOKEN}" \
                                         -d '' \
-                                        --connect-timeout 60 \
-                                        --max-time 360 \
+                                        --connect-timeout 120 \
+                                        --max-time 1200 \
                                         --retry 5 \
                                         --retry-delay 5 \
-                                        --retry-max-time 600
+                                        --retry-max-time 2400
                                 fi
                             """
                             }
