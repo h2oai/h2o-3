@@ -198,7 +198,7 @@ public class GLMUtils {
       String colName = glmScControlVariablesHeaders[i];
       String colNameLower = colName.toLowerCase();
       if(colNameLower.equals("negative_log_likelihood") || colNameLower.equals("objective")){
-        colName = "Unrestrictive "+colName;
+        colName = "Unrestricted "+colName;
       }
       if (!finalColHeaders.contains(colName)) {
         finalColHeaders.add(colName);
