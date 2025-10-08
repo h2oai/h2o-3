@@ -2,6 +2,28 @@
 
 ## H2O
 
+### 3.46.0.8 - 10/8/2025
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8/index.html</a>
+
+#### Bug
+- [[#16592]](https://github.com/h2oai/h2o-3/issues/16592) – CoxPH MOJO model from version 3.32.x.x is now compatible with 3.46.0.8 and can be uploaded.
+- [[#16590]](https://github.com/h2oai/h2o-3/issues/16590) – Fixed XGBoost MOJO model scoring failure in Python when using an offset column.
+- [[#16603]](https://github.com/h2oai/h2o-3/issues/16603) – Allow the `lambda_` hyperparameter in GLM Grid search, not only `lambda`.
+- [[#16652]](https://github.com/h2oai/h2o-3/issues/16652) – Fixed Parquet export for empty values in UUID and Time columns. Time columns can have empty values; UUIDs cannot by definition.
+- [[#16638]](https://github.com/h2oai/h2o-3/issues/16638) – Changed release target from Sonatype to OSSRH.
+
+#### Docs
+- [[#16663]](https://github.com/h2oai/h2o-3/issues/16663) – Minor wording and typo fixes in documentation (community PR).
+- [[#16644]](https://github.com/h2oai/h2o-3/issues/16664) – Generate sitemap for H2O-3 documentation
+
+#### Security
+- [[#16599]](https://github.com/h2oai/h2o-3/issues/16599) – Do not run the Docker image as root by default.
+- [[#16622]](https://github.com/h2oai/h2o-3/issues/16622) – Fixed MySQL JDBC Driver deserialization vulnerability (Key-Value Bypass Parameter Inspection). Addresses CVE-2025-6544 and CVE-2025-5662.
+- [[#16632]](https://github.com/h2oai/h2o-3/issues/16632) – Fixed CVE-2025-48734 in `commons-beanutils`.
+- [[#16649]](https://github.com/h2oai/h2o-3/issues/16649) – Fixed CVE-2024-48924 in `commons-lang3` and CVE-2025-53864 in `nimbus-jose-jwt`.
+- [[#16423]](https://github.com/h2oai/h2o-3/issues/16423) – Fixed `protobuf-java` vulnerabilities CVE-2024-7254, SNYK-JAVA-COMGOOGLEPROTOBUF-8055227, and SNYK-JAVA-COMGOOGLEPROTOBUF-8055228.
+
 ### 3.46.0.7 - 3/27/2025
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html</a>
