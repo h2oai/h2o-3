@@ -741,6 +741,9 @@ private setReleaseJobProperties(final pipelineContext) {
             env.DO_RELEASE = true
         }
     }
+    if (params.UPLOAD_NEXUS) {
+        env.DO_RELEASE = true
+    }
     sh "printenv | sort"
 }
 
