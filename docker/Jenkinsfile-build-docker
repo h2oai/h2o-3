@@ -1,7 +1,7 @@
 @Library('test-shared-library@dai-updated') _
 import ai.h2o.ci.buildsummary.StagesSummary
 
-DEFAULT_LABEL = 'linux'
+DEFAULT_LABEL = 'h2o3_linux'
 
 H2O_ECR='353750902984.dkr.ecr.us-east-1.amazonaws.com'
 
@@ -126,7 +126,7 @@ private Closure makeStage(final pipelineContext, String target) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
                     deleteDir()
-                    
+
                     // pullPreviousVersionIfRequired(pipelineContext, target)
                     // println "make ${target}"
                     dockerLoginH2OECR()
@@ -144,8 +144,8 @@ private Closure makeStage(final pipelineContext, String target) {
                         """
                     } else {
                         println "${H2O_ECR}/h2o-3/${target} already exists"
-                    }  
-                    
+                    }
+
                 }
             }
         }
@@ -169,7 +169,7 @@ def imageExistsH2OECR(String repository, String tag) {
         returnStdout: true
     ).trim()
     }
-    
+
 
     return result == tag
 }
