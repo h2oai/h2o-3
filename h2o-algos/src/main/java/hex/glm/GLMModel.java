@@ -2012,19 +2012,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
       
-      if(contrVal) {
-        String[] controlValsNames = getControlValsNames();
-        for (int index = 0; index < len; index++) {
-          magnitudesSort[index] = (float) magnitudes[indices[index]];
-          String name = names[indices[index]];
-          String categoricalName = name.contains(".") ? name.split("\\.")[0] : null;
-          if (controlValsNames != null) {
-            if (ArrayUtils.find(controlValsNames, name) > -1 || (categoricalName != null && ArrayUtils.find(controlValsNames, categoricalName) > -1)) {
-              name = name + _control_val_suffix;
-            }
+      String[] controlValsNames = getControlValsNames();
+      for (int index = 0; index < len; index++) {
+        magnitudesSort[index] = (float) magnitudes[indices[index]];
+        String name = names[indices[index]];
+        String categoricalName = name.contains(".") ? name.split("\\.")[0] : null;
+        if (contrVal &&controlValsNames != null) {
+          if (ArrayUtils.find(controlValsNames, name) > -1 || (categoricalName != null && ArrayUtils.find(controlValsNames, categoricalName) > -1)) {
+            name = name + _control_val_suffix;
           }
-          namesSort[index] = name;
         }
+        namesSort[index] = name;
       }
       return new VarImp(magnitudesSort, namesSort);
     }
