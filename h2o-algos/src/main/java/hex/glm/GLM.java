@@ -3393,6 +3393,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         validScore.fillFrom(_model._output._validation_metrics);
       }
       _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);  // add to scoringInfo for early stopping
+
+      if (_parms._generate_scoring_history) { // update scoring history with deviance train and valid if available
+        if (!(mtrain == null) && !(_valid == null)) {
+            _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
+                    _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
+                    mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
+        } else if (!(mtrain == null)) { // only doing training deviance
+            _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
+                    _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),
+                    _state.alpha());
+        }
+        _job.update(_workPerIteration, _state.toString());
+      }
       _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, null, null) : null;
       _model.update(_job._key);
     }
