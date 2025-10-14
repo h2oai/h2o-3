@@ -1971,13 +1971,13 @@ class H2OFrame(Keyed, H2ODisplay):
         if can_use_pandas() and use_pandas:
             import pandas
             if use_multi_thread:
-                with local_context(polars_enabled=True): # turn on multi-thread toolboxes   
-                    if can_use_polars() and can_use_pyarrow(): # can use multi-thread
+                with local_context(polars_enabled=True):  # turn on multi-thread toolboxes
+                    if can_use_polars() and can_use_pyarrow():  # can use multi-thread
                         exportFile = tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv", delete=False)
                         try:
                             exportFile.close()  # needed for Windows
-                            h2o.export_file(self, exportFile.name, force=True)
-                            return self.convert_with_polars(exportFile.name)
+                            h2o.export_file(self, os.path.realpath(exportFile.name), force=True)
+                            return self.convert_with_polars(os.path.realpath(exportFile.name))
                         finally:
                             os.unlink(exportFile.name)
             warnings.warn("Converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"

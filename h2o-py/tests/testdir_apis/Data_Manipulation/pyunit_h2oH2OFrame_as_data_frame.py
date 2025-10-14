@@ -27,5 +27,10 @@ def h2o_H2OFrame_as_data_frame():
     assert_is_type(small_bike_pandas, DataFrame)
     assert small_bike_pandas.shape == (smallbike.nrow, smallbike.ncol)
 
+    ##multithread = True
+    small_bike_multithread = smallbike.as_data_frame(use_multi_thread=True, header=True)
+    assert_is_type(small_bike_multithread, DataFrame)
+    assert small_bike_multithread.shape == (smallbike.nrow, smallbike.ncol)
+
 
 pyunit_utils.standalone_test(h2o_H2OFrame_as_data_frame)
