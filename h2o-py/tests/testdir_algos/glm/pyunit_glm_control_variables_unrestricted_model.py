@@ -1,4 +1,7 @@
 import sys
+
+from h2o.exceptions import H2OResponseError
+
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
@@ -28,7 +31,7 @@ def glm_control_variables_unrestricted_model():
     print("++++++++++++++++ Model with control variables and score each iteration true")
     print(glm_model_2._model_json["output"]["scoring_history"])
 
-    glm_model_unrestricted = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2, "unrestricted")
+    glm_model_unrestricted = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2)
     metrics_unrestricted = glm_model_unrestricted.training_model_metrics()
     print(metrics_unrestricted)
     print("++++++++++++++++ Unrestricted model with control variables")
@@ -86,6 +89,20 @@ def glm_control_variables_unrestricted_model():
     # check scoring history are the same
     pyunit_utils.assert_equal_scoring_history(glm_model, glm_model_unrestricted, ["objective", "negative_log_likelihood"])
 
+    # check unrestricted model key     
+    assert glm_model_2._model_json["model_id"]['name']+"_unrestricted_model" in glm_model_unrestricted._model_json["model_id"]['name']
+    
+    # check model already exists
+    try:
+        H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2)
+    except H2OResponseError as e:
+        assert "already exists" in str(e)
+        
+    # check creation a new model if key differ    
+    name = "unrestricted"
+    glm_model_unrestricted_2 = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2, name)
+    assert glm_model_unrestricted_2._model_json["model_id"]['name'] == name
+    
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_control_variables_unrestricted_model)

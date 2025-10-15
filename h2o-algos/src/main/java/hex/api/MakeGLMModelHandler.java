@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
@@ -61,14 +62,17 @@ public class MakeGLMModelHandler extends Handler {
     if(model._parms._control_variables == null){
       throw new IllegalArgumentException("Source model is not trained with control variables.");
     }
-    Key key = args.dest != null? Key.make(args.dest) : Key.make();
+    Key generatedKey = Key.make(model._key.toString()+"_unrestricted_model");
+    Key key = args.dest != null ? Key.make(args.dest) : generatedKey;
     GLMModel modelContrVars = DKV.getGet(key);
     if(modelContrVars != null) {
       throw new IllegalArgumentException("Model with "+key+" already exists.");
     }
-    GLMModel m = new GLMModel(key, model._parms,null, model._ymu,
+    GLMModel.GLMParameters parms = (GLMModel.GLMParameters) model._parms.clone();
+    GLMModel.GLMParameters inputParms = (GLMModel.GLMParameters) model._input_parms.clone();
+    GLMModel m = new GLMModel(key, parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
-    m.setInputParms(model._input_parms);
+    m.setInputParms(inputParms);
     m._input_parms._control_variables = null;
     m._parms._control_variables = null;
     DataInfo dinfo = model.dinfo();
@@ -84,6 +88,7 @@ public class MakeGLMModelHandler extends Handler {
     m._output._model_summary = model._output._model_summary;
     m.resetThreshold(model.defaultThreshold());
     m._output._variable_importances = model._output._variable_importances_control_vals_enabled;
+    m._key = key;
     
     DKV.put(key, m);
     GLMModelV3 res = new GLMModelV3();
