@@ -76,11 +76,11 @@ public class MakeGLMModelHandler extends Handler {
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
             model._output._ordinal, null);
-    ModelMetrics mt = model._output._training_metrics_control_vals_enabled;
-    ModelMetrics mv = model._output._validation_metrics_control_vals_enabled;
+    ModelMetrics mt = model._output._training_metrics_unrestricted_model;
+    ModelMetrics mv = model._output._validation_metrics_unrestricted_model;
     m._output._training_metrics = mt;
     m._output._validation_metrics = mv;
-    m._output._scoring_history = model._output._scoring_history_control_vals_enabled;
+    m._output._scoring_history = model._output._scoring_history_unrestricted_model;
     m._output._model_summary = model._output._model_summary;
     m.resetThreshold(model.defaultThreshold());
     m._output._variable_importances = model._output._variable_importances_control_vals_enabled;

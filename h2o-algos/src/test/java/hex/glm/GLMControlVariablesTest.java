@@ -91,9 +91,9 @@ public class GLMControlVariablesTest extends TestUtil {
             assertNotEquals(tMse, tMse2, delta);
 
             // check result training metrics unrestricted model and glm model with control variables disabled are the same
-            assertEquals(glm2._output._training_metrics.auc_obj()._auc, glm._output._training_metrics_control_vals_enabled.auc_obj()._auc, delta);
-            assertEquals(glm2._output._training_metrics.mse(), glm._output._training_metrics_control_vals_enabled.mse(), delta);
-            assertEquals(glm2._output._training_metrics.rmse(), glm._output._training_metrics_control_vals_enabled.rmse(), delta);
+            assertEquals(glm2._output._training_metrics.auc_obj()._auc, glm._output._training_metrics_unrestricted_model.auc_obj()._auc, delta);
+            assertEquals(glm2._output._training_metrics.mse(), glm._output._training_metrics_unrestricted_model.mse(), delta);
+            assertEquals(glm2._output._training_metrics.rmse(), glm._output._training_metrics_unrestricted_model.rmse(), delta);
             
             // check preds differ
             int differ = 0;
@@ -113,10 +113,10 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable glm2SH = glm2._output._scoring_history;
             System.out.println(glm2SH);
             System.out.println("Scoring history control val enabled unrestricted model");
-            TwoDimTable glmSHCV = glm._output._scoring_history_control_vals_enabled;
+            TwoDimTable glmSHCV = glm._output._scoring_history_unrestricted_model;
             System.out.println(glmSHCV);
             System.out.println("Scoring history control val disabled unrestricted model");
-            TwoDimTable glm2SHCV = glm2._output._scoring_history_control_vals_enabled;
+            TwoDimTable glm2SHCV = glm2._output._scoring_history_unrestricted_model;
             System.out.println(glm2SHCV);
             
             

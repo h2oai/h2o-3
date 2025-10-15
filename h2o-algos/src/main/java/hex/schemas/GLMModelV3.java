@@ -78,7 +78,10 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     
     @API(help="True if all constraints conditions are satisfied.  Otherwise, false.")
     boolean all_constraints_satisfied;
-
+    
+    @API(help="Scoring history of the unrestricted model (used when control variables are provided)", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public TwoDimTableV3 scoring_history_unrestricted_model;
+    
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet

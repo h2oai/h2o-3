@@ -139,13 +139,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
-    if (_output._training_metrics_control_vals_enabled != null) {
+    if (_output._training_metrics_unrestricted_model != null) {
       currInfo.scored_train = new ScoreKeeper(Double.NaN);
-      currInfo.scored_train.fillFrom(_output._training_metrics_control_vals_enabled);
+      currInfo.scored_train.fillFrom(_output._training_metrics_unrestricted_model);
     }
-    if (_output._validation_metrics_control_vals_enabled != null) {
+    if (_output._validation_metrics_unrestricted_model != null) {
       currInfo.scored_valid = new ScoreKeeper(Double.NaN);
-      currInfo.scored_valid.fillFrom(_output._validation_metrics_control_vals_enabled);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_unrestricted_model);
     }
     _controlValScoringInfo = ScoringInfo.prependScoringInfo(currInfo, _controlValScoringInfo);
   }
@@ -1598,9 +1598,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     private String[] _control_values_names;
     public String _control_val_suffix = "_control";
 
-    public TwoDimTable _scoring_history_control_vals_enabled;
-    public ModelMetrics _training_metrics_control_vals_enabled;
-    public ModelMetrics _validation_metrics_control_vals_enabled;
+    // Unrestricted model is produced when control variables are used.
+    public TwoDimTable _scoring_history_unrestricted_model;
+    public ModelMetrics _training_metrics_unrestricted_model;
+    public ModelMetrics _validation_metrics_unrestricted_model;
     
     public void mapControlVariables() {
       if(_control_values_names == null || _names == null) {
@@ -1978,10 +1979,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if (nclasses() != 2 || _training_metrics == null || _training_metrics instanceof ModelMetricsBinomialUplift)
         return 0.5;
       if(_defaultThreshold == -1) {
-        if (_validation_metrics_control_vals_enabled != null && ((ModelMetricsBinomial) _validation_metrics_control_vals_enabled)._auc != null) 
-          return ((ModelMetricsBinomial) _validation_metrics_control_vals_enabled)._auc.defaultThreshold();
-        if (_training_metrics_control_vals_enabled != null && ((ModelMetricsBinomial) _training_metrics_control_vals_enabled)._auc != null)
-          return ((ModelMetricsBinomial) _training_metrics_control_vals_enabled)._auc.defaultThreshold();
+        if (_validation_metrics_unrestricted_model != null && ((ModelMetricsBinomial) _validation_metrics_unrestricted_model)._auc != null) 
+          return ((ModelMetricsBinomial) _validation_metrics_unrestricted_model)._auc.defaultThreshold();
+        if (_training_metrics_unrestricted_model != null && ((ModelMetricsBinomial) _training_metrics_unrestricted_model)._auc != null)
+          return ((ModelMetricsBinomial) _training_metrics_unrestricted_model)._auc.defaultThreshold();
         if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
           return ((ModelMetricsBinomial) _validation_metrics)._auc.defaultThreshold();
         if (((ModelMetricsBinomial) _training_metrics)._auc != null)

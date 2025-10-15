@@ -3164,7 +3164,7 @@ h2o.learning_curve_plot <- function(model,
                          "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae")
     allowed_metrics <- Filter(
       function(m)
-        paste0("training_", m) %in% names(sh) || paste0(m, "_train") %in% names(sh),
+        paste0("training_", m) %in% names(sh) || paste0(m, "_train") %in% names(sh) || m %in% names(sh),
       allowed_metrics)
   } else if (model@algorithm == "glrm") {
     allowed_metrics <- c("objective")
@@ -3246,6 +3246,30 @@ h2o.learning_curve_plot <- function(model,
         metric = sh[[validation_metric]]
       )
     )
+  }
+  if (!is.null(model@model$scoring_history_unrestricted_model)) {
+      sh_control <- model@model$scoring_history_unrestricted_model
+      scoring_history <- rbind(
+          scoring_history,
+          data.frame(
+              model = "Main Model",
+              type = "Training (Unrestricted model)",
+              x = sh_control[[timestep]],
+              metric = sh_control[[training_metric]],
+              stringsAsFactors = FALSE
+          )
+      )
+      if (validation_metric %in% names(sh)) {
+          scoring_history <- rbind(
+              scoring_history,
+              data.frame(
+                  model = "Main Model",
+                  type = "Validation (Unrestricted model)",
+                  x = sh_control[[timestep]],
+                  metric = sh_control[[validation_metric]]
+              )
+          )
+      }
   }
 
   if (!is.null(model@model$cv_scoring_history)) {
@@ -3330,10 +3354,13 @@ h2o.learning_curve_plot <- function(model,
   }
 
   colors <- c("Training" = "#785ff0", "Training (CV Models)" = "#648fff",
+              "Training (Unrestricted model)" = "#a5d6ff", "Validation (Unrestricted model)" = "#ff8c00",
               "Validation"  = "#ff6000", "Cross-validation" = "#ffb000")
   shape <- c("Training" = 16, "Training (CV Models)" = NA,
+             "Training (Unrestricted model)" = 16, "Validation (Unrestricted model)" = 16,
              "Validation" = 16, "Cross-validation" = NA)
   fill <- c("Training" = NA, "Training (CV Models)" = "#648fff",
+            "Training (Unrestricted model)" = NA, "Validation (Unrestricted model)" = NA,
             "Validation" = NA, "Cross-validation" = "#ffb000")
 
   scoring_history <- scoring_history[!(is.na(scoring_history$x) |

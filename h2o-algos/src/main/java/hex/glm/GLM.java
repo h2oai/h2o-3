@@ -1415,7 +1415,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _scoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
       }
       if (_model._parms._control_variables != null) {
-        TwoDimTable scoringHistoryControlVal = _model._output._scoring_history_control_vals_enabled;
+        TwoDimTable scoringHistoryControlVal = _model._output._scoring_history_unrestricted_model;
         _scoringHistoryControlVariableEnabled.restoreFromCheckpoint(scoringHistoryControlVal, colHeadersIndex);
       }
   }
@@ -3415,7 +3415,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long t2 = System.currentTimeMillis();
       if (!(mtrain == null)) {
         if (_model._parms._control_variables != null){
-          _model._output._training_metrics_control_vals_enabled = mtrain;
+          _model._output._training_metrics_unrestricted_model = mtrain;
           _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time
         } else {
           _model._output._training_metrics = mtrain;
@@ -3432,7 +3432,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
         if(_model._parms._control_variables != null){
-          _model._output._validation_metrics_control_vals_enabled = ModelMetrics.getFromDKV(_model, valid);
+          _model._output._validation_metrics_unrestricted_model = ModelMetrics.getFromDKV(_model, valid);
         } else {
           _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         }
@@ -3464,8 +3464,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     _state.lambda(), trainDev, validDev, xval_deviance, xval_se, _state.alpha());
           } else if(_model._parms._control_variables != null){
             _scoringHistoryControlVariableEnabled.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
-                    _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics_control_vals_enabled).residual_deviance(),
-                    mtrain._nobs, _model._output._validation_metrics_control_vals_enabled._nobs, _state.lambda(), _state.alpha());
+                    _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics_unrestricted_model).residual_deviance(),
+                    mtrain._nobs, _model._output._validation_metrics_unrestricted_model._nobs, _state.lambda(), _state.alpha());
           } else {
             _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
@@ -3491,7 +3491,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
       } else if(_model._parms._control_variables != null){
-        _model._output._scoring_history_control_vals_enabled = _scoringHistoryControlVariableEnabled.to2dTable(_parms, _xval_deviances_generate_SH,
+        _model._output._scoring_history_unrestricted_model = _scoringHistoryControlVariableEnabled.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
       } else {
         _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
@@ -3824,9 +3824,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           scoringHistoryEarlyStopControlVal.setTableHeader("Scoring history with control variables enabled");
           ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ? 
                   ScoreKeeper.StoppingMetric.logloss : ScoreKeeper.StoppingMetric.deviance : _model._parms._stopping_metric;
-          _model._output._scoring_history = combineScoringHistoryControlVariables(_model._output._scoring_history, _model._output._scoring_history_control_vals_enabled,
+          _model._output._scoring_history = combineScoringHistoryControlVariables(_model._output._scoring_history, _model._output._scoring_history_unrestricted_model,
                   scoringHistoryEarlyStop, scoringHistoryEarlyStopControlVal, sm, null != _parms._valid);
-          _model._output._scoring_history_control_vals_enabled = combineScoringHistory(_model._output._scoring_history_control_vals_enabled, scoringHistoryEarlyStopControlVal);
+          _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopControlVal);
           // set control variables flag to true for scoring after training
           _model._useControlVariables = true;
         } else {

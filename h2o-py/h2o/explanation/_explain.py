@@ -2478,7 +2478,7 @@ def learning_curve_plot(
     :return: object that contains the resulting figure (can be accessed using ``result.figure()``).
 
     :examples:
-    
+
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -2504,35 +2504,53 @@ def learning_curve_plot(
     if model.algo == "stackedensemble":
         model = model.metalearner()
 
-    if model.algo not in ("stackedensemble", "glm", "gam", "glrm", "deeplearning",
-                          "drf", "gbm", "xgboost", "coxph", "isolationforest"):
-        raise H2OValueError("Algorithm {} doesn't support learning curve plot!".format(model.algo))
+    if model.algo not in (
+        "stackedensemble",
+        "glm",
+        "gam",
+        "glrm",
+        "deeplearning",
+        "drf",
+        "gbm",
+        "xgboost",
+        "coxph",
+        "isolationforest",
+    ):
+        raise H2OValueError(
+            "Algorithm {} doesn't support learning curve plot!".format(model.algo)
+        )
 
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
 
-    metric_mapping = {'anomaly_score': 'mean_anomaly_score',
-                      'custom': 'custom',
-                      'custom_increasing': 'custom',
-                      'deviance': 'deviance',
-                      'logloss': 'logloss',
-                      'rmse': 'rmse',
-                      'mae': 'mae',
-                      'auc': 'auc',
-                      'aucpr': 'pr_auc',
-                      'lift_top_group': 'lift',
-                      'misclassification': 'classification_error',
-                      'objective': 'objective',
-                      'convergence': 'convergence',
-                      'negative_log_likelihood': 'negative_log_likelihood',
-                      'sumetaieta02': 'sumetaieta02',
-                      'loglik': 'loglik'}
+    metric_mapping = {
+        "anomaly_score": "mean_anomaly_score",
+        "custom": "custom",
+        "custom_increasing": "custom",
+        "deviance": "deviance",
+        "logloss": "logloss",
+        "rmse": "rmse",
+        "mae": "mae",
+        "auc": "auc",
+        "aucpr": "pr_auc",
+        "lift_top_group": "lift",
+        "misclassification": "classification_error",
+        "objective": "objective",
+        "convergence": "convergence",
+        "negative_log_likelihood": "negative_log_likelihood",
+        "sumetaieta02": "sumetaieta02",
+        "loglik": "loglik",
+    }
     inverse_metric_mappping = {v: k for k, v in metric_mapping.items()}
     inverse_metric_mappping["custom"] = "custom, custom_increasing"
 
     # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
-    scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
+    scoring_history = model._model_json["output"][
+        "scoring_history"
+    ] or model._model_json["output"].get("glm_scoring_history")
     if scoring_history is None:
-        raise RuntimeError("Could not retrieve scoring history for {}".format(model.algo))
+        raise RuntimeError(
+            "Could not retrieve scoring history for {}".format(model.algo)
+        )
     scoring_history = _preprocess_scoring_history(model, scoring_history)
 
     allowed_metrics = []
@@ -2540,25 +2558,54 @@ def learning_curve_plot(
     if model.algo in ("glm", "gam"):
         if model.actual_params["lambda_search"]:
             import h2o.two_dim_table
+
             allowed_timesteps = ["iteration"]
         else:
             allowed_timesteps = ["iterations", "duration"]
 
-        allowed_metrics = ["deviance", "objective", "negative_log_likelihood", "convergence", "sumetaieta02",
-                           "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae"]
-        allowed_metrics = [m for m in allowed_metrics
-                           if m in scoring_history.col_header or
-                           "training_{}".format(m) in scoring_history.col_header or
-                           "{}_train".format(m) in scoring_history.col_header]
+        allowed_metrics = [
+            "deviance",
+            "objective",
+            "negative_log_likelihood",
+            "convergence",
+            "sumetaieta02",
+            "logloss",
+            "auc",
+            "classification_error",
+            "rmse",
+            "lift",
+            "pr_auc",
+            "mae",
+        ]
+        allowed_metrics = [
+            m
+            for m in allowed_metrics
+            if m in scoring_history.col_header
+            or "training_{}".format(m) in scoring_history.col_header
+            or "{}_train".format(m) in scoring_history.col_header
+        ]
     elif model.algo == "glrm":
         allowed_metrics = ["objective"]
         allowed_timesteps = ["iterations"]
     elif model.algo in ("deeplearning", "drf", "gbm", "xgboost"):
         model_category = model._model_json["output"]["model_category"]
         if "Binomial" == model_category:
-            allowed_metrics = ["logloss", "auc", "classification_error", "rmse", "lift", "pr_auc"]
+            allowed_metrics = [
+                "logloss",
+                "auc",
+                "classification_error",
+                "rmse",
+                "lift",
+                "pr_auc",
+            ]
         elif model_category in ["Multinomial", "Ordinal"]:
-            allowed_metrics = ["logloss", "classification_error", "rmse", "pr_auc", "auc"]
+            allowed_metrics = [
+                "logloss",
+                "classification_error",
+                "rmse",
+                "pr_auc",
+                "auc",
+            ]
         elif "Regression" == model_category:
             allowed_metrics = ["rmse", "deviance", "mae"]
         if model.algo in ["drf", "gbm"]:
@@ -2581,16 +2628,20 @@ def learning_curve_plot(
         metric = metric_mapping.get(metric.lower())
 
     if metric not in allowed_metrics:
-        raise H2OValueError("for {}, metric must be one of: {}".format(
-            model.algo.upper(),
-            ", ".join(inverse_metric_mappping[m.lower()] for m in allowed_metrics)
-        ))
+        raise H2OValueError(
+            "for {}, metric must be one of: {}".format(
+                model.algo.upper(),
+                ", ".join(inverse_metric_mappping[m.lower()] for m in allowed_metrics),
+            )
+        )
 
     timestep = allowed_timesteps[0]
 
-    if ("deviance" == metric
-            and model.algo in ["glm", "gam"]
-            and "deviance_train" in scoring_history.col_header):
+    if (
+        "deviance" == metric
+        and model.algo in ["glm", "gam"]
+        and "deviance_train" in scoring_history.col_header
+    ):
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
     elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
@@ -2613,12 +2664,25 @@ def learning_curve_plot(
 
     if colormap is None:
         col_train, col_valid = "#785ff0", "#ff6000"
+        col_unrestricted_train, col_unrestricted_valid = (
+            "#a5d6ff",
+            "#ff8c00",
+        )
         col_cv_train, col_cv_valid = "#648fff", "#ffb000"
     else:
-        col_train, col_valid, col_cv_train, col_cv_valid = plt.get_cmap(colormap, 4)(list(range(4)))
+        (
+            col_train,
+            col_valid,
+            col_cv_train,
+            col_cv_valid,
+            col_unrestricted_train,
+            col_unrestricted_valid,
+        ) = plt.get_cmap(colormap, 6)(list(range(6)))
 
     # Get scoring history with only filled in entries
-    scoring_history = _preprocess_scoring_history(model, scoring_history, training_metric)
+    scoring_history = _preprocess_scoring_history(
+        model, scoring_history, training_metric
+    )
 
     plt.figure(figsize=figsize)
     plt.grid(True)
@@ -2634,74 +2698,130 @@ def learning_curve_plot(
                 if validation_metric in cvsh.col_header:
                     for i in range(len(cvsh[timestep])):
                         cvsh_valid[cvsh[timestep][i]].append(cvsh[validation_metric][i])
-            mean_train = np.array(sorted(
-                [(k, np.mean(v)) for k, v in cvsh_train.items()],
-                key=lambda k: k[0]
-            ))
-            sd_train = np.array(sorted(
-                [(k, np.std(v)) for k, v in cvsh_train.items()],
-                key=lambda k: k[0]
-            ))[:, 1]
+            mean_train = np.array(
+                sorted(
+                    [(k, np.mean(v)) for k, v in cvsh_train.items()], key=lambda k: k[0]
+                )
+            )
+            sd_train = np.array(
+                sorted(
+                    [(k, np.std(v)) for k, v in cvsh_train.items()], key=lambda k: k[0]
+                )
+            )[:, 1]
 
-            len_train = np.array(sorted(
-                [(k, len(v)) for k, v in cvsh_train.items()],
-                key=lambda k: k[0]
-            ))[:, 1]
-            if len(len_train) > 1 and (cv_ribbon or len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5):
-                plt.plot(mean_train[:, 0], mean_train[:, 1], c=col_cv_train,
-                         label="Training (CV Models)")
-                plt.fill_between(mean_train[:, 0],
-                                 mean_train[:, 1] - sd_train,
-                                 mean_train[:, 1] + sd_train,
-                                 color=col_cv_train, alpha=0.25)
+            len_train = np.array(
+                sorted([(k, len(v)) for k, v in cvsh_train.items()], key=lambda k: k[0])
+            )[:, 1]
+            if len(len_train) > 1 and (
+                cv_ribbon
+                or len_train.mean() > 2
+                and np.mean(len_train[:-1] == len_train[1:]) >= 0.5
+            ):
+                plt.plot(
+                    mean_train[:, 0],
+                    mean_train[:, 1],
+                    c=col_cv_train,
+                    label="Training (CV Models)",
+                )
+                plt.fill_between(
+                    mean_train[:, 0],
+                    mean_train[:, 1] - sd_train,
+                    mean_train[:, 1] + sd_train,
+                    color=col_cv_train,
+                    alpha=0.25,
+                )
                 if len(cvsh_valid) > 0:
-                    mean_valid = np.array(sorted(
-                        [(k, np.mean(v)) for k, v in cvsh_valid.items()],
-                        key=lambda k: k[0]
-                    ))
-                    sd_valid = np.array(sorted(
-                        [(k, np.std(v)) for k, v in cvsh_valid.items()],
-                        key=lambda k: k[0]
-                    ))[:, 1]
-                    plt.plot(mean_valid[:, 0], mean_valid[:, 1], c=col_cv_valid,
-                             label="Cross-validation")
-                    plt.fill_between(mean_valid[:, 0],
-                                     mean_valid[:, 1] - sd_valid,
-                                     mean_valid[:, 1] + sd_valid,
-                                     color=col_cv_valid, alpha=0.25)
+                    mean_valid = np.array(
+                        sorted(
+                            [(k, np.mean(v)) for k, v in cvsh_valid.items()],
+                            key=lambda k: k[0],
+                        )
+                    )
+                    sd_valid = np.array(
+                        sorted(
+                            [(k, np.std(v)) for k, v in cvsh_valid.items()],
+                            key=lambda k: k[0],
+                        )
+                    )[:, 1]
+                    plt.plot(
+                        mean_valid[:, 0],
+                        mean_valid[:, 1],
+                        c=col_cv_valid,
+                        label="Cross-validation",
+                    )
+                    plt.fill_between(
+                        mean_valid[:, 0],
+                        mean_valid[:, 1] - sd_valid,
+                        mean_valid[:, 1] + sd_valid,
+                        color=col_cv_valid,
+                        alpha=0.25,
+                    )
             else:
                 cv_lines = cv_lines is None or cv_lines
 
         if cv_lines:
             for cvsh in model._model_json["output"]["cv_scoring_history"]:
                 cvsh = _preprocess_scoring_history(model, cvsh, training_metric)
-                plt.plot(cvsh[timestep],
-                         cvsh[training_metric],
-                         label="Training (CV Models)",
-                         c=col_cv_train,
-                         linestyle="dotted")
+                plt.plot(
+                    cvsh[timestep],
+                    cvsh[training_metric],
+                    label="Training (CV Models)",
+                    c=col_cv_train,
+                    linestyle="dotted",
+                )
                 if validation_metric in cvsh.col_header:
-                    plt.plot(cvsh[timestep],
-                             cvsh[validation_metric],
-                             label="Cross-validation",
-                             c=col_cv_valid,
-                             linestyle="dotted"
-                             )
+                    plt.plot(
+                        cvsh[timestep],
+                        cvsh[validation_metric],
+                        label="Cross-validation",
+                        c=col_cv_valid,
+                        linestyle="dotted",
+                    )
 
-    plt.plot(scoring_history[timestep],
-             scoring_history[training_metric],
-             "o-",
-             label="Training",
-             c=col_train)
+    plt.plot(
+        scoring_history[timestep],
+        scoring_history[training_metric],
+        "o-",
+        label="Training",
+        c=col_train,
+    )
     if validation_metric in scoring_history.col_header:
-        plt.plot(scoring_history[timestep],
-                 scoring_history[validation_metric],
-                 "o-",
-                 label="Validation",
-                 c=col_valid)
+        plt.plot(
+            scoring_history[timestep],
+            scoring_history[validation_metric],
+            "o-",
+            label="Validation",
+            c=col_valid,
+        )
+
+    if model._model_json["output"].get("scoring_history_unrestricted_model"):
+        sh_control = _preprocess_scoring_history(
+            model,
+            model._model_json["output"].get("scoring_history_unrestricted_model"),
+            training_metric,
+        )
+        plt.plot(
+            sh_control[timestep],
+            sh_control[training_metric],
+            "o-",
+            label="Training (Unrestricted model)",
+            c=col_unrestricted_train,
+        )
+        if validation_metric in sh_control.col_header:
+            plt.plot(
+                sh_control[timestep],
+                sh_control[validation_metric],
+                "o-",
+                label="Validation (Unrestricted model)",
+                c=col_unrestricted_valid,
+            )
 
     if selected_timestep_value is not None:
-        plt.axvline(x=selected_timestep_value, label="Selected\n{}".format(timestep), c="#2FBB24")
+        plt.axvline(
+            x=selected_timestep_value,
+            label="Selected\n{}".format(timestep),
+            c="#2FBB24",
+        )
 
     plt.title("Learning Curve\nfor {}".format(_shorten_model_ids([model.model_id])[0]))
     plt.xlabel(timestep)
@@ -2709,10 +2829,21 @@ def learning_curve_plot(
     handles, labels = plt.gca().get_legend_handles_labels()
     labels_and_handles = dict(zip(labels, handles))
     labels_and_handles_ordered = OrderedDict()
-    for lbl in ["Training", "Training (CV Models)", "Validation", "Cross-validation", "Selected\n{}".format(timestep)]:
+    for lbl in [
+        "Training",
+        "Training (CV Models)",
+        "Training (Unrestricted model)",
+        "Validation",
+        "Validation (Unrestricted model)",
+        "Cross-validation",
+        "Selected\n{}".format(timestep),
+    ]:
         if lbl in labels_and_handles:
             labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
-    plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
+    plt.legend(
+        list(labels_and_handles_ordered.values()),
+        list(labels_and_handles_ordered.keys()),
+    )
 
     if save_plot_path is not None:
         plt.savefig(fname=save_plot_path)
