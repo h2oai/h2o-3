@@ -13,7 +13,6 @@ import water.util.TwoDimTable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -220,11 +219,11 @@ public class GLMUtils {
       colCounter++;
     }
 
-    finalColHeaders.add("Unrestricted training stopping metric "+stoppingMetric.name());
+    finalColHeaders.add("Unrestricted training "+stoppingMetric.name());
     finalColTypes.add("double");
     finalColFormats.add("%.5f");
     if (hasValidationMetrics) {
-      finalColHeaders.add("Unrestricted validation stopping metric "+stoppingMetric.name());
+      finalColHeaders.add("Unrestricted validation "+stoppingMetric.name());
       finalColTypes.add("double");
       finalColFormats.add("%.5f");
     }

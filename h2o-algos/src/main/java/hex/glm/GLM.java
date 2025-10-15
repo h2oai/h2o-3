@@ -3384,7 +3384,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } else {
         Log.info(LogMsg("ModelMetrics mtrain is null"));
       }
-      Log.info(LogMsg("Control values Training metrics computed in " + (t2 - t1) + "ms"));
+      Log.info(LogMsg("Control values training metrics computed in " + (t2 - t1) + "ms"));
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();

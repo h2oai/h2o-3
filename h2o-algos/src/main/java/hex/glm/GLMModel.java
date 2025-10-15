@@ -1794,7 +1794,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(GLM glm) {
       super(glm);
       _dinfo = glm._dinfo.clone();
-      _dinfo._adaptedFrame = null; 
+      _dinfo._adaptedFrame = null;
       String[] cnames = glm._dinfo.coefNames();
       String [] names = glm._dinfo._adaptedFrame._names;
       String [][] domains = glm._dinfo._adaptedFrame.domains();
@@ -2199,7 +2199,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       
       for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
         int l = _output._dinfo.getCategoricalId(i, data[i]);
-          if (l >= 0) eta += bcv[l];
+        if (l >= 0) eta += bcv[l];
       }
       int numStart = _output._dinfo.numStart();
       int ncats = _output._dinfo._cats;
