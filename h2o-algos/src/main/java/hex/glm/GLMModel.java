@@ -723,6 +723,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if ((_interactions != null || _interaction_pairs != null)) {
           glm.error("_control_variables", "Control variables option is not supported with interactions.");
         }
+        if(_lambda_search) {
+          glm.error("_control_variables", "Control variables option is not supported with lambda search.");
+        }
+        if(_fold_column != null || _nfolds > 0){
+          glm.error("_control_variables", "Control variables option is not supported with cross validation.");
+        }
         for(String col: _control_variables){
           Vec v = train().vec(col);
           if (v == null) {
@@ -1547,7 +1553,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String[] _coefficient_names;
     public long _training_time_ms;
     public TwoDimTable _variable_importances;
-    public TwoDimTable _variable_importances_control_vals_enabled;
+    public TwoDimTable _variable_importances_unrestricted_model;
     public VarImp _varimp;  // should contain the same content as standardized coefficients
     int _lambda_array_size; // store number of lambdas to iterate over
     public double _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
@@ -1596,7 +1602,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     
     private int[] _control_values_idxs_in_adapted_frame;
     private String[] _control_values_names;
-    public String _control_val_suffix = "_control";
 
     // Unrestricted model is produced when control variables are used.
     public TwoDimTable _scoring_history_unrestricted_model;
@@ -1618,6 +1623,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     
     public double[] getControlValBeta(double[] beta){
+      if (_control_values_idxs_in_adapted_frame == null){
+        mapControlVariables();
+      }
+      assert _control_values_idxs_in_adapted_frame != null;
       for(int featureIdx : _control_values_idxs_in_adapted_frame) {
         if (featureIdx < _dinfo._catOffsets.length - 1 && _column_types[featureIdx].equals("Enum")) {
           for (int i = _dinfo._catOffsets[featureIdx]; i < _dinfo._catOffsets[featureIdx + 1]; i++) {
@@ -1629,10 +1638,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         }
       }
       return beta;
-    }
-    
-    public String[] getControlValsNames(){
-      return _control_values_names;
     }
 
     public double[] stdErr() {
@@ -2008,22 +2013,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
       String[] namesSort = new String[len];
       
-      if (_nclasses > 2)
+      if (contrVal)
+        calculateVarimpBase(magnitudes, indices, getControlValBeta(getNormBeta()));
+      else if (_nclasses > 2)
         calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
       
-      String[] controlValsNames = getControlValsNames();
       for (int index = 0; index < len; index++) {
         magnitudesSort[index] = (float) magnitudes[indices[index]];
-        String name = names[indices[index]];
-        String categoricalName = name.contains(".") ? name.split("\\.")[0] : null;
-        if (contrVal &&controlValsNames != null) {
-          if (ArrayUtils.find(controlValsNames, name) > -1 || (categoricalName != null && ArrayUtils.find(controlValsNames, categoricalName) > -1)) {
-            name = name + _control_val_suffix;
-          }
-        }
-        namesSort[index] = name;
+        namesSort[index] = names[indices[index]];
       }
       return new VarImp(magnitudesSort, namesSort);
     }

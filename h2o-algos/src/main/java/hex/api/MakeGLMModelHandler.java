@@ -4,7 +4,6 @@ import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
-import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
@@ -87,7 +86,7 @@ public class MakeGLMModelHandler extends Handler {
     m._output._scoring_history = model._output._scoring_history_unrestricted_model;
     m._output._model_summary = model._output._model_summary;
     m.resetThreshold(model.defaultThreshold());
-    m._output._variable_importances = model._output._variable_importances_control_vals_enabled;
+    m._output._variable_importances = model._output._variable_importances_unrestricted_model;
     m._key = key;
     
     DKV.put(key, m);

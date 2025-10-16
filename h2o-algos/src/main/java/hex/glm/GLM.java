@@ -563,9 +563,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public ArrayList<Double> getLikelihoods() { return _likelihoods;}
     public ArrayList<Double> getObjectives() { return _objectives;}
 
-    public ScoringHistory(boolean hasTest, boolean hasXval, boolean generate_scoring_historty) {
+    public ScoringHistory(boolean hasTest, boolean hasXval, boolean generate_scoring_history) {
       if(hasTest)_lambdaDevTest = new ArrayList<>();
-      if (generate_scoring_historty) {
+      if (generate_scoring_history) {
         _lambdas = new ArrayList<>(); // these are only used when _parms.generate_scoring_history=true
         _lambdaDevTrain = new ArrayList<>();
         if (hasTest)
@@ -3829,15 +3829,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopControlVal);
           // set control variables flag to true for scoring after training
           _model._useControlVariables = true;
+          _model._output._varimp = _model._output.calculateVarimp(true);
+          _model._output._variable_importances_unrestricted_model = calcVarImp(_model._output.calculateVarimp(false));
+          _model._output._variable_importances = calcVarImp(_model._output._varimp);
         } else {
           TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
           _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
                   scoring_history_early_stop);
+          _model._output._varimp = _model._output.calculateVarimp(false);
+          _model._output._variable_importances = calcVarImp(_model._output._varimp);
         }
-        _model._output._varimp = _model._output.calculateVarimp(true);
-        _model._output._variable_importances_control_vals_enabled = calcVarImp(_model._output.calculateVarimp(false));
-        _model._output._variable_importances = calcVarImp(_model._output._varimp);
+        
         if (_linearConstraintsOn)
           printConstraintSummary(_model, _state, _dinfo.coefNames());
           

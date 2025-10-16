@@ -291,7 +291,7 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       coefficients_table.fillFromImpl(tdt);
       if(impl.beta() != null) { // get varImp
         calculateVarimpBase(magnitudes, indices, impl.getNormBeta());
-
+        
         String[] names2 = new String[len];
         for (int i = 0; i < len; ++i)
           names2[i] = names[indices[i]];

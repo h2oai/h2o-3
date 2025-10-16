@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.genmodel.algos.deeplearning.ActivationUtils;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.Test;
@@ -131,25 +132,12 @@ public class GLMControlVariablesTest extends TestUtil {
             
             //check variable importance
             TwoDimTable vi = glm._output._variable_importances;
-            String[] viRowHeader = vi.getRowHeaders();
+            TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
+            TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
             
-            int numControlVariables = 0;
-            String suffix = glm._output._control_val_suffix;
-            for (String name : viRowHeader) {
-                if(name.contains(suffix)) {
-                    numControlVariables++;
-                    if (name.contains(".")) {
-                        String catName = name.split("\\.")[0];
-                        assert ArrayUtils.find(control_variables, catName) > -1 : 
-                                "Variable "+catName+" should not be marked as "+suffix;
-                    } else {
-                        String numericName = name.substring(0, name.length() - suffix.length());
-                        assert ArrayUtils.find(control_variables, numericName) > -1 :
-                                "Variable "+numericName+" should not be marked as "+suffix;
-                    }
-                }
-            }
-            assert numControlVariables >= control_variables.length;
+            assertNotEquals(vi, vi_unrestricted);
+            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
+
         } finally {
             if(train != null) train.remove();
             if(test != null) test.remove();
