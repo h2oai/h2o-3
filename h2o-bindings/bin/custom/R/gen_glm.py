@@ -75,7 +75,7 @@ h2o.makeGLMModel <- function(model,beta) {
 #' @param model a GLM \linkS4class{H2OModel} trained with control variable
 #' @param destination_key a string or a NULL
 #' @export
-h2o.makeUnrestrictedGLMModel <- function(model, destination_key = NULL) {
+h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
   stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
   query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
   if (!missing(destination_key) && !is.null(destination_key)) {

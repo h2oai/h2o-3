@@ -2802,14 +2802,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
 
-    @staticmethod
-    def make_unrestricted_glm_model(model, dest=None):
+    def make_unrestricted_glm_model(self, dest=None):
         """
         Make unrestricted GLM model when control variables are defined.
 
         Needs to be passed source model trained with control variables enabled. 
 
-        :param model: source model trained with control variables enabled
         :param dest: (optional) destination key
 
         :examples:
@@ -2824,14 +2822,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ...         y=1)
         >>> p = m.model_performance(d)
         >>> print(p)
-        >>> m2 = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(model=m,
-        ...                                                               dest="unrestricted_glm")
+        >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
         """
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
-            data={"model": model._model_json["model_id"]["name"],
+            data={"model": self._model_json["model_id"]["name"],
                   "dest": dest}
         )
         m = H2OGeneralizedLinearEstimator()

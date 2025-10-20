@@ -22,7 +22,7 @@ glm_control_variables_explain <- function() {
 
     summary(prostate_glm)
 
-    unrestricted_prostate_glm <- h2o.makeUnrestrictedGLMModel(prostate_glm)
+    unrestricted_prostate_glm <- h2o.make_unrestricted_glm_model(prostate_glm)
 
     summary(unrestricted_prostate_glm)
 

@@ -249,7 +249,7 @@ verify_control_variables_implementation <- function(y,
     other_args
   ))
   h2o_constr_res <- as.data.frame(predict(model_constr, test_frame))
-  h2o_unconstr_res <- as.data.frame(predict(h2o.makeUnrestrictedGLMModel(model_constr), test_frame))
+  h2o_unconstr_res <- as.data.frame(predict(h2o.make_unrestricted_glm_model(model_constr), test_frame))
   
   expect_equal(h2o_constr_res[, ncol(h2o_constr_res)], preds$predictions, info = deparse(other_args))
   expect_equal(h2o_unconstr_res[, ncol(h2o_unconstr_res)], preds$unrestricted_predictions, info = deparse(other_args))

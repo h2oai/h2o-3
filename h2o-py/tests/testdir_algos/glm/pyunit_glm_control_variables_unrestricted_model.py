@@ -31,7 +31,7 @@ def glm_control_variables_unrestricted_model():
     metrics_2 = glm_model_2.training_model_metrics()
     print(metrics_2)
 
-    glm_model_unrestricted = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2)
+    glm_model_unrestricted = glm_model_2.make_unrestricted_glm_model()
 
     print("-- Unrestricted model with control variables --")
     print(glm_model_unrestricted)
