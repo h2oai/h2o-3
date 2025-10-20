@@ -67,6 +67,10 @@ public class GLMControlVariablesTest extends TestUtil {
             // train model witch control variables enabled
             glm = new GLM(params).trainModel().get();
             Scope.track_generic(glm);
+
+            System.out.println("_________________________________");
+            System.out.println(glm);
+            System.out.println("______");
             
             preds = glm.score(test);
             Scope.track_generic(preds);
@@ -122,6 +126,8 @@ public class GLMControlVariablesTest extends TestUtil {
             
             
             // check scoring history is the same (instead of timestamp and duration column)
+            // change table header because it contains " unrestricted model"
+            glm2SH.setTableHeader(glmSHCV.getTableHeader());
             assertTwoDimTableEquals(glmSHCV, glm2SH, new int[]{0,1});
             
             // check control val scoring history is not null when control vals is enabled

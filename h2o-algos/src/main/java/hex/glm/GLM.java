@@ -3827,10 +3827,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._output._scoring_history = combineScoringHistoryControlVariables(_model._output._scoring_history, _model._output._scoring_history_unrestricted_model,
                   scoringHistoryEarlyStop, scoringHistoryEarlyStopControlVal, sm, null != _parms._valid);
           _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopControlVal);
+          _model._output._scoring_history_unrestricted_model.setTableHeader(_model._output._scoring_history_unrestricted_model.getTableHeader()+" unrestricted model");
           // set control variables flag to true for scoring after training
           _model._useControlVariables = true;
           _model._output._varimp = _model._output.calculateVarimp(true);
           _model._output._variable_importances_unrestricted_model = calcVarImp(_model._output.calculateVarimp(false));
+          _model._output._variable_importances_unrestricted_model.setTableHeader(_model._output._variable_importances_unrestricted_model.getTableHeader()+" unrestricted model");
           _model._output._variable_importances = calcVarImp(_model._output._varimp);
         } else {
           TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),

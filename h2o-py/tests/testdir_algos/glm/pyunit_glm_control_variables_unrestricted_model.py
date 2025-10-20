@@ -18,41 +18,42 @@ def glm_control_variables_unrestricted_model():
     glm_model = H2OGeneralizedLinearEstimator(family="binomial", score_each_iteration=True, seed=0xC0FFEE)
     glm_model.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
+    print("-- Model without control variables --")
     metrics = glm_model.training_model_metrics()
     print(metrics)
-    print("++++++++++++++++ Model without control variables")
-    print(glm_model._model_json["output"]["scoring_history"])
+    print(glm_model)
 
     glm_model_2 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True, seed=0xC0FFEE)
     glm_model_2.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
+    print("-- Model with control variables and score each iteration true --")
+    print(glm_model_2)
     metrics_2 = glm_model_2.training_model_metrics()
     print(metrics_2)
-    print("++++++++++++++++ Model with control variables and score each iteration true")
-    print(glm_model_2._model_json["output"]["scoring_history"])
 
     glm_model_unrestricted = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2)
+
+    print("-- Unrestricted model with control variables --")
+    print(glm_model_unrestricted)
     metrics_unrestricted = glm_model_unrestricted.training_model_metrics()
     print(metrics_unrestricted)
-    print("++++++++++++++++ Unrestricted model with control variables")
-    print(glm_model_unrestricted._model_json["output"]["scoring_history"])
 
     # score each iteration false case
     glm_model_3 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=False, seed=0xC0FFEE)
     glm_model_3.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars)
 
+    print("-- Model with control variables score each iteration false --")
+    print(glm_model_3)
     metrics_3 = glm_model_3.training_model_metrics()
     print(metrics_3)
-    print("++++++++++++++++ Model with control variables score each iteration false")
-    print(glm_model_3._model_json["output"]["scoring_history"])
 
     glm_model_4 = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"], score_each_iteration=True, seed=0xC0FFEE)
     glm_model_4.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars, validation_frame=cars)
 
+    print("-- Model with control variables score each iteration true and validation dataset --")
+    print(glm_model_4)
     metrics_4 = glm_model_4.training_model_metrics()
     print(metrics_4)
-    print("++++++++++++++++ Model with control variables score each iteration true and validation dataset")
-    print(glm_model_4._model_json["output"]["scoring_history"])
 
     # predictions with control variables disabled
     predictions_train = glm_model.predict(cars).as_data_frame()
