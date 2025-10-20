@@ -342,6 +342,8 @@ def class_extensions():
                   "dest": dest}
         )
         m = H2OGeneralizedLinearEstimator()
+        if dest is None:
+            dest = model_json["model_id"]["name"]
         m._resolve_model(dest, model_json)
         return m
 
