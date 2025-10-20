@@ -743,6 +743,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             if (col.equals(_response_column)){
               glm.error("_control_variables", "Control variable '"+col+"' is set as response_column.");
             }
+            for (String icol : _ignored_columns){
+              if (col.equals(icol)){
+                glm.error("_control_variables", "Control variable '"+col+"' is set is ignored_columns.");
+              }
+            }
           }
         }
       }

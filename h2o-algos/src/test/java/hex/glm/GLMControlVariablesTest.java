@@ -14,7 +14,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.ArrayUtils;
 import water.util.DistributedException;
 import water.util.TwoDimTable;
 
@@ -232,6 +231,34 @@ public class GLMControlVariablesTest extends TestUtil {
             params._response_column = "y";
             params._intercept = false;
             params._control_variables = new String[]{"bla"};
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if(train != null) train.remove();
+            if(glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testControlVariablePresentInFrame(){
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"a","b"},Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0},cat1.group().addVec());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "y"},new Vec[]{cat1, cat2,res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._ignored_columns = new String[]{"x1"};
+            params._control_variables = new String[]{"x1"};
             glm = new GLM(params).trainModel().get();
         } finally {
             if(train != null) train.remove();
