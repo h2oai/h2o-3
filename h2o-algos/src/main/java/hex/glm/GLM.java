@@ -756,7 +756,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private transient ScoringHistory _scoringHistory;
-  private transient ScoringHistory _scoringHistoryControlVariableEnabled;
+  private transient ScoringHistory _scoringHistoryUnrestrictedModel;
   private transient LambdaSearchScoringHistory _lambdaSearchScoringHistory;
 
   long _t0 = System.currentTimeMillis();
@@ -947,7 +947,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _lambdaSearchScoringHistory = new LambdaSearchScoringHistory(_parms._valid != null,_parms._nfolds > 1);
       _scoringHistory = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1, 
               _parms._generate_scoring_history);
-      _scoringHistoryControlVariableEnabled = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1,
+      _scoringHistoryUnrestrictedModel = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1,
               _parms._generate_scoring_history);
       _train.bulkRollups(); // make sure we have all the rollups computed in parallel
       _t0 = System.currentTimeMillis();
@@ -1416,7 +1416,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_model._parms._control_variables != null) {
         TwoDimTable scoringHistoryControlVal = _model._output._scoring_history_unrestricted_model;
-        _scoringHistoryControlVariableEnabled.restoreFromCheckpoint(scoringHistoryControlVal, colHeadersIndex);
+        _scoringHistoryUnrestrictedModel.restoreFromCheckpoint(scoringHistoryControlVal, colHeadersIndex);
       }
   }
   
@@ -3440,7 +3440,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         validScore.fillFrom(_model._output._validation_metrics);
       }
       if(_model._parms._control_variables != null) {
-        _model.addControlValScoringInfo(_parms, nclasses(), t2, _state._iter);
+        _model.addUnrestrictedModelScoringInfo(_parms, nclasses(), t2, _state._iter);
       } else {
         _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);
       }// add to scoringInfo for early stopping
@@ -3463,7 +3463,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                     _state.lambda(), trainDev, validDev, xval_deviance, xval_se, _state.alpha());
           } else if(_model._parms._control_variables != null){
-            _scoringHistoryControlVariableEnabled.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
+            _scoringHistoryUnrestrictedModel.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics_unrestricted_model).residual_deviance(),
                     mtrain._nobs, _model._output._validation_metrics_unrestricted_model._nobs, _state.lambda(), _state.alpha());
           } else {
@@ -3477,7 +3477,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     _state.lambda(), _state.deviance() / mtrain._nobs, Double.NaN, xval_deviance,
                     xval_se, _state.alpha());
           } else if(_model._parms._control_variables != null) {
-            _scoringHistoryControlVariableEnabled.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
+            _scoringHistoryUnrestrictedModel.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),
                     _state.alpha());
           } else {
@@ -3491,7 +3491,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
       } else if(_model._parms._control_variables != null){
-        _model._output._scoring_history_unrestricted_model = _scoringHistoryControlVariableEnabled.to2dTable(_parms, _xval_deviances_generate_SH,
+        _model._output._scoring_history_unrestricted_model = _scoringHistoryUnrestrictedModel.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
       } else {
         _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
@@ -3819,7 +3819,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           
           TwoDimTable scoringHistoryEarlyStop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
-          TwoDimTable scoringHistoryEarlyStopControlVal = ScoringInfo.createScoringHistoryTable(_model.getControlValScoringInfo(),
+          TwoDimTable scoringHistoryEarlyStopControlVal = ScoringInfo.createScoringHistoryTable(_model.getUnrestrictedModelScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
           scoringHistoryEarlyStopControlVal.setTableHeader("Scoring history with control variables enabled");
           ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ? 
@@ -4025,7 +4025,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       assert !_parms._lambda_search || _parms._generate_scoring_history;
       if (!_parms._generate_scoring_history && !_parms._lambda_search) { // same as before, _state._iter is not updated
         if (_model._parms._control_variables != null){
-          _scoringHistoryControlVariableEnabled.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
+          _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
           double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
           GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_state._dinfo._adaptedFrame);
           double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
@@ -4046,7 +4046,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private boolean updateEarlyStop() {
-    ScoreKeeper[] sk = _parms._control_variables != null ? _model.controlValScoreKeepers() : _model.scoreKeepers();
+    ScoreKeeper[] sk = _parms._control_variables != null ? _model.unrestritedModelScoreKeepers() : _model.scoreKeepers();
     return _earlyStop || ScoreKeeper.stopEarly(sk,
             _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric,
             _parms._stopping_tolerance, "model's last", true);

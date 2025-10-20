@@ -189,16 +189,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     final int nc = _m._output.nclasses();
     final int ncols = nc == 1 ? 1 : nc + 1; // Regression has 1 predict col; classification also has class distribution
     // compute
-    /**if (_sparse) {
-      for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
-        processRow(r,res,ps,preds,ncols);
-    } else {
-      DataInfo.Row r = _dinfo.newDenseRow();
-      for (int rid = 0; rid < chks[0]._len; ++rid) {
-        _dinfo.extractDenseRow(chks, rid, r);
-        processRow(r,res,ps,preds,ncols);
-      }
-    }**/
     if (_sparse) {
       for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
         processRow(r,res,ps,preds,ncols);
