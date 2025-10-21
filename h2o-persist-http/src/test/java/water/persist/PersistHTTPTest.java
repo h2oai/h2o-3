@@ -4,9 +4,12 @@ import org.apache.http.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 
+import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,6 +63,24 @@ public class PersistHTTPTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void importFilesRecursivePath() {
+    try {
+      Scope.enter();
+      File f = FileUtils.locateFile("smalldata/prostate/prostate.csv");
+      final String localUrl = H2O.getURL(H2O.ARGS.jks != null ? "https" : "http") + "/3/ImportFiles?path=" + f.getAbsolutePath();
+      System.out.println("localUrl = " + localUrl);
+      PersistHTTP p = new PersistHTTP();
+      ArrayList<String> files = new ArrayList<>();
+      ArrayList<String> keys = new ArrayList<>();
+      ArrayList<String> fails = new ArrayList<>();
+      ArrayList<String> dels = new ArrayList<>();
+      p.importFiles(localUrl, null, files, keys, fails, dels);
+    } finally {
+      Scope.exit();
+    }
+  }  
 
   @Test
   public void importFilesLazy() throws Exception {
