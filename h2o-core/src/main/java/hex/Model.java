@@ -1990,6 +1990,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Scope.track(adaptFr);
     return adaptFr;
   }
+  public ModelMetrics scoreAndReturnMetrics(Frame fr, String destination_key, Job j, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    try (Scope.Safe s = Scope.safe(fr)) {
+      // Adapt frame, clean up the previous score warning messages
+      _warningsP = new String[0];
+      Frame adaptFr = adaptFrameForScore(fr, true);
+
+      // Predict & Score
+      PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, true, customMetricFunc);
+      return result.makeModelMetrics(fr, adaptFr);
+    }
+  }
+
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     try (Scope.Safe s = Scope.safe(fr)) {
       // Adapt frame, clean up the previous score warning messages
