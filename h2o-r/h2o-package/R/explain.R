@@ -3205,7 +3205,7 @@ h2o.learning_curve_plot <- function(model,
 
   timestep <- allowed_timesteps[[1]]
 
-  if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score")) {
+  if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score", "negative_log_likelihood")) {
     training_metric <- metric
     validation_metric <- "UNDEFINED"
   } else if ("deviance" == metric &&

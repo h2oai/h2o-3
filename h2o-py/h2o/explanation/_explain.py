@@ -2644,7 +2644,7 @@ def learning_curve_plot(
     ):
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
-    elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
+    elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score", "negative_log_likelihood"):
         training_metric = metric
         validation_metric = "UNDEFINED"
     else:
