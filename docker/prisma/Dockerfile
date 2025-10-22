@@ -2,7 +2,7 @@ FROM alpine:latest
 
 RUN apk update && apk upgrade && apk add openjdk8 nodejs npm git bash
 
-ENV DIRECTORIES=".config .npm .cache .local"
+ENV DIRECTORIES=".config .npm .cache .local /.npm"
 
 RUN for dir in $DIRECTORIES; do \
       mkdir -p "/$dir"; \
