@@ -278,7 +278,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="A list of pairwise (first order) column interactions.", direction=Direction.INPUT, level=Level.expert)
     public StringPairV3[] interaction_pairs;
 
-    @API(help="A list of predictor column indices which is used for training but removed for scoring.", 
+    @API(help="A list of predictor column indices which is used for training but removed for scoring. Experimental.", 
             direction=Direction.INPUT, level=Level.expert)
     public String[] control_variables;
     

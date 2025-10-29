@@ -103,6 +103,16 @@ def glm_control_variables_unrestricted_model():
     name = "unrestricted"
     glm_model_unrestricted_2 = H2OGeneralizedLinearEstimator.make_unrestricted_glm_model(glm_model_2, name)
     assert glm_model_unrestricted_2._model_json["model_id"]['name'] == name
+
+    # check variable importance tables are differ
+    varimp = glm_model_2.varimp(use_pandas=True)
+    varimp_unrestricted = glm_model_unrestricted.varimp(use_pandas=True)
+    
+    year_varimp = varimp[varimp.apply(lambda row: row.astype(str).str.contains('year').any(), axis=1)]["relative_importance"].values[0]
+    assert year_varimp == 0
+
+    year_varimp_unrestricted = varimp_unrestricted[varimp_unrestricted.apply(lambda row: row.astype(str).str.contains('year').any(), axis=1)]["relative_importance"].values[0]
+    assert year_varimp_unrestricted > 0
     
 
 if __name__ == "__main__":

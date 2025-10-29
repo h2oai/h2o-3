@@ -19,9 +19,12 @@ When control variables are specified, GLM will exclude them during scoring. Mode
 
 To get the unrestricted model with its own metrics use ``glm.make_unrestriced_glm_model()``/``h2o.make_unrestricted_glm_model(glm)``.
 
+The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. 
+
 
 **Notes**:
 
+- This option is experimental.
 - This option is applicable only for regression and binomial distribution.
 - This option is not available when cross validation is enabled.
 - This option is not available when Lambda search is enabled.
@@ -80,6 +83,10 @@ Example
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm <- h2o.make_unrestricted_glm_model(airlines_glm)
 
+        # get variable importance
+        varimp <- h2o.varimp(airlines_glm)
+        varimp_unrestricted <- h2o.varimp(unrestricted_airlines_glm)
+
 
    .. code-tab:: python
 
@@ -131,3 +138,7 @@ Example
 
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm = airlines_glm.make_unrestricted_glm_model()
+
+        # get variable importance tables
+        varimp = airlines_glm.varimp()
+        varimp_unrestricted = unrestricted_airlines_glm.varimp()

@@ -43,7 +43,7 @@ Algorithm-specific parameters
 
 -  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` while disabling ``HGLM`` will enable the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled). 
 
-- `control_variables <algo-params/control_variables.html>`__: Specify control values which will be disabled for metric calculation and during scoring. 
+- `control_variables <algo-params/control_variables.html>`__: Specify control variables which will be disabled for metric calculation and during scoring. This feature is experimental. 
 
 - `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
 
