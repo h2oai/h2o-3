@@ -28,6 +28,7 @@ The control variables' coefficients are set to zero in the variable importance t
 - This option is applicable only for regression and binomial distribution.
 - This option is not available when cross validation is enabled.
 - This option is not available when Lambda search is enabled.
+- This option is not available when interactions are enabled.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
