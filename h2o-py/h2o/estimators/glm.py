@@ -338,6 +338,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``0.001``.
         :type stopping_tolerance: float
         :param control_variables: A list of predictor column indices which is used for training but removed for scoring.
+               Experimental.
                Defaults to ``None``.
         :type control_variables: List[str], optional
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -2044,7 +2045,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def control_variables(self):
         """
-        A list of predictor column indices which is used for training but removed for scoring.
+        A list of predictor column indices which is used for training but removed for scoring. Experimental.
 
         Type: ``List[str]``.
         """
