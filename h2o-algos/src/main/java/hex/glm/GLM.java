@@ -3375,7 +3375,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void scorePostProcessingControlVal(Frame train, long t1) {
       ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
       long t2 = System.currentTimeMillis();
-      if (!(mtrain == null)) {
+      if (mtrain != null) {
         _model._output._training_metrics = mtrain;
         _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time         
         ScoreKeeper trainScore = new ScoreKeeper(Double.NaN);
@@ -3422,7 +3422,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void scorePostProcessing(Frame train, long t1) {
       ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
       long t2 = System.currentTimeMillis();
-      if (!(mtrain == null)) {
+      if (mtrain != null) {
         if (_model._parms._control_variables != null){
           _model._output._training_metrics_unrestricted_model = mtrain;
           _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time
