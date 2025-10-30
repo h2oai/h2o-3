@@ -1,9 +1,9 @@
 package hex.schemas;
 
-        import water.Iced;
-        import water.api.API;
-        import water.api.schemas3.KeyV3;
-        import water.api.schemas3.SchemaV3;
+import water.Iced;
+import water.api.API;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 
 /**
  * End point to get unrestricted GLM model when control variables are enabled. Creates a modified copy of the original model.

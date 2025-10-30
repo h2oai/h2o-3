@@ -201,8 +201,8 @@ public class GLMUtils {
       }
       if (!finalColHeaders.contains(colName)) {
         finalColHeaders.add(colName);
-        finalColTypes.add(glmSCContrColTypes[colCounter]);
-        finalColFormats.add(glmSCContrColFormats[colCounter]);
+        finalColTypes.add(glmSCContrColTypes[i]);
+        finalColFormats.add(glmSCContrColFormats[i]);
         glmScContrValsColIndices.add(i);
         colCounter++;
       }

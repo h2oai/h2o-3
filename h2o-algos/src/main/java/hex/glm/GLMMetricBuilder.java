@@ -221,7 +221,9 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
     GLMModel gm = (GLMModel) m;
     computeAIC(gm);
-    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, adaptedFrame, preds);
+    // This change breaks GLM and GAM FractionalBinomial tests:
+    // ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, adaptedFrame, preds);
+    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
     if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
             _glmf._family == Family.fractionalbinomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
