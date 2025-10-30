@@ -69,6 +69,22 @@ h2o.makeGLMModel <- function(model,beta) {
   m
 }
 
+#' Make unrestricted GLM model when control variables are defined.
+#'
+#' Needs source model trained with control variables enabled.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variable
+#' @param destination_key a string or a NULL
+#' @export
+h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
+  stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
+  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
+  if (!missing(destination_key) && !is.null(destination_key)) {
+    query <- c(query, list(dest = destination_key))
+  }
+  res <- do.call(.h2o.__remoteSend, query)
+  h2o.getModel(model_id = res$model_id$name)
+}
+
 #' Extract best lambda value found from glm model.
 #'
 #' This function allows setting betas of an existing glm model.

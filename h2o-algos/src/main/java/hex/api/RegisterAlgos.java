@@ -58,6 +58,10 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             MakeGLMModelHandler.class, "make_model",
             "Make a new GLM model based on existing one");
 
+    context.registerEndpoint("make_unrestricted_model", "POST /3/MakeUnrestrictedGLMModel",
+            MakeGLMModelHandler.class, "make_unrestricted_model",
+            "Make unrestricted GLM model based on existing one with control variables enabled.");
+
     context.registerEndpoint("glm_regularization_path","GET /3/GetGLMRegPath", MakeGLMModelHandler.class, "extractRegularizationPath",
             "Get full regularization path");
 

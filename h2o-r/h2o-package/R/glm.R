@@ -115,6 +115,7 @@
 #'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
+#' @param control_variables A list of predictor column indices which is used for training but removed for scoring. Experimental.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -265,6 +266,7 @@ h2o.glm <- function(x,
                     stopping_rounds = 0,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
+                    control_variables = NULL,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
@@ -425,6 +427,8 @@ h2o.glm <- function(x,
     parms$stopping_metric <- stopping_metric
   if (!missing(stopping_tolerance))
     parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(control_variables))
+    parms$control_variables <- control_variables
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -558,6 +562,7 @@ h2o.glm <- function(x,
                                     stopping_rounds = 0,
                                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                     stopping_tolerance = 0.001,
+                                    control_variables = NULL,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
@@ -723,6 +728,8 @@ h2o.glm <- function(x,
     parms$stopping_metric <- stopping_metric
   if (!missing(stopping_tolerance))
     parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(control_variables))
+    parms$control_variables <- control_variables
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -816,6 +823,22 @@ h2o.makeGLMModel <- function(model,beta) {
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
+}
+
+#' Make unrestricted GLM model when control variables are defined.
+#'
+#' Needs source model trained with control variables enabled.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variable
+#' @param destination_key a string or a NULL
+#' @export
+h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
+  stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
+  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
+  if (!missing(destination_key) && !is.null(destination_key)) {
+    query <- c(query, list(dest = destination_key))
+  }
+  res <- do.call(.h2o.__remoteSend, query)
+  h2o.getModel(model_id = res$model_id$name)
 }
 
 #' Extract best lambda value found from glm model.
