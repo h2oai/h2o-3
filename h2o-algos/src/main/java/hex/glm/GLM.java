@@ -3387,9 +3387,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Control values training metrics computed in " + (t2 - t1) + "ms"));
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
-        _model._useControlVariables = true;
-        _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
-        _model._useControlVariables = false;
+        try {
+          _model._useControlVariables = true;
+          _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
+        } finally {
+          _model._useControlVariables = true;
+        }
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
         validScore.fillFrom(_model._output._validation_metrics);
@@ -3397,18 +3400,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);  // add to scoringInfo for early stopping
 
       if (_parms._generate_scoring_history) { // update scoring history with deviance train and valid if available
-        if (!(mtrain == null) && !(_valid == null)) {
-          double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
-          GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, betaContrVal).doAll(_dinfo._adaptedFrame);
-          double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
-          _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, task._likelihood,
+        double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
+        GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, betaContrVal).doAll(_dinfo._adaptedFrame);
+        double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
+        
+        if ((mtrain != null) && (_valid != null)) {
+          _scoringHistory.addIterationScore(true, true, _state._iter, task._likelihood,
                   objectiveControlVal, _state.deviance(task._likelihood), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
                   mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
-        } else if (!(mtrain == null)) { // only doing training deviance
-          double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
-          GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, betaContrVal).doAll(_dinfo._adaptedFrame);
-          double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
-          _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, task._likelihood,
+        } else { // only doing training deviance
+          _scoringHistory.addIterationScore(true, false, _state._iter, task._likelihood,
                   objectiveControlVal, _state.deviance(task._likelihood), Double.NaN, mtrain._nobs, 1, _state.lambda(),
                   _state.alpha());
         }
@@ -3463,7 +3464,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             xval_se = _xval_sd_generate_SH[xval_iter_index];
           }
         }
-        if (!(mtrain == null) && !(_valid == null)) {
+        if ((mtrain != null) && (_valid != null)) {
           if (_parms._lambda_search) {
             double trainDev = _state.deviance() / mtrain._nobs;
             double validDev = ((GLMMetrics) _model._output._validation_metrics).residual_deviance() /
@@ -3479,7 +3480,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
                     mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
           }
-        } else if (!(mtrain == null)) { // only doing training deviance
+        } else if (mtrain != null) { // only doing training deviance
           if (_parms._lambda_search) {
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                     _state.lambda(), _state.deviance() / mtrain._nobs, Double.NaN, xval_deviance,
