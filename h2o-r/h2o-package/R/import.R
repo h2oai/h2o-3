@@ -111,6 +111,11 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
       skipped_columns[a] = skipped_columns[a]-1   # change index to be from 0 to ncol-1
     }
   }
+  
+  if (.h2o.startedH2O()) {
+    path <- sapply(path, normalizePath, mustWork = FALSE)
+  }
+  
   if(length(path) > 1L) {
     destFrames <- c()
     fails <- c()
