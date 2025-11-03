@@ -912,14 +912,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case negativebinomial:
           // the estimated dispersion parameter is theta. The likelihood formula requires k. Theta=1/k.
           double invThetaEstimated = 1 / _dispersion_estimated;
-          return yr * log(invThetaEstimated * prediction / w) - (yr + w/invThetaEstimated) * log(1 + invThetaEstimated * prediction / w) 
-                  + log(Gamma.gamma(yr + w / invThetaEstimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(w / invThetaEstimated)));
+          return yr * log(invThetaEstimated * prediction / w) - (yr + w/invThetaEstimated) * log(1 + invThetaEstimated * prediction / w)
+                  + Gamma.logGamma(yr + w / invThetaEstimated) - (Gamma.logGamma(yr + 1) + Gamma.logGamma(w / invThetaEstimated));
         case gamma:
           double invPhiEst = 1 / _dispersion_estimated;
           return w * invPhiEst * log(w * yr * invPhiEst / prediction) - w * yr * invPhiEst / prediction 
                   - log(yr) - Gamma.logGamma(w * invPhiEst);
         case tweedie:
-          return -TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _dispersion_estimated);
+          return TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _dispersion_estimated);
         case multinomial:
           // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
           double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);

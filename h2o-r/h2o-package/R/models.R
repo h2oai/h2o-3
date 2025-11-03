@@ -3029,7 +3029,7 @@ h2o.average_objective <- function(model) {
 
 extract_scoring_history <- function(model, value) {
   if (is(model, "H2OModel") && (model@algorithm=='glm')) {
-      if (model@allparameters$generate_scoring_history==TRUE) {
+      if (model@params$actual$generate_scoring_history) {
           scHist <- model@model$scoring_history
           return(scHist[nrow(scHist), value])
       } else {
