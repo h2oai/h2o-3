@@ -869,7 +869,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     " got floats.");
           if (Family.negativebinomial.equals(_parms._family))
             if (_parms._theta <= 0)// || _parms._theta > 1)
-              error("_family", "Illegal Negative Binomial theta value. Theta must be a non-negative number.");
+              error("_family", "Illegal Negative Binomial theta value. Theta must be a positive number.");
             else
               _parms._invTheta = 1 / _parms._theta;
           break;
