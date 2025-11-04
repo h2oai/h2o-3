@@ -1255,10 +1255,14 @@ The final AIC in the output metric is calculated using the standard formula, uti
 
 where
 
-- :math:`p` is the number of non-zero coefficients estimated in the model
+- :math:`p` is the number of estimated coefficients (i.e. including dispersion etc). When using regularization :math:`p` is the number of non-zero coefficients.
 - :math:`LL` is the log likelihood
 
 To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` and the parameter ``HGLM`` to ``False`` to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
+
+.. note::
+
+   For ridge regression and elastic net, the AIC is approximated without calculating the actual effective degrees of freedom, i.e., the estimate is the same as for LASSO. Therefore, the AIC values for ridge regression and elastic net should be used with caution.
 
 Tweedie Likelihood Calculation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
