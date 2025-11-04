@@ -23,7 +23,7 @@ def assert_equal(h2o_model, sm_model, coef_tolerance=1e-6, aic_tolerance=1e-6, d
     :param sm_model: statsmodels' GLMResults
     :param coef_tolerance: max difference for betas
     :param aic_tolerance: max difference for AIC
-    :param dk_params: Used in newer statsmodels to include infomation about other estimated params such as dispersion  
+    :param dk_params: Used in newer statsmodels to include information about other estimated params such as dispersion  
     """
     h2o_aic = h2o_model.aic()
     # We use old version of statsmodels, that don't have the info_criteria function.
