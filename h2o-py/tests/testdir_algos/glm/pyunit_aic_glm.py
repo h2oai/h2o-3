@@ -91,7 +91,7 @@ def test_glm_aic_gamma_no_regularization():
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
         data=train_pd,
-        family=sm.families.Gamma(link=sm.families.links.log),
+        family=sm.families.Gamma(link=sm.families.links.log()),
     ).fit()
 
     glm_no_reg = H2OGeneralizedLinearEstimator(
@@ -247,7 +247,7 @@ def test_glm_aic_tweedie_no_regularization():
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
         data=train_pd,
-        family=sm.families.Tweedie(link=sm.families.links.log, var_power=1.5),
+        family=sm.families.Tweedie(link=sm.families.links.log(), var_power=1.5),
     ).fit()
 
     glm_no_reg = H2OGeneralizedLinearEstimator(
