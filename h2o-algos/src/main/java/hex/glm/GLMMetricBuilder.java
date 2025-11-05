@@ -198,8 +198,6 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
           case gaussian:
           case gamma:
           case negativebinomial:
-            k += 1; // dispersion (sigma, alpha, etc) is another estimated parameter
-            break;
           case tweedie:
             k += 1;
             break;
