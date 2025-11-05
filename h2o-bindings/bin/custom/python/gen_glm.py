@@ -321,9 +321,8 @@ def class_extensions():
 
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
-        ...                                   lambda_search=True,
         ...                                   solver='COORDINATE_DESCENT',
-        ...                                   control_variables=[2,3])
+        ...                                   control_variables=["PSA"])
         >>> m.train(training_frame=d,
         ...         x=[2,3,4,5,6,7,8],
         ...         y=1)
