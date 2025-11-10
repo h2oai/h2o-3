@@ -289,12 +289,12 @@ def test_glm_aic_control_variables():
     )
     assert aic_diff < 1e-5, f"AIC difference is {aic_diff}"
 
-    glm_fn = tempfile.mkdtemp()
-    glm_fn = glm_no_reg.download_mojo(glm_fn)
-
-    glm_no_reg_mojo = H2OGenericEstimator.from_file(glm_fn)
-    aic_diff = abs(glm_no_reg_mojo.aic() - glm_no_reg.aic())
-    assert aic_diff < 1e-5, f"AIC difference between mojo and glm: {aic_diff}"
+    ## MOJOs are not supported
+    # glm_fn = tempfile.mkdtemp()
+    # glm_fn = glm_no_reg.download_mojo(glm_fn)
+    # glm_no_reg_mojo = H2OGenericEstimator.from_file(glm_fn)
+    # aic_diff = abs(glm_no_reg_mojo.aic() - glm_no_reg.aic())
+    # assert aic_diff < 1e-5, f"AIC difference between mojo and glm: {aic_diff}"
 
     ## MOJOs are not supported
     # aic_mojo = float(glm_no_reg_mojo.model_performance(train_h2o)._metric_json["AIC"])
@@ -317,13 +317,12 @@ def test_glm_aic_control_variables():
     )
     assert aic_diff < 1e-5, f"AIC difference is {aic_diff}"
 
-    glm_cv_fn = tempfile.mkdtemp()
-    glm_cv_fn = glm_cv.download_mojo(glm_cv_fn)
-
-    glm_cv_mojo = H2OGenericEstimator.from_file(glm_cv_fn)
-
-    aic_diff = abs(glm_cv_mojo.aic() - glm_cv.aic())
-    assert aic_diff < 1e-5, f"AIC difference between mojo and glm: {aic_diff}"
+    ## MOJOs are not supported
+    # glm_cv_fn = tempfile.mkdtemp()
+    # glm_cv_fn = glm_cv.download_mojo(glm_cv_fn)
+    # glm_cv_mojo = H2OGenericEstimator.from_file(glm_cv_fn)
+    # aic_diff = abs(glm_cv_mojo.aic() - glm_cv.aic())
+    # assert aic_diff < 1e-5, f"AIC difference between mojo and glm: {aic_diff}"
 
     ## MOJOs are unsupported
     # aic_mojo = float(glm_cv_mojo.model_performance(train_h2o)._metric_json["AIC"])
