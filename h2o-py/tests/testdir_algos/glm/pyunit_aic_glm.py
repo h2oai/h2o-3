@@ -1,11 +1,11 @@
 import sys
-
-from h2o import H2OFrame
+import tempfile
 
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+from h2o.estimators import H2OGenericEstimator
 import statsmodels.api as sm
 import statsmodels.tools as st
 
@@ -264,6 +264,73 @@ def test_glm_aic_tweedie_no_regularization():
     # Without calculating likelihood, H2O can't guess AIC
 
 
+def test_glm_aic_control_variables():
+    _header("Gaussian regression with control variables")
+    train_h2o = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "PSA"
+    x = ["CAPSULE", "AGE", "RACE", "DPROS", "DCAPS", "VOL", "GLEASON"]
+    x_plus_intercept_plus_disp = len(x) + 1 + 1
+    cv = ["RACE", "AGE"]
+
+    _header("No regularization", 1)
+
+    glm_no_reg = H2OGeneralizedLinearEstimator(
+        lambda_=0,
+        calc_like=True,
+        control_variables=cv,
+        compute_p_values=True,
+        remove_collinear_columns=True,
+        seed=12345,
+    )
+    glm_no_reg.train(x=x, y=y, training_frame=train_h2o)
+    aic_diff = abs(
+        (-2 * glm_no_reg.loglikelihood() + 2 * x_plus_intercept_plus_disp)
+        - glm_no_reg.aic()
+    )
+    assert aic_diff < 1e-5, f"AIC difference is {aic_diff}"
+
+    glm_fn = tempfile.mkdtemp()
+    glm_fn = glm_no_reg.download_mojo(glm_fn)
+
+    glm_no_reg_mojo = H2OGenericEstimator.from_file(glm_fn)
+    aic_diff = abs(glm_no_reg_mojo.aic() - glm_no_reg.aic())
+    assert aic_diff < 1e-5, f"AIC difference between mojo and glm: {aic_diff}"
+
+    ## MOJOs are not supported
+    # aic_mojo = float(glm_no_reg_mojo.model_performance(train_h2o)._metric_json["AIC"])
+    # aic_model = float(glm_no_reg._model_json["output"]["training_metrics"]._metric_json["AIC"])
+    # aic_diff = abs(aic_mojo - aic_model)
+    # assert aic_diff < 1e-5, f"AIC difference between mojo.model_perf and glm: {aic_diff}, aic(model)={aic_model}; aic(mojo)={aic_mojo}; model.aic()={glm_no_reg.aic()}, mojo.aic()={glm_no_reg_mojo.aic()}"
+
+    _header("LASSO", 1)
+    glm_cv = H2OGeneralizedLinearEstimator(
+        lambda_=1, alpha=1, calc_like=True, control_variables=cv  # LASSO
+    )
+    glm_cv.train(x=x, y=y, training_frame=train_h2o)
+
+    x_reg_plus_intercept_plus_disp = (
+        len([v for k, v in glm_cv.coef().items() if v != 0 or k in cv]) + 1
+    )
+    aic_diff = abs(
+        (-2 * glm_cv.loglikelihood() + 2 * x_reg_plus_intercept_plus_disp)
+        - glm_cv.aic()
+    )
+    assert aic_diff < 1e-5, f"AIC difference is {aic_diff}"
+
+    glm_cv_fn = tempfile.mkdtemp()
+    glm_cv_fn = glm_cv.download_mojo(glm_cv_fn)
+
+    glm_cv_mojo = H2OGenericEstimator.from_file(glm_cv_fn)
+
+    aic_diff = abs(glm_cv_mojo.aic() - glm_cv.aic())
+    assert aic_diff < 1e-5, f"AIC difference between mojo and glm: {aic_diff}"
+
+    ## MOJOs are unsupported
+    # aic_mojo = float(glm_cv_mojo.model_performance(train_h2o)._metric_json["AIC"])
+    # aic_diff = abs(aic_mojo - glm_cv.aic())
+    # assert aic_diff < 1e-5, f"AIC difference between mojo.model_perf and glm: {aic_diff}"
+
+
 pyunit_utils.run_tests(
     [
         test_glm_aic_binomial_no_regularization,
@@ -272,5 +339,6 @@ pyunit_utils.run_tests(
         test_glm_aic_negative_binomial_no_regularization,
         test_glm_aic_poisson_no_regularization,
         test_glm_aic_tweedie_no_regularization,
+        test_glm_aic_control_variables,
     ]
 )

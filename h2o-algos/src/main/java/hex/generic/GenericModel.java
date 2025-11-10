@@ -179,6 +179,17 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             } else {
                 // regularization => use number of non-zero coefficients as a proxy for effective degrees of freedom
                 k =  Arrays.stream(((GlmMojoModelBase) this.genModel()).getBeta()).filter(b -> b != 0).count();
+                if (_glmParameters._control_variables !=  null) {
+                    for (String control_var: _glmParameters._control_variables) {
+                        for (int i = 0; i < _output._names.length; i++) {
+                            if (control_var.equals(_output._names[i])) {
+                                if (((GlmMojoModelBase) this.genModel()).getBeta()[i] == 0)
+                                    k++;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             if (!_glmParameters._fix_dispersion_parameter) {
                 // If it is not fixed it's estimated

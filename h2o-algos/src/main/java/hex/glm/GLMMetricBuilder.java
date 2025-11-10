@@ -191,6 +191,17 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       } else {
         // regularization => use number of non-zero coefficients as a proxy for effective degrees of freedom
         k = _rank;
+        if (gm._parms._control_variables !=  null) {
+          for (String control_var: gm._parms._control_variables) {
+            for (int i = 0; i < gm._output._names.length; i++) {
+              if (control_var.equals(gm._output._names[i])) {
+                if (gm._output.beta()[i] == 0)
+                  k++;
+                break;
+              }
+            }
+          }
+        }
       }
       if (!gm._parms._fix_dispersion_parameter) {
         // If it is not fixed it's estimated
