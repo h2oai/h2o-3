@@ -308,6 +308,41 @@ def class_extensions():
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
+
+    def make_unrestricted_glm_model(self, dest=None):
+        """
+        Make unrestricted GLM model when control variables are defined.
+
+        Needs to be passed source model trained with control variables enabled. 
+
+        :param dest: (optional) destination key
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   solver='COORDINATE_DESCENT',
+        ...                                   control_variables=["PSA"])
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,7,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        """
+        model_json = h2o.api(
+            "POST /3/MakeUnrestrictedGLMModel",
+            data={"model": self._model_json["model_id"]["name"],
+                  "dest": dest}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        if dest is None:
+            dest = model_json["model_id"]["name"]
+        m._resolve_model(dest, model_json)
+        return m
+
 extensions = dict(
     __imports__="""import h2o""",
     __class__=class_extensions,

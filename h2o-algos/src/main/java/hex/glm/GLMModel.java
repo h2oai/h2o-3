@@ -50,6 +50,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
 
+  protected ScoringInfo[] _unrestrictedModelScoringInfo;
+
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     _ymu = ymu;
@@ -109,6 +111,45 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     scoringInfo = ScoringInfo.prependScoringInfo(currInfo, scoringInfo);
   }
+
+  public ScoringInfo[] getUnrestrictedModelScoringInfo() { return _unrestrictedModelScoringInfo;}
+
+  public ScoreKeeper[] unrestritedModelScoreKeepers() {
+    int size = _unrestrictedModelScoringInfo ==null? 0: _unrestrictedModelScoringInfo.length;
+    ScoreKeeper[] sk = new ScoreKeeper[size];
+    for (int i=0;i<size;++i) {
+      if (_unrestrictedModelScoringInfo[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = _unrestrictedModelScoringInfo[i].scored_xval;
+      else if (_unrestrictedModelScoringInfo[i].validation)
+        sk[i] = _unrestrictedModelScoringInfo[i].scored_valid;
+      else
+        sk[i] = _unrestrictedModelScoringInfo[i].scored_train;
+    }
+    return sk;
+  }
+
+  public void addUnrestrictedModelScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (_unrestrictedModelScoringInfo != null && (((GLMScoringInfo) _unrestrictedModelScoringInfo[_unrestrictedModelScoringInfo.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
+    currInfo.is_classification = nclasses > 1;
+    currInfo.validation = parms.valid() != null;
+    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
+    currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
+    currInfo.total_training_time_ms = _output._training_time_ms;
+    if (_output._training_metrics_unrestricted_model != null) {
+      currInfo.scored_train = new ScoreKeeper(Double.NaN);
+      currInfo.scored_train.fillFrom(_output._training_metrics_unrestricted_model);
+    }
+    if (_output._validation_metrics_unrestricted_model != null) {
+      currInfo.scored_valid = new ScoreKeeper(Double.NaN);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_unrestricted_model);
+    }
+    _unrestrictedModelScoringInfo = ScoringInfo.prependScoringInfo(currInfo, _unrestrictedModelScoringInfo);
+  }
+  
   
   public void setVcov(double[][] inv) {_output._vcov = inv;}
 
@@ -537,6 +578,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _constraint_alpha = 0.1; // eta_k = constraint_eta_0/pow(constraint_c0, constraint_alpha)
     public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
     public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
+    public String[] _control_variables; // control variables definition, list of column names
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -675,6 +717,40 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if (!(_missing_values_handling instanceof DeepLearningModel.DeepLearningParameters.MissingValuesHandling) &&
                 !(_missing_values_handling instanceof MissingValuesHandling)) {
           throw new IllegalArgumentException("Missing values handling should be specified as an instance of " + MissingValuesHandling.class.getName());
+        }
+      }
+      if(_control_variables != null) {
+        if ((_interactions != null || _interaction_pairs != null)) {
+          glm.error("_control_variables", "Control variables option is not supported with interactions.");
+        }
+        if(_lambda_search) {
+          glm.error("_control_variables", "Control variables option is not supported with lambda search.");
+        }
+        if(_fold_column != null || _nfolds > 0){
+          glm.error("_control_variables", "Control variables option is not supported with cross validation.");
+        }
+        for(String col: _control_variables){
+          Vec v = train().vec(col);
+          if (v == null) {
+            glm.error("_control_variables", "Control variable '"+col+"' is not in the frame.");
+          } else {
+            if (col.equals(_weights_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as weight_column.");
+            }
+            if (col.equals(_offset_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as offset_column.");
+            }
+            if (col.equals(_response_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as response_column.");
+            }
+            if(_ignored_columns != null) {
+              for (String icol : _ignored_columns) {
+                if (col.equals(icol)) {
+                  glm.error("_control_variables", "Control variable '" + col + "' is set is ignored_columns.");
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -1451,6 +1527,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final long      _nobs;
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
+  public boolean _useControlVariables = false;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1483,6 +1560,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String[] _coefficient_names;
     public long _training_time_ms;
     public TwoDimTable _variable_importances;
+    public TwoDimTable _variable_importances_unrestricted_model;
     public VarImp _varimp;  // should contain the same content as standardized coefficients
     int _lambda_array_size; // store number of lambdas to iterate over
     public double _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
@@ -1528,6 +1606,46 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double[][] _initConstraintMatrix = null;
     public boolean hasPValues(){return _zvalues != null;}
     public boolean hasVIF() { return _vif_predictor_names != null; }
+    
+    private int[] _control_values_idxs_in_adapted_frame;
+    private String[] _control_values_names;
+
+    // Unrestricted model is produced when control variables are used.
+    public TwoDimTable _scoring_history_unrestricted_model;
+    public ModelMetrics _training_metrics_unrestricted_model;
+    public ModelMetrics _validation_metrics_unrestricted_model;
+    
+    public void mapControlVariables() {
+      if(_control_values_names == null || _names == null) {
+        return;
+      }
+      _control_values_idxs_in_adapted_frame = new int[_control_values_names.length];
+      for(int i = 0; i < _control_values_names.length; i++) {
+        for(int j = 0; j < _names.length; j++) {
+          if(_control_values_names[i].equals(_names[j]) ) {
+            _control_values_idxs_in_adapted_frame[i] = j; break;
+          }
+        }
+      }
+    }
+    
+    public double[] getControlValBeta(double[] beta){
+      if (_control_values_idxs_in_adapted_frame == null){
+        mapControlVariables();
+      }
+      assert _control_values_idxs_in_adapted_frame != null;
+      for(int featureIdx : _control_values_idxs_in_adapted_frame) {
+        if (featureIdx < _dinfo._catOffsets.length - 1 && _column_types[featureIdx].equals("Enum")) {
+          for (int i = _dinfo._catOffsets[featureIdx]; i < _dinfo._catOffsets[featureIdx + 1]; i++) {
+            beta[i] = 0;
+          }
+        } else {
+          featureIdx += _dinfo._numOffsets[0] - _dinfo._catOffsets.length + 1;
+          beta[featureIdx] = 0;
+        }
+      }
+      return beta;
+    }
 
     public double[] stdErr() {
       return calculateStdErrFromZValues(_zvalues, _global_beta);
@@ -1597,6 +1715,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _binomial;
     public boolean _multinomial;
     public boolean _ordinal;
+    public boolean _score_control_vals_used_but_disabled;
 
     public void setLambdas(GLMParameters parms) {
       if (parms._lambda_search) {
@@ -1652,7 +1771,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, 
-                     String[] coefficient_names, double[] beta, boolean binomial, boolean multinomial, boolean ordinal) {
+                     String[] coefficient_names, double[] beta, boolean binomial, boolean multinomial, boolean ordinal, String[] controlVarNames) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
       setNames(column_names, column_types);
@@ -1674,7 +1793,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _global_beta=beta;
       _submodels = new Submodel[]{new Submodel(0, 0, beta, -1, Double.NaN, Double.NaN,
               _totalBetaLength, null, false)};
+      _control_values_names = controlVarNames;
+      mapControlVariables();
     }
+    
     
     public GLMOutput() {
       _isSupervised = true; 
@@ -1726,7 +1848,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
               Family.fractionalbinomial == glm._parms._family);
       _multinomial = glm._parms._family == Family.multinomial;
       _ordinal = glm._parms._family == Family.ordinal;
+      // setup control variables idxs from model parameters
+      _control_values_names = glm._parms._control_variables;
+      mapControlVariables();
     }
+    
 
     /**
      * Variance Covariance matrix accessor. Available only if odel has been built with p-values.
@@ -1860,10 +1986,29 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       assert submodel_index < _submodels.length : "submodel_index specified exceeds the submodels length.";
       return _submodels[submodel_index];
     }
+
+    public double defaultThreshold() {
+      if (nclasses() != 2 || _training_metrics == null || _training_metrics instanceof ModelMetricsBinomialUplift)
+        return 0.5;
+      if(_defaultThreshold == -1) {
+        if (_validation_metrics_unrestricted_model != null && ((ModelMetricsBinomial) _validation_metrics_unrestricted_model)._auc != null) 
+          return ((ModelMetricsBinomial) _validation_metrics_unrestricted_model)._auc.defaultThreshold();
+        if (_training_metrics_unrestricted_model != null && ((ModelMetricsBinomial) _training_metrics_unrestricted_model)._auc != null)
+          return ((ModelMetricsBinomial) _training_metrics_unrestricted_model)._auc.defaultThreshold();
+        if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
+          return ((ModelMetricsBinomial) _validation_metrics)._auc.defaultThreshold();
+        if (((ModelMetricsBinomial) _training_metrics)._auc != null)
+          return ((ModelMetricsBinomial) _training_metrics)._auc.defaultThreshold();
+        return 0.5;
+      } else {
+        return _defaultThreshold;
+      }
+    }
     
     // calculate variable importance which is derived from the standardized coefficients
-    public VarImp calculateVarimp() {
+    public VarImp calculateVarimp(boolean contrVal) {
       String[] names = coefficientNames();
+      
       final double [] magnitudes = new double[names.length];
       int len = magnitudes.length - 1;
       if (len == 0) // GLM model contains only intercepts and no predictor coefficients.
@@ -1875,7 +2020,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
       String[] namesSort = new String[len];
       
-      if (_nclasses > 2)
+      if (contrVal)
+        calculateVarimpBase(magnitudes, indices, getControlValBeta(getNormBeta()));
+      else if (_nclasses > 2)
         calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
@@ -2053,9 +2200,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     } else {
       double[] b = beta();
       double eta = b[b.length - 1] + o; // intercept + offset
+      double[] bcv = b.clone();
+      if (this._useControlVariables)
+        bcv = _output.getControlValBeta(bcv); // make beta connected to control variables zero
+      
       for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
         int l = _output._dinfo.getCategoricalId(i, data[i]);
-        if (l >= 0) eta += b[l];
+        if (l >= 0) eta += bcv[l];
       }
       int numStart = _output._dinfo.numStart();
       int ncats = _output._dinfo._cats;
@@ -2063,7 +2214,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double d = data[ncats + i];
         if (!_output._dinfo._skipMissing && Double.isNaN(d))
           d = _output._dinfo._numNAFill[i];
-        eta += b[numStart + i] * d;
+        eta += bcv[numStart + i] * d;
       }
       double mu = _parms.linkInv(eta);
       if (_parms._family == Family.binomial) { // threshold for prediction
@@ -2255,8 +2406,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean haveMojo() {
-    if (_parms.interactionSpec() == null) return super.haveMojo();
-    else return false;
+    if (_parms._control_variables != null && _parms._control_variables.length>0)
+      return false;
+    if (_parms.interactionSpec() == null)
+      return super.haveMojo();
+    return false;
   }
 
   @Override
@@ -2270,7 +2424,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMMojoWriter(this);
   }
 
-  private boolean isFeatureUsedInPredict(int featureIdx, double[] beta){
+  private boolean isFeatureUsedInPredict(int featureIdx, double[] beta) {
+    if (_useControlVariables && _output._control_values_idxs_in_adapted_frame != null && Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, featureIdx) >= 0) {
+      return false;
+    }
     if (featureIdx < _output._dinfo._catOffsets.length - 1 && _output._column_types[featureIdx].equals("Enum")) {
       for (int i = _output._dinfo._catOffsets[featureIdx];
            i < _output._dinfo._catOffsets[featureIdx + 1];
@@ -2316,5 +2473,5 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     if (_output._regression_influence_diagnostics!= null)
       ab.getKey(_output._regression_influence_diagnostics, fs);
     return super.readAll_impl(ab, fs);
-  }  
+  }
 }

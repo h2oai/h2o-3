@@ -518,6 +518,10 @@ public final class ComputationState {
   public void setActiveClass(int activeClass) {_activeClass = activeClass;}
 
   public double deviance() {
+    return deviance(likelihood());
+  }
+
+  public double deviance(double likelihood) {
     switch (_parms._family) {
       case gaussian:
       case binomial:
@@ -525,12 +529,12 @@ public final class ComputationState {
       case ordinal:
       case multinomial:
       case fractionalbinomial:
-        return 2*likelihood();
+        return 2*likelihood;
       case poisson:
       case gamma:
-      case negativebinomial:  
+      case negativebinomial:
       case tweedie:
-        return likelihood();
+        return likelihood;
       default:
         throw new RuntimeException("unknown family " + _parms._family);
     }
