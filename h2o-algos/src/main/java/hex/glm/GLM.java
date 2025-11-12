@@ -868,7 +868,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             warn("_family", "Poisson and Negative Binomial expect non-negative integer response," +
                     " got floats.");
           if (Family.negativebinomial.equals(_parms._family))
-            if (_parms._theta <= 0)// || _parms._theta > 1)
+            if (_parms._theta <= 0)
               error("_family", "Illegal Negative Binomial theta value. Theta must be a positive number.");
             else
               _parms._invTheta = 1 / _parms._theta;
