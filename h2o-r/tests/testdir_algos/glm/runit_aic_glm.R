@@ -39,12 +39,12 @@ header <- function(title, level = 0) {
         h2o_likelihood <- h2o.loglikelihood(h2o_model)
         if (abs(h2o_likelihood - r_llh) > loglik_tolerance) {
             cat(sprintf(
-                "‼️ Likelihood differs by %f; h2o loglikelihood: %f, r loglikelihood: %f\n",
+                "Likelihood differs by %f; h2o loglikelihood: %f, r loglikelihood: %f\n",
                 abs(h2o_likelihood - r_llh), h2o_likelihood, r_llh
             ))
             expect_equal(h2o_likelihood, r_llh)
         } else {
-            cat(sprintf("✅  Differences in log likelihoods were smaller than %f.\n", loglik_tolerance))
+            cat(sprintf("Differences in log likelihoods were smaller than %f.\n", loglik_tolerance))
             expect_true(TRUE)
         }
     }
@@ -59,14 +59,14 @@ header <- function(title, level = 0) {
             if (diff > coef_tolerance) {
                 diff_coef <- TRUE
                 cat(sprintf(
-                    "‼️  Coefficient '%s' differs by %.6e; h2o: %.6f; R: %.6f\n",
+                    "Coefficient '%s' differs by %.6e; h2o: %.6f; R: %.6f\n",
                     name, h2o_coefs[name] - r_coefs[r_name], h2o_coefs[name], r_coefs[r_name]
                 ))
             }
         }
     }
     if (!diff_coef) {
-        cat(sprintf("✅  Differences in coefficients were smaller than %f.\n", coef_tolerance))
+        cat(sprintf("Differences in coefficients were smaller than %f.\n", coef_tolerance))
     }
 
     # Compare AIC
@@ -75,7 +75,7 @@ header <- function(title, level = 0) {
         cat(sprintf("Missing value h2o=%f, r=%f\n", h2o_aic, r_aic))
     } else if (aic_diff > aic_tolerance) {
         message <- sprintf(
-            "❌  H2O's and R's AIC estimates don't match by %.6f. AIC(h2o)=%.6f, AIC(R)=%.6f",
+            "H2O's and R's AIC estimates don't match by %.6f. AIC(h2o)=%.6f, AIC(R)=%.6f",
             h2o_aic - r_aic, h2o_aic, r_aic
         )
         cat(message)
@@ -83,7 +83,7 @@ header <- function(title, level = 0) {
     } else {
         expect_true(TRUE)
         cat(sprintf(
-            "✅  Differences between AIC is smaller than threshold: %.6e. AIC(h2o)=%.6f, AIC(R)=%.6f\n",
+            "Differences between AIC is smaller than threshold: %.6e. AIC(h2o)=%.6f, AIC(R)=%.6f\n",
             h2o_aic - r_aic, h2o_aic, r_aic
         ))
     }

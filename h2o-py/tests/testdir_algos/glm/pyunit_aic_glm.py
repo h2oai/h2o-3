@@ -1,11 +1,9 @@
 import sys
-import tempfile
 
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-from h2o.estimators import H2OGenericEstimator
 import statsmodels.api as sm
 import statsmodels.tools as st
 
@@ -37,14 +35,14 @@ def assert_equal(
             cn = "const"
         if abs(cv - sm_model.params.at[cn]) > coef_tolerance:
             print(
-                f"‼️  coefficient '{cn}' differs by {cv - sm_model.params.at[cn]}; h2o: {cv}; statsmodels: {sm_model.params.at[cn]}"
+                f"Coefficient '{cn}' differs by {cv - sm_model.params.at[cn]}; h2o: {cv}; statsmodels: {sm_model.params.at[cn]}"
             )
     if abs(h2o_aic - sm_aic) > aic_tolerance:
         message = f"H2O's and statsmodels' AIC estimates don't match by {h2o_aic - sm_aic}. AIC(h2o)={h2o_aic}, AIC(sm)={sm_aic}"
         assert h2o_aic == sm_aic, message
     else:
         print(
-            f"✅  Differences between AIC is smaller than threshold: {h2o_aic - sm_aic}. AIC(h2o)={h2o_aic}, AIC(sm)={sm_aic}"
+            f"Differences between AIC is smaller than threshold: {h2o_aic - sm_aic}. AIC(h2o)={h2o_aic}, AIC(sm)={sm_aic}"
         )
 
 
