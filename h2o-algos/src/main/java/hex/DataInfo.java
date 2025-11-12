@@ -35,7 +35,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public void dropWeights() {
-    if(!_weights)return;
+    if(!_weights) return;
     _adaptedFrame.remove(weightChunkId());
     _weights = false;
   }
