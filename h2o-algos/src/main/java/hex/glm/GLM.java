@@ -2,6 +2,7 @@ package hex.glm;
 
 import Jama.Matrix;
 import hex.*;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -3400,17 +3401,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);  // add to scoringInfo for early stopping
 
       if (_parms._generate_scoring_history) { // update scoring history with deviance train and valid if available
+        double likelihoodContrVal;
         double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
-        GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, betaContrVal).doAll(_dinfo._adaptedFrame);
-        double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
-        
+        if(_parms._distribution.equals(DistributionFamily.multinomial)){
+          GLMResDevTaskMultinomial task = new GLMResDevTaskMultinomial(_job._key, _dinfo, betaContrVal, nclasses()).doAll(_dinfo._adaptedFrame);
+          likelihoodContrVal = task._likelihood;
+        } else {
+          GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, betaContrVal).doAll(_dinfo._adaptedFrame);
+          likelihoodContrVal = task._likelihood;
+        }
+        double objectiveControlVal = _state.objective(betaContrVal, likelihoodContrVal);
         if ((mtrain != null) && (_valid != null)) {
-          _scoringHistory.addIterationScore(true, true, _state._iter, task._likelihood,
-                  objectiveControlVal, _state.deviance(task._likelihood), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
+          _scoringHistory.addIterationScore(true, true, _state._iter, likelihoodContrVal,
+                  objectiveControlVal, _state.deviance(likelihoodContrVal), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
                   mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
         } else { // only doing training deviance
-          _scoringHistory.addIterationScore(true, false, _state._iter, task._likelihood,
-                  objectiveControlVal, _state.deviance(task._likelihood), Double.NaN, mtrain._nobs, 1, _state.lambda(),
+          _scoringHistory.addIterationScore(true, false, _state._iter, likelihoodContrVal,
+                  objectiveControlVal, _state.deviance(likelihoodContrVal), Double.NaN, mtrain._nobs, 1, _state.lambda(),
                   _state.alpha());
         }
         _job.update(_workPerIteration, _state.toString());
@@ -4036,9 +4043,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_model._parms._control_variables != null){
           _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
           double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
-          GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_state._dinfo._adaptedFrame);
-          double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
-          _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
+          double likelihoosContrVal;
+          if(_model._parms._distribution.equals(DistributionFamily.multinomial)){
+            GLMResDevTaskMultinomial task = new GLMResDevTaskMultinomial(_job._key, _dinfo, betaContrVal, nclasses()).doAll(_state._dinfo._adaptedFrame);
+            likelihoosContrVal = task._likelihood;
+          } else {
+            GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_state._dinfo._adaptedFrame);
+            likelihoosContrVal = task._likelihood;
+          }
+          double objectiveControlVal = _state.objective(betaContrVal, likelihoosContrVal);
+          _scoringHistory.addIterationScore(_state._iter, likelihoosContrVal, objectiveControlVal);
         } else {
           _scoringHistory.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
         }

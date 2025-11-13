@@ -1646,6 +1646,28 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
       return beta;
     }
+    
+    public double[][] getControlValBetaMultinomial(double[][] beta) {
+      if (_control_values_idxs_in_adapted_frame == null) {
+        mapControlVariables();
+      }
+      assert _control_values_idxs_in_adapted_frame != null;
+      for (int featureIdx : _control_values_idxs_in_adapted_frame) {
+        if (featureIdx < _dinfo._catOffsets.length - 1 && _column_types[featureIdx].equals("Enum")) {
+          for (int i = _dinfo._catOffsets[featureIdx]; i < _dinfo._catOffsets[featureIdx + 1]; i++) {
+            for (int c = 0; c < beta.length; ++c) {
+              beta[c][i] = 0;
+            }
+          }
+        } else {
+          for (int c = 0; c < beta.length; ++c) {
+            featureIdx += _dinfo._numOffsets[0] - _dinfo._catOffsets.length + 1;
+            beta[c][featureIdx] = 0;
+          }
+        }
+      }
+      return beta;
+    }
 
     public double[] stdErr() {
       return calculateStdErrFromZValues(_zvalues, _global_beta);
@@ -2147,9 +2169,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int icptInd = bm[0].length-1;
       if (_parms._family == Family.ordinal) // only need one eta for all classes
         classInd -= 1;  // last class all zeros
+      double[][] bmcv = bm.clone();
+      if(_useControlVariables){
+        bmcv = _output.getControlValBetaMultinomial(bm);
+      }      
       for (int c = 0; c < classInd; ++c) {
-        double e = bm[c][icptInd]; // grab the intercept, replace the bm[0].length-1
-        double [] b = bm[c];
+        double e = bmcv[c][icptInd]; // grab the intercept, replace the bm[0].length-1
+        double [] b = bmcv[c];
         for(int i = 0; i < _output._dinfo._cats; ++i) {
           int l = _output._dinfo.getCategoricalId(i, data[i]);
           if (l >= 0) e += b[l];
@@ -2203,7 +2229,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double[] bcv = b.clone();
       if (this._useControlVariables)
         bcv = _output.getControlValBeta(bcv); // make beta connected to control variables zero
-      
       for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
         int l = _output._dinfo.getCategoricalId(i, data[i]);
         if (l >= 0) eta += bcv[l];
