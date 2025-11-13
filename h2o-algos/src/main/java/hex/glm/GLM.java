@@ -868,9 +868,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             warn("_family", "Poisson and Negative Binomial expect non-negative integer response," +
                     " got floats.");
           if (Family.negativebinomial.equals(_parms._family))
-            if (_parms._theta <= 0)// || _parms._theta > 1)
-              error("_family", "Illegal Negative Binomial theta value.  Valid theta values be > 0" +
-                      " and <= 1.");
+            if (_parms._theta <= 0)
+              error("_family", "Illegal Negative Binomial theta value. Theta must be a positive number.");
             else
               _parms._invTheta = 1 / _parms._theta;
           break;
@@ -994,6 +993,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error(_parms._non_negative ? "non_negative" : "beta_constraints",
                 " does not work with " + _parms._family + " family.");
       }
+
+      if (_parms._fix_dispersion_parameter && negativebinomial.equals(_parms._family)) {
+        if (_parms._init_dispersion_parameter != 1.0)
+          error("init_dispersion_parameter", "is not supported when fix_dispersion_parameter == True for negative binomial family, use parameter theta instead.");
+      }
+      
       // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
       if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family) && !tweedie.equals(_parms._family) && !negativebinomial.equals(_parms._family))
         error("dispersion_parameter_mode", " ml can only be used for family gamma, tweedie, negative binomial.");
@@ -1008,11 +1013,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _parms._lambda = new double[]{0.0};
           }
         }
-        if (_parms._fix_dispersion_parameter)
+        if (_parms._fix_dispersion_parameter) {
           if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
             error("fix_dispersion_parameter", " is only supported for gamma, tweedie, " +
                     "negativebinomial families.");
-          
+        }
         if (_parms._fix_tweedie_variance_power && tweedie.equals(_parms._family)) {
           double minResponse = _parms.train().vec(_parms._response_column).min();
           if (minResponse < 0)
@@ -1240,38 +1245,47 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       
       // check for correct setting for Tweedie ML dispersion parameter setting
-      if (_parms._fix_dispersion_parameter) { // only tweeide, NB, gamma are allowed to use this
+      if (_parms._fix_dispersion_parameter) { // only tweedie, NB, gamma are allowed to use this
         if (!tweedie.equals(_parms._family) && !gamma.equals(_parms._family) && !negativebinomial.equals(_parms._family))
           error("fix_dispersion_parameter", " is only allowed for tweedie, gamma and " +
                   "negativebinomial families");
       }
 
-        if (_parms._fix_tweedie_variance_power && !_parms._fix_dispersion_parameter)
-          _tweedieDispersionOnly = true;
-      
-        // likelihood calculation for gaussian, gamma, negativebinomial and tweedie families requires dispersion parameter estimation
-        // _dispersion_parameter_method: gaussian - pearson (default); gamma, negativebinomial, tweedie - ml.
-        if(_parms._calc_like) {
-          switch (_parms._family) {
-            case gaussian:
-              _parms._compute_p_values = true;
-              _parms._remove_collinear_columns = true;
-              break;
-            case gamma:
-            case negativebinomial:
-              _parms._compute_p_values = true;
-              _parms._remove_collinear_columns = true;
-            case tweedie:
-              // dispersion value estimation for tweedie family does not require 
-              // parameters compute_p_values and remove_collinear_columns
-              _parms._dispersion_parameter_method = ml;
-              // disable regularization as ML is supported only without regularization
-              _parms._lambda = new double[] {0.0};
-            default:
-              // other families does not require dispersion parameter estimation
-          }
+      if (_parms._fix_tweedie_variance_power && !_parms._fix_dispersion_parameter)
+        _tweedieDispersionOnly = true;
+    
+      // likelihood calculation for gaussian, gamma, negativebinomial and tweedie families requires dispersion parameter estimation
+      // _dispersion_parameter_method: gaussian - pearson (default); gamma, negativebinomial, tweedie - ml.
+      if(_parms._calc_like) {
+        switch (_parms._family) {
+          case gaussian:
+            _parms._compute_p_values = true;
+            _parms._remove_collinear_columns = true;
+            break;
+          case gamma:
+          case negativebinomial:
+            _parms._compute_p_values = true;
+            _parms._remove_collinear_columns = true;
+            break;
+          case tweedie:
+            _parms._compute_p_values = true;
+            _parms._remove_collinear_columns = true;
+            // dispersion value estimation for tweedie family does not require 
+            // parameters compute_p_values and remove_collinear_columns
+            _parms._dispersion_parameter_method = ml;
+
+            if (_parms._lambda != null && _parms._lambda.length > 0 && _parms._lambda[0] != 0.0) {
+              error("calc_like", "calc_like can't be used with regularization (lambda > 0) with Tweedie family.");
+            }
+            
+            // disable regularization as ML is supported only without regularization
+            _parms._lambda = new double[] {0.0};
+            break;
+          default:
+            // other families do not require dispersion parameter estimation
         }
-        
+      }
+      
       if (_parms.hasCheckpoint()) {
         if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
           _checkPointFirstIter = true;  // mark the first iteration during iteration process of training
@@ -2515,10 +2529,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
 
           // Dispersion estimation part
-          if (negativebinomial.equals(_parms._family)){
-            converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
-            Log.info("GLM negative binomial dispersion estimation: iteration = "+iterCnt+"; theta = " + _parms._theta);
-          } else if (tweedie.equals(_parms._family)){
+          if (negativebinomial.equals(_parms._family)) {
+            if (!_parms._fix_dispersion_parameter) {
+              converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
+              Log.info("GLM negative binomial dispersion estimation: iteration = " + iterCnt + "; theta = " + _parms._theta);
+            } 
+          } else if (tweedie.equals(_parms._family)) {
             if (!_parms._fix_tweedie_variance_power) {
               if (!_parms._fix_dispersion_parameter) {
                 converged = updateTweediePandPhi(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
@@ -2529,6 +2545,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               }
             }
           }
+        
 
           if (Math.abs(previousLLH - gram.likelihood) < _parms._objective_epsilon)
             sameLLH ++;
@@ -3275,6 +3292,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (tweedie.equals(_parms._family) && !_parms._fix_dispersion_parameter && !_parms._fix_tweedie_variance_power) {
         _model.setDispersion(_parms._dispersion_estimated, true);
       }
+      if (_parms._fix_dispersion_parameter) {
+        _parms._dispersion_estimated = _parms._family.equals(negativebinomial)
+                ? _parms._theta 
+                : _parms._init_dispersion_parameter; 
+      }      
       if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters...
         double se = _parms._init_dispersion_parameter;
         boolean seEst = false;

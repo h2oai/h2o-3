@@ -168,12 +168,43 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     @Override
     public double aic(double likelihood) {
-        // calculate negative loglikelihood specifically  for GLM
+        // calculate AIC specifically  for GLM
         if (!_algoName.equals("glm")) {
             return Double.NaN;
         } else {
-            long betasCount = Arrays.stream(((GlmMojoModelBase) this.genModel()).getBeta()).filter(b -> b != 0).count();
-            return -2 * likelihood + 2 * betasCount;
+            long k = 0;
+            if (_glmParameters._lambda != null && _glmParameters._lambda.length == 1 && _glmParameters._lambda[0] == 0.0 && !_glmParameters._lambda_search) {
+                // no regularization 
+                k = ((GlmMojoModelBase) this.genModel()).getBeta().length;
+            } else {
+                // regularization => use number of non-zero coefficients as a proxy for effective degrees of freedom
+                k =  Arrays.stream(((GlmMojoModelBase) this.genModel()).getBeta()).filter(b -> b != 0).count();
+                if (_glmParameters._control_variables !=  null) {
+                    for (String control_var: _glmParameters._control_variables) {
+                        for (int i = 0; i < _output._names.length; i++) {
+                            if (control_var.equals(_output._names[i])) {
+                                if (((GlmMojoModelBase) this.genModel()).getBeta()[i] == 0)
+                                    k++;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (!_glmParameters._fix_dispersion_parameter) {
+                // If it is not fixed it's estimated
+                switch (_glmParameters._family) {
+                    case gaussian:
+                    case gamma:
+                    case negativebinomial:
+                    case tweedie:
+                        k += 1;
+                        break;
+                }
+            }
+            if (!_glmParameters._fix_tweedie_variance_power && _glmParameters._family.equals(GLMModel.GLMParameters.Family.tweedie))
+                k += 1;
+            return 2 * likelihood + 2 * k;
         }
     }
 

@@ -184,7 +184,39 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
 
   protected void computeAIC(GLMModel gm) {
     if (gm._parms._calc_like && gm._finalScoring) { // uses likelihood which is calculated for the final scoring
-      _aic = 2 * _log_likelihood + 2 * Arrays.stream(gm.beta()).filter(b -> b != 0).count();
+      long k = 0;
+      if (gm._parms._lambda != null && gm._parms._lambda.length == 1 && gm._parms._lambda[0] == 0.0 && !gm._parms._lambda_search) {
+        // no regularization 
+        k = gm.beta().length;
+      } else {
+        // regularization => use number of non-zero coefficients as a proxy for effective degrees of freedom
+        k = _rank;
+        if (gm._parms._control_variables !=  null) {
+          for (String control_var: gm._parms._control_variables) {
+            for (int i = 0; i < gm._output._names.length; i++) {
+              if (control_var.equals(gm._output._names[i])) {
+                if (gm._output.beta()[i] == 0)
+                  k++;
+                break;
+              }
+            }
+          }
+        }
+      }
+      if (!gm._parms._fix_dispersion_parameter) {
+        // If it is not fixed it's estimated
+        switch (_glmf._family) {
+          case gaussian:
+          case gamma:
+          case negativebinomial:
+          case tweedie:
+            k += 1;
+            break;
+        }
+      }
+      if (!gm._parms._fix_tweedie_variance_power && _glmf._family.equals(Family.tweedie))
+        k += 1;
+      _aic = 2 * k - 2 * _log_likelihood;
     } else { // original calculation for the model build
       _aic = 0;
       switch (_glmf._family) {
