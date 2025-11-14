@@ -750,6 +750,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                 }
               }
             }
+            if(_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
+              glm.error("_control_variables", "The "+_distribution.name()+ " distribution is not supported with control variables.");
+            }
           }
         }
       }
