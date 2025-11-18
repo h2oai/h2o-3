@@ -3,12 +3,12 @@
 For any question not answered in this file or in [H2O-3 Documentation](https://docs.h2o.ai/h2o/latest-stable/h2o-docs), please use:
 
 [![Ask on GitHub](https://img.shields.io/github/discussions/h2oai/h2o-3.svg?logo=github&label=Discussions%20Q%26A&color=FFE600)](https://github.com/h2oai/h2o-3/discussions/categories/q-a)
-[![Ask on StackOverflow](https://img.shields.io/stackexchange/stackoverflow/t/h2o?logo=stackoverflow&label=H2O%20on%20StackOverflow&color=f7a664)](http://stackoverflow.com/questions/tagged/h2o)
+[![Ask on StackOverflow](https://img.shields.io/stackexchange/stackoverflow/t/h2o?logo=stackoverflow&label=H2O%20on%20StackOverflow&color=f7a664)](https://stackoverflow.com/questions/tagged/h2o)
 [![Ask on Gitter](https://img.shields.io/gitter/room/h2oai/h2o-3?logo=gitter&logoColor=red&label=H2O%20chatroom&color=b5b5b5)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular [algorithms](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science.html) such as Generalized Linear Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests, Deep Neural Networks, Stacked Ensembles, Naive Bayes, Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic machine learning algorithm ([H2O AutoML](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html)). 
+H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular [algorithms](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science.html) such as Generalized Linear Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests, Deep Neural Networks, Stacked Ensembles, Naive Bayes, Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic machine learning algorithm ([H2O AutoML](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html)). 
 
-H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  H2O models can be [downloaded](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/save-and-load-model.html) and loaded into H2O memory for scoring, or exported into POJO or MOJO format for extremely fast scoring in [production](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html).  More information can be found in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).
+H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  H2O models can be [downloaded](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/save-and-load-model.html) and loaded into H2O memory for scoring, or exported into POJO or MOJO format for extremely fast scoring in [production](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html).  More information can be found in the [H2O User Guide](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).
 
 H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H2O-2](https://github.com/h2oai/h2o-2).  
 
@@ -46,7 +46,7 @@ install.packages("h2o")
 
 For the latest stable, nightly, Hadoop (or Spark / Sparkling Water) releases, or the stand-alone H2O jar, please visit: [https://h2o.ai/download](https://h2o.ai/download)
 
-More info on downloading & installing H2O is available in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html).
+More info on downloading & installing H2O is available in the [H2O User Guide](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html).
 
 <a name="Resources"></a>
 ## 2. Open Source Resources
@@ -73,7 +73,7 @@ You can browse and create new issues in our GitHub repository:  <https://github.
 *  GitHub issues -- file bug reports / track issues here
     * The <https://github.com/h2oai/h2o-3/issues> page contains issues for the current H2O-3 project)
 *  Stack Overflow -- ask all code/software questions here
-    * <http://stackoverflow.com/questions/tagged/h2o>
+    * <https://stackoverflow.com/questions/tagged/h2o>
 *  Cross Validated (Stack Exchange) -- ask algorithm/theory questions here
     * <https://stats.stackexchange.com/questions/tagged/h2o>
 *  h2ostream Google Group -- ask non-code related questions here
@@ -82,13 +82,13 @@ You can browse and create new issues in our GitHub repository:  <https://github.
 * Gitter H2O Developer Chat
     * <https://gitter.im/h2oai/h2o-3>    
 *  Documentation
-    * H2O User Guide (main docs): <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html>
-    * All H2O documentation links: <http://docs.h2o.ai>
+    * H2O User Guide (main docs): <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html>
+    * All H2O documentation links: <https://docs.h2o.ai>
     * Nightly build page (nightly docs linked in page): <https://s3.amazonaws.com/h2o-release/h2o/master/latest.html>
 *  Download (pre-built packages)
-    * <http://h2o.ai/download>
+    * <https://h2o.ai/download>
 *  Website
-    * <http://h2o.ai>
+    * <https://h2o.ai>
 *  Twitter -- follow us for updates and H2O news!
     * <https://twitter.com/h2oai>
 
@@ -124,17 +124,17 @@ dependencies {
 }
 ```
 
-Refer to the latest H2O-3 bleeding edge [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html) for information about installing nightly build artifacts.
+Refer to the latest H2O-3 bleeding edge [nightly build page](https://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html) for information about installing nightly build artifacts.
 
 Refer to the [h2o-droplets GitHub repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use Java artifacts with gradle.
 
-> Note: Stable H2O-3 artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may substantially lag behind H2O-3 Bleeding Edge nightly builds.
+> Note: Stable H2O-3 artifacts are periodically published to Maven Central ([click here to search](https://search.maven.org/search?q=g:ai.h2o)) but may substantially lag behind H2O-3 Bleeding Edge nightly builds.
 
 
 <a name="Building"></a>
 ## 4. Building H2O-3
 
-Getting started with H2O development requires [JDK 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements), [Node.js](https://nodejs.org/), [Gradle](https://gradle.org/), [Python](https://www.python.org/) and [R](http://www.r-project.org/).  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires [JDK 1.8+](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements), [Node.js](https://nodejs.org/), [Gradle](https://gradle.org/), [Python](https://www.python.org/) and [R](https://www.r-project.org/).  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
 
 ### 4.1. Before building
 
@@ -255,7 +255,7 @@ dependencies (like Hadoop) and using it saves build time as well as need to down
 
 ##### Step 3: Install JDK
 
-Install [Java 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 1.8+](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements) and add the appropriate directory `C:\Program Files\Java\jdk1.8.0_XXX\bin` with java.exe to PATH in Environment Variables. To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -265,21 +265,21 @@ The CLASSPATH variable also needs to be set to the lib subfolder of the JDK:
 
 ##### Step 4. Install Node.js
 
-Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended.
+Install [Node.js](https://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended.
 
 ##### Step 5. Install R, the required packages, and Rtools:
 
-Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
+Install [R](https://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
 <a name="InstallRPackagesInUnix"></a>
 Install the following R packages:
 
-- [RCurl](http://cran.r-project.org/package=RCurl)
-- [jsonlite](http://cran.r-project.org/package=jsonlite)
-- [statmod](http://cran.r-project.org/package=statmod)
-- [devtools](http://cran.r-project.org/package=devtools)
-- [roxygen2](http://cran.r-project.org/package=roxygen2)
-- [testthat](http://cran.r-project.org/package=testthat)
+- [RCurl](https://cran.r-project.org/package=RCurl)
+- [jsonlite](https://cran.r-project.org/package=jsonlite)
+- [statmod](https://cran.r-project.org/package=statmod)
+- [devtools](https://cran.r-project.org/package=devtools)
+- [roxygen2](https://cran.r-project.org/package=roxygen2)
+- [testthat](https://cran.r-project.org/package=testthat)
 
 To install these packages from within an R session:
 
@@ -289,11 +289,11 @@ for (pkg in pkgs) {
   if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg)
 }
 ```
-Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
+Note that [libcurl](https://curl.se) is required for installation of the **RCurl** R package.
 
 Note that this packages don't cover running tests, they are for building H2O only.
 
-Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
+Finally, install [Rtools](https://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
 ##### Step 6. Install [Cygwin](https://cygwin.com/setup-x86_64.exe)
@@ -306,7 +306,7 @@ If Cygwin is already installed, remove the Python packages or ensure that Native
 
 ##### Step 8. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
-If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads.  Make sure that command prompt support is enabled before the installation.
+If you don't already have a Git client, please install one.  The default one can be found here https://git-scm.com/downloads.  Make sure that command prompt support is enabled before the installation.
 
 Download and update h2o-3 source codes:
 
@@ -322,11 +322,11 @@ Download and update h2o-3 source codes:
 
 ### 4.4. Setup on OS X
 
-If you don't have [Homebrew](http://brew.sh/), we recommend installing it.  It makes package management for OS X easy.
+If you don't have [Homebrew](https://brew.sh/), we recommend installing it.  It makes package management for OS X easy.
 
 ##### Step 1. Install JDK
 
-Install [Java 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirementsl). To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 1.8+](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -336,21 +336,21 @@ Using Homebrew:
 
     brew install node
 
-Otherwise, install from the [Node.js website](http://nodejs.org/download/).
+Otherwise, install from the [Node.js website](https://nodejs.org/download/).
 
 ##### Step 3. Install R and the required packages:
 
-Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
+Install [R](https://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
 <a name="InstallRPackagesInUnix"></a>
 Install the following R packages:
 
-- [RCurl](http://cran.r-project.org/package=RCurl)
-- [jsonlite](http://cran.r-project.org/package=jsonlite)
-- [statmod](http://cran.r-project.org/package=statmod)
-- [devtools](http://cran.r-project.org/package=devtools)
-- [roxygen2](http://cran.r-project.org/package=roxygen2)
-- [testthat](http://cran.r-project.org/package=testthat)
+- [RCurl](https://cran.r-project.org/package=RCurl)
+- [jsonlite](https://cran.r-project.org/package=jsonlite)
+- [statmod](https://cran.r-project.org/package=statmod)
+- [devtools](https://cran.r-project.org/package=devtools)
+- [roxygen2](https://cran.r-project.org/package=roxygen2)
+- [testthat](https://cran.r-project.org/package=testthat)
 
 To install these packages from within an R session:
 
@@ -360,7 +360,7 @@ for (pkg in pkgs) {
   if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg)
 }
 ```
-Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
+Note that [libcurl](https://curl.se) is required for installation of the **RCurl** R package.
 
 Note that this packages don't cover running tests, they for building H2O only.
 
@@ -393,22 +393,22 @@ Note: on a regular machine it may take very long time (about an hour) to run all
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
-### 4.5. Setup on Ubuntu 14.04
+### 4.5. Setup on Ubuntu (20.04+ recommended)
 
 ##### Step 1. Install Node.js
 
-    curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
+    curl -sL https://deb.nodesource.com/setup_18.x | sudo bash -
     sudo apt-get install -y nodejs
 
 ##### Step 2. Install JDK:
 
-Install [Java 8](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 8+](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements). Installation instructions can be found here [JDK installation](https://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
 ##### Step 3. Install R and the required packages:
 
-Installation instructions can be found here [R installation](http://cran.r-project.org).  Click “Download R for Linux”.  Click “ubuntu”.  Follow the given instructions.
+Installation instructions can be found here [R installation](https://cran.r-project.org).  Click “Download R for Linux”.  Click “ubuntu”.  Follow the given instructions.
 
 To install the required packages, follow the [same instructions as for OS X above](#InstallRPackagesInUnix).
 
@@ -439,35 +439,18 @@ Download and update h2o-3 source codes:
 
 > Make sure that you are not running as root, since `bower` will reject such a run.
 
-### 4.6. Setup on Ubuntu 13.10
+### 4.6. Setup on CentOS 7+
 
-##### Step 1. Install Node.js
-
-    curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
-    sudo apt-get install -y nodejs
-
-##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04 (above)
-
-### 4.7. Setup on CentOS 7
+**Note:** This setup guide uses older packages. For modern CentOS/RHEL systems, it's recommended to install Java 8+ from your package manager or use SDKMAN.
 
 ```
-cd /opt
-sudo wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/7u79-b15/jdk-7u79-linux-x64.tar.gz"
-
-sudo tar xzf jdk-7u79-linux-x64.tar.gz
-cd jdk1.7.0_79
-
-sudo alternatives --install /usr/bin/java java /opt/jdk1.7.0_79/bin/java 2
-
-sudo alternatives --install /usr/bin/jar jar /opt/jdk1.7.0_79/bin/jar 2
-sudo alternatives --install /usr/bin/javac javac /opt/jdk1.7.0_79/bin/javac 2
-sudo alternatives --set jar /opt/jdk1.7.0_79/bin/jar
-sudo alternatives --set javac /opt/jdk1.7.0_79/bin/javac
+# Install Java 8+ (use system package manager)
+sudo yum install java-1.8.0-openjdk-devel
 
 cd /opt
 
-sudo wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
-sudo rpm -ivh epel-release-7-5.noarch.rpm
+sudo wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sudo rpm -ivh epel-release-latest-7.noarch.rpm
 
 sudo echo "multilib_policy=best" >> /etc/yum.conf
 sudo yum -y update
@@ -477,13 +460,11 @@ sudo yum -y install R R-devel git python-pip openssl-devel libxml2-devel libcurl
 sudo pip install scikit-learn grip tabulate statsmodels wheel
 
 mkdir ~/Rlibrary
-export JAVA_HOME=/opt/jdk1.7.0_79
-export JRE_HOME=/opt/jdk1.7.0_79/jre
-export PATH=$PATH:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
 export R_LIBS_USER=~/Rlibrary
 
 # install local R packages
-R -e 'install.packages(c("RCurl","jsonlite","statmod","devtools","roxygen2","testthat"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
+R -e 'install.packages(c("RCurl","jsonlite","statmod","devtools","roxygen2","testthat"), dependencies=TRUE, repos="https://cran.rstudio.com/")'
 
 cd
 git clone https://github.com/h2oai/h2o-3.git
@@ -505,12 +486,12 @@ To start the H2O cluster locally, execute the following on the command line:
 
     java -jar build/h2o.jar
 
-A list of available start-up JVM and H2O options (e.g. `-Xmx`, `-nthreads`, `-ip`), is available in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/starting-h2o.html#from-the-command-line).
+A list of available start-up JVM and H2O options (e.g. `-Xmx`, `-nthreads`, `-ip`), is available in the [H2O User Guide](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/starting-h2o.html#from-the-command-line).
 
 <a name="BuildingHadoop"></a>
 ## 6. Building H2O on Hadoop
 
-Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-3.
+Pre-built H2O-on-Hadoop zip files are available on the [download page](https://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-3.
 
 To build H2O with Hadoop support yourself, first install sphinx for python: `pip install sphinx`
 Then start the build by entering  the following from the top-level h2o-3 directory:
@@ -547,7 +528,7 @@ Hadoop supports [secure user impersonation](https://hadoop.apache.org/docs/r2.7.
 Setting up secure user impersonation (for h2o):
 
 1.  Create or find an id to use as proxy which has limited-to-no access to HDFS or related services; the proxy user need only be used to impersonate a user
-2.  (Required if not using h2odriver) If you are not using the driver (e.g. you wrote your own code against h2o's API using Hadoop), make the necessary code changes to impersonate users (see [org.apache.hadoop.security.UserGroupInformation](http://hadoop.apache.org/docs/r2.8.0/api/org/apache/hadoop/security/UserGroupInformation.html))
+2.  (Required if not using h2odriver) If you are not using the driver (e.g. you wrote your own code against h2o's API using Hadoop), make the necessary code changes to impersonate users (see [org.apache.hadoop.security.UserGroupInformation](https://hadoop.apache.org/docs/r2.8.0/api/org/apache/hadoop/security/UserGroupInformation.html))
 3.  In either of Ambari/Cloudera Manager or directly on the NameNode's core-site.xml file, add 2/3 properties for the user we wish to use as a proxy (replace <proxyusername> with the simple user name - not the fully-qualified principal name).
     * `hadoop.proxyuser.<proxyusername>.hosts`: the hosts the proxy user is allowed to perform impersonated actions on behalf of a valid user from
     * `hadoop.proxyuser.<proxyusername>.groups`: the groups an impersonated user must belong to for impersonation to work with that proxy user
@@ -628,7 +609,7 @@ Sparkling Water combines two open-source technologies: Apache Spark and the H2O 
 
 **Sparkling Water Resources**:
 
-* [Download page for pre-built packages](http://h2o.ai/download/)
+* [Download page for pre-built packages](https://h2o.ai/download/)
 * [Sparkling Water GitHub repository](https://github.com/h2oai/sparkling-water)  
 * [README](https://github.com/h2oai/sparkling-water/blob/master/README.md)
 * [Developer documentation](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
@@ -638,7 +619,7 @@ Sparkling Water combines two open-source technologies: Apache Spark and the H2O 
 
 ### Documentation Homepage
 
-The main H2O documentation is the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).  Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects.
+The main H2O documentation is the [H2O User Guide](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).  Visit <https://docs.h2o.ai> for the top-level introduction to documentation on H2O projects.
 
 
 ### Generate REST API documentation
@@ -656,7 +637,7 @@ If the build fails, try `gradlew clean`, then `git clean -f`.
 
 ### Bleeding edge build documentation
 
-Documentation for each bleeding edge nightly build is available on the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o/master/latest.html).
+Documentation for each bleeding edge nightly build is available on the [nightly build page](https://s3.amazonaws.com/h2o-release/h2o/master/latest.html).
 
 
 <a name="Citing"></a>
@@ -683,7 +664,7 @@ If you use H2O as part of your workflow in a publication, please cite your H2O r
 
 ### H2O Booklets
 
-H2O algorithm booklets are available at the [Documentation Homepage](http://docs.h2o.ai/h2o/latest-stable/index.html).
+H2O algorithm booklets are available at the [Documentation Homepage](https://docs.h2o.ai/h2o/latest-stable/index.html).
 
 	@Manual{h2o_booklet_name,
 	    title = {booklet_title},
@@ -695,14 +676,14 @@ H2O algorithm booklets are available at the [Documentation Homepage](http://docs
 
 **Formatted booklet citation examples**:
 
-Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Deep Learning with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf>.
+Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Deep Learning with H2O_. <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf>.
 
-Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
+Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
 
 <a name="Community"></a>
 ## 10. Community
 
-H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://github.com/h2oai/h2o-3/issues).  Please join us!  
+H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](https://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://github.com/h2oai/h2o-3/issues).  Please join us!  
 
 
 ### Team & Committers
