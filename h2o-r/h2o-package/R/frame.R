@@ -1660,7 +1660,10 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000L)
 .num.list <- function(nl) paste0('[',paste0(nl,collapse=" "),']')
 
 # Convert to Currents string-list syntax
-.quote <- function(x) paste0('"',x,'"')
+.quote <- function(x) {
+    escaped <- gsub('(?<!\\\\)(")', '\\\\"', x, perl = TRUE)
+    paste0('"', escaped, '"')
+}
 .str.list <- function(sl) {
   if (is.null(sl))
     "[]"
