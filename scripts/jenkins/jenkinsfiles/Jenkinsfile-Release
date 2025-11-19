@@ -710,12 +710,12 @@ private setReleaseJobProperties(final pipelineContext) {
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
+            booleanParam(defaultValue: true, description: 'If set, build with Hadoop support. Should be unchecked only for test releases when you do not want to wait for the full build.', name: 'BUILD_HADOOP'),
             booleanParam(defaultValue: true, description: 'If set, build PyPI package and upload it to S3', name: 'BUILD_PYPI'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
             booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER'),
-            booleanParam(defaultValue: true, description: 'If set, build with Hadoop support', name: 'BUILD_HADOOP')
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
