@@ -53,7 +53,9 @@ try {
                             <li><strong>Version:</strong> ${version}.${currentBuild.number}</li>
                             <li><strong>Node:</strong> ${env.NODE_NAME}</li>
                             <li><strong>Test Release:</strong> ${params.TEST_RELEASE}</li>
+                            <li><strong>Test Credentials:</strong> ${params.TEST_CREDENTIALS}</li>
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
+                            <li><strong>Build Hadoop:</strong> ${params.BUILD_HADOOP}</li>
                             <li><strong>Build PyPI:</strong> ${params.BUILD_PYPI}</li>
                             <li><strong>PyPI Upload:</strong> ${params.UPLOAD_TO_PYPI}</li>
                             <li><strong>Build Conda:</strong> ${params.BUILD_CONDA}</li>
@@ -61,8 +63,6 @@ try {
                             <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
                             <li><strong>Update Branch Latest Links</strong> ${params.UPDATE_LATEST_BRANCH}</li>
                             <li><strong>Publish H2O K8S Docker image:</strong> ${params.BUILD_H2O_DOCKER}</li>
-                            <li><strong>Build Hadoop:</strong> ${params.BUILD_HADOOP}</li>
-                            <li><strong>Test Credentials:</strong> ${params.TEST_CREDENTIALS}</li>
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
@@ -72,7 +72,7 @@ try {
                     pipelineContext.getBuildSummary().markStageSuccessful(this, CHECKOUT_STAGE_NAME)
                 }
 
-                if (params.TEST_RELEASE && params.TEST_CREDENTIALS) {
+                if (params.TEST_CREDENTIALS) {
                     final String TEST_CREDENTIALS_STAGE_NAME = 'Test Credentials'
                     stage(TEST_CREDENTIALS_STAGE_NAME) {
                         try {
@@ -772,11 +772,11 @@ private setReleaseJobProperties(final pipelineContext) {
         disableConcurrentBuilds(),
         parameters([
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: env.BRANCH_NAME == 'master', description: 'If set, test all credentials (PyPI, Anaconda, Docker, S3) before building.', name: 'TEST_CREDENTIALS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: true, description: 'If set, build with Hadoop support. Should be unchecked only for test releases when you do not want to wait for the full build.', name: 'BUILD_HADOOP'),
-            booleanParam(defaultValue: false, description: 'If set and TEST_RELEASE is true, test all credentials (PyPI, Anaconda, Docker, S3) before building', name: 'TEST_CREDENTIALS'),
             booleanParam(defaultValue: true, description: 'If set, build PyPI package and upload it to S3', name: 'BUILD_PYPI'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
             booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
@@ -830,10 +830,10 @@ Configuration:
     Test Credentials:       | ${params.TEST_CREDENTIALS}
     S3 Bucket:              | ${env.S3_ROOT}
     Publish to Nexus:       | ${params.UPLOAD_NEXUS}
+    Build Hadoop:           | ${params.BUILD_HADOOP}
     Publish to PyPI:        | ${params.UPLOAD_TO_PYPI}
     Publish to Conda:       | ${params.UPLOAD_TO_ANACONDA}
     Publish to Docker Hub   | ${params.BUILD_H2O_DOCKER}
-    Build Hadoop:           | ${params.BUILD_HADOOP}
 =======================================
 """
 }
