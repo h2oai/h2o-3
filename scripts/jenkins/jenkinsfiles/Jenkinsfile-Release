@@ -61,6 +61,7 @@ try {
                             <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
                             <li><strong>Update Branch Latest Links</strong> ${params.UPDATE_LATEST_BRANCH}</li>
                             <li><strong>Publish H2O K8S Docker image:</strong> ${params.BUILD_H2O_DOCKER}</li>
+                            <li><strong>Build Hadoop:</strong> ${params.BUILD_HADOOP}</li>
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
@@ -84,7 +85,7 @@ try {
                                 # Stop on error.
                                 set -e
 
-                                export BUILD_HADOOP=false
+                                export BUILD_HADOOP=${params.BUILD_HADOOP}
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -147,8 +148,11 @@ try {
                                 if [ "\$TEST_RELEASE" = true ]; then
                                     ./gradlew buildH2oDevDist
                                 else
-                                    ./gradlew buildH2oDevDist
+                                    ./gradlew -PvalidateRelease buildH2oDevDist
+                                fi
 
+                                # Run OSSRH commands if UPLOAD_NEXUS is enabled
+                                if [ "\$UPLOAD_NEXUS" = true ]; then
                                     # Debug output - see if gradle published to OSSRH Staging API
                                     curl -H "Authorization: Bearer ${BEARER_TOKEN}" \
                                      'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
@@ -710,7 +714,8 @@ private setReleaseJobProperties(final pipelineContext) {
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
             booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER')
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER'),
+            booleanParam(defaultValue: true, description: 'If set, build with Hadoop support', name: 'BUILD_HADOOP')
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
@@ -761,6 +766,7 @@ Configuration:
     Publish to PyPI:        | ${params.UPLOAD_TO_PYPI}
     Publish to Conda:       | ${params.UPLOAD_TO_ANACONDA}
     Publish to Docker Hub   | ${params.BUILD_H2O_DOCKER}
+    Build Hadoop:           | ${params.BUILD_HADOOP}
 =======================================
 """
 }
