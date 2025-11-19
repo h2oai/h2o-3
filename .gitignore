@@ -114,3 +114,5 @@ leak-check.out
 
 # Terraform
 .terraform/
+
+.claude/
