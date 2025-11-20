@@ -221,14 +221,6 @@ This regenerates Python and R client code in `h2o-py/h2o/` and `h2o-r/h2o-packag
 - **R**: 3.1+ with packages: RCurl, jsonlite, statmod, devtools, roxygen2, testthat
 - **Gradle**: Via `gradlew` wrapper (auto-downloaded)
 
-### R Package Syncing
-Set up local R library to avoid conflicts:
-```bash
-mkdir -p ~/Rlibrary
-export R_LIBS_USER=~/Rlibrary
-./gradlew syncRPackages
-```
-
 ### Running Tests Requirements
 - Minimum 8GB RAM (16GB recommended)
 - Tests spawn 5 JVMs forming an H2O cluster
@@ -240,7 +232,6 @@ To build H2O-on-Hadoop assemblies:
 ```bash
 export BUILD_HADOOP=1
 ./gradlew build -x test
-./gradlew dist
 ```
 
 Assemblies created in `target/` for various Hadoop distributions (CDH, HDP, MapR, EMR).
@@ -249,7 +240,7 @@ To build only specific distributions:
 ```bash
 export BUILD_HADOOP=1
 export H2O_TARGET=hdp2.6,cdh6.3
-./gradlew dist
+./gradlew build -x test
 ```
 
 ## Building H2O Assemblies
