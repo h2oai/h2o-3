@@ -53,7 +53,9 @@ try {
                             <li><strong>Version:</strong> ${version}.${currentBuild.number}</li>
                             <li><strong>Node:</strong> ${env.NODE_NAME}</li>
                             <li><strong>Test Release:</strong> ${params.TEST_RELEASE}</li>
+                            <li><strong>Test Credentials:</strong> ${params.TEST_CREDENTIALS}</li>
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
+                            <li><strong>Build Hadoop:</strong> ${params.BUILD_HADOOP}</li>
                             <li><strong>Build PyPI:</strong> ${params.BUILD_PYPI}</li>
                             <li><strong>PyPI Upload:</strong> ${params.UPLOAD_TO_PYPI}</li>
                             <li><strong>Build Conda:</strong> ${params.BUILD_CONDA}</li>
@@ -70,6 +72,70 @@ try {
                     pipelineContext.getBuildSummary().markStageSuccessful(this, CHECKOUT_STAGE_NAME)
                 }
 
+                if (params.TEST_CREDENTIALS) {
+                    final String TEST_CREDENTIALS_STAGE_NAME = 'Test Credentials'
+                    stage(TEST_CREDENTIALS_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, TEST_CREDENTIALS_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, TEST_CREDENTIALS_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+
+                            echo "Testing credentials for PyPI, Anaconda, Docker, and S3..."
+
+                            // Test PyPI credentials
+                            withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                    sh """
+                                        echo "=== Testing PyPI Credentials ==="
+                                        echo "Activating Python ${env.PYTHON_VERSION}"
+                                        . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+
+                                        # Test PyPI login by checking if credentials work
+                                        python -c "import requests; auth=('\$TWINE_USERNAME', '\$TWINE_PASSWORD'); r=requests.get('https://upload.pypi.org/', auth=auth); print('PyPI credentials: OK' if r.status_code in [200, 405] else 'PyPI credentials: FAILED')"
+                                    """
+                                }
+                            }
+
+                            // Test Anaconda credentials
+                            withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
+                                insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                    sh '''
+                                        echo "=== Testing Anaconda Credentials ==="
+                                        anaconda login --username "$ANACONDA_USERNAME" --password "$ANACONDA_PASSWORD"
+                                        anaconda whoami
+                                        anaconda logout
+                                        echo "Anaconda credentials: OK"
+                                    '''
+                                }
+                            }
+
+                            // Test Docker credentials
+                            withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME')]) {
+                                sh '''
+                                    echo "=== Testing Docker Credentials ==="
+                                    echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+                                    echo "Docker credentials: OK"
+                                    docker logout
+                                '''
+                            }
+
+                            // Test S3/AWS credentials
+                            insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                sh """
+                                    echo "=== Testing S3/AWS Credentials ==="
+                                    aws sts get-caller-identity
+                                    echo "S3/AWS credentials: OK"
+                                """
+                            }
+
+                            echo "All credentials tested successfully!"
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, TEST_CREDENTIALS_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, TEST_CREDENTIALS_STAGE_NAME)
+                            throw e
+                        }
+                    }
+                }
+
                 final String BUILD_STAGE_NAME = 'Build'
                 stage(BUILD_STAGE_NAME) {
                     try {
@@ -84,7 +150,7 @@ try {
                                 # Stop on error.
                                 set -e
 
-                                export BUILD_HADOOP=true
+                                export BUILD_HADOOP=${params.BUILD_HADOOP}
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -148,7 +214,10 @@ try {
                                     ./gradlew buildH2oDevDist
                                 else
                                     ./gradlew -PvalidateRelease buildH2oDevDist
+                                fi
 
+                                # Run OSSRH commands if UPLOAD_NEXUS is enabled
+                                if [ "\$UPLOAD_NEXUS" = true ]; then
                                     # Debug output - see if gradle published to OSSRH Staging API
                                     curl -H "Authorization: Bearer ${BEARER_TOKEN}" \
                                      'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
@@ -703,14 +772,16 @@ private setReleaseJobProperties(final pipelineContext) {
         disableConcurrentBuilds(),
         parameters([
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: env.BRANCH_NAME == 'master', description: 'If set, test all credentials (PyPI, Anaconda, Docker, S3) before building.', name: 'TEST_CREDENTIALS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
+            booleanParam(defaultValue: true, description: 'If set, build with Hadoop support. Should be unchecked only for test releases when you do not want to wait for the full build.', name: 'BUILD_HADOOP'),
             booleanParam(defaultValue: true, description: 'If set, build PyPI package and upload it to S3', name: 'BUILD_PYPI'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
             booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER')
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER'),
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
@@ -741,6 +812,9 @@ private setReleaseJobProperties(final pipelineContext) {
             env.DO_RELEASE = true
         }
     }
+    if (params.UPLOAD_NEXUS) {
+        env.DO_RELEASE = true
+    }
     sh "printenv | sort"
 }
 
@@ -753,8 +827,10 @@ Configuration:
     Branch:                 | ${env.BRANCH_NAME}
     Docker Image:           | ${pipelineContext.getBuildConfig().getReleaseImage()}
     Test Release:           | ${params.TEST_RELEASE}
+    Test Credentials:       | ${params.TEST_CREDENTIALS}
     S3 Bucket:              | ${env.S3_ROOT}
     Publish to Nexus:       | ${params.UPLOAD_NEXUS}
+    Build Hadoop:           | ${params.BUILD_HADOOP}
     Publish to PyPI:        | ${params.UPLOAD_TO_PYPI}
     Publish to Conda:       | ${params.UPLOAD_TO_ANACONDA}
     Publish to Docker Hub   | ${params.BUILD_H2O_DOCKER}
