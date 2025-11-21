@@ -124,7 +124,7 @@ else
   HADOOP_VERSIONS_TO_PROCESS="${H2O_TARGET//,/ }"
 fi
 
-if [ -z "$DO_FAST" ]; then
+if [ -z "$DO_FAST" ] && [ "$BUILD_HADOOP" != "false" ]; then
   for HADOOP_VERSION in $HADOOP_VERSIONS_TO_PROCESS; do
     make_hadoop_zip $HADOOP_VERSION
   done
