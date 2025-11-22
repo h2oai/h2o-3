@@ -168,19 +168,6 @@ Conda is only required if you want to run H2O-3 on the Anaconda cloud:
 
 - Conda 3.6+ repository
 
-Optional Spark requirements
-'''''''''''''''''''''''''''
-
-Spark is only required if you want to run Sparkling Water. Supported spark versions:
-
-- Spark 3.4
-- Spark 3.3
-- Spark 3.2
-- Spark 3.1
-- Spark 3.0
-- Spark 2.4
-- Spark 2.3
-
 
 User support
 ------------
@@ -194,7 +181,6 @@ H2O-3 supports many different types of users.
     getting-started/flow-users
     getting-started/python-users
     getting-started/r-users
-    getting-started/sparkling-users
     getting-started/api-users
     getting-started/java-users
     getting-started/hadoop-users
