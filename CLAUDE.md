@@ -17,7 +17,6 @@ Most probably cannot run on laptop.
 
 ```bash
 ./gradlew syncSmalldata    # Download test data from S3
-./gradlew syncRPackages    # Sync R packages (recommended)
 ./gradlew build
 ```
 
