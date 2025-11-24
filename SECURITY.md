@@ -8,7 +8,7 @@ If the issue is confirmed, we will release a patch as soon as possible depending
 ## Known Vulnerabilities
 We located these vulnerabilites from our security scans. The following list shows the vulnerabilities and the libraries they were found in:
 
-Total: 8 (UNKNOWN: 0, LOW: 2, MEDIUM: 6, HIGH: 0, CRITICAL: 0)
+Total: 8 (UNKNOWN: 0, LOW: 2, MEDIUM: 2, HIGH: 0, CRITICAL: 0)
 
 | Library                         | Vulnerability    | Severity | Status   | Installed Version | Fixed Version | Title                                                                 |
 |---------------------------------|----------------|---------|---------|-----------------|---------------|----------------------------------------------------------------------|

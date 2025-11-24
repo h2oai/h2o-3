@@ -2,9 +2,28 @@
 
 ## H2O
 
+### 3.46.0.9 - 11/24/2025
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/9/index.html</a>
+
+#### Bug
+- [[#16673]](https://github.com/h2oai/h2o-3/issues/16673) – Fixed incorrect AIC calculation in GLM.
+- [[#16610]](https://github.com/h2oai/h2o-3/issues/16610) – Fixed floating point parsing issue.
+- [[#16695]](https://github.com/h2oai/h2o-3/issues/16694) - Fixed relevel method in python when special characters such as `$` are is in the name of the level
+
+#### New Feature
+- [[#16524]](https://github.com/h2oai/h2o-3/issues/16524) – Added control variables support in GLM for Regression and Binomial models.
+
+#### Docs
+- [[#16449]](https://github.com/h2oai/h2o-3/issues/16449) – Added severity level information to SECURITY.md.
+- [[#16703]](https://github.com/h2oai/h2o-3/issues/16703) – Removed Sparkling Water from Welcome and Starting documentation pages.
+
+#### Security
+- [[#16642]](https://github.com/h2oai/h2o-3/issues/16642) – Fixed CVE-2024-7768 in H2O-3 package
+
 ### 3.46.0.8 - 10/8/2025
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8s/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8/index.html</a>
 
 #### Bug
 - [[#16592]](https://github.com/h2oai/h2o-3/issues/16592) – CoxPH MOJO model from version 3.32.x.x is now compatible with 3.46.0.8 and can be uploaded.
