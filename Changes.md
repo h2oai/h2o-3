@@ -9,7 +9,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/9/index
 #### Bug
 - [[#16673]](https://github.com/h2oai/h2o-3/issues/16673) – Fixed incorrect AIC calculation in GLM.
 - [[#16610]](https://github.com/h2oai/h2o-3/issues/16610) – Fixed floating point parsing issue.
-
+- [[#16695]](https://github.com/h2oai/h2o-3/issues/16694) - Fixed relevel method in python when special characters such as `$` are is in the name of the level
 #### New Feature
 - [[#16524]](https://github.com/h2oai/h2o-3/issues/16524) – Added control variables support in GLM for Regression and Binomial models.
 
