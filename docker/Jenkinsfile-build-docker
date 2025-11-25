@@ -26,17 +26,17 @@ JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
 
 def nodeIfPublish(String nodeName = null, Closure body) {
     if (params.publish) {
-        node(nodeName) {
-            body()
-        }
-    } else {
-        if (env.NODE_NAME) {
-            node(env.NODE_NAME) {
+        if (nodeName) {
+            node(nodeName) {
                 body()
             }
         } else {
-            error("No node context for workspace-dependent steps")
+            node {
+                body()
+            }
         }
+    } else {
+        body()
     }
 }
 
@@ -130,7 +130,7 @@ ansiColor('xterm') {
 private buildInParallel(final pipelineContext, final targets) {
     parallel(targets.collectEntries { target ->
         [
-            (target): makeStage(pipelineContext, target),
+                (target): makeStage(pipelineContext, target),
         ]
     })
 }
@@ -188,7 +188,7 @@ def imageExistsH2OECR(String repository, String tag) {
 				returnStdout: true
 			).trim()
 		}
-		
+    
 		return result == tag
 	} catch (Exception e) {
 		// We didn't find the image. Exception can be thrown due to status code 254 that corresponds to "The repository with name 'h2o-3/xyz' does not exist in the registry with id 'xxx'"
