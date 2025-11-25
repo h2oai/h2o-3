@@ -38,27 +38,10 @@ def unstashDockerImage(image) {
 
 def stashDockerImages(target){
 	if (!params.publish) {  // when publish this is noop since we can retrieve the image from registry
-		switch (target) {
-			case 'dev-base':
-				stashDockerImage("dev-base")
-				break
-			case 'dev-jdk-8-base':
-				stashDockerImage("dev-jdk-8-base")
-				break
-			case 'dev-python-3.7':
-				stashDockerImage("dev-python-3.7")
-				break
-			case 'dev-r-3.4.1':
-				stashDockerImage("dev-r-3.4.1")
-				break
-			case 'dev-build-base':
-				stashDockerImage("dev-build-base")
-				break
-			case 'dev-build-hadoop':
-				stashDockerImage("dev-build-hadoop")
-				break
-			default:
-				break
+		toPersist = ["dev-base", "dev-jdk-8-base", "dev-python-3.7", "dev-r-3.4.1",
+					 "dev-build-base", "dev-build-hadoop", "dev-python-base", "dev-r-base"]
+		if (toPersist.contains(target)) {
+			stashDockerImage(target)
 		}
 	}
 }
@@ -87,6 +70,11 @@ def unstashDockerImages(target){
 				unstashDockerImage("dev-build-hadoop")
 				break
 			default:
+				if (target.startsWith('dev-python-')) {
+					unstashDockerImage("dev-python-base")
+				} else if (target.startsWith('dev-r-')) {
+					unstashDockerImage("dev-r-base")
+				} 
 				break
 		}
 	}
