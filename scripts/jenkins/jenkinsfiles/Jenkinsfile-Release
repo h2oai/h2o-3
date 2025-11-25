@@ -777,7 +777,7 @@ private setReleaseJobProperties(final pipelineContext) {
     final boolean testReleaseDefault = !isReleaseBranch && env.BRANCH_NAME != 'master'
 
     // For execution logic, use the actual parameter value if available, otherwise fall back to default
-    final boolean testRelease = params.containsKey('TEST_RELEASE') ? params.TEST_RELEASE : testReleaseDefault
+    final boolean testRelease = params.TEST_RELEASE != null ? params.TEST_RELEASE : testReleaseDefault
 
     def jobProperties = [
         disableConcurrentBuilds(),
