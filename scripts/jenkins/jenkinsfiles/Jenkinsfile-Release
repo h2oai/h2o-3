@@ -773,22 +773,26 @@ private setReleaseJobProperties(final pipelineContext) {
     final boolean isReleaseBranch = env.BRANCH_NAME.startsWith(pipelineContext.getBuildConfig().RELEASE_BRANCH_PREFIX)
 
     // Fix for build 0 where parameters are null and cannot be used in default value setup
-    final boolean testRelease = params.containsKey('TEST_RELEASE') ? params.TEST_RELEASE : !isReleaseBranch && env.BRANCH_NAME != 'master'
+    // Compute testRelease once based on branch logic for use in parameter defaults
+    final boolean testReleaseDefault = !isReleaseBranch && env.BRANCH_NAME != 'master'
+
+    // For execution logic, use the actual parameter value if available, otherwise fall back to default
+    final boolean testRelease = params.containsKey('TEST_RELEASE') ? params.TEST_RELEASE : testReleaseDefault
 
     def jobProperties = [
         disableConcurrentBuilds(),
         parameters([
-            booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: testReleaseDefault, description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
             booleanParam(defaultValue: env.BRANCH_NAME == 'master', description: 'If set, test all credentials (PyPI, Anaconda, Docker, S3) before building.', name: 'TEST_CREDENTIALS'),
-            booleanParam(defaultValue: isReleaseBranch && !testRelease, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
-            booleanParam(defaultValue: isReleaseBranch && !testRelease, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: true, description: 'If set, build with Hadoop support. Should be unchecked only for test releases when you do not want to wait for the full build.', name: 'BUILD_HADOOP'),
             booleanParam(defaultValue: true, description: 'If set, build PyPI package and upload it to S3', name: 'BUILD_PYPI'),
-            booleanParam(defaultValue: isReleaseBranch && !testRelease, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
             booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
-            booleanParam(defaultValue: isReleaseBranch && !testRelease, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
-            booleanParam(defaultValue: isReleaseBranch && !testRelease, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER'),
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
