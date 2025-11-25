@@ -24,6 +24,22 @@ properties([
 JDK_VERSIONS = ['8', '11', '17']
 JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
 
+def nodeIfPublish(String nodeName = null, Closure body) {
+    if (params.publish) {
+        if (nodeName) {
+            node(nodeName) {
+                body()
+            }
+        } else {
+            node {
+                body()
+            }
+        }
+    } else {
+        body()
+    }
+}
+
 
 def pipelineContext
 
@@ -124,7 +140,7 @@ private Closure makeStage(final pipelineContext, String target) {
         def buildImageStageName = "Build $target"
         buildSummary.stageWithSummary(buildImageStageName) {
             final String noCache = params.noCache ? "--no-cache" : ""
-            node (DEFAULT_LABEL) {
+            nodeIfPublish (DEFAULT_LABEL) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
                     deleteDir()
