@@ -40,91 +40,102 @@ def nodeIfPublish(String nodeName = null, Closure body) {
     }
 }
 
+def nodeIfNotPublish(Closure body) {
+	if (!params.publish) {
+		node(DEFAULT_LABEL) {
+			body()
+		}
+	} else {
+		body()
+	}
+}
 
 def pipelineContext
 
 ansiColor('xterm') {
     timestamps {
-        def checkoutStageName = 'Checkout and Init'
-        buildSummary.stageWithSummary(checkoutStageName) {
-            node (DEFAULT_LABEL) {
-                buildSummary.refreshStage(checkoutStageName)
-                cleanWs()
-                def scmEnv = checkout scm
+		nodeIfNotPublish {
+			def checkoutStageName = 'Checkout and Init'
+			buildSummary.stageWithSummary(checkoutStageName) {
+				node (DEFAULT_LABEL) {
+					buildSummary.refreshStage(checkoutStageName)
+					cleanWs()
+					def scmEnv = checkout scm
 
-                def final pipelineContextFactory = load('scripts/jenkins/groovy/pipelineContext.groovy')
-                pipelineContext = pipelineContextFactory('.', 'MODE_BUILD_DOCKER', scmEnv, true)
-                def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
-                currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
+					def final pipelineContextFactory = load('scripts/jenkins/groovy/pipelineContext.groovy')
+					pipelineContext = pipelineContextFactory('.', 'MODE_BUILD_DOCKER', scmEnv, true)
+					def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
+					currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                // if (params.publish && !params.forceBuild) {
-                //     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
-                //         error "Image already exists. Use forceBuild if you wish to overwrite."
-                //     }
-                // } else {
-                //     manager.addBadge("warning.gif", "forceBuild enabled")
-                // }
+					// if (params.publish && !params.forceBuild) {
+					//     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
+					//         error "Image already exists. Use forceBuild if you wish to overwrite."
+					//     }
+					// } else {
+					//     manager.addBadge("warning.gif", "forceBuild enabled")
+					// }
 
-                dir('docker') {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                        docker.image('d3fk/s3cmd').inside("--entrypoint='' -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz"
-                        }
-                    }
-                    stash name: 'docker-sources'
-                }
-            }
-        }
+					dir('docker') {
+						withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+							docker.image('d3fk/s3cmd').inside("--entrypoint='' -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz"
+								sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz"
+							}
+						}
+						stash name: 'docker-sources'
+					}
+				}
+			}
 
-		PYTHON_VERSIONS = pipelineContext.getBuildConfig().PYTHON_VERSIONS
-		R_VERSIONS = pipelineContext.getBuildConfig().R_VERSIONS
-		
-        buildInParallel(pipelineContext, ['dev-base'])
-        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
+			PYTHON_VERSIONS = pipelineContext.getBuildConfig().PYTHON_VERSIONS
+			R_VERSIONS = pipelineContext.getBuildConfig().R_VERSIONS
+			
+			buildInParallel(pipelineContext, ['dev-base'])
+			buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
 
-        buildInParallel(pipelineContext, ['dev-python-base'])
-        def pythonImages = []
-        PYTHON_VERSIONS.each {version ->
-            pythonImages += "dev-python-${version}"
-        }
-        buildInParallel(pipelineContext, pythonImages)
+			buildInParallel(pipelineContext, ['dev-python-base'])
+			def pythonImages = []
+			PYTHON_VERSIONS.each {version ->
+				pythonImages += "dev-python-${version}"
+			}
+			buildInParallel(pipelineContext, pythonImages)
 
-        buildInParallel(pipelineContext, ['dev-r-base'])
-        def componentImages = []
-        R_VERSIONS.each {version ->
-            componentImages += "dev-r-${version}"
-        }
-        JDK_VERSIONS.each {version ->
-            componentImages += "dev-jdk-${version}"
-        }
-        componentImages += "dev-mojocompat"
-        buildInParallel(pipelineContext, componentImages)
+			buildInParallel(pipelineContext, ['dev-r-base'])
+			def componentImages = []
+			R_VERSIONS.each {version ->
+				componentImages += "dev-r-${version}"
+			}
+			JDK_VERSIONS.each {version ->
+				componentImages += "dev-jdk-${version}"
+			}
+			componentImages += "dev-mojocompat"
+			buildInParallel(pipelineContext, componentImages)
 
-        buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
-        buildInParallel(pipelineContext, ["dev-release"])
+			buildInParallel(pipelineContext, ["dev-build-base"])
+			buildInParallel(pipelineContext, ["dev-build-hadoop"],)
+			buildInParallel(pipelineContext, ["dev-release"])
 
-        def componentJdkImages = []
-        PYTHON_VERSIONS.each {version ->
-            JDK_VERSIONS_PY_R.each {jdkVersion ->
-                componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
-            }
-        }
-        R_VERSIONS.each {version ->
-            JDK_VERSIONS_PY_R.each {jdkVersion ->
-                componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
-            }
-        }
-        buildInParallel(pipelineContext, componentJdkImages)
-    }
+			def componentJdkImages = []
+			PYTHON_VERSIONS.each {version ->
+				JDK_VERSIONS_PY_R.each {jdkVersion ->
+					componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
+				}
+			}
+			R_VERSIONS.each {version ->
+				JDK_VERSIONS_PY_R.each {jdkVersion ->
+					componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
+				}
+			}
+			buildInParallel(pipelineContext, componentJdkImages)
+		}
+	}
 }
 
 private buildInParallel(final pipelineContext, final targets) {
