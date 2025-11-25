@@ -97,13 +97,14 @@ ansiColor('xterm') {
                 def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                // if (params.publish && !params.forceBuild) {
-                //     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
-                //         error "Image already exists. Use forceBuild if you wish to overwrite."
-                //     }
-                // } else {
-                //     manager.addBadge("warning.gif", "forceBuild enabled")
-                // }
+                if (params.publish && !params.forceBuild) {
+					dockerLoginH2OECR()
+                    if (imageExistsH2OECR("h2o-3/dev-base", "${currentVersion}")) {
+                        error "Image already exists. Use forceBuild if you wish to overwrite."
+                    }
+                } else {
+                    manager.addBadge("warning.gif", "forceBuild enabled")
+                }
 
                 dir('docker') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
@@ -237,16 +238,3 @@ def imageExistsH2OECR(String repository, String tag) {
 	}
 }
 
-// def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
-//     def previousVersion = pipelineContext.getBuildConfig().getDefaultImageVersion() - 1
-//     // hack for first version of image
-//     if (previousVersion <= 0) {
-//         previousVersion = 1
-//     }
-//     println("harbor.h2o.ai/opsh2oai/h2o-3/${image}:${previousVersion}")
-//     // if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai", "h2o-3/${image}", "${previousVersion}")) {
-//     //     retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
-//     //         sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
-//     //     }
-//     // }
-// }
