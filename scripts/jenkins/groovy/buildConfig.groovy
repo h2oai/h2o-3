@@ -51,9 +51,9 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
-  public static final String DEFAULT_PYTHON_VERSION = '3.6'
-  public static final List PYTHON_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
-  public static final List R_VERSIONS = ['3.3.3', '3.4.1']
+  public static final String DEFAULT_PYTHON_VERSION = '3.11'
+  public static final List PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
+  public static final List R_VERSIONS = ['3.5.3', '4.4.0', '4.5.2']
 
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
