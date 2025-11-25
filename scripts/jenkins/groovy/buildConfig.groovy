@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
   private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 46
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 47
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/h2oai/devutils/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
