@@ -24,6 +24,74 @@ properties([
 JDK_VERSIONS = ['8', '11', '17']
 JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
 
+def stashDockerImage(image) {
+	sh "docker save -o ${image}.tar ${H2O_ECR}/h2o-3/${image}"
+	stash includes: "${image}.tar", name: "docker-image-${image}"
+	sh "rm ${image}.tar"
+}
+
+def unstashDockerImage(image) {
+	unstash "docker-image-${image}"
+	sh "docker load -i ${image}.tar"
+	sh "rm ${image}.tar"
+}
+
+def stashDockerImages(target){
+	if (!params.publish) {  // when publish this is noop since we can retrieve the image from registry
+		switch (target) {
+			case 'dev-base':
+				stashDockerImage("dev-base")
+				break
+			case 'dev-jdk-8-base':
+				stashDockerImage("dev-jdk-8-base")
+				break
+			case 'dev-python-3.7':
+				stashDockerImage("dev-python-3.7")
+				break
+			case 'dev-r-3.4.1':
+				stashDockerImage("dev-r-3.4.1")
+				break
+			case 'dev-build-base':
+				stashDockerImage("dev-build-base")
+				break
+			case 'dev-build-hadoop':
+				stashDockerImage("dev-build-hadoop")
+				break
+			default:
+				break
+		}
+	}
+}
+
+def unstashDockerImages(target){
+	if (!params.publish) {  // when publish this is noop since we can retrieve the image from registry
+		switch (target) {
+			case 'dev-jdk-8-base':
+			case 'dev-jdk-others-base':
+				unstashDockerImage("dev-base")
+				break
+			case 'dev-python-base':
+				unstashDockerImage("dev-jdk-8-base")
+				break
+			case 'dev-r-base':
+			case 'dev-mojocompat':
+				unstashDockerImage("dev-python-3.7")
+				break
+			case 'dev-build-base':
+				unstashDockerImage("dev-r-3.4.1")
+				break
+			case 'dev-build-hadoop':
+				unstashDockerImage("dev-build-base")
+				break
+			case 'dev-release':
+				unstashDockerImage("dev-build-hadoop")
+				break
+			default:
+				break
+		}
+	}
+}
+
 
 def pipelineContext
 
@@ -132,6 +200,7 @@ private Closure makeStage(final pipelineContext, String target) {
                     // pullPreviousVersionIfRequired(pipelineContext, target)
                     // println "make ${target}"
                     dockerLoginH2OECR()
+					unstashDockerImages(target)
                     if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") ||
                        (imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") && params.forceBuild)){
                         unstash 'docker-sources'
@@ -147,7 +216,7 @@ private Closure makeStage(final pipelineContext, String target) {
                     } else {
                         println "${H2O_ECR}/h2o-3/${target} already exists"
                     }  
-                    
+                    stashDockerImages(target)
                 }
             }
         }
