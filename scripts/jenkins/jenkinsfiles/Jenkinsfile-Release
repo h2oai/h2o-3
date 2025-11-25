@@ -82,7 +82,7 @@ try {
                             echo "Testing credentials for PyPI, Anaconda, Docker, and S3..."
 
                             // Test PyPI credentials
-                            withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                            withCredentials([usernamePassword(credentialsId: 'H2O-PYPI-TOKEN', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
                                 insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                     sh """
                                         echo "=== Testing PyPI Credentials ==="
@@ -422,7 +422,7 @@ EOF
                             try {
                                 pipelineContext.getBuildSummary().addStageSummary(this, BUILD_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
                                 pipelineContext.getBuildSummary().setStageDetails(this, BUILD_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                                withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                withCredentials([usernamePassword(credentialsId: 'H2O-PYPI-TOKEN', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         sh """
                                             echo "Activating Python ${env.PYTHON_VERSION}"
