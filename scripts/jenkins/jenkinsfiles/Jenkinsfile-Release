@@ -82,7 +82,7 @@ try {
                             echo "Testing credentials for PyPI, Anaconda, Docker, and S3..."
 
                             // Test PyPI credentials
-                            withCredentials([usernamePassword(credentialsId: 'H2O-PYPI-TOKEN', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                            withCredentials([string(credentialsId: 'H2O-PYPI-TOKEN', variable: 'PYPI_TOKEN')]) {
                                 insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                     sh """
                                         echo "=== Testing PyPI Credentials ==="
@@ -90,7 +90,8 @@ try {
                                         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
 
                                         # Test PyPI login by checking if credentials work
-                                        python -c "import requests; auth=('\$TWINE_USERNAME', '\$TWINE_PASSWORD'); r=requests.get('https://upload.pypi.org/', auth=auth); print('PyPI credentials: OK' if r.status_code in [200, 405] else 'PyPI credentials: FAILED')"
+                                        # PyPI API tokens use '__token__' as the username
+                                        python -c "import requests; auth=('__token__', '\$PYPI_TOKEN'); r=requests.get('https://upload.pypi.org/', auth=auth); print('PyPI credentials: OK' if r.status_code in [200, 405] else 'PyPI credentials: FAILED')"
                                     """
                                 }
                             }
@@ -422,7 +423,7 @@ EOF
                             try {
                                 pipelineContext.getBuildSummary().addStageSummary(this, BUILD_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
                                 pipelineContext.getBuildSummary().setStageDetails(this, BUILD_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                                withCredentials([usernamePassword(credentialsId: 'H2O-PYPI-TOKEN', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                withCredentials([string(credentialsId: 'H2O-PYPI-TOKEN', variable: 'PYPI_TOKEN')]) {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         sh """
                                             echo "Activating Python ${env.PYTHON_VERSION}"
@@ -438,6 +439,9 @@ EOF
                                                     echo '****** WARNING! Upload to PyPI suppressed ******'
                                                 else
                                                     echo '****** Upload to PyPI ******'
+                                                    # PyPI API tokens use '__token__' as the username
+                                                    export TWINE_USERNAME=__token__
+                                                    export TWINE_PASSWORD=\$PYPI_TOKEN
                                                     twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
                                                     echo '****** Upload h2o_client to PyPI ******'
                                                     cd ../client/dist
