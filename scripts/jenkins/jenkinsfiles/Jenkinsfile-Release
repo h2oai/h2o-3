@@ -771,8 +771,8 @@ private setReleaseJobProperties(final pipelineContext) {
     def RELEASE_BUCKET = 's3://h2o-release/h2o'
 
     final boolean isReleaseBranch = env.BRANCH_NAME.startsWith(pipelineContext.getBuildConfig().RELEASE_BRANCH_PREFIX)
-    
-    # Fix for build 0 where parameters are null and cannot be used in default value setup
+
+    // Fix for build 0 where parameters are null and cannot be used in default value setup
     final boolean testRelease = params.containsKey('TEST_RELEASE') ? params.TEST_RELEASE : !isReleaseBranch && env.BRANCH_NAME != 'master'
 
     def jobProperties = [
@@ -803,7 +803,7 @@ private setReleaseJobProperties(final pipelineContext) {
     }
     properties(jobProperties)
 
-    if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
+    if (!testRelease && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
         env.S3_ROOT = RELEASE_BUCKET
     } else {
         env.S3_ROOT = TEST_RELEASE_BUCKET
@@ -813,7 +813,7 @@ private setReleaseJobProperties(final pipelineContext) {
     if (env.BRANCH_NAME == 'master') {
         // we are building nightly build
         env.NIGHTLY_BUILD = true
-    } else if (params.TEST_RELEASE || isReleaseBranch) {
+    } else if (testRelease || isReleaseBranch) {
         // in case of release branch and enabled upload to Maven, we have to set DO_RELEASE
         if (params.UPLOAD_NEXUS) {
             env.DO_RELEASE = true
