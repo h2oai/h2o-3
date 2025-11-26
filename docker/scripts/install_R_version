@@ -63,7 +63,7 @@ ln -s -f ${R_VERSION_HOME}/bin/Rscript /usr/local/R/current/bin/Rscript""" > /us
 	chmod a+x /usr/bin/activate_R_${R_VERSION}
 }
 
-installR()
+installR
 
 # Activate this R version
 echo "Activating R ${R_VERSION}"
@@ -654,9 +654,7 @@ elif [ "$R_VERSION" = "4.4.0" ]; then
 	getAndInstallFromCRAN devtools 2.4.5
 	getAndInstallFromCRAN uplift 0.3.5
 	getAndInstallFromCRAN DT 0.33
-	
 else
-	
 	getAndInstallFromCRAN abind 1.4-5
 	getAndInstallFromCRAN acepack 1.4.1
 	getAndInstallFromCRAN AUC 0.3.0

@@ -187,13 +187,9 @@ private Closure makeStage(final pipelineContext, String target) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
                     deleteDir()
-                    
-                    // pullPreviousVersionIfRequired(pipelineContext, target)
-                    // println "make ${target}"
                     dockerLoginH2OECR()
 					unstashDockerImages(target)
-                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") ||
-                       (imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") && params.forceBuild)){
+                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") || params.forceBuild){
                         unstash 'docker-sources'
                         sh """
                             make \
