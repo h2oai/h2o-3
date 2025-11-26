@@ -63,7 +63,7 @@ ln -s -f ${R_VERSION_HOME}/bin/Rscript /usr/local/R/current/bin/Rscript""" > /us
 	chmod a+x /usr/bin/activate_R_${R_VERSION}
 }
 
-# installR()
+installR()
 
 # Activate this R version
 echo "Activating R ${R_VERSION}"
@@ -182,240 +182,244 @@ function getAndInstallFromCRAN(){
 echo "Installing dependencies for R ${R_VERSION}"
 
 if [ "$R_VERSION" = "4.5.2" ]; then
-	getAndInstallFromCRAN abind 1.4-5
-	getAndInstallFromCRAN acepack 1.4.2
 	getAndInstallFromCRAN AUC 0.3.2
+	getAndInstallFromCRAN DEoptimR 1.1-4
+	getAndInstallFromCRAN Formula 1.2-5
+	getAndInstallFromCRAN HDtweedie 1.2
+	getAndInstallFromCRAN KernSmooth 2.23-26
+	getAndInstallFromCRAN LiblineaR 2.10-24
+	getAndInstallFromCRAN MASS 7.3-65
+	getAndInstallFromCRAN R.methodsS3 1.8.2
+	getAndInstallFromCRAN R6 2.6.1
+	getAndInstallFromCRAN RColorBrewer 1.1-3
+	getAndInstallFromCRAN RUnit 0.4.33.1
+	getAndInstallFromCRAN Rcpp 1.1.0
+	getAndInstallFromCRAN RcppParallel 5.1.11-1
+	getAndInstallFromCRAN RhpcBLASctl 0.23-42
+	getAndInstallFromCRAN S7 0.2.1
+	getAndInstallFromCRAN SparseM 1.84-2
+	getAndInstallFromCRAN abind 1.4-8
+	getAndInstallFromCRAN acepack 1.6.3
 	getAndInstallFromCRAN backports 1.5.0
 	getAndInstallFromCRAN base64enc 0.1-3
 	getAndInstallFromCRAN bit 4.6.0
-	getAndInstallFromCRAN bitops 1.0-7
-	getAndInstallFromCRAN boot 1.3-30
+	getAndInstallFromCRAN bitops 1.0-9
+	getAndInstallFromCRAN boot 1.3-32
 	getAndInstallFromCRAN brew 1.0-10
 	getAndInstallFromCRAN brio 1.1.5
-	getAndInstallFromCRAN cli 3.6.2
+	getAndInstallFromCRAN cli 3.6.5
 	getAndInstallFromCRAN clipr 0.8.0
-	getAndInstallFromCRAN cluster 2.1.6
+	getAndInstallFromCRAN cluster 2.1.8.1
 	getAndInstallFromCRAN codetools 0.2-20
-	getAndInstallFromCRAN colorspace 2.1-0
-	getAndInstallFromCRAN commonmark 1.9.1
-	getAndInstallFromCRAN cpp11 0.4.7
-	getAndInstallFromCRAN crayon 1.5.2
-	getAndInstallFromCRAN curl 5.2.1
+	getAndInstallFromCRAN colorspace 2.1-2
+	getAndInstallFromCRAN commonmark 2.0.0
+	getAndInstallFromCRAN cpp11 0.5.2
+	getAndInstallFromCRAN crayon 1.5.3
+	getAndInstallFromCRAN curl 7.0.0
 	getAndInstallFromCRAN data.table 1.17.8
 	getAndInstallFromCRAN deldir 2.0-4
-	getAndInstallFromCRAN DEoptimR 1.1-3
 	getAndInstallFromCRAN digest 0.6.39
-	getAndInstallFromCRAN diptest 0.77-1
-	getAndInstallFromCRAN evaluate 0.23
-	getAndInstallFromCRAN fansi 1.0.6
+	getAndInstallFromCRAN diptest 0.77-2
+	getAndInstallFromCRAN evaluate 1.0.5
+	getAndInstallFromCRAN fansi 1.0.7
 	getAndInstallFromCRAN farver 2.1.2
 	getAndInstallFromCRAN fastmap 1.2.0
-	getAndInstallFromCRAN float 0.3-2
-	getAndInstallFromCRAN foreign 0.8-86
+	getAndInstallFromCRAN float 0.3-3
+	getAndInstallFromCRAN foreign 0.8-90
 	getAndInstallFromCRAN formatR 1.14
-	getAndInstallFromCRAN Formula 1.2-5
-	getAndInstallFromCRAN fs 1.6.4
+	getAndInstallFromCRAN fs 1.6.6
 	getAndInstallFromCRAN futile.options 1.0.1
-	getAndInstallFromCRAN generics 0.1.3
+	getAndInstallFromCRAN generics 0.1.4
 	getAndInstallFromCRAN getopt 1.20.4
 	getAndInstallFromCRAN gitcreds 0.1.2
-	getAndInstallFromCRAN glue 1.7.0
+	getAndInstallFromCRAN glue 1.8.0
 	getAndInstallFromCRAN gtools 3.9.5
-	getAndInstallFromCRAN HDtweedie 1.2
 	getAndInstallFromCRAN highlight 0.5.1
 	getAndInstallFromCRAN ini 0.3.1
 	getAndInstallFromCRAN isoband 0.2.7
 	getAndInstallFromCRAN iterators 1.0.14
 	getAndInstallFromCRAN jpeg 0.1-11
-	getAndInstallFromCRAN jsonlite 1.8.8
-	getAndInstallFromCRAN kernlab 0.9-32
-	getAndInstallFromCRAN KernSmooth 2.23-24
+	getAndInstallFromCRAN jsonlite 2.0.0
+	getAndInstallFromCRAN kernlab 0.9-33
 	getAndInstallFromCRAN labeling 0.4.3
-	getAndInstallFromCRAN lattice 0.22-6
+	getAndInstallFromCRAN lattice 0.22-7
 	getAndInstallFromCRAN lazyeval 0.2.2
-	getAndInstallFromCRAN LiblineaR 2.10-24
-	getAndInstallFromCRAN magrittr 2.0.3
-	getAndInstallFromCRAN MASS 7.3-60.2
+	getAndInstallFromCRAN magrittr 2.0.4
 	getAndInstallFromCRAN matrixStats 1.5.0
-	getAndInstallFromCRAN mclust 6.1.1
-	getAndInstallFromCRAN mime 0.12
+	getAndInstallFromCRAN mclust 6.1.2
+	getAndInstallFromCRAN mime 0.13
 	getAndInstallFromCRAN misc3d 0.9-1
-	getAndInstallFromCRAN mlbench 2.1-5
-	getAndInstallFromCRAN modeltools 0.2-23
+	getAndInstallFromCRAN mlbench 2.1-6
+	getAndInstallFromCRAN modeltools 0.2-24
 	getAndInstallFromCRAN mvtnorm 1.3-3
-	getAndInstallFromCRAN nnet 7.3-19
-	getAndInstallFromCRAN packrat 0.9.2
-	getAndInstallFromCRAN pixmap 0.4-13
+	getAndInstallFromCRAN nnet 7.3-20
+	getAndInstallFromCRAN otel 0.2.0
+	getAndInstallFromCRAN packrat 0.9.3
+	getAndInstallFromCRAN pixmap 0.4-14
 	getAndInstallFromCRAN pkgconfig 2.0.3
 	getAndInstallFromCRAN png 0.1-8
 	getAndInstallFromCRAN praise 1.0.0
 	getAndInstallFromCRAN prettyunits 1.2.0
 	getAndInstallFromCRAN proxy 0.4-27
-	getAndInstallFromCRAN ps 1.7.6
-	getAndInstallFromCRAN R.methodsS3 1.8.2
-	getAndInstallFromCRAN R6 2.5.1
+	getAndInstallFromCRAN ps 1.9.1
 	getAndInstallFromCRAN randomForest 4.7-1.2
 	getAndInstallFromCRAN rappdirs 0.3.3
-	getAndInstallFromCRAN RColorBrewer 1.1-3
-	getAndInstallFromCRAN Rcpp 1.0.12
-	getAndInstallFromCRAN RcppParallel 5.1.7
 	getAndInstallFromCRAN remotes 2.5.0
-	getAndInstallFromCRAN renv 1.0.7
-	getAndInstallFromCRAN RhpcBLASctl 0.23-42
-	getAndInstallFromCRAN rlang 1.1.3
-	getAndInstallFromCRAN rpart 4.1.23
-	getAndInstallFromCRAN rprojroot 2.0.4
-	getAndInstallFromCRAN rstudioapi 0.16.0
-	getAndInstallFromCRAN RUnit 0.4.33
+	getAndInstallFromCRAN renv 1.1.5
+	getAndInstallFromCRAN rlang 1.1.6
+	getAndInstallFromCRAN rpart 4.1.24
+	getAndInstallFromCRAN rprojroot 2.1.1
+	getAndInstallFromCRAN rstudioapi 0.17.1
 	getAndInstallFromCRAN shape 1.4.6.1
-	getAndInstallFromCRAN slam 0.1-50
+	getAndInstallFromCRAN slam 0.1-55
 	getAndInstallFromCRAN sourcetools 0.1.7-1
-	getAndInstallFromCRAN SparseM 1.83
 	getAndInstallFromCRAN sparsepp 1.22
-	getAndInstallFromCRAN spatial 7.3-17
-	getAndInstallFromCRAN statmod 1.5.0
-	getAndInstallFromCRAN stringi 1.8.4
+	getAndInstallFromCRAN spatial 7.3-18
+	getAndInstallFromCRAN statmod 1.5.1
+	getAndInstallFromCRAN stringi 1.8.7
 	getAndInstallFromCRAN svd 0.5.8
-	getAndInstallFromCRAN sys 3.4.2
+	getAndInstallFromCRAN sys 3.4.3
 	getAndInstallFromCRAN tweedie 2.3.5
-	getAndInstallFromCRAN utf8 1.2.4
-	getAndInstallFromCRAN uuid 1.2-0
+	getAndInstallFromCRAN utf8 1.2.6
+	getAndInstallFromCRAN uuid 1.2-1
 	getAndInstallFromCRAN versions 0.3
 	getAndInstallFromCRAN viridisLite 0.4.2
 	getAndInstallFromCRAN whisker 0.4.1
-	getAndInstallFromCRAN withr 3.0.0
-	getAndInstallFromCRAN xfun 0.44
+	getAndInstallFromCRAN withr 3.0.2
+	getAndInstallFromCRAN xfun 0.54
 	getAndInstallFromCRAN xtable 1.8-4
-	getAndInstallFromCRAN yaml 2.3.8
-	getAndInstallFromCRAN zip 2.3.1
-	getAndInstallFromCRAN checkmate 2.3.1
-	getAndInstallFromCRAN PKI 0.1-12
-	getAndInstallFromCRAN bit64 4.0.5
-	getAndInstallFromCRAN caTools 1.18.3
-	getAndInstallFromCRAN RCurl 1.98-1.14
-	getAndInstallFromCRAN sessioninfo 1.2.2
-	getAndInstallFromCRAN munsell 0.5.1
-	getAndInstallFromCRAN diffobj 0.3.5
+	getAndInstallFromCRAN yaml 2.3.10
+	getAndInstallFromCRAN zip 2.3.3
 	getAndInstallFromCRAN robustbase 0.99-6
+	getAndInstallFromCRAN class 7.3-23
+	getAndInstallFromCRAN R.oo 1.27.1
+	getAndInstallFromCRAN lgr 0.5.0
+	getAndInstallFromCRAN RcppArmadillo 15.2.2-1
+	getAndInstallFromCRAN RcppEigen 0.3.4.0.2
+	getAndInstallFromCRAN RcppTOML 0.2.3
+	getAndInstallFromCRAN checkmate 2.3.3
+	getAndInstallFromCRAN PKI 0.1-15
+	getAndInstallFromCRAN bit64 4.6.0-1
+	getAndInstallFromCRAN RCurl 1.98-1.17
+	getAndInstallFromCRAN caTools 1.18.3
+	getAndInstallFromCRAN desc 1.4.3
+	getAndInstallFromCRAN sessioninfo 1.2.3
+	getAndInstallFromCRAN munsell 0.5.1
+	getAndInstallFromCRAN diffobj 0.3.6
+	getAndInstallFromCRAN rversions 3.0.0
+	getAndInstallFromCRAN interp 1.1-6
 	getAndInstallFromCRAN lambda.r 1.2.4
 	getAndInstallFromCRAN optparse 1.7.5
 	getAndInstallFromCRAN foreach 1.5.2
-	getAndInstallFromCRAN Matrix 1.7-0
-	getAndInstallFromCRAN nlme 3.1-164
-	getAndInstallFromCRAN sp 2.1-4
-	getAndInstallFromCRAN zoo 1.8-12
-	getAndInstallFromCRAN class 7.3-22
-	getAndInstallFromCRAN prabclus 2.3-3
-	getAndInstallFromCRAN plot3D 1.4.1
+	getAndInstallFromCRAN Matrix 1.7-4
+	getAndInstallFromCRAN nlme 3.1-168
+	getAndInstallFromCRAN sp 2.2-0
+	getAndInstallFromCRAN zoo 1.8-14
+	getAndInstallFromCRAN prabclus 2.3-4
+	getAndInstallFromCRAN plot3D 1.4.2
 	getAndInstallFromCRAN libcoin 1.0-10
-	getAndInstallFromCRAN flexmix 2.3-19
-	getAndInstallFromCRAN R.oo 1.26.0
-	getAndInstallFromCRAN desc 1.4.3
-	getAndInstallFromCRAN lgr 0.4.4
-	getAndInstallFromCRAN processx 3.8.4
-	getAndInstallFromCRAN RcppArmadillo 0.12.8.3.0
-	getAndInstallFromCRAN RcppEigen 0.3.4.0.0
-	getAndInstallFromCRAN interp 1.1-6
+	getAndInstallFromCRAN flexmix 2.3-20
+	getAndInstallFromCRAN processx 3.8.6
 	getAndInstallFromCRAN cachem 1.1.0
 	getAndInstallFromCRAN ellipsis 0.3.2
 	getAndInstallFromCRAN htmltools 0.5.8.1
-	getAndInstallFromCRAN later 1.3.2
+	getAndInstallFromCRAN later 1.4.4
 	getAndInstallFromCRAN lifecycle 1.0.4
-	getAndInstallFromCRAN xml2 1.3.6
-	getAndInstallFromCRAN askpass 1.2.0
+	getAndInstallFromCRAN xml2 1.5.0
+	getAndInstallFromCRAN askpass 1.2.1
 	getAndInstallFromCRAN highr 0.11
-	getAndInstallFromCRAN tinytex 0.51
-	getAndInstallFromCRAN gplots 3.1.3.1
+	getAndInstallFromCRAN tinytex 0.58
+	getAndInstallFromCRAN e1071 1.7-16
+	getAndInstallFromCRAN flexclust 1.5.0
+	getAndInstallFromCRAN R.utils 2.13.0
+	getAndInstallFromCRAN gplots 3.2.0
+	getAndInstallFromCRAN waldo 0.6.2
+	getAndInstallFromCRAN latticeExtra 0.6-31
 	getAndInstallFromCRAN futile.logger 1.4.3
-	getAndInstallFromCRAN irlba 2.3.5.1
 	getAndInstallFromCRAN MatrixExtra 0.1.15
+	getAndInstallFromCRAN irlba 2.3.5.1
 	getAndInstallFromCRAN mlapi 0.1.1
-	getAndInstallFromCRAN survival 3.6-4
-	getAndInstallFromCRAN xgboost 1.7.7.1
-	getAndInstallFromCRAN mgcv 1.9-1
-	getAndInstallFromCRAN ade4 1.7-22
-	getAndInstallFromCRAN sandwich 3.1-0
-	getAndInstallFromCRAN e1071 1.7-14
-	getAndInstallFromCRAN flexclust 1.4-2
-	getAndInstallFromCRAN fpc 2.2-12
-	getAndInstallFromCRAN R.utils 2.12.3
+	getAndInstallFromCRAN survival 3.8-3
+	getAndInstallFromCRAN xgboost 1.7.11.1
+	getAndInstallFromCRAN mgcv 1.9-4
+	getAndInstallFromCRAN ade4 1.7-23
+	getAndInstallFromCRAN sandwich 3.1-1
+	getAndInstallFromCRAN fpc 2.2-13
 	getAndInstallFromCRAN callr 3.7.6
 	getAndInstallFromCRAN xopen 1.0.1
-	getAndInstallFromCRAN latticeExtra 0.6-30
 	getAndInstallFromCRAN memoise 2.0.1
-	getAndInstallFromCRAN crosstalk 1.2.1
-	getAndInstallFromCRAN fontawesome 0.5.2
+	getAndInstallFromCRAN crosstalk 1.2.2
+	getAndInstallFromCRAN fontawesome 0.5.3
 	getAndInstallFromCRAN jquerylib 0.1.4
-	getAndInstallFromCRAN sass 0.4.9
-	getAndInstallFromCRAN promises 1.3.0
-	getAndInstallFromCRAN gtable 0.3.5
-	getAndInstallFromCRAN scales 1.3.0
-	getAndInstallFromCRAN systemfonts 1.1.0
+	getAndInstallFromCRAN sass 0.4.10
+	getAndInstallFromCRAN gtable 0.3.6
+	getAndInstallFromCRAN promises 1.5.0
+	getAndInstallFromCRAN scales 1.4.0
+	getAndInstallFromCRAN systemfonts 1.3.1
 	getAndInstallFromCRAN vctrs 0.6.5
-	getAndInstallFromCRAN rversions 2.1.2
 	getAndInstallFromCRAN urlchecker 1.0.1
-	getAndInstallFromCRAN openssl 2.2.0
-	getAndInstallFromCRAN knitr 1.47
+	getAndInstallFromCRAN openssl 2.3.4
+	getAndInstallFromCRAN knitr 1.50
 	getAndInstallFromCRAN ROCR 1.0-11
-	getAndInstallFromCRAN rsparse 0.5.1
-	getAndInstallFromCRAN gbm 2.1.9
-	getAndInstallFromCRAN glmnet 4.1-8
-	getAndInstallFromCRAN penalized 0.9-52
-	getAndInstallFromCRAN TH.data 1.1-2
-	getAndInstallFromCRAN pkgbuild 1.4.4
+	getAndInstallFromCRAN rsparse 0.5.3
+	getAndInstallFromCRAN TH.data 1.1-5
+	getAndInstallFromCRAN gbm 2.2.2
+	getAndInstallFromCRAN glmnet 4.1-10
+	getAndInstallFromCRAN penalized 0.9-53
+	getAndInstallFromCRAN pkgbuild 1.4.8
 	getAndInstallFromCRAN webshot 0.5.5
-	getAndInstallFromCRAN bslib 0.7.0
-	getAndInstallFromCRAN httpuv 1.6.15
+	getAndInstallFromCRAN bslib 0.9.0
 	getAndInstallFromCRAN gridExtra 2.3
-	getAndInstallFromCRAN textshaping 0.4.0
-	getAndInstallFromCRAN downlit 0.4.3
-	getAndInstallFromCRAN pillar 1.9.0
-	getAndInstallFromCRAN purrr 1.0.2
-	getAndInstallFromCRAN stringr 1.5.1
+	getAndInstallFromCRAN httpuv 1.6.16
+	getAndInstallFromCRAN textshaping 1.0.4
+	getAndInstallFromCRAN downlit 0.4.5
+	getAndInstallFromCRAN ggplot2 4.0.1
+	getAndInstallFromCRAN pillar 1.11.1
+	getAndInstallFromCRAN purrr 1.2.0
+	getAndInstallFromCRAN stringr 1.6.0
 	getAndInstallFromCRAN tidyselect 1.2.1
-	getAndInstallFromCRAN credentials 2.0.1
+	getAndInstallFromCRAN credentials 2.0.3
 	getAndInstallFromCRAN httr 1.4.7
-	getAndInstallFromCRAN httr2 1.0.1
-	getAndInstallFromCRAN rsconnect 1.3.0
-	getAndInstallFromCRAN tables 0.9.25
+	getAndInstallFromCRAN httr2 1.2.1
+	getAndInstallFromCRAN jose 1.2.1
+	getAndInstallFromCRAN tables 0.9.31
 	getAndInstallFromCRAN MLmetrics 1.1.3
 	getAndInstallFromCRAN text2vec 0.6.4
-	getAndInstallFromCRAN multcomp 1.4-25
-	getAndInstallFromCRAN pkgload 1.3.4
+	getAndInstallFromCRAN multcomp 1.4-29
+	getAndInstallFromCRAN pkgload 1.4.1
 	getAndInstallFromCRAN rcmdcheck 1.4.0
-	getAndInstallFromCRAN rmarkdown 2.27
-	getAndInstallFromCRAN shiny 1.8.1.1
-	getAndInstallFromCRAN ragg 1.3.2
+	getAndInstallFromCRAN rmarkdown 2.30
+	getAndInstallFromCRAN shiny 1.11.1
+	getAndInstallFromCRAN ragg 1.5.0
+	getAndInstallFromCRAN viridis 0.6.5
 	getAndInstallFromCRAN repr 1.1.7
-	getAndInstallFromCRAN tibble 3.2.1
-	getAndInstallFromCRAN gert 2.0.1
-	getAndInstallFromCRAN gh 1.4.1
+	getAndInstallFromCRAN tibble 3.3.0
+	getAndInstallFromCRAN gert 2.2.0
+	getAndInstallFromCRAN gh 1.5.0
+	getAndInstallFromCRAN snowflakeauth 0.2.0
 	getAndInstallFromCRAN coin 1.4-3
-	getAndInstallFromCRAN roxygen2 7.3.1
+	getAndInstallFromCRAN roxygen2 7.3.3
+	getAndInstallFromCRAN testthat 3.3.1
 	getAndInstallFromCRAN htmlwidgets 1.6.4
-	getAndInstallFromCRAN miniUI 0.1.1.1
+	getAndInstallFromCRAN miniUI 0.1.2
 	getAndInstallFromCRAN shinyjs 2.1.0
 	getAndInstallFromCRAN IRdisplay 1.1
 	getAndInstallFromCRAN dplyr 1.1.4
-	getAndInstallFromCRAN ggplot2 4.0.1
-	getAndInstallFromCRAN pkgdown 2.0.9
+	getAndInstallFromCRAN pkgdown 2.2.0
 	getAndInstallFromCRAN rematch2 2.1.2
-	getAndInstallFromCRAN usethis 2.2.3
-	getAndInstallFromCRAN htmlTable 2.4.2
-	getAndInstallFromCRAN profvis 0.3.8
-	getAndInstallFromCRAN rgl 1.3.1
+	getAndInstallFromCRAN usethis 3.2.1
+	getAndInstallFromCRAN rsconnect 1.6.2
+	getAndInstallFromCRAN DT 0.34.0
+	getAndInstallFromCRAN htmlTable 2.4.3
+	getAndInstallFromCRAN profvis 0.4.0
+	getAndInstallFromCRAN rgl 1.3.31
 	getAndInstallFromCRAN tidyr 1.3.1
-	getAndInstallFromCRAN viridis 0.6.5
-	getAndInstallFromCRAN waldo 0.5.2
-	getAndInstallFromCRAN plot3Drgl 1.0.4
-	getAndInstallFromCRAN plotly 4.10.4
-	getAndInstallFromCRAN RItools 0.3-3
-	getAndInstallFromCRAN Hmisc 5.1-3
-	getAndInstallFromCRAN testthat 3.2.1.1
-	getAndInstallFromCRAN devtools 2.4.5
+	getAndInstallFromCRAN Hmisc 5.2-4
+	getAndInstallFromCRAN devtools 2.4.6
+	getAndInstallFromCRAN plot3Drgl 1.0.5
+	getAndInstallFromCRAN RItools 0.3-5
+	getAndInstallFromCRAN plotly 4.11.0
 	getAndInstallFromCRAN uplift 0.3.5
-	getAndInstallFromCRAN DT 0.33
-
 elif [ "$R_VERSION" = "4.4.0" ]; then
 	getAndInstallFromCRAN abind 1.4-5
 	getAndInstallFromCRAN acepack 1.4.2
