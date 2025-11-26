@@ -74,7 +74,7 @@ def unstashDockerImages(target){
 					unstashDockerImage("dev-python-base")
 				} else if (target.startsWith('dev-r-')) {
 					unstashDockerImage("dev-r-base")
-				} else if (target ==~ /dev-jdk-\d+/)) { 
+				} else if (target ==~ /dev-jdk-\d+/) { 
 					unstashDockerImage("dev-jdk-others-base")
 				}
 				break
