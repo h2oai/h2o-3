@@ -45,8 +45,7 @@ USER h2o
 RUN \
   cd && \
   wget https://raw.githubusercontent.com/h2oai/h2o-3/master/docker/start-h2o-docker.sh && \
-  chmod +x start-h2o-docker.sh && \
-  (wget http://s3.amazonaws.com/h2o-training/mnist/train.csv.gz && gunzip train.csv.gz || echo "MNIST data not available, skipping")
+  chmod +x start-h2o-docker.sh
 
 # Define a mountable data directory
 #VOLUME \
