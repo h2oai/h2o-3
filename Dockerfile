@@ -1,12 +1,12 @@
 ########################################################################
-# Dockerfile for JDK on Ubuntu 22.04 LTS
+# Dockerfile for JDK on Ubuntu 24.04 LTS
 ########################################################################
 
 # pull base image
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # maintainer details
-MAINTAINER h2oai "h2o.ai"
+LABEL maintainer="h2o.ai"
 
 # add a post-invoke hook to dpkg which deletes cached deb files
 # update the sources.list
@@ -20,7 +20,7 @@ RUN \
   apt-get dist-upgrade -y && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y wget unzip openjdk-8-jdk python3-pip python3-sklearn python3-pandas python3-numpy python3-matplotlib software-properties-common && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates wget unzip openjdk-8-jdk python3-pip python3-sklearn python3-pandas python3-numpy python3-matplotlib software-properties-common python3-requests python3-tabulate && \
   apt-get clean
 
 # Fetch h2o latest_stable
@@ -32,8 +32,8 @@ RUN \
   cd /opt && \
   cd `find . -name 'h2o.jar' | sed 's/.\///;s/\/h2o.jar//g'` && \
   cp h2o.jar /opt && \
-  /usr/bin/pip3 install `find . -name "*.whl"` && \
-  printf '!/bin/bash\ncd /home/h2o\n./start-h2o-docker.sh\n' > /start-h2o-docker.sh && \
+  /usr/bin/pip3 install --break-system-packages `find . -name "*.whl"` && \
+  printf '#!/bin/bash\ncd /home/h2o\n./start-h2o-docker.sh\n' > /start-h2o-docker.sh && \
   chmod +x /start-h2o-docker.sh
 
 RUN \
