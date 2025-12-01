@@ -99,14 +99,14 @@ ansiColor('xterm') {
                 def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                if (params.publish && !params.forceBuild) {
-					dockerLoginH2OECR()
-                    if (imageExistsH2OECR("h2o-3/dev-base", "${currentVersion}")) {
-                        error "Image already exists. Use forceBuild if you wish to overwrite."
-                    }
-                } else {
-                    manager.addBadge("warning.gif", "forceBuild enabled")
-                }
+                // if (params.publish && !params.forceBuild) {
+				// 	dockerLoginH2OECR()
+                //     if (imageExistsH2OECR("h2o-3/dev-base", "${currentVersion}")) {
+                //         error "Image already exists. Use forceBuild if you wish to overwrite."
+                //     }
+                // } else {
+                //     manager.addBadge("warning.gif", "forceBuild enabled")
+                // }
 
                 dir('docker') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
