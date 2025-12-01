@@ -181,14 +181,22 @@ def call(final pipelineContext) {
       stageName: 'R4.0 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '4.0.2',
       timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
-//    [
-//      stageName: 'R4.4 Small', target: 'test-r-small', rVersion: '4.4.0',
-//      timeoutValue: 190, component: pipelineContext.getBuildConfig().COMPONENT_R
-//    ],
-//    [
-//      stageName: 'R4.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '4.4.0',
-//      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
-//    ],
+    [
+      stageName: 'R4.4 Small', target: 'test-r-small', rVersion: '4.4.0',
+      timeoutValue: 190, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '4.4.0',
+      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.5 Small', target: 'test-r-small', rVersion: '4.5.2',
+      timeoutValue: 190, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.5 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '4.5.2',
+      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
     [
       stageName: 'R3.5 Booklets', target: 'test-r-booklets', rVersion: '3.5.3',
       timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_R
@@ -558,7 +566,11 @@ def call(final pipelineContext) {
     [
       stageName: 'R4.4 Explain', target: 'test-r-explain', rVersion: '4.4.0',
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],      
+    ],
+    [
+      stageName: 'R4.5 Explain', target: 'test-r-explain', rVersion: '4.5.2',
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
     [
       stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 10,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
