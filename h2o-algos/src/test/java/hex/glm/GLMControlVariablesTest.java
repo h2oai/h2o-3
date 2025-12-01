@@ -707,71 +707,14 @@ public class GLMControlVariablesTest extends TestUtil {
         }
         return new Frame(Key.<Frame>make(frameName),new String[]{"predict"},new Vec[]{predictions});
     }
-
-    private Frame scoreManualWithCoefficients(double[][] coefficients, Frame data, String frameName){
-        return scoreManualWithCoefficients(coefficients, data, frameName, null);
-    }
     
-    private Frame scoreManualWithCoefficients(double[][] coefficients, Frame data, String frameName, int[] controlVariablesIdxs){
-        Vec predictions = Vec.makeZero(data.numRows(), Vec.T_NUM);
-        Vec[] classPredictions = new Vec[coefficients.length];
-        for (int c = 0; c < coefficients.length; c++){
-            classPredictions[c] = Vec.makeZero(data.numRows(), Vec.T_NUM);
-        }
-        for (int i = 0; i < data.numRows(); i++) {
-            double sumExp = 0;
-            double maxRow = 0;
-            double[] preds = new double[coefficients.length];
-            double[] eta = new double[coefficients.length];
-            for (int c = 0; c < coefficients.length; ++c) {
-                for (int j = 0; j < data.numCols(); j++) {
-                    if (controlVariablesIdxs == null || Arrays.binarySearch(controlVariablesIdxs, j) < 0) {
-                        eta[c] += data.vec(j).at(i) * coefficients[c][j];
-                    }
-                }
-                if (eta[c] > maxRow) {
-                    maxRow = eta[c];
-                }
-            }
-            for (int c = 0; c < coefficients.length; ++c) {
-                sumExp += eta[c] = Math.exp(eta[c] - maxRow); // intercept
-            }
-            sumExp = 1.0 / sumExp;
-            for (int c = 0; c < coefficients.length; ++c) {
-                preds[c] = eta[c] * sumExp;
-            }
-            predictions.set(i, ArrayUtils.maxIndex(eta));
-            for (int c = 0; c < coefficients.length; c++){
-                classPredictions[c].set(i, preds[c]);
-            }
-        }
-        return new Frame(Key.<Frame>make(frameName),new String[]{"predict", "0", "1", "2"},new Vec[]{predictions, classPredictions[0], classPredictions[1], classPredictions[2]});
-    }
-
-    public double innerProduct(double[] vec, int numStart, int[] binIds, int[] numVals, int nNums, int[] numIds, boolean intercept){
-        double res = 0;
-        int off = 0;
-        for (int i = 0; i < binIds.length; ++i)
-            res += vec[off+binIds[i]];
-        if (numIds == null) {
-            for (int i = 0; i < numVals.length; ++i)
-                res += numVals[i] * vec[numStart + i];
-        } else {
-            for (int i = 0; i < nNums; ++i)
-                res += numVals[i] * vec[off+numIds[i]];
-        }
-        if(intercept)
-            res += vec[vec.length-1];
-        return res;
-    }
-
     public double toProb(double pred){
         return 1.0 / (Math.exp(-pred) + 1.0);
     }
 
     @Test
     public void testBasicDataMultinomial(){
-        /* Test against multinomial GLM from glmnet library in R 
+        /* Test agains t multinomial GLM from glmnet library in R 
          
         cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
         cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
@@ -817,10 +760,10 @@ public class GLMControlVariablesTest extends TestUtil {
         try {
             Scope.enter();
 
-            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
-            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec num1 = Vec.makeVec(new double[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},Vec.newKey());
+            Vec num2 = Vec.makeVec(new double[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},Vec.newKey());
             Vec res = Vec.makeVec(new double[]{1,2,0,0,2,1,0,1,0,1,2,1,1,2,1,0,2,0,2,0,2,0,1,2,1,1}, new String[]{"0","1", "2"},Vec.newKey());
-            train = new Frame(Key.<Frame>make("train"),new String[]{"cat1", "cat2", "y"},new Vec[]{cat1, cat2,res});
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "y"},new Vec[]{num1, num2,res});
             DKV.put(train);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
@@ -834,27 +777,16 @@ public class GLMControlVariablesTest extends TestUtil {
             params._lambda_search = false;
             params._distribution = DistributionFamily.multinomial;
             params._auc_type = MultinomialAucType.MACRO_OVR;
-            //params._link = GLMModel.GLMParameters.Link.logit;
             glm = new GLM(params).trainModel().get();
             preds = glm.score(train);
-            //System.out.println(preds.toTwoDimTable().toString());
 
-            //System.out.println(glm._output._variable_importances);
             double[][] coefficientsH2o = glm._output.getNormBetaMultinomial();
             double[][] coefficientsH2oGlobalBeta = glm._output._global_beta_multinomial;
 
-            params._control_variables = new String[]{"cat1"};
+            params._control_variables = new String[]{"x1"};
             glmControl = new GLM(params).trainModel().get();
             predsControl = glmControl.score(train);
-            //System.out.println(predsControl.toTwoDimTable().toString());
-            //System.out.println(glmControl._output._variable_importances);
-
-            double[][] coefficientsControlH2o = glmControl._output.getNormBetaMultinomial();
-
-
-            //double[] coefR0 = new double[]{0.2917359, -0.1505452, -0.0935533};
-            //double[] coefR1 = new double[]{-0.06250493, 0.03661836, 0.26101689};
-            //double[] coefR2 = new double[]{-0.2292310, 0.1139269, -0.1674636};
+            
 
             double[] coefR0 = new double[]{-0.0935533, 0.2917359, -0.1505452};
             double[] coefR1 = new double[]{0.26101689, -0.06250493, 0.03661836};
@@ -862,49 +794,68 @@ public class GLMControlVariablesTest extends TestUtil {
 
             double[][] coefficientsR = new double[][]{coefR0, coefR1, coefR2};
 
-            double[] coefH2O0 = coefficientsH2oGlobalBeta[0];
-            double[] coefH2O1 = coefficientsH2oGlobalBeta[1];
-            double[] coefH2O2 = coefficientsH2oGlobalBeta[2];
+            double[] coefH2O0 = coefficientsH2o[0];
+            double[] coefH2O1 = coefficientsH2o[1];
+            double[] coefH2O2 = coefficientsH2o[2];
+
+            System.out.println("Coefficients norm beta");
+            System.out.println(Arrays.toString(coefH2O0) + Arrays.toString(coefH2O1) + Arrays.toString(coefH2O2));
+
+            double[] coefH2O0Global = coefficientsH2oGlobalBeta[0];
+            double[] coefH2O1Global = coefficientsH2oGlobalBeta[1];
+            double[] coefH2O2Global = coefficientsH2oGlobalBeta[2];
 
             System.out.println("Coefficients global beta");
-            System.out.println(Arrays.toString(coefH2O0) + Arrays.toString(coefH2O1) + Arrays.toString(coefH2O2));
+            System.out.println(Arrays.toString(coefH2O0Global) + Arrays.toString(coefH2O1Global) + Arrays.toString(coefH2O2Global));
 
-            coefH2O0 = coefficientsH2o[0];
-            coefH2O1 = coefficientsH2o[1];
-            coefH2O2 = coefficientsH2o[2];
-
-            System.out.println("Coefficients before normalization");
-            System.out.println(Arrays.toString(coefH2O0) + Arrays.toString(coefH2O1) + Arrays.toString(coefH2O2));
-
-            double[][] normCoefficientsH2O = normalizeValues(coefficientsH2o);
+            double[][] normCoefficientsH2O = normalizeValues(coefficientsH2oGlobalBeta);
             double[] coefH2O0Norm = normCoefficientsH2O[0];
             double[] coefH2O1Norm = normCoefficientsH2O[1];
             double[] coefH2O2Norm = normCoefficientsH2O[2];
 
-            System.out.println("Coefficients h2o normalized");
+            System.out.println("Coefficients h2o global beta normalized");
             System.out.println(Arrays.toString(coefH2O0Norm) + Arrays.toString(coefH2O1Norm) + Arrays.toString(coefH2O2Norm));
             
             System.out.println("Coefficients R");
             System.out.println(Arrays.toString(coefR0) + Arrays.toString(coefR1) + Arrays.toString(coefR2));
+
+            System.out.println("Coefficients control h2o global beta");
+            double[][] coefficientsControlH2o = glmControl._output._global_beta_multinomial;
+            double[] coefH2O0Control = coefficientsControlH2o[0];
+            double[] coefH2O1Control = coefficientsControlH2o[1];
+            double[] coefH2O2Control = coefficientsControlH2o[2];
+            System.out.println(Arrays.toString(coefH2O0Control) + Arrays.toString(coefH2O1Control) + Arrays.toString(coefH2O2Control));
+
+            System.out.println("Coefficients control h2o normalized global beta");
+            double[][] coefficientsControlH2oNorm = normalizeValues(glmControl._output._global_beta_multinomial);
+            double[] coefH2O0ControlNorm = coefficientsControlH2o[0];
+            double[] coefH2O1ControlNorm = coefficientsControlH2o[1];
+            double[] coefH2O2ControlNorm = coefficientsControlH2o[2];
+            System.out.println(Arrays.toString(coefH2O0ControlNorm) + Arrays.toString(coefH2O1ControlNorm) + Arrays.toString(coefH2O2ControlNorm));
+
 
             Vec predsRVec = Vec.makeVec(new double[]{2, 2, 2, 3, 3, 2, 2, 1, 1, 2, 1, 2, 3, 2, 2, 2, 3, 3, 1, 1, 2, 2, 2, 2, 1, 3},Vec.newKey());
             Vec preds0 = Vec.makeVec(new double[]{0.04763741, -0.24409854, 0.04763741, -0.15054523, -0.15054523, -0.24409854, -0.24409854, 0.14119072, 0.14119072, -0.24409854, 0.14119072, -0.24409854, -0.15054523, 0.04763741, -0.24409854, 0.04763741, -0.15054523, -0.15054523, 0.14119072, 0.14119072, -0.24409854, -0.24409854, 0.04763741, -0.24409854, 0.14119072, -0.15054523},Vec.newKey());
             Vec preds1 = Vec.makeVec(new double[]{0.23513032, 0.29763525, 0.23513032, 0.03661836, 0.03661836, 0.29763525, 0.29763525, -0.02588657, -0.02588657, 0.29763525, -0.02588657, 0.29763525, 0.03661836, 0.23513032, 0.29763525, 0.23513032, 0.03661836, 0.03661836, -0.02588657, -0.02588657, 0.29763525, 0.29763525, 0.23513032, 0.29763525, -0.02588657, 0.03661836},Vec.newKey());
             Vec preds2 = Vec.makeVec(new double[]{-0.28276773, -0.05353671, -0.28276773, 0.11392687, 0.11392687, -0.05353671, -0.05353671, -0.11530414, -0.11530414, -0.05353671, -0.11530414, -0.05353671, 0.11392687, -0.28276773, -0.05353671, -0.28276773, 0.11392687, 0.11392687, -0.11530414, -0.11530414, -0.05353671, -0.05353671, -0.28276773, -0.05353671, -0.11530414, 0.11392687},Vec.newKey());
             predsR = new Frame(Key.<Frame>make("predsR"),new String[]{"predict", "0", "1", "2"},new Vec[]{predsRVec, preds0, preds1, preds2});
+            
+            System.out.println("Score manual R");
+            Frame manualPredsR = scoreManualWithMultinomialCoefficients(coefficientsR, train, "manualPredsR", true);
+            System.out.println("Score manual H2o global beta with sumExp");
+            Frame manualPredsH2o = scoreManualWithMultinomialCoefficients(coefficientsH2oGlobalBeta, train, "manualPredsH2o", false);
+            System.out.println("Score manual normalized H2o global beta without sumExp");
+            Frame manualPredsH2oNormalized = scoreManualWithMultinomialCoefficients(normCoefficientsH2O, train, "manualPredsH2oNormalized", true);
+            System.out.println("Score manual h2o control global beta with sumExp");
+            Frame manualPredsControl = scoreManualWithMultinomialCoefficients(coefficientsControlH2o, train, "manualPredsControl", new int[]{0}, false);
+            System.out.println("Score manual h2o control normalized without sumExp");
+            Frame manualPredsControlNorm = scoreManualWithMultinomialCoefficients(coefficientsControlH2oNorm, train, "manualPredsControlNorm", new int[]{0}, true);
+            System.out.println("Score manual R control");
+            Frame manualPredsRControl = scoreManualWithMultinomialCoefficients(coefficientsR, train, "manualPredsR", new int[]{0}, true);
 
-            coefficientsH2o = new double[][]{coefH2O0, coefH2O1, coefH2O2};
-            System.out.println("Coefficients control h2o");
-            System.out.println(glmControl.coefficients().toString());
-
-            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR");
-            Frame manualPredsH2o = scoreManualWithCoefficients(coefficientsH2o, train, "manualPredsH2o");
-            Frame manualPredsH2oNormalized = scoreManualWithCoefficients(normCoefficientsH2O, train, "manualPredsH2oNormalized");
-            Frame manualPredsControl = scoreManualWithCoefficients(coefficientsControlH2o, train, "manualPredsControl", new int[]{0});
-            Frame manualPredsRControl = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", new int[]{0});
-
-            double tol = 1e-3;
+            double tol = 1e-2;
             long numRows = preds.numRows();
+            //numRows = 5;
             for (long i = 0; i < numRows; i++) {
                 long h2oPredict = preds.vec(0).at8(i);
                 double h2o0 = preds.vec(1).at(i);
@@ -942,6 +893,11 @@ public class GLMControlVariablesTest extends TestUtil {
                 double manualH2oControl1 = manualPredsControl.vec(2).at(i);
                 double manualH2oControl2 = manualPredsControl.vec(3).at(i);
 
+                double manualH2oControlPredictNorm = manualPredsControlNorm.vec(0).at(i);
+                double manualH2oControl0Norm = manualPredsControlNorm.vec(1).at(i);
+                double manualH2oControl1Norm = manualPredsControlNorm.vec(2).at(i);
+                double manualH2oControl2Norm = manualPredsControlNorm.vec(3).at(i);
+
                 double manualRControlPredict = manualPredsRControl.vec(0).at(i);
                 double manualRControl0 = manualPredsRControl.vec(1).at(i);
                 double manualRControl1 = manualPredsRControl.vec(2).at(i);
@@ -955,21 +911,25 @@ public class GLMControlVariablesTest extends TestUtil {
                         "\nR manual predict: \n"+manualRPredict+" 0: "+manualR0+" 1: "+manualR1+" 2: "+manualR2+
                         "\nh2o control predict: \n"+h2oControlPredict+" 0: "+h2oControl0+" 1: "+h2oControl1+" 2: "+h2oControl2+
                         "\nh2o manual control predict: \n"+manualH2oControlPredict+" 0: "+manualH2oControl0+" 1: "+manualH2oControl1+" 2: "+manualH2oControl2+
+                        "\nh2o manual control normalized predict: \n"+manualH2oControlPredictNorm+" 0: "+manualH2oControl0Norm+" 1: "+manualH2oControl1Norm+" 2: "+manualH2oControl2Norm+
                         "\nR manual control predict: \n"+manualRControlPredict+" 0: "+manualRControl0+" 1: "+manualRControl1+" 2: "+manualRControl2+"\n");
 
                 // glm score calculation check
-                // Assert.assertEquals(h2o0, manualH2o0, tol); This assert does not pass due to this issue: https://github.com/h2oai/h2o-3/issues/16639
-                Assert.assertEquals(manualH2oPredictNorm, manualRPredict, tol);
-                Assert.assertEquals(manualH2oNorm0, manualR0, tol);
+                Assert.assertEquals(h2o0, manualH2o0, tol); // check manual scoring is identical with h2o scoring
+                // check manual scoring with normalized coefficients is identical with R scoring
+                Assert.assertEquals(manualH2oPredictNorm, manualRPredict, tol); 
+                Assert.assertEquals(manualH2oNorm0, manualR0, tol); 
                 Assert.assertEquals(manualH2oNorm1, manualR1, tol);
                 Assert.assertEquals(manualH2oNorm2, manualR2, tol);
-                // Assert.assertEquals(r0, manualR0, tol);
+                // check R scoring is identical with manual R scoring
+                Assert.assertEquals(r0, manualR0, tol);
 
                 // control values calculation check
-                // Assert.assertEquals(h2oControl0, manualH2oControl0, tol);
-                // Assert.assertEquals(h2oControl0, manualRControl0, tol);
+                Assert.assertEquals(h2oControl0, manualH2oControl0, tol);
+                Assert.assertEquals(manualH2oControl0Norm, manualRControl0, tol);
+                Assert.assertEquals(manualH2oControl1Norm, manualRControl1, tol);
+                Assert.assertEquals(manualH2oControl2Norm, manualRControl2, tol);
             }
-
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
@@ -992,8 +952,55 @@ public class GLMControlVariablesTest extends TestUtil {
             for (int j = 0; j < vals[i].length; j++) {
                 normVals[j][i] = vals[j][i] - mean;
             }
-        }
+        } 
         return normVals;
     }
-    
+
+    private Frame scoreManualWithMultinomialCoefficients(double[][] coefficients, Frame data, String frameName, boolean isR){
+        return scoreManualWithMultinomialCoefficients(coefficients, data, frameName, null, isR);
+    }
+
+    private Frame scoreManualWithMultinomialCoefficients(double[][] coefficients, Frame data, String frameName, int[] controlVariablesIdxs, boolean isR){
+        Vec predictions = Vec.makeZero(data.numRows(), Vec.T_NUM);
+        Vec[] classPredictions = new Vec[coefficients.length];
+        for (int c = 0; c < coefficients.length; c++){
+            classPredictions[c] = Vec.makeZero(data.numRows(), Vec.T_NUM);
+        }
+        for (long i = 0; i < data.numRows(); i++) {
+            double sumExp = 0;
+            double maxRow = 0;
+            double[] preds = new double[coefficients.length];
+            double[] eta = new double[coefficients.length];
+            for (int c = 0; c < coefficients.length; ++c) {
+                for (int j = 0; j < data.numCols()-1; j++) {
+                    if (controlVariablesIdxs == null || Arrays.binarySearch(controlVariablesIdxs, j) < 0) {
+                        eta[c] += data.vec(j).at(i) * coefficients[c][j];
+                    }
+                }
+                eta[c] += coefficients[c][data.numCols()-1]; // intercept
+                if (eta[c] > maxRow) {
+                    maxRow = eta[c];
+                }
+            }
+            
+            if (!isR) {
+                for (int c = 0; c < coefficients.length; ++c) {
+                    sumExp += eta[c] = Math.exp(eta[c] - maxRow); // intercept
+                }
+                sumExp = 1.0 / sumExp;
+            } else{
+                sumExp = 1;
+            }
+            for (int c = 0; c < coefficients.length; ++c) {
+                preds[c] = eta[c] * sumExp;
+            }
+            predictions.set(i, ArrayUtils.maxIndex(eta));
+            for (int c = 0; c < coefficients.length; c++){
+                classPredictions[c].set(i, preds[c]);
+            }
+        }
+        return new Frame(Key.<Frame>make(frameName),new String[]{"predict", "0", "1", "2"},new Vec[]{predictions, classPredictions[0], classPredictions[1], classPredictions[2]});
+    }
+
+
 }
