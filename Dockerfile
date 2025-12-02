@@ -1,12 +1,12 @@
 ########################################################################
-# Dockerfile for Oracle JDK 8 on Ubuntu 16.04
+# Dockerfile for JDK on Ubuntu 24.04 LTS
 ########################################################################
 
 # pull base image
-FROM ubuntu:16.04
+FROM ubuntu:24.04
 
 # maintainer details
-MAINTAINER h2oai "h2o.ai"
+LABEL maintainer="h2o.ai"
 
 # add a post-invoke hook to dpkg which deletes cached deb files
 # update the sources.list
@@ -16,12 +16,11 @@ MAINTAINER h2oai "h2o.ai"
 
 RUN \
   echo 'DPkg::Post-Invoke {"/bin/rm -f /var/cache/apt/archives/*.deb || true";};' | tee /etc/apt/apt.conf.d/no-cache && \
-  echo "deb http://mirror.math.princeton.edu/pub/ubuntu xenial main universe" >> /etc/apt/sources.list && \
   apt-get update -q -y && \
   apt-get dist-upgrade -y && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y wget unzip openjdk-8-jdk python-pip python-sklearn python-pandas python-numpy python-matplotlib software-properties-common python-software-properties && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates wget unzip openjdk-8-jdk python3-pip python3-sklearn python3-pandas python3-numpy python3-matplotlib software-properties-common python3-requests python3-tabulate && \
   apt-get clean
 
 # Fetch h2o latest_stable
@@ -33,8 +32,8 @@ RUN \
   cd /opt && \
   cd `find . -name 'h2o.jar' | sed 's/.\///;s/\/h2o.jar//g'` && \
   cp h2o.jar /opt && \
-  /usr/bin/pip install `find . -name "*.whl"` && \
-  printf '!/bin/bash\ncd /home/h2o\n./start-h2o-docker.sh\n' > /start-h2o-docker.sh && \
+  /usr/bin/pip3 install --break-system-packages `find . -name "*.whl"` && \
+  printf '#!/bin/bash\ncd /home/h2o\n./start-h2o-docker.sh\n' > /start-h2o-docker.sh && \
   chmod +x /start-h2o-docker.sh
 
 RUN \
@@ -46,9 +45,7 @@ USER h2o
 RUN \
   cd && \
   wget https://raw.githubusercontent.com/h2oai/h2o-3/master/docker/start-h2o-docker.sh && \
-  chmod +x start-h2o-docker.sh && \
-  wget http://s3.amazonaws.com/h2o-training/mnist/train.csv.gz && \
-  gunzip train.csv.gz
+  chmod +x start-h2o-docker.sh
 
 # Define a mountable data directory
 #VOLUME \

@@ -159,3 +159,62 @@ After obtaining the IP address, point your browser to the specified IP address a
 		# Initialize H2O
 		library(h2o)
 		dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+
+Running H2O in detached mode
+-----------------------------
+
+For running H2O in the background (detached mode), you can build and run the Docker image from the repository root:
+
+Step 1: Build the Docker image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From the repository root directory, build the Docker image using the Dockerfile:
+
+.. code-block:: bash
+
+	docker build -t h2o:latest .
+
+Step 2: Run H2O in detached mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Run the container in detached mode with H2O automatically started:
+
+.. code-block:: bash
+
+	docker run -d -p 54321:54321 --name h2o h2o:latest java -Xmx2g -jar /opt/h2o.jar -port 54321
+
+This will start H2O in the background and map port 54321 to your local machine.
+
+Step 3: Access H2O
+~~~~~~~~~~~~~~~~~~
+
+After the container starts, you can access 
+
+``
+>>> import h2o
+>>> h2o.connect("localhost:54321")
+`` in your python client.
+
+To view the H2O logs:
+
+.. code-block:: bash
+
+	docker logs h2o
+
+To access the container shell:
+
+.. code-block:: bash
+
+	docker exec -it h2o /bin/bash
+
+To stop the container:
+
+.. code-block:: bash
+
+	docker stop h2o
+
+To restart the container:
+
+.. code-block:: bash
+
+	docker start h2o
