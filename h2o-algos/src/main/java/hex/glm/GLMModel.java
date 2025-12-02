@@ -1819,7 +1819,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       mapControlVariables();
     }
     
-    
     public GLMOutput() {
       _isSupervised = true; 
       _nclasses = -1;
@@ -2042,9 +2041,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
       String[] namesSort = new String[len];
       
-      if (contrVal)
-        calculateVarimpBase(magnitudes, indices, getControlValBeta(getNormBeta()));
-      else if (_nclasses > 2)
+      if (contrVal) {
+        if(_nclasses > 2) {
+          calculateVarimpMultinomial(magnitudes, indices, getControlValBetaMultinomial(getNormBetaMultinomial()));
+        } else {
+          calculateVarimpBase(magnitudes, indices, getControlValBeta(getNormBeta()));
+        }
+      } else if (_nclasses > 2)
         calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());

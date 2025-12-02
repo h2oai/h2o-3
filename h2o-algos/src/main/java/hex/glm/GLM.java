@@ -3403,7 +3403,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._generate_scoring_history) { // update scoring history with deviance train and valid if available
         double likelihoodContrVal;
         double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
-        if(_parms._distribution.equals(DistributionFamily.multinomial)){
+        if(_model._output.isMultinomialClassifier()){
           GLMResDevTaskMultinomial task = new GLMResDevTaskMultinomial(_job._key, _dinfo, betaContrVal, nclasses()).doAll(_dinfo._adaptedFrame);
           likelihoodContrVal = task._likelihood;
         } else {
@@ -4044,7 +4044,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
           double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
           double likelihoosContrVal;
-          if(_model._parms._distribution.equals(DistributionFamily.multinomial)){
+          if(_model._output.isMultinomialClassifier()){
             GLMResDevTaskMultinomial task = new GLMResDevTaskMultinomial(_job._key, _dinfo, betaContrVal, nclasses()).doAll(_state._dinfo._adaptedFrame);
             likelihoosContrVal = task._likelihood;
           } else {
