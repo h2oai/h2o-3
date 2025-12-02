@@ -20,7 +20,15 @@ RUN \
   apt-get dist-upgrade -y && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates wget unzip openjdk-8-jdk python3-pip python3-sklearn python3-pandas python3-numpy python3-matplotlib software-properties-common python3-requests python3-tabulate && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates wget unzip openjdk-8-jdk software-properties-common && \
+  add-apt-repository ppa:deadsnakes/ppa -y && \
+  apt-get update -q -y && \
+  apt-get install -y python3.11 python3.11-distutils python3.11-dev && \
+  wget https://bootstrap.pypa.io/get-pip.py && \
+  python3.11 get-pip.py && \
+  rm get-pip.py && \
+  update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
+  python3.11 -m pip install scikit-learn pandas numpy matplotlib requests tabulate && \
   apt-get clean
 
 # Fetch h2o latest_stable
@@ -32,7 +40,7 @@ RUN \
   cd /opt && \
   cd `find . -name 'h2o.jar' | sed 's/.\///;s/\/h2o.jar//g'` && \
   cp h2o.jar /opt && \
-  /usr/bin/pip3 install --break-system-packages `find . -name "*.whl"` && \
+  python3.11 -m pip install `find . -name "*.whl"` && \
   printf '#!/bin/bash\ncd /home/h2o\n./start-h2o-docker.sh\n' > /start-h2o-docker.sh && \
   chmod +x /start-h2o-docker.sh
 
