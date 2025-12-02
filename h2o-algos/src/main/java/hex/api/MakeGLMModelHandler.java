@@ -15,6 +15,7 @@ import water.api.Handler;
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -77,7 +78,7 @@ public class MakeGLMModelHandler extends Handler {
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
-            model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
+            model._output.coefficientNames(), model._output._multinomial ? ArrayUtils.flattenArray(model._output.get_global_beta_multinomial()) : model._output.beta(), model._output._binomial, model._output._multinomial,
             model._output._ordinal, null);
     ModelMetrics mt = model._output._training_metrics_unrestricted_model;
     ModelMetrics mv = model._output._validation_metrics_unrestricted_model;
