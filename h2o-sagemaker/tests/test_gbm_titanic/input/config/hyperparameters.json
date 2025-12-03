@@ -1,0 +1,4 @@
+{
+  "training": "{'target': 'survived', 'distribution': 'AUTO', 'categorical_columns': 'survived,boat,body'}",
+  "learn_rate": 0.5
+}
