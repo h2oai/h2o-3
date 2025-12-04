@@ -363,7 +363,7 @@ if [ "$R_VERSION" = "4.5.2" ]; then
 	getAndInstallFromCRAN ROCR 1.0-11
 	getAndInstallFromCRAN rsparse 0.5.3
 	getAndInstallFromCRAN TH.data 1.1-5
-	getAndInstallFromCRAN gbm 2.2.2
+	getAndInstallFromCRAN gbm 2.1.9  # version 2.2.2 gives slightly different results
 	getAndInstallFromCRAN glmnet 4.1-10
 	getAndInstallFromCRAN penalized 0.9-53
 	getAndInstallFromCRAN pkgbuild 1.4.8
