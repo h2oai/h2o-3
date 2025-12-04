@@ -54,6 +54,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
 	  [
+      stageName: 'R4.4 Smoke', target: 'test-r-smoke', rVersion: '4.4.0',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+	  [
       stageName: 'R4.5 Smoke', target: 'test-r-smoke', rVersion: '4.5.2',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
