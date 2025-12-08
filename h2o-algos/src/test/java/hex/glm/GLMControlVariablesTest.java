@@ -829,9 +829,9 @@ public class GLMControlVariablesTest extends TestUtil {
 
             System.out.println("Coefficients control h2o normalized global beta");
             double[][] coefficientsControlH2oNorm = normalizeValues(glmControl._output._global_beta_multinomial);
-            double[] coefH2O0ControlNorm = coefficientsControlH2o[0];
-            double[] coefH2O1ControlNorm = coefficientsControlH2o[1];
-            double[] coefH2O2ControlNorm = coefficientsControlH2o[2];
+            double[] coefH2O0ControlNorm = coefficientsControlH2oNorm[0];
+            double[] coefH2O1ControlNorm = coefficientsControlH2oNorm[1];
+            double[] coefH2O2ControlNorm = coefficientsControlH2oNorm[2];
             System.out.println(Arrays.toString(coefH2O0ControlNorm) + Arrays.toString(coefH2O1ControlNorm) + Arrays.toString(coefH2O2ControlNorm));
 
 
