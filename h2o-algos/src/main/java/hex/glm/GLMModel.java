@@ -1661,8 +1661,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
         } else {
           for (int c = 0; c < beta.length; ++c) {
-            featureIdx += _dinfo._numOffsets[0] - _dinfo._catOffsets.length + 1;
-            beta[c][featureIdx] = 0;
+            int adjustedFeatureIdx = featureIdx + _dinfo._numOffsets[0] - _dinfo._catOffsets.length + 1;
+            beta[c][adjustedFeatureIdx] = 0;
           }
         }
       }
