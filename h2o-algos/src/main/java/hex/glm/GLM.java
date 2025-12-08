@@ -4043,16 +4043,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_model._parms._control_variables != null){
           _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
           double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
-          double likelihoosContrVal;
+          double likelihoodContrVal;
           if(_model._output.isMultinomialClassifier()){
             GLMResDevTaskMultinomial task = new GLMResDevTaskMultinomial(_job._key, _dinfo, betaContrVal, nclasses()).doAll(_state._dinfo._adaptedFrame);
-            likelihoosContrVal = task._likelihood;
+            likelihoodContrVal = task._likelihood;
           } else {
             GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_state._dinfo._adaptedFrame);
-            likelihoosContrVal = task._likelihood;
+            likelihoodContrVal = task._likelihood;
           }
-          double objectiveControlVal = _state.objective(betaContrVal, likelihoosContrVal);
-          _scoringHistory.addIterationScore(_state._iter, likelihoosContrVal, objectiveControlVal);
+          double objectiveControlVal = _state.objective(betaContrVal, likelihoodContrVal);
+          _scoringHistory.addIterationScore(_state._iter, likelihoodContrVal, objectiveControlVal);
         } else {
           _scoringHistory.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
         }
