@@ -31,7 +31,7 @@ glm_control_variables_multinomial <- function() {
     h2o.learning_curve_plot(prostate_glm)
     h2o.learning_curve_plot(unrestricted_prostate_glm)
 
-    # explain does not work for ordinal distribution - fail witn partial dependence plot
+    # explain does not work for ordinal distribution - fail with partial dependence plot
     # h2o.explain(prostate_glm, df)
     # h2o.explain(unrestricted_prostate_glm, df)
 
