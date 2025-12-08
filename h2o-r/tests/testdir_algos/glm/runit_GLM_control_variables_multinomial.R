@@ -53,4 +53,4 @@ glm_control_variables_multinomial <- function() {
     expect_true(varimp_unrestricted[varimp_unrestricted$variable == "C2.2", 2] >= 0)
 }
 
-doTest("GLM: Control variables works with expain", glm_control_variables_multinomial)
+doTest("GLM: Control variables works with explain", glm_control_variables_multinomial)
