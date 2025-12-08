@@ -35,7 +35,7 @@ def test_glm_control_vals_multinomial():
     # check predictions are different
     for i in range(predictions.shape[0]):
         pyunit_utils.assert_not_equal(predictions.iloc[i, 1], predictions_cv.iloc[i, 1], f"Predictions at position {i} should differ but they don't!")
-    
+        
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_glm_control_vals_multinomial)
