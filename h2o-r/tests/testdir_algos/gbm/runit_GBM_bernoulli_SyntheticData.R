@@ -87,7 +87,7 @@ test.GBM.bernoulli.SyntheticData <- function() {
         H2O_auc <- round(h2o.auc(H2O_perf), digits=3)
         print(paste ( " H2O_auc:", H2O_auc,
                       " R_auc:", R_auc, sep=''),quote=F)
-                      expect_that(H2O_auc >= (R_auc-.01), is_true()) # Compare H2O and R auc's; here tolerance is 0.01
+                      expect_true(H2O_auc >= (R_auc-.01)) # Compare H2O and R auc's; here tolerance is 0.01
     }
     
 }
