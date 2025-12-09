@@ -16,20 +16,28 @@ def test_glm_control_vals_ordinal():
     x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     y = "C11"
 
+     # h2o_data = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars.csv"))
+     # y = "cylinders"
+     # h2o_data[y] = h2o_data[y].asfactor()
+
     # check ordinal distribution
     model_o = H2OGeneralizedLinearEstimator(family='ordinal',
                                             generate_scoring_history=True,
-                                            score_each_iteration=True)
-    model_o.train(training_frame=h2o_data, x=x, y=y)
+                                            score_each_iteration=True,
+                                            seed=42)
+    
+    model_o.train(training_frame=h2o_data, y=y)
+    print(model_o)
     print(model_o._model_json["output"]["scoring_history"])
     predictions_o = model_o.predict(h2o_data).as_data_frame()
 
     model_cv_o = H2OGeneralizedLinearEstimator(family='ordinal',
                                                control_variables=["C2"],
                                                generate_scoring_history=True,
-                                               score_each_iteration=True)
-
-    model_cv_o.train(training_frame=h2o_data, x=x, y=y)
+                                               score_each_iteration=True,
+                                               seed=42)
+    model_cv_o.train(training_frame=h2o_data, y=y)
+    print(model_cv_o)
     print(model_cv_o._model_json["output"]["scoring_history"])
     predictions_cv_o = model_cv_o.predict(h2o_data).as_data_frame()
 
