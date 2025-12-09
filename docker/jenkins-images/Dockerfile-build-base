@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.4.1:${FROM_VERSION}
+FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-4.5.2:${FROM_VERSION}
 
 ENV NODE_MAJOR '20'
 

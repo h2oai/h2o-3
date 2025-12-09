@@ -293,6 +293,22 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-r-4.5.2-jdk-%: dev-r-4.5.2
+endif
+dev-r-4.5.2-jdk-%:
+	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-4.5.2-jdk-$*:$(VERSION) \
+		$(NO_CACHE) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-4.5.2 \
+		--build-arg INSTALL_JAVA_VERSION=$* \
+		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-4.5.2-jdk-$*:$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-r-%: dev-r-base
 endif
 dev-r-%:
