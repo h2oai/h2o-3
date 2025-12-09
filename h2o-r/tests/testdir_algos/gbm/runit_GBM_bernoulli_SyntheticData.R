@@ -77,6 +77,9 @@ test.GBM.bernoulli.SyntheticData <- function() {
     gg_models <- lapply(tru.gbm@model_ids, function(mid) { model = h2o.getModel(mid) })
     for(i in 1:num_models){
         model <- gg_models[[i]]
+        # Workaround for R 4.5 where all gbm 2.1.x - 2.2.x segfault 
+        if (version$major == "4" && startsWith(version$minor, "5.") && i >= 4)
+            next
         gg<-gbm(y~., data=all.data2, distribution="bernoulli", n.trees=model@parameters$ntrees,
                       interaction.depth=model@parameters$max_depth,n.minobsinnode=model@parameters$min_rows,
                       shrinkage=model@parameters$learn_rate,bag.fraction=1)                # R gbm model
