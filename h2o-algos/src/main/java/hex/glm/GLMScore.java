@@ -47,7 +47,11 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
             _m._parms._family == GLMModel.GLMParameters.Family.ordinal){
       _beta = null;
-      _beta_multinomial = m._output._global_beta_multinomial;
+      if(m._useControlVariables){
+        _beta_multinomial = m._output.getControlValBetaMultinomial(m._output._global_beta_multinomial);
+      } else {
+        _beta_multinomial = m._output._global_beta_multinomial;
+      }
       _dinfo = dinfo;
     } else {
       double[] beta = m.beta();
@@ -67,7 +71,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         beta2[l] = beta[beta.length - 1];
         beta = beta2;
       }
-
       if (m._useControlVariables) {
         double[] betaContVar = m.beta().clone();
         betaContVar = m._output.getControlValBeta(betaContVar);
@@ -116,7 +119,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       preds[_nclasses] = 1-previousCDF;
       preds[0] = ArrayUtils.maxIndex(preds)-1;
     } else if (_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {
-      double[] eta = _eta;
+      double[] eta = _eta.clone();
       final double[][] bm = _beta_multinomial;
       double sumExp = 0;
       double maxRow = 0;
