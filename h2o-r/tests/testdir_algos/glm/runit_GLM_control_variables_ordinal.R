@@ -4,7 +4,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 glm_control_variables_ordinal <- function() {
     
-    # problematic data
+    # problematic data - sometimes it fails due to training issue:
+    # 
     df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
 
     df$C1 <- as.factor(df$C1)
@@ -45,9 +46,10 @@ glm_control_variables_ordinal <- function() {
     h2o.learning_curve_plot(ordinal_glm_cv)
     h2o.learning_curve_plot(unrestricted_ordinal_glm)
 
-    # explain does not work for ordinal distribution - fail with partial dependence plot
-    # h2o.explain(prostate_glm, df)
-    # h2o.explain(unrestricted_prostate_glm, df)
+    # explain does not work for ordinal distribution - fail with partial dependence plot 
+    # https://github.com/h2oai/h2o-3/issues/16716
+    # h2o.explain(ordinal_glm_cv, df)
+    # h2o.explain(unrestricted_ordinal_glm, df)
 
     # test variable importance
     varimp <- h2o.varimp(ordinal_glm)
@@ -63,7 +65,6 @@ glm_control_variables_ordinal <- function() {
 
     # in unrestricted model control variables can have larger importance than zero
     expect_true(varimp_unrestricted[varimp_unrestricted$variable == "C2.1", 2] > 0)
-
     
     # ordinal data
     df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv")
@@ -102,8 +103,9 @@ glm_control_variables_ordinal <- function() {
     h2o.learning_curve_plot(unrestricted_ordinal_glm)
 
     # explain does not work for ordinal distribution - fail with partial dependence plot
-    # h2o.explain(prostate_glm, df)
-    # h2o.explain(unrestricted_prostate_glm, df)
+    # https://github.com/h2oai/h2o-3/issues/16716
+    # h2o.explain(ordinal_glm_cv, df)
+    # h2o.explain(unrestricted_ordinal_glm, df)
 
     # test variable importance
     varimp <- h2o.varimp(ordinal_glm)
