@@ -64,6 +64,8 @@ setup(
 
     keywords='ML Flow, H2O-3',
 
+    python_requires='>=3.8',
+
     packages=packages,
 
     # run-time dependencies
