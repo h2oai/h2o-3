@@ -570,7 +570,7 @@ def call(final pipelineContext) {
   ]
 
   def supportedHadoopDists = pipelineContext.getBuildConfig().getSupportedHadoopDistributions()
-//  def HADOOP_STAGES = []
+  def HADOOP_STAGES = []
   for (distribution in supportedHadoopDists) {
     def target
     def ldapConfigPath
@@ -623,7 +623,7 @@ def call(final pipelineContext) {
     HADOOP_STAGES += [ standaloneStage, onHadoopStage ]
   }
 
-//  def KERBEROS_STAGES = []
+  def KERBEROS_STAGES = []
   def distributionsToTest = [
           [ name: "cdh", version: "5.10" ], // hdp2/hive1
           [ name: "cdh", version: "6.1"  ], // hdp3/hive2
@@ -746,7 +746,7 @@ def call(final pipelineContext) {
           ),
           customDockerArgs: extraHostConfig
     ]
-//  def HADOOP_MULTINODE_STAGES = [ hadoopClusterStage ]
+  def HADOOP_MULTINODE_STAGES = [ hadoopClusterStage ]
   HADOOP_MULTINODE_STAGES += [
       [
           stageName: "TEST External XGBoost on ${HADOOP_CLUSTER_CONFIG.nameNode}",
@@ -779,7 +779,7 @@ def call(final pipelineContext) {
       ]
   ]
 
-//  def XGB_STAGES = []
+  def XGB_STAGES = []
   for (String osName: pipelineContext.getBuildConfig().getSupportedXGBEnvironments().keySet()) {
     final def xgbEnvs = pipelineContext.getBuildConfig().getSupportedXGBEnvironments()[osName]
     final def xgbImageBuildTag = '1'
@@ -807,7 +807,7 @@ def call(final pipelineContext) {
 //    ]
   ]
 
-//  def SINGLE_TEST_STAGES = []
+  def SINGLE_TEST_STAGES = []
   if (modeCode == MODE_SINGLE_TEST_CODE) {
     if (params.testPath == null || params.testPath == '') {
       error 'Parameter testPath must be set.'
