@@ -9,7 +9,7 @@ import os
 import glob
 import random
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 '''
 Export file with h2o.export_file and compare with Python counterpart when re importing file to check for parity.

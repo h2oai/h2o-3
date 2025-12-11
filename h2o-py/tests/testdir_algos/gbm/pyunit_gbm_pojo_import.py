@@ -5,7 +5,7 @@ import h2o
 import unittest
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 
 class TestGBMPojoImport(unittest.TestCase):

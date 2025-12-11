@@ -7,7 +7,7 @@ import string
 import os
 import glob
 import random
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 
 def export_parquet_multipart():
