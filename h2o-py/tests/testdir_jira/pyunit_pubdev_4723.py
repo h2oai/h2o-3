@@ -3,7 +3,7 @@
 import pandas
 import h2o
 from tests import pyunit_utils
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 TEST_DATASET = pyunit_utils.locate('smalldata/logreg/prostate_missing.csv')
 

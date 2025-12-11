@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 from pandas import DataFrame
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 # Compares dropping duplicates with pandas directly
 def pubdev_drop_duplicates():
     df = DataFrame(

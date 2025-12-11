@@ -7,7 +7,7 @@ from tests import pyunit_utils
 from datetime import datetime
 import h2o
 import uuid
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 import boto3
 import warnings
 

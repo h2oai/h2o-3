@@ -5,7 +5,7 @@ import os
 sys.path.insert(1, os.path.join("../../../h2o-py"))
 from tests import pyunit_utils
 import h2o
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 
 def local_and_hdfs_frame_equality():
