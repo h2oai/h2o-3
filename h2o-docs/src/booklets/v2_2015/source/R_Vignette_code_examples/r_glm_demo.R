@@ -1,7 +1,7 @@
 # Import dataset and display summary
 library(h2o)
 h2o.init()
-airlinesURL = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+airlinesURL = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip"
 airlines.hex = h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
 summary(airlines.hex)
 
