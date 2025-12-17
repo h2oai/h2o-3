@@ -700,6 +700,24 @@ class H2OInfogram(H2OEstimator):
         Customized parameters for the machine learning algorithm specified in the algorithm parameter.
 
         Type: ``dict``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default_payment_next_month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> gbm_params = {'ntrees':3}
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols)
+        >>> ig.train(y=y, x=x, training_frame=train, algorithm_params=gbm_params)
+        >>> ig.plot()
         """
         if self._parms.get("algorithm_params") != None:
             algorithm_params_dict =  ast.literal_eval(self._parms.get("algorithm_params"))
@@ -745,6 +763,23 @@ class H2OInfogram(H2OEstimator):
         information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1.
 
         Type: ``float``, defaults to ``-1.0``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)
+        >>> y = "default_payment_next_month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.plot()
         """
         return self._parms.get("total_information_threshold")
 
@@ -768,6 +803,23 @@ class H2OInfogram(H2OEstimator):
         the y-axis of the Core Infogram. Default is -1 which gets set to 0.1.
 
         Type: ``float``, defaults to ``-1.0``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)
+        >>> y = "default_payment_next_month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, net_information_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.plot()
         """
         return self._parms.get("net_information_threshold")
 
@@ -792,6 +844,23 @@ class H2OInfogram(H2OEstimator):
         which gets set to 0.1.
 
         Type: ``float``, defaults to ``-1.0``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)
+        >>> y = "default_payment_next_month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, relevance_index_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.plot()
         """
         return self._parms.get("relevance_index_threshold")
 
@@ -816,6 +885,23 @@ class H2OInfogram(H2OEstimator):
         gets set to 0.1.
 
         Type: ``float``, defaults to ``-1.0``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)
+        >>> y = "default_payment_next_month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, safety_index_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.plot()
         """
         return self._parms.get("safety_index_threshold")
 
@@ -837,6 +923,23 @@ class H2OInfogram(H2OEstimator):
         and less than or equal to 1.0 is acceptable.
 
         Type: ``float``, defaults to ``1.0``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)
+        >>> y = "default_payment_next_month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, data_fraction=0.7)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.plot()
         """
         return self._parms.get("data_fraction")
 
@@ -852,6 +955,23 @@ class H2OInfogram(H2OEstimator):
         importance, and the top N are evaluated.  Defaults to 50.
 
         Type: ``int``, defaults to ``50``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)
+        >>> y = "default_payment_next_month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, top_n_features=30)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.plot()
         """
         return self._parms.get("top_n_features")
 
@@ -874,7 +994,7 @@ class H2OInfogram(H2OEstimator):
 
     def plot(self, train=True, valid=False, xval=False, figsize=(10, 10), title="Infogram", legend_on=False, server=False):
         """
-        Plot the infogram.  By default, it will plot the infogram calculated from training dataset.  
+        Plot the infogram.  By default, it will plot the infogram calculated from training dataset. 
         Note that the frame rel_cmi_frame contains the following columns:
         - 0: predictor names
         - 1: admissible 
