@@ -65,7 +65,7 @@ At a minimum, we recommend the following for compatibility with H2O-3:
 -  **Languages**: R and Python are not required to use H2O-3 unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
    -  R version 3 or later
-   -  Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x 
+   -  Python 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x 
 
 -  **Browser**: An internet browser is required to use H2O-3's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 -  **numpy**: H2O-3 only supports ``numpy<2``. To work around having ``numpy2`` installed, run the following command:
@@ -94,7 +94,7 @@ H2O-3 supports the following versions of Java:
 - **Languages**: R and Python are not required to use H2O-3 (unless you want to use H2O-3 in those environments), but Java is always required (see `Java requirements <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
    
    - R version 3+
-   - Python 3.6.x, 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x
+   - Python 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x
 
 - **Browser**: An internet browser is required to use H2O-3's web UI, Flow.
    
@@ -168,19 +168,6 @@ Conda is only required if you want to run H2O-3 on the Anaconda cloud:
 
 - Conda 3.6+ repository
 
-Optional Spark requirements
-'''''''''''''''''''''''''''
-
-Spark is only required if you want to run Sparkling Water. Supported spark versions:
-
-- Spark 3.4
-- Spark 3.3
-- Spark 3.2
-- Spark 3.1
-- Spark 3.0
-- Spark 2.4
-- Spark 2.3
-
 
 User support
 ------------
@@ -194,7 +181,6 @@ H2O-3 supports many different types of users.
     getting-started/flow-users
     getting-started/python-users
     getting-started/r-users
-    getting-started/sparkling-users
     getting-started/api-users
     getting-started/java-users
     getting-started/hadoop-users

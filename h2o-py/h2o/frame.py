@@ -2880,7 +2880,7 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> newLevels = newFrame.levels()
         >>> newLevels
         """
-        return H2OFrame._expr(expr=ExprNode("relevel", self, quote(y)))
+        return H2OFrame._expr(expr=ExprNode("relevel", self, y))
 
     def relevel_by_frequency(self, weights_column=None, top_n=-1):
         """
