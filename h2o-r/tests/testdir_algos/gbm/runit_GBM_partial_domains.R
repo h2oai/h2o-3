@@ -35,8 +35,8 @@ test.partialDomains <- function() {
       pred1 <- h2o.predict(model1,df[df$Origin==s,])
       leaf_assign2 <- h2o.predict_leaf_node_assignment(model2,df[df$Origin==s,])
       pred2 <- h2o.predict(model2,df[df$Origin==s,])
-      expect_that(all(leaf_assign1 == leaf_assign2), is_true())
-      expect_that(all(pred1 == pred2), is_true())
+      expect_true(all(leaf_assign1 == leaf_assign2))
+      expect_true(all(pred1 == pred2))
     }
 
     ## compare models on the full frame
@@ -47,8 +47,8 @@ test.partialDomains <- function() {
       pred1 <- h2o.predict(model1,df[df$Origin==s,])
       leaf_assign2 <- h2o.predict_leaf_node_assignment(model2,df[df$Origin==s,])
       pred2 <- h2o.predict(model2,df[df$Origin==s,])
-      expect_that(all(leaf_assign1 == leaf_assign2), is_true())
-      expect_that(all(pred1 == pred2), is_true())
+      expect_true(all(leaf_assign1 == leaf_assign2))
+      expect_true(all(pred1 == pred2))
     }
 }
 

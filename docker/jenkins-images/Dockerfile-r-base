@@ -10,7 +10,7 @@ RUN \
 
 # For rgl R package
 RUN \
-    apt-get install -y zip libglu1-mesa-dev libpcre2-dev
+    apt-get install -y zip libglu1-mesa-dev libpcre2-dev libpng-dev libtiff5-dev libjpeg-dev libwebp-dev
 
 # Remove unnecessary packages
 RUN \

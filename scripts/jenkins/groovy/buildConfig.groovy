@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
   private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 46
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 47
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/h2oai/devutils/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
@@ -53,7 +53,8 @@ class BuildConfig {
 
   public static final String DEFAULT_PYTHON_VERSION = '3.7'
   public static final List PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
-  public static final List R_VERSIONS = ['3.3.3', '3.4.1']
+  public static final List R_VERSIONS = ['3.4.1', '3.5.3', '4.0.2', '4.4.0', '4.5.2']
+
 
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
