@@ -77,8 +77,6 @@ class Check:
             r"^    R  .*Mb",
             r"^    help  .*Mb",
             r"^NOTE: There were 2 notes.",
-            # r"^Status: 1 WARNING, 1 NOTE",
-            # r"^Status: 1 WARNING, .* NOTEs",
             r"^Status: 2 NOTEs",
             r"^Status: 1 NOTE",
             r"^See",
