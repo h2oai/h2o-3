@@ -600,7 +600,7 @@ EOF
                             } else{
                                 if(env.NIGHTLY_BUILD){
                                     CHART_NAME = "h2o-3-nightly"
-                                    BUCKET = "h2oai-nightly-helm-charts"
+                                    BUCKET = "h2oai-test-helm-charts"
                                     VERSION = THREE_DIGITS_VERSION
                                 } else {
                                     CHART_NAME = "h2o-3"
