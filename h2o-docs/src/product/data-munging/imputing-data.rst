@@ -35,7 +35,7 @@ The ``impute`` function accepts the following arguments:
         h2o.init()
 
         # Import the airlines dataset
-        air_path = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+        air_path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip"
         air = h2o.import_file(path=air_path)
         air.dim
         [43978, 31]
@@ -93,7 +93,7 @@ The ``impute`` function accepts the following arguments:
       	h2o.init()
 
         # Upload the Airlines dataset
-        file_path <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+        file_path <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip"
         air <- h2o.importFile(file_path, "air")
         print(dim(air))
         43978    31
