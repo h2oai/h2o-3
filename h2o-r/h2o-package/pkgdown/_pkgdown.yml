@@ -37,6 +37,7 @@ reference:
       - dimnames.H2OFrame
       - feature_frequencies.H2OModel
       - get_seed.H2OModel
+      - generate_col_ind
       - h2o
       - h2o.abs
       - h2o.acos
@@ -56,14 +57,22 @@ reference:
       - h2o.asfactor
       - h2o.asnumeric
       - h2o.assign
+      - h2o.aecu
+      - h2o.aecu_table
       - h2o.auc
       - h2o.automl
       - h2o.auuc
+      - h2o.auuc_normalized
+      - h2o.auuc_table
+      - h2o.atc
+      - h2o.ate
+      - h2o.att
       - h2o.average_objective
       - h2o.betweenss
       - h2o.biases
       - h2o.bottomN
       - h2o.cbind
+      - h2o.calculate_fairness_metrics
       - h2o.ceiling
       - h2o.centers
       - h2o.centersSTD
@@ -107,6 +116,7 @@ reference:
       - h2o.deepfeatures
       - h2o.deeplearning
       - h2o.describe
+      - h2o.disparate_analysis
       - h2o.difflag1
       - h2o.dim
       - h2o.dimnames
@@ -130,10 +140,15 @@ reference:
       - h2o.find_threshold_by_max_metric
       - h2o.findSynonyms
       - h2o.floor
+      - h2o.fair_pd_plot
+      - h2o.fair_pr_plot
+      - h2o.fair_roc_plot
+      - h2o.fair_shap_plot
       - h2o.flow
       - h2o.gainsLift
       - h2o.gains_lift
       - h2o.gains_lift_plot
+      - "h2o.gains_lift_plot,H2OModel-method"
       - h2o.gbm
       - h2o.generic
       - h2o.genericModel
@@ -430,8 +445,10 @@ reference:
       - range.H2OFrame
       - scale.H2OFrame
       - show,H2OCoxPHModelSummary-method
+      - "show,H2OParetoFront-method"
       - staged_predict_proba.H2OModel
       - str.H2OFrame
+      - "summary,H2OAutoML-method"
       - summary,H2OCoxPHModel-method
       - summary,H2OGrid-method
       - summary,H2OModel-method
