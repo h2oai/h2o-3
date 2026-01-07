@@ -143,7 +143,6 @@ reference:
       - h2o.get_segment_models
       - h2o.getConnection
       - h2o.getFrame
-      - h2o.getFutureModel
       - h2o.getGLMFullRegularizationPath
       - h2o.getGrid
       - h2o.getId
