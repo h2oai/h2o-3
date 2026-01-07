@@ -477,6 +477,7 @@ reference:
       - prostate
       - range.H2OFrame
       - scale.H2OFrame
+      - show,H2OAutoML-method
       - show,H2OCoxPHModelSummary-method
       - show,H2OParetoFront-method
       - staged_predict_proba.H2OModel
