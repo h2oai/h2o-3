@@ -20,6 +20,7 @@ reference:
 
   - title: "Reference"
     contents:
+      - "&&"
       - apply
       - as.character.H2OFrame
       - as.data.frame.H2OFrame
@@ -30,6 +31,7 @@ reference:
       - as.numeric
       - as.vector.H2OFrame
       - australia
+      - case_insensitive_match_arg
       - colnames
       - dim.H2OFrame
       - dimnames.H2OFrame
@@ -398,13 +400,16 @@ reference:
       - H2OModelFuture-class
       - H2OModelMetrics-class
       - H2ONode-class
+      - H2OSegmentModels-class
+      - H2OSegmentModelsFuture-class
       - H2OSplitNode-class
       - H2OTree-class
       - housevotes
       - iris
       - is.character
       - is.factor 
-      - is.h2o 
+      - is.h2o
+      - Keyed-class 
       - is.numeric
       - length,H2OTree-method
       - Logical-or
