@@ -388,6 +388,7 @@ h2o.decryptionSetup <- function(keystore, keystore_type = "JCEKS", key_alias = N
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
 #'
 #' @param v Character vector.
+#' @keywords internal
 .collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
 .collapse.char.empty.nulls <- function(v) {
