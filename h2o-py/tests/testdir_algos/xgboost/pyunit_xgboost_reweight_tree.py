@@ -35,7 +35,7 @@ def xgboost_reweight_tree():
     prostate_frame["weights"] = weights_scale
     xgb_model.update_tree_weights(prostate_frame, "weights")
     contribs_reweighted = xgb_model.predict_contributions(prostate_frame)
-    assert_frame_equal(contribs_reweighted.as_data_frame(), contribs_original.as_data_frame(), check_less_precise=3)
+    assert_frame_equal(contribs_reweighted.as_data_frame(), contribs_original.as_data_frame(), atol=1e-3)
 
     # 3. Re-weight based on small subset of the data => contributions are expected to change
     with pyunit_utils.catch_warnings() as ws:
