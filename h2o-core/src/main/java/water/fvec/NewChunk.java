@@ -517,33 +517,34 @@ public class NewChunk extends Chunk {
   }
 
   public void addCategorical(int e) {
-    if(_ms == null || _ms.len() == _sparseLen) {
-      if (2*_sparseLen > _len && isSparseZero()) {
-       int ids[] = new int[_id.length+1];
-       System.arraycopy(_id, 0, ids, 1, _id.length);
-       ids[0] = -1;
-       // append2slow() will run cancel_sparse which will lose the information about 0 being a category.
-       // To be safe just set to categorical only those zeros that are surrounded by categories.
-       // We care only about those zeros set before cancel_sparse was called after the call all zeros
-       // should be set correctly as category since isSparseZero() == false 
-       append2slow();
-       for (int i = 0; i < ids.length-1; i++) {
-         if (_xs.isCategorical(ids[i+1]) && (i==0 || _xs.isCategorical(ids[i])))
-          for (int j = ids[i]+1; j < ids[i+1]; j++) {
-             _xs.setCategorical(j);
-          }
-       }
+    if (_ms == null || _ms.len() == _sparseLen) {
+      if (2 * _sparseLen > _len && isSparseZero()) {
+        int ids[] = new int[_id.length + 1];
+        System.arraycopy(_id, 0, ids, 1, _id.length);
+        ids[0] = -1;
+        // append2slow() will run cancel_sparse which will lose the information about 0 being a category.
+        // To be safe just set to categorical only those zeros that are surrounded by categories.
+        // We care only about those zeros set before cancel_sparse was called after the call all zeros
+        // should be set correctly as category since isSparseZero() == false.
+        append2slow();
+        for (int i = 0; i < ids.length - 1; i++) {
+          if (_xs.isCategorical(ids[i + 1]) && (i == 0 || _xs.isCategorical(ids[i])))
+            for (int j = ids[i] + 1; j < ids[i + 1]; j++) {
+              _xs.setCategorical(j);
+            }
+        }
       } else
         append2slow();
     }
-    if(e != 0 || !isSparseZero() ) {
-      _ms.set(_sparseLen,e);
+    if (e != 0 || !isSparseZero()) {
+      _ms.set(_sparseLen, e);
       _xs.setCategorical(_sparseLen);
-      if(_id != null) _id[_sparseLen] = _len;
+      if (_id != null) _id[_sparseLen] = _len;
       ++_sparseLen;
     }
     ++_len;
   }
+
   public void addNA() {
     if(!_sparseNA) {
       if (isString()) {
