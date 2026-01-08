@@ -630,7 +630,6 @@ public class NewChunkTest extends TestUtil {
     nc.addNumDecompose(Double.MIN_NORMAL);
   }
 
-
   @Test
   public void testNewChunkSparseCategoricals() {
     // this is reproduction of issue that caused failure in multinode for the
@@ -654,7 +653,11 @@ public class NewChunkTest extends TestUtil {
     for (int i = 0; i < data.length; i++) {
       nc.addCategorical(data[i]);
     }
-    assertTrue(nc.type() == Vec.T_CAT);
+    assertEquals(Vec.T_CAT, nc.type());
+    Chunk c = nc.new_close();
+    for (int i = 0; i < data.length; i++) {
+      assertEquals(data[i], (int)c.atd(i));
+    }
   }
 }
 
