@@ -140,7 +140,7 @@ class ScoringHistoryGLM(ScoringHistory):
         plt.ylabel(metric)
         plt.title("Validation Scoring History")
         style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
-        plt.plot(scoring_history[timestep], scoring_history[metric], style)
+        plt.plot(scoring_history[timestep].to_numpy(), scoring_history[metric].to_numpy(), style)
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
         if not server:
