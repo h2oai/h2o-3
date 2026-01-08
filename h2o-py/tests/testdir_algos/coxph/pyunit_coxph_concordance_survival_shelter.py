@@ -22,7 +22,7 @@ def coxph_concordance_and_baseline():
         shelter[colname] = shelter[colname].astype("category")
         shelter[colname] = shelter[colname].cat.codes
     for colname in ["end_ts", "intake_date", "intake_time", "start_ts"]:
-        shelter[colname] = shelter[colname].astype("datetime64")
+        shelter[colname] = shelter[colname].astype("datetime64[ns]")
 
     without_strata(shelter)
     with_strata(shelter)
