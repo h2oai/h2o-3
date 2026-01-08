@@ -31,7 +31,7 @@ def h2o_H2OFrame_impute():
     del col1[row_ind_median]
     impute_median = np.median(col1)
     del col2[row_ind_mode]
-    impute_mode = mode(col2).__getitem__(0)[0]
+    impute_mode = mode(col2, keepdims=False).mode
     modeNum = findModeNumber(col2)
 
     print("first column NA row is {0}, second column NA row is {1}, third column NA row "
