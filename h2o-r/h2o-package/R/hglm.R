@@ -68,7 +68,7 @@
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate$RACE <- as.factor(prostate$RACE)
-#' model <- h2o.hglm(y="VOL", x=c("AGE","RACE","DPROS"), random_columns = ["AGE"], 
+#' model <- h2o.hglm(y="VOL", x=c("AGE","RACE","DPROS"), random_columns = c("AGE"), 
 #'                   group_column = "RACE", training_frame=prostate)
 #' 
 #' }

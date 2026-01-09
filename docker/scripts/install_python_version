@@ -58,14 +58,8 @@ for python_version in "${array[@]}"; do
   rm -rf /var/cache/apt/*
 
   echo "###### Installing pip for Python ${python_version} ######"
-  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]] || [[ ${python_version} == "3.6" ]] || [[ ${python_version} == "3.7" ]]
-  then
-    curl https://bootstrap.pypa.io/pip/${python_version}/get-pip.py --output get-pip.py
-    python${python_version} get-pip.py
-  else
-    curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
-    python${python_version} get-pip.py
-  fi
+  curl -f https://bootstrap.pypa.io/pip/${python_version}/get-pip.py --output get-pip.py ||  curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+  python${python_version} get-pip.py
 
   echo "###### Creating Virtualenv for Python ${python_version} ######"
   python${python_version} -m pip install virtualenv
