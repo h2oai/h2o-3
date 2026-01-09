@@ -1,16 +1,18 @@
-#
-# H2O <-> R Communication and Utility Methods
-#
-# Collected here are the various methods used by the h2o-R package to communicate with the H2O
-# backend. There are methods for checking cluster health, polling, and inspecting objects in
-# the H2O store.
-# @import methods
-# @import RCurl
-# @importFrom graphics barplot lines
-# @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot na.omit
-# @importFrom tools md5sum
-# @importFrom utils download.file packageVersion read.csv
-#           setTxtProgressBar txtProgressBar URLencode write.csv head tail
+#'
+#' H2O <-> R Communication and Utility Methods
+#'
+#' Collected here are the various methods used by the h2o-R package to communicate with the H2O
+#' backend. There are methods for checking cluster health, polling, and inspecting objects in
+#' the H2O store.
+#' @import methods
+#' @import RCurl
+#' @importFrom graphics barplot lines
+#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot na.omit
+#' @importFrom tools md5sum
+#' @importFrom utils download.file packageVersion read.csv
+#'           setTxtProgressBar txtProgressBar URLencode write.csv head tail
+#' @keywords internal
+NULL
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   GET & POST
