@@ -784,6 +784,7 @@ h2o.resume <- function(recovery_dir=NULL) {
 #
 # It will download a jar file if it needs to.
 #' @importFrom utils flush.console
+#' @keywords internal
 .h2o.downloadJar <- function(overwrite = FALSE) {
   old_options <- options(timeout = max(1000, getOption("timeout")))
   on.exit(options(old_options))

@@ -11,6 +11,8 @@
 #' @importFrom tools md5sum
 #' @importFrom utils download.file packageVersion read.csv
 #'           setTxtProgressBar txtProgressBar URLencode write.csv head tail
+#' @keywords internal
+NULL
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   GET & POST
@@ -433,6 +435,7 @@
 #' @param parms (Optional) Parameters to include in the request
 #' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
+#' @keywords internal
 .h2o.doRawGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = "GET", ...)
@@ -460,6 +463,7 @@
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
+#' @keywords internal
 .h2o.doRawPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = "POST", fileUploadInfo = fileUploadInfo, ...)
@@ -484,6 +488,7 @@
 #' @param parms (Optional) Parameters to include in the request
 #' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
+#' @keywords internal
 .h2o.doGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
               parms = parms, method = "GET", ...)
@@ -496,6 +501,7 @@
 #' @param parms (Optional) Parameters to include in the request
 #' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
+#' @keywords internal
 .h2o.doPOST <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
               parms = parms, method = "POST", ...)
@@ -572,6 +578,7 @@
 #' @param parms (Optional) Parameters to include in the request
 #' @param ... (Optional) Additional parameters.
 #' @return The raw response payload as a character vector
+#' @keywords internal
 .h2o.doSafeGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                   parms = parms, method = "GET", ...)
@@ -589,6 +596,7 @@
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @param ... (Optional) Additional parameters.
 #' @return The raw response payload as a character vector
+#' @keywords internal
 .h2o.doSafePOST <- function(h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
   .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                   parms = parms, method = "POST", fileUploadInfo = fileUploadInfo, ...)
@@ -1050,6 +1058,7 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
+#' @keywords internal
 .h2o.__checkConnectionHealth <- function() {
   rv <- .h2o.doGET(urlSuffix = .h2o.__CLOUD)
   conn = h2o.getConnection()
@@ -1183,6 +1192,7 @@ h2o.show_progress <- function(expr) {
 #'
 #' Check if Progress Bar is Enabled
 #'
+#' @keywords internal
 .h2o.is_progress <- function() {
   progress <- mget("PROGRESS_BAR", .pkg.env, ifnotfound = TRUE)
   if (is.list(progress)) progress <- unlist(progress)
