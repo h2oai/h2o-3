@@ -306,7 +306,7 @@ The following demo demonstrates how to import a file, define significant data, v
 
 \begin{spverbatim}
 # Import dataset and display summary
-> airlinesURL = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+> airlinesURL = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip"
 > airlines.hex = h2o.importFile(localH2O, path = airlinesURL, key = "airlines.hex")
 > summary(airlines.hex)
 

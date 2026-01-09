@@ -53,7 +53,7 @@ demo.xgboost_chunk_layout <- function() {
     # - approximated AUC will be identical regardless of the appended columns for 2 frames that have the same chunk layout
     expect_identical(auc_copy, auc_appended)
     # - approximated AUC might (and in this case will) be different for 2 identical frames that have a different chunk layout
-    expect(!identical(auc_orig, auc_copy))
+    expect_true(!identical(auc_orig, auc_copy))
 }
 
 doTest("XGBoost Demo: Show how chunk layout can XGBoost model", demo.xgboost_chunk_layout)

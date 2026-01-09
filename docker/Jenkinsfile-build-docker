@@ -23,8 +23,65 @@ properties([
 
 JDK_VERSIONS = ['8', '11', '17']
 JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
-PYTHON_VERSIONS = ['3.6', '3.7','3.8', '3.9', '3.10', '3.11']
-R_VERSION = ['3.4.1', '3.5.3', '4.4.0']
+
+def stashDockerImage(image) {
+	sh "docker save -o ${image}.tar ${H2O_ECR}/h2o-3/${image}"
+	stash includes: "${image}.tar", name: "docker-image-${image}"
+	sh "rm ${image}.tar"
+}
+
+def unstashDockerImage(image) {
+	unstash "docker-image-${image}"
+	sh "docker load -i ${image}.tar"
+	sh "rm ${image}.tar"
+}
+
+def stashDockerImages(target){
+	if (!params.publish) {  // when publish this is noop since we can retrieve the image from registry
+		toPersist = ["dev-base", "dev-jdk-8-base", "dev-jdk-others-base", "dev-python-3.7", "dev-r-4.5.2",
+					 "dev-build-base", "dev-build-hadoop", "dev-python-base", "dev-r-base"]
+		if (toPersist.contains(target)) {
+			stashDockerImage(target)
+		}
+	}
+}
+
+def unstashDockerImages(target){
+	if (!params.publish) {  // when publish this is noop since we can retrieve the image from registry
+		switch (target) {
+			case 'dev-jdk-8-base':
+			case 'dev-jdk-others-base':
+				unstashDockerImage("dev-base")
+				break
+			case 'dev-python-base':
+				unstashDockerImage("dev-jdk-8-base")
+				break
+			case 'dev-r-base':
+			case 'dev-mojocompat':
+				unstashDockerImage("dev-python-3.7")
+				break
+			case 'dev-build-base':
+				unstashDockerImage("dev-r-4.5.2")
+				break
+			case 'dev-build-hadoop':
+				unstashDockerImage("dev-build-base")
+				break
+			case 'dev-release':
+				unstashDockerImage("dev-build-hadoop")
+				break
+			default:
+				if (target.startsWith('dev-python-')) {
+					unstashDockerImage("dev-python-base")
+				} else if (target.startsWith('dev-r-')) {
+					unstashDockerImage("dev-r-base")
+				} else if (target ==~ /dev-jdk-\d+/) { 
+					unstashDockerImage("dev-jdk-others-base")
+				}
+				break
+		}
+	}
+}
+
 
 def pipelineContext
 
@@ -43,7 +100,8 @@ ansiColor('xterm') {
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
                 // if (params.publish && !params.forceBuild) {
-                //     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai', 'h2o-3/dev-base', "${currentVersion}")) {
+				// 	dockerLoginH2OECR()
+                //     if (imageExistsH2OECR("h2o-3/dev-base", "${currentVersion}")) {
                 //         error "Image already exists. Use forceBuild if you wish to overwrite."
                 //     }
                 // } else {
@@ -69,6 +127,9 @@ ansiColor('xterm') {
             }
         }
 
+		PYTHON_VERSIONS = pipelineContext.getBuildConfig().PYTHON_VERSIONS
+		R_VERSIONS = pipelineContext.getBuildConfig().R_VERSIONS
+		
         buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
 
@@ -81,7 +142,7 @@ ansiColor('xterm') {
 
         buildInParallel(pipelineContext, ['dev-r-base'])
         def componentImages = []
-        R_VERSION.each {version ->
+        R_VERSIONS.each {version ->
             componentImages += "dev-r-${version}"
         }
         JDK_VERSIONS.each {version ->
@@ -100,7 +161,7 @@ ansiColor('xterm') {
                 componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
             }
         }
-        R_VERSION.each {version ->
+        R_VERSIONS.each {version ->
             JDK_VERSIONS_PY_R.each {jdkVersion ->
                 componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
             }
@@ -126,12 +187,9 @@ private Closure makeStage(final pipelineContext, String target) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
                     deleteDir()
-
-                    // pullPreviousVersionIfRequired(pipelineContext, target)
-                    // println "make ${target}"
                     dockerLoginH2OECR()
-                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") ||
-                       (imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") && params.forceBuild)){
+					unstashDockerImages(target)
+                    if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") || params.forceBuild){
                         unstash 'docker-sources'
                         sh """
                             make \
@@ -144,8 +202,8 @@ private Closure makeStage(final pipelineContext, String target) {
                         """
                     } else {
                         println "${H2O_ECR}/h2o-3/${target} already exists"
-                    }
-
+                    }  
+                    stashDockerImages(target)
                 }
             }
         }
@@ -162,28 +220,19 @@ def dockerLoginH2OECR(){
 }
 
 def imageExistsH2OECR(String repository, String tag) {
-    def result = "-1"
-    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
-        result = sh(
-        script: "aws ecr batch-get-image --registry-id=353750902984 --repository-name='${repository}' --image-ids=imageTag='${tag}' --query 'images[].imageId.imageTag' --output text",
-        returnStdout: true
-    ).trim()
-    }
-
-
-    return result == tag
+	try {
+		def result = "-1"
+		withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "H2O-AWS_CT-JENKINS-H2O-ECR"]]) {
+			result = sh(
+				script: "aws ecr batch-get-image --registry-id=353750902984 --repository-name='${repository}' --image-ids=imageTag='${tag}' --query 'images[].imageId.imageTag' --output text",
+				returnStdout: true
+			).trim()
+		}
+    
+		return result == tag
+	} catch (Exception e) {
+		// We didn't find the image. Exception can be thrown due to status code 254 that corresponds to "The repository with name 'h2o-3/xyz' does not exist in the registry with id 'xxx'"
+		return false
+	}
 }
 
-// def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
-//     def previousVersion = pipelineContext.getBuildConfig().getDefaultImageVersion() - 1
-//     // hack for first version of image
-//     if (previousVersion <= 0) {
-//         previousVersion = 1
-//     }
-//     println("harbor.h2o.ai/opsh2oai/h2o-3/${image}:${previousVersion}")
-//     // if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai", "h2o-3/${image}", "${previousVersion}")) {
-//     //     retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
-//     //         sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
-//     //     }
-//     // }
-// }
