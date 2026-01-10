@@ -8,7 +8,6 @@ import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.mrtasks.GetClassCountsMRTask;
 import hex.tree.dt.mrtasks.ScoreDTTask;
-import org.apache.commons.math3.util.Precision;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -19,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static hex.tree.dt.binning.SplitStatistics.entropyBinarySplit;
+import static hex.tree.dt.binning.SplitStatistics.entropyMulticlass;
 
 /**
  * Decision Tree
@@ -49,8 +48,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
     private DTModel _model;
     transient Random _rand;
-
-    //    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
     public final static double EPSILON = 1e-6;
     public final static double MIN_IMPROVEMENT = 1e-6;
     private static final Logger LOG = Logger.getLogger(DT.class);
@@ -108,10 +105,9 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
     private AbstractSplittingRule findBestSplitForFeature(Histogram histogram, int featureIndex) {
         return (_train.vec(featureIndex).isNumeric()
-                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex)
-                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex))
+                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex, _nclass)
+                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex, _nclass))
                 .stream()
-                // todo - consider setting min count of samples in bin instead of filtering splits
                 .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
                         && (binStatistics._rightCount >= _min_rows)))
                 .peek(binStatistics -> Log.debug("split: " + binStatistics._splittingRule + ", counts: "
@@ -128,7 +124,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
 
     private static double calculateCriterionOfSplit(SplitStatistics binStatistics) {
-        return binStatistics.binaryEntropy();
+        return binStatistics.splitEntropy();
     }
 
     /**
@@ -139,7 +135,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      */
     private int selectDecisionValue(int[] countsByClass) {
         if (_nclass == 1) {
-            return countsByClass[0];
+            return 0;
         }
         int currentMaxClass = 0;
         int currentMax = countsByClass[currentMaxClass];
@@ -155,10 +151,10 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     /**
      * Calculates probabilities of each class for a leaf.
      *
-     * @param countsByClass counts of 0 and 1 in a leaf
-     * @return probabilities of 0 or 1
+     * @param countsByClass counts of each class in a leaf
+     * @return probabilities of each class
      */
-    private double[] calculateProbability(int[] countsByClass) {
+    private double[] calculateProbabilities(int[] countsByClass) {
         int samplesCount = Arrays.stream(countsByClass).sum();
         return Arrays.stream(countsByClass).asDoubleStream().map(n -> n / samplesCount).toArray();
     }
@@ -171,7 +167,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      * @param nodeIndex     node index
      */
     public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
-        _tree[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbability(countsByClass)[0]);
+        _tree[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbabilities(countsByClass));
         _leavesCount++;
         // nothing to return, node is modified inplace
     }
@@ -200,16 +196,19 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         // [count0, count1, ...]
         int[] countsByClass = countClasses(actualLimits);
         if (nodeIndex == 0) {
-            Log.info("Classes counts in dataset: 0 - " + countsByClass[0] + ", 1 - " + countsByClass[1]);
+            Log.info(IntStream.range(0, countsByClass.length)
+                    .mapToObj(i -> i + " - " + countsByClass[i])
+                    .collect(Collectors.joining(", ", "Classes counts in dataset: ", "")));
         }
         // compute node depth
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
-        // stop building from this node, the node will be a leaf
-        if ((nodeDepth >= _parms._max_depth)
-                || (countsByClass[0] <= _min_rows)
-                || (countsByClass[1] <= _min_rows)
-//                || zeroRatio > 0.999 || zeroRatio < 0.001
-        ) {
+        // stop building from this node, the node will be a leaf if: 
+        // - max depth is reached 
+        // - there is only one non-zero count in the countsByClass 
+        // - there are not enough data points in the node
+        if ((nodeDepth >= _parms._max_depth) 
+                || Arrays.stream(countsByClass).filter(c -> c > 0).count() < 2 
+                || Arrays.stream(countsByClass).sum() < _min_rows) {
             // add imaginary left and right children to imitate valid tree structure
             // left child
             limitsQueue.add(null);
@@ -219,10 +218,10 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             return;
         }
 
-        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH/*, minNumSamplesInBin - todo consider*/);
+        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH, _nclass);
 
         AbstractSplittingRule bestSplittingRule = findBestSplit(histogram);
-        double criterionForTheParentNode = entropyBinarySplit(1.0 * countsByClass[0] / (countsByClass[0] + countsByClass[1]));
+        double criterionForTheParentNode = entropyMulticlass(countsByClass, Arrays.stream(countsByClass).sum());
         // if no split could be found, make a list from current node
         // if the information gain is low, make a leaf from current node
         if (bestSplittingRule == null
@@ -290,9 +289,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             }
             if (!_response.isCategorical()) {
                 error("_response", "Only categorical response is supported");
-            }
-            if (!_response.isBinary()) {
-                error("_response", "Only binary response is supported");
             }
         }
 
@@ -365,7 +361,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     public ModelCategory[] can_build() {
         return new ModelCategory[]{
                 ModelCategory.Binomial,
-//                ModelCategory.Multinomial,
+                ModelCategory.Multinomial,
 //                                            ModelCategory.Ordinal,
 //                ModelCategory.Regression
         };
