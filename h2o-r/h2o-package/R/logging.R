@@ -1,6 +1,7 @@
 #' Starting H2O For examples
 #'
 #' @name aaa
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' if (Sys.info()['sysname'] == "Darwin" && Sys.info()['release'] == '13.4.0') {
@@ -14,6 +15,7 @@ NULL
 #' Shutdown H2O cluster after examples run
 #'
 #' @name zzz
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' library(h2o)
