@@ -29,7 +29,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' Stop with a user friendly message if a user is missing the ggplot2 package or has an old version of it.
 #'
 #' @param version minimal required ggplot2 version
-#' @keywords internal
+#' @noRd
 .check_for_ggplot2 <- function(version = "3.0.0") {
   if (!use.package("ggplot2", version, TRUE)) {
     function_name <- as.character(sys.call(-1)[[1]])
@@ -42,7 +42,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param model_or_model_id Model object or a string containing model id
 #' @param treat_xrt_as_algorithm Try to find out if a model is XRT and if so report it as xrt
 #' @return algorithm name
-#' @keywords internal
+#' @noRd
 .get_algorithm <- function(model_or_model_id, treat_xrt_as_algorithm = FALSE) {
   known_algos <- c("anovaglm", "deeplearning", "drf", "glm", "gam", "modelselection", "gbm", "naivebayes", "stackedensemble",
                    "rulefit", "xgboost", "xrt")
@@ -67,7 +67,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #'
 #' @param models models or model ids
 #' @param all_stackedensembles if TRUE, select all stacked ensembles
-#' @keywords internal
+#' @noRd
 .get_first_of_family <- function(models, all_stackedensembles = FALSE) {
   selected_models <- character()
   included_families <- character()
@@ -86,7 +86,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param model Either H2O model/model id => TRUE, or something else => FALSE
 #'
 #' @return boolean
-#' @keywords internal
+#' @noRd
 .is_h2o_model <- function(model) {
   classes <- class(model)
   return(any(startsWith(classes, "H2O") & endsWith(classes, "Model")))
@@ -97,7 +97,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param model Either tree-based H2O model/model id => TRUE, or something else => FALSE
 #'
 #' @return boolean
-#' @keywords internal
+#' @noRd
 .is_h2o_tree_model <- function(model) {
   return(.get_algorithm(model) %in% c("drf", "gbm", "xgboost"))
 }
@@ -107,7 +107,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param model Either a linear model with coefficients => TRUE, or something else => FALSE
 #'
 #' @return boolean
-#' @keywords internal
+#' @noRd
 .has_model_coefficients <- function(model) {
     return(.get_algorithm(model) %in% c("glm"))
 }
@@ -116,7 +116,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #'
 #' @param model model or a string containing model id
 #' @return boolean
-#' @keywords internal
+#' @noRd
 .interpretable <- function(model) {
   return(.get_algorithm(model) %in% c("gam", "glm", "rulefit"))
 }
@@ -125,7 +125,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #'
 #' @param column H2OFrame column
 #' @return named vector with feature counts
-#' @keywords internal
+#' @noRd
 .get_feature_count <- function(column) {
   desc <- Count <- NULL  # To keep R check as CRAN quiet
   tbl <- h2o.arrange(h2o.table(column), desc(Count))
@@ -141,7 +141,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param models list or vector of models/model_ids
 #'
 #' @return a vector of \code{model_id}s
-#' @keywords internal
+#' @noRd
 .model_ids <- function(models) {
   sapply(models, function(model) {
     if (!is.character(model) && .is_h2o_model(model)) {
@@ -157,7 +157,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' Has the model variable importance?
 #' @param model model or a string containing model id
 #' @return boolean
-#' @keywords internal
+#' @noRd
 .has_varimp <- function(model) {
   if (is.character(model))
     return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
@@ -169,7 +169,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' Get a mapping between columns and their domains
 #' @param model an h2o model
 #' @return list containing a mapping from column to its domains (levels)
-#' @keywords internal
+#' @noRd
 .get_domain_mapping <- function(model) {
   domains <- model@model$domains
   names(domains) <- model@model$names
@@ -180,7 +180,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' Shortens model ids if possible (iff there will be same amount of unique model_ids as before)
 #' @param model_ids character vector
 #' @return character vector
-#' @keywords internal
+#' @noRd
 .shorten_model_ids <- function(model_ids) {
   shortened_model_ids <- gsub("(.*)_AutoML_[\\d_]+(_.*)?$", "\\1\\2", model_ids, perl = TRUE)
   shortened_model_ids <- gsub("(Grid_[^_]*)_.*?(_model_\\d+)?$", "\\1\\2", shortened_model_ids, perl = TRUE)
@@ -278,7 +278,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param check_x_y_consistency If TRUE, make sure that when given a list of models all models have the same X and y. Defaults to TRUE.
 #' @return a list with the following names \code{leader}, \code{is_automl}, \code{models},
 #'   \code{is_classification}, \code{is_multinomial_classification}, \code{x}, \code{y}, \code{model}
-#' @keywords internal
+#' @noRd
 .process_models_or_automl <- function(object, newdata,
                                       require_single_model = FALSE,
                                       require_multiple_models = FALSE,
@@ -471,7 +471,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param overrides Parameters to add/override.
 #'
 #' @return result of \code{fun}
-#' @keywords internal
+#' @noRd
 .customized_call <- function(fun, ..., overridable_defaults = NULL, overrides = NULL) {
   unchangeable_params <- list(...)
   if (any(names(overrides) %in% names(unchangeable_params))) {
@@ -503,7 +503,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #'             fuzzy_col_name must be in cols
 #'
 #' @return a correct column name
-#' @keywords internal
+#' @noRd
 .find_appropriate_column_name <- function(fuzzy_col_name, cols) {
   if (!fuzzy_col_name %in% cols) {
     if (tolower(fuzzy_col_name) %in% tolower(make.names(cols))) {
@@ -523,7 +523,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param leaderboard_frame when provided with list of models, use this frame to calculate metrics
 #' @param top_n create leaderboard with just top_n models
 #' @return a data.frame
-#' @keywords internal
+#' @noRd
 .create_leaderboard <- function(models_info, leaderboard_frame, top_n = 20) {
   if (models_info$is_automl) {
     leaderboard <- models_info$leaderboard
@@ -544,7 +544,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #'
 #' @param model H2OModel
 #' @return sorted named vector
-#' @keywords internal
+#' @noRd
 .consolidate_varimps <- function(model) {
   varimps_hdf <- h2o.varimp(model)
   varimps <- stats::setNames(varimps_hdf$percentage, varimps_hdf$variable)
@@ -598,7 +598,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param model H2OModel
 #'
 #' @return A named vector
-#' @keywords internal
+#' @noRd
 .varimp <- function(model) {
   if (!.has_varimp(model)) {
     stop("Can't get variable importance from: ", model@model_id)
@@ -618,7 +618,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param model H2OModel
 #' @param top_n Plot just top_n features
 #' @return list of variable importance, groupped variable importance, and variable importance plot
-#' @keywords internal
+#' @noRd
 .plot_varimp <- function(model, top_n = 10) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
@@ -652,7 +652,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param top_n leaderboard will contain top_n models
 #'
 #' @return H2OFrame
-#' @keywords internal
+#' @noRd
 .leaderboard_for_row <- function(models_info, newdata, row_index, top_n = 20) {
   leaderboard <- .create_leaderboard(models_info, newdata)
   top_n <- min(top_n, nrow(leaderboard))
@@ -680,7 +680,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' Min-max normalization.
 #' @param col numeric vector
 #' @return normalized numeric vector
-#' @keywords internal
+#' @noRd
 .min_max <- function(col) {
   rng <- range(col, na.rm = TRUE)
   if (rng[[2]] == rng[[1]]) {
@@ -694,7 +694,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 #'
 #' @param col vector
 #' @return vector with values between 0 and 1
-#' @keywords internal
+#' @noRd
 .uniformize <- function(col) {
   if (is.factor(col)) {
     return(.min_max(as.numeric(col) / nlevels(col)))
@@ -866,7 +866,7 @@ case_insensitive_match_arg <- function(arg, choices) {
 
 #' Check if we are plotting in to r notebook.
 #' @return boolean
-#' @keywords internal
+#' @noRd
 .is_plotting_to_rnotebook <- function() {
   grDevices::graphics.off()
   # dev.capabilities()$locator is T when chunk output is set to the console
