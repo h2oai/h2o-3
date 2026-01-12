@@ -4472,10 +4472,10 @@ as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
 }
 
 #' Logical and for H2OFrames
-#' 
+#'
 #' @param x An H2OFrame object
 #' @param y An H2OFrame object
-#' @export	
+#' @export
 `&&` <- function (x, y) {
   if( is.H2OFrame(x)  ) .newExpr("&&", x,y)
   else base::`&&`(x,y)

@@ -17,6 +17,7 @@ NULL
 #' @param x features
 #' @param y response
 #' @param autoencoder autoencoder flag
+#' @keywords internal
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
    if (is(x, "H2OInfogram"))
      x<-x@admissible_features
@@ -2028,6 +2029,7 @@ h2o.aecu_table <- function(object, train=FALSE, valid=FALSE) {
 #' 
 #' @param probs An \linkS4class{H2OFrame} holding vector of probabilities.
 #' @param acts An \linkS4class{H2OFrame} holding vector of actuals.
+#' @keywords internal
 .h2o.perfect_auc <- function(probs, acts) {
   .newExpr("perfectAUC", probs, acts)[1, 1]
 }
