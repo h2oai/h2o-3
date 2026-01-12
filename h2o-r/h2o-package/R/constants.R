@@ -108,19 +108,19 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' Model Builder Endpoint Generator
 #'
 #' @param algo Cannonical identifier of H2O algorithm.
-#' @keywords internal
+#' @noRd
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo)
 
 #' Segment Models Builder Endpoint Generator
 #'
 #' @param algo Cannonical identifier of H2O algorithm.
-#' @keywords internal
+#' @noRd
 .h2o.__SEGMENT_MODELS_BUILDERS <- function(algo) paste0("SegmentModelsBuilders/", algo)
 
 #' Export Files Endpoint Generator
 #'
 #' @param frame H2OFrame
-#' @keywords internal
+#' @noRd
 .h2o.__EXPORT_FILES <- function(frame) paste0("Frames/", h2o.getId(frame), '/export')
 
 # Model Endpoint
@@ -133,7 +133,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #'
 #' @param model H2OModel.
 #' @param data H2OFrame.
-#' @keywords internal
+#' @noRd
 .h2o.__MODEL_METRICS <- function(model,data) {
   if(missing(data)) {
     paste0("ModelMetrics/models/",model)
