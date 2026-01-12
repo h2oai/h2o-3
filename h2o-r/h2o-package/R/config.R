@@ -9,7 +9,7 @@
 # the read config file should be printed to the console.
 # Returns the .h2oconfig file as a data frame with a respective key-value store where the `key` is a column name.
 #' @importFrom utils read.table
-#' @keywords internal
+#' @noRd
 .parse.h2oconfig <- function(h2oconfig_filename, print_path = FALSE){
 
     #Only show this output when connecting to H2O
