@@ -48,6 +48,7 @@ class Check:
             r"^\* checking .* \.\.\. \[\d+s/\d+s\] OK",
             r"^\* checking extension type ... Package",
             r"^\* this is package",
+            r"^\* package encoding: UTF-8",
             r"^\* checking CRAN incoming feasibility \.\.\.",
             r"^\*\* found \\donttest examples: .*",
             r"^Maintainer:",
