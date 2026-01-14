@@ -39,6 +39,8 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
 
     if (GLMModel.GLMParameters.Family.tweedie.equals(model._parms._family))
       writekv("tweedie_link_power", model._parms._tweedie_link_power);
+
+    writekv("dispersion_estimated", (model._parms._compute_p_values ? model._parms._dispersion_estimated : 1.0));
   }
 
 }

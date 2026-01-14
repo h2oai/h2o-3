@@ -1,13 +1,13 @@
-#'
-#' TODO: No objects in this file are being used. Either remove file or use objects.
-#'
-#' Append a <key,value> pair to a list.
-#'
-#' Contained here are a set of helper methods that perform type checking on the value passed in.
-#'
-#' @param parms a list to add the <k,v> pair to
-#' @param k a key, typically the name of some algorithm parameter
-#' @param v a value, the value of the algorithm parameter
+#
+# TODO: No objects in this file are being used. Either remove file or use objects.
+#
+# Append a <key,value> pair to a list.
+#
+# Contained here are a set of helper methods that perform type checking on the value passed in.
+#
+# @param parms a list to add the <k,v> pair to
+# @param k a key, typically the name of some algorithm parameter
+# @param v a value, the value of the algorithm parameter
 
 .addParm <- function(parms, k, v) {
   cmd <- sprintf("parms$%s = v", k)

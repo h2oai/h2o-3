@@ -358,17 +358,6 @@ h2o.getModel <- function(model_id) {
     }
   }
 
-  if (identical("glm", json$algo) && allparams$HGLM) {
-    .newH2OModel(Class         = Class,
-                 model_id      = model_id,
-                 algorithm     = json$algo,
-                 parameters    = parameters,
-                 allparameters = allparams,
-                 params        = params,
-                 have_pojo     = FALSE,
-                 have_mojo     = FALSE,
-                 model         = model)
-  } else {
   .newH2OModel(Class         = Class,
                model_id      = model_id,
                algorithm     = json$algo,
@@ -378,7 +367,6 @@ h2o.getModel <- function(model_id) {
                have_pojo     = json$have_pojo,
                have_mojo     = json$have_mojo,
                model         = model)
-  }
 }
 
 #' Retrieves an instance of \linkS4class{H2OSegmentModels} for a given id.

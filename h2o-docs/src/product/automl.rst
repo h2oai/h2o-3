@@ -182,8 +182,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
+        test <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         y <- "response"
@@ -241,8 +241,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
+        test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         x = train.columns

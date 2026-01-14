@@ -2,7 +2,6 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 test.force_col_types <- function() {
-  browser()
   originalTypes <- c("real", "int", "int", "int", "int", "string", "real", "string", "real", "real", "enum", "int", "int", "int", "int", "enum", 'real', 'real', "enum", "enum", "enum", 'real',  "int", "int", "enum", "enum", "string", "int", "int", "int", "int", "int", "int", "int", "enum", "int", "string", "int", "string", "int", "string",  "string", 'real', "int",  "string", "int", 'real', 'real', "int", "int")
   h2odata <- h2o.importFile(path = locate("smalldata/parser/synthetic_dataset.csv"))
   checkTypes(originalTypes, h2odata)

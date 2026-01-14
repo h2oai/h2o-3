@@ -10,6 +10,9 @@ public class ModelMetricsMultinomialGenericV3<I extends ModelMetricsMultinomialG
   public S fillFromImpl(I modelMetrics) {
     super.fillFromImpl(modelMetrics);
     logloss = modelMetrics._logloss;
+    loglikelihood = modelMetrics.loglikelihood();
+    AIC = modelMetrics.aic();
+    
     r2 = modelMetrics.r2();
 
     if (modelMetrics._hit_ratio_table != null) {

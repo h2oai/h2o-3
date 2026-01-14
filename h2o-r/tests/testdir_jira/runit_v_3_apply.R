@@ -27,8 +27,8 @@ applytest <- function(){
   df.2 <- as.data.frame( df.h.2 )
 #  df.3 <- as.data.frame( df.h.3 )
 
-  expect_that(all( df.1 == c(3,7,11) ), is_true())
-  expect_that(all( df.2 == c(9, 12 ) ), is_true())
+  expect_true(all( df.1 == c(3,7,11) ))
+  expect_true(all( df.2 == c(9, 12 ) ))
 #  expect_that(all( df.3[,1] == c(2,4,6) ))
 #  expect_that(all( df.3[,2] == c(3,5,7) ))
 

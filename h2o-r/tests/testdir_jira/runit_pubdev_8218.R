@@ -6,7 +6,8 @@ test.pubdev_8218 = function(){
     df = data.frame(
     v1 = c('Y', 'Y', 'Y', 'N', 'N'),
     v2 = c('S', 'S', 'S', 'A', 'A'),
-    v3 = c('E1', 'E1', 'E1', 'B1', 'B1')
+    v3 = c('E1', 'E1', 'E1', 'B1', 'B1'),
+    stringsAsFactors = TRUE
     )
     df.hex = as.h2o(df, 'dfhex')
     interaction = h2o.interaction(
@@ -30,7 +31,8 @@ test.pubdev_8218 = function(){
     df = data.frame(
     v1 = c('Y', 'Y', 'Y', 'N', 'N', 'Y'),
     v2 = c('S', 'S', 'S', 'A', 'A', 'N'),
-    v3 = c('E1', 'E1', 'E1', 'B1', 'B1', 'B1')
+    v3 = c('E1', 'E1', 'E1', 'B1', 'B1', 'B1'),
+    stringsAsFactors = TRUE
     )
     df.hex = as.h2o(df, 'dfhex')
     interaction = h2o.interaction(

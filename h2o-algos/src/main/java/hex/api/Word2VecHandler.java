@@ -7,6 +7,7 @@ import water.DKV;
 import water.api.Handler;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.util.*;
 
@@ -28,11 +29,16 @@ public class Word2VecHandler extends Handler {
     });
     args.synonyms = new String[result.size()];
     args.scores = new double[result.size()];
-    int i = 0;
-    for (Map.Entry<String, Float> entry : result) {
-      args.synonyms[i] = entry.getKey();
-      args.scores[i] = entry.getValue();
-      i++;
+    if(result.size() > 0) {
+      int i = 0;
+      for (Map.Entry<String, Float> entry : result) {
+        args.synonyms[i] = entry.getKey();
+        args.scores[i] = entry.getValue();
+        i++;
+      }
+    }
+    if (result.size() < args.count) {
+      Log.warn(String.format("The result number of synonyms (%d) is less than the 'count' parameter (%d).", args.synonyms.length, args.count));
     }
     return args;
   }

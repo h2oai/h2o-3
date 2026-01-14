@@ -88,7 +88,7 @@ public class AstTopNTest extends TestUtil {
     }
   }
 
-  public void testTopBottom(Frame topBottom, double testPercent, int grabTopN, String columnIndex,
+  private void testTopBottom(Frame topBottom, double testPercent, int grabTopN, String columnIndex,
                             double tolerance) {
     Scope.enter();
     Frame topBN = null, topBL = null;
@@ -111,7 +111,7 @@ public class AstTopNTest extends TestUtil {
   /*
   Helper function to compare test frame result with correct answer
    */
-  public void checkTopBottomN(Frame answerF, Frame grabF, double tolerance, int grabTopN) {
+  private void checkTopBottomN(Frame answerF, Frame grabF, double tolerance, int grabTopN) {
     Scope.enter();
     try {
       double nfrac = (grabTopN < 0) ? 1.0 * grabF.numRows() / answerF.numRows() : (1 - 1.0 * grabF.numRows() / answerF.numRows());   // translate percentage to actual fraction
@@ -119,7 +119,7 @@ public class AstTopNTest extends TestUtil {
       SplitFrame sf = new SplitFrame(answerF, new double[]{nfrac, 1 - nfrac}, new Key[]{Key.make("topN.hex"), Key.make("bottomN.hex")});
       // Invoke the job
       sf.exec().get();
-      Key[] ksplits = sf._destination_frames;
+      Key<Frame>[] ksplits = sf._destination_frames;
       Frame topN = (Frame) ((grabTopN < 0) ? DKV.get(ksplits[0]).get() : DKV.get(ksplits[1]).get());
       double[] bottomN = FrameUtils.asDoubles(grabF.vec(0));
       Arrays.sort(bottomN);
@@ -129,8 +129,8 @@ public class AstTopNTest extends TestUtil {
       Scope.track(sortedFT);
       assertIdenticalUpToRelTolerance(topN, sortedFT, tolerance);
       Scope.track(topN);
-      Scope.track_generic(ksplits[0].get());
-      Scope.track_generic(ksplits[1].get());
+      Scope.track(ksplits[0].get());
+      Scope.track(ksplits[1].get());
     } finally {
       Scope.exit();
     }

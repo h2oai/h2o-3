@@ -13,11 +13,13 @@ public class ChunkReadSupport extends ReadSupport<Long> {
   private WriterDelegate _writer;
   private byte[] _chunkSchema;
   private boolean[] _keepColumns;
+  private boolean _adjustTimezone;
 
-  public ChunkReadSupport(WriterDelegate writer, byte[] chunkSchema, boolean[] keepcolumns) {
+  public ChunkReadSupport(WriterDelegate writer, byte[] chunkSchema, boolean[] keepcolumns, boolean adjustTimezone) {
     _writer = writer;
     _chunkSchema = chunkSchema;
     _keepColumns = keepcolumns;
+    _adjustTimezone = adjustTimezone;
   }
 
   @Override
@@ -28,7 +30,7 @@ public class ChunkReadSupport extends ReadSupport<Long> {
   @Override
   public RecordMaterializer<Long> prepareForRead(Configuration configuration, Map<String, String> keyValueMetaData,
                                                     MessageType fileSchema, ReadContext readContext) {
-    return new ChunkRecordMaterializer(fileSchema, _chunkSchema, _writer, _keepColumns);
+    return new ChunkRecordMaterializer(fileSchema, _chunkSchema, _writer, _keepColumns, _adjustTimezone);
   }
 
 }

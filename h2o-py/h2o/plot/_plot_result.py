@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 # mutable versions of py immutable types
+# when changing this module, please make sure it doesn't break explanations in jupyter, vscode and ipython
 from h2o.exceptions import H2OError
 
 __no_export = set(dir())  # all variables defined above this are not exported

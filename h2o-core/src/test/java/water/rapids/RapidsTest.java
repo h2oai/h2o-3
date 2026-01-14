@@ -46,7 +46,7 @@ public class RapidsTest{
     Scope.enter();
     try {
       final Frame iris = parseTestFile(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
-      Scope.track_generic(iris);
+      Scope.track(iris);
       final Val spearmanMatrix = Rapids.exec("(cor iris_spearman iris_spearman \"complete.obs\" \"Spearman\")", session);
       assertTrue(spearmanMatrix instanceof ValFrame);
       // Only two columns verified by hand
