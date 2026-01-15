@@ -1595,12 +1595,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
     Lambda = deprecated_property('Lambda', lambda_)
 
-    def _additional_used_columns(self, parms):
-        """
-        :return: Gam columns if specified.
-        """
-        return parms["gam_columns"]
-
     def _summary(self):
         """Return a detailed summary of the model."""
         model = self._model_json["output"]
