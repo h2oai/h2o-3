@@ -451,6 +451,7 @@ examples = dict(
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols, algorithm_params=gbm_params)
 >>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.algorithm_params
 >>> ig.plot()
 """,
     data_fraction="""
@@ -467,6 +468,7 @@ examples = dict(
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols, data_fraction=0.7)
 >>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.data_fraction
 >>> ig.plot()
 """,
     net_information_threshold="""
@@ -483,6 +485,7 @@ examples = dict(
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols, net_information_threshold=0.5)
 >>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.net_information_threshold
 >>> ig.plot()
 """,
     relevance_index_threshold="""
@@ -499,6 +502,7 @@ examples = dict(
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols, relevance_index_threshold=0.5)
 >>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.relevance_index_threshold
 >>> ig.plot()
 """,
     safety_index_threshold="""
@@ -515,6 +519,7 @@ examples = dict(
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols, safety_index_threshold=0.5)
 >>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.safety_index_threshold
 >>> ig.plot()
 """,
     top_n_features="""
@@ -531,6 +536,7 @@ examples = dict(
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols, top_n_features=30)
 >>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.top_n_features
 >>> ig.plot()
 """,
     total_information_threshold="""
@@ -547,6 +553,7 @@ examples = dict(
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
 >>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=0.5)
 >>> ig.train(y=y, x=x, training_frame=train)
+>>> ig.total_information_threshold
 >>> ig.plot()
 """
 )

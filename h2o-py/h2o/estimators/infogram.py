@@ -717,6 +717,7 @@ class H2OInfogram(H2OEstimator):
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
         >>> ig = H2OInfogram(protected_columns=pcols, algorithm_params=gbm_params)
         >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.algorithm_params
         >>> ig.plot()
         """
         if self._parms.get("algorithm_params") != None:
@@ -779,6 +780,7 @@ class H2OInfogram(H2OEstimator):
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
         >>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=0.5)
         >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.total_information_threshold
         >>> ig.plot()
         """
         return self._parms.get("total_information_threshold")
@@ -819,6 +821,7 @@ class H2OInfogram(H2OEstimator):
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
         >>> ig = H2OInfogram(protected_columns=pcols, net_information_threshold=0.5)
         >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.net_information_threshold
         >>> ig.plot()
         """
         return self._parms.get("net_information_threshold")
@@ -860,6 +863,7 @@ class H2OInfogram(H2OEstimator):
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
         >>> ig = H2OInfogram(protected_columns=pcols, relevance_index_threshold=0.5)
         >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.relevance_index_threshold
         >>> ig.plot()
         """
         return self._parms.get("relevance_index_threshold")
@@ -901,6 +905,7 @@ class H2OInfogram(H2OEstimator):
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
         >>> ig = H2OInfogram(protected_columns=pcols, safety_index_threshold=0.5)
         >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.safety_index_threshold
         >>> ig.plot()
         """
         return self._parms.get("safety_index_threshold")
@@ -939,6 +944,7 @@ class H2OInfogram(H2OEstimator):
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
         >>> ig = H2OInfogram(protected_columns=pcols, data_fraction=0.7)
         >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.data_fraction
         >>> ig.plot()
         """
         return self._parms.get("data_fraction")
@@ -971,6 +977,7 @@ class H2OInfogram(H2OEstimator):
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
         >>> ig = H2OInfogram(protected_columns=pcols, top_n_features=30)
         >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.top_n_features
         >>> ig.plot()
         """
         return self._parms.get("top_n_features")
