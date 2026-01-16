@@ -706,16 +706,16 @@ class H2OInfogram(H2OEstimator):
         >>> import h2o
         >>> from h2o.estimators.infogram import H2OInfogram
         >>> h2o.init()
-        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
-        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
         >>> df = h2o.import_file(path=f, col_types=col_types)
         >>> train = df.split_frame(seed=1)[0]
-        >>> y = "default_payment_next_month"
+        >>> y = "default payment next month"
         >>> x = train.columns
         >>> x.remove(y)
         >>> gbm_params = {'ntrees':3}
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
-        >>> ig = H2OInfogram(protected_columns=pcols, algorithm_params=gbm_params)
+        >>> ig = H2OInfogram(protected_columns=pcols, algorithm="gbm", algorithm_params=gbm_params)
         >>> ig.train(y=y, x=x, training_frame=train)
         >>> ig.algorithm_params
         >>> ig.plot()
@@ -770,11 +770,11 @@ class H2OInfogram(H2OEstimator):
         >>> import h2o
         >>> from h2o.estimators.infogram import H2OInfogram
         >>> h2o.init()
-        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
-        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
         >>> df = h2o.import_file(path=f, col_types=col_types)
         >>> train = df.split_frame(seed=1)[0]
-        >>> y = "default_payment_next_month"
+        >>> y = "default payment next month"
         >>> x = train.columns
         >>> x.remove(y)
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
@@ -811,17 +811,17 @@ class H2OInfogram(H2OEstimator):
         >>> import h2o
         >>> from h2o.estimators.infogram import H2OInfogram
         >>> h2o.init()
-        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
-        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
         >>> df = h2o.import_file(path=f, col_types=col_types)
         >>> train = df.split_frame(seed=1)[0]
-        >>> y = "default_payment_next_month"
+        >>> y = "default payment next month"
         >>> x = train.columns
         >>> x.remove(y)
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
-        >>> ig = H2OInfogram(protected_columns=pcols, net_information_threshold=0.5)
+        >>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=0.5)
         >>> ig.train(y=y, x=x, training_frame=train)
-        >>> ig.net_information_threshold
+        >>> ig.total_information_threshold
         >>> ig.plot()
         """
         return self._parms.get("net_information_threshold")
@@ -853,11 +853,11 @@ class H2OInfogram(H2OEstimator):
         >>> import h2o
         >>> from h2o.estimators.infogram import H2OInfogram
         >>> h2o.init()
-        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
-        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
         >>> df = h2o.import_file(path=f, col_types=col_types)
         >>> train = df.split_frame(seed=1)[0]
-        >>> y = "default_payment_next_month"
+        >>> y = "default payment next month"
         >>> x = train.columns
         >>> x.remove(y)
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
@@ -895,11 +895,11 @@ class H2OInfogram(H2OEstimator):
         >>> import h2o
         >>> from h2o.estimators.infogram import H2OInfogram
         >>> h2o.init()
-        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
-        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
         >>> df = h2o.import_file(path=f, col_types=col_types)
         >>> train = df.split_frame(seed=1)[0]
-        >>> y = "default_payment_next_month"
+        >>> y = "default payment next month"
         >>> x = train.columns
         >>> x.remove(y)
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
@@ -934,11 +934,11 @@ class H2OInfogram(H2OEstimator):
         >>> import h2o
         >>> from h2o.estimators.infogram import H2OInfogram
         >>> h2o.init()
-        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
-        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
         >>> df = h2o.import_file(path=f, col_types=col_types)
         >>> train = df.split_frame(seed=1)[0]
-        >>> y = "default_payment_next_month"
+        >>> y = "default payment next month"
         >>> x = train.columns
         >>> x.remove(y)
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
@@ -967,11 +967,11 @@ class H2OInfogram(H2OEstimator):
         >>> import h2o
         >>> from h2o.estimators.infogram import H2OInfogram
         >>> h2o.init()
-        >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
-        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
         >>> df = h2o.import_file(path=f, col_types=col_types)
         >>> train = df.split_frame(seed=1)[0]
-        >>> y = "default_payment_next_month"
+        >>> y = "default payment next month"
         >>> x = train.columns
         >>> x.remove(y)
         >>> pcols = ["SEX", "MARRIAGE", "AGE"]
