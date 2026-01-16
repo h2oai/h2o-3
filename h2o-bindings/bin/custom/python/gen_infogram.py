@@ -449,8 +449,8 @@ examples = dict(
 >>> x.remove(y)
 >>> gbm_params = {'ntrees':3}
 >>> pcols = ["SEX", "MARRIAGE", "AGE"]
->>> ig = H2OInfogram(protected_columns=pcols)
->>> ig.train(y=y, x=x, training_frame=train, algorithm_params=gbm_params)
+>>> ig = H2OInfogram(protected_columns=pcols, algorithm_params=gbm_params)
+>>> ig.train(y=y, x=x, training_frame=train)
 >>> ig.plot()
 """,
     data_fraction="""
@@ -460,7 +460,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)[0]
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -476,7 +476,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)[0]
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -492,7 +492,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)[0]
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -508,7 +508,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)[0]
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -524,7 +524,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)[0]
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
@@ -540,7 +540,7 @@ examples = dict(
 >>> f = "https://erin-data.s3.amazonaws.com/admissible/data/taiwan_credit_card_uci.csv"
 >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default_payment_next_month': "enum"}
 >>> df = h2o.import_file(path=f, col_types=col_types)
->>> train = df.split_frame(seed=1)
+>>> train = df.split_frame(seed=1)[0]
 >>> y = "default_payment_next_month"
 >>> x = train.columns
 >>> x.remove(y)
