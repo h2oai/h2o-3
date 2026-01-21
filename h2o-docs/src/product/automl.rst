@@ -18,7 +18,7 @@ H2O offers a number of `model explainability <http://docs.h2o.ai/h2o/latest-stab
 AutoML interface
 ----------------
 
-The H2O AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column and optionally specify a time constraint or limit on the number of total models trained.  Below are the parameters that can be set by the user in the R and Python interfaces. See the `Web UI via H2O Wave <#web-ui-via-h2o-wave>`__ section below for information on how to use the H2O Wave web interface for AutoML.
+The H2O AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column, and optionally specify a time constraint or limit on the number of total models trained.  Below are the parameters that can be set by the user in the R and Python interfaces. See the `Web UI via H2O Wave <#web-ui-via-h2o-wave>`__ section below for information on how to use the H2O Wave web interface for AutoML.
 
 In both the R and Python API, AutoML uses the same data-related arguments, ``x``, ``y``, ``training_frame``, ``validation_frame``, as the other H2O algorithms.  Most of the time, all you'll need to do is specify the data arguments. You can then configure values for ``max_runtime_secs`` and/or ``max_models`` to set explicit time or number-of-model limits on your run.  
 
