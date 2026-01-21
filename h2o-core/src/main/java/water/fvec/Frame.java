@@ -1614,7 +1614,7 @@ public class Frame extends Lockable<Frame> {
     return job.start(t, fr.anyVec().nChunks());
   }
 
-  public static Job exportParquet(Frame fr, String path, boolean overwrite, String compression, boolean writeChecksum) {
+  public static Job exportParquet(Frame fr, String path, boolean overwrite, String compression, boolean writeChecksum, boolean tzAdjustFromLocal) {
     // Validate input
     if (H2O.getPM().isFileAccessDenied(path)) {
       throw new H2OFileAccessDeniedException("File " + path + " access denied");
@@ -1638,7 +1638,7 @@ public class Frame extends Lockable<Frame> {
     }
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
 
-    H2O.H2OCountedCompleter t = parquetExporter.export(fr, path, overwrite, compression, writeChecksum);
+    H2O.H2OCountedCompleter t = parquetExporter.export(fr, path, overwrite, compression, writeChecksum, tzAdjustFromLocal);
     return job.start(t, fr.anyVec().nChunks());
   }
 

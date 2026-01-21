@@ -2,7 +2,6 @@ package hex.api;
 
 import hex.ModelBuilder;
 import hex.anovaglm.ANOVAGLM;
-import hex.modelselection.ModelSelection;
 import hex.psvm.PSVM;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
@@ -39,6 +38,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.modelselection.ModelSelection (true),
             new hex.isotonic    .IsotonicRegression(true),
             new hex.tree.dt      .DT         (true),
+            new hex.hglm        .HGLM        (true),
             new hex.adaboost.     AdaBoost   (true)
     };
 
@@ -57,6 +57,10 @@ public class RegisterAlgos extends AlgoAbstractRegister {
     context.registerEndpoint("make_glm_model", "POST /3/MakeGLMModel",
             MakeGLMModelHandler.class, "make_model",
             "Make a new GLM model based on existing one");
+
+    context.registerEndpoint("make_unrestricted_model", "POST /3/MakeUnrestrictedGLMModel",
+            MakeGLMModelHandler.class, "make_unrestricted_model",
+            "Make unrestricted GLM model based on existing one with control variables enabled.");
 
     context.registerEndpoint("glm_regularization_path","GET /3/GetGLMRegPath", MakeGLMModelHandler.class, "extractRegularizationPath",
             "Get full regularization path");

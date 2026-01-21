@@ -39,7 +39,7 @@ try {
           }
           String nodeLabel = DEFAULT_NODE_LABEL
           if (pipelineContext != null) {
-            nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(DEFAULT_NODE_LABEL)
+            nodeLabel = "h2o-3"
           }
           echo "######### NodeLabel: ${nodeLabel} #########"
           node(nodeLabel) {
@@ -55,6 +55,8 @@ try {
                     git init
                     git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
                     git config remote.origin.url https://github.com/h2oai/h2o-3
+                    git config --add safe.directory .
+
 
                     git fetch --no-tags origin pull/${env.ghprbPullId}/head:remote-${env.ghprbSourceBranch}
                     git checkout ${env.ghprbActualCommit}
@@ -113,14 +115,27 @@ try {
 def cancelPreviousBuilds() {
   echo "###### Cancelling all previous builds ######"
   def hi = Hudson.instance
-  def pname = env.JOB_NAME.split('/')[0]
+  def jobNameParts = env.JOB_NAME.tokenize('/')
+  def pname = jobNameParts[0]
 
-  hi.getItem(pname).getItem(env.JOB_BASE_NAME).getBuilds().each{ build ->
+  def item = hi.getItem(pname)
+  // if called from multibranch pipeline/folder etc., we need to get the builds of the leaf item
+  if (jobNameParts.size() > 1) {
+    // remove the first element, because that has been already used to get the root item
+    jobNameParts.remove(0)
+    for (part in jobNameParts) {
+      item = item.getItem(part)
+    }
+  }
+
+  item.getBuilds().each{ build ->
     def exec = build.getExecutor()
 
-    if (build.number != currentBuild.number && exec != null) {
+    if (build.number < currentBuild.number && exec != null) {
       exec.doStop()
       println("Aborted previous running build #${build.number}")
+    } else {
+      println("Build is not running or is current build, not aborting - #${build.number}")
     }
   }
 }

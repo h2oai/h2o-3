@@ -145,4 +145,113 @@ public class SQLManagerTest {
     Assert.assertEquals("SELECT * FROM mytable LIMIT 1310 OFFSET 0",
             SQLManager.buildSelectChunkSql("", "mytable", 0, 1310, "*", null));
   }
+
+  @Test
+  public void testValidateJdbcConnectionStringH2() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: init");
+
+    String h2MaliciousJdbc = "jdbc:h2:mem:test;MODE=MSSQLServer;init=CREATE ALIAS RBT AS '@groovy.transform.ASTTest(value={ assert java.lang.Runtime.getRuntime().exec(\"reboot\")" + "})" + "def rbt" + "'";
+
+    SQLManager.validateJdbcUrl(h2MaliciousJdbc);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysql() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
+    
+    String mysqlMaliciousJdbc = "jdbc:mysql://domain:123/test?autoDeserialize=true&queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor&user=abcd";
+
+    SQLManager.validateJdbcUrl(mysqlMaliciousJdbc);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlKeyValuePairs() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
+
+    String jdbcConnection = "jdbc:mysql://(host=127.0.0.1,port=3308,autoDeserialize=true,queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlKeyValuePairsSpace() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
+
+    String jdbcConnection = "jdbc:mysql://(host=127.0.0.1,port=3308, autoDeserialize  =  true,queryInterceptors = com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlKeyValuePairsCAPITAL() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: AUTODeserialize");
+
+    String jdbcConnection = "jdbc:mysql://(host=127.0.0.1,port=3308, AUTODeserialize  =  true,queryInterceptors = com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor,user=deser_CUSTOM,maxAllowedPacket=655360)";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }  
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlSpaceBetween() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: allowLoadLocalInfile");
+
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?allowLoadLocalInfile  =  true&  autoDeserialize=true";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlCAPITAL() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: AUTODESERIALIZE");
+
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?AUTODESERIALIZE  =  true&  allowLoadLocalInfile=true";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }  
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlOneParameter() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: allowLoadLocalInfile");
+
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?allowLoadLocalInfile=true";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlDoubleEncodedString() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: allowLoadLocalInfile");
+
+    String jdbcConnection = "jdbc%3Amysql%3A%2F%2F127.0.0.1%3A3308%2Ftest%3F+%2561%256c%256c%256f%2577%254c%256f%2561%2564%254c%256f%2563%2561%256c%2549%256e%2566%2569%256c%2565%3Dtrue%26+%2561%256c%256c%256f%2577%2555%2572%256c%2549%256e%254c%256f%2563%2561%256c%2549%256e%2566%2569%256c%2565%3Dtrue&table=a&username=fileread_/etc/passwd&password=123123&fetch_mode=SINGLE";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringMysqlMultipleEncodedString() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("JDBC URL contains invalid characters");
+
+    String jdbcConnection = "jdbc%2525252525252525253Amysql%2525252525252525253A%2525252525252525252F%2525252525252525252F127.0.0.1%2525252525252525253A3308%2525252525252525252Ftest%2525252525252525253F%25252525252525252B%2525252525252525252561%252525252525252525256c%252525252525252525256c%252525252525252525256f%2525252525252525252577%252525252525252525254c%252525252525252525256f%2525252525252525252561%2525252525252525252564%252525252525252525254c%252525252525252525256f%2525252525252525252563%2525252525252525252561%252525252525252525256c%2525252525252525252549%252525252525252525256e%2525252525252525252566%2525252525252525252569%252525252525252525256c%2525252525252525252565%2525252525252525253Dtrue%25252525252525252526%25252525252525252B%2525252525252525252561%252525252525252525256c%252525252525252525256c%252525252525252525256f%2525252525252525252577%2525252525252525252555%2525252525252525252572%252525252525252525256c%2525252525252525252549%252525252525252525256e%252525252525252525254c%252525252525252525256f%2525252525252525252563%2525252525252525252561%252525252525252525256c%2525252525252525252549%252525252525252525256e%2525252525252525252566%2525252525252525252569%252525252525252525256c%2525252525252525252565%2525252525252525253Dtrue%252525252525252526table%25252525252525253Da%252525252525252526username%25252525252525253Dfileread_%25252525252525252Fetc%25252525252525252Fpasswd%252525252525252526password%25252525252525253D123123%252525252525252526fetch_mode%25252525252525253DSINGLE";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  /**
+   * Test fail if any exception is thrown therefore no assert
+   */
+  @Test
+  public void testValidateJdbcConnectionStringMysqlPass() {
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?allowedParameter=true";
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
 }

@@ -28,7 +28,6 @@
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param random_columns random columns indices for HGLM.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param score_iteration_interval Perform scoring for every score_iteration_interval iterations. Defaults to -1.
@@ -43,8 +42,6 @@
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
 #'        one of: "AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial",
 #'        "poisson", "gamma", "tweedie", "negativebinomial". Defaults to AUTO.
-#' @param rand_family Random Component Family array.  One for each random component. Only support gaussian for now. Must be one of:
-#'        "[gaussian]".
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power. Defaults to 1.
 #' @param theta Theta Defaults to 1e-10.
@@ -90,12 +87,9 @@
 #'        the conditional values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
-#' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
-#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If standardize is
-#'        true, the standardized coefficients should be used.  Otherwise, use the regular coefficients.
+#' @param startval double array to initialize coefficients for GLM.  If standardize is true, the standardized coefficients should
+#'        be used.  Otherwise, use the regular coefficients.
 #' @param calc_like \code{Logical}. if true, will return likelihood function value. Defaults to FALSE.
-#' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned.
-#'        Defaults to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values.  If false, build the next model for next set
@@ -121,6 +115,7 @@
 #'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
+#' @param control_variables A list of predictor column indices which is used for training but removed for scoring. Experimental.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -229,14 +224,12 @@ h2o.glm <- function(x,
                     keep_cross_validation_fold_assignment = FALSE,
                     fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                     fold_column = NULL,
-                    random_columns = NULL,
                     ignore_const_cols = TRUE,
                     score_each_iteration = FALSE,
                     score_iteration_interval = -1,
                     offset_column = NULL,
                     weights_column = NULL,
                     family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
-                    rand_family = c("[gaussian]"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 1,
                     theta = 1e-10,
@@ -260,10 +253,8 @@ h2o.glm <- function(x,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
-                    rand_link = c("[identity]", "[family_default]"),
                     startval = NULL,
                     calc_like = FALSE,
-                    HGLM = FALSE,
                     prior = -1,
                     cold_start = FALSE,
                     lambda_min_ratio = -1,
@@ -275,6 +266,7 @@ h2o.glm <- function(x,
                     stopping_rounds = 0,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
+                    control_variables = NULL,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
@@ -331,11 +323,6 @@ h2o.glm <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if (HGLM && is.null(random_columns)) stop("HGLM: must specify random effect column!")
-  if (HGLM && (!is.null(random_columns))) {
-    temp <- .verify_dataxy(training_frame, random_columns, y)
-    random_columns <- temp$x_i-1  # change column index to numeric column indices starting from 0
-  }
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
@@ -362,8 +349,6 @@ h2o.glm <- function(x,
     parms$fold_assignment <- fold_assignment
   if (!missing(fold_column))
     parms$fold_column <- fold_column
-  if (!missing(random_columns))
-    parms$random_columns <- random_columns
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
@@ -376,8 +361,6 @@ h2o.glm <- function(x,
     parms$weights_column <- weights_column
   if (!missing(family))
     parms$family <- family
-  if (!missing(rand_family))
-    parms$rand_family <- rand_family
   if (!missing(tweedie_variance_power))
     parms$tweedie_variance_power <- tweedie_variance_power
   if (!missing(tweedie_link_power))
@@ -422,14 +405,10 @@ h2o.glm <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
-  if (!missing(rand_link))
-    parms$rand_link <- rand_link
   if (!missing(startval))
     parms$startval <- startval
   if (!missing(calc_like))
     parms$calc_like <- calc_like
-  if (!missing(HGLM))
-    parms$HGLM <- HGLM
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))
@@ -448,6 +427,8 @@ h2o.glm <- function(x,
     parms$stopping_metric <- stopping_metric
   if (!missing(stopping_tolerance))
     parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(control_variables))
+    parms$control_variables <- control_variables
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -539,14 +520,12 @@ h2o.glm <- function(x,
                                     keep_cross_validation_fold_assignment = FALSE,
                                     fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                     fold_column = NULL,
-                                    random_columns = NULL,
                                     ignore_const_cols = TRUE,
                                     score_each_iteration = FALSE,
                                     score_iteration_interval = -1,
                                     offset_column = NULL,
                                     weights_column = NULL,
                                     family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
-                                    rand_family = c("[gaussian]"),
                                     tweedie_variance_power = 0,
                                     tweedie_link_power = 1,
                                     theta = 1e-10,
@@ -570,10 +549,8 @@ h2o.glm <- function(x,
                                     beta_epsilon = 0.0001,
                                     gradient_epsilon = -1,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
-                                    rand_link = c("[identity]", "[family_default]"),
                                     startval = NULL,
                                     calc_like = FALSE,
-                                    HGLM = FALSE,
                                     prior = -1,
                                     cold_start = FALSE,
                                     lambda_min_ratio = -1,
@@ -585,6 +562,7 @@ h2o.glm <- function(x,
                                     stopping_rounds = 0,
                                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                     stopping_tolerance = 0.001,
+                                    control_variables = NULL,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
@@ -648,11 +626,6 @@ h2o.glm <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if (HGLM && is.null(random_columns)) stop("HGLM: must specify random effect column!")
-  if (HGLM && (!is.null(random_columns))) {
-    temp <- .verify_dataxy(training_frame, random_columns, y)
-    random_columns <- temp$x_i-1  # change column index to numeric column indices starting from 0
-  }
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
@@ -677,8 +650,6 @@ h2o.glm <- function(x,
     parms$fold_assignment <- fold_assignment
   if (!missing(fold_column))
     parms$fold_column <- fold_column
-  if (!missing(random_columns))
-    parms$random_columns <- random_columns
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
@@ -691,8 +662,6 @@ h2o.glm <- function(x,
     parms$weights_column <- weights_column
   if (!missing(family))
     parms$family <- family
-  if (!missing(rand_family))
-    parms$rand_family <- rand_family
   if (!missing(tweedie_variance_power))
     parms$tweedie_variance_power <- tweedie_variance_power
   if (!missing(tweedie_link_power))
@@ -737,14 +706,10 @@ h2o.glm <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
-  if (!missing(rand_link))
-    parms$rand_link <- rand_link
   if (!missing(startval))
     parms$startval <- startval
   if (!missing(calc_like))
     parms$calc_like <- calc_like
-  if (!missing(HGLM))
-    parms$HGLM <- HGLM
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))
@@ -763,6 +728,8 @@ h2o.glm <- function(x,
     parms$stopping_metric <- stopping_metric
   if (!missing(stopping_tolerance))
     parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(control_variables))
+    parms$control_variables <- control_variables
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -856,6 +823,22 @@ h2o.makeGLMModel <- function(model,beta) {
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
+}
+
+#' Make unrestricted GLM model when control variables are defined.
+#'
+#' Needs source model trained with control variables enabled.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variable
+#' @param destination_key a string or a NULL
+#' @export
+h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
+  stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
+  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
+  if (!missing(destination_key) && !is.null(destination_key)) {
+    query <- c(query, list(dest = destination_key))
+  }
+  res <- do.call(.h2o.__remoteSend, query)
+  h2o.getModel(model_id = res$model_id$name)
 }
 
 #' Extract best lambda value found from glm model.

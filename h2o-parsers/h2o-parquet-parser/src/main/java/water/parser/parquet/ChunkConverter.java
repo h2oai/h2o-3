@@ -6,12 +6,19 @@ import org.apache.parquet.io.api.Converter;
 import org.apache.parquet.io.api.GroupConverter;
 import org.apache.parquet.io.api.PrimitiveConverter;
 import org.apache.parquet.schema.*;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import water.fvec.Vec;
+import water.logging.Logger;
 import water.parser.BufferedString;
+import water.parser.ParseTime;
 import water.parser.parquet.ext.DecimalUtils;
 import water.util.StringUtils;
 
 import java.time.Instant;
+
+import static water.parser.parquet.TypeUtils.getTimestampAdjustmentFromUtcToLocalInMillis;
 
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
@@ -29,9 +36,11 @@ class ChunkConverter extends GroupConverter {
   private final Converter[] _converters;
 
   private long _currentRecordIdx = -1;
+  private boolean _adjustTimezone;
 
-  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepColumns) {
+  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepColumns, boolean adjustTimezone) {
     _writer = writer;
+    _adjustTimezone = adjustTimezone;
 
     int colIdx = 0; // index to columns actually parsed
     _converters = new Converter[chunkSchema.length];
@@ -134,7 +143,12 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_UUID:
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
-          return new TimestampConverter(colIdx, _writer);
+          if (_adjustTimezone) {
+            long timestampAdjustmentMillis = getTimestampAdjustmentFromUtcToLocalInMillis();
+            return new TimestampConverter(colIdx, _writer, timestampAdjustmentMillis);
+          } else {
+            return new TimestampConverter(colIdx, _writer, 0L);
+          }
         } else if (OriginalType.DATE.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT32)){
             return new DateConverter(colIdx, _writer);
         } else {
@@ -303,26 +317,32 @@ class ChunkConverter extends GroupConverter {
   }
 
   private static class TimestampConverter extends PrimitiveConverter {
-
     private final int _colIdx;
     private final WriterDelegate _writer;
+    private final long timestampAdjustmentMillis;
 
-    TimestampConverter(int _colIdx, WriterDelegate _writer) {
-      this._colIdx = _colIdx;
-      this._writer = _writer;
+    TimestampConverter(int colIdx, WriterDelegate writer, long timestampAdjustmentMillis) {
+      this._colIdx = colIdx;
+      this._writer = writer;
+      this.timestampAdjustmentMillis = timestampAdjustmentMillis;
     }
 
     @Override
     public void addLong(long value) {
-      _writer.addNumCol(_colIdx, value, 0);
+      _writer.addNumCol(_colIdx, adjustTimeStamp(value), 0);
     }
 
     @Override
     public void addBinary(Binary value) {
       final long timestampMillis = ParquetInt96TimestampConverter.getTimestampMillis(value);
 
-      _writer.addNumCol(_colIdx, timestampMillis);
+      _writer.addNumCol(_colIdx, adjustTimeStamp(timestampMillis));
     }
+
+    private long adjustTimeStamp(long ts) {
+      return ts + timestampAdjustmentMillis;
+    }
+
   }
 
   private static class DateConverter extends PrimitiveConverter {

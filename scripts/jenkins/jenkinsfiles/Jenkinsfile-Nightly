@@ -8,66 +8,58 @@ def pipelineContext = null
 def result = 'FAILURE'
 def scmEnv = null
 
-try {
-  ansiColor('xterm') {
-    timestamps {
 
-      boolean healthCheckPassed = false
-      int attempt = 0
-      stage('Checkout and Build') {
-        while (!healthCheckPassed) {
-          attempt += 1
-          if (attempt > HEALTH_CHECK_RETRIES) {
-            error "Too many attempts to pass initial health check"
-          }
-          String nodeLabel = DEFAULT_NODE_LABEL
-          if (pipelineContext != null) {
-            nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(DEFAULT_NODE_LABEL)
-          }
-          echo "######### NodeLabel: ${nodeLabel} #########"
-          node(nodeLabel) {
-            dir('h2o-3') {
-              // clear the folder
-              deleteDir()
-              // checkout H2O-3
-              retryWithTimeout(180, 3) {
-                echo "###### Checkout H2O-3 ######"
-                scmEnv = checkout scm
-              }
-            }
+ansiColor('xterm') {
+timestamps {
 
-            if (pipelineContext == null) {
-              def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')
-              pipelineContext = initPipelineContext(scmEnv, 'MODE_NIGHTLY', true)
-              // Execute nightly for master at 22:XX
-              // for rel- branches at 21:XX
-              String scheduleString = 'H 22 * * *'
-              if (env.BRANCH_NAME.startsWith('rel-')) {
-                scheduleString = 'H 21 * * *'
-              }
-              pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
-              // Load the defineTestStages script
-              defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
-            }
-            healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
-            if (healthCheckPassed) {
-              // Load build script and execute it
-              def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
-              buildH2O3(pipelineContext)
-            }
+  boolean healthCheckPassed = false
+  int attempt = 0
+  stage('Checkout and Build') {
+    while (!healthCheckPassed) {
+      attempt += 1
+      if (attempt > HEALTH_CHECK_RETRIES) {
+        error "Too many attempts to pass initial health check"
+      }
+      String nodeLabel = DEFAULT_NODE_LABEL
+      if (pipelineContext != null) {
+        nodeLabel = DEFAULT_NODE_LABEL
+      }
+      echo "######### NodeLabel: ${nodeLabel} #########"
+      node(nodeLabel) {
+        dir('h2o-3') {
+          // clear the folder
+          deleteDir()
+          // checkout H2O-3
+          retryWithTimeout(180, 3) {
+            echo "###### Checkout H2O-3 ######"
+            scmEnv = checkout scm
           }
         }
-      }
 
-      defineTestStages(pipelineContext)
-      result = 'SUCCESS'
+        if (pipelineContext == null) {
+          def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')
+          pipelineContext = initPipelineContext(scmEnv, 'MODE_NIGHTLY', true)
+          // Execute nightly for master at 22:XX
+          // for rel- branches at 21:XX
+          String scheduleString = 'H 22 * * *'
+          if (env.BRANCH_NAME.startsWith('rel-')) {
+            scheduleString = 'H 21 * * *'
+          }
+          pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
+          // Load the defineTestStages script
+          defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
+        }
+        healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
+        if (healthCheckPassed) {
+          // Load build script and execute it
+          def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
+          buildH2O3(pipelineContext)
+        }
+      }
     }
   }
-} finally {
-  if (pipelineContext != null) {
-    pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this))
-    if (!pipelineContext.getHealthChecker().getHealthProblems().isEmpty()) {
-      pipelineContext.getEmailer().sendEmail(this, 'WARNING', pipelineContext.getHealthChecker().toEmail(this, pipelineContext), ['michalr@h2o.ai'])
-    }
-  }
+
+  defineTestStages(pipelineContext)
+  result = 'SUCCESS'
+}
 }

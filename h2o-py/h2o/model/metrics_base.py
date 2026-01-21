@@ -88,7 +88,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         m_supports_logloss = (m_is_binomial or m_is_multinomial or m_is_ordinal) and not m_is_uplift
         m_supports_mpce = (m_is_binomial or m_is_multinomial or m_is_ordinal) and not (m_is_glm or m_is_uplift)  # GLM excluded?
         m_supports_mse = not (m_is_anomaly or m_is_clustering or m_is_uplift)
-        m_supports_r2 = m_is_regression and m_is_glm
+        m_supports_r2 = m_is_regression and m_is_glm and not(m_is_hglm)
         
         items = [
             "{mtype}: {algo}".format(mtype=metric_type, algo=self._algo),
@@ -103,7 +103,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
                 "MSE: {}".format(self.mse()),
                 "RMSE: {}".format(self.rmse()),
             ])
-        if m_is_regression:
+        if m_is_regression and not(m_is_hglm):
             items.extend([
                 "MAE: {}".format(self.mae()),
                 "RMSLE: {}".format(self.rmsle()),
@@ -125,35 +125,14 @@ class MetricsBase(h2o_meta(H2ODisplay)):
             auc, aucpr = self.auc(), self.aucpr()
             if is_type(auc, numeric): items.append("AUC: {}".format(auc))
             if is_type(aucpr, numeric): items.append("AUCPR: {}".format(aucpr))
-        if m_is_glm: 
-            if m_is_hglm and not m_is_generic:
-                items.extend([
-                    "Standard error of fixed columns: {}".format(self.hglm_metric("sefe")),
-                    "Standard error of random columns: {}".format(self.hglm_metric("sere")),
-                    "Coefficients for fixed columns: {}".format(self.hglm_metric("fixedf")),
-                    "Coefficients for random columns: {}".format(self.hglm_metric("ranef")),
-                    "Random column indices: {}".format(self.hglm_metric("randc")),
-                    "Dispersion parameter of the mean model (residual variance for LMM): {}".format(self.hglm_metric("varfix")),
-                    "Dispersion parameter of the random columns (variance of random columns): {}".format(self.hglm_metric("varranef")),
-                    "Convergence reached for algorithm: {}".format(self.hglm_metric("converge")),
-                    "Deviance degrees of freedom for mean part of the model: {}".format(self.hglm_metric("dfrefe")),
-                    "Estimates and standard errors of the linear prediction in the dispersion model: {}".format(self.hglm_metric("summvc1")),
-                    "Estimates and standard errors of the linear predictor for the dispersion parameter of the random columns: {}".format(self.hglm_metric("summvc2")),
-                    "Index of most influential observation (-1 if none): {}".format(self.hglm_metric("bad")),
-                    "H-likelihood: {}".format(self.hglm_metric("hlik")),
-                    "Profile log-likelihood profiled over random columns: {}".format(self.hglm_metric("pvh")),
-                    "Adjusted profile log-likelihood profiled over fixed and random effects: {}".format(self.hglm_metric("pbvh")),
-                    "Conditional AIC: {}".format(self.hglm_metric("caic")),
-                ])
-            else:
-                items.extend([
-                    "Null degrees of freedom: {}".format(self.null_degrees_of_freedom()),
-                    "Residual degrees of freedom: {}".format(self.residual_degrees_of_freedom()),
-                    "Null deviance: {}".format(self.null_deviance()),
-                    "Residual deviance: {}".format(self.residual_deviance()),
-                ])
-            
         if m_is_glm:
+            items.extend([
+                "Null degrees of freedom: {}".format(self.null_degrees_of_freedom()),
+                "Residual degrees of freedom: {}".format(self.residual_degrees_of_freedom()),
+                "Null deviance: {}".format(self.null_deviance()),
+                "Residual deviance: {}".format(self.residual_deviance()),
+            ])  
+        if m_is_glm and not(m_is_hglm):
             if is_type(self.aic(), numeric) and not math.isnan(self.aic()) and self.aic() != 0:
                 items.append("AIC: {}".format(self.aic()))
             if is_type(self.loglikelihood(), numeric) and not math.isnan(self.loglikelihood()) and self.loglikelihood() != 0:

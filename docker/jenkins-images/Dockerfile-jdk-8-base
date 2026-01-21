@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-base:${FROM_VERSION}
+FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-base:${FROM_VERSION}
 
 ENV JAVA_VERSION=8
 COPY scripts/install_java_version_local scripts/java-${JAVA_VERSION}-vars.sh jdk-8u311-linux-x64.tar.gz /tmp/

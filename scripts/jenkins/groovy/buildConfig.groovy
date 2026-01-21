@@ -8,15 +8,15 @@ def call(final context, final String mode, final String commitMessage, final cha
 
 class BuildConfig {
 
-  public static final String DOCKER_REGISTRY = 'harbor.h2o.ai'
+  public static final String DOCKER_REGISTRY = '353750902984.dkr.ecr.us-east-1.amazonaws.com'
 
   private static final String DEFAULT_IMAGE_NAME = 'dev-build-base'
   private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
   private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 45
-  public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
-  public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 47
+  public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/h2oai/devutils/awscli'
+  public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
   private static final String HADOOP_IMAGE_VERSION_TAG = '84'
@@ -51,9 +51,10 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
-  public static final String DEFAULT_PYTHON_VERSION = '3.6'
-  public static final List PYTHON_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
-  public static final List R_VERSIONS = ['3.3.3', '3.4.1']
+  public static final String DEFAULT_PYTHON_VERSION = '3.7'
+  public static final List PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
+  public static final List R_VERSIONS = ['3.4.1', '3.5.3', '4.0.2', '4.4.0', '4.5.2']
+
 
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
@@ -197,15 +198,15 @@ class BuildConfig {
     if (buildHadoop) {
       return getHadoopBuildImage()
     }
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopBuildImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getReleaseImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopImageVersion() {
@@ -269,11 +270,11 @@ class BuildConfig {
     def imageVersion = DEFAULT_IMAGE_VERSION_TAG
     if (stageConfig.imageVersion)
       imageVersion = stageConfig.imageVersion
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
+    return "${DOCKER_REGISTRY}/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
   }
   
   String getDevImageReference(final specifier, final version) {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${version}"
+    return "${DOCKER_REGISTRY}/h2o-3/dev-${specifier}:${version}"
   }
 
   String getDevImageReference(final specifier) {
@@ -369,8 +370,8 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-0xk10'), //master or nightly build - use only this one
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build - not used
+    LABELS_C1('h2o-3', 'h2o-3', 'h2o-3', 'h2o-3'), //master or nightly build - use only this one
+    LABELS_B4('h2o-3', 'h2o-3', 'h2o-3', 'h2o-3')
 
     static Map<String, NodeLabels> LABELS_MAP = [
             "c1": LABELS_C1,

@@ -40,11 +40,6 @@ if(!missing(beta_constraints))
     set_required_params="""
 parms$training_frame <- training_frame
 args <- .verify_dataxy(training_frame, x, y)
-if (HGLM && is.null(random_columns)) stop("HGLM: must specify random effect column!")
-if (HGLM && (!is.null(random_columns))) {
-  temp <- .verify_dataxy(training_frame, random_columns, y)
-  random_columns <- temp$x_i-1  # change column index to numeric column indices starting from 0
-}
 if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
 if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
 if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
@@ -72,6 +67,22 @@ h2o.makeGLMModel <- function(model,beta) {
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
+}
+
+#' Make unrestricted GLM model when control variables are defined.
+#'
+#' Needs source model trained with control variables enabled.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variable
+#' @param destination_key a string or a NULL
+#' @export
+h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
+  stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
+  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
+  if (!missing(destination_key) && !is.null(destination_key)) {
+    query <- c(query, list(dest = destination_key))
+  }
+  res <- do.call(.h2o.__remoteSend, query)
+  h2o.getModel(model_id = res$model_id$name)
 }
 
 #' Extract best lambda value found from glm model.

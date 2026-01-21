@@ -112,6 +112,7 @@ public class Example {
                                                                   null,
                                                                   (byte)'\\',
                                                                 false,
+                                                                false,
                                                                 null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
@@ -140,6 +141,7 @@ public class Example {
                                                    null,
                                                    null,
                                                    parseSetupBody.escapechar,
+                                                   false,
                                                    null).execute().body();
             System.out.println("parseBody: " + parseBody);
 

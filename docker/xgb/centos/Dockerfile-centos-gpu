@@ -4,8 +4,7 @@ FROM ${FROM_IMAGE}
 MAINTAINER h2oai "h2o.ai"
 
 ARG H2O_BRANCH='master'
-ENV JENKINS_UID='2117'
-ENV JENKINS_GID='2117'
+RUN export JENKINS_UID=$(id -u jenkins) && export JENKINS_GID=$(id -g jenkins)
 
 COPY xgb/centos/common/sbin xgb/common/sbin xgb/centos/omp/sbin /usr/sbin/
 

@@ -2,6 +2,123 @@
 
 ## H2O
 
+### 3.46.0.9 - 11/24/2025
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/9/index.html</a>
+
+#### Bug
+- [[#16673]](https://github.com/h2oai/h2o-3/issues/16673) – Fixed incorrect AIC calculation in GLM.
+- [[#16610]](https://github.com/h2oai/h2o-3/issues/16610) – Fixed floating point parsing issue.
+- [[#16695]](https://github.com/h2oai/h2o-3/issues/16694) - Fixed relevel method in python when special characters such as `$` are is in the name of the level
+
+#### New Feature
+- [[#16524]](https://github.com/h2oai/h2o-3/issues/16524) – Added control variables support in GLM for Regression and Binomial models.
+
+#### Docs
+- [[#16449]](https://github.com/h2oai/h2o-3/issues/16449) – Added severity level information to SECURITY.md.
+- [[#16703]](https://github.com/h2oai/h2o-3/issues/16703) – Removed Sparkling Water from Welcome and Starting documentation pages.
+
+#### Security
+- [[#16642]](https://github.com/h2oai/h2o-3/issues/16642) – Fixed CVE-2024-7768 in H2O-3 package
+
+### 3.46.0.8 - 10/8/2025
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/8/index.html</a>
+
+#### Bug
+- [[#16592]](https://github.com/h2oai/h2o-3/issues/16592) – CoxPH MOJO model from version 3.32.x.x is now compatible with 3.46.0.8 and can be uploaded.
+- [[#16590]](https://github.com/h2oai/h2o-3/issues/16590) – Fixed XGBoost MOJO model scoring failure in Python when using an offset column.
+- [[#16603]](https://github.com/h2oai/h2o-3/issues/16603) – Allow the `lambda_` hyperparameter in GLM Grid search, not only `lambda`.
+- [[#16652]](https://github.com/h2oai/h2o-3/issues/16652) – Fixed Parquet export for empty values in UUID and Time columns. Time columns can have empty values; UUIDs cannot by definition.
+- [[#16638]](https://github.com/h2oai/h2o-3/issues/16638) – Changed release target from Sonatype to OSSRH.
+
+#### Docs
+- [[#16663]](https://github.com/h2oai/h2o-3/issues/16663) – Minor wording and typo fixes in documentation (community PR).
+- [[#16644]](https://github.com/h2oai/h2o-3/issues/16664) – Generate sitemap for H2O-3 documentation
+
+#### Security
+- [[#16599]](https://github.com/h2oai/h2o-3/issues/16599) – Do not run the Docker image as root by default.
+- [[#16622]](https://github.com/h2oai/h2o-3/issues/16622) – Fixed MySQL JDBC Driver deserialization vulnerability (Key-Value Bypass Parameter Inspection). Addresses CVE-2025-6544 and CVE-2025-5662.
+- [[#16632]](https://github.com/h2oai/h2o-3/issues/16632) – Fixed CVE-2025-48734 in `commons-beanutils`.
+- [[#16649]](https://github.com/h2oai/h2o-3/issues/16649) – Fixed CVE-2024-48924 in `commons-lang3` and CVE-2025-53864 in `nimbus-jose-jwt`.
+- [[#16423]](https://github.com/h2oai/h2o-3/issues/16423) – Fixed `protobuf-java` vulnerabilities CVE-2024-7254, SNYK-JAVA-COMGOOGLEPROTOBUF-8055227, and SNYK-JAVA-COMGOOGLEPROTOBUF-8055228.
+
+### 3.46.0.7 - 3/27/2025
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/7/index.html</a>
+
+#### Bug
+- [[#16444]](https://github.com/h2oai/h2o-3/issues/16444) - Fix error in the uplift_drf_demo python notebook.
+- [[#16466]](https://github.com/h2oai/h2o-3/issues/16466) - Fix invalid escape sequences in h2o-py docstrings.
+- [[#16507]](https://github.com/h2oai/h2o-3/issues/16507) - Remove Hadoop hdp packages from the H2O-3 project because those are no longer available from the vendor.
+
+#### Security
+- [[#16472]](https://github.com/h2oai/h2o-3/issues/16472), [[#16480]](https://github.com/h2oai/h2o-3/issues/16480) - Upgrade mina-core to fix CVE-2024-52046
+
+### 3.46.0.6 - 1/11/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/6/index.html</a>
+
+#### Bug
+- [[#16397]](https://github.com/h2oai/h2o-3/issues/16397) - Removed Sun license from the jps jar.
+- [[#16382]](https://github.com/h2oai/h2o-3/issues/16382) - Fixed issues with constrained GLM.
+- [[#16360]](https://github.com/h2oai/h2o-3/issues/16360) - Fixed H2O-3 R package for Windows not allowing the opening of one file by multiple processes.
+- [[#16333]](https://github.com/h2oai/h2o-3/issues/16333) - Fixed pyplot warning from `learning_curve_plot` call.
+
+#### Improvement
+- [[#15180]](https://github.com/h2oai/h2o-3/issues/15180) - Enabled users to adjust parquet imported timezone.
+
+#### New Feature
+- [[#16361]](https://github.com/h2oai/h2o-3/issues/16361) - Enabled ability to display full PIDs in logs with `sys.ai.h2o.log.max.pid.length` call.
+- [[#8487]](https://github.com/h2oai/h2o-3/issues/8487) - Implemented HGLM Gaussian as its own independent toolbox.
+
+#### Docs
+- [[#16413]](https://github.com/h2oai/h2o-3/issues/16413) - Added the HGLM algorithm page and removed HGLM as a parameter.
+- [[#16412]](https://github.com/h2oai/h2o-3/issues/16412) - Added `numpy` requirements to welcome page.
+- [[#16384]](https://github.com/h2oai/h2o-3/issues/16384) - Fixed broken links throughout the user guide.
+- [[#16338]](https://github.com/h2oai/h2o-3/issues/16338) - Clarified the `group_by` documentation by expanding the examples.
+- [[#16208]](https://github.com/h2oai/h2o-3/issues/16208) - Added documentation on constrained GLM.
+- [[#16182]](https://github.com/h2oai/h2o-3/issues/16182) - Updated the Welcome page to adhere to style guide requirements and broke it up into multiple smaller getting started pages.
+- [[#15983]](https://github.com/h2oai/h2o-3/issues/15983) - Added examples to Python documentation for Rulefit.
+
+#### Security
+- [[#16425]](https://github.com/h2oai/h2o-3/issues/16425) - Addressed CVE-2024-8862 by adding JDBC parameter validation.
+- [[#16416]](https://github.com/h2oai/h2o-3/issues/16416) - Addressed CVE-2024-47561 by upgrading avro:avro library from 1.11.3 to 1.11.4.
+- [[#16391]](https://github.com/h2oai/h2o-3/issues/16391) - Addressed sonatype-2024-3350 by using compatible versions of Apache commons-collections packages.
+- [[#16351]](https://github.com/h2oai/h2o-3/issues/16351) - Addressed CVE-2024-5979 which caused AstRunTool to crash H2O-3 if bad inputs were provided by not calling `System.exit` from `water.tools`.
+
+### 3.46.0.5 - 8/28/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index.html</a>
+
+#### Bug
+- [[#16328]](https://github.com/h2oai/h2o-3/issues/16328) - Updated how ModelSelection handles categorical predictors to preserve the best categorical predictor when the best categorical level performs well relative to other predictors.
+- [[#16120]](https://github.com/h2oai/h2o-3/issues/16120) - Resolved that MOJO is working for Isolation Forest and Extended Isolation forest for implemented versions.
+
+#### New Feature
+- [[#16327]](https://github.com/h2oai/h2o-3/issues/16327) - Ensured H2O-3 can load data from Snowflake using JDBC connector.
+
+#### Docs
+- [[#16215]](https://github.com/h2oai/h2o-3/issues/16215) - Updated the following user guide pages to adhere to style guide updates: Algorithms, Supported data types, Quantiles, and Early stopping.
+- [[#16207]](https://github.com/h2oai/h2o-3/issues/16207) - Updated the Starting H2O user guide page to adhere to style guide updates.
+- [[#15989]](https://github.com/h2oai/h2o-3/issues/15989) - Updated Python documentation for Decision Tree algorithm.
+
+#### Security
+- [[#16349]](https://github.com/h2oai/h2o-3/issues/16349) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2.
+- [[#16342]](https://github.com/h2oai/h2o-3/issues/16342) - Addressed SNYK-JAVA-DNSJAVA-7547403, SNYK-JAVA-DNSJAVA-7547404, SNYK-JAVA-DNSJAVA-7547405, and CVE-2024-25638 by upgrading dnsjava to 3.6.0. 
+
+### 3.46.0.4 - 7/9/2024
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/4/index.html</a>
+
+#### Docs
+- [[#16212]](https://github.com/h2oai/h2o-3/issues/16212) - Updating user guide - H2O Clients.
+- [[#16214]](https://github.com/h2oai/h2o-3/issues/16214) - Updating user guide - Data Manipulation.
+- [[#16213]](https://github.com/h2oai/h2o-3/issues/16213) - Updating user guide - Getting data into your H2O cluster.
+
+#### Security
+- [[#15748]](https://github.com/h2oai/h2o-3/issues/15748) - Addressed PRISMA-2023-0067 by upgrading jackson-databind.
+
 ### 3.46.0.3 - 6/11/2024
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index.html</a>
@@ -18,6 +135,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index
 - [[#16284]](https://github.com/h2oai/h2o-3/issues/16284) - Added support for Websockets to steam.jar.
 
 #### Docs
+- [[#16189]](https://github.com/h2oai/h2o-3/issues/16189) - Updating user guide - Downloading & Installing H2O.
 - [[#16288]](https://github.com/h2oai/h2o-3/issues/16288) - Fixed GBM Python example in user guide.
 - [[#16188]](https://github.com/h2oai/h2o-3/issues/16188) - Updated API-related changes page to adhere to style guide requirements.
 - [[#16016]](https://github.com/h2oai/h2o-3/issues/16016) - Added examples to Python documentation for Uplift DRF.

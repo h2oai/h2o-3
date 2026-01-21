@@ -17,6 +17,7 @@ NULL
 #' @param x features
 #' @param y response
 #' @param autoencoder autoencoder flag
+#' @noRd
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
    if (is(x, "H2OInfogram"))
      x<-x@admissible_features
@@ -2028,6 +2029,7 @@ h2o.aecu_table <- function(object, train=FALSE, valid=FALSE) {
 #' 
 #' @param probs An \linkS4class{H2OFrame} holding vector of probabilities.
 #' @param acts An \linkS4class{H2OFrame} holding vector of actuals.
+#' @noRd
 .h2o.perfect_auc <- function(probs, acts) {
   .newExpr("perfectAUC", probs, acts)[1, 1]
 }
@@ -2559,19 +2561,6 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
   invisible(NULL)
 }
 
-#' Retrieve HGLM ModelMetrics
-#'
-#' @param object an H2OModel object or H2OModelMetrics.
-#' @export
-h2o.HGLMMetrics <- function(object) {
-    if( is(object, "H2OModel") ) {
-        model.parts <- .model.parts(object)
-        return(model.parts$tm@metrics)
-    }
-    warning(paste0("No HGLM Metric for ",class(object)))
-    invisible(NULL)
-}
-
 #' Retrieve the GINI Coefficcient
 #'
 #' Retrieves the GINI coefficient from an \linkS4class{H2OBinomialMetrics}.
@@ -2831,7 +2820,7 @@ h2o.get_variable_inflation_factors <- function(object) {
 #' @export
 h2o.coef <- function(object, predictorSize = -1) {
   if (is(object, "H2OModel") &&
-      object@algorithm %in% c("glm", "gam", "coxph", "modelselection")) {
+      object@algorithm %in% c("glm", "gam", "coxph", "modelselection", "hglm")) {
     if ((object@algorithm == "glm" ||
          object@algorithm == "gam") &&
         (object@allparameters$family %in% c("multinomial", "ordinal"))) {
@@ -2893,7 +2882,7 @@ h2o.coef <- function(object, predictorSize = -1) {
       }
     }
   } else {
-    stop("Can only extract coefficients from GAM, GLM and CoxPH models")
+    stop("Can only extract coefficients from GAM, GLM, HGLM and CoxPH models")
   }
 }
 
@@ -3042,7 +3031,7 @@ h2o.average_objective <- function(model) {
 
 extract_scoring_history <- function(model, value) {
   if (is(model, "H2OModel") && (model@algorithm=='glm')) {
-      if (model@allparameters$generate_scoring_history==TRUE) {
+      if (model@params$actual$generate_scoring_history) {
           scHist <- model@model$scoring_history
           return(scHist[nrow(scHist), value])
       } else {
@@ -3187,7 +3176,7 @@ h2o.coef_norm <- function(object, predictorSize=-1) {
       )
     }
   } else {
-    stop("Can only extract coefficients from GAMs/GLMs")
+    stop("Can only extract coefficients from GAMs/GLMs/CoxPHs/ModelSelections")
   }
 }
 
@@ -5047,9 +5036,6 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       allowed_metrics <- c("deviance_train", "deviance_test", "deviance_xval")
       allowed_timesteps <- c("iteration", "duration")
       df <- df[df["alpha"] == x@model$alpha_best,]
-    } else if (!is.null(x@allparameters$HGLM) && x@allparameters$HGLM) {
-      allowed_metrics <- c("convergence", "sumetaieta02")
-      allowed_timesteps <- c("iterations", "duration")
     } else {
       allowed_metrics <- c("objective", "negative_log_likelihood")
       allowed_timesteps <- c("iterations", "duration")

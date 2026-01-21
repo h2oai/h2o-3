@@ -548,7 +548,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     break
             return self._metrics_class_valid(raw_metrics, algo=self._model_json["algo"])
 
-    def scoring_history(self):
+    def scoring_history(self, as_data_frame=True):
         """
         Retrieve Model Score History.
 
@@ -556,7 +556,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         model = self._model_json["output"]
         if "scoring_history" in model and model["scoring_history"] is not None:
-            return model["scoring_history"].as_data_frame()
+            if as_data_frame:
+                return model["scoring_history"].as_data_frame()
+            else:
+                return model["scoring_history"]
         print("No score history for this model")
         
     def negative_log_likelihood(self):
@@ -836,12 +839,15 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     
     def coef_names(self):
         """
-        Return the coefficient names of glm model
+        Return the coefficient names of glm model.  For HGLM model, will return all coefficient names plus the 
+        intercept.
         """
         if self.algo == 'glm':
             coefs = self._model_json['output']['coefficient_names']
             coefs.remove('Intercept')
             return coefs
+        if self.algo == "hglm":
+            return self._model_json['output']['coefficient_names']
         
     def coef(self):
         """
@@ -909,7 +915,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         Will return :math:`R^2` for GLM Models. 
 
-        The :math:`R^2` value is defined to be :math:`1 - MSE / var`, where var is computed as :math:`\sigma * \sigma`.
+        The :math:`R^2` value is defined to be :math:`1 - MSE / var`, where var is computed as :math:`\\sigma * \\sigma`.
 
         If all are ``False`` (default), then return the training metric value.
         If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",

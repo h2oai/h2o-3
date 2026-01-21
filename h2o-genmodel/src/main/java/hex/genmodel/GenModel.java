@@ -177,7 +177,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
         outputDomains[0] = getDomainValues(getResponseIdx());
         break;
       case Regression:
-      case HGLMRegression:
       case Clustering:
       case AutoEncoder:
       case TargetEncoder:

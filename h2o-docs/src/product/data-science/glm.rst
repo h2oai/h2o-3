@@ -43,6 +43,8 @@ Algorithm-specific parameters
 
 -  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` while disabling ``HGLM`` will enable the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled). 
 
+- `control_variables <algo-params/control_variables.html>`__: Specify control variables which will be disabled for metric calculation and during scoring. This feature is experimental. 
+
 - `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
 
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, this will break out of the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``0.0001``.
@@ -62,6 +64,8 @@ Algorithm-specific parameters
 -  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+
+**max_iterations**: For GLM, must be :math:`\geq` 1 to obtain a proper model (or -1 for unlimited which is the default setting). Setting it to 0 will only return the correct coefficient names and an empty model.
 
 - **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``1000000``.
 
@@ -99,7 +103,12 @@ Shared GLM family parameters
    :scale: 5%
    :align: middle
 
-**GLM Family**: |GAM| `Generalized Additive Models <gam.html#defining-a-gam-model>`__ (GAM) |MS| `ModelSelection <model_selection.html#defining-a-modelselection-model>`__ |ANOVA| `ANOVA GLM <anova_glm.#defining-an-anova-glm-model>`__
+.. |HGLM| image:: ../images/HGLM.png
+   :alt: HGLM
+   :scale: 5%
+   :align: middle
+
+**GLM Family**: |GAM| `Generalized Additive Models <gam.html#defining-a-gam-model>`__ (GAM) |MS| `ModelSelection <model_selection.html#defining-a-modelselection-model>`__ |ANOVA| `ANOVA GLM <anova_glm.#defining-an-anova-glm-model>`__ |HGLM| `Hierarchical Generalized Linear Model <hglm.html>`__ (HGLM)
 
 -  `alpha <algo-params/alpha.html>`__: |GAM| |MS| |ANOVA| Specify the regularization distribution between L1 and L2. A value of ``1`` produces LASSO regression; a value of ``0`` produces Ridge regression. The default value of ``alpha`` is ``0`` when ``SOLVER = 'L-BFGS'``; otherwise it is ``0.5`` to specify a mixing between LASSO and Ridge regression.
 
@@ -115,7 +124,7 @@ Shared GLM family parameters
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: |GAM| |MS| |ANOVA| Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
--  `family <algo-params/family.html>`__: |GAM| |MS| |ANOVA| Specify the model type.
+-  `family <algo-params/family.html>`__: |GAM| |MS| |ANOVA| |HGLM| Specify the model type.
 
    -  If the family is ``gaussian``, the response must be numeric (**Real** or **Int**).
    -  If the family is ``binomial``, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
@@ -175,7 +184,7 @@ Shared GLM family parameters
 
 -  `objective_epsilon <algo-params/objective_epsilon.html>`__: |GAM| If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, the default value of ``objective_epsilon`` is set to ``.0001``. The default value is ``-1``.
 
--  `plug_values <algo-params/plug_values.html>`__: |GAM| |MS| |ANOVA| (Applicable only if ``missing_values_handling="PlugValues"``) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
+-  `plug_values <algo-params/plug_values.html>`__: |GAM| |MS| |ANOVA| |HGLM| (Applicable only if ``missing_values_handling="PlugValues"``) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
 
 -  `prior <algo-params/prior.html>`__: |GAM| |MS| |ANOVA| Specify prior probability for :math:`p(y==1)`. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to ``-1`` and must be a value in the range (0,1).
    
@@ -185,7 +194,7 @@ Shared GLM family parameters
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: |GAM| |MS| Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This option defaults to ``False`` (disabled).
 
-- **score_iteration_interval**: |MS| Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
+- **score_iteration_interval**: |MS| |HGLM| Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
 
 -  `solver <algo-params/solver.html>`__: |GAM| |MS| |ANOVA| Specify the solver to use. One of: 
    
@@ -245,7 +254,7 @@ Common parameters
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This options defaults to ``-1``.
 
-- `max_runtime_secs <algo-params/max-runtime-secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable. 
+- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable. 
 
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values. One of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``.
 
@@ -1588,8 +1597,8 @@ The final AIC in the output metric is calculated using the standard formula, uti
 
 where:
 
-- :math:`p` is the number of non-zero coefficients estimated in the model.
-- :math:`LL` is the log-likelihood.
+- :math:`p` is the number of estimated coefficients (i.e. including dispersion etc). When using regularization :math:`p` is the number of non-zero coefficients.
+- :math:`LL` is the log likelihood
 
 To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` and the parameter ``HGLM`` to ``False`` to enable the calculation of the full log-likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
 
@@ -1761,17 +1770,221 @@ The following is a simple example showing how to build a Generalized Linear mode
     print(prostate_glm.coef_norm())
     {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
 
-    # Print the Coefficients table
-    prostate_glm._model_json['output']['coefficients_table']
-    Coefficients: glm coefficients
-    names      coefficients    std_error    z_value    p_value      standardized_coefficients
-    ---------  --------------  -----------  ---------  -----------  ---------------------------
-    Intercept  -6.67516        1.93176      -3.45548   0.000549318  -0.0761001
-    RACE.1     -0.442788       1.32423      -0.334373  0.738098     -0.442788
-    RACE.2     -0.589923       1.37347      -0.429514  0.667549     -0.589923
-    AGE        -0.0178887      0.0187019    -0.956516  0.338812     -0.116761
-    VOL        -0.0127833      0.00751435   -1.70119   0.0889072    -0.234544
-    GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
+Constrained GLM
+~~~~~~~~~~~~~~~
+
+We've implemented the algorithm from Bierlaire's *Optimization: Priciples and Algorithms, Chapter 19* [:ref:`8<ref8>`] where we're basically trying to solve the following optimization problem:
+
+.. math::
+   
+   \min_{X\in R^n} f(x), \text{subject to } h(x) = 0, g(x) \leq 0 \quad \text{ equation 1}
+
+where:
+
+   - :math:`f: R^n \to R,h: R^n \to R^m,g: R^n \to R^p` 
+   - the constraints :math:`h,g` are linear.
+
+However, the actual problem we are solving is:
+
+.. math::
+   
+   \min_{X\in R^n} f(x) \text{ subject to } h(x)=0 \quad \text{ equation 2}
+
+The inequalities constraints can be easily converted to equalities constraints through simple reasoning and using active constraints. We solve the constrained optimization problem by solving the augmented Lagrangian function using the quadratic penalty:
+
+.. math::
+   
+   L_c(x,\lambda) = f(x) + \lambda^T h(x) + \frac{c}{2} \| h(x) \|^2 \quad \text{ equation 3}
+
+The basic ideas used to solve the constrained GLM consist of:
+
+a. transforming a constrained problem into a sequence of unconstrained problems;
+b. penalizing more and more the possible violation of the constraints during the sequence by continuously increasing the value of :math:`c` at each iteration.
+
+Converting to standard form
+'''''''''''''''''''''''''''
+
+A standard form of :math:`g(x) \leq 0` is the only acceptable form of inequality constraints. For example, if you have a constraint of :math:`2x_1 - 4x_2 \geq 10` where :math:`x_1 \text{ and } x_4` are coefficient names, then you must convert it to :math:`10-2x_1 + 4x_2 \leq 0`. 
+
+Example of constrained GLM
+''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the Gaussian 10,000 rows dataset:
+      h2o_data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+      # Set the predictors, response, and enum columns:
+      enum_columns = c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
+      for (cname in enum_columns) {
+      h2o.asfactor(h2o_data[cname])
+      }
+      myY = "C21"
+      col_names <- names(h2o_data)
+      myX <- col_names[1:20]
+
+      # Set the constraints:
+      constraints <- data.frame(names <- c("C1.2", "C11", "constant", "C5.2", "C12", "C15", "constant"),
+      values <- c(1, 1, 13.56, 1, 1, 1, -5),
+      types <- c("Equal", "Equal", "Equal", "LessThanEqual", "LessThanEqual", "LessThanEqual", "LessThanEqual"),
+      constraint_numbers <- c(0, 0, 0, 1, 1, 1, 1))
+      constraints_h2o <- as.h2o(constraints)
+
+      # Set the beta constraints:
+      bc <- data.frame(names <- c("C1.1", "C5.2", "C11", "C15"), 
+                       lower_bounds <- c(-36, -14, 25, 14), 
+                       upper_bounds <- c(-35, -13, 26, 15))
+      bc_h2o <- as.h2o(bc)
+
+      # Build and train your model:
+      m_sep <- h2o.glm(x=myX, 
+                       y=myY, 
+                       training_frame=h2o.data, 
+                       family='gaussian', 
+                       linear_constraints=constraints, 
+                       solver="irlsm", 
+                       lambda=0.0, 
+                       beta_constraints=bc_h2o, 
+                       constraint_eta0=0.1, 
+                       constraint_tau=10, 
+                       constraint_alpha=0.01, 
+                       constraint_beta=0.9, 
+                       constraint_c0=100)
+
+      # Find your coefficients:
+      h2o.coef(m_sep)
+
+   .. code-tab:: python
+
+      # Import the Gaussian 10,000 rows dataset:
+      h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+      # Set the predictors, response, and enum columns:
+      enum_columns = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"]
+      ffor cname in enum_columns:
+      h2o_data[cname] = h2o_data[cname].asfactor()
+      myY = "C21"
+      myX = h2o_data.names.remove(myY)
+
+      # Set the linear constraints:
+      linear_constraints = [] # this constraint is satisfied by default coefficient initialization
+      name = "C1.2"
+      values = 1
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C11"
+      values = 1
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "constant"
+      values = 13.56 
+      types = "Equal"
+      contraint_numbers = 0
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C5.2"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C12"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "C15"
+      values = 1
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      name = "constant"
+      values = -5
+      types = "LessThanEqual"
+      contraint_numbers = 1
+      linear_constraints.append([name, values, types, contraint_numbers])
+
+      linear_constraints2 = h2o.H2OFrame(linear_constraints)
+      linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])
+
+      # Set the beta constraints:
+      bc = []
+      name = "C1.1"
+      c1p1LowerBound = -36
+      c1p1UpperBound=-35
+      bc.append([name, c1p1LowerBound, c1p1UpperBound])
+
+      name = "C5.2"
+      c5p2LowerBound=-14
+      c5p2UpperBound=-13
+      bc.append([name, c5p2LowerBound, c5p2UpperBound])
+
+      name = "C11"
+      c11LowerBound=25
+      c11UpperBound=26
+      bc.append([name, c11LowerBound, c11UpperBound])
+
+      name = "C15"
+      c15LowerBound=14
+      c15UpperBound=15
+      bc.append([name, c15LowerBound, c15UpperBound])
+
+      beta_constraints = h2o.H2OFrame(bc)
+      beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])
+
+      # Build and train your model:
+      m_sep = glm(family='gaussian', 
+                  linear_constraints=linear_constraints2, 
+                  solver="irlsm", 
+                  lambda_=0.0, 
+                  beta_constraints=beta_constraints, 
+                  constraint_eta0=0.1, 
+                  constraint_tau=10, 
+                  constraint_alpha=0.01, 
+                  constraint_beta=0.9, 
+                  constraint_c0=100)
+      m_sep.train(training_frame=h2o_data,x=myX, y=myY)
+
+      # Find your coefficients:
+      coef_sep = m_sep.coef()
+
+
+Treatment of strict inequalities
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To convert a strict inequality, just add a small number to it. For example, :math:`2x_1 - 4x_2 < 0` can be converted to :math:`2x_1 - 4x_2 - 10^{-12} \leq 0`.
+
+Transforming inequality constraints to equality constraints
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+This transformation is going to use slack variables which are introduced to replace an inequality constraint by an equality constraint. The slack variable should be non-negative. To transform inequality constraints to equality constraints, we proceed as follows:
+
+a. For each inequality constraint of :math:`g(x)`, a slack variable is added to it such that you will have: :math:`g_i(x) - s_i^2 = 0`;
+b. Let :math:`s = \begin{bmatrix} s_1^2 \\ \vdots \\ s_p^2 \\\end{bmatrix}` and :math:`g_{aug}(x) = g(x) - s`;
+c. When :math:`g_i(x) \leq 0`, the constraint is satisfied and can therefore be ignored and declared inactive;
+d. The inequality constraints are violated only when :math:`g_i(x) - s_i^2 \geq 0`. This is because it implies that :math:`g_i(x) \geq s_i^2 \geq 0` and this isn't allowed. Therefore, :math:`geq(x)` only includes the :math:`g_i(x)` when you have :math:`g_i(x) \geq 0`;
+e. Therefore, you have :math:`h_a(x) = \begin{bmatrix} h(x) \\ geq(x) \\\end{bmatrix}`, where :math:`h(x)` is the original equality constraint and :math:`geq(x)` contains the inequality constraints that satisfied the condition :math:`g_i(x) \geq 0`;
+f. The optimization problem in *equation 1* can now be rewritten as:
+
+.. math::
+   
+   \min_{X\in R^n} f(x), \text{ subject to } h_a(x) = 0 \quad \text{ equation 4}
+
+g. The augmented Lagrangian function you will solve from *equation 4* becomes:
+
+.. math::
+   
+   L_c(x, \lambda) = f(x) + \lambda^T h_a(x) + \frac{c}{2} \|h_a(x)\|^2 \quad \text{ equation 5}
+
+Modifying or Creating a Custom GLM Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     # Print the Standard error
     print(prostate_glm._model_json['output']['coefficients_table']['std_error'])
@@ -2113,3 +2326,7 @@ Technometrics 19.4 (1977): 415-428.
 `Ronnegard, Lars. HGLM course at the Roslin Institute, http://users.du.se/~lrn/DUweb/Roslin/RoslinCourse_hglmAlgorithm_Nov13.pdf. <http://users.du.se/~lrn/DUweb/Roslin/RoslinCourse_hglmAlgorithm_Nov13.pdf>`__
 
 `Balzer, Laura B, and van der Laan, Mark J. "Estimating Effects on Rare Outcomes: Knowledge is Power." U.C. Berkeley Division of Biostatistics Working Paper Series (2013) <http://biostats.bepress.com/ucbbiostat/paper310/>`__.
+
+.. _ref8:
+
+Michel Bierlaire, Optimization: Principles and Algorithms, Chapter 19, EPEL Press, second edition, 2018

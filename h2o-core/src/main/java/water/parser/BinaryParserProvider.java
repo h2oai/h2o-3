@@ -23,7 +23,7 @@ public abstract class BinaryParserProvider extends ParserProvider {
   @Deprecated
   public final ParseSetup guessSetup(ByteVec v, byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings) {
     ParseSetup ps = new ParseSetup(null, sep, singleQuotes, checkHeader,
-            ncols, columnNames, columnTypes, domains, naStrings, null);
+            ncols, columnNames, columnTypes, domains, naStrings, null, false);
     return guessSetup(v, bits, ps);
   }
 

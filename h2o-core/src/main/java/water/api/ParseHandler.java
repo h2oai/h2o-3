@@ -28,7 +28,7 @@ class ParseHandler extends Handler {
                                       new ParseWriter.ParseErr[0], parse.chunk_size,
                                       parse.decrypt_tool != null ? parse.decrypt_tool.key() : null, parse.skipped_columns,
                                       parse.custom_non_data_line_markers != null ? parse.custom_non_data_line_markers.getBytes(): null,
-                                      parse.escapechar, parse.force_col_types);
+                                      parse.escapechar, parse.force_col_types, parse.tz_adjust_to_local);
 
     if (parse.source_frames == null)
       throw new H2OIllegalArgumentException("Data for Frame '" + parse.destination_frame.name + "' is not available. Please check that the path is valid (for all H2O nodes).'");

@@ -1,7 +1,7 @@
 ``rand_family``
 ---------------
 
-- Available in: GLM
+- Available in: HGLM
 - Hyperparameter: no
 
 Description
