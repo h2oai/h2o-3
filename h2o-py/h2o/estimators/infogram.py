@@ -194,40 +194,38 @@ class H2OInfogram(H2OEstimator):
                response.
                Defaults to ``None``.
         :type protected_columns: List[str], optional
-        :param total_information_threshold: A number between 0 and 1 representing a threshold for total information,
-               defaulting to 0.1. For a specific feature, if the total information is higher than this threshold, and
-               the corresponding net information is also higher than the threshold ``net_information_threshold``, that
-               feature will be considered admissible. The total information is the x-axis of the Core Infogram. Default
-               is -1 which gets set to 0.1.
-               Defaults to ``-1.0``.
+        :param total_information_threshold: A number between 0 and 1 representing a threshold for total information.
+               For a specific feature, if the total information is higher than this threshold, and the corresponding net
+               information is also higher than the threshold ``net_information_threshold``, that feature will be
+               considered admissible. The total information is the x-axis of the Core Infogram.
+               Defaults to ``0.1``.
         :type total_information_threshold: float
-        :param net_information_threshold: A number between 0 and 1 representing a threshold for net information,
-               defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the
-               corresponding total information is also higher than the total_information_threshold, that feature will be
-               considered admissible. The net information is the y-axis of the Core Infogram. Default is -1 which gets
-               set to 0.1.
-               Defaults to ``-1.0``.
+        :param net_information_threshold: A number between 0 and 1 representing a threshold for net information.  For a
+               specific feature, if the net information is higher than this threshold, and the corresponding total
+               information is also higher than the total_information_threshold, that feature will be considered
+               admissible. The net information is the y-axis of the Core Infogram.
+               Defaults to ``0.1``.
         :type net_information_threshold: float
-        :param relevance_index_threshold: A number between 0 and 1 representing a threshold for the relevance index,
-               defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific
-               feature, if the relevance index value is higher than this threshold, and the corresponding safety index
-               is also higher than the safety_index_threshold``, that feature will be considered admissible.  The
-               relevance index is the x-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
-               Defaults to ``-1.0``.
+        :param relevance_index_threshold: A number between 0 and 1 representing a threshold for the relevance index.
+               This is only used when ``protected_columns`` is set by the user.  For a specific feature, if the
+               relevance index value is higher than this threshold, and the corresponding safety index is also higher
+               than the safety_index_threshold``, that feature will be considered admissible.  The relevance index is
+               the x-axis of the Fair Infogram.
+               Defaults to ``0.1``.
         :type relevance_index_threshold: float
-        :param safety_index_threshold: A number between 0 and 1 representing a threshold for the safety index,
-               defaulting to 0.1.  This is only used when protected_columns is set by the user.  For a specific feature,
-               if the safety index value is higher than this threshold, and the corresponding relevance index is also
-               higher than the relevance_index_threshold, that feature will be considered admissible.  The safety index
-               is the y-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
-               Defaults to ``-1.0``.
+        :param safety_index_threshold: A number between 0 and 1 representing a threshold for the safety index.  This is
+               only used when protected_columns is set by the user.  For a specific feature, if the safety index value
+               is higher than this threshold, and the corresponding relevance index is also higher than the
+               relevance_index_threshold, that feature will be considered admissible.  The safety index is the y-axis of
+               the Fair Infogram.
+               Defaults to ``0.1``.
         :type safety_index_threshold: float
-        :param data_fraction: The fraction of training frame to use to build the infogram model. Defaults to 1.0, and
-               any value greater than 0 and less than or equal to 1.0 is acceptable.
+        :param data_fraction: The fraction of training frame to use to build the infogram model. Any value greater than
+               0 and less than or equal to 1.0 is acceptable.
                Defaults to ``1.0``.
         :type data_fraction: float
         :param top_n_features: An integer specifying the number of columns to evaluate in the infogram.  The columns are
-               ranked by variable importance, and the top N are evaluated.  Defaults to 50.
+               ranked by variable importance, and the top N are evaluated.
                Defaults to ``50``.
         :type top_n_features: int
         """
@@ -700,6 +698,25 @@ class H2OInfogram(H2OEstimator):
         Customized parameters for the machine learning algorithm specified in the algorithm parameter.
 
         Type: ``dict``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default payment next month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> gbm_params = {'ntrees':3}
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, algorithm="gbm", algorithm_params=gbm_params)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.algorithm_params
+        >>> ig.plot()
         """
         if self._parms.get("algorithm_params") != None:
             algorithm_params_dict =  ast.literal_eval(self._parms.get("algorithm_params"))
@@ -739,12 +756,30 @@ class H2OInfogram(H2OEstimator):
     @property
     def total_information_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
-        feature, if the total information is higher than this threshold, and the corresponding net information is also
-        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
-        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1.
+        A number between 0 and 1 representing a threshold for total information.  For a specific feature, if the total
+        information is higher than this threshold, and the corresponding net information is also higher than the
+        threshold ``net_information_threshold``, that feature will be considered admissible. The total information is
+        the x-axis of the Core Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default payment next month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.total_information_threshold
+        >>> ig.plot()
         """
         return self._parms.get("total_information_threshold")
 
@@ -762,12 +797,30 @@ class H2OInfogram(H2OEstimator):
     @property
     def net_information_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific
-        feature, if the net information is higher than this threshold, and the corresponding total information is also
-        higher than the total_information_threshold, that feature will be considered admissible. The net information is
-        the y-axis of the Core Infogram. Default is -1 which gets set to 0.1.
+        A number between 0 and 1 representing a threshold for net information.  For a specific feature, if the net
+        information is higher than this threshold, and the corresponding total information is also higher than the
+        total_information_threshold, that feature will be considered admissible. The net information is the y-axis of
+        the Core Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default payment next month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, total_information_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.total_information_threshold
+        >>> ig.plot()
         """
         return self._parms.get("net_information_threshold")
 
@@ -785,13 +838,30 @@ class H2OInfogram(H2OEstimator):
     @property
     def relevance_index_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is only used
-        when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is higher
-        than this threshold, and the corresponding safety index is also higher than the safety_index_threshold``, that
-        feature will be considered admissible.  The relevance index is the x-axis of the Fair Infogram. Default is -1
-        which gets set to 0.1.
+        A number between 0 and 1 representing a threshold for the relevance index.  This is only used when
+        ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is higher than
+        this threshold, and the corresponding safety index is also higher than the safety_index_threshold``, that
+        feature will be considered admissible.  The relevance index is the x-axis of the Fair Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default payment next month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, relevance_index_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.relevance_index_threshold
+        >>> ig.plot()
         """
         return self._parms.get("relevance_index_threshold")
 
@@ -809,13 +879,30 @@ class H2OInfogram(H2OEstimator):
     @property
     def safety_index_threshold(self):
         """
-        A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
-        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
-        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
-        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1 which
-        gets set to 0.1.
+        A number between 0 and 1 representing a threshold for the safety index.  This is only used when
+        protected_columns is set by the user.  For a specific feature, if the safety index value is higher than this
+        threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that feature
+        will be considered admissible.  The safety index is the y-axis of the Fair Infogram.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.1``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default payment next month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, safety_index_threshold=0.5)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.safety_index_threshold
+        >>> ig.plot()
         """
         return self._parms.get("safety_index_threshold")
 
@@ -833,10 +920,28 @@ class H2OInfogram(H2OEstimator):
     @property
     def data_fraction(self):
         """
-        The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value greater than 0
-        and less than or equal to 1.0 is acceptable.
+        The fraction of training frame to use to build the infogram model. Any value greater than 0 and less than or
+        equal to 1.0 is acceptable.
 
         Type: ``float``, defaults to ``1.0``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default payment next month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, data_fraction=0.7)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.data_fraction
+        >>> ig.plot()
         """
         return self._parms.get("data_fraction")
 
@@ -849,9 +954,27 @@ class H2OInfogram(H2OEstimator):
     def top_n_features(self):
         """
         An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable
-        importance, and the top N are evaluated.  Defaults to 50.
+        importance, and the top N are evaluated.
 
         Type: ``int``, defaults to ``50``.
+
+        :examples:
+
+        >>> import h2o
+        >>> from h2o.estimators.infogram import H2OInfogram
+        >>> h2o.init()
+        >>> f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"
+        >>> col_types = {'SEX': "enum", 'MARRIAGE': "enum", 'default payment next month': "enum"}
+        >>> df = h2o.import_file(path=f, col_types=col_types)
+        >>> train = df.split_frame(seed=1)[0]
+        >>> y = "default payment next month"
+        >>> x = train.columns
+        >>> x.remove(y)
+        >>> pcols = ["SEX", "MARRIAGE", "AGE"]
+        >>> ig = H2OInfogram(protected_columns=pcols, top_n_features=30)
+        >>> ig.train(y=y, x=x, training_frame=train)
+        >>> ig.top_n_features
+        >>> ig.plot()
         """
         return self._parms.get("top_n_features")
 
@@ -874,7 +997,7 @@ class H2OInfogram(H2OEstimator):
 
     def plot(self, train=True, valid=False, xval=False, figsize=(10, 10), title="Infogram", legend_on=False, server=False):
         """
-        Plot the infogram.  By default, it will plot the infogram calculated from training dataset.  
+        Plot the infogram.  By default, it will plot the infogram calculated from training dataset. 
         Note that the frame rel_cmi_frame contains the following columns:
         - 0: predictor names
         - 1: admissible 
