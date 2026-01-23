@@ -976,3 +976,26 @@ class H2OBinomialModelMetrics(MetricsBase):
         if 'thresholds_and_metric_scores' in self._metric_json:
             return self._metric_json['thresholds_and_metric_scores']
         return None
+    
+    def kolmogorov_smirnov(self, thresholds= None):
+        """
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
+            If None, then the threshold maximizing the KS statistic will be used.
+        :returns: The Kolmogorov-Smirnov statistic for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.kolmogorov_smirnov()
+        """
+        return self.metric("ks", thresholds=thresholds)
