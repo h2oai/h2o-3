@@ -92,7 +92,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         if not (model is None or is_type(model, H2OEstimator)): model = model()
         self._id = grid_id
         self.model = model
-        self.hyper_params = dict(hyper_params)
+        self.hyper_params = {k: v if isinstance(v, list) else [v] for k, v in hyper_params.items()}
         self.search_criteria = None if search_criteria is None else dict(search_criteria)
         self.export_checkpoints_dir = export_checkpoints_dir
         self.recovery_dir = recovery_dir
