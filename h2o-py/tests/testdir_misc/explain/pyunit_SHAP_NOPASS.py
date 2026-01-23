@@ -21,7 +21,6 @@ except ImportError:
         return x
 
 from h2o.estimators import *
-from h2o.explanation._explain import no_progress_block
 
 seed = 6
 K = 5
@@ -57,7 +56,7 @@ def test_local_accuracy(
         print("Testing local accuracy in output space...")
     else:
         print("Testing local accuracy...")
-    with no_progress_block():
+    with h2o.no_progress_block():
         cf = mod.predict_contributions(
             test, background_frame=train, output_format=output_format, output_space=output_space,
             output_per_reference=True
@@ -299,7 +298,7 @@ def test_contributions_against_naive(mod, y, train, test, link=False, eps=1e-6):
                 [train[brow, k] == "NA" for k, v in train.types.items() if v == "enum"]
             ):
                 continue
-            with no_progress_block():
+            with h2o.no_progress_block():
                 naive_contr = naiveBSHAP(mod, y, train, test, xrow, brow, link=link)
                 contr = mod.predict_contributions(
                     test[xrow, :],
