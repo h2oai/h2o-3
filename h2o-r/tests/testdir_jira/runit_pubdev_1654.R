@@ -8,7 +8,7 @@ test.pubdev.1654 <- function() {
   use_all_factor_levels <- FALSE
   
   Log.info("Importing birds.csv data...")
-  birds.dat <- read.csv(locate("smalldata/pca_test/birds.csv"), header = TRUE)
+  birds.dat <- read.csv(locate("smalldata/pca_test/birds.csv"), header = TRUE, stringsAsFactors = TRUE)
   birds.hex <- h2o.importFile(locate("smalldata/pca_test/birds.csv"))
   print(summary(birds.hex))
   

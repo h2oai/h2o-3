@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def DEFAULT_NODE_LABEL = 'h2o-3 && docker && !mr-0xc8 && !micro'
+def DEFAULT_NODE_LABEL = 'h2o-3'
 final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null
@@ -22,7 +22,7 @@ try {
           }
           String nodeLabel = DEFAULT_NODE_LABEL
           if (pipelineContext != null) {
-            nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(DEFAULT_NODE_LABEL)
+            nodeLabel = "h2o-3"
           }
           echo "######### NodeLabel: ${nodeLabel} #########"
           node(nodeLabel) {

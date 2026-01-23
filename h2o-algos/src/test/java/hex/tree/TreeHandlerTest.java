@@ -11,11 +11,14 @@ import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -26,13 +29,11 @@ import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static water.TestUtil.parseTestFile;
 
-public class TreeHandlerTest extends TestUtil {
-
-    @BeforeClass
-    public static void stall() {
-        stall_till_cloudsize(1);
-    }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class TreeHandlerTest {
 
     @Test
     public void testSharedTreeSubgraphConversion() {
@@ -98,7 +99,6 @@ public class TreeHandlerTest extends TestUtil {
             }
 
             assertEquals(sharedTreeSubgraph.nodesArray.size(), nonRootNodesFound + 1); // +1 for the root node that is not represented explicitely
-
 
         } finally {
             Scope.exit();
@@ -475,7 +475,7 @@ public class TreeHandlerTest extends TestUtil {
         try {
             Scope.enter();
             final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
-            Scope.track_generic(trainingFrame);
+            Scope.track(trainingFrame);
             IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
             parms._train = trainingFrame._key;
             parms._distribution = AUTO;

@@ -46,9 +46,8 @@ test.model.generic.glm <- function() {
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
     compare_output(original_output, generic_output,
-                   c("Extract .+ frame","H2OBinomialModel: glm", "Model ID", "H2OBinomialMetrics: glm"),
-                   c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic"))
-    
+                   c("Extract .+ frame","H2OBinomialModel: glm", "Model ID", "H2OBinomialMetrics: glm", "AIC"),
+                   c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic", "AIC"))
     # Multinomial
     
     cols <- c("Origin", "Distance")
@@ -64,9 +63,8 @@ test.model.generic.glm <- function() {
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
     compare_output(original_output, generic_output,
-                   c("Extract .+ frame","H2OMultinomialModel: glm", "Model ID", "H2OMultinomialMetrics: glm"),
-                   c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic"))
-    
+                   c("Extract .+ frame","H2OMultinomialModel: glm", "Model ID", "H2OMultinomialMetrics: glm", "AIC"),
+                   c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic", "AIC"))
     # Ordinal
     
     cols <- c("Origin", "Distance")

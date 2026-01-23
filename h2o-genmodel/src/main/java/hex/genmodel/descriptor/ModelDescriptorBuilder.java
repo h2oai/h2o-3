@@ -43,8 +43,10 @@ public class ModelDescriptorBuilder {
         private final double[] _priorClassDistrib;
         private final double[] _modelClassDistrib;
         private final String _offsetColumn;
+        private final String _foldColumn;
         private final String _weightsColumn;
         private final String _treatmentColumn;
+        private final String _idColumn;
         private final String[][] _domains;
         private final String[][] _origDomains;
         private final String[] _names;
@@ -65,6 +67,7 @@ public class ModelDescriptorBuilder {
             _modelClassDistrib = mojoModel._modelClassDistrib;
             _h2oVersion = mojoModel._h2oVersion;
             _offsetColumn = mojoModel._offsetColumn;
+            _foldColumn = mojoModel._foldColumn;
             _domains = mojoModel._domains;
             _origDomains = mojoModel.getOrigDomainValues();
             _names = mojoModel._names;
@@ -73,14 +76,15 @@ public class ModelDescriptorBuilder {
             _fullAlgoName = fullAlgorithmName;
             if (modelAttributes != null) {
                 ColumnSpecifier weightsColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("weights_column");
-                _weightsColumn = weightsColSpec != null ? weightsColSpec.getColumnName() : null; 
+                _weightsColumn = weightsColSpec != null ? weightsColSpec.getColumnName() : null;
+                // the treatment column should be ColumnSpecifier not String - this should be fixed in different PR
+                _treatmentColumn = (String) modelAttributes.getParameterValueByName("treatment_column");
+                ColumnSpecifier idColSpec = (ColumnSpecifier) modelAttributes.getParameterValueByName("id_column");
+                _idColumn = idColSpec != null ? idColSpec.getColumnName() : null;
             } else {
                 _weightsColumn = null;
-            }
-            if (modelAttributes != null) {
-                _treatmentColumn = (String) modelAttributes.getParameterValueByName("treatment_column");;
-            } else {
                 _treatmentColumn = null;
+                _idColumn = null;
             }
         }
 
@@ -116,13 +120,16 @@ public class ModelDescriptorBuilder {
 
         @Override
         public String foldColumn() {
-            return null;
+            return _foldColumn;
         }
 
         @Override
         public String treatmentColumn() {
             return _treatmentColumn;
         }
+
+        @Override
+        public String idColumn() { return _idColumn;}
 
         @Override
         public ModelCategory getModelCategory() {
@@ -261,6 +268,9 @@ public class ModelDescriptorBuilder {
 
         @Override
         public String treatmentColumn() { return null; }
+
+        @Override
+        public String idColumn() { return null; }
 
         @Override
         public ModelCategory getModelCategory() {

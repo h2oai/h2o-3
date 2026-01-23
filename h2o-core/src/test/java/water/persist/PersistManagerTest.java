@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.*;
+import water.exceptions.H2OFileAccessDeniedException;
 import water.fvec.*;
 
 import java.io.*;
@@ -33,7 +34,7 @@ public class PersistManagerTest extends TestUtil {
         List<String> matches = persistManager.calcTypeaheadMatches("", 100);
         assertNotNull(matches);
         assertEquals(0, matches.size());
-        
+
         // Path with spaces (testing trim is being done)
         matches = persistManager.calcTypeaheadMatches("   ", 100);
         assertNotNull(matches);
@@ -41,7 +42,7 @@ public class PersistManagerTest extends TestUtil {
     }
 
     @Test
-    public void createReturnsBufferedOutputStreamForFiles() throws IOException  {
+    public void createReturnsBufferedOutputStreamForFiles() throws IOException {
         File target = new File(tmp.getRoot(), "target.txt");
         try (OutputStream os = persistManager.create(target.getAbsolutePath(), false)) {
             assertTrue(os instanceof BufferedOutputStream);
@@ -150,7 +151,7 @@ public class PersistManagerTest extends TestUtil {
         }
     }
 
-    
+
     @Test
     public void testDeltaLakeMetadataFilter() {
         PersistManager.DeltaLakeMetadataFilter filter = new PersistManager.DeltaLakeMetadataFilter();
@@ -169,5 +170,17 @@ public class PersistManagerTest extends TestUtil {
                 "dbfs:///_delta_log/b/fileB.parquet"
         ), result);
     }
-    
+
+    @Test
+    public void testImportFileMatchingDenyList() {
+        Exception actual = null;
+        try {
+            persistManager.importFiles("/etc/hosts", null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>());
+        } catch (Exception e) {
+            actual = e;
+        }
+        assertNotNull(actual);
+        assertTrue(actual instanceof H2OFileAccessDeniedException);
+    }
+
 }

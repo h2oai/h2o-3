@@ -1,13 +1,17 @@
 package water.util;
 
+import Jama.Matrix;
 import org.junit.Assert;
 import org.junit.Test;
+import water.TestUtil;
 
 import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.genRandomArray;
+import static water.TestUtil.genRandomMatrix;
 import static water.util.ArrayUtils.*;
 
 /**
@@ -586,4 +590,299 @@ public class ArrayUtilsTest {
     assertArrayEquals(new String[]{"a", "b", "1", "2", "3", "c", "d", "e"}, ArrayUtils.insert(ar1, ar2, 2));
   }
   
+  @Test
+  public void testMatrixVectorMultiplication() {
+    testMatArrayMult(10, 10); // square matrix
+    testMatArrayMult(10, 5);  // tall array
+    testMatArrayMult(5, 10);  // wide array
+  }
+  
+  public void testMatArrayMult(int mat1Row, int mat1Col) {
+    double[][] mat1 = genRandomMatrix(mat1Row, mat1Col, 888);
+    double[] arr = genRandomArray(mat1Col, 889);
+    double[] result = new double[mat1Row];
+    matrixVectorMult(result, mat1, arr);
+    
+    Matrix mat2 = new Matrix(mat1);
+    Matrix vec = (new Matrix(new double[][]{arr})).transpose();
+    Matrix resultM = mat2.times(vec);
+    double[] matResult = resultM.transpose().getArray()[0];
+    
+    TestUtil.checkArrays(result, matResult, 1e-6);
+  }
+  
+  @Test
+  public void testOutputProductCum() {
+    testOutProdCum(10, 10, 5, 8);
+    testOutProdCum(20, 10, 30, 40);
+    testOutProdCum(4, 20, 8, 9);
+  }
+  
+  @Test
+  public void testOuterProductSymCum() {
+    testOutProdSymCum(20, 10, 5);
+    testOutProdSymCum(15, 15, 10);
+    testOutProdSymCum(25, 50, 20);
+  }
+  
+  public void testOutProdCum(int arr1Len, int arr2Len, int numVec, int numLevel) {
+    double[][][] arr1 = new double[numLevel][][];
+    double[][][] arr2 = new double[numLevel][][];
+    Matrix matResult = new Matrix(new double[arr1Len][arr2Len]);
+    double[][] result = new double[arr1Len][arr2Len];
+    
+    for (int index = 0; index < numLevel; index++) {
+      arr1[index] = genRandomMatrix(numVec, arr1Len, 888+index);
+      arr2[index] = genRandomMatrix(numVec, arr2Len, 889+index);
+      for (int index2 = 0; index2 < numVec; index2++)
+        outerProductCum(result, arr1[index][index2], arr2[index][index2]);
+      Matrix tempMatrix = (new Matrix(arr1[index])).transpose();
+      Matrix tempMatrix2 = new Matrix(arr2[index]);
+      Matrix outerMatrix = tempMatrix.times(tempMatrix2);
+      matResult = matResult.plus(outerMatrix);
+    }
+    
+    double[][] matResultT = matResult.getArray();
+    TestUtil.checkDoubleArrays(result, matResultT, 1e-6);
+  }
+  
+  public void testOutProdSymCum(int arr1Len, int numVec, int numLevel) {
+    double[][][] arr1 = new double[numLevel][][];
+    Matrix matResult = new Matrix(new double[arr1Len][arr1Len]);
+    double[][] result = new double[arr1Len][arr1Len];
+    
+    for (int index = 0; index < numLevel; index++) {
+      arr1[index] = genRandomMatrix(numVec, arr1Len, 888+index);
+      for (int index2 = 0; index2 < numVec; index2++)
+        outputProductSymCum(result, arr1[index][index2]);
+      Matrix tempMatrix = (new Matrix(arr1[index])).transpose();
+      Matrix outerMatrix = tempMatrix.times(tempMatrix.transpose());
+      matResult = matResult.plus(outerMatrix);
+    }
+    
+    double[][] matResultT = matResult.getArray();
+    TestUtil.checkDoubleArrays(result, matResultT, 1e-6);
+  }
+  
+  @Test
+  public void testMatrixAddition() {
+    testMatrixAdd(20, 20, 10); // square matrix
+    testMatrixAdd(4, 20, 4);   // wide matrix
+    testMatrixAdd(50, 8, 20);  // tall matrix
+  }
+  
+  @Test
+  public void testArraysAddition() {
+    testArrayAdd(15, 10);
+    testArrayAdd(8, 20);
+    testArrayAdd(30, 10);
+  }
+  
+  public void testArrayAdd(int arrLength, int numInstant) {
+    double[][] arrayOfVec = genRandomMatrix(numInstant, arrLength, 888);
+    double[] vecSum = new double[arrLength];
+    Matrix matrixSum = new Matrix(new double[1][arrLength]);
+    for (int index=0; index<numInstant; index++) {
+      add(vecSum, arrayOfVec[index]);
+      matrixSum = matrixSum.plus(new Matrix(new double[][]{arrayOfVec[index]}));
+    }
+    
+    double[] matrixSumT = matrixSum.transpose().getArray()[0];
+    TestUtil.checkArrays(vecSum, matrixSumT, 1e-6);
+  }
+  
+  public void testMatrixAdd(int numRow, int numCol, int numInstant) {
+    double[][][] matrix = new double[numInstant][][];
+    Matrix[] matrixT = new Matrix[numInstant];
+    Matrix matrixTSum = new Matrix(new double[numRow][numCol]);
+    
+    for (int index=0; index<numInstant; index++) {
+      matrix[index] = genRandomMatrix(numRow, numCol, 888 + index);
+      matrixT[index] = new Matrix(matrix[index]);
+    }
+    
+    double[][] result = new double[numRow][numCol];
+    for (int index=0; index<numInstant; index++) {
+      add(result, matrix[index]);
+      matrixTSum = matrixTSum.plus(matrixT[index]);
+    }
+    
+    double[][] matrixSumT = matrixTSum.getArray();
+    TestUtil.checkDoubleArrays(result, matrixSumT, 1e-6);
+  }
+  
+  @Test
+  public void testMatrixMultiplication() {
+    testMatrixMult(10,10, 10);  // check square matrix
+    testMatrixMult(10, 5, 20);  // wide matrix
+    testMatrixMult(20, 10, 10); // skinny matrix
+  }
+  
+  @Test
+  public void testMatrixScalarMultiplication() {
+    testMatScalarMult(10, 20);
+    testMatScalarMult(8, 8);
+    testMatScalarMult(25, 11);
+  }
+  
+  @Test
+  public void testMatrixMinus() {
+    checkMatrixMinus(10, 10);
+    checkMatrixMinus(15, 8);
+    checkMatrixMinus(10, 20);
+  }
+  
+  public void checkMatrixMinus(int numRow, int numCol) {
+    double[][] mat1 = genRandomMatrix(numRow, numCol, 123);
+    double[][] mat2 = genRandomMatrix(numRow, numCol, 321);
+    Matrix matMat1 = new Matrix(mat1);
+    double[][] matResult = matMat1.minus(new Matrix(mat2)).getArray();
+    double[][] result = new double[numRow][numCol];
+    minus(result, mat1, mat2);
+    TestUtil.checkDoubleArrays(result, matResult, 1e-6);
+  }
+  
+  @Test 
+  public void testArrayMinus() {
+    testArrMinus(10);
+    testArrMinus(15);
+    testArrMinus(20);
+  }
+  
+  public void testArrMinus(int length) {
+    double[] array1 = genRandomArray(length, 1234);
+    double[] array2 = genRandomArray(length, 1235);
+    double[] result = new double[length];
+    minus(result, array1, array2);
+    
+    double[] matResult = new Matrix(new double[][]{array1}).minus(new Matrix(new double[][]{array2})).transpose().getArray()[0];
+    TestUtil.checkArrays(result, matResult, 1e-6);
+  }
+  
+  public void testMatScalarMult(int numRow, int numCol) {
+    double[][] mat = genRandomMatrix(numRow, numCol, 123);
+    double[][] result = new double[numRow][numCol];
+    double scalar = genRandomMatrix(1, 1, 124)[0][0];
+    mult(result, mat, scalar);
+    double[][] matResult = new Matrix(mat).times(scalar).getArray();
+    TestUtil.checkDoubleArrays(result, matResult, 1e-6);
+  }
+
+  public void testMatrixMult(int mat1Row, int mat1Col, int mat2Col) {
+    double[][] mat1 = genRandomMatrix(mat1Row, mat1Col, 888);
+    double[][] mat2 = genRandomMatrix(mat1Col, mat2Col, 889);
+    double[][] result = new double[mat1Row][mat2Col];
+    matrixMult(result, mat1, mat2);
+    
+    // generate result using Matrix toolbox;
+    Matrix mat3 = new Matrix(mat1);
+    Matrix mat4 = new Matrix(mat2);
+    double[][] resultMatrix = mat3.times(mat4).getArray();
+    
+    // compare result
+    TestUtil.checkDoubleArrays(result, resultMatrix, 1e-6);
+  }
+  
+  @Test
+  public void testTrace() {
+    testMatrixTrace(1);
+    testMatrixTrace(5);
+    testMatrixTrace(10);
+  }
+  
+  public void testMatrixTrace(int matLength) {
+    double[][] mat = genRandomMatrix(matLength, matLength, 123);
+    Matrix matMat = new Matrix(mat);
+    double traceVal = trace(mat);
+    double matTraceVal = matMat.trace();
+    assertTrue(Math.abs(traceVal - matTraceVal) < 1e-6);
+  }
+  
+  @Test
+  public void testMaxMagArrayMatrix() {
+    // check maximum magnitude for arrays
+    checkCorrectMaxMag(10, 0);
+    checkCorrectMaxMag(20, 19);
+    checkCorrectMaxMag(1,0);
+    // check maximum magnitude for matrices
+    checkCorrectMaxMag(1,1,0,0);
+    checkCorrectMaxMag(10, 1, 0, 0);
+    checkCorrectMaxMag(10, 1, 9, 0);
+    checkCorrectMaxMag(1, 15, 0, 0);
+    checkCorrectMaxMag(1, 15, 0, 14);
+    checkCorrectMaxMag(20, 15, 0, 0);
+    checkCorrectMaxMag(20, 15, 19, 14);
+    checkCorrectMaxMag(20, 15, 10, 7);
+  }
+  
+  public void checkCorrectMaxMag(int numRow, int numCol, int maxValueRow, int maxValueCol) {
+    double[][] mat = new double[numRow][];
+    double maxValue = 0;
+    double maxRowValue;
+    for (int index=0; index<numRow; index++) {
+      mat[index] = genRandomArray(numCol, 123+index);
+      maxRowValue = maxMag(mat[index]);
+      if (maxRowValue > maxValue)
+        maxValue = maxRowValue;
+    }
+    maxValue += 20;
+    mat[maxValueRow][maxValueCol] = maxValue;
+    double maxValueFound = maxMag(mat);
+    assertTrue(Math.abs(maxValue - maxValueFound) < 1e-12);
+  }
+  
+  public void checkCorrectMaxMag(int arrayLength, int maxValueIndex) {
+    double randValue = genRandomMatrix(1, 1, 123)[0][0];
+    double maxValue = Math.abs(randValue) + 10;
+    double[] arr = new double[arrayLength];
+    Arrays.fill(arr, randValue);
+    arr[maxValueIndex] = maxValue;
+    double maxFound = maxMag(arr);
+    assertTrue(Math.abs(maxValue-maxFound) < 1e-12);
+  }
+  
+  @Test
+  public void testFlattenArray() {
+    checkFlattenArray(2, 1);
+    checkFlattenArray(10, 20);
+    checkFlattenArray(25, 3);
+  }
+  
+  public void checkFlattenArray(int numLevel2, int numRandomCoeffs) {
+    double[][] originalMat = genRandomMatrix(numLevel2, numRandomCoeffs, 123);
+    double[] flattenArr = flattenArray(originalMat);
+    int oneDArrayInd = 0;
+    for (int level2Ind = 0; level2Ind < numLevel2; level2Ind++) {
+      for (int coefInd = 0; coefInd < numRandomCoeffs; coefInd++) {
+        assertEquals(originalMat[level2Ind][coefInd], flattenArr[oneDArrayInd], 1e-6);
+        oneDArrayInd++;
+      }
+    }
+  }
+  
+  @Test
+  public void testExpandMat() {
+    checkExpandMat(2, 1);
+    checkExpandMat(10, 2);
+    checkExpandMat(5, 20);
+    checkExpandMat(13, 13);
+  }
+  
+  public void checkExpandMat(int numLevel2, int numRandomCoeff) {
+    double[][] tmat = genRandomMatrix(numRandomCoeff, numRandomCoeff, 123);
+    double[][] tmatBig = expandMat(tmat, numLevel2);
+    int bigRowInd;
+    int bigColInd;
+    int offset;
+    for (int ind = 0; ind < numLevel2; ind++) {
+      for (int ind2 = 0; ind2 < numRandomCoeff; ind2++) {
+        offset = ind*numRandomCoeff;
+        bigRowInd = offset + ind2;
+        for (int index = 0; index < numRandomCoeff; index++) {
+          bigColInd = offset+index;
+          assertEquals(tmatBig[bigRowInd][bigColInd], tmat[ind2][index], 1e-6);
+        }
+      }
+    }
+  }
 }

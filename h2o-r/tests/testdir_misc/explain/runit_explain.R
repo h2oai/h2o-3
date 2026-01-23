@@ -520,23 +520,6 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
                        compute_p_values = TRUE)
   expect_ggplot(h2o.learning_curve_plot(glm_model))
 
-  # HGLM
-  h2odata <- h2o.uploadFile(locate("smalldata/glm_test/semiconductor.csv"))
-  yresp <- "y"
-  xlist <- c("x1", "x3", "x5", "x6")
-  z <- c(1)
-  h2odata$Device <- h2o.asfactor(h2odata$Device)
-  hglm_model <- h2o.glm(x = xlist,
-                        y = yresp,
-                        family = "gaussian",
-                        rand_family = c("gaussian"),
-                        rand_link = c("identity"),
-                        training_frame = h2odata,
-                        HGLM = TRUE,
-                        random_columns = z,
-                        calc_like = TRUE)
-  expect_ggplot(h2o.learning_curve_plot(hglm_model))
-
   # GAM
   knots1 <- c(-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290)
   frame_Knots1 <- as.h2o(knots1)

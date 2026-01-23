@@ -158,6 +158,11 @@ public class ScoreKeeper extends Iced {
     misclassification(ConvergenceStrategy.LESS_IS_BETTER, true, true),
     mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true, true),
     anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false, false),
+    AUUC(ConvergenceStrategy.MORE_IS_BETTER, false, false),
+    ATE(ConvergenceStrategy.MORE_IS_BETTER, false, false),
+    ATT(ConvergenceStrategy.MORE_IS_BETTER, false, false),
+    ATC(ConvergenceStrategy.MORE_IS_BETTER, false, false),
+    qini(ConvergenceStrategy.MORE_IS_BETTER, false, false),
     custom(ConvergenceStrategy.LESS_IS_BETTER, false, false),
     custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false, false),
     ;
@@ -232,6 +237,21 @@ public class ScoreKeeper extends Iced {
         case anomaly_score:
           val = skj._anomaly_score_normalized;
           break;
+        case AUUC:
+          val = skj._AUUC;
+          break;
+        case ATE:
+          val = skj._ate;
+          break;
+        case ATT:
+          val = skj._att;
+          break;
+        case ATC:
+          val = skj._atc;
+          break;
+        case qini:
+          val = skj._qini;
+          break;
         default:
           throw H2O.unimpl("Undefined stopping criterion.");
       }
@@ -244,7 +264,8 @@ public class ScoreKeeper extends Iced {
     regression(StoppingMetric.deviance),
     classification(StoppingMetric.logloss),
     anomaly_detection(StoppingMetric.anomaly_score),
-    autoencoder(StoppingMetric.MSE);
+    autoencoder(StoppingMetric.MSE),
+    uplift(StoppingMetric.AUUC);
 
     private final StoppingMetric _defaultMetric;
     
@@ -256,9 +277,14 @@ public class ScoreKeeper extends Iced {
       return _defaultMetric;
     }
 
-    public static ProblemType forSupervised(boolean isClassifier) {
-      return isClassifier ? classification : regression;
+    public static ProblemType forSupervised(boolean isClassifier, boolean isUplift) {
+      return isClassifier ? isUplift ? uplift : classification : regression;
     }
+
+    public static ProblemType forSupervised(boolean isClassifier) {
+      return forSupervised(isClassifier,false);
+    }
+    
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria what is the best scoring iteration of the last k iterations? */

@@ -1271,3 +1271,27 @@ class H2OOrdinalGridSearch(object):
 
 class H2ORegressionGridSearch(object):
     pass
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Binomial Uplift Grid Search
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+class H2OOBinomialUpliftGridSearch(object):
+    
+    def auuc(self, train=False, valid=False):
+        return {model.model_id: model.auuc(train, valid) for model in self.models}
+    
+    def qini(self, train=False, valid=False):
+        return {model.model_id: model.qini(train, valid) for model in self.models}
+
+    def ate(self, train=False, valid=False):
+        return {model.model_id: model.ate(train, valid) for model in self.models}
+
+    def att(self, train=False, valid=False):
+        return {model.model_id: model.att(train, valid) for model in self.models}
+
+    def atc(self, train=False, valid=False):
+        return {model.model_id: model.atc(train, valid) for model in self.models}
+    
+    

@@ -16,7 +16,6 @@ test.gbm.leaf.assignment.mojo <-
       h2o.downloadCSV(params_prob_data$tDataset[,params_prob_data$params$x], filename)
       twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, get_leaf_node_assignment=TRUE) # perform H2O and mojo prediction and return frames
       print("Finished mojo.  Going to compare two frames")
-      browser()
       print(twoFrames)
       compareStringFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1)
     }, error = function(x) x)

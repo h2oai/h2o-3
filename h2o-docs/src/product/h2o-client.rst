@@ -1,26 +1,26 @@
-H2O Clients
-===========
+H2O-3 clients
+=============
 
-These clients allow you to connect to and interact with H2O.
+These clients allow you to connect to and interact with H2O-3.
 
 H2O Flow
 --------
 
-H2O Flow is a Web based (GUI) user interface. It allows users to interactively run their H2O machine learning workflows and iteratively improve them. It combines code execution, text, mathematics, plots, and rich media in a single document. Documentation for H2O Flow can be found `here <flow.html>`__.
+H2O Flow is a Web based (GUI) user interface. It lets you interactively run your H2O-3 machine learning workflows and iteratively improve them. H2O Flow combines code execution, text, mathematics, plots, and rich media in a single document. See the `documentation for H2O Flow <flow.html>`__.
 
-R Client
+R client
 --------
 
-R users can use H2O-R library which internally uses H2O REST API calls to connect to H2O (Server) and allows users to run their H2O workflow via R. Documentation for the H2O-R Client can be found `here <../h2o-r/docs/index.html>`__.
+R users can use H2O-R library which internally uses H2O REST API calls to connect to H2O-3 (Server) and lets you run your H2O-3 workflow via R. See the `documentation for the H2O-R Client <../h2o-r/docs/index.html>`__.
 
-Python Client
+Python client
 -------------
 
-Python users can connect to H2O using the H2O Python package that internally uses H2O REST API calls to connect to H2O (Server) and allows users to run their H2O workflow via Python. Documentation for the H2O-Python Client can be found `here <../h2o-py/docs/index.html>`__. 
+Python users can connect to H2O-3 using the H2O Python package that internally uses H2O REST API calls to connect to H2O-3 (Server) and allows users to run their H2O-3 workflow via Python. See the `documentation for the H2O-Python Client <../h2o-py/docs/index.html>`__.
 
-Sklearn Support
+Sklearn support
 ~~~~~~~~~~~~~~~
 
-Most H2O estimators available in the H2O-Python client can also be used in the standard ``sklearn`` API. The ``h2o.sklearn`` module provides a collection of wrappers auto-generated on top of the original estimators and transformers, as well as on top of ``H2OAutoML``.
+Most H2O-3 estimators available in the H2O-Python client can also be used in the standard ``sklearn`` API. The ``h2o.sklearn`` module provides a collection of wrappers auto-generated on top of the original estimators and transformers, as well as on top of ``H2OAutoML``.
 
-For examples on how to integrate H2O estimators into your Sklearn workflow, please click `here <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/sklearn-integration>`__.
+See `examples on how to integrate H2O-3 estimators into your Sklearn workflow <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/sklearn-integration>`__.

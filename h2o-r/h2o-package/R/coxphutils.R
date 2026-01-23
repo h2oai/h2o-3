@@ -1,4 +1,5 @@
 #' @importFrom stats as.formula
+#' @noRd
 .as.survival.coxph.model <- function(model) {
     coefs <- model$coefficients_table
     df <- length(coefs$names)
@@ -16,6 +17,7 @@
 }
 
 #' @importFrom stats as.formula pchisq
+#' @noRd
 .as.survival.coxph.summary <- function(model) {
     coefs <- model$coefficients_table
     df <- length(coefs$names)

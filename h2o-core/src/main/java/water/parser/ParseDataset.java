@@ -1,5 +1,6 @@
 package water.parser;
 
+import com.github.luben.zstd.ZstdInputStream;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -906,6 +907,17 @@ public final class ParseDataset {
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
+        case ZSTD: {
+          localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec, localSetup);
+          try (InputStream bvs = vec.openStream(_jobKey);
+               InputStream dec = decryptionTool.decryptInputStream(bvs);
+               ZstdInputStream zstdIs = new ZstdInputStream(dec)) {
+            _dout[_lo] = streamParse(zstdIs, localSetup, makeDout(localSetup, chunkStartIdx, vec.nChunks()), bvs);
+          }
+          _errors = _dout[_lo].removeErrors();
+          chunksAreLocal(vec, chunkStartIdx, key);
+          break;
+          }
         }
         Log.trace("Finished a map stage of a file parse with start index "+chunkStartIdx+".");
       } catch( IOException ioe ) {

@@ -16,8 +16,8 @@ test.model.generic.gbm <- function() {
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
     compare_output(original_output, generic_output,
-                   c("Extract .+ frame","H2OBinomialModel: gbm", "Model ID", "H2OBinomialMetrics: gbm"),
-                   c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic"))
+                   c("Extract .+ frame","H2OBinomialModel: gbm", "Model ID", "H2OBinomialMetrics: gbm", "AIC"),
+                   c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic", "AIC"))
     
     generic_model_preds  <- h2o.predict(generic_model, data)
     expect_equal(length(generic_model_preds), 3)
@@ -54,8 +54,8 @@ test.model.generic.gbm <- function() {
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
     compare_output(original_output, generic_output,
-                   c("Extract .+ frame", "H2OMultinomialModel: gbm", "Model ID", "H2OMultinomialMetrics: gbm"),
-                   c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic"))
+                   c("Extract .+ frame", "H2OMultinomialModel: gbm", "Model ID", "H2OMultinomialMetrics: gbm", "AIC"),
+                   c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic", "AIC"))
     
 }
 

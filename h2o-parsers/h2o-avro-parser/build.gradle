@@ -6,7 +6,7 @@ description = "H2O Avro Parser"
 dependencies {
   api project(":h2o-core")
   // Avro support
-  api 'org.apache.avro:avro:1.11.3'
+  api 'org.apache.avro:avro:1.11.4'
 
   testImplementation project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
