@@ -853,28 +853,29 @@ def call(final pipelineContext) {
   } else if (modeCode == MODE_SINGLE_TEST_CODE) {
     executeInParallel(SINGLE_TEST_STAGES, pipelineContext)
   } else {
-    if (modeCode == MODE_PR_CODE) {
-      // For PR mode, only run metadata validation
-      executeInParallel(METADATA_VALIDATION_STAGES, pipelineContext)
+    def jobs = PR_STAGES
+    if (modeCode >= MODE_MASTER_CODE) {
+      jobs += MASTER_STAGES
+    }
+    if (modeCode >= MODE_NIGHTLY_REPEATED_CODE) {
+      jobs += NIGHTLY_REPEATED_STAGES
+    }
+    if (modeCode >= MODE_NIGHTLY_CODE) {
+      jobs += NIGHTLY_STAGES
+    }
+    if (modeCode >= MODE_NIGHTLY_REPEATED_CODE) {
+      // in Nightly mode execute all jobs regardless whether smoke tests fail 
+      executeInParallel(SMOKE_STAGES + jobs, pipelineContext)
     } else {
-      def jobs = PR_STAGES
-      if (modeCode >= MODE_MASTER_CODE) {
-        jobs += MASTER_STAGES
+      def smokeStages = SMOKE_STAGES
+      if (modeCode == MODE_PR_CODE) {
+        smokeStages += SMOKE_PR_STAGES
       }
-      if (modeCode >= MODE_NIGHTLY_REPEATED_CODE) {
-        jobs += NIGHTLY_REPEATED_STAGES
+      executeInParallel(smokeStages, pipelineContext)
+      if (modeCode == MODE_PR_CODE) {
+        jobs += METADATA_VALIDATION_STAGES
       }
-      if (modeCode >= MODE_NIGHTLY_CODE) {
-        jobs += NIGHTLY_STAGES
-      }
-      if (modeCode >= MODE_NIGHTLY_REPEATED_CODE) {
-        // in Nightly mode execute all jobs regardless whether smoke tests fail
-        executeInParallel(SMOKE_STAGES + jobs, pipelineContext)
-      } else {
-        def smokeStages = SMOKE_STAGES
-        executeInParallel(smokeStages, pipelineContext)
-        executeInParallel(jobs, pipelineContext)
-      }
+      executeInParallel(jobs, pipelineContext)
     }
   }
 }
