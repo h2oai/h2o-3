@@ -1,10 +1,7 @@
 package hex.glm;
 
-import hex.CreateFrame;
-import hex.DataInfo;
-import hex.FrameSplitter;
+import hex.*;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
-import hex.SplitFrame;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;

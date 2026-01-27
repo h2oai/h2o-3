@@ -156,6 +156,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  custom_metric_func=None,
                  export_checkpoints_dir=None,
                  verbosity="warn",
+                 auc_type="AUTO",
                  **kwargs):
         """
         Create a new H2OAutoML instance.
@@ -296,6 +297,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :param verbosity: Verbosity of the backend messages printed during training.
             Available options are ``None`` (live log disabled), ``"debug"``, ``"info"``, ``"warn"`` or ``"error"``.
             Defaults to ``"warn"``.
+        :param auc_type: 
+        :type auc_type: str, optional
         """
 
         # early validate kwargs, extracting hidden parameters:
@@ -359,6 +362,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         self.preprocessing = preprocessing
         if monotone_constraints is not None:
             algo_parameters['monotone_constraints'] = monotone_constraints
+        if auc_type is not None:
+            algo_parameters['auc_type'] = auc_type
         self._algo_parameters = algo_parameters
 
         self.sort_metric = sort_metric
@@ -438,6 +443,13 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         else:
             self._algo_parameters['monotone_constraints'] = monotone_constraints
         return self.__validate_algo_parameters(self._algo_parameters)
+    
+    def validate_auc_type(self, auc_type):
+        if auc_type is None:
+            auc_type = "NONE"
+        auc_type = auc_type.upper()
+        auc_types = ['MACRO_OVO', 'WEIGHTED_OVO', 'MACRO_OVR', 'WEIGHTED_OVR', 'AUTO', 'NONE']
+        assert auc_type in auc_types, "The auc_type must be one of %s." % auc_types
 
     def __validate_algo_parameters(self, algo_parameters):
         if algo_parameters is None:
@@ -448,6 +460,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             if len(name) == 0:
                 name, scope = scope, 'any'
             value = [dict(key=k, value=v) for k, v in v.items()] if isinstance(v, dict) else v   # we can't use stringify_dict here as this will be converted into a JSON string
+            if k is "auc_type":
+                self.validate_auc_type(v)
             algo_parameters_json.append(dict(scope=scope, name=name, value=value))
         return algo_parameters_json
 
@@ -521,6 +535,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                                   validate_fn=__validate_preprocessing)
     monotone_constraints = _aml_property('build_models.algo_parameters', name='monotone_constraints', types=(None, dict), freezable=True,
                                          validate_fn=__validate_monotone_constraints)
+    auc_type = _aml_property('build_models.algo_parameters', name='auc_type', types=(None, dict), freezable=True)
     _algo_parameters = _aml_property('build_models.algo_parameters', types=(None, dict), freezable=True,
                                      validate_fn=__validate_algo_parameters)
 
