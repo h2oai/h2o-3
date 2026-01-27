@@ -82,7 +82,7 @@ try {
                             echo "Testing credentials for PyPI, Anaconda, Docker, and S3..."
 
                             // Test PyPI credentials
-                            withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                            withCredentials([string(credentialsId: 'H2O-PYPI-TOKEN', variable: 'PYPI_TOKEN')]) {
                                 insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                     sh """
                                         echo "=== Testing PyPI Credentials ==="
@@ -90,7 +90,8 @@ try {
                                         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
 
                                         # Test PyPI login by checking if credentials work
-                                        python -c "import requests; auth=('\$TWINE_USERNAME', '\$TWINE_PASSWORD'); r=requests.get('https://upload.pypi.org/', auth=auth); print('PyPI credentials: OK' if r.status_code in [200, 405] else 'PyPI credentials: FAILED')"
+                                        # PyPI API tokens use '__token__' as the username
+                                        python -c "import requests; auth=('__token__', '\$PYPI_TOKEN'); r=requests.get('https://upload.pypi.org/', auth=auth); print('PyPI credentials: OK' if r.status_code in [200, 405] else 'PyPI credentials: FAILED')"
                                     """
                                 }
                             }
@@ -422,7 +423,7 @@ EOF
                             try {
                                 pipelineContext.getBuildSummary().addStageSummary(this, BUILD_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
                                 pipelineContext.getBuildSummary().setStageDetails(this, BUILD_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                                withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                withCredentials([string(credentialsId: 'H2O-PYPI-TOKEN', variable: 'PYPI_TOKEN')]) {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         sh """
                                             echo "Activating Python ${env.PYTHON_VERSION}"
@@ -438,6 +439,9 @@ EOF
                                                     echo '****** WARNING! Upload to PyPI suppressed ******'
                                                 else
                                                     echo '****** Upload to PyPI ******'
+                                                    # PyPI API tokens use '__token__' as the username
+                                                    export TWINE_USERNAME=__token__
+                                                    export TWINE_PASSWORD=\$PYPI_TOKEN
                                                     twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
                                                     echo '****** Upload h2o_client to PyPI ******'
                                                     cd ../client/dist
@@ -497,7 +501,7 @@ EOF
                                                             echo '****** Upload to Conda ******'
                                                             # Right now packages for all platforms are in the current directory
                                                             # upload all distribution packages
-                                                            anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
+                                                            anaconda login --username "$ANACONDA_USERNAME" --password "$ANACONDA_PASSWORD"
                                                             anaconda upload osx-64/\${PKG_NAME}
                                                             anaconda upload linux-64/\${PKG_NAME}
                                                             anaconda upload win-64/\${PKG_NAME}
@@ -768,20 +772,27 @@ private setReleaseJobProperties(final pipelineContext) {
 
     final boolean isReleaseBranch = env.BRANCH_NAME.startsWith(pipelineContext.getBuildConfig().RELEASE_BRANCH_PREFIX)
 
+    // Fix for build 0 where parameters are null and cannot be used in default value setup
+    // Compute testRelease once based on branch logic for use in parameter defaults
+    final boolean testReleaseDefault = !isReleaseBranch && env.BRANCH_NAME != 'master'
+
+    // For execution logic, use the actual parameter value if available, otherwise fall back to default
+    final boolean testRelease = params.TEST_RELEASE != null ? params.TEST_RELEASE : testReleaseDefault
+
     def jobProperties = [
         disableConcurrentBuilds(),
         parameters([
-            booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: testReleaseDefault, description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
             booleanParam(defaultValue: env.BRANCH_NAME == 'master', description: 'If set, test all credentials (PyPI, Anaconda, Docker, S3) before building.', name: 'TEST_CREDENTIALS'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: true, description: 'If set, build with Hadoop support. Should be unchecked only for test releases when you do not want to wait for the full build.', name: 'BUILD_HADOOP'),
             booleanParam(defaultValue: true, description: 'If set, build PyPI package and upload it to S3', name: 'BUILD_PYPI'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
             booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
+            booleanParam(defaultValue: isReleaseBranch && !testReleaseDefault, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER'),
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
@@ -796,7 +807,7 @@ private setReleaseJobProperties(final pipelineContext) {
     }
     properties(jobProperties)
 
-    if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
+    if (!testRelease && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
         env.S3_ROOT = RELEASE_BUCKET
     } else {
         env.S3_ROOT = TEST_RELEASE_BUCKET
@@ -806,7 +817,7 @@ private setReleaseJobProperties(final pipelineContext) {
     if (env.BRANCH_NAME == 'master') {
         // we are building nightly build
         env.NIGHTLY_BUILD = true
-    } else if (params.TEST_RELEASE || isReleaseBranch) {
+    } else if (testRelease || isReleaseBranch) {
         // in case of release branch and enabled upload to Maven, we have to set DO_RELEASE
         if (params.UPLOAD_NEXUS) {
             env.DO_RELEASE = true
