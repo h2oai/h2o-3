@@ -1,7 +1,7 @@
-Using H2O with Kubernetes
-=========================
+Use H2O with Kubernetes
+=======================
 
-H2O Software Stack
+H2O software stack
 ------------------
 
 In order to understand the behavior and limitations of a H2O distributed cluster, it is mandatory to understand the basics of H2O's design. The H2O cluster is stateful. If one H2O node is terminated, the cluster is immediately recognized as unhealthy and has to be restarted as a whole.
@@ -13,12 +13,12 @@ This implies that H2O nodes must be treated as stateful by Kubernetes. In Kubern
 - Persistent storages and volumes associated with the StatefulSet of H2O Nodes will not be deleted once the cluster is brought down.
 
 
-H2O Kubernetes Deployment
+H2O Kubernetes deployment
 -------------------------
 
 In order to spawn a H2O cluster inside a Kubernetes cluster, the following list of requirements must be met:
 
-1. A Kubernetes cluster. For local development, k3s is a great choice. For easy start, OpenShift by RedHat is a great choice with their 30 day free trial.
+1. A Kubernetes cluster. For local development, `k3s <https://k3s.io/>`__ is a great choice. For easy start, `OpenShift by RedHat <https://www.redhat.com/en/technologies/cloud-computing/openshift>`__ is a great choice with their 30 day free trial.
 2. Docker image with H2O inside.
 3. A Kubernetes deployment definition with a StatefulSet of H2O pods and a headless service.
 
@@ -26,14 +26,16 @@ After H2O is started, there must be a way for H2O nodes to "find" themselves and
 
 For reproducibility, resource limits and requests should always be set to equal values.
 
-**Note**: Official K8s images don’t apply any `security settings <../security.html>`__. The default user is ``root``. If you require a secure interface with H2O running the image, you need to change the user and execution command to add security parameters before running the image. The following is the default command used in Docker images:
+.. note::
+  
+  Official K8s images don’t apply any `security settings <../security.html>`__. The default user is ``root``. If you require a secure interface with H2O running the image, you need to change the user and execution command to add security parameters before running the image. The following is the default command used in Docker images:
 
 ::
   
   java -Djava.library.path=/opt/h2oai/h2o-3/xgb_lib_dir -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar
 
 
-Headless Service
+Headless service
 ~~~~~~~~~~~~~~~~
 
 .. code:: yaml
@@ -52,9 +54,8 @@ Headless Service
     - protocol: TCP
       port: 54321
 
-The ``clusterIP: None`` defines the service as headless, and ``port: 54321`` is the default H2O port. Users and client libraries use this port to talk to the H2O cluster.
-
-The ``app: h2o-k8s`` setting is the name of the application with H2O pods inside. Be sure this setting corresponds to the name of the chosen H2O deployment name.
+- ``clusterIP: None``: Defines the service as headless, and ``port: 54321`` is the default H2O port. Users and client libraries use this port to talk to the H2O cluster.
+- ``app: h2o-k8s``: Set to the name of the application with H2O pods inside. Be sure this setting corresponds to the name of the chosen H2O deployment name.
 
 StatefulSet
 ~~~~~~~~~~~
@@ -111,7 +112,7 @@ Besides the standardized Kubernetes settings (e.g. replicas: 3 defining the numb
 - H2O communicates on port 54321, therefore ``containerPort: 54321`` must be exposed to make it possible for the clients to connect.
 - The **pod management policy** must be set to parallel: ``podManagementPolicy: "Parallel"``. This makes Kubernetes spawn all H2O nodes at once. If not specified, Kubernetes will spawn the pods with H2O nodes sequentially, one after another, significantly prolonging the startup process.
 
-Native Kubernetes Resources
+Native Kubernetes resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O is able to discover other pods with H2O under the same service automatically by using the resources native to Kubernetes: services and environment variables.
@@ -123,23 +124,25 @@ In order to ensure reproducibility, all requests should be directed towards the 
 
 Once the clustering is done, all nodes but the leader node mark themselves as "not ready", leaving only the leader node exposed. The ``readinessProbe`` residing on ``/kubernetes/isLeaderNode`` makes sure only the leader node is exposed once the cluster is formed by making all nodes but the leader node "not available". 
 
-The default port for H2O Kubernetes API is 8080. However, in the example, an optional environment variable changes the port to 8081 to demonstrate the functionality.
+The default port for H2O Kubernetes API is ``8080``. However, in the previous example, an optional environment variable changes the port to ``8081`` to demonstrate the functionality.
 
-Environment Variables
+Environment variables
 '''''''''''''''''''''
 
 If none of the optional lookup constraints are specified, a sensible default node lookup timeout will be set (defaults to 3 minutes). If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever condition is met first.
 
-1. ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address to match the specifics of your Kubernetes implementation.
-2. ``H2O_NODE_LOOKUP_TIMEOUT`` - **[OPTIONAL]** Node lookup constraint. Specify the time before the node lookup times out.
-3. ``H2O_NODE_EXPECTED_COUNT`` - **[OPTIONAL]** Node lookup constraint. This is the expected number of H2O pods to be discovered (should be equal to the number of replicas).
-4. ``H2O_KUBERNETES_API_PORT`` - **[OPTIONAL]** Port for Kubernetes API checks and probes to listen on. Defaults to 8080.
+- ``H2O_KUBERNETES_SERVICE_DNS``: *Required* Crucial for clustering to work. This format usually follows the ``<service-name>.<project-namespace>.svc.cluster.local`` pattern. This setting enables H2O node discovery through DNS. It must be modified to match the name of the headless service you created. Be sure you also pay attention to the rest of the address: it needs to match the specifics of your Kubernetes implementation.
+- ``H2O_NODE_LOOKUP_TIMEOUT``: Node lookup constraint. Specify the time before the node lookup times out.
+- ``H2O_NODE_EXPECTED_COUNT``: Node lookup constraint. Specofu the expected number of H2O pods to be discovered.
+- ``H2O_KUBERNETES_API_PORT``: Port for Kubernetes API checks to listen on (defaults to ``8080``). 
 
-Exposing H2O
-~~~~~~~~~~~~
+Expose H2O
+~~~~~~~~~~
 
 In order to expose H2O and make it available from the outside of the Kubernetes cluster, an Ingress is required. Some vendors provide custom resources to achieve the same goal (e.g.
-`OpenShift and Routes <https://docs.openshift.com/container-platform/4.5/networking/ingress-operator.html#nw-ingress-sharding_configuring-ingress>`__). An example of an ingress is found below. Path configuration, namespace and other Ingress attributes are always specific to user's cluster specification.
+`OpenShift and Routes <https://docs.openshift.com/container-platform/4.5/networking/ingress-operator.html#nw-ingress-sharding_configuring-ingress>`__). Path configuration, namespace and other Ingress attributes are always specific to your cluster specification.
+
+The following example is for an Ingress:
 
 .. code:: yaml
 
@@ -158,7 +161,7 @@ In order to expose H2O and make it available from the outside of the Kubernetes 
             servicePort: 80
 
 Reproducibility notes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 There are three key requirements to make sure actions invoked on H2O are reproducible:
 
@@ -171,8 +174,8 @@ In a Kubernetes environment, one common mistake is to set different resource quo
 The ``readinessProbe`` residing on ``/kubernetes/isLeaderNode`` makes sure only the leader node is exposed once the cluster is formed by making all nodes but the leader node "not available". Without the readiness probe, reproducibility is not guaranteed.
 
 
-Installing H2O with Helm
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Install H2O with Helm
+---------------------
 
 `Helm <https://helm.sh/>`__ can be used to deploy H2O into a kubernetes cluster. Helm requires setting up the KUBECONFIG environment variable properly or stating the KUBECONFIG destination explicitly. There are three steps required in order to use the official H2O Helm chart:
 
@@ -189,7 +192,7 @@ Installing H2O with Helm
 
 The basic command ``helm install basic-h2o h2o/h2o`` only installs a minimal H2O cluster with few resources. There are various settings and modifications available. To inspect a complete list of the configuration options available, use the  ``helm inspect values h2o/h2o --version |version|`` command.
 
-Among the most common settings are number of H2O nodes (there is one pod per each H2O node) spawned, memory and CPU resources for each H2O node, and an ingress. Below is an example on how to configure these basic options.
+Among the most common settings are number of H2O nodes (there is one pod per each H2O node) spawned, memory and CPU resources for each H2O node, and an ingress. The following is an example on how to configure these basic options.
 
 .. code:: yaml
 

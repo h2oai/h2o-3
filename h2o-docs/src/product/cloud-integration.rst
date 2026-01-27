@@ -1,7 +1,7 @@
-Cloud Integration
------------------
+Cloud integration
+=================
 
-H2O is supported on a number of cloud environments, including
+H2O is supported on a number of cloud environments:
 
 - EC2 Instances and S3 Storage (RedHat AMI, Amazon Linux AMI, and Ubuntu AMI)
 - Amazon AWS
@@ -11,7 +11,10 @@ H2O is supported on a number of cloud environments, including
 - Nimbix Cloud
 - Kubernetes
 
-Refer to the following topics:
+H2O on cloud environments
+-------------------------
+
+Refer to the following topics for more information:
 
 .. toctree::
    :maxdepth: 1
