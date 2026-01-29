@@ -3384,19 +3384,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
       _model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
       scorePostProcessing(train, t1);
-      if (_model._parms._control_variables != null){
+      if (_model._parms._control_variables != null || _model._parms._remove_offset_effects){
         try {
-          _model._useControlVariables = true;
+          _model._useControlVariables = _model._parms._control_variables != null;
+          _model._remove_offset_effect = _model._parms._remove_offset_effects;
           long t2 = System.currentTimeMillis();
           _model.score(train, null, CFuncRef.from(_parms._custom_metric_func)).delete();
-          scorePostProcessingControlVal(train, t2);
+          scorePostProcessingRestrictedModel(train, t2);
         } finally {
           _model._useControlVariables = false;
+          _model._remove_offset_effect = false;
         }
       }
     }
 
-    private void scorePostProcessingControlVal(Frame train, long t1) {
+    private void scorePostProcessingRestrictedModel(Frame train, long t1) {
       ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
       long t2 = System.currentTimeMillis();
       if (mtrain != null) {
@@ -3408,7 +3410,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } else {
         Log.info(LogMsg("ModelMetrics mtrain is null"));
       }
-      Log.info(LogMsg("Control values training metrics computed in " + (t2 - t1) + "ms"));
+      Log.info(LogMsg("Restricted model training metrics computed in " + (t2 - t1) + "ms"));
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         try {
@@ -3447,7 +3449,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
       long t2 = System.currentTimeMillis();
       if (mtrain != null) {
-        if (_model._parms._control_variables != null){
+        if (_model._parms._control_variables != null || _model._parms._remove_offset_effects){
           _model._output._training_metrics_unrestricted_model = mtrain;
           _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time
         } else {
@@ -3464,7 +3466,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
-        if(_model._parms._control_variables != null){
+        if(_model._parms._control_variables != null || _model._parms._remove_offset_effects){
           _model._output._validation_metrics_unrestricted_model = ModelMetrics.getFromDKV(_model, valid);
         } else {
           _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
@@ -3472,7 +3474,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
         validScore.fillFrom(_model._output._validation_metrics);
       }
-      if(_model._parms._control_variables != null) {
+      if(_model._parms._control_variables != null || _model._parms._remove_offset_effects) {
         _model.addUnrestrictedModelScoringInfo(_parms, nclasses(), t2, _state._iter);
       } else {
         _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);
@@ -3495,7 +3497,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     _model._output._validation_metrics._nobs;
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                     _state.lambda(), trainDev, validDev, xval_deviance, xval_se, _state.alpha());
-          } else if(_model._parms._control_variables != null){
+          } else if(_model._parms._control_variables != null || _model._parms._remove_offset_effects){
             _scoringHistoryUnrestrictedModel.addIterationScore(true, true, _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics_unrestricted_model).residual_deviance(),
                     mtrain._nobs, _model._output._validation_metrics_unrestricted_model._nobs, _state.lambda(), _state.alpha());
@@ -3509,7 +3511,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                     _state.lambda(), _state.deviance() / mtrain._nobs, Double.NaN, xval_deviance,
                     xval_se, _state.alpha());
-          } else if(_model._parms._control_variables != null) {
+          } else if(_model._parms._control_variables != null || _model._parms._remove_offset_effects) {
             _scoringHistoryUnrestrictedModel.addIterationScore(true, false, _state._iter, _state.likelihood(),
                     _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),
                     _state.alpha());
@@ -3523,7 +3525,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
-      } else if(_model._parms._control_variables != null){
+      } else if(_model._parms._control_variables != null || _model._parms._remove_offset_effects){
         _model._output._scoring_history_unrestricted_model = _scoringHistoryUnrestrictedModel.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
       } else {
