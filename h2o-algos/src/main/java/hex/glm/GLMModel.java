@@ -579,6 +579,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
     public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
     public String[] _control_variables; // control variables definition, list of column names
+    public boolean _remove_offset_effects; // control offset effect from prediction and metric calculation 
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -1531,6 +1532,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
+  public boolean _remove_offset_effect = false;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -2202,7 +2204,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     } else {
       double[] b = beta();
-      double eta = b[b.length - 1] + o; // intercept + offset
+      double eta = b[b.length - 1]; // intercept 
+      if (!this._remove_offset_effect){ // offset
+          eta += o;
+      }
       double[] bcv = b.clone();
       if (this._useControlVariables)
         bcv = _output.getControlValBeta(bcv); // make beta connected to control variables zero
