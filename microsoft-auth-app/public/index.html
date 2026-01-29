@@ -3,12 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Microsoft Auth - Death to Shibboleth</title>
+    <title>Zeus Auth - Death to Shibboleth</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <link rel="stylesheet" href="/styles.css">
     <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 </head>
 <body>
+    <!-- Lightning Canvas -->
+    <canvas id="lightning-canvas"></canvas>
+
+    <!-- Floating Particles -->
+    <div id="particles"></div>
+
+    <!-- Audio Elements -->
+    <audio id="thunder-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav">
+    </audio>
+
     <div class="app">
         <!-- Hero Section -->
         <header class="hero">
@@ -135,6 +146,7 @@
     </div>
 
     <script src="/config.js"></script>
+    <script src="/effects.js"></script>
     <script src="/app.js"></script>
 </body>
 </html>

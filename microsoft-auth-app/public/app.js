@@ -57,6 +57,12 @@ async function initializeApp() {
  */
 async function signIn() {
     try {
+        // Lightning strike on click!
+        if (window.zeusEffects) {
+            window.zeusEffects.strikeLightning();
+            window.zeusEffects.playClick();
+        }
+
         // Option 1: Popup login (better UX, but may be blocked)
         // const response = await msalInstance.loginPopup(loginRequest);
 
@@ -101,7 +107,11 @@ function handleLoginResponse(response) {
     if (response && response.account) {
         currentAccount = response.account;
         showDashboard();
-        showToast('Welcome, ' + currentAccount.name + '!', 'success');
+
+        // EPIC VICTORY CELEBRATION!
+        if (window.zeusEffects) {
+            window.zeusEffects.victory('Welcome, ' + response.account.name + '!');
+        }
     }
 }
 
@@ -200,6 +210,12 @@ async function callMicrosoftGraph() {
         apiResultContent.textContent = JSON.stringify(data, null, 2);
 
         showToast('Graph API call successful!', 'success');
+
+        // Celebration particles!
+        if (window.zeusEffects) {
+            window.zeusEffects.launchConfetti(30);
+            window.zeusEffects.playSuccess();
+        }
     } catch (error) {
         console.error('Graph API error:', error);
         showToast('API call failed: ' + error.message, 'error');
@@ -246,6 +262,11 @@ async function getFullProfile() {
         apiResultContent.textContent = JSON.stringify(cleanProfile, null, 2);
 
         showToast('Profile loaded!', 'success');
+
+        // Quick celebration
+        if (window.zeusEffects) {
+            window.zeusEffects.playSuccess();
+        }
     } catch (error) {
         console.error('Profile error:', error);
         showToast('Failed to load profile: ' + error.message, 'error');
@@ -289,6 +310,11 @@ async function demonstrateSilentRefresh() {
         apiResultContent.textContent = JSON.stringify(refreshResult, null, 2);
 
         showToast(`Token refreshed in ${refreshResult.timeMs}ms!`, 'success');
+
+        // Lightning for speed!
+        if (window.zeusEffects) {
+            window.zeusEffects.strikeLightning();
+        }
     } catch (error) {
         console.error('Silent refresh error:', error);
         showToast('Silent refresh failed: ' + error.message, 'error');
@@ -345,4 +371,19 @@ No urn:oid nightmares.
 
 Just Microsoft Entra ID + MSAL.js.
 Authentication as it should be.
+
+Keyboard shortcuts:
+  L - Strike lightning
+  C - Launch confetti
+  V - Victory celebration
+  M - Toggle sound
 `);
+
+// Add click effects to all buttons
+document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        if (window.zeusEffects) {
+            window.zeusEffects.burstParticles(e.clientX, e.clientY, 15);
+        }
+    });
+});
