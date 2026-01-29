@@ -97,7 +97,8 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
 
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
 
-    m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
+    // seems like it is not used anywhere
+    // m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
     _defaultThreshold = m.defaultThreshold();
   }
 
@@ -108,7 +109,10 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       Arrays.fill(preds,0);
       double previousCDF = 0.0;
       for (int cInd = 0; cInd < lastClass; cInd++) {
-        double eta = r.innerProduct(bm[cInd]) + o;
+        double eta = r.innerProduct(bm[cInd]);
+        if(!_m._remove_offset_effect) {
+          eta += o;
+        }
         double currCDF = 1.0 / (1 + Math.exp(-eta));
         preds[cInd + 1] = currCDF - previousCDF;
         previousCDF = currCDF;
@@ -121,7 +125,10 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       double sumExp = 0;
       double maxRow = 0;
       for (int c = 0; c < bm.length; ++c) {
-        eta[c] = r.innerProduct(bm[c]) + o;
+        eta[c] = r.innerProduct(bm[c]);
+        if(!_m._remove_offset_effect) {
+          eta[c] += o;
+        }
         if(eta[c] > maxRow)
           maxRow = eta[c];
       }
@@ -132,8 +139,11 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         preds[c + 1] = eta[c] * sumExp;
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
-      double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
-      
+      double x = r.innerProduct(_beta);
+      if(!_m._remove_offset_effect) {
+        x += o;
+      }
+      double mu = _m._parms.linkInv(x);
       if (_m._parms._family == GLMModel.GLMParameters.Family.binomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction

@@ -763,5 +763,134 @@ public class GLMControlVariablesTest extends TestUtil {
         }
         return new Frame(Key.<Frame>make(frameName),new String[]{"predict"},new Vec[]{predictions});
     }
+
+    @Test
+    public void compareModelWithOffsetEnabledAndDisabled() {
+        Frame train = null;
+        Frame test = null;
+        Frame preds = null;
+        GLMModel glm = null;
+        Frame preds2 = null;
+        GLMModel glm2 = null;
+        try {
+            Scope.enter();
+            train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+            GLMModel.GLMParameters.Family family = GLMModel.GLMParameters.Family.binomial;
+            String responseColumn = "C21";
+
+            // set cat columns
+            int numCols = train.numCols();
+            int enumCols = (numCols - 1) / 2;
+            for (int cindex = 0; cindex < enumCols; cindex++) {
+                train.replace(cindex, train.vec(cindex).toCategoricalVec()).remove();
+            }
+            int response_index = numCols - 1;
+
+            train.replace((response_index), train.vec(response_index).toCategoricalVec()).remove();
+
+            DKV.put(train);
+            Scope.track_generic(train);
+
+            test = new Frame(train);
+            test.remove(responseColumn);
+
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(family);
+            params._response_column = responseColumn;
+            params._train = train._key;
+            params._score_each_iteration = true;
+            params._offset_column = "C20";
+            params._remove_offset_effects = true;
+
+            // train model witch control variables enabled
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            System.out.println("_________________________________");
+            System.out.println(glm);
+            System.out.println("______");
+
+            preds = glm.score(test);
+            Scope.track_generic(preds);
+
+            // train model with offset effect removed
+            params._remove_offset_effects = false;
+
+            glm2 = new GLM(params).trainModel().get();
+            Scope.track_generic(glm2);
+
+            preds2 = glm2.score(test);
+            Scope.track_generic(preds2);
+
+            // check result training metrics are not the same
+            double delta = 10e-10;
+            assertNotEquals(glm.auc(), glm2.auc(), delta);
+            assertNotEquals(glm.mse(), glm2.mse(), delta);
+            //assertNotEquals(glm.logloss(), glm2.logloss(), delta);
+
+            double tMse = glm._output._training_metrics._MSE;
+            double tMse2 = glm2._output._training_metrics._MSE;
+            System.out.println(tMse+" "+tMse2);
+            assertNotEquals(tMse, tMse2, delta);
+
+            // check result training metrics unrestricted model and glm model with control variables disabled are the same
+            assertEquals(glm2._output._training_metrics.auc_obj()._auc, glm._output._training_metrics_unrestricted_model.auc_obj()._auc, delta);
+            assertEquals(glm2._output._training_metrics.mse(), glm._output._training_metrics_unrestricted_model.mse(), delta);
+            assertEquals(glm2._output._training_metrics.rmse(), glm._output._training_metrics_unrestricted_model.rmse(), delta);
+
+            // check preds differ
+            int differ = 0;
+            int testRowNumber = 100;
+            double threshold = (2 * testRowNumber)/1.1;
+            for (int i = 0; i < testRowNumber; i++) {
+                if(preds.vec(1).at(i) != preds2.vec(1).at(i)) differ++;
+                if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
+            }
+            System.out.println(differ + " " + threshold);
+            //assert differ > threshold;
+
+            System.out.println("Scoring history remove offset enabled");
+            TwoDimTable glmSH = glm._output._scoring_history;
+            System.out.println(glmSH);
+            System.out.println("Scoring history remove offset disabled");
+            TwoDimTable glm2SH = glm2._output._scoring_history;
+            System.out.println(glm2SH);
+            System.out.println("Scoring history remove offset enabled unrestricted model");
+            TwoDimTable glmSHCV = glm._output._scoring_history_unrestricted_model;
+            System.out.println(glmSHCV);
+            System.out.println("Scoring history remove offset disabled unrestricted model");
+            TwoDimTable glm2SHCV = glm2._output._scoring_history_unrestricted_model;
+            System.out.println(glm2SHCV);
+
+
+            // check scoring history is the same (instead of timestamp and duration column)
+            // change table header because it contains " unrestricted model"
+            glm2SH.setTableHeader(glmSHCV.getTableHeader());
+            assertTwoDimTableEquals(glmSHCV, glm2SH, new int[]{0,1});
+
+            // check control val scoring history is not null when control vals is enabled
+            assertNotNull(glmSHCV);
+
+            // check control val scoring history is null when control vals is disabled
+            assertNull(glm2SHCV);
+
+            //check variable importance
+            TwoDimTable vi = glm._output._variable_importances;
+            TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
+            TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
+
+            assertNotEquals(vi, vi_unrestricted);
+            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
+
+        } finally {
+            if(train != null) train.remove();
+            if(test != null) test.remove();
+            if(preds != null) preds.remove();
+            if(glm != null) glm.remove();
+            if(preds2 != null) preds2.remove();
+            if(glm2 != null) glm2.remove();
+            Scope.exit();
+        }
+    }
     
 }
