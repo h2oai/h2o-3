@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft Auth - Death to Shibboleth</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Hero Section -->
+        <header class="hero">
+            <div class="hero-content">
+                <h1>⚡ Zeus Auth</h1>
+                <p class="tagline">One login. No SAML nightmares. No eduPerson attributes.</p>
+                <p class="subtitle">Microsoft Entra ID authentication that just works.</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Not Signed In State -->
+            <section id="landing" class="card landing-card">
+                <div class="comparison">
+                    <div class="old-way">
+                        <h3>🪦 The Old Way (RIP)</h3>
+                        <ul class="pain-points">
+                            <li><span class="strike">OpenAthens federation</span></li>
+                            <li><span class="strike">Shibboleth IdP configuration</span></li>
+                            <li><span class="strike">SAML metadata exchanges</span></li>
+                            <li><span class="strike">eduPerson attributes</span></li>
+                            <li><span class="strike">urn:oid:1.3.6.1.4.1.5923.1.1.1.6</span></li>
+                            <li><span class="strike">InCommon federation trust</span></li>
+                            <li><span class="strike">Attribute release policies</span></li>
+                            <li><span class="strike">WAYF pages</span></li>
+                        </ul>
+                        <div class="horror-code">
+                            <code>
+&lt;saml:Attribute Name="urn:oid:1.3.6.1.4.1.5923.1.1.1.9"&gt;
+  &lt;saml:AttributeValue&gt;
+    member@institution.edu
+  &lt;/saml:AttributeValue&gt;
+&lt;/saml:Attribute&gt;
+                            </code>
+                        </div>
+                    </div>
+
+                    <div class="new-way">
+                        <h3>⚡ The Zeus Way</h3>
+                        <ul class="benefits">
+                            <li>✅ One Microsoft login</li>
+                            <li>✅ Modern OAuth 2.0 / OIDC</li>
+                            <li>✅ JSON tokens (not XML soup)</li>
+                            <li>✅ 5 minutes to integrate</li>
+                            <li>✅ SSO that actually works</li>
+                            <li>✅ Graph API for everything</li>
+                            <li>✅ Conditional Access policies</li>
+                            <li>✅ Works with personal & work accounts</li>
+                        </ul>
+                        <button id="signInBtn" class="btn btn-primary btn-large">
+                            <svg class="ms-logo" viewBox="0 0 21 21">
+                                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                            </svg>
+                            Sign in with Microsoft
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Signed In State -->
+            <section id="dashboard" class="card dashboard-card" style="display: none;">
+                <div class="user-header">
+                    <div class="avatar" id="userAvatar">?</div>
+                    <div class="user-info">
+                        <h2 id="userName">Welcome!</h2>
+                        <p id="userEmail" class="email"></p>
+                    </div>
+                    <button id="signOutBtn" class="btn btn-secondary">Sign Out</button>
+                </div>
+
+                <div class="token-section">
+                    <h3>Your ID Token Claims</h3>
+                    <p class="token-subtitle">Look at this beautiful JSON. No OIDs. No XML. Just data.</p>
+                    <pre id="tokenClaims" class="code-block"></pre>
+                </div>
+
+                <div class="actions-section">
+                    <h3>What You Can Do Now</h3>
+                    <div class="action-grid">
+                        <button id="callGraphBtn" class="btn btn-action">
+                            📊 Call Microsoft Graph
+                        </button>
+                        <button id="getProfileBtn" class="btn btn-action">
+                            👤 Get Full Profile
+                        </button>
+                        <button id="silentRefreshBtn" class="btn btn-action">
+                            🔄 Silent Token Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="apiResult" class="api-result" style="display: none;">
+                    <h3>API Response</h3>
+                    <pre id="apiResultContent" class="code-block"></pre>
+                </div>
+            </section>
+
+            <!-- Stats Section -->
+            <section class="stats-section">
+                <div class="stat">
+                    <span class="stat-number">0</span>
+                    <span class="stat-label">SAML assertions parsed</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">0</span>
+                    <span class="stat-label">Shibboleth configs written</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">∞</span>
+                    <span class="stat-label">Hours saved</span>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built with rage against <code>eduPersonScopedAffiliation</code></p>
+            <p class="small">Powered by Microsoft Entra ID + MSAL.js | Deploy to Netlify in seconds</p>
+        </footer>
+    </div>
+
+    <script src="/config.js"></script>
+    <script src="/app.js"></script>
+</body>
+</html>

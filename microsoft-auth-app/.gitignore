@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Netlify
+.netlify/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (in case you add any)
+.env
+.env.local
+.env.*.local
+
+# Build outputs (if you add a build step later)
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp

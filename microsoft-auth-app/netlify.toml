@@ -1,0 +1,82 @@
+# Netlify Configuration for Zeus Auth
+# Deploy Microsoft Entra ID auth in seconds, not the weeks Shibboleth takes
+
+[build]
+  # The public directory contains our static SPA
+  publish = "public"
+
+  # No build command needed - it's pure static files
+  # Unlike Shibboleth which requires:
+  # - Apache/Nginx configuration
+  # - mod_shib installation
+  # - Metadata exchange ceremonies
+  # - Attribute mapping rituals
+  # - Certificate management
+  # - ... hours of your life you'll never get back
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# SPA routing - all paths serve index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent clickjacking
+    X-Frame-Options = "DENY"
+
+    # Prevent MIME type sniffing
+    X-Content-Type-Options = "nosniff"
+
+    # Enable XSS protection
+    X-XSS-Protection = "1; mode=block"
+
+    # Referrer policy
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+    # Content Security Policy
+    # Allowing Microsoft login endpoints and MSAL CDN
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://alcdn.msauth.net;
+      style-src 'self' 'unsafe-inline';
+      connect-src 'self' https://login.microsoftonline.com https://graph.microsoft.com https://*.microsoft.com;
+      frame-src https://login.microsoftonline.com;
+      img-src 'self' data: https://graph.microsoft.com;
+    """
+
+    # Permissions policy
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "/styles.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/app.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Environment-specific configurations
+[context.production]
+  environment = { NODE_ENV = "production" }
+
+[context.deploy-preview]
+  environment = { NODE_ENV = "preview" }
+
+[context.branch-deploy]
+  environment = { NODE_ENV = "staging" }
+
+# Dev settings
+[dev]
+  port = 8888
+  targetPort = 3000
+  publish = "public"
+  autoLaunch = true

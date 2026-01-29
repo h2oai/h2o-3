@@ -1,0 +1,3 @@
+# SPA Routing - All paths to index.html
+# (Also configured in netlify.toml, this is a backup)
+/*    /index.html   200

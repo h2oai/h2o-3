@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Lost in Federation | Zeus Auth</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        .container { max-width: 600px; }
+        h1 {
+            font-size: 8rem;
+            background: linear-gradient(135deg, #0078d4, #00bcf2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+        h2 { font-size: 1.5rem; margin-bottom: 10px; }
+        p { color: #a0a0b0; margin-bottom: 30px; line-height: 1.6; }
+        code {
+            background: rgba(209, 52, 56, 0.2);
+            color: #ff6b6b;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        a {
+            display: inline-block;
+            background: linear-gradient(135deg, #0078d4, #00bcf2);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 120, 212, 0.5);
+        }
+        .joke {
+            margin-top: 40px;
+            padding: 20px;
+            background: #1a1a24;
+            border-radius: 12px;
+            border: 1px solid #2a2a3a;
+        }
+        .joke p { margin: 0; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <h2>Page Not Found</h2>
+        <p>
+            Unlike Shibboleth federation discovery, this is a simple 404.
+            No <code>WAYF</code> page. No metadata lookup. Just... not here.
+        </p>
+        <a href="/">Back to Zeus Auth</a>
+
+        <div class="joke">
+            <p>
+                Fun fact: Finding this page was still faster than
+                configuring a Shibboleth SP from scratch.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

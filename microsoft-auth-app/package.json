@@ -1,0 +1,40 @@
+{
+  "name": "zeus-auth",
+  "version": "1.0.0",
+  "description": "Microsoft Entra ID authentication - Death to Shibboleth",
+  "main": "public/index.html",
+  "scripts": {
+    "start": "npx serve public -l 8888",
+    "dev": "netlify dev",
+    "deploy": "netlify deploy --prod --dir=public",
+    "deploy:preview": "netlify deploy --dir=public"
+  },
+  "keywords": [
+    "microsoft",
+    "entra",
+    "azure-ad",
+    "msal",
+    "authentication",
+    "oauth2",
+    "oidc",
+    "netlify",
+    "no-shibboleth",
+    "death-to-saml"
+  ],
+  "author": "Zeus Thunderbolt Division",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/zeus-auth.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/zeus-auth/issues"
+  },
+  "homepage": "https://your-app.netlify.app"
+}
