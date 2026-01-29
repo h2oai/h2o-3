@@ -47,6 +47,9 @@
                     <li><a href="#intro">Introduction: The Federation Problem</a></li>
                     <li><a href="#complexity">Protocol Complexity Analysis</a></li>
                     <li><a href="#attributes">The eduPerson Attribute Disaster</a></li>
+                    <li><a href="#ezproxy">EZproxy: The Proxy Server Problem</a></li>
+                    <li><a href="#openathens">OpenAthens: A Case Study in Pain</a></li>
+                    <li><a href="#scihub">The Sci-Hub Indictment</a></li>
                     <li><a href="#implementation">Implementation Failure Rates</a></li>
                     <li><a href="#dx">Developer Experience Metrics</a></li>
                     <li><a href="#tco">Total Cost of Ownership</a></li>
@@ -402,9 +405,329 @@
                 </div>
             </section>
 
-            <!-- Section 4: Implementation Failure -->
+            <!-- Section 4: EZproxy -->
+            <section id="ezproxy" class="paper-section">
+                <h2>4. EZproxy: The Proxy Server Problem</h2>
+
+                <p>
+                    OCLC's EZproxy is the dominant proxy server solution in academic libraries, used by thousands
+                    of institutions worldwide. It was designed in an era when IP-based authentication was
+                    sufficient and users accessed resources from campus. That era has ended.
+                </p>
+
+                <div class="data-card warning">
+                    <h4>Documented Security Vulnerabilities</h4>
+                    <p>
+                        The University of Pennsylvania Libraries has
+                        <a href="https://github.com/upenn-libraries/ezproxy-security-issues" target="_blank">documented critical security issues</a>
+                        that remain unaddressed in OCLC's official documentation:
+                    </p>
+                </div>
+
+                <h3>4.1 Clickjacking Vulnerability</h3>
+
+                <p>
+                    EZproxy authentication prompts can be loaded within iframes, enabling attackers to create
+                    fake login pages that harvest credentials:
+                </p>
+
+                <blockquote class="pull-quote rage">
+                    "There is no way to prevent a malicious site from mocking up a version of your
+                    institution's EZProxy login page... users may become accustomed to submitting their
+                    credentials in a way that is prone to eventual exploitation."
+                    <footer>— <a href="https://github.com/upenn-libraries/ezproxy-security-issues">UPenn Libraries Security Documentation</a></footer>
+                </blockquote>
+
+                <h3>4.2 Session Hijacking</h3>
+
+                <p>
+                    Even with <code>ForceHTTPSLogin</code> enabled, session cookies are transmitted in
+                    cleartext when accessing non-HTTPS resources:
+                </p>
+
+                <div class="code-block-labeled bad-code">
+                    <h4>The Session Cookie Problem</h4>
+                    <pre><code># Session cookie sent in the clear to non-HTTPS sites
+Cookie: ezproxy=sHj7kL2mN9pQrS4tUvWxYz
+
+# Attacker on same network can intercept and reuse
+# No absolute session expiration by default
+# Sessions can persist indefinitely</code></pre>
+                </div>
+
+                <p>
+                    The undocumented <code>Option ForceSSL</code> causes cross-domain and mixed-content
+                    issues that render many resources unusable—a "fix" that breaks functionality.
+                </p>
+
+                <h3>4.3 The Proxy Piracy Pipeline</h3>
+
+                <p>
+                    EZproxy credentials are a primary vector for academic content piracy. According to
+                    <a href="https://scholarlykitchen.sspnet.org/2018/01/16/what-will-you-do-when-they-come-for-your-proxy-server-ra21/" target="_blank">The Scholarly Kitchen</a>:
+                </p>
+
+                <blockquote class="pull-quote">
+                    "Proxy services are one of the main vectors for article piracy. Compromised proxy
+                    login credentials can lead to thousands of articles being downloaded in a very
+                    short amount of time."
+                    <footer>— The Scholarly Kitchen, 2018</footer>
+                </blockquote>
+
+                <h3>4.4 Architectural Obsolescence</h3>
+
+                <p>
+                    EZproxy's fundamental architecture assumes users start from the library portal.
+                    This assumption is catastrophically wrong in 2026:
+                </p>
+
+                <div class="failure-modes">
+                    <div class="failure-card">
+                        <h4>Google Scholar</h4>
+                        <div class="failure-stat">Broken</div>
+                        <p>Users arrive at publishers, not the library</p>
+                    </div>
+                    <div class="failure-card">
+                        <h4>DOI Links</h4>
+                        <div class="failure-stat">Broken</div>
+                        <p>Direct links bypass proxy entirely</p>
+                    </div>
+                    <div class="failure-card">
+                        <h4>Citation Links</h4>
+                        <div class="failure-stat">Broken</div>
+                        <p>References in papers link directly</p>
+                    </div>
+                    <div class="failure-card">
+                        <h4>Mobile Apps</h4>
+                        <div class="failure-stat">Broken</div>
+                        <p>URL rewriting doesn't work in apps</p>
+                    </div>
+                </div>
+
+                <cite>
+                    Source: <a href="https://www.tandfonline.com/doi/full/10.1080/1941126X.2019.1709738" target="_blank">
+                    "We Have Outgrown IP Authentication"</a>, Journal of Electronic Resources Librarianship, 2020
+                </cite>
+            </section>
+
+            <!-- Section 5: OpenAthens Case Study -->
+            <section id="openathens" class="paper-section">
+                <h2>5. OpenAthens: A Case Study in Implementation Pain</h2>
+
+                <p>
+                    The <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8608206/" target="_blank">"OpenAthens Odyssey"</a>
+                    case study, published in the Journal of the Medical Library Association (2021),
+                    documents the Texas Medical Center Library's migration from EZproxy to OpenAthens.
+                    The findings are sobering.
+                </p>
+
+                <h3>5.1 Implementation Timeline</h3>
+
+                <div class="time-comparison">
+                    <div class="time-item saml">
+                        <div class="protocol-name">Planning & Preparation</div>
+                        <div class="time-value">4 months</div>
+                        <div class="time-desc">September–December 2017</div>
+                    </div>
+                    <div class="time-item saml">
+                        <div class="protocol-name">User Communication & Testing</div>
+                        <div class="time-value">3 months</div>
+                        <div class="time-desc">January–March 2018</div>
+                    </div>
+                </div>
+
+                <h3>5.2 Stakeholder Complexity</h3>
+
+                <div class="data-card">
+                    <h4>Parties Involved in a Single Implementation</h4>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <span class="stat-value">6</span>
+                            <span class="stat-desc">Academic institutions</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">30+</span>
+                            <span class="stat-desc">Publishers contacted</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">6</span>
+                            <span class="stat-desc">IT security reviews</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">?</span>
+                            <span class="stat-desc">Months of follow-up issues</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>5.3 Post-Implementation Failures</h3>
+
+                <blockquote class="pull-quote rage">
+                    "For months following the end of the project, library staff discovered that some
+                    journal publishers were dropping OpenAthens credentials and reverting to EZproxy
+                    IP range without prior notice. Staff discovered these errors only after receiving
+                    user complaints of access denials."
+                    <footer>— OpenAthens Odyssey, JMLA 2021</footer>
+                </blockquote>
+
+                <p>Publishers that caused ongoing problems included:</p>
+
+                <ul class="conclusion-list">
+                    <li>SAGE (security layer incompatibility)</li>
+                    <li>Mary Ann Liebert (CAPTCHA blocking federation)</li>
+                    <li>Future Medicine (security conflicts)</li>
+                    <li>Slack, PNAS, American College of Physicians (silent reversions)</li>
+                </ul>
+
+                <div class="data-card warning">
+                    <h4>The CAPTCHA Problem</h4>
+                    <p>
+                        "The CAPTCHA challenge initiated at Atypon-supported platforms prevented the
+                        authentication process from occurring at the vendor site."
+                    </p>
+                    <p class="note">
+                        When your authentication system is defeated by a checkbox asking if you're human,
+                        something has gone fundamentally wrong.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section 6: Sci-Hub Indictment -->
+            <section id="scihub" class="paper-section">
+                <h2>6. The Sci-Hub Indictment</h2>
+
+                <p>
+                    The existence and explosive growth of Sci-Hub is the ultimate indictment of academic
+                    authentication systems. When users—including those with legitimate institutional access—choose
+                    an illegal service over their library, the authentication experience has catastrophically failed.
+                </p>
+
+                <div class="data-card">
+                    <h4>Sci-Hub by the Numbers</h4>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <span class="stat-value">88M+</span>
+                            <span class="stat-desc">Papers in collection (July 2022)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">85%</span>
+                            <span class="stat-desc">Coverage of paywalled papers</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">~400K</span>
+                            <span class="stat-desc">Daily downloads</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">#1</span>
+                            <span class="stat-desc">Reason: "Easier than library"</span>
+                        </div>
+                    </div>
+                    <cite>Sources: <a href="https://www.science.org/content/article/sci-hub-s-cache-pirated-papers-so-big-subscription-journals-are-doomed-data-analyst" target="_blank">Science Magazine</a>, Sci-Hub statistics</cite>
+                </div>
+
+                <h3>6.1 Users Choose Piracy Over Authentication</h3>
+
+                <p>
+                    A <a href="https://crln.acrl.org/index.php/crlnews/article/view/9457/10702" target="_blank">
+                    2016 analysis in College & Research Libraries News</a> found something remarkable:
+                </p>
+
+                <blockquote class="pull-quote">
+                    "An analysis of Sci-Hub logs from September 2015 through February 2016 led to the
+                    surprising finding that many of its users were academic users who probably already
+                    had legal access—suggesting authentication barriers drive users toward alternatives."
+                    <footer>— C&RL News, 2016</footer>
+                </blockquote>
+
+                <h3>6.2 Why Users Prefer Sci-Hub</h3>
+
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Library Access</th>
+                                <th>Sci-Hub</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Find article</td>
+                                <td class="bad">Navigate to library → search → maybe find it</td>
+                                <td class="good">Paste DOI</td>
+                            </tr>
+                            <tr>
+                                <td>Authenticate</td>
+                                <td class="bad">SSO → WAYF → credentials → MFA → wait</td>
+                                <td class="good">None</td>
+                            </tr>
+                            <tr>
+                                <td>Handle errors</td>
+                                <td class="bad">Proxy error? Try again. Cookie issue? Clear cache.</td>
+                                <td class="good">Just works</td>
+                            </tr>
+                            <tr>
+                                <td>Get PDF</td>
+                                <td class="bad">Click through publisher landing page</td>
+                                <td class="good">Instant download</td>
+                            </tr>
+                            <tr>
+                                <td>Time to paper</td>
+                                <td class="bad">2-5 minutes (if it works)</td>
+                                <td class="good">10 seconds</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>6.3 The Credential Economy</h3>
+
+                <p>
+                    Sci-Hub's collection was largely built using stolen or donated institutional credentials.
+                    This presents an uncomfortable truth:
+                </p>
+
+                <div class="security-comparison">
+                    <div class="security-card bad">
+                        <h4>How Credentials Are Obtained</h4>
+                        <ul>
+                            <li>Phishing emails targeting university users</li>
+                            <li>Credential stuffing from prior breaches</li>
+                            <li>Researchers voluntarily donating access</li>
+                            <li>Compromised EZproxy sessions</li>
+                        </ul>
+                    </div>
+                    <div class="security-card bad">
+                        <h4>Why It Works</h4>
+                        <ul>
+                            <li>EZproxy sessions don't expire</li>
+                            <li>No anomaly detection by default</li>
+                            <li>Single-factor authentication common</li>
+                            <li>Users reuse passwords</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <blockquote class="pull-quote">
+                    "A 2023 study concluded that Sci-Hub is widely used by students and faculty even
+                    at major research universities because Sci-Hub has a larger collection of research
+                    articles than any single library and provides an easier-to-use interface than
+                    legal academic libraries."
+                    <footer>— <a href="https://en.wikipedia.org/wiki/Sci-Hub" target="_blank">Wikipedia, citing peer-reviewed research</a></footer>
+                </blockquote>
+
+                <div class="data-card">
+                    <h4>The Ultimate Metric</h4>
+                    <p style="font-size: 1.2rem; text-align: center; margin: 0;">
+                        When <strong>piracy provides better UX than the legal option</strong>,
+                        the legal option has failed.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section 7: Implementation Failure -->
             <section id="implementation" class="paper-section">
-                <h2>4. Implementation Failure Rates</h2>
+                <h2>7. Implementation Failure Rates</h2>
 
                 <p>
                     We analyzed integration project outcomes from multiple sources to understand the true
@@ -501,9 +824,9 @@
                 </div>
             </section>
 
-            <!-- Section 5: Developer Experience -->
+            <!-- Section 8: Developer Experience -->
             <section id="dx" class="paper-section">
-                <h2>5. Developer Experience Metrics</h2>
+                <h2>8. Developer Experience Metrics</h2>
 
                 <p>
                     Developer experience (DX) directly impacts adoption, implementation quality, and
@@ -610,9 +933,9 @@
                 </div>
             </section>
 
-            <!-- Section 6: TCO -->
+            <!-- Section 9: TCO -->
             <section id="tco" class="paper-section">
-                <h2>6. Total Cost of Ownership</h2>
+                <h2>9. Total Cost of Ownership</h2>
 
                 <p>
                     The true cost of identity federation extends beyond licensing fees to include
@@ -677,9 +1000,9 @@
                 </blockquote>
             </section>
 
-            <!-- Section 7: Security -->
+            <!-- Section 10: Security -->
             <section id="security" class="paper-section">
-                <h2>7. Security Considerations</h2>
+                <h2>10. Security Considerations</h2>
 
                 <p>
                     Proponents of SAML often cite security as an advantage. The data tells a different story.
@@ -739,9 +1062,9 @@
                 </div>
             </section>
 
-            <!-- Section 8: Modern Alternative -->
+            <!-- Section 11: Modern Alternative -->
             <section id="modern" class="paper-section">
-                <h2>8. The Modern Alternative</h2>
+                <h2>11. The Modern Alternative</h2>
 
                 <p>
                     OAuth 2.0 with OpenID Connect provides everything academic institutions need,
@@ -824,7 +1147,7 @@
 
             <!-- Conclusion -->
             <section id="conclusion" class="paper-section">
-                <h2>9. Conclusion</h2>
+                <h2>12. Conclusion</h2>
 
                 <p>
                     The data is unambiguous: SAML-based academic identity federation has become a liability.
@@ -860,16 +1183,26 @@
             <section class="paper-section references">
                 <h2>References</h2>
                 <ol class="ref-list">
+                    <li>Somorovsky, J., et al. (2012). <a href="https://www.usenix.org/system/files/conference/usenixsecurity12/sec12-final91.pdf">"On Breaking SAML: Be Whoever You Want to Be"</a>. USENIX Security Symposium</li>
+                    <li>PortSwigger Research. (2025). <a href="https://portswigger.net/research/the-fragile-lock">"The Fragile Lock: Novel Bypasses For SAML Authentication"</a></li>
+                    <li>Arsenault, C., et al. (2021). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8608206/">"OpenAthens odyssey: challenges of implementing federated authentication for a multi-institutional user population"</a>. Journal of the Medical Library Association</li>
+                    <li>UPenn Libraries. (2024). <a href="https://github.com/upenn-libraries/ezproxy-security-issues">EZproxy Security Issues</a>. GitHub</li>
+                    <li>Tay, A. (2022). <a href="https://journals.ala.org/index.php/ltr/article/view/7848/10929">"The Access and Delivery Problem for Libraries"</a>. Library Technology Reports</li>
+                    <li>Breeding, M. (2020). <a href="https://www.tandfonline.com/doi/full/10.1080/1941126X.2019.1709738">"We Have Outgrown IP Authentication"</a>. Journal of Electronic Resources Librarianship</li>
+                    <li>Russell, G. (2016). <a href="https://crln.acrl.org/index.php/crlnews/article/view/9457/10702">"Sci-Hub unmasked: Piracy, information policy, and your library"</a>. College & Research Libraries News</li>
+                    <li>Anderson, R. (2018). <a href="https://scholarlykitchen.sspnet.org/2018/01/16/what-will-you-do-when-they-come-for-your-proxy-server-ra21/">"What Will You Do When They Come for Your Proxy Server?"</a>. The Scholarly Kitchen</li>
+                    <li>InCommon Federation Interoperability Working Group. (2024). <a href="https://spaces.at.internet2.edu/spaces/FIWG/pages/95715772/Final+Report+-+Federation+Interoperability+Working+Group+1">Final Report</a>. Internet2</li>
+                    <li>REFEDS. (2022). <a href="https://wiki.refeds.org/display/STAN/eduPerson+(202208)+v4.4.0">eduPerson Specification v4.4.0</a></li>
+                    <li>Lloyd, T. (2020). <a href="https://content.iospress.com/articles/information-services-and-use/isu200091">"Introduction to SeamlessAccess"</a>. Information Services & Use</li>
+                    <li>Endor Labs. (2025). <a href="https://www.endorlabs.com/learn/cve-2025-47949-reveals-flaw-in-samlify-that-opens-door-to-saml-single-sign-on-bypass">CVE-2025-47949: SAML Single Sign-On Bypass</a></li>
+                    <li>ProjectDiscovery. (2024). <a href="https://projectdiscovery.io/blog/github-enterprise-saml-authentication-bypass">"GitHub Enterprise SAML Authentication Bypass"</a></li>
+                    <li>Cirrus Identity. (2024). <a href="https://blog.cirrusidentity.com/multilateral-federations-and-azure-ad">"Azure AD and InCommon"</a></li>
+                    <li>Science Magazine. (2017). <a href="https://www.science.org/content/article/sci-hub-s-cache-pirated-papers-so-big-subscription-journals-are-doomed-data-analyst">"Sci-Hub's cache of pirated papers is so big, subscription journals are doomed"</a></li>
                     <li>OASIS. (2005). SAML 2.0 Core Specification. <a href="https://docs.oasis-open.org/security/saml/v2.0/">OASIS Standards</a></li>
                     <li>IETF. (2012). RFC 6749: The OAuth 2.0 Authorization Framework</li>
                     <li>OpenID Foundation. (2014). OpenID Connect Core 1.0</li>
-                    <li>EDUCAUSE. (2024). IT Issues Survey. <a href="https://www.educause.edu">educause.edu</a></li>
-                    <li>InCommon. (2024). Annual Federation Report</li>
-                    <li>Gartner. (2024). Identity and Access Management Magic Quadrant</li>
-                    <li>Somorovsky, J., et al. (2012). On Breaking SAML: Be Whoever You Want to Be. USENIX Security</li>
-                    <li>EDUCAUSE. (2024). eduPerson Object Class Specification</li>
-                    <li>NIST. (2017). SP 800-63B: Digital Identity Guidelines - Authentication</li>
-                    <li>Microsoft. (2024). Microsoft Entra ID Documentation</li>
+                    <li>Microsoft. (2025). <a href="https://learn.microsoft.com/en-us/entra/architecture/multilateral-federation-solution-two">Microsoft Entra ID with Shibboleth as a SAML proxy</a></li>
+                    <li>OCLC. (2024). <a href="https://help.oclc.org/Library_Management/EZproxy/Secure_your_EZproxy_server">Secure your EZproxy server</a>. OCLC Support</li>
                 </ol>
             </section>
         </main>
