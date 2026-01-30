@@ -29,6 +29,7 @@ def glrm_mojo():
     # test and make sure setting the iteration number did not screw up the prediction
     predID, pred_mojo = pyunit_utils.mojo_predict(glrmModel, TMPDIR, MOJONAME, glrmIterNumber=100) # save mojo predict
     pred_h2o = h2o.get_frame("GLRMLoading_"+predID)
+    assert pred_h2o is not None
     print("Comparing mojo x Factor and model x Factor for 100 iterations")
     pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)
     predID, pred_mojo = pyunit_utils.mojo_predict(glrmModel, TMPDIR, MOJONAME, glrmIterNumber=1) # save mojo predict

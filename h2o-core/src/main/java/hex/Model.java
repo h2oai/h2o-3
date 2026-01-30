@@ -277,6 +277,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
+  
+  public boolean isGeneric() {
+    return false;
+  }
 
   public boolean havePojo() {
     if (_parms._preprocessors != null) return false; // TE processor not included to current POJO (see PUBDEV-8508 for potential fix)
@@ -309,7 +313,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public GridSortBy getDefaultGridSortBy() {
     if (! isSupervised())
       return null;
-    else if (_output.nclasses() > 1)
+    else if (_output.hasTreatment()){
+      return GridSortBy.AUUC;
+    } else if (_output.nclasses() > 1)
       return GridSortBy.LOGLOSS;
     else
       return GridSortBy.RESDEV;
@@ -319,6 +325,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public static final GridSortBy LOGLOSS = new GridSortBy("logloss", false);
     public static final GridSortBy RESDEV = new GridSortBy("residual_deviance", false);
     public static final GridSortBy R2 = new GridSortBy("r2", true);
+    public static final GridSortBy AUUC = new GridSortBy("auuc", false);
 
     public final String _name;
     public final boolean _decreasing;
@@ -442,6 +449,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _offset_column;
     public String _fold_column;
     public String _treatment_column;
+    public String _id_column;
 
     // Check for constant response
     public boolean _check_constant_response = true;
@@ -566,7 +574,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
 
     public String[] getNonPredictors() {
-        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column, _treatment_column})
+        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column, _treatment_column, _id_column})
                 .filter(Objects::nonNull)
                 .toArray(String[]::new);
     }
@@ -791,6 +799,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override
     public final String getTreatmentColumn(){
       return _treatment_column;
+    }
+
+    @Override
+    public String getIdColumn() {
+      return _id_column;
     }
 
     @Override
@@ -1071,6 +1084,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasWeights = b.hasWeightCol();
       _hasFold = b.hasFoldCol();
       _hasTreatment = b.hasTreatmentCol();
+      _hasId = b.hasIdCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
       _reproducibility_information_table = createReproducibilityInformationTable(b);
@@ -1080,7 +1094,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
     public int nfeatures() {
-      return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (_hasTreatment ?1:0) - (isSupervised()?1:0);
+      return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (_hasTreatment ?1:0) - (_hasId?1:0) - (isSupervised()?1:0);
     }
     /** Returns features used by the model */
     public String[] features() {
@@ -1153,16 +1167,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     protected boolean _hasWeights;// only need to know if we have them
     protected boolean _hasFold;// only need to know if we have them
     protected boolean _hasTreatment;
+    protected boolean _hasId;
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
     public boolean hasFold () { return _hasFold;}
     public boolean hasTreatment() { return _hasTreatment;}
     public boolean hasResponse() { return isSupervised(); }
+    public boolean hasId() {return _hasId;}
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
     public String treatmentName() { return _hasTreatment ? _names[treatmentIdx()]: null;}
+    public String idName() {return _hasId ? _names[idIdx()] : null;}
+    
     public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
     // cn are predictor cols, r is response, w is weights, o is offset, f is fold and t is treatment - these are optional
@@ -1188,6 +1206,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public int treatmentIdx() {
       if(!_hasTreatment) return -1;
+      return _names.length - (isSupervised()?1:0) - 1;
+    }
+
+    public int idIdx() {
+      if(!_hasId) return -1;
       return _names.length - (isSupervised()?1:0) - 1;
     }
 
@@ -1378,7 +1401,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public double likelihood(double w, double y, double[] f) {
-    return 0.0; // place holder.  This function is overridden in GLM.
+    return Double.NaN; // placeholder.  This function is overridden in GLM and GenericModel.
+  }
+
+  public double aic(double likelihood) {
+    return Double.NaN; // placeholder.  This function is overridden in GenericModel.
   }
 
   public ScoringInfo[] scoring_history() { return scoringInfo; }
@@ -1656,6 +1683,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String getFoldColumn();
     String getResponseColumn();
     String getTreatmentColumn();
+    String getIdColumn();
     double missingColumnsType();
     int getMaxCategoricalLevels();
     default String[] getNonPredictors() {
@@ -1700,6 +1728,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String fold = parms.getFoldColumn();
     final String response = parms.getResponseColumn();
     final String treatment = parms.getTreatmentColumn();
+    final String id = parms.getIdColumn();
 
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
@@ -1719,7 +1748,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // As soon as the test frame contains at least one original pre-encoding predictor,
         // then we consider the frame as valid for predictions, and we'll later fill missing columns with NA
         Set<String> required = new HashSet<>(Arrays.asList(origNames));
-        required.removeAll(Arrays.asList(response, weights, fold, treatment));
+        required.removeAll(Arrays.asList(response, weights, fold, treatment, id));
         for (String name : test.names()) {
           if (required.contains(name)) {
             match = true;
@@ -1964,11 +1993,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
   
-  protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
+  protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics) {
     Frame adaptFr = new Frame(fr);
-    applyPreprocessors(adaptFr, tmpFrames);
+    applyPreprocessors(adaptFr);
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    tmpFrames.add(adaptFr);
     if (msg.length > 0) {
       for (String s : msg) {
         if ((_output.responseName() == null) || !containsResponse(s, _output.responseName())) {  // response column missing will not generate warning for prediction
@@ -1977,38 +2005,51 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }
+    Scope.track(adaptFr);
     return adaptFr;
   }
-  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    // Adapt frame, clean up the previous score warning messages
-    _warningsP = new String[0];
-    computeMetrics = computeMetrics &&
-            (!_output.hasResponse() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad()));
-    List<Frame> tmpFrames = new ArrayList<>();
-    Frame adaptFr = adaptFrameForScore(fr, computeMetrics, tmpFrames);
+  public ModelMetrics scoreAndReturnMetrics(Frame fr, String destination_key, Job j, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    try (Scope.Safe s = Scope.safe(fr)) {
+      // Adapt frame, clean up the previous score warning messages
+      _warningsP = new String[0];
+      Frame adaptFr = adaptFrameForScore(fr, true);
 
-    // Predict & Score
-    PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc); 
-    Frame output = result.getPredictions();
-    result.makeModelMetrics(fr, adaptFr);
-
-    Vec predicted = output.vecs()[0]; // Modeled/predicted response
-    String[] mdomain = predicted.domain(); // Domain of predictions (union of test and train)
-    // Output is in the model's domain, but needs to be mapped to the scored
-    // dataset's domain.
-    if(_output.isClassifier() && computeMetrics && !_output.hasTreatment()) {
-      Vec actual = fr.vec(_output.responseName());
-      if( actual != null ) {  // Predict does not have an actual, scoring does
-        String[] sdomain = actual.domain(); // Scored/test domain; can be null
-        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
-      }
+      // Predict & Score
+      PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, true, customMetricFunc);
+      return result.makeModelMetrics(fr, adaptFr);
     }
-    for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
-    return output;
+  }
+
+  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    try (Scope.Safe s = Scope.safe(fr)) {
+      // Adapt frame, clean up the previous score warning messages
+      _warningsP = new String[0];
+      computeMetrics = computeMetrics &&
+              (!_output.hasResponse() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad()));
+      Frame adaptFr = adaptFrameForScore(fr, computeMetrics);
+
+      // Predict & Score
+      PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc);
+      Frame output = result.getPredictions();
+      result.makeModelMetrics(fr, adaptFr);
+
+      Vec predicted = output.vecs()[0]; // Modeled/predicted response
+      String[] mdomain = predicted.domain(); // Domain of predictions (union of test and train)
+      // Output is in the model's domain, but needs to be mapped to the scored
+      // dataset's domain.
+      if (_output.isClassifier() && computeMetrics && !_output.hasTreatment()) {
+        Vec actual = fr.vec(_output.responseName());
+        if (actual != null) {  // Predict does not have an actual, scoring does
+          String[] sdomain = actual.domain(); // Scored/test domain; can be null
+          if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
+            CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
+        }
+      }
+      return Scope.untrack(output);
+    }
   }
   
-  private void applyPreprocessors(Frame fr, List<Frame> tmpFrames) {
+  private void applyPreprocessors(Frame fr) {
     if (_parms._preprocessors == null) return;
     
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
@@ -2018,7 +2059,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       ModelPreprocessor preprocessor = key.get();
       result = preprocessor.processScoring(result, this);
-      tmpFrames.add(result);
+      Scope.track(result);
     }
     fr.restructure(result.names(), result.vecs()); //inplace
   }
@@ -3135,11 +3176,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   static <T extends Lockable<T>> int deleteAll(Key<T>[] keys) {
     int c = 0;
     for (Key k : keys) {
-      T t = DKV.getGet(k);
-      if (t != null) {
-        t.delete(); //delete all subparts
-        c++;
-      }
+      if (Keyed.remove(k)) c++;
     }
     return c;
   }
@@ -3474,6 +3511,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       @Override
       public String foldColumn() { return _output.foldName(); }
       @Override
+      public String idColumn() { return _output.idName();}
+
+    @Override
       public ModelCategory getModelCategory() { return _output.getModelCategory(); }
       @Override
       public boolean isSupervised() { return _output.isSupervised(); }

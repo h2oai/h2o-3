@@ -967,7 +967,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         Frame x = null;
         if (_wideDataset) {   // extract X into archetype, extract Y into X frames
-          x = new water.util.ArrayUtils().frame(model._output._representation_key, xnames, yt._transposed?yt._archetypes:transpose(yt._archetypes));
+          x = ArrayUtils.frame(model._output._representation_key, xnames, yt._transposed ? yt._archetypes : transpose(yt._archetypes));
           yt._archetypes = new FrameUtils.Vecs2ArryTsk(_ncolY, _parms._k).doAll(xwF).res;
           model._output._archetypes_raw = new Archetypes(yt._archetypes, yt._transposed, tinfo._catOffsets,
                   numLevels);
@@ -1004,14 +1004,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
        //
         model.update(_job);
       } finally {
-        List<Key<Vec>> keep = new ArrayList<>();
         if (model._output._iterations ==0) {
           warn("_max_runtime_secs", "model may not be properly built due to timeout.  Set " +
                   "max_runtime_secs to 0 or increase its value.");
         }
         if (model != null) {
           Frame loadingFrm = DKV.getGet(model._output._representation_key);
-          if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);
+          if (loadingFrm != null) Scope.untrack(loadingFrm);
           model.unlock(_job);
         }
         if (tinfo != null) tinfo.remove();
@@ -1031,7 +1030,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         if ((fr != null) && (!_wideDataset)) {
           for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
         }
-        Scope.untrack(keep);
       }
     }
 

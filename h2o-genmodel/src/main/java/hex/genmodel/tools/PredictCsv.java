@@ -251,7 +251,7 @@ public class PredictCsv {
             AutoEncoderModelPrediction p = modelWrapper.predictAutoEncoder(row);
             for (int i=0; i < p.reconstructed.length; i++) {
               output.write(myDoubleToString(p.reconstructed[i]));
-              if (i < p.reconstructed.length)
+              if (i < p.reconstructed.length-1)
                 output.write(',');
             }
             break;

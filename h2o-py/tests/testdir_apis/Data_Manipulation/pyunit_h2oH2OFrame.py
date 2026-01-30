@@ -125,12 +125,10 @@ def H2OFrame_from_H2OFrame():
     assert dupl4.columns == ["n1", "s1"]
 
 
-def H2OFrame_skipped_columns_is_BUGGY():
-    try:
-        h2o.H2OFrame(data, skipped_columns=[1])
-        assert False, "skipped_columns handling may be fixed now"  # parse_setup is absolutely weird, with only half parameters passed to build the ParseSetup, and then a bunch of logic done locally, that's why it's buggy: see issue https://github.com/h2oai/h2o-3/issues/15947 
-    except ValueError as e:
-        assert "length of col_names should be equal to the number of columns parsed: 4 vs 3" in str(e)
+def H2OFrame_skipped_columns_BUG_fixed():
+    f1 = h2o.H2OFrame(data, skipped_columns=[1])
+    f2 = h2o.H2OFrame(data)
+    assert f1.ncol == (f2.ncol-1), "expected number of columns: {0}, actual column numbers: {1}".format(f1.ncol, (f2.ncol-1))
 
 
 pu.run_tests([
@@ -141,5 +139,5 @@ pu.run_tests([
     H2OFrame_from_pandas,
     H2OFrame_from_scipy,
     H2OFrame_from_H2OFrame,
-    H2OFrame_skipped_columns_is_BUGGY
+    H2OFrame_skipped_columns_BUG_fixed
 ])

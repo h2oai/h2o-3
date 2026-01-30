@@ -9,7 +9,6 @@ test.pca.la1s <- function() {
   run_time_c <- c()
   num_run <- 1
 
-  browser()
   dataR <- h2o.importFile(locate("bigdata/laptop/jira/la1s.wc.arff.txt.zip"), sep = ',', destination_frame = "data", header = T, parse = FALSE)
   data <- h2o.parseRaw(dataR, destination_frame = "bigParse",
                               parse_type = "CSV", header = T) # chunk_size = 124022500 size will make one chunk.

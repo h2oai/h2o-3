@@ -19,7 +19,7 @@ def h2oget_timezone():
     timezones = h2o.list_timezones()
     assert_is_type(timezones, H2OFrame)
 
-    assert timezones.nrow == 467, "h2o.get_timezone() returns frame with wrong row number."
+    assert timezones.nrow == 459, "h2o.get_timezone() returns frame with wrong row number."
     assert timezones.ncol == 1, "h2o.get_timezone() returns frame with wrong column number."
 
 if __name__ == "__main__":

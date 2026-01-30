@@ -13,7 +13,7 @@ test.import_single_quoted <- function() {
   expect_true(h2o.ncol(hdf) == 20)
   expect_true(h2o.nrow(hdf) == 7)
     
-  df <- read.csv(path, quote="'")
+  df <- read.csv(path, quote="'", stringsAsFactors = TRUE)
   hddf <- as.data.frame(hdf)
   # comparing last column only as it's difficult to compare dataframes in R (always cryptic errors on some column): 
     # if parsing was ok, last column should be identical, otherwise it should be shifted
@@ -29,7 +29,7 @@ test.upload_single_quoted <- function() {
   expect_true(h2o.ncol(hdf) == 20)
   expect_true(h2o.nrow(hdf) == 7)
     
-  df <- read.csv(path, quote="'")
+  df <- read.csv(path, quote="'", stringsAsFactors = TRUE)
   hddf <- as.data.frame(hdf)
   expect_equal(df['status'], hddf['status'])
 }

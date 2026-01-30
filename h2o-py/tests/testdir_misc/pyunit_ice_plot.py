@@ -12,7 +12,7 @@ from h2o.estimators import *
 from h2o.explanation._explain import *
 from h2o.explanation._explain import _handle_orig_values, _factor_mapper
 from h2o.two_dim_table import H2OTwoDimTable
-
+from h2o.utils.threading import local_context
 
 def test_original_values():
     paths = ["smalldata/titanic/titanic_expanded.csv", "smalldata/logreg/prostate.csv", "smalldata/iris/iris2.csv"]
@@ -55,20 +55,21 @@ def test_handle_orig_values():
 
         plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
         frame = train.sort(gbm.actual_params["response_column"])
-        for column in cols_to_test:
-            is_factor = frame[column].isfactor()[0]
-            if is_factor:
-                factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
-            deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
-            deciles[10] = frame.nrow - 1
-            colors = plt.get_cmap(colormap, 11)(list(range(11)))
-            for i, index in enumerate(deciles):
-                percentile_string = "{}th Percentile".format(i * 10)
-                if targets[test_id] is not None:
-                    target = [targets[test_id]]
-                else:
-                    target = None
-                pp_data = gbm.partial_plot(
+        with local_context(datatable_disabled=True, polars_disabled=True): # force single thread as_data_frame conversion
+            for column in cols_to_test:
+                is_factor = frame[column].isfactor()[0]
+                if is_factor:
+                    factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
+                deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
+                deciles[10] = frame.nrow - 1
+                colors = plt.get_cmap(colormap, 11)(list(range(11)))
+                for i, index in enumerate(deciles):
+                    percentile_string = "{}th Percentile".format(i * 10)
+                    if targets[test_id] is not None:
+                        target = [targets[test_id]]
+                    else:
+                        target = None
+                    pp_data = gbm.partial_plot(
                         frame,
                         cols=[column],
                         plot=False,
@@ -77,26 +78,26 @@ def test_handle_orig_values():
                         nbins=100 if not is_factor else 1 + frame[column].nlevels()[0],
                         include_na=True
                     )[0]
-                encoded_col = pp_data.col_header[0]
-                factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column)) if is_factor else None
-                orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
-                orig_value_prediction = NumpyFrame(_handle_orig_values(is_factor, pp_data, encoded_col, plt, target, gbm,
-                                                            frame, index, column, colors[i], percentile_string, factor_map, orig_value))
+                    encoded_col = pp_data.col_header[0]
+                    factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column)) if is_factor else None
+                    orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
+                    orig_value_prediction = NumpyFrame(_handle_orig_values(is_factor, pp_data, encoded_col, plt, target, gbm,
+                                                                           frame, index, column, colors[i], percentile_string, factor_map, orig_value))
 
-                if (is_factor and math.isnan(factor_map([frame[index, column]])[0])) or (not is_factor and math.isnan(frame[index, column])):
-                    orig_test_value = orig_value_prediction["mean_response"][orig_value_prediction.nrow - 1]
-                else:
-                    orig_test_value = orig_value_prediction["mean_response"]
+                    if (is_factor and math.isnan(factor_map([frame[index, column]])[0])) or (not is_factor and math.isnan(frame[index, column])):
+                        orig_test_value = orig_value_prediction["mean_response"][orig_value_prediction.nrow - 1]
+                    else:
+                        orig_test_value = orig_value_prediction["mean_response"]
 
-                if type_test[test_id] == "Regression":
-                    assert gbm.training_model_metrics()["model_category"] == "Regression"
-                    np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()["predict"][index], 5)
-                elif type_test[test_id] == "Binomial":
-                    assert gbm.training_model_metrics()["model_category"] == "Binomial"
-                    np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()["p1"][index], 5)
-                elif type_test[test_id] == "Multinomial":
-                    assert gbm.training_model_metrics()["model_category"] == "Multinomial"
-                    np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()[targets[test_id]][index], 5)
+                    if type_test[test_id] == "Regression":
+                        assert gbm.training_model_metrics()["model_category"] == "Regression"
+                        np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()["predict"][index], 5)
+                    elif type_test[test_id] == "Binomial":
+                        assert gbm.training_model_metrics()["model_category"] == "Binomial"
+                        np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()["p1"][index], 5)
+                    elif type_test[test_id] == "Multinomial":
+                        assert gbm.training_model_metrics()["model_category"] == "Multinomial"
+                        np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()[targets[test_id]][index], 5)
 
 
 def _get_cols_to_test(train, y):

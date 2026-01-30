@@ -72,7 +72,7 @@ class PipelineUtils {
     }
 
     void pullXGBWheels(final context) {
-        unstashFiles(context, 'xgb-whls')
+//        unstashFiles(context, 'xgb-whls')
     }
 
     void stashScripts(final context) {
@@ -84,7 +84,7 @@ class PipelineUtils {
     }
 
     List<String> readSupportedHadoopDistributions(final context, final String buildinfoPath) {
-        final List<String> DOCKERIZED_DISTRIBUTIONS = ['cdh', 'hdp']
+        final List<String> DOCKERIZED_DISTRIBUTIONS = ['cdh']
 
         final String buildinfoContent = context.sh(script: "sed 's/SUBST_BUILD_TIME_MILLIS/\"SUBST_BUILD_TIME_MILLIS\"/g' ${buildinfoPath} | sed -e 's/SUBST_BUILD_NUMBER/\"SUBST_BUILD_NUMBER\"/g'", returnStdout: true).trim()
 
@@ -127,20 +127,6 @@ class PipelineUtils {
         return gradleVersion
     }
 
-    boolean dockerImageExistsInRegistry(final context, final String registry, final String projectName, final String repositoryName, final String version) {
-        context.withCredentials([context.usernamePassword(credentialsId: "${registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-            String repositoryNameAdjusted = repositoryName.replaceAll("/","%252F")
-            context.echo "URL: http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryNameAdjusted}/artifacts/${version}/tags"
-            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryNameAdjusted}/artifacts/${version}/tags".execute().text
-            final def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-            if (jsonResponse instanceof List) {
-                return jsonResponse.size() > 0
-            }
-            assert jsonResponse instanceof Map, "Response is not a valid json. Response is:" + response
-            context.echo response // The output is most probably error (NOT_FOUND)
-            return false
-        }
-    }
 
     /**
      *

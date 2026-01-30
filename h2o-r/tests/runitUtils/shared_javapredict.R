@@ -68,7 +68,7 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
   safeSystem(cmd)
 
   print("Comparing predictions between H2O and Java POJO")
-  prediction2 <- read.csv(sprintf("%s/out_pojo.csv", tmpdir_name), header=T)
+  prediction2 <- read.csv(sprintf("%s/out_pojo.csv", tmpdir_name), header=T, stringsAsFactors=TRUE)
   if (nrow(prediction1) != nrow(prediction2)) {
     warning("Prediction mismatch")
     print(paste("Rows from H2O", nrow(prediction1)))

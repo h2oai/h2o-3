@@ -4,15 +4,15 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.IsolationForest.accuracy <- function() {
-    set.seed(1234)
+    set.seed(12345)
     N = 1e6
     random_data <- data.frame(
         x = c(rnorm(N, 0, 0.5), rnorm(N*0.05, -2, 1)),
         y = c(rnorm(N, 0, 0.5), rnorm(N*0.05,  2, 1)),
-        outlier = c(rep("NO", N), rep("YES", (0.05*N)))
+        outlier = c(rep("NO", N), rep("YES", (0.05*N))),
+        stringsAsFactors = TRUE
     )
     random_data.hex <- as.h2o(random_data)
-
     # different approach than in the paper - build a smaller number of deeper trees trained on a much larger sample
     h2o_isolation_forest <- h2o.isolationForest(x = c("x", "y"), training_frame = random_data.hex[, c("x", "y")],
                                                 ntrees = 25, seed = 1234, sample_rate = 0.7, min_rows = 1000, max_depth = 16)

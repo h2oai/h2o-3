@@ -148,7 +148,7 @@ Common parameters
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Stacked Ensembles model.
+This example demonstrates how to build a Stacked Ensembles model using H2O-3 to improve predictive performance through model combination. The model is constructed from base learners, such as Gradient Boosting Machines (GBM) and Random Forests (RF), which are trained using cross-validation to generate level-one data. The ensemble model is then evaluated on a test set, allowing for a comparison of its performance against that of the individual base learners.
 
 .. tabs::
    .. code-tab:: r R
@@ -157,8 +157,8 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
+        test <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         y <- "response"
@@ -287,8 +287,8 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
+        test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         x = train.columns

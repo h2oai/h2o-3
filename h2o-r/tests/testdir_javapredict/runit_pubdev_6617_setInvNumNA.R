@@ -18,7 +18,6 @@ test.mojo.setInvNumNA <-
     params$y <- "C2"
     params$family <- "gaussian"
     modelAndDir<-buildModelSaveMojoGLM(params) # build the model and save mojo
-    browser()
     modelPred <- h2o.predict(modelAndDir$model, testModel) # predict with invalid row value replaced with mean value
     # get genmodel.jar pathname
     a = strsplit(modelAndDir$dirName, '/')

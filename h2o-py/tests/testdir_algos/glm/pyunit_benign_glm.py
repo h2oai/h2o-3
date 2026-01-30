@@ -7,7 +7,7 @@ from tests import pyunit_utils
 
 def test_benign():
     training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
-
+    training_data[3] = training_data[3].asfactor()
     Y = 3
     X = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10]
 

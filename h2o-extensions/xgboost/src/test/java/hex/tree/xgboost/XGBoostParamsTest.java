@@ -27,8 +27,8 @@ public class XGBoostParamsTest extends TestUtil {
     final Locale originalLocale = Locale.getDefault();
     try {
       Scope.enter();
-      Frame traningFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
-      Scope.track_generic(traningFrame);
+      Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
+      Scope.track(trainingFrame);
       String response = "Distance";
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -36,7 +36,7 @@ public class XGBoostParamsTest extends TestUtil {
       parms._max_depth = 5;
       parms._min_rows = 5000000;
       parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Dest"};
-      parms._train = traningFrame._key;
+      parms._train = trainingFrame._key;
       parms._response_column = response;
 
       TestUtil.setLocale(Locale.FRENCH); // French uses different decimal formatting than English

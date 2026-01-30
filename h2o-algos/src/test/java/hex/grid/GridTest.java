@@ -9,6 +9,7 @@ import hex.glm.GLMModel;
 import hex.grid.HyperSpaceWalker.BaseWalker.WalkerFactory;
 import hex.tree.CompressedTree;
 import hex.tree.gbm.GBMModel;
+import hex.tree.uplift.UpliftDRFModel;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -1024,6 +1025,41 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
 
+  }
+
+  @Test
+  public void testUpliftDrfGridSearch() {
+    try {
+      Scope.enter();
+
+      Frame train = Scope.track(parseTestFile("smalldata/uplift/criteo_uplift_13k.csv"));
+      train.toCategoricalCol("treatment");
+      train.toCategoricalCol("conversion");
+      DKV.put(train);
+      Scope.track(train);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{5, 10, 20});
+        put("_max_depth", new Integer[]{5, 10});
+      }};
+
+      UpliftDRFModel.UpliftDRFParameters params = new UpliftDRFModel.UpliftDRFParameters();
+      params._train = train._key;
+      params._ignored_columns = new String[]{"visit", "exposure"};
+      params._treatment_column = "treatment";
+      params._response_column = "conversion";
+      params._seed = 0xDECAF;
+
+      Job<Grid> gs = GridSearch.create(null, params, hyperParms).withMaxConsecutiveFailures(10)
+              .withParallelism(3)
+              .start();
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+      assertEquals(6, grid.getModelCount());
+    } finally {
+      Scope.exit();
+    }
   }
 
 }

@@ -10,7 +10,7 @@ test.ifelse <- function() {
   Log.info("Find Setosa species H2O's ifelse...")
   setosa.hex <- ifelse(iris.hex$Species == "setosa", "N", "Y")
 
-  expect_equal(as.data.frame(setosa.hex), data.frame(C1 = setosa))
+  expect_equal(as.data.frame(setosa.hex), data.frame(C1 = setosa, stringsAsFactors = TRUE))
 }
 
 doTest("R and H2O ifelse Function", test.ifelse)

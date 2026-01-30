@@ -106,7 +106,7 @@ More information about the ``h2o.transform()`` function can be found in the H2O-
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Word2vec model.
+This example illustrates how to build a Word2vec model using H2O-3 to analyze job titles from a dataset. It begins by importing the dataset and defining a function to tokenize the job titles, filtering out stop words and short tokens. The Word2vec model is trained on the tokenized job titles to generate word vectors. A gradient boosting model is then created using these vectors to predict job categories. The model also finds synonyms for specific words and provides predictions for various job titles, demonstrating its utility in understanding job title semantics.
 
 .. tabs::
    .. code-tab:: r R

@@ -168,7 +168,7 @@ The **predict** column contains values from the **score** column, and the **mean
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build an Isolation Forest model. 
+This example demonstrates how to build an Isolation Forest model for anomaly detection using the H2O-3 platform. It uses the prostate dataset, splits it into training and testing datasets, and trains an Isolation Forest model. After training, the model can predict anomalies and provide leaf node assignments for the testing data.
 
 .. tabs::
    .. code-tab:: r R

@@ -3,7 +3,7 @@
 ``stopping_metric``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, AutoML, XGBoost, Isolation Forest
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, AutoML, XGBoost, Isolation Forest, UpliftDRF
 - Hyperparameter: yes
 
 Description
@@ -32,6 +32,11 @@ Available options for ``stopping_metric`` include the following:
 - ``lift_top_group``
 - ``misclassification``
 - ``mean_per_class_error``
+- ``AUUC`` (area under the uplift curve, for UpliftDRF only)
+- ``qini`` (difference between the Qini AUUC and area under the random uplift curve, for UpliftDRF only)
+- ``ATE`` (average treatment effect, for UpliftDRF only)
+- ``ATT`` (average treatment effect on the Treated, for UpliftDRF only)
+- ``ATC`` (average treatment effect on the Control, for UpliftDRF only)
 - ``custom`` (for custom metric functions where "less is better". It is expected that the lower bound is 0.) Note that this is currently only supported in the Python client for GBM and DRF. More information available in Python example below and `here <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md>`__.
 - ``custom_increasing`` (for custom metric functions where "more is better".) Note that this is currently only supported in the Python client for GBM and DRF. More information available in Python example below and `here <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md>`__.
 

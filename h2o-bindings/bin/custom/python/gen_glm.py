@@ -217,6 +217,131 @@ def class_extensions():
         m._resolve_model(model_json["model_id"]["name"], model_json)
         return m
 
+    @staticmethod
+    def getConstraintsInfo(model):
+        """
+        
+        Given a constrained GLM model, the constraints descriptions, constraints values, constraints conditions and 
+        whether the constraints are satisfied (true) or not (false) are returned.
+        
+        :param model: GLM model with linear and beta (if applicable)  constraints
+        :return: H2OTwoDimTable containing the above constraints information.
+        
+        :example:
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> response = "C21"
+        >>> predictors = list(range(0,20))
+        >>> loose_init_const = [] # this constraint is satisfied by default coefficient initialization
+        >>> # add loose constraints
+        >>> name = "C19"
+        >>> values = 0.5
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "C20"
+        >>> values = -0.8
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "constant"
+        >>> values = -1000
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> linear_constraints2 = h2o.H2OFrame(loose_init_const)
+        >>> linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])    
+        >>> # GLM model with GLM coefficients with default initialization
+        >>> h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", compute_p_values=True, remove_collinear_columns=True, 
+        ...                                         lambda_=0.0, solver="irlsm", linear_constraints=linear_constraints2,
+        ...                                         init_optimal_glm = False, seed=12345)
+        >>> h2o_glm.train(x=predictors, y=response, training_frame=train)
+        >>> print(H2OGeneralizedLinearEstimator.getConstraintsInfo(h2o_glm))
+        """
+        if model.actual_params["linear_constraints"] is not None:
+            return model._model_json["output"]["linear_constraints_table"]
+        else:
+            raise H2OValueError("getConstraintsInfo can only be called when there are linear constraints.")
+        
+    @staticmethod
+    def allConstraintsPassed(model):
+        """
+        
+        Given a constrainted GLM model, this will return true  if all beta (if exists) and linear constraints are
+         satified.  It will return false even if one constraint is not satisfied.  To see which ones failed, use
+         getConstraintsInfo function.
+         
+        :param model:  GLM model with linear and beta (if applicable)  constraints
+        :return: boolean True or False
+        
+        :example:
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> response = "C21"
+        >>> predictors = list(range(0,20))
+        >>> loose_init_const = [] # this constraint is satisfied by default coefficient initialization
+        >>> # add loose constraints
+        >>> name = "C19"
+        >>> values = 0.5
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "C20"
+        >>> values = -0.8
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "constant"
+        >>> values = -1000
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> linear_constraints2 = h2o.H2OFrame(loose_init_const)
+        >>> linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])    
+        >>> # GLM model with GLM coefficients with default initialization
+        >>> h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", compute_p_values=True, remove_collinear_columns=True, 
+        ...                                         lambda_=0.0, solver="irlsm", linear_constraints=linear_constraints2,
+        ...                                         init_optimal_glm = False, seed=12345)
+        >>> h2o_glm.train(x=predictors, y=response, training_frame=train)
+        >>> print(H2OGeneralizedLinearEstimator.allConstraintsPassed(h2o_glm))
+        """
+        if model.actual_params["linear_constraints"] is not None:
+            return model._model_json["output"]["all_constraints_satisfied"]
+        else:
+            raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
+
+
+    def make_unrestricted_glm_model(self, dest=None):
+        """
+        Make unrestricted GLM model when control variables are defined.
+
+        Needs to be passed source model trained with control variables enabled. 
+
+        :param dest: (optional) destination key
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   solver='COORDINATE_DESCENT',
+        ...                                   control_variables=["PSA"])
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,7,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        """
+        model_json = h2o.api(
+            "POST /3/MakeUnrestrictedGLMModel",
+            data={"model": self._model_json["model_id"]["name"],
+                  "dest": dest}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        if dest is None:
+            dest = model_json["model_id"]["name"]
+        m._resolve_model(dest, model_json)
+        return m
 
 extensions = dict(
     __imports__="""import h2o""",

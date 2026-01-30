@@ -41,7 +41,7 @@ public class CVModelBuilder {
             if (job.stop_requested()) {
                 LOG.info("Skipping build of last " + (N - i) + " out of " + N + " cross-validation models");
                 stopAll(submodel_tasks);
-                throw new Job.JobCancelledException();
+                throw new Job.JobCancelledException(job);
             }
             LOG.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
             prepare(modelBuilders[i]);

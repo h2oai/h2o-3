@@ -33,17 +33,7 @@ public class RemoveAllHandler extends Handler {
 
   private void clearAll() {
     Log.info("Removing all objects");
-    // Bulk brainless key removal.  Completely wipes all Keys without regard.
-    new MRTask(H2O.MIN_HI_PRIORITY) {
-      @Override
-      public void setupLocal() {
-        H2O.raw_clear();
-        water.fvec.Vec.ESPC.clear();
-      }
-    }.doAllNodes();
-    // Wipe the backing store without regard as well
-    H2O.getPM().getIce().cleanUp();
-    H2O.updateNotIdle();
+    DKVManager.clear();
   }
 
   private void retainKeys(final KeyV3[] retained_keys) {
@@ -58,8 +48,6 @@ public class RemoveAllHandler extends Handler {
         retainedKeys[i] = retained_keys[i].key();
       }
     }
-
     DKVManager.retain(retainedKeys);
-
   }
 }

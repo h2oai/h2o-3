@@ -56,18 +56,20 @@ public class VecParquetReader implements Closeable {
   private final byte[] chunkSchema; // contains column types of all columns, not just the skipped one
 
   private ParquetReader<Long> reader;
-  private boolean[] _keepColumns;
+  private boolean[] keepColumns;
+  private boolean adjustTimezone;
 
-  public VecParquetReader(Vec vec, ParquetMetadata metadata, ParseWriter writer, byte[] chunkSchema, boolean[] keepcolumns, int parseColumnNumber) {
-    this(vec, metadata, new WriterDelegate(writer, parseColumnNumber), chunkSchema, keepcolumns);
+  public VecParquetReader(Vec vec, ParquetMetadata metadata, ParseWriter writer, byte[] chunkSchema, boolean[] keepcolumns, int parseColumnNumber, boolean adjustTimezone) {
+    this(vec, metadata, new WriterDelegate(writer, parseColumnNumber), chunkSchema, keepcolumns, adjustTimezone);
   }
 
-  VecParquetReader(Vec vec, ParquetMetadata metadata, WriterDelegate writer, byte[] chunkSchema, boolean[] keepcolumns) {
+  VecParquetReader(Vec vec, ParquetMetadata metadata, WriterDelegate writer, byte[] chunkSchema, boolean[] keepcolumns, boolean adjustTimezone) {
     this.vec = vec;
     this.metadata = metadata;
     this.writer = writer;
     this.chunkSchema = chunkSchema;
-    _keepColumns = keepcolumns;
+    this.keepColumns = keepcolumns;
+    this.adjustTimezone = adjustTimezone;
   }
 
   /**
@@ -85,7 +87,7 @@ public class VecParquetReader implements Closeable {
   private void initReader() throws IOException {
     assert reader == null;
     final VecReaderEnv env = VecReaderEnv.make(vec);
-    ChunkReadSupport crSupport = new ChunkReadSupport(writer, chunkSchema, _keepColumns);
+    ChunkReadSupport crSupport = new ChunkReadSupport(writer, chunkSchema, keepColumns, adjustTimezone);
     ParquetReader.Builder<Long> prBuilder = ParquetReader.builder(crSupport, env.getPath())
             .withConf(env.getConf())
             .withFilter(new FilterCompat.Filter() {

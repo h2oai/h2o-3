@@ -703,7 +703,7 @@ If the search space is too large (i.e., you don't want to restrict the parameter
 
 To resume model training, use checkpoint model keys (\texttt{model\_id}) to incrementally train a specific model using more iterations, more data, different data, and so forth. To further train the initial model, use it (or its key) as a checkpoint argument for a new model.
 
-To get the best possible model in a general multi-node setup, we recommend building a model with \texttt{train\_samples\_per\_iteration=-2} (default, auto-tuning) and saving it to disk so that youâll have at least one saved model.
+To get the best possible model in a general multi-node setup, we recommend building a model with \texttt{train\_samples\_per\_iteration=-2} (default, auto-tuning) and saving it to disk so that you'll have at least one saved model.
 
 To improve this initial model, start from the previous model and add iterations by building another model, specifying \texttt{checkpoint=previous\_model\_id}, and changing \texttt{train\_samples\_per\_iteration}, \texttt{target\_ratio\_comm\_to\_comp},
 or other parameters. Many parameters can be changed between checkpoints, especially those that affect regularization or performance tuning.
@@ -1164,7 +1164,7 @@ We would like to acknowledge the following individuals for their contributions t
 
 \textbf{Arno Candel}
 
-Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform. He is also the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named 2014 Big Data All-Star by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
+Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform. He is also the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named 2014 Big Data All-Star by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
 \textbf{Erin LeDell}
 

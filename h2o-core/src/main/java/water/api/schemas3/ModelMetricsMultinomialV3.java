@@ -24,6 +24,12 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
   @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
   public double logloss;
 
+  @API(help="The logarithmic likelihood for this scoring run.", direction=API.Direction.OUTPUT)
+  public double loglikelihood;
+
+  @API(help="The AIC for this scoring run.", direction=API.Direction.OUTPUT)
+  public double AIC;
+
   @API(help="The mean misclassification error per class.", direction=API.Direction.OUTPUT)
   public double mean_per_class_error;
 
@@ -43,6 +49,9 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
   public S fillFromImpl(I modelMetrics) {
     super.fillFromImpl(modelMetrics);
     logloss = modelMetrics.logloss();
+    loglikelihood = modelMetrics.loglikelihood();
+    AIC = modelMetrics.aic();
+    
     r2 = modelMetrics.r2();
 
     if (modelMetrics._hit_ratios != null) {

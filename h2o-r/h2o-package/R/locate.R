@@ -12,6 +12,7 @@
 #'
 #' @param pathStub relative path
 #' @param root.parent search root directory
+#' @noRd
 .h2o.locate<-
   function(pathStub, root.parent = NULL) {
     pathStub <- .h2o.locate.clean(pathStub)

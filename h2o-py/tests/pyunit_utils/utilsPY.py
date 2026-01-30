@@ -728,19 +728,20 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
     :return: a dictionary of parameter_name:list_of_values
     """
     grid_space = {}
-    if algo in ["gbm", "rf"]:
+    if algo in ["gbm", "rf", "uplift"]:
         if random.randint(0,1): grid_space['ntrees'] = random.sample(list(range(1,6)),random.randint(2,3))
         if random.randint(0,1): grid_space['max_depth'] = random.sample(list(range(1,6)),random.randint(2,3))
         if random.randint(0,1): grid_space['min_rows'] = random.sample(list(range(1,11)),random.randint(2,3))
         if random.randint(0,1): grid_space['nbins'] = random.sample(list(range(2,21)),random.randint(2,3))
         if random.randint(0,1): grid_space['nbins_cats'] = random.sample(list(range(2,1025)),random.randint(2,3))
-
         if algo == "gbm":
             if random.randint(0,1): grid_space['learn_rate'] = [random.random() for _ in range(random.randint(2,3))]
             grid_space['distribution'] = random.sample(['bernoulli', 'multinomial', 'gaussian', 'poisson', 'tweedie', 'gamma'], 1)
         if algo == "rf":
             if random.randint(0,1): grid_space['mtries'] = random.sample(list(range(1,ncols+1)),random.randint(2,3))
             if random.randint(0,1): grid_space['sample_rate'] = [random.random() for r in range(random.randint(2,3))]
+        if algo == "uplift":
+            grid_space['uplift_metric'] = random.sample(['KL','ChiSquared','Euclidean'], 1)
     elif algo == "km":
         grid_space['k'] = random.sample(list(range(1,10)),random.randint(2,3))
         if random.randint(0,1): grid_space['max_iterations'] = random.sample(list(range(1,1000)),random.randint(2,3))
@@ -1870,16 +1871,20 @@ def generate_sign_vec(table1, table2):
                 break       # found what we need.  Goto next column
 
     return sign_vec
+
 def equal_two_dicts(dict1, dict2, tolerance=1e-6, throwError=True):
     size1 = len(dict1)
     if (size1 == len(dict2)):   # only proceed if lengths are the same
         for key1 in dict1.keys():
             diff = abs(dict1[key1]-dict2[key1])
-            if (diff > tolerance):
+            if diff > tolerance:
+                print("values for key {0} are {1}, {2} and they differ by {3} and is more than "
+                      "{4}".format(key1, dict1[key1], dict2[key1], diff, tolerance))
                 if throwError:
                     assert False, "Dict 1 value {0} and Dict 2 value {1} do not agree.".format(dict1[key1], dict2[key1])
                 else:
                     return False
+    return True
 
 def equal_two_dicts_string(dict1, dict2, throwError=True):
     size1 = len(dict1)

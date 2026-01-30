@@ -41,8 +41,11 @@ def ipy_valid_lines(block):
     for line in lines:
         if "import matplotlib.pyplot as plt" in line or "%matplotlib inline" in line:
             import matplotlib
-            matplotlib.use('Agg', warn=False)
-
+            try:
+                matplotlib.use('Agg', warn=False)
+            except TypeError:
+                matplotlib.use('Agg')
+                
     # remove ipython magic functions
     lines = [line for line in lines if not line.startswith('%')]
 

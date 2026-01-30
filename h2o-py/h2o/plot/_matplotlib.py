@@ -1,13 +1,13 @@
 
 def get_matplotlib_pyplot(server, raise_if_not_available=False):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         # noinspection PyUnresolvedReferences
         import matplotlib
-        from distutils.version import LooseVersion
         if server:
-            if LooseVersion(matplotlib.__version__) <= LooseVersion("3.1"):
-                matplotlib.use("Agg", warn=False)
-            else:  # Versions >= 3.2 don't have warn argument
+            if matplotlib.get_backend() != "Agg":
+                import matplotlib.pyplot as plt
+                plt.close('all')
                 matplotlib.use("Agg")
         try:
             # noinspection PyUnresolvedReferences
@@ -30,6 +30,7 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
 
 
 def get_polycollection(server, raise_if_not_available=False):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         from matplotlib.collections import PolyCollection as polycoll
         return polycoll
@@ -41,6 +42,7 @@ def get_polycollection(server, raise_if_not_available=False):
     
     
 def get_matplotlib_cm(function_name):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         from matplotlib import cm
         return cm
@@ -50,6 +52,7 @@ def get_matplotlib_cm(function_name):
 
 
 def get_mplot3d_axes(function_name):
+    # when changing this function, please make sure it doesn't break explanations in jupyter, vscode and ipython
     try:
         # noinspection PyUnresolvedReferences
         from mpl_toolkits.mplot3d import Axes3D

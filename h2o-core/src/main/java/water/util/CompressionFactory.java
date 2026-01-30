@@ -1,5 +1,6 @@
 package water.util;
 
+import com.github.luben.zstd.ZstdOutputStream;
 import water.Iced;
 
 import java.io.ByteArrayOutputStream;
@@ -23,6 +24,8 @@ public class CompressionFactory extends Iced<CompressionFactory> {
         return os;
       case "gzip":
         return new GZIPOutputStream(os);
+      case "zstd":
+        return new ZstdOutputStream(os);
       case "bzip2":
         return wrapDynamic("org.python.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream", os);
       case "snappy":

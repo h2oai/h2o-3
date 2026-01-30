@@ -4,7 +4,6 @@ import hex.CMetricScoringTask;
 import hex.DataInfo;
 import hex.ModelMetrics;
 import water.Job;
-import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
@@ -34,8 +33,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
   private final double [][] _beta_multinomial;
   private final double _defaultThreshold;
 
-
-
   public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions, CFuncRef customMetric) {
     super(customMetric);
     _j = j;
@@ -51,28 +48,56 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
             _m._parms._family == GLMModel.GLMParameters.Family.ordinal){
       _beta = null;
       _beta_multinomial = m._output._global_beta_multinomial;
+      _dinfo = dinfo;
     } else {
-      double [] beta = m.beta();
-      int [] ids = new int[beta.length-1];
+      double[] beta = m.beta();
+      DataInfo copy = dinfo.clone();
+      int[] ids = new int[beta.length - 1];
       int k = 0;
-      for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids
-        if(beta[i] != 0) ids[k++] = i;
+      for (int i = 0; i < beta.length - 1; ++i) { // pick out beta that is not zero in ids
+        if (beta[i] != 0) ids[k++] = i;
       }
-      if(k < beta.length-1) {
-        ids = Arrays.copyOf(ids,k);
+      if (k < beta.length - 1) {
+        ids = Arrays.copyOf(ids, k);
         dinfo = dinfo.filterExpandedColumns(ids);
-        double [] beta2 = MemoryManager.malloc8d(ids.length+1);
+        double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
         int l = 0;
-        for(int x:ids)
+        for (int x : ids)
           beta2[l++] = beta[x];
-        beta2[l] = beta[beta.length-1];
+        beta2[l] = beta[beta.length - 1];
         beta = beta2;
       }
+
+      if (m._useControlVariables) {
+        double[] betaContVar = m.beta().clone();
+        betaContVar = m._output.getControlValBeta(betaContVar);
+        ids = new int[betaContVar.length - 1];
+        k = 0;
+        for (int i = 0; i < betaContVar.length - 1; ++i) { // pick out beta that is not zero in ids & that is not in control variables
+          if (betaContVar[i] != 0) ids[k++] = i;
+        }
+        if (k < betaContVar.length - 1) {
+          ids = Arrays.copyOf(ids, k);
+          copy = copy.filterExpandedColumns(ids);
+          double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
+          int l = 0;
+          for (int x : ids)
+            beta2[l++] = betaContVar[x];
+          beta2[l] = betaContVar[betaContVar.length - 1];
+          betaContVar = beta2;
+        }
+        _beta = betaContVar;
+        _dinfo = copy;
+      } else {
+        _beta = beta;
+        _dinfo = dinfo;
+      }
       _beta_multinomial = null;
-      _beta = beta;
     }
-    _dinfo = dinfo;
+
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
+
+    m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
     _defaultThreshold = m.defaultThreshold();
   }
 
@@ -108,6 +133,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
       double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
+      
       if (_m._parms._family == GLMModel.GLMParameters.Family.binomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction
@@ -141,6 +167,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
     }
   }
+  
   public void map(Chunk[] chks, NewChunk[] preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
     if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
@@ -172,6 +199,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         processRow(r,res,ps,preds,ncols);
       }
     }
+    
     if (_j != null) _j.update(1);
   }
 

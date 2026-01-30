@@ -34,7 +34,7 @@ Example
 		h2o.init()
 
 		# Import a sample binary outcome training set into H2O
-		train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+		train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
 
 		# Identify predictors and response
 		x <- setdiff(names(train), y)
@@ -77,7 +77,7 @@ Example
 		h2o.init()
 
 		# Import a sample binary outcome training set into H2O
-		train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+		train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
 
 		# Identify predictors and response
 		x = train.columns

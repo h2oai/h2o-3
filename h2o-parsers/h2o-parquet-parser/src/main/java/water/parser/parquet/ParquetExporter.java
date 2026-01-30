@@ -8,8 +8,8 @@ import water.util.ExportFileFormat;
 public class ParquetExporter implements BinaryFormatExporter {
 
     @Override
-    public H2O.H2OCountedCompleter export(Frame frame, String path, boolean force, String compression, boolean writeChecksum) {
-        return new ExportParquetDriver(frame, path, force, compression, writeChecksum);
+    public H2O.H2OCountedCompleter export(Frame frame, String path, boolean force, String compression, boolean writeChecksum, boolean tzAdjustFromLocal) {
+        return new ExportParquetDriver(frame, path, force, compression, writeChecksum, tzAdjustFromLocal);
     }
 
     @Override
@@ -25,19 +25,22 @@ public class ParquetExporter implements BinaryFormatExporter {
         String _compression;
         boolean _writeChecksum;
 
-        public ExportParquetDriver(Frame frame, String path, boolean force, String compression, boolean writeChecksum) {
+        boolean _tzAdjustFromLocal;
+
+        public ExportParquetDriver(Frame frame, String path, boolean force, String compression, boolean writeChecksum, boolean tzAdjustFromLocal) {
             _frame = frame;
             _path = path;
             _force = force;
             _compression = compression;
             _writeChecksum = writeChecksum;
+            _tzAdjustFromLocal = tzAdjustFromLocal;
         }
 
         @Override
         public void compute2() {
             // multipart export
             FrameParquetExporter parquetExporter = new FrameParquetExporter();
-            parquetExporter.export(this, _path, _frame, _force, _compression, _writeChecksum);
+            parquetExporter.export(this, _path, _frame, _force, _compression, _writeChecksum, _tzAdjustFromLocal);
         }
     }
 }

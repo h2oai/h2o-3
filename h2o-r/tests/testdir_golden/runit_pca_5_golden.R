@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.poison.golden <- function() {
   Log.info("Importing poison.csv data...") 
-  poisonR <- read.csv(locate("smalldata/pca_test/poison.csv"), header = TRUE)
+  poisonR <- read.csv(locate("smalldata/pca_test/poison.csv"), header = TRUE, stringsAsFactors = TRUE)
   poisonH2O <- h2o.uploadFile(locate("smalldata/pca_test/poison.csv"), destination_frame = "poisonH2O")
   
   k_test <- sort(sample(1:8,3))

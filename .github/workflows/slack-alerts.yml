@@ -8,21 +8,34 @@ jobs:
   send-slack-alert:
     runs-on: ubuntu-latest
     steps:
-    - name: Post to a Slack channel
-      id: slack
-      uses: slackapi/slack-github-action@v1.23.0
-      with:
-        channel-id: 'h2o-3-github-issues'
-        payload: |
-          {
-            "text": ":github: *H2O-3 GitHub Issue Opened*",
-            "attachments": [
-              {
-                "text": "*Title:* ${{ github.event.issue.title }}\n*Link:* ${{ github.event.issue.html_url }}",
-                "color": "good",
-                "fallback": "Build Alert"
-              }
-            ]
-          }
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Check issue title and URL
+        id: check
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          if [[ ! "$ISSUE_TITLE" =~ ^[a-zA-Z0-9\ \-\_\:\'\(\)\`]+$ ]]; then
+            echo "Invalid characters in issue title"
+            exit 1
+          fi
+          echo "TITLE=$ISSUE_TITLE" >> $GITHUB_ENV
+          echo "URL=$ISSUE_URL" >> $GITHUB_ENV
+
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          channel-id: "h2o-3-github-issues"
+          payload: |
+            {
+              "text": ":github: *H2O-3 GitHub Issue Opened*",
+              "attachments": [
+                {
+                  "text": "*Title:* ${{ env.TITLE }}\n*Link:* ${{ env.URL }}",
+                  "color": "good",
+                  "fallback": "Build Alert"
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

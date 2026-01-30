@@ -20,7 +20,7 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `treatment_column <treatment_column.html>`__
-- `response_column <response_column.html>`__
+- `response_column <y.html>`__
 - `uplift_metric <uplift_metric.html>`__
 - `auuc_type <auuc_type.html>`__
 

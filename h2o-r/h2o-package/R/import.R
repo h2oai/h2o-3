@@ -1,9 +1,10 @@
-##`'
-##`' Data Import
-##`'
-##`' Importing data is a _lazy_ parse of the data. It adds an extra step so that a user may specify a variety of options
-##`' including a header file, separator type, and in the future column type. Additionally, the import phase provides
-##`' feedback on whether or not a folder or group of files may be imported together.
+#
+# Data Import
+#
+# Importing data is a _lazy_ parse of the data. It adds an extra step so that a user may specify a variety of options
+# including a header file, separator type, and in the future column type. Additionally, the import phase provides
+# feedback on whether or not a folder or group of files may be imported together.
+
 
 #'
 #' Import Files into H2O

@@ -46,6 +46,7 @@ hex.schemas.KMeansModelV3$KMeansModelOutputV3
 hex.schemas.KMeansV3
 hex.schemas.KMeansV3$KMeansParametersV3
 hex.schemas.MakeGLMModelV3
+hex.schemas.MakeUnrestrictedGLMModelV3
 hex.schemas.GenericV3
 hex.schemas.GenericV3$GenericParametersV3
 hex.schemas.GenericModelV3
@@ -114,6 +115,10 @@ hex.schemas.UpliftDRFModelV3
 hex.schemas.UpliftDRFModelV3$UpliftDRFModelOutputV3
 hex.schemas.UpliftDRFV3
 hex.schemas.UpliftDRFV3$UpliftDRFParametersV3
+hex.schemas.HGLMModelV3
+hex.schemas.HGLMModelV3$HGLMModelOutputV3
+hex.schemas.HGLMV3
+hex.schemas.HGLMV3$HGLMParametersV3
 hex.schemas.AdaBoostModelV3
 hex.schemas.AdaBoostModelV3$AdaBoostModelOutputV3
 hex.schemas.AdaBoostV3

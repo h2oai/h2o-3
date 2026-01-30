@@ -10,11 +10,11 @@ buildscript {
     }
 
     repositories {
-        if (isCi) {
-            maven {
-                allowInsecureProtocol = true
-                url "${localNexusLocation}/public"
-            }
+        if (false) {
+//            maven {
+//                allowInsecureProtocol = true
+//                url "${localNexusLocation}/public"
+//            }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
             mavenCentral()
@@ -25,7 +25,7 @@ buildscript {
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
         classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0'
-        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
+        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.3'
         classpath 'org.testng:testng:6.8'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.5.2'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
@@ -155,7 +155,8 @@ ext {
 
     pythonProjects = [
       project(':h2o-py'),
-      project(':h2o-py-cloud-extensions')
+      project(':h2o-py-cloud-extensions'),
+      project(':h2o-py-mlflow-flavor')
     ]
 
     // The project which need to be run under CI only
@@ -178,7 +179,7 @@ ext {
     // Versions of libraries shared cross all projects
     //
     junitVersion  = '4.12'
-    awsJavaSdkVersion = '1.12.268'
+    awsJavaSdkVersion = '1.12.705'
 
     //
     // Optional H2O modules which can be included h2o.jar assembly
@@ -236,11 +237,11 @@ subprojects {
         if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
         }
-        if (isCi) {
-            maven {
-                allowInsecureProtocol = true
-                url "${localNexusLocation}/public"
-            }
+        if (false) {
+//            maven {
+//                allowInsecureProtocol = true
+//                url "${localNexusLocation}/public"
+//            }
             maven {
                 url "https://oss.sonatype.org/content/groups/staging/"
             }
@@ -250,10 +251,8 @@ subprojects {
                 url "https://repository.cloudera.com/artifactory/cloudera-repos/"
             }
             maven {
-                url "https://repo.hortonworks.com/content/repositories/releases/"
-            }
-            maven {
-                url "https://repo.hortonworks.com/content/repositories/jetty-hadoop/"
+                allowInsecureProtocol = true
+                url "http://nexus-private.hortonworks.com:8081/nexus/"
             }
             maven {
                 url "https://repository.mapr.com/maven/"

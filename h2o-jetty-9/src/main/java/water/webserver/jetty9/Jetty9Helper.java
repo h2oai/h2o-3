@@ -17,7 +17,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -33,6 +32,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.util.Collections;
 
 class Jetty9Helper {
@@ -65,7 +66,8 @@ class Jetty9Helper {
 
         final ServerConnector connector;
         if (isSecured) {
-            final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
+            final SslContextFactory sslContextFactory = getSslContextFactory();
+            sslContextFactory.setKeyStorePath(config.jks);
             sslContextFactory.setKeyStorePassword(config.jks_pass);
             if (config.jks_alias != null) {
                 sslContextFactory.setCertAlias(config.jks_alias);
@@ -82,6 +84,22 @@ class Jetty9Helper {
         jettyServer.setConnectors(new Connector[]{connector});
 
         return jettyServer;
+    }
+
+    /**
+     * A method which tries to get the proper SslContextFactory - for older Jetty 9 versions SslContextFactory,
+     * and for newer ones (which fail with the former one) SslContextFactory$Server
+     */
+    protected static SslContextFactory getSslContextFactory() {
+        try {
+            return (SslContextFactory) Class.forName("org.eclipse.jetty.util.ssl.SslContextFactory$Server").newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            try {
+                return (SslContextFactory) Class.forName("org.eclipse.jetty.util.ssl.SslContextFactory").newInstance();
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
     }
 
     static HttpConfiguration makeHttpConfiguration(ConnectionConfiguration cfg) {

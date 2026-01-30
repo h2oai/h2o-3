@@ -58,7 +58,7 @@ public class ParserTest2 extends TestUtil {
     Key rkey = FVecFactory.makeByteVec(data);
     ParseSetup ps = new ParseSetup(CSV_INFO, (byte)',', false, ParseSetup.HAS_HEADER, 9,
             new String[]{"'C1Chunk'","C1SChunk", "'C2Chunk'", "'C2SChunk'", "'C4Chunk'", "'C4FChunk'", "'C8Chunk'", "'C8DChunk'", "'Categorical'"},
-            ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null, null, null);
+            ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null, null, null, false);
     Frame fr = ParseDataset.parse(Key.make("na_test.hex"), new Key[]{rkey}, true, ps);
     int nlines = (int)fr.numRows();
     Assert.assertEquals(9,nlines);
@@ -101,7 +101,7 @@ public class ParserTest2 extends TestUtil {
     ParseSetup ps = new ParseSetup(CSV_INFO, (byte)',', false, ParseSetup.HAS_HEADER, 4,
         new String[]{"'C1'","'C2'", "'C3'", "'C4'"},
         ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric"}),
-        null, null, null, null, null);
+        null, null, null, null, null, false);
     Frame fr = null;
     try {
       fr = ParseDataset.parse(Key.make("blank_lines_test.hex"), new Key[]{dataKey}, true, ps);
@@ -124,7 +124,7 @@ public class ParserTest2 extends TestUtil {
                                               ar("last","'line''s","trailing","piece'") };
     Key k = FVecFactory.makeByteVec(data);
 
-    ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', false/*single quote*/, 4, ParseSetup.NO_HEADER, null, null, null, null, null));
+    ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', false/*single quote*/, 4, ParseSetup.NO_HEADER, null, null, null, null, null, false));
     gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
@@ -132,7 +132,7 @@ public class ParserTest2 extends TestUtil {
     String[][] expectTrue = new String[][] { ar("Tomass,test,first,line", null),
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
-    ParseSetup gSetupT = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', true/*single quote*/, 2, ParseSetup.NO_HEADER, null, null, null, null, null));
+    ParseSetup gSetupT = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', true/*single quote*/, 2, ParseSetup.NO_HEADER, null, null, null, null, null, false));
     gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
     //testParsed(frT,expectTrue);  // not currently passing

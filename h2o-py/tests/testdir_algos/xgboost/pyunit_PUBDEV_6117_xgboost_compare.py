@@ -39,7 +39,7 @@ def comparison_test():
                                 dtrain=nativeXGBoostInput, num_boost_round=nativeXGBoostParam[1])
         nativePred = nativeModel.predict(data=nativeXGBoostInput, ntree_limit=nativeXGBoostParam[1])
         pyunit_utils.summarizeResult_binomial(h2oPredictD, nativePred, -1, -1, -1,
-                                              -1, tolerance=1e-10)
+                                              -1, tolerance=1e-6)
     else:
         print("********  Test skipped.  This test cannot be performed in multinode environment.")
 

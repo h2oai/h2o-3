@@ -26,7 +26,7 @@ test <- function() {
 	hh = h2o.glm(x = 2:31,y = 1,training_frame = frm,family = "binomial",offset_column =  "off",lambda = 0)
 	gr = glm(formula = y~X1+X2 + X3 +X4 +X5+X6+X7+X8+X9+X10+ X11+X12+X13+X14+X15+X16+X17+X18+X19+ X20+X21+X22+X23+X24+X25+X26+X27+X28+X29+X30,
          family = "binomial",data = rfm,offset= rfm[,32]) 
-	gg = glmnet(x = as.matrix(rfm[,-c(1,32)]),y = as.factor(rfm[,1]),family = "binomial",lambda =0,offse = rfm[,32])        
+	gg = glmnet(x = as.matrix(rfm[,-c(1,32)]),y = as.factor(rfm[,1]),family = "binomial",lambda =0, offset = rfm[,32])        
 	print("compare results")
 	expect_equal(gr$null.deviance, hh@model$training_metrics@metrics$null_deviance)
 	expect_equal(gr$aic, hh@model$training_metrics@metrics$AIC,tolerance = 0.00001)
@@ -34,7 +34,7 @@ test <- function() {
 	expect_equal(gr$df.residual,hh@model$training_metrics@metrics$residual_degrees_of_freedom)
 	#predictions
 	ph = h2o.predict(object = hh,newdata = val)
-	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]),offset = as.matrix(valid[,32]),type = "response")
+	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]), newoffset = as.matrix(valid[,32]), offset = as.matrix(valid[,32]),type = "response")
 	print("compare predictions")
 	expect_equal(min(pr),min(ph$p1),tolerance = 0.0001)
 	expect_equal(max(pr),max(ph$p1),tolerance = 0.0001)
@@ -49,7 +49,7 @@ test <- function() {
 	expect_equal(deviance(gg),hh@model$training_metrics@metrics$residual_deviance,tolerance = 0.00001)
 	#predictions
 	ph = h2o.predict(object = hh,newdata = val)
-	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]),offset = as.matrix(valid[,32]),type = "response")
+	pr = predict(object = gg,newx = as.matrix(valid[,-c(1,32)]), newoffset = as.matrix(valid[,32]), offset = as.matrix(valid[,32]),type = "response")
 	print("compare predictions")
 	expect_equal(min(pr),min(ph$p1),tolerance = 0.0001)
 	expect_equal(max(pr),max(ph$p1),tolerance = 0.0001)

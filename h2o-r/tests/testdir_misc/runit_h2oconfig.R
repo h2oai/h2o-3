@@ -88,7 +88,7 @@ test.config <- function() {
     password = password"),fileConn)
     #Parse config and check if correct
     config = .parse.h2oconfig(h2oconfig_filename)
-    expect_equal(config,data.frame(init.username = "name" ,init.password = "password"))
+    expect_equal(config,data.frame(init.username = "name" ,init.password = "password", stringsAsFactors = TRUE))
 
     #Create tmp config
     writeLines(c("[general]
@@ -99,7 +99,7 @@ test.config <- function() {
     password = password"),fileConn)
     #Parse config and check if correct
     config = .parse.h2oconfig(h2oconfig_filename)
-    expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.username = "name" ,init.password = "password"))
+    expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.username = "name" ,init.password = "password", stringsAsFactors = TRUE))
 
     #Create tmp config
     writeLines(c("
@@ -108,7 +108,7 @@ test.config <- function() {
     init.password = password"),fileConn)
     #Parse config and check if correct
     config = .parse.h2oconfig(h2oconfig_filename)
-    expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.username = "name" ,init.password = "password"))
+    expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.username = "name" ,init.password = "password", stringsAsFactors = TRUE))
 
     #Delete tmp directory
     on.exit(unlink(dir,recursive=TRUE))

@@ -122,6 +122,22 @@ public final class Gram extends Iced<Gram> {
       }
     }
   }
+  
+  public void addGAMPenalty(double[][][] ds, int[][] gamIndices, double[][] xmatrix) {
+    int numGamCols = gamIndices.length;
+    int numKnots;
+    int betaIndex, betaIndexJ;
+    for (int gamInd=0; gamInd<numGamCols; gamInd++) {
+      numKnots = gamIndices[gamInd].length;
+      for (int betaInd=0; betaInd<numKnots; betaInd++) {
+        betaIndex = gamIndices[gamInd][betaInd];
+        for (int betaIndj=0; betaIndj<= betaInd; betaIndj++) {
+          betaIndexJ = gamIndices[gamInd][betaIndj];
+          xmatrix[betaIndex][betaIndexJ] += 2*ds[gamInd][betaInd][betaIndj];
+        }
+      }
+    }
+  }
 
   public double get(int i, int j) {
     if(j > i) {

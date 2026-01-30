@@ -139,22 +139,6 @@ public class GamUtils {
       return equalNames;
   }
 
-  public static void copy2DArray(double[][] src_array, double[][] dest_array) {
-    int numRows = src_array.length;
-    for (int colIdx = 0; colIdx < numRows; colIdx++) { // save zMatrix for debugging purposes or later scoring on training dataset
-      System.arraycopy(src_array[colIdx], 0, dest_array[colIdx], 0,
-              src_array[colIdx].length);
-    }
-  }
-
-  public static void copy2DArray(int[][] src_array, int[][] dest_array) {
-    int numRows = src_array.length;
-    for (int colIdx = 0; colIdx < numRows; colIdx++) { // save zMatrix for debugging purposes or later scoring on training dataset
-      System.arraycopy(src_array[colIdx], 0, dest_array[colIdx], 0,
-              src_array[colIdx].length);
-    }
-  }
-
   public static void copyCVGLMtoGAMModel(GAMModel model, GLMModel glmModel, GAMParameters parms, String foldColumn) {
     // copy over cross-validation metrics
     model._output._cross_validation_metrics = glmModel._output._cross_validation_metrics;

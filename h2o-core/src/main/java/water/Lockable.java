@@ -66,11 +66,14 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
    *  @return self, locked by job_key */
   public T delete_and_lock( ) { return delete_and_lock((Key<Job>)null); }
   public T delete_and_lock( Job job ) { return (T)delete_and_lock(job._key); }
-  public T delete_and_lock( Key<Job> job_key ) {
+  public T delete_and_lock( Key<Job> job_key) {
+    return delete_and_lock(job_key, false);  // internal delete, by default don't remove dependencies as they're often still needed.
+  }
+  public T delete_and_lock( Key<Job> job_key, boolean cascade) {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
       Log.debug("lock-then-clear "+_key+" by job "+job_key);
-      old.remove_impl(new Futures(), false).blockForPending();  // internal delete, don't remove dependencies as they're often still needed.
+      old.remove_impl(new Futures(), cascade).blockForPending(); 
     }
     return (T)this;
   }

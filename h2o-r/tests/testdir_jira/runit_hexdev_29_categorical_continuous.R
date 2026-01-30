@@ -12,7 +12,8 @@ test.continuous.or.categorical <- function() {
   aa <- data.frame(
     h1 = c( 1, 8, 4, 3, 6),
     h2 = c('fish', 'cat', 'fish', 'dog', 'bird'),
-    h3 = c( 0, 1, 0, 0, 1)
+    h3 = c( 0, 1, 0, 0, 1),
+    stringsAsFactors = TRUE
     )
 
   df.hex <- as.h2o(aa)

@@ -1,7 +1,7 @@
 ``family``
 ----------
 
-- Available in: GLM, GAM
+- Available in: GLM, GAM, HGLM
 - Hyperparameter: no
 
 Description

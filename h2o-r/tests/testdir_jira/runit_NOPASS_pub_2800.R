@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # R behavior: Reports an error but keeps the frame as is
 
 test.pubdev.2800 <- function(conn){
-    df <- h2o.importFile("http://h2o-smalldata.s3.amazonaws.com/jira/test_string_missing.csv")
+    df <- h2o.importFile("smalldata/jira/test_string_missing.csv")
     expect_false(is.na(df[3,2]))
 }
 

@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.7:${FROM_VERSION}
+FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.7:${FROM_VERSION}
 
 # Prepare packages to be able to build R from sources
 RUN \
@@ -10,7 +10,7 @@ RUN \
 
 # For rgl R package
 RUN \
-    apt-get install -y zip libglu1-mesa-dev libpcre2-dev
+    apt-get install -y zip libglu1-mesa-dev libpcre2-dev libpng-dev libtiff5-dev libjpeg-dev libwebp-dev
 
 # Remove unnecessary packages
 RUN \
