@@ -104,7 +104,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if isinstance(python_obj, H2OFrame):
-            sc = h2o.h2o.shallow_copy(python_obj, destination_frame)
+            sc = h2o.shallow_copy(python_obj, destination_frame)
             if skipped_columns:
                 sc = sc.drop(skipped_columns)
             if column_names:

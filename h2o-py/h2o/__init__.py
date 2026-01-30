@@ -25,7 +25,7 @@ __no_export = set(dir())  # variables defined above this are not exported
 
 from h2o.h2o import (connect, init, api, connection, resume,
                      lazy_import, upload_file, import_file, import_sql_table, import_sql_select, import_hive_table,
-                     parse_setup, parse_raw, assign, deep_copy, models, get_model, get_grid, get_frame,
+                     parse_setup, parse_raw, assign, deep_copy, shallow_copy, models, get_model, get_grid, get_frame,
                      show_progress, no_progress, enable_expr_optimizations, is_expr_optimizations_enabled,
                      log_and_echo, remove, remove_all, rapids,
                      ls, frame, frames, create_frame, load_frame,
