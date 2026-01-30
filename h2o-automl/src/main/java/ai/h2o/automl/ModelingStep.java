@@ -90,7 +90,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
         applyPreprocessing(params);
         ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
-        builder._parms = params;
+        builder.setParams(params);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         builder.init(false);          // validate parameters

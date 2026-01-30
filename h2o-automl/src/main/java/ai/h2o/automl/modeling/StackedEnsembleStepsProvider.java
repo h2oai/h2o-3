@@ -65,6 +65,12 @@ public class StackedEnsembleStepsProvider
             }
 
             @Override
+            protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
+                StackedEnsembleParameters seParms = (StackedEnsembleParameters)parms;
+                super.setStoppingCriteria(seParms._metalearner_parameters, defaults); // specific handling for GLM will be handled on the metalearner itself.
+            }
+
+            @Override
             protected PreprocessingConfig getPreprocessingConfig() {
                 //SE should not have TE applied, the base models already do it.
                 PreprocessingConfig config = super.getPreprocessingConfig();

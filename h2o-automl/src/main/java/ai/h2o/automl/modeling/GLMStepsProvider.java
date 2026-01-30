@@ -25,7 +25,13 @@ public class GLMStepsProvider
 
             @Override
             protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
-                // disabled as we're using lambda search
+                GLMParameters glmParms = (GLMParameters)parms; 
+                if (glmParms._lambda_search) {
+                    glmParms._stopping_rounds = 0;
+                    glmParms._objective_epsilon = aml().getBuildSpec().build_control.stopping_criteria.stopping_tolerance();
+                } else {
+                    super.setStoppingCriteria(glmParms, defaults);
+                }
             }
 
             public GLMParameters prepareModelParameters() {

@@ -78,16 +78,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Unique new job and named result key */
   protected ModelBuilder(P parms, Key<M> key) {
     _job = new Job<>(_result = key, parms.javaName(), parms.algoName());
-    _parms = parms;
-    _input_parms = (P) parms.clone();
+    setParams(parms);
   }
 
   /** Shared pre-existing Job and unique new result key */
   protected ModelBuilder(P parms, Job<M> job) {
     _job = job;
     _result = defaultKey(parms.algoName());
-    _parms = parms;
-    _input_parms = (P) parms.clone();
+    setParams(parms);
   }
 
   /** List of known ModelBuilders with all default args; endlessly cloned by
@@ -156,8 +154,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               B mb = (B) prototype.clone();
               mb._job = job;
               mb._result = result;
-              mb._parms = prototype._parms.clone();
-              mb._input_parms = prototype._parms.clone();
+              mb.setParams(prototype._parms.clone());
               return mb;
             })
             .orElseThrow(() -> {
@@ -180,8 +177,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public static <B extends ModelBuilder, MP extends Model.Parameters> B make(MP parms, Key<Model> mKey) {
     Job<Model> mJob = new Job<>(mKey, parms.javaName(), parms.algoName());
     B newMB = ModelBuilder.make(parms.algoName(), mJob, mKey);
-    newMB._parms = parms.clone();
-    newMB._input_parms = parms.clone();
+    newMB.setParams(parms.clone());
     return newMB;
   }
 
@@ -189,8 +185,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * The values of this property will be used as actual parameters of the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
-  /** All the parameters required to build the model conserved in the input form, with AUTO values not evaluated yet. */
+  /** 
+   * All the parameters required to build the model conserved in the input form, with AUTO values not evaluated yet. 
+   * Algo implementations should use `_parms`, not `_input_parms`!
+   * */
   public P _input_parms;
+  
+  public void setParams(P parms) {
+    _parms = parms;
+    _input_parms = (P)parms.clone();
+  }
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
@@ -344,7 +348,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Job<M> trainModelOnH2ONode() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-    this._input_parms = (P) this._parms.clone();
     TrainModelRunnable trainModel = new TrainModelRunnable(this);
     H2O.runOnH2ONode(trainModel);
     return _job;
@@ -469,8 +472,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     @Override
     public void run() {
       ModelBuilder mb = ModelBuilder.make(_parms.algoName(), _job, _key);
-      mb._parms = _parms;
-      mb._input_parms = _parms.clone();
+      mb.setParams(_parms);
       mb.trainModelNested(_fr);
     }
   }
@@ -792,8 +794,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
-      cv_mb._input_parms = (P) _parms.clone();
       cv_mb._desc = "Cross-Validation model " + (i + 1) + " / " + N;
+      cv_mb.setParams(cv_mb._parms);
 
       // Error-check all the cross-validation Builders before launching any
       cv_mb.init(false);
