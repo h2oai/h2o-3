@@ -29,6 +29,7 @@ class H2ODecisionTreeEstimator(H2OEstimator):
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  response_column=None,  # type: Optional[str]
                  seed=-1,  # type: int
+                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  max_depth=20,  # type: int
                  min_rows=10,  # type: int
                  ):
@@ -55,6 +56,10 @@ class H2ODecisionTreeEstimator(H2OEstimator):
         :param seed: Seed for random numbers (affects sampling)
                Defaults to ``-1``.
         :type seed: int
+        :param distribution: Distribution function
+               Defaults to ``"auto"``.
+        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+               "quantile", "huber"]
         :param max_depth: Max depth of tree.
                Defaults to ``20``.
         :type max_depth: int
@@ -71,6 +76,7 @@ class H2ODecisionTreeEstimator(H2OEstimator):
         self.categorical_encoding = categorical_encoding
         self.response_column = response_column
         self.seed = seed
+        self.distribution = distribution
         self.max_depth = max_depth
         self.min_rows = min_rows
 
@@ -189,6 +195,21 @@ class H2ODecisionTreeEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
+
+    @property
+    def distribution(self):
+        """
+        Distribution function
+
+        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        "quantile", "huber"]``, defaults to ``"auto"``.
+        """
+        return self._parms.get("distribution")
+
+    @distribution.setter
+    def distribution(self, distribution):
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+        self._parms["distribution"] = distribution
 
     @property
     def max_depth(self):

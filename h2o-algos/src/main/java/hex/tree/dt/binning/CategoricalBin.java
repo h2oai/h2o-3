@@ -1,21 +1,25 @@
 package hex.tree.dt.binning;
 
+import org.apache.commons.lang.ArrayUtils;
+
+import java.util.Arrays;
+
 /**
  * For categorical features values are already binned to categories - each bin corresponds to one value (category)
  */
 public class CategoricalBin extends AbstractBin {
     public int _category;
 
-    public CategoricalBin(int category, int count, int count0) {
+    public CategoricalBin(int category, int[] classesDistribution, int count) {
         _category = category;
+        _classesDistribution = classesDistribution;
         _count = count;
-        _count0 = count0;
     }
 
-    public CategoricalBin(int category) {
+    public CategoricalBin(int category, int nclass) {
         _category = category;
+        _classesDistribution = new int[nclass];
         _count = 0;
-        _count0 = 0;
     }
 
     public int getCategory() {
@@ -23,11 +27,13 @@ public class CategoricalBin extends AbstractBin {
     }
     
     public CategoricalBin clone() {
-        return new CategoricalBin(_category, _count, _count0);
+        return new CategoricalBin(_category, _classesDistribution, _count);
     }
     
     public double[] toDoubles() {
-        return new double[]{_category, _count, _count0};
+        // category|count|class0|class1|...
+        return ArrayUtils.addAll(new double[]{_category, _count}, 
+                Arrays.stream(_classesDistribution).asDoubleStream().toArray());
     }
 
 }
