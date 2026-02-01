@@ -119,11 +119,11 @@ test_helper <- function(p, phi, offset) {
       mu = hmu,
       p = p,
       phi = hdispersion
-    ) - h2o.loglikelihood(hfit)
+    ) - (-h2o.loglikelihood(hfit))
   ) < eps)
   
   cat("Difference in negative log-likelihood calculation between R and H2O: ", 
-      abs(nll(simData, mu = hmu, p = p, phi = hdispersion) - h2o.loglikelihood(hfit)), "\n", sep="")
+      abs(nll(simData, mu = hmu, p = p, phi = hdispersion) - (-h2o.loglikelihood(hfit))), "\n", sep="")
   
   # are we better than R's implementation or at least the same? smaller the negative likelihood the better
   hnll <- nll(

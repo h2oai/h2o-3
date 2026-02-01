@@ -131,8 +131,8 @@ publishing {
 
       if (project.ext.isRelease) {
           maven {
-              name "SonatypeRelease"
-              url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+              name "OssrhStagingAPI"
+              url "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
 
               credentials {
                   username project["oss-releases.username"]

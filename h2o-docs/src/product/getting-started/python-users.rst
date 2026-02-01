@@ -31,4 +31,4 @@ See a notebook demonstration for how to use grid search in Python.
 Anaconda Cloud users
 --------------------
 
-You can run H2O-3 in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repositories are supported (as are a number of H2O-3 versions). See Anaconda's `official H2O-3 package <https://anaconda.org/h2oai/h2o/files>`__ to view a list of all available H2O-3 versions. You can refer to the `Install on Anaconda Cloud <../downloading.html#install-on-anaconda-cloud>`__ section for information about installing H2O-3 in an Anaconda Cloud.
+You can run H2O-3 in an Anaconda Cloud environment. Conda 3.7+ repositories are supported (as are a number of H2O-3 versions). See Anaconda's `official H2O-3 package <https://anaconda.org/h2oai/h2o/files>`__ to view a list of all available H2O-3 versions. You can refer to the `Install on Anaconda Cloud <../downloading.html#install-on-anaconda-cloud>`__ section for information about installing H2O-3 in an Anaconda Cloud.

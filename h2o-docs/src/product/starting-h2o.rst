@@ -447,11 +447,6 @@ Dual stack machines support IPv4 and IPv6 network stacks. H2O-3 prefers IPV4, ho
 - ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=true`` - H2O-3 will try to select IPv4.
 - ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=false`` - H2O-3 will try to select IPv6.
 
-On Spark
---------
-
-See the `Getting Started with Sparkling Water <welcome.html#getting-started-with-sparkling-water>`__ section for information on how to launch H2O-3 on Spark. 
-
 Connecting to an H2O-3 cluster by name
 --------------------------------------
 

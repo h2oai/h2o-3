@@ -38,7 +38,7 @@ Unlike the `upload <uploading-data.html>`__ function, which is a push from the c
 		# To import from S3:
 		library(h2o)
 		h2o.init()
-		airlines_path <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
+		airlines_path <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip"
 		airlines <- h2o.importFile(path = airlines_path)
 
 		# To import from HDFS, you must include the node name:

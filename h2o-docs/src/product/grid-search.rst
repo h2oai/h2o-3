@@ -833,7 +833,7 @@ GLM Hyperparameters
 - ``alpha``
 - ``dispersion_learning_rate``
 - ``init_dispersion_parameter``
-- ``lambda``
+- ``lambda`` (``lambda_``)
 - ``rand_family``
 - ``rand_link``
 - ``startval``
@@ -850,7 +850,7 @@ ModelSelection Hyperparameters
 ''''''''''''''''''''''''''''''
 
 - ``alpha``
-- ``lambda``
+- ``lambda`` (``lambda_``)
 - ``missing_values_handling``
 - ``nparallelism``
 - ``rand_family``
@@ -865,7 +865,7 @@ GAM Hyperparameters
 - ``balance_classes``
 - ``bs``
 - ``gam_columns``
-- ``lambda``
+- ``lambda`` (``lambda_``)
 - ``missing_values_handling``
 - ``num_knots``
 - ``rand_family``

@@ -2880,7 +2880,7 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> newLevels = newFrame.levels()
         >>> newLevels
         """
-        return H2OFrame._expr(expr=ExprNode("relevel", self, quote(y)))
+        return H2OFrame._expr(expr=ExprNode("relevel", self, y))
 
     def relevel_by_frequency(self, weights_column=None, top_n=-1):
         """
@@ -3973,7 +3973,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
         :examples:
 
-        >>> air = h2o.import_file("https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv")
+        >>> air = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip")
         # slice out all but the following five columns
         >>> df = air[:, ["ArrDelay", "DepDelay", "Origin", "Dest", "Distance"]]
         # group by "Distance" and sort by "Origin"

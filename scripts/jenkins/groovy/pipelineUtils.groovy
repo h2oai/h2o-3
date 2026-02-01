@@ -127,20 +127,6 @@ class PipelineUtils {
         return gradleVersion
     }
 
-    boolean dockerImageExistsInRegistry(final context, final String registry, final String projectName, final String repositoryName, final String version) {
-        context.withCredentials([context.usernamePassword(credentialsId: "${registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-            String repositoryNameAdjusted = repositoryName.replaceAll("/","%252F")
-            context.echo "URL: http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryNameAdjusted}/artifacts/${version}/tags"
-            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryNameAdjusted}/artifacts/${version}/tags".execute().text
-            final def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-            if (jsonResponse instanceof List) {
-                return jsonResponse.size() > 0
-            }
-            assert jsonResponse instanceof Map, "Response is not a valid json. Response is:" + response
-            context.echo response // The output is most probably error (NOT_FOUND)
-            return false
-        }
-    }
 
     /**
      *

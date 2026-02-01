@@ -17,6 +17,7 @@ NULL
 #' @param x features
 #' @param y response
 #' @param autoencoder autoencoder flag
+#' @noRd
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
    if (is(x, "H2OInfogram"))
      x<-x@admissible_features
@@ -2028,6 +2029,7 @@ h2o.aecu_table <- function(object, train=FALSE, valid=FALSE) {
 #' 
 #' @param probs An \linkS4class{H2OFrame} holding vector of probabilities.
 #' @param acts An \linkS4class{H2OFrame} holding vector of actuals.
+#' @noRd
 .h2o.perfect_auc <- function(probs, acts) {
   .newExpr("perfectAUC", probs, acts)[1, 1]
 }
@@ -3067,7 +3069,7 @@ h2o.average_objective <- function(model) {
 
 extract_scoring_history <- function(model, value) {
   if (is(model, "H2OModel") && (model@algorithm=='glm')) {
-      if (model@allparameters$generate_scoring_history==TRUE) {
+      if (model@params$actual$generate_scoring_history) {
           scHist <- model@model$scoring_history
           return(scHist[nrow(scHist), value])
       } else {

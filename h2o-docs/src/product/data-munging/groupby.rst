@@ -78,7 +78,7 @@ The following examples in Python and R show how to find the months with the high
         h2o.init()
 
         # Upload the airlines dataset
-        air = h2o.import_file("https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv")
+        air = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip")
         air.dim
         [43978, 31]
 
@@ -140,7 +140,7 @@ The following examples in Python and R show how to find the months with the high
         h2o.init()
 
         # Import the airlines data set and display a summary.
-        airlines_url <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+        airlines_url <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip"
         airlines <- h2o.importFile(path = airlines_url)
         summary(airlines)
 
@@ -226,7 +226,7 @@ The following R code shows the options by-variable with ``gb.control``.
     h2o.init()
 
     # Import the airlines dataset:
-    airlines.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv")
+    airlines.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip")
 
     # View quantiles and histograms:
     quantile(x = airlines.hex$ArrDelay, na.rm = TRUE)

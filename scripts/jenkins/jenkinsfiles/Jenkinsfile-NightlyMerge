@@ -1,10 +1,10 @@
 pipeline {
     agent {
-        label 'linux'
+        label 'h2o3_linux'
     }
 
-    triggers { 
-        cron('H 0 * * *') 
+    triggers {
+        cron('H 0 * * *')
     }
 
     stages {
@@ -23,7 +23,7 @@ pipeline {
                     sh "git checkout origin/${latestReleaseBranch}"
                     def mergeBase = sh(script: "git merge-base origin/master HEAD", returnStdout: true).trim()
                     def changes = sh(script: "git diff --quiet ${mergeBase} HEAD || echo 'changed'", returnStdout: true).trim()
-                    
+
                     if (changes == 'changed') {
                         def commitMessage = "Merge remote-tracking branch origin/${latestReleaseBranch}"
                         currentBuild.description = commitMessage
@@ -36,7 +36,7 @@ pipeline {
                                 git config --global user.name "${GH_USERNAME}"
                                 git config --global user.email "${GH_EMAIL}"
                                 git remote set-url origin https://${GH_TOKEN}@github.com/h2oai/h2o-3.git
-                                
+
                                 git checkout master
                                 git merge --no-ff origin/${latestReleaseBranch} -m "${commitMessage}"
                                 git push origin

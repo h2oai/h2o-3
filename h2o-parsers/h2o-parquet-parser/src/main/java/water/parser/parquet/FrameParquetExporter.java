@@ -112,10 +112,13 @@ public class FrameParquetExporter  {
                         currColType = _colTypes[j];
                         switch (currColType) {
                             case (T_UUID):
+                                throw new IllegalArgumentException("UUID column type is not supported. You can work around this by converting the column to a String.");
                             case (T_TIME):
-                                long timestamp = cs[j].at8(i);
-                                long adjustedTimestamp = timestamp - timeStampAdjustment;
-                                group = group.append(currColName, adjustedTimestamp);
+                                if (!cs[j].isNA(i)) {
+                                    long timestamp = cs[j].at8(i);
+                                    long adjustedTimestamp = timestamp - timeStampAdjustment;
+                                    group = group.append(currColName, adjustedTimestamp);
+                                }
                                 break;
                             case (T_STR):
                                 if (!cs[j].isNA(i)) {

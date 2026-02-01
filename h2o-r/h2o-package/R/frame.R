@@ -1660,7 +1660,10 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000L)
 .num.list <- function(nl) paste0('[',paste0(nl,collapse=" "),']')
 
 # Convert to Currents string-list syntax
-.quote <- function(x) paste0('"',x,'"')
+.quote <- function(x) {
+    escaped <- gsub('(?<!\\\\)(")', '\\\\"', x, perl = TRUE)
+    paste0('"', escaped, '"')
+}
 .str.list <- function(sl) {
   if (is.null(sl))
     "[]"
@@ -4469,10 +4472,10 @@ as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
 }
 
 #' Logical and for H2OFrames
-#' 
+#'
 #' @param x An H2OFrame object
 #' @param y An H2OFrame object
-#' @export	
+#' @export
 `&&` <- function (x, y) {
   if( is.H2OFrame(x)  ) .newExpr("&&", x,y)
   else base::`&&`(x,y)

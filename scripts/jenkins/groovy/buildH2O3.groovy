@@ -1,7 +1,7 @@
 def call(final pipelineContext) {
 
-    final String PYTHON_VERSION = '3.7'
-    final String R_VERSION = '3.4.1'
+    final String PYTHON_VERSION = pipelineContext.getBuildConfig().DEFAULT_PYTHON_VERSION
+    final String R_VERSION = pipelineContext.getBuildConfig().R_VERSIONS[-1]
     final String JAVA_VERSION = '8'
 
     // Load required scripts

@@ -1,5 +1,5 @@
 extensions = dict(
-    required_params=['x', 'y', 'training_frame', 'random_columns', 'group_column'],
+    required_params=["x", "y", "training_frame", "random_columns", "group_column"],
     set_required_params="""
     parms$training_frame <- training_frame
     args <- .verify_dataxy(training_frame, x, y)
@@ -102,7 +102,7 @@ h2o.mean_residual_fixed <- function(model, train=TRUE) {
            return(model@model$mean_residual_fixed_valid) 
     }
 }
-    """
+    """,
 )
 
 doc = dict(
@@ -118,7 +118,7 @@ doc = dict(
     prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
     prostate <- h2o.uploadFile(path = prostate_path)
     prostate$RACE <- as.factor(prostate$RACE)
-    model <- h2o.hglm(y="VOL", x=c("AGE","RACE","DPROS"), random_columns = ["AGE"], 
+    model <- h2o.hglm(y="VOL", x=c("AGE","RACE","DPROS"), random_columns = c("AGE"), 
                       group_column = "RACE", training_frame=prostate)
-    """
+    """,
 )
