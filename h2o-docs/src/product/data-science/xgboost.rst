@@ -431,7 +431,7 @@ Below is a simple example showing how to build a XGBoost model.
     feature_interactions = h2o.feature_interaction(titanic_xgb)
 
     # Get Friedman and Popescu's H statistics
-    h <- h2o.h(titanic_xgb, train, c('fair','age'))
+    h <- h2o.h(titanic_xgb, train, c('pclass','age'))
     print(h)
 
 
@@ -471,7 +471,7 @@ Below is a simple example showing how to build a XGBoost model.
     feature_interactions = titanic_xgb.feature_interaction()
 
     # Get Friedman and Popescu's H statistics
-    h = titanic_xgb.h(train, ['fair','age'])
+    h = titanic_xgb.h(train, ['pclass','age'])
     print(h)
 
 Note
