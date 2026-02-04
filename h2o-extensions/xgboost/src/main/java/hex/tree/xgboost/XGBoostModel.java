@@ -1036,34 +1036,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
-    // Validate vars parameter
-    if (vars == null || vars.length == 0) {
-      throw new IllegalArgumentException(
-              "Calculating H statistics error: 'vars' parameter cannot be null or empty. " +
-              "Please specify at least one variable.");
-    }
-
-    // Validate that all specified columns exist in the frame and are numeric
-    for (String varName : vars) {
-      if (varName == null) {
-        throw new IllegalArgumentException(
-                "Calculating H statistics error: 'vars' parameter contains a null value.");
-      }
-      Vec col = frame.vec(varName);
-      if (col == null) {
-        throw new IllegalArgumentException(
-                "Calculating H statistics error: column '" + varName + "' does not exist in the frame.");
-      }
-      if (!col.isNumeric()) {
-        throw new IllegalArgumentException(
-                "Calculating H statistics error: column '" + varName + "' is not numeric. " +
-                "H statistics can only be calculated for numeric variables.");
-      }
-      if (col.isBad() || col.isConst()) {
-        throw new IllegalArgumentException(
-                "Calculating H statistics error: column '" + varName + "' contains only missing or constant values.");
-      }
-    }
+    // Validate input parameters
+    validateFriedmanPopescusHInput(frame, vars);
 
     Frame adaptFrm = removeSpecialNNonNumericColumns(frame);
 
