@@ -756,7 +756,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             }
           }
         }
-      }
+      } if (_remove_offset_effects) {
+          if(_offset_column == null) {
+              glm.error("_remove_offset_effects", "The offset_column is missing.");
+          }
+          if(_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
+              glm.error("_remove_offset_effects", "The "+_distribution.name()+ " distribution is not supported with remove offset effects.");
+          }
+        }
     }
     
     public GLMParameters() {
@@ -1532,7 +1539,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
-  public boolean _remove_offset_effect = false;
+  public boolean _useRemoveOffsetEffects = false;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -2205,7 +2212,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     } else {
       double[] b = beta();
       double eta = b[b.length - 1]; // intercept 
-      if (!this._remove_offset_effect){ // offset
+      if (!this._useRemoveOffsetEffects){ // offset
           eta += o;
       }
       double[] bcv = b.clone();

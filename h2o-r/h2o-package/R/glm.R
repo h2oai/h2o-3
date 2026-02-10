@@ -116,6 +116,7 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param control_variables A list of predictor column indices which is used for training but removed for scoring. Experimental.
+#' @param remove_offset_effects \code{Logical}. Remove offset effects from scoring and metric calculation. Experimental. Defaults to FALSE.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -267,6 +268,7 @@ h2o.glm <- function(x,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
                     control_variables = NULL,
+                    remove_offset_effects = FALSE,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
@@ -429,6 +431,8 @@ h2o.glm <- function(x,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(control_variables))
     parms$control_variables <- control_variables
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -563,6 +567,7 @@ h2o.glm <- function(x,
                                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                     stopping_tolerance = 0.001,
                                     control_variables = NULL,
+                                    remove_offset_effects = FALSE,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
@@ -730,6 +735,8 @@ h2o.glm <- function(x,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(control_variables))
     parms$control_variables <- control_variables
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -832,7 +839,7 @@ h2o.makeGLMModel <- function(model,beta) {
 #' @param destination_key a string or a NULL
 #' @export
 h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
-  stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = !is.null(model@params$actual[["control_variables"]]) || model@params$actual[["remove_offset_effects"]])
   query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
   if (!missing(destination_key) && !is.null(destination_key)) {
     query <- c(query, list(dest = destination_key))

@@ -56,10 +56,10 @@ public class MakeGLMModelHandler extends Handler {
 
   public GLMModelV3 make_unrestricted_model(int version, MakeUnrestrictedGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
-    if(model == null)
+    if (model == null)
       throw new IllegalArgumentException("Missing source model " + args.model);
-    if(model._parms._control_variables == null){
-      throw new IllegalArgumentException("Source model is not trained with control variables.");
+    if (model._parms._control_variables == null && !model._parms._remove_offset_effects){
+      throw new IllegalArgumentException("Source model is not trained with control variables or remove offset effects.");
     }
     Key generatedKey = Key.make(model._key.toString()+"_unrestricted_model");
     Key key = args.dest != null ? Key.make(args.dest) : generatedKey;
@@ -73,7 +73,9 @@ public class MakeGLMModelHandler extends Handler {
             Double.NaN, Double.NaN, -1);
     m.setInputParms(inputParms);
     m._input_parms._control_variables = null;
+    m._input_parms._remove_offset_effects = false;
     m._parms._control_variables = null;
+    m._parms._remove_offset_effects = false;
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
