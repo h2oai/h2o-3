@@ -95,6 +95,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  control_variables=None,  # type: Optional[List[str]]
+                 remove_offset_effects=False,  # type: bool
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
@@ -341,6 +342,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Experimental.
                Defaults to ``None``.
         :type control_variables: List[str], optional
+        :param remove_offset_effects: Remove offset effects from scoring and metric calculation. Experimental.
+               Defaults to ``False``.
+        :type remove_offset_effects: bool
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
                Defaults to ``False``.
         :type balance_classes: bool
@@ -504,6 +508,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.stopping_metric = stopping_metric
         self.stopping_tolerance = stopping_tolerance
         self.control_variables = control_variables
+        self.remove_offset_effects = remove_offset_effects
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -2055,6 +2060,20 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def control_variables(self, control_variables):
         assert_is_type(control_variables, None, [str])
         self._parms["control_variables"] = control_variables
+
+    @property
+    def remove_offset_effects(self):
+        """
+        Remove offset effects from scoring and metric calculation. Experimental.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("remove_offset_effects")
+
+    @remove_offset_effects.setter
+    def remove_offset_effects(self, remove_offset_effects):
+        assert_is_type(remove_offset_effects, None, bool)
+        self._parms["remove_offset_effects"] = remove_offset_effects
 
     @property
     def balance_classes(self):

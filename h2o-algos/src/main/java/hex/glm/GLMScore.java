@@ -110,7 +110,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       double previousCDF = 0.0;
       for (int cInd = 0; cInd < lastClass; cInd++) {
         double eta = r.innerProduct(bm[cInd]);
-        if(!_m._remove_offset_effect) {
+        if(!_m._useRemoveOffsetEffects) {
           eta += o;
         }
         double currCDF = 1.0 / (1 + Math.exp(-eta));
@@ -126,7 +126,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       double maxRow = 0;
       for (int c = 0; c < bm.length; ++c) {
         eta[c] = r.innerProduct(bm[c]);
-        if(!_m._remove_offset_effect) {
+        if(!_m._useRemoveOffsetEffects) {
           eta[c] += o;
         }
         if(eta[c] > maxRow)
@@ -140,7 +140,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
       double x = r.innerProduct(_beta);
-      if(!_m._remove_offset_effect) {
+      if(!_m._useRemoveOffsetEffects) {
         x += o;
       }
       double mu = _m._parms.linkInv(x);
