@@ -1,4 +1,4 @@
-``control_variables``
+``remove_offset_effects``
 --------------------
 
 - Available in: GLM
@@ -7,19 +7,11 @@
 Description
 ~~~~~~~~~~~
 
-Control variables are special predictors that are included during model training but automatically excluded during inference/scoring. This feature allows you to account for certain factors during training without having them affect predictions.
+This feature allows you to remove offset effects during scoring and metric calculation. 
 
-Common use cases include:
-
-- Accounting for batch effects or experimental conditions
-- Controlling for confounding variables
-- Incorporating fixed effects that won't be available at prediction time
-
-When control variables are specified, GLM will exclude them during scoring. Model metrics and scoring history are calculated for both the restricted model (with control variables excluded) and the unrestricted model (with control variables included).
+Model metrics and scoring history are calculated for both the restricted model (with offset effects removed) and the unrestricted model (with offset effect included).
 
 To get the unrestricted model with its own metrics use ``glm.make_unrestriced_glm_model()``/``h2o.make_unrestricted_glm_model(glm)``.
-
-The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. 
 
 
 **Notes**:
@@ -33,7 +25,7 @@ The control variables' coefficients are set to zero in the variable importance t
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `remove_offset_effects <remove_offset_effects.html>`__
+- `control_variables <control_variables.html>`__
 
 Example
 ~~~~~~~
@@ -64,29 +56,22 @@ Example
 		train <- airlines_splits[[1]]
 		valid <- airlines_splits[[2]]
 
-		# try using the `control_variables` parameter:
+		# try using the `remove_offset_effects` parameter:
 		airlines_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
                         validation_frame = valid,
                         remove_collinear_columns = FALSE,
                         score_each_iteration = TRUE,
                         generate_scoring_history = TRUE,
-                        control_variables = c("Year", "DayOfWeek"))
+                        remove_offset_effects = TRUE)
 
 		# print the AUC for the validation data
 		print(h2o.auc(airlines_glm, valid = TRUE))
-
-		# take a look at the coefficients_table
-		airlines_glm@model$coefficients_table
 
 		# take a look at the learning curve
 		h2o.learning_curve_plot(airlines_glm)
 
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm <- h2o.make_unrestricted_glm_model(airlines_glm)
-
-        # get variable importance
-        varimp <- h2o.varimp(airlines_glm)
-        varimp_unrestricted <- h2o.varimp(unrestricted_airlines_glm)
 
 
    .. code-tab:: python
@@ -114,22 +99,19 @@ Example
 		# split into train and validation sets
 		train, valid= airlines.split_frame(ratios = [.8])
 
-		# try using the `control_variables` parameter:
+		# try using the `remove_offset_effects` parameter:
 		# initialize your estimator
 		airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial', 
 		                                             remove_collinear_columns = True,
 													 score_each_iteration = True,
 													 generate_scoring_history = True,
-		                                             control_variables = ["Year", "DayOfWeek"])
+		                                             remove_offset_effects = True)
 
 		# then train your model
 		airlines_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 		# print the auc for the validation data
 		print(airlines_glm.auc(valid=True))
-
-		# take a look at the coefficients_table
-		coeff_table = airlines_glm._model_json['output']['coefficients_table']
 
 		# convert table to a pandas dataframe
 		coeff_table.as_data_frame()
@@ -139,7 +121,3 @@ Example
 
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm = airlines_glm.make_unrestricted_glm_model()
-
-        # get variable importance tables
-        varimp = airlines_glm.varimp()
-        varimp_unrestricted = unrestricted_airlines_glm.varimp()
