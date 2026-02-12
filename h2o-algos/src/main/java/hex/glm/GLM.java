@@ -3414,10 +3414,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         try {
-          //_model._useControlVariables = true;
+          _model._useControlVariables = _model._parms._control_variables != null;
+          _model._useRemoveOffsetEffects = _model._parms._remove_offset_effects;
           _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
         } finally {
-          //_model._useControlVariables = true;
+            _model._useControlVariables = _model._parms._control_variables != null;
+            _model._useRemoveOffsetEffects = _model._parms._remove_offset_effects;
         }
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
@@ -3875,8 +3877,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   scoringHistoryEarlyStop, scoringHistoryEarlyStopRestricted, sm, null != _parms._valid);
           _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopRestricted);
           _model._output._scoring_history_unrestricted_model.setTableHeader(_model._output._scoring_history_unrestricted_model.getTableHeader()+" unrestricted model");
-          // set control variables flag to true for scoring after training
-          _model._useControlVariables = !_model._parms._remove_offset_effects;
+          // set control variables and remove offset effects flag to true for scoring after training
+          _model._useControlVariables = _model._parms._control_variables != null;
           _model._useRemoveOffsetEffects = _model._parms._remove_offset_effects;
           _model._output._varimp = _model._output.calculateVarimp(_model._useControlVariables);
           _model._output._variable_importances_unrestricted_model = calcVarImp(_model._output.calculateVarimp(false));
