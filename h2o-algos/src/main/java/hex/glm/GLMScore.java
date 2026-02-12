@@ -94,11 +94,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
       _beta_multinomial = null;
     }
-
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
-
-    // seems like it is not used anywhere
-    // m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
     _defaultThreshold = m.defaultThreshold();
   }
 

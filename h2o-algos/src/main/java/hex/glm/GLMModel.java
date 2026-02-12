@@ -1727,7 +1727,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _binomial;
     public boolean _multinomial;
     public boolean _ordinal;
-    public boolean _score_control_vals_used_but_disabled;
 
     public void setLambdas(GLMParameters parms) {
       if (parms._lambda_search) {
