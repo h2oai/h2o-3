@@ -839,7 +839,7 @@ h2o.makeGLMModel <- function(model,beta) {
 #' @param destination_key a string or a NULL
 #' @export
 h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
-  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = !is.null(model@params$actual[["control_variables"]]) || model@params$actual[["remove_offset_effects"]])
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
   query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
   if (!missing(destination_key) && !is.null(destination_key)) {
     query <- c(query, list(dest = destination_key))

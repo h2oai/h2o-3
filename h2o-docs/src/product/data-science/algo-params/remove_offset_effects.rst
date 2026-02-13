@@ -11,7 +11,7 @@ This feature allows you to remove offset effects during scoring and metric calcu
 
 Model metrics and scoring history are calculated for both the restricted model (with offset effects removed) and the unrestricted model (with offset effect included).
 
-To get the unrestricted model with its own metrics use ``glm.make_unrestriced_glm_model()``/``h2o.make_unrestricted_glm_model(glm)``.
+To get the unrestricted model with its own metrics use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
 
 
 **Notes**:
@@ -62,6 +62,7 @@ Example
                         remove_collinear_columns = FALSE,
                         score_each_iteration = TRUE,
                         generate_scoring_history = TRUE,
+                        offset_column = "Distance",
                         remove_offset_effects = TRUE)
 
 		# print the AUC for the validation data
@@ -105,6 +106,7 @@ Example
 		                                             remove_collinear_columns = True,
 													 score_each_iteration = True,
 													 generate_scoring_history = True,
+													 offset_column = "Distance",
 		                                             remove_offset_effects = True)
 
 		# then train your model
@@ -112,9 +114,6 @@ Example
 
 		# print the auc for the validation data
 		print(airlines_glm.auc(valid=True))
-
-		# convert table to a pandas dataframe
-		coeff_table.as_data_frame()
 
 		# take a look at the learning curve
 		airlines_glm.learning_curve_plot()
