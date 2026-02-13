@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-glm_control_variables_explain <- function() {
+glm_remove_offset_effects_explain <- function() {
     df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
     df$CAPSULE <- as.factor(df$CAPSULE)
     df$RACE <- as.factor(df$RACE)
@@ -37,4 +37,4 @@ glm_control_variables_explain <- function() {
     h2o.explain(unrestricted_prostate_glm, df)
 }
 
-doTest("GLM: Control variables works with expain", glm_control_variables_explain)
+doTest("GLM: Remove offset effects works with explain", glm_remove_offset_effects_explain)

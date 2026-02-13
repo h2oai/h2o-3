@@ -3413,14 +3413,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Restricted model training metrics computed in " + (t2 - t1) + "ms"));
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
-        try {
-          _model._useControlVariables = _model._parms._control_variables != null;
-          _model._useRemoveOffsetEffects = _model._parms._remove_offset_effects;
-          _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
-        } finally {
-            _model._useControlVariables = _model._parms._control_variables != null;
-            _model._useRemoveOffsetEffects = _model._parms._remove_offset_effects;
-        }
+        _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
         validScore.fillFrom(_model._output._validation_metrics);
@@ -3870,7 +3863,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
           TwoDimTable scoringHistoryEarlyStopRestricted = ScoringInfo.createScoringHistoryTable(_model.getUnrestrictedModelScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
-          scoringHistoryEarlyStopRestricted.setTableHeader("Scoring history with control variables enabled");
           ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ? 
                   ScoreKeeper.StoppingMetric.logloss : ScoreKeeper.StoppingMetric.deviance : _model._parms._stopping_metric;
           _model._output._scoring_history = combineScoringHistoryRestricted(_model._output._scoring_history, _model._output._scoring_history_unrestricted_model,
@@ -4080,7 +4072,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_state._dinfo._adaptedFrame);
           double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
           _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
-        } if (_model._parms._remove_offset_effects) {
+        } else if (_model._parms._remove_offset_effects) {
             _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
             _scoringHistory.addIterationScore(_state._iter, _state.likelihood(), _state.objective()); 
         } else {
