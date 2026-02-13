@@ -138,9 +138,9 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable vi = glm._output._variable_importances;
             TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
             TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
-            
-            assertNotEquals(vi, vi_unrestricted);
-            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
+
+            assertFalse(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
+            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
 
         } finally {
             if(train != null) train.remove();
@@ -859,8 +859,8 @@ public class GLMControlVariablesTest extends TestUtil {
                 if(preds.vec(1).at(i) != preds2.vec(1).at(i)) differ++;
                 if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
             }
-            System.out.println(differ + " " + threshold);
-            assert differ > threshold;
+            
+            assertTrue("Expected number of differing predictions to exceed threshold", differ > threshold);
 
             System.out.println("Scoring history remove offset enabled");
             TwoDimTable glmSH = glm._output._scoring_history;
@@ -891,8 +891,8 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
             TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
 
-            assertArrayEquals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders());
-            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
+            assertTrue(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
+            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
 
         } finally {
             if(train != null) train.remove();
@@ -1021,9 +1021,8 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
             TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
 
-            assertNotEquals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders());
-            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
-
+            assertFalse(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
+            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
         } finally {
             if(train != null) train.remove();
             if(test != null) test.remove();

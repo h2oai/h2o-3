@@ -725,10 +725,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           glm.error("_control_variables", "Control variables option is not supported with interactions.");
         }
         if(_lambda_search) {
-          glm.error("_control_variables", "Control variables option is not supported with lambda search.");
+          glm.error("_control_variables", "Control variables option is not supported with Lambda search.");
         }
         if(_fold_column != null || _nfolds > 0){
-          glm.error("_control_variables", "Control variables option is not supported with cross validation.");
+          glm.error("_control_variables", "Control variables option is not supported with cross-validation.");
         }
         for(String col: _control_variables){
           Vec v = train().vec(col);
@@ -757,11 +757,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
         }
       } if (_remove_offset_effects) {
-          if(_offset_column == null) {
+          if (_offset_column == null) {
               glm.error("_remove_offset_effects", "The offset_column is missing.");
           }
-          if(_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
+          if (_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
               glm.error("_remove_offset_effects", "The "+_distribution.name()+ " distribution is not supported with remove offset effects.");
+          }
+          if (_interactions != null || _interaction_pairs != null) {
+              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with interactions.");
+          }
+          if (_lambda_search) {
+              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
+          }
+          if (_fold_column != null || _nfolds > 0) {
+              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with cross-validation.");
           }
         }
     }

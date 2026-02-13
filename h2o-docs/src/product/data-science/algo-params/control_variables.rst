@@ -17,7 +17,7 @@ Common use cases include:
 
 When control variables are specified, GLM will exclude them during scoring. Model metrics and scoring history are calculated for both the restricted model (with control variables excluded) and the unrestricted model (with control variables included).
 
-To get the unrestricted model with its own metrics use ``glm.make_unrestriced_glm_model()``/``h2o.make_unrestricted_glm_model(glm)``.
+To get the unrestricted model with its own metrics use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
 
 The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. 
 
