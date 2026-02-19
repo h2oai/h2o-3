@@ -106,9 +106,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       double previousCDF = 0.0;
       for (int cInd = 0; cInd < lastClass; cInd++) {
         double eta = r.innerProduct(bm[cInd]);
-        if(!_m._useRemoveOffsetEffects) {
-          eta += o;
-        }
         double currCDF = 1.0 / (1 + Math.exp(-eta));
         preds[cInd + 1] = currCDF - previousCDF;
         previousCDF = currCDF;
