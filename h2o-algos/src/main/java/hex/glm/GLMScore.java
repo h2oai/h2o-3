@@ -119,9 +119,6 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       double maxRow = 0;
       for (int c = 0; c < bm.length; ++c) {
         eta[c] = r.innerProduct(bm[c]);
-        if(!_m._useRemoveOffsetEffects) {
-          eta[c] += o;
-        }
         if(eta[c] > maxRow)
           maxRow = eta[c];
       }
