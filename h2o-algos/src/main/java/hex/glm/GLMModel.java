@@ -756,7 +756,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             }
           }
         }
-      } if (_remove_offset_effects) {
+      }
+      if (_remove_offset_effects) {
           if (_offset_column == null) {
               glm.error("_remove_offset_effects", "The offset_column is missing.");
           }
