@@ -104,9 +104,9 @@ Example
 		# initialize your estimator
 		airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial', 
 		                                             remove_collinear_columns = True,
-													 score_each_iteration = True,
-													 generate_scoring_history = True,
-													 offset_column = "Distance",
+		                                             score_each_iteration = True,
+		                                             generate_scoring_history = True,
+		                                             offset_column = "Distance",
 		                                             remove_offset_effects = True)
 
 		# then train your model
