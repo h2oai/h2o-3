@@ -47,15 +47,16 @@ testGLMvcovValues <- function() {
 	manualWeight <- hf_vcov$weight
 	manualAcceleration <- hf_vcov$acceleration
 	manualYear <- hf_vcov$year
-	
+
   # compare values from function with those obtained manually
-  for (i in seq_along(c("Intercept", predictors)))
-    expect_equal(manualIntercept[i], vcovIntercept[i])
-    expect_equal(manualDisplacement[i], vcovDisplacement[i])
-    expect_equal(manualPower[i], vcovPower[i])
-    expect_equal(manualWeight[i], vcovWeight[i])
-    expect_equal(manualAcceleration[i], vcovAcceleration[i])
-    expect_equal(manualYear[i], vcovYear[i])
+  for (i in seq_along(c("Intercept", predictors))) {
+    expect_equal(manualIntercept[i, 1], vcovIntercept[i, 1])
+    expect_equal(manualDisplacement[i, 1], vcovDisplacement[i, 1])
+    expect_equal(manualPower[i, 1], vcovPower[i, 1])
+    expect_equal(manualWeight[i, 1], vcovWeight[i, 1])
+    expect_equal(manualAcceleration[i, 1], vcovAcceleration[i, 1])
+    expect_equal(manualYear[i, 1], vcovYear[i, 1])
+  }
 }
 
 doSuite("GLM: VCOV support",
