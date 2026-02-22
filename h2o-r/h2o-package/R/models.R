@@ -2666,7 +2666,7 @@ h2o.coef_with_p_values <- function(object) {
 }
 
 #'
-#' Return the variance-covariance matrix for GLM models
+#' Return an H2OFrame with the variance-covariance matrix for GLM models
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @examples 
@@ -2693,8 +2693,8 @@ h2o.coef_with_p_values <- function(object) {
 #' @export
 h2o.vcov <- function(object) {
   if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
-    if (object@parameters$compute_p_values) {
-      object@model$vcov_table
+    if (object@params$input$compute_p_values) {
+      return(h2o.getFrame(object@model$vcov_table$name))
     } else {
       stop("variance-covariance matrix not found in model.  Make sure to set compute_p_values=TRUE.")
     }

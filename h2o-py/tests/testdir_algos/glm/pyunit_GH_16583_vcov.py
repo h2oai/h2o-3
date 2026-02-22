@@ -17,7 +17,7 @@ def test_glm_vcov():
     gbm_model.train(x=predictors, y=y, training_frame=cars)
 
     try:
-        gbm_model.vcov()
+        vcov = gbm_model.vcov()
     except ValueError as e:
         assert "The variance-covariance matrix is only found in GLM." in e.args[0], "Wrong error messages received."
 
@@ -32,7 +32,7 @@ def test_wrong_model_vcov():
     h2oglm_vcov.train(x=predictors, y=y, training_frame=cars)
 
     try:
-        h2oglm_vcov.vcov()
+        vcov = h2oglm_vcov.vcov()
     except ValueError as e:
         assert "The variance-covariance matrix is only calculated when compute_p_values=True" in e.args[0], "Wrong error messages received."
 
@@ -48,7 +48,7 @@ def test_glm_vcov_values():
 
     h2oglm_compute_vcov.train(x = predictors, y = y, training_frame  = cars)
     vcov = h2oglm_compute_vcov.vcov()
-    vcov_intercept = vcov['intercept']
+    vcov_intercept = vcov['Intercept']
     vcov_displacement = vcov['displacement']
     vcov_power = vcov['power']
     vcov_weight = vcov['weight']
@@ -58,34 +58,36 @@ def test_glm_vcov_values():
     print("variance-covariance table: {0}".format(vcov))
   
     # manually obtain covariances and compare with ones using functions
-    names = h2oglm_compute_vcov._model_json["output"]["vcov_table"]["names"]
-    manual_intercept = h2oglm_compute_vcov._model_json["output"]["vcov_table"]["intercept"]
-    manual_displacement = h2oglm_compute_vcov._model_json["output"]["vcov_table"]["displacement"]
-    manual_power = h2oglm_compute_vcov._model_json["output"]["vcov_table"]["power"]
-    manual_weight = h2oglm_compute_vcov._model_json["output"]["vcov_table"]["weight"]
-    manual_acceleration = h2oglm_compute_vcov._model_json["output"]["vcov_table"]["acceleration"]
-    manual_year = h2oglm_compute_vcov._model_json["output"]["vcov_table"]["year"]
+    hf_vcov = h2o.get_frame(h2oglm_compute_vcov._model_json["output"]["vcov_table"]["name"])
+    names = hf_vcov["Names"]
+    manual_intercept = hf_vcov["Intercept"]
+    manual_displacement = hf_vcov["displacement"]
+    manual_power = hf_vcov["power"]
+    manual_weight = hf_vcov["weight"]
+    manual_acceleration = hf_vcov["acceleration"]
+    manual_year = hf_vcov["year"]
   
     # check both sets of values are equal
-    for i, el in enumerate(names):
-        assert abs(vcov_intercept[i]-manual_intercept[i]) < 1e-12, "Expected covariance between intercept and {el} : {0} " \
-                                                                  ", actual covariance: {1}.  They are different".format(
-                                                                  vcov_intercept[count], manual_intercept[count])
-        assert abs(vcov_displacement[i]-manual_displacement[i]) < 1e-12, "Expected covariance between displacement and {el} : {0} " \
-                                                                  ", actual covariance: {1}.  They are different".format(
-                                                                  vcov_displacement[count], manual_displacement[count])
-        assert abs(vcov_power[i]-manual_power[i]) < 1e-12, "Expected covariance between power and {el} : {0} " \
-                                                                  ", actual covariance: {1}.  They are different".format(
-                                                                  vcov_power[count], manual_power[count])
-        assert abs(vcov_weight[i]-manual_weight[i]) < 1e-12, "Expected covariance between weight and {el} : {0} " \
-                                                                  ", actual covariance: {1}.  They are different".format(
-                                                                  vcov_weight[count], manual_weight[count])
-        assert abs(vcov_acceleration[i]-manual_acceleration[i]) < 1e-12, "Expected covariance between acceleration and {el} : {0} " \
-                                                                  ", actual covariance: {1}.  They are different".format(
-                                                                  vcov_acceleration[count], manual_acceleration[count])
-        assert abs(vcov_year[i]-manual_year[i]) < 1e-12, "Expected covariance between year and {el} : {0} " \
-                                                                  ", actual covariance: {1}.  They are different".format(
-                                                                  vcov_year[count], manual_year[count])
+    for i in range(names.shape[0]):
+        el = names[i,0]
+        assert abs(vcov_intercept[i, 0]-manual_intercept[i, 0]) < 1e-12, f"Expected covariance between Intercept and {el} : {0} " \
+                                                                  ", actual covariance: {1}.  They are different.".format(
+                                                                  vcov_intercept[i, 0], manual_intercept[i, 0])
+        assert abs(vcov_displacement[i, 0]-manual_displacement[i, 0]) < 1e-12, f"Expected covariance between displacement and {el} : {0} " \
+                                                                  ", actual covariance: {1}.  They are different.".format(
+                                                                  vcov_displacement[i, 0], manual_displacement[i, 0])
+        assert abs(vcov_power[i, 0]-manual_power[i, 0]) < 1e-12, f"Expected covariance between power and {el} : {0} " \
+                                                                  ", actual covariance: {1}.  They are different.".format(
+                                                                  vcov_power[i, 0], manual_power[i, 0])
+        assert abs(vcov_weight[i, 0]-manual_weight[i, 0]) < 1e-12, f"Expected covariance between weight and {el} : {0} " \
+                                                                  ", actual covariance: {1}.  They are different.".format(
+                                                                  vcov_weight[i, 0], manual_weight[i, 0])
+        assert abs(vcov_acceleration[i, 0]-manual_acceleration[i, 0]) < 1e-12, f"Expected covariance between acceleration and {el} : {0} " \
+                                                                  ", actual covariance: {1}.  They are different.".format(
+                                                                  vcov_acceleration[i, 0], manual_acceleration[i, 0])
+        assert abs(vcov_year[i, 0]-manual_year[i, 0]) < 1e-12, f"Expected covariance between year and {el} : {0} " \
+                                                                  ", actual covariance: {1}.  They are different.".format(
+                                                                  vcov_year[i, 0], manual_year[i, 0])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_glm_vcov)

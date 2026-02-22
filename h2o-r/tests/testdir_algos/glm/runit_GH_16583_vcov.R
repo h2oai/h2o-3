@@ -3,64 +3,64 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 # call glm functions by a gbm model.  Should generate an error
 testGBMvcov <- function() {
-	bhexFV <- h2o.importFile(locate("smalldata/logreg/benign.csv"))
-	maxX <- 11
-	Y <- 4
-	X   <- 3:maxX
-	X   <- X[ X != Y ]
-	mFV <- h2o.gbm(y=Y, x=colnames(bhexFV)[X], training_frame=bhexFV)
+	cars <- h2o.importFile(locate("smalldata/junit/cars_20mpg.csv"))
+	y = "economy_20mpg"
+	predictors = c("displacement","power","weight","acceleration","year")
+	cars[y] = h2o.asfactor(cars[y])
+	mFV <- h2o.gbm(y=y, x=predictors, training_frame=cars)
 
 	assertError(vcovValues <- h2o.vcov(mFV))
 }
 
 # should throw an error when compute_p_value=FALSE
 testGLMvcovcomputePValueFALSE <- function() {
-	bhexFV <- h2o.importFile(locate("smalldata/logreg/benign.csv"))
-	maxX <- 11
-	Y <- 4
-	X   <- 3:maxX
-	X   <- X[ X != Y ]
-	mFV <- h2o.glm(y=Y, x=colnames(bhexFV)[X], training_frame=bhexFV, lambda=1.0)
+	cars <- h2o.importFile(locate("smalldata/junit/cars_20mpg.csv"))
+	y = "economy_20mpg"
+	predictors = c("displacement","power","weight","acceleration","year")
+	cars[y] = h2o.asfactor(cars[y])
+	mFV <- h2o.glm(y=y, x=predictors, training_frame=cars, lambda=1.0, compute_p_values = FALSE)
 
 	assertError(vcovValues <- h2o.vcov(mFV))
 }
 
-testGLMPValZValStdError <- function() {
-	bhexFV <- h2o.importFile(locate("smalldata/logreg/benign.csv"))
-	maxX <- 11
-	Y <- 4
-	X   <- 3:maxX
-	X   <- X[ X != Y ]
-	bhexFV$FNDX <- h2o.asfactor(bhexFV$FNDX)
-	mFV <- h2o.glm(y=Y, x=colnames(bhexFV)[X], training_frame=bhexFV, family="binomial", lambda=0.0, compute_p_values=TRUE)
+testGLMvcovValues <- function() {
+	cars <- h2o.importFile(locate("smalldata/junit/cars_20mpg.csv"))
+	y = "economy_20mpg"
+	predictors = c("displacement","power","weight","acceleration","year")
+	cars[y] = h2o.asfactor(cars[y])
+	mFV <- h2o.glm(y=y, x=predictors, training_frame=cars, family="binomial", lambda=0.0, compute_p_values=TRUE)
 
-	vcovValues <- h2o.coef_with_p_values(mFV)
+	vcovValues <- h2o.vcov(mFV)
 	print("variance-covariance table")
 	print(vcovValues)
-	vcovIntercept <- vcovValues$intercept
+	vcovIntercept <- vcovValues$Intercept
 	vcovDisplacement <- vcovValues$displacement
 	vcovPower <- vcovValues$power
 	vcovWeight <- vcovValues$weight
 	vcovAcceleration <- vcovValues$acceleration
 	vcovYear <- vcovValues$year
 	
-	manualIntercept <- mFV@model$coefficients_table$intercept
-	manualDisplacement <- mFV@model$coefficients_table$displacement
-	manualPower <- mFV@model$coefficients_table$power
-	manualWeight <- mFV@model$coefficients_table$weight
-	manualAcceleration <- mFV@model$coefficients_table$acceleration
-	manualYear <- mFV@model$coefficients_table$year
+	hf_vcov <- h2o.getFrame(mFV@model$vcov_table$name)
+	manualIntercept <- hf_vcov$Intercept
+	manualDisplacement <- hf_vcov$displacement
+	manualPower <- hf_vcov$power
+	manualWeight <- hf_vcov$weight
+	manualAcceleration <- hf_vcov$acceleration
+	manualYear <- hf_vcov$year
 	
-  # compare values from model and obtained manually
-  for (ind in c(1:length(manuelPValues)))
-    expect_equal(manualIntercept[ind], vcovIntercept[ind])
-    expect_equal(manualDisplacement[ind], vcovDisplacement[ind])
-    expect_equal(manualPower[ind], vcovPower[ind])
-    expect_equal(manualWeight[ind], vcovWeight[ind])
-    expect_equal(manualAcceleration[ind], vcovAcceleration[ind])
-    expect_equal(manualYear[ind], vcovYear[ind])
+  # compare values from function with those obtained manually
+  for (i in seq_along(c("Intercept", predictors)))
+    expect_equal(manualIntercept[i], vcovIntercept[i])
+    expect_equal(manualDisplacement[i], vcovDisplacement[i])
+    expect_equal(manualPower[i], vcovPower[i])
+    expect_equal(manualWeight[i], vcovWeight[i])
+    expect_equal(manualAcceleration[i], vcovAcceleration[i])
+    expect_equal(manualYear[i], vcovYear[i])
 }
 
-doTest("GLM: make sure error is generated when a gbm model calls glm functions", testGBMvcov)
-doTest("GLM: make sure error is generated when compute_p_values=FALSE", testGLMvcovcomputePValueFALSE)
-doTest("GLM: test variance-covariance values", testGLMPValZValStdError)
+doSuite("GLM: VCOV support",
+    makeSuite(
+	testGBMvcov, 
+	testGLMvcovcomputePValueFALSE, 
+	testGLMvcovValues
+	))

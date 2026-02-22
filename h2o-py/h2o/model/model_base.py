@@ -889,9 +889,12 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             raise ValueError("p-values, z-values and std_error are only found in GLM.")
 
     def vcov(self):
+        """
+        Return an H2OFrame with the variance-covariance matrix for a GLM (requires ``compute_p_values=True``).
+        """
         if self.algo == 'glm':
             if self.parms["compute_p_values"]["actual_value"]:
-                return self._model_json["output"]["vcov_table"]
+                return h2o.get_frame(self._model_json["output"]["vcov_table"]["name"])
             else:
                 raise ValueError("The variance-covariance matrix is only calculated when compute_p_values=True.")
         else:
