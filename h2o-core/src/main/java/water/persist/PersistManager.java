@@ -32,7 +32,7 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
  */
 public class PersistManager {
 
-  public static final int MAX_BACKENDS = 8;
+  public static final int MAX_BACKENDS = 16;
   public static final int VALUE_DRIVE = MAX_BACKENDS;
   
   /** Property which enable HDFS as default fallback persistent layer. For example,
@@ -44,14 +44,18 @@ public class PersistManager {
 
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public interface Schemes {
-    String FILE = "file";
-    String HDFS = "hdfs";
-    String S3   = "s3";
-    String S3N  = "s3n";
-    String S3A  = "s3a";
-    String GCS  = "gs";
-    String NFS  = "nfs";
-    String HEX  = "hex";
+    String FILE  = "file";
+    String HDFS  = "hdfs";
+    String S3    = "s3";
+    String S3N   = "s3n";
+    String S3A   = "s3a";
+    String GCS   = "gs";
+    String NFS   = "nfs";
+    String HEX   = "hex";
+    String ABFS  = "abfs";
+    String ABFSS = "abfss";
+    String WASB  = "wasb";
+    String WASBS = "wasbs";
   }
 
   public static class PersistStatsEntry {
@@ -106,6 +110,12 @@ public class PersistManager {
   
   public boolean isGcsPath(String path) {
     return path.toLowerCase().startsWith("gs://");
+  }
+
+  public boolean isAzurePath(String path) {
+    String s = path.toLowerCase();
+    return s.startsWith("abfs://") || s.startsWith("abfss://")
+        || s.startsWith("wasb://") || s.startsWith("wasbs://");
   }
 
   public boolean isHexPath(String path) {
@@ -208,6 +218,15 @@ public class PersistManager {
     } catch (Throwable ignore) {
       Log.info("Drive subsystem not available");
     }
+
+    try {
+      Class<?> klass = Class.forName("water.persist.PersistAzure");
+      java.lang.reflect.Constructor<?> constructor = klass.getConstructor();
+      I[Value.AZURE] = (Persist) constructor.newInstance();
+      Log.info("Azure Blob Storage subsystem successfully initialized");
+    } catch (Throwable ignore) {
+      Log.info("Azure Blob Storage subsystem not available");
+    }
   }
 
   public void store(int backend, Value v) throws IOException {
@@ -262,6 +281,9 @@ public class PersistManager {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("gs".equals(scheme)) {
       ikey = I[Value.GCS].uriToKey(uri);
+    } else if ("abfs".equals(scheme) || "abfss".equals(scheme) || "wasb".equals(scheme) || "wasbs".equals(scheme)) {
+      if (I[Value.AZURE] == null) throw new H2OIllegalArgumentException("Azure Blob Storage support is not configured");
+      ikey = I[Value.AZURE].uriToKey(uri);
     } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
     } else if (useHdfsAsFallback() && I[Value.HDFS].canHandle(uri.toString())) {
@@ -313,6 +335,11 @@ public class PersistManager {
       return I[Value.S3].calcTypeaheadMatches(filter, limit);
     } else if(s.startsWith("gs://")) {
       return I[Value.GCS].calcTypeaheadMatches(filter, limit);
+    } else if(s.startsWith("abfs://") || s.startsWith("abfss://") || s.startsWith("wasb://") || s.startsWith("wasbs://")) {
+      if (I[Value.AZURE] == null) {
+        throw new H2OIllegalArgumentException("Azure Blob Storage support is not configured");
+      }
+      return I[Value.AZURE].calcTypeaheadMatches(filter, limit);
     } else if(s.startsWith("drive://")) {
       return I[VALUE_DRIVE].calcTypeaheadMatches(filter, limit);
     } else if (s.startsWith("hdfs:")
@@ -430,6 +457,9 @@ public class PersistManager {
     } else if ("gs".equals(scheme)) {
       if (I[Value.GCS] == null) throw new H2OIllegalArgumentException("GCS support is not configured");
       I[Value.GCS].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("abfs".equals(scheme) || "abfss".equals(scheme) || "wasb".equals(scheme) || "wasbs".equals(scheme)) {
+      if (I[Value.AZURE] == null) throw new H2OIllegalArgumentException("Azure Blob Storage support is not configured");
+      I[Value.AZURE].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("drive".equals(scheme)) {
       if (I[VALUE_DRIVE] == null) throw new H2OIllegalArgumentException("Drive support is not configured");
       I[VALUE_DRIVE].importFiles(path, pattern, files, keys, fails, dels);
@@ -524,6 +554,8 @@ public class PersistManager {
       return I[Value.GCS].list(path);
     } else if (isS3Path(path)) {
       return I[Value.S3].list(path);
+    } else if (isAzurePath(path)) {
+      return I[Value.AZURE].list(path);
     }
 
     File dir = new File(path);
@@ -550,6 +582,8 @@ public class PersistManager {
       return I[Value.GCS].exists(path);
     } else if (isS3Path(path)) {
       return I[Value.S3].exists(path);
+    } else if (isAzurePath(path)) {
+      return I[Value.AZURE].exists(path);
     }
 
     File f = new File(path);
@@ -574,6 +608,9 @@ public class PersistManager {
     } else if (isS3Path(path)) {
       PersistEntry[] content = I[Value.S3].list(path);
       return content.length == 0;
+    } else if (isAzurePath(path)) {
+      PersistEntry[] content = I[Value.AZURE].list(path);
+      return content == null || content.length == 0;
     }
 
     return new CheckLocalDirTask(path).doAllNodes()._result;
@@ -664,6 +701,8 @@ public class PersistManager {
       return I[Value.GCS].length(path);
     } else if (isS3Path(path)) {
       return I[Value.S3].length(path);
+    } else if (isAzurePath(path)) {
+      return I[Value.AZURE].length(path);
     }
 
     File f = new File(path);
@@ -680,6 +719,8 @@ public class PersistManager {
       return I[Value.HDFS].open(path);
     } else if (isGcsPath(path)) {
       return I[Value.GCS].open(path);
+    } else if (isAzurePath(path)) {
+      return I[Value.AZURE].open(path);
     } else if (isHexPath(path)) {
       return HEX.open(path);
     } else if (isS3Path(path)) {
@@ -742,6 +783,8 @@ public class PersistManager {
       return I[Value.GCS].mkdirs(path);
     } else if (isS3Path(path)) {
       return I[Value.S3].mkdirs(path);
+    } else if (isAzurePath(path)) {
+      return I[Value.AZURE].mkdirs(path);
     }
 
     File f = new File(path);
@@ -761,6 +804,9 @@ public class PersistManager {
     if (isS3Path(fromPath) || isS3Path(toPath)) {
       return I[Value.S3].rename(fromPath, toPath);
     }
+    if (isAzurePath(fromPath) || isAzurePath(toPath)) {
+      return I[Value.AZURE].rename(fromPath, toPath);
+    }
 
     File f = new File(fromPath);
     File t = new File(toPath);
@@ -774,6 +820,8 @@ public class PersistManager {
       return I[Value.HDFS].create(path, overwrite);
     } else if (isGcsPath(path)) {
       return I[Value.GCS].create(path, overwrite);
+    } else if (isAzurePath(path)) {
+      return I[Value.AZURE].create(path, overwrite);
     } else if (isHexPath(path)) {
       return HEX.create(path, overwrite);
     } if (isS3Path(path)) {
@@ -803,6 +851,8 @@ public class PersistManager {
       return I[Value.GCS].delete(path);
     } else if (isS3Path(path)) {
       return I[Value.S3].delete(path);
+    } else if (isAzurePath(path)) {
+      return I[Value.AZURE].delete(path);
     }
 
     File f = new File(path);
@@ -829,6 +879,11 @@ public class PersistManager {
           return I[Value.S3];
         case Schemes.GCS:
           return I[Value.GCS];
+        case Schemes.ABFS:
+        case Schemes.ABFSS:
+        case Schemes.WASB:
+        case Schemes.WASBS:
+          return I[Value.AZURE];
         default:
           if (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(uri.toString())) {
             return I[Value.HDFS];
@@ -848,7 +903,7 @@ public class PersistManager {
    * @return boolean
    */
   public boolean isFileAccessDenied(String path) {
-    if (isHdfsPath(path) || isGcsPath(path) || isS3Path(path)) {
+    if (isHdfsPath(path) || isGcsPath(path) || isS3Path(path) || isAzurePath(path)) {
       return false;
     }
     File f = new File(FileUtils.getURI(path));

@@ -1,0 +1,26 @@
+description = "H2O Persist Azure"
+
+dependencies {
+    api project(":h2o-core")
+    api "com.azure:azure-storage-blob:12.27.1"
+    api "com.azure:azure-identity:1.14.2"
+
+    testImplementation project(":h2o-test-support")
+    testRuntimeOnly project(":${defaultWebserverModule}")
+
+    constraints {
+        api('com.azure:azure-core:1.53.0') {
+            because 'Ensures consistent Azure SDK core version'
+        }
+    }
+}
+
+apply from: "${rootDir}/gradle/dataCheck.gradle"
+
+test {
+    dependsOn ":h2o-core:testJar"
+    dependsOn smalldataCheck, jar, testJar, testMultiNode
+
+    // Azure tests require live credentials; exclude from standard test runs
+    exclude '**'
+}

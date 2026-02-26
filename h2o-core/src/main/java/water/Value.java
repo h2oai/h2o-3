@@ -182,31 +182,33 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
   // ---
 
-  // Backend persistence info.  3 bits are reserved for 8 different flavors of
+  // Backend persistence info.  4 bits are reserved for 16 different flavors of
   // backend storage.  1 bit for whether or not the latest _mem field is
-  // entirely persisted on the backend storage.  The low 3 bits are final.  The
+  // entirely persisted on the backend storage.  The low 4 bits are final.  The
   // other bit monotonically changes from 0->1.  The deleted bit ALSO
   // monotonically changes 0->1.  These two bits cannot be combined without the
   // use of atomic operations.
-  private volatile byte _persist; // 1 bit of disk/notdisk; 3 bits of backend flavor
-  public  final static byte ICE = 1<<0; // ICE: distributed local disks
-  public  final static byte HDFS= 2<<0; // HDFS: backed by Hadoop cluster
-  public  final static byte S3  = 3<<0; // Amazon S3
-  public  final static byte NFS = 4<<0; // NFS: Standard file system
-  public  final static byte GCS = 5<<0; // Google Cloud Storage
-  public  final static byte HTTP= 6<<0; // HTTP/HTTPS data source (that accepts byte ranges, "Accept-Ranges: bytes")
-  public  final static byte TCP = 7<<0; // TCP: For profile purposes, not a storage system
-  private final static byte BACKEND_MASK = (8-1);
+  private volatile byte _persist; // 1 bit of disk/notdisk; 4 bits of backend flavor
+  public  final static byte ICE  = 1<<0; // ICE: distributed local disks
+  public  final static byte HDFS = 2<<0; // HDFS: backed by Hadoop cluster
+  public  final static byte S3   = 3<<0; // Amazon S3
+  public  final static byte NFS  = 4<<0; // NFS: Standard file system
+  public  final static byte GCS  = 5<<0; // Google Cloud Storage
+  public  final static byte HTTP = 6<<0; // HTTP/HTTPS data source (that accepts byte ranges, "Accept-Ranges: bytes")
+  public  final static byte TCP  = 7<<0; // TCP: For profile purposes, not a storage system
+  public  final static byte AZURE= 8;    // Azure Blob Storage / ADLS Gen2
+  private final static byte BACKEND_MASK = (16-1);
   final byte backend() { return (byte)(_persist&BACKEND_MASK); }
   boolean onICE (){ return (backend()) ==  ICE; }
   private boolean onHDFS(){ return (backend()) == HDFS; }
   private boolean onNFS (){ return (backend()) ==  NFS; }
   private boolean onS3  (){ return (backend()) ==   S3; }
   private boolean onGCS (){ return (backend()) ==  GCS; }
+  private boolean onAZURE(){ return (backend()) == AZURE; }
 
- // Manipulate the on-disk bit
-  private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
-  private final static byte ON_dsk = 1<<3;
+ // Manipulate the on-disk bit (bit 4, shifted past the 4-bit backend field)
+  private final static byte NOTdsk = 0<<4; // latest _mem is persisted or not
+  private final static byte ON_dsk = 1<<4;
   /** Check if the backing byte[] has been saved-to-disk */
   public final boolean isPersisted() { return (_persist&ON_dsk)!=0; }
   public final void setDsk() { _persist |=  ON_dsk; } // note: not atomic, but only monotonically set bit
