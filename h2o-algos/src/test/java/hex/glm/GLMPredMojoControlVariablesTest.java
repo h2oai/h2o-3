@@ -28,7 +28,7 @@ import java.util.Random;
 public class GLMPredMojoControlVariablesTest extends TestUtil {
 
   double _tol = 1e-6;
-  private static final long SEED = 0x1CEDC0FFEEL;
+  private static final long SEED = 0x1CEDCAFE;
 
   @Test
   public void testGaussianPredMojoControlVariables() {
