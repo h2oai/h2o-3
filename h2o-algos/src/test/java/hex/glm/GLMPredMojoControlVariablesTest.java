@@ -28,6 +28,7 @@ import java.util.Random;
 public class GLMPredMojoControlVariablesTest extends TestUtil {
 
   double _tol = 1e-6;
+  private static final long SEED = 0x1CEDCAFE;
 
   @Test
   public void testGaussianPredMojoControlVariables() {
@@ -212,7 +213,7 @@ public class GLMPredMojoControlVariablesTest extends TestUtil {
   private Frame[] createAndSplitData(int responseFactors, boolean positiveResponse,
                                      boolean convertResponseToNumeric, String suffix) {
     CreateFrame cf = new CreateFrame();
-    Random generator = new Random();
+    Random generator = new Random(SEED);
     int numRows = generator.nextInt(10000) + 15000 + 200;
     int numCols = generator.nextInt(17) + 3;
     cf.rows = numRows;
@@ -222,9 +223,7 @@ public class GLMPredMojoControlVariablesTest extends TestUtil {
     cf.response_factors = responseFactors;
     cf.positive_response = positiveResponse;
     cf.missing_fraction = 0;
-    cf.seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols +
-            " seed: " + cf.seed + " family: " + suffix);
+    cf.seed = SEED;
 
     Frame trainData = cf.execImpl().get();
     if (convertResponseToNumeric) {
@@ -252,7 +251,7 @@ public class GLMPredMojoControlVariablesTest extends TestUtil {
   private Frame[] createAndSplitData3Way(int responseFactors, boolean positiveResponse,
                                          boolean convertResponseToNumeric, String suffix) {
     CreateFrame cf = new CreateFrame();
-    Random generator = new Random();
+    Random generator = new Random(SEED);
     int numRows = generator.nextInt(10000) + 15000 + 200;
     int numCols = generator.nextInt(17) + 3;
     cf.rows = numRows;
@@ -262,9 +261,7 @@ public class GLMPredMojoControlVariablesTest extends TestUtil {
     cf.response_factors = responseFactors;
     cf.positive_response = positiveResponse;
     cf.missing_fraction = 0;
-    cf.seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols +
-            " seed: " + cf.seed + " family: " + suffix);
+    cf.seed = SEED;
 
     Frame trainData = cf.execImpl().get();
     if (convertResponseToNumeric) {
