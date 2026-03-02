@@ -31,7 +31,6 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
       writekv("num_means", model.dinfo().numNAFill());
       writekv("cat_modes", model.dinfo().catNAFill());
     }
-    
     if (model._parms._control_variables != null && model._parms._control_variables.length > 0)
       writekv("beta", model._output.getControlValBeta(model.beta_internal().clone()));
     else
