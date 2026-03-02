@@ -2246,7 +2246,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       @Override
       public void generate(JCodeSB out) {
         if (_parms._control_variables != null && _parms._control_variables.length > 0)
-          JCodeGen.toClassWithArray(out, "public static", "BETA", _output.getControlValBeta(beta_internal().clone())); // "The Coefficients"  
+          JCodeGen.toClassWithArray(out, "public static", "BETA", _output.getControlValBeta(beta_internal().clone())); // "The Coefficients"
         else
           JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numNAFill,"Imputed numeric values");
