@@ -104,6 +104,108 @@ public class GLMPredMojoControlVariablesTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testBinomialPredMojoControlVariables() {
+    try {
+      Scope.enter();
+      Frame[] data = createAndSplitData(2, false, false, "binomial");
+      GLMParameters params = createCommonParams(Family.binomial, data[0]);
+      checkMojoRestrictedAndUnrestricted(params, data[1], "binomial");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGaussianStandardizedPredMojoControlVariables() {
+    try {
+      Scope.enter();
+      Frame[] data = createAndSplitData(1, true, false, "gaussian_std");
+      GLMParameters params = createCommonParams(Family.gaussian, data[0]);
+      params._standardize = true;
+      checkMojoRestrictedAndUnrestricted(params, data[1], "gaussian_std");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testBinomialStandardizedPredMojoControlVariables() {
+    try {
+      Scope.enter();
+      Frame[] data = createAndSplitData(2, false, false, "binomial_std");
+      GLMParameters params = createCommonParams(Family.binomial, data[0]);
+      params._standardize = true;
+      checkMojoRestrictedAndUnrestricted(params, data[1], "binomial_std");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testTweedieStandardizedPredMojoControlVariables() {
+    try {
+      Scope.enter();
+      Frame[] data = createAndSplitData(1, true, false, "tweedie_std");
+      GLMParameters params = createCommonParams(Family.tweedie, data[0]);
+      params._tweedie_variance_power = 1.5;
+      params._tweedie_link_power = 1 - 1.5;
+      params._standardize = true;
+      checkMojoRestrictedAndUnrestricted(params, data[1], "tweedie_std");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /**
+   * Tests that a model trained with a validation frame and control variables
+   * still produces correct MOJO/POJO predictions. The validation frame exercises
+   * a separate code path in scorePostProcessing / scorePostProcessingControlVal.
+   */
+  @Test
+  public void testGaussianWithValidationFramePredMojoControlVariables() {
+    try {
+      Scope.enter();
+      Frame[] data = createAndSplitData3Way(1, true, false, "gaussian_valid");
+      GLMParameters params = createCommonParams(Family.gaussian, data[0]);
+      params._valid = data[1]._key;
+      params._generate_scoring_history = true;
+      checkMojoRestrictedAndUnrestricted(params, data[2], "gaussian_valid");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testTweedieWithValidationFramePredMojoControlVariables() {
+    try {
+      Scope.enter();
+      Frame[] data = createAndSplitData3Way(1, true, false, "tweedie_valid");
+      GLMParameters params = createCommonParams(Family.tweedie, data[0]);
+      params._tweedie_variance_power = 1.5;
+      params._tweedie_link_power = 1 - 1.5;
+      params._valid = data[1]._key;
+      params._generate_scoring_history = true;
+      checkMojoRestrictedAndUnrestricted(params, data[2], "tweedie_valid");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testBinomialWithValidationFramePredMojoControlVariables() {
+    try {
+      Scope.enter();
+      Frame[] data = createAndSplitData3Way(2, false, false, "binomial_valid");
+      GLMParameters params = createCommonParams(Family.binomial, data[0]);
+      params._valid = data[1]._key;
+      params._generate_scoring_history = true;
+      checkMojoRestrictedAndUnrestricted(params, data[2], "binomial_valid");
+    } finally {
+      Scope.exit();
+    }
+  }
+
   /**
    * Creates a synthetic dataset and splits it 80/20 into train/test frames.
    */
@@ -142,6 +244,49 @@ public class GLMPredMojoControlVariablesTest extends TestUtil {
     Scope.track(tr);
     Scope.track(te);
     return new Frame[]{tr, te};
+  }
+
+  /**
+   * Creates a synthetic dataset and splits it 60/20/20 into train/valid/test frames.
+   */
+  private Frame[] createAndSplitData3Way(int responseFactors, boolean positiveResponse,
+                                         boolean convertResponseToNumeric, String suffix) {
+    CreateFrame cf = new CreateFrame();
+    Random generator = new Random();
+    int numRows = generator.nextInt(10000) + 15000 + 200;
+    int numCols = generator.nextInt(17) + 3;
+    cf.rows = numRows;
+    cf.cols = numCols;
+    cf.factors = 10;
+    cf.has_response = true;
+    cf.response_factors = responseFactors;
+    cf.positive_response = positiveResponse;
+    cf.missing_fraction = 0;
+    cf.seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols +
+            " seed: " + cf.seed + " family: " + suffix);
+
+    Frame trainData = cf.execImpl().get();
+    if (convertResponseToNumeric) {
+      Vec v = trainData.remove("response");
+      trainData.add("response", v.toNumericVec());
+      Scope.track(v);
+      DKV.put(trainData);
+    }
+    Scope.track(trainData);
+
+    SplitFrame sf = new SplitFrame(trainData, new double[]{0.6, 0.2, 0.2},
+            new Key[]{Key.make("train_" + suffix + ".hex"), Key.make("valid_" + suffix + ".hex"),
+                    Key.make("test_" + suffix + ".hex")});
+    sf.exec().get();
+    Key[] ksplits = sf._destination_frames;
+    Frame tr = DKV.get(ksplits[0]).get();
+    Frame va = DKV.get(ksplits[1]).get();
+    Frame te = DKV.get(ksplits[2]).get();
+    Scope.track(tr);
+    Scope.track(va);
+    Scope.track(te);
+    return new Frame[]{tr, va, te};
   }
 
   private GLMParameters createCommonParams(Family family, Frame tr) {

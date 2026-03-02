@@ -11,13 +11,15 @@ FAMILIES = [
 ]
 
 
-def make_data(dtype):
+def make_data(dtype, three_way=False):
     if dtype == "regression":
         train = h2o.create_frame(rows=5000, cols=10, factors=10, has_response=True,
                                  response_factors=1, positive_response=True, missing_fraction=0, seed=1234)
     elif dtype == "binomial":
         train = h2o.create_frame(rows=5000, cols=10, factors=10, has_response=True,
                                  response_factors=2, missing_fraction=0, seed=1234)
+    if three_way:
+        return train.split_frame(ratios=[0.6, 0.2], seed=1234)
     return train.split_frame(ratios=[0.8], seed=1234)
 
 
@@ -56,10 +58,41 @@ def run_family_test(spec, standardize):
     check_mojo(unrestricted, test, pred_unrestricted)
 
 
+def run_validation_frame_test(spec, standardize):
+    """Train with a validation frame and verify MOJO predictions still match."""
+    print("\n--- %s, standardize=%s, with validation frame ---" % (spec["family"], standardize))
+    train, valid, test = make_data(spec["data"], three_way=True)
+    extra = {k: v for k, v in spec.items() if k != "data"}
+
+    model = H2OGeneralizedLinearEstimator(
+        lambda_=0, alpha=0.001,
+        standardize=standardize, control_variables=["C1", "C2"],
+        generate_scoring_history=True,
+        **extra
+    )
+    model.train(x=[c for c in train.columns if c != "response"], y="response",
+                training_frame=train, validation_frame=valid)
+
+    pred_restricted = model.predict(test)
+    unrestricted = model.make_unrestricted_glm_model()
+    pred_unrestricted = unrestricted.predict(test)
+
+    col = "p0" if "p0" in pred_restricted.columns else "predict"
+    max_diff = (pred_restricted[col].asnumeric() - pred_unrestricted[col].asnumeric()).abs().max()
+    assert max_diff > 1e-10, \
+        "%s (standardize=%s, valid): restricted vs unrestricted max diff = %e" % (spec["family"], standardize, max_diff)
+
+    check_mojo(model, test, pred_restricted)
+    check_mojo(unrestricted, test, pred_unrestricted)
+
+
 def glm_mojo_control_variables():
     for spec in FAMILIES:
         for standardize in [False, True]:
             run_family_test(spec, standardize)
+    # Validation frame exercises a separate scoring code path for control variables
+    for spec in FAMILIES:
+        run_validation_frame_test(spec, False)
 
 
 if __name__ == "__main__":
