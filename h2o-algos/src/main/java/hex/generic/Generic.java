@@ -107,8 +107,13 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
                 if (ZipUtil.isCompressed(modelBytes)) {
                     genericModel = importMojo(modelBytes, dataKey);
                 } else {
-                    warn("_path", "Trying to import a POJO model - this is currently an experimental feature.");
-                    genericModel = importPojo(modelBytes, dataKey, _result.toString());
+                    if (H2O.getSysBoolProperty("pojo.import.enabled", false)) {
+                        warn("_path", "Trying to import a POJO model - this is currently an experimental feature.");
+                        genericModel = importPojo(modelBytes, dataKey, _result.toString());
+                    } else {
+                        throw new SecurityException("POJO import is disabled since it brings a security risk. " +
+                            "To enable the feature, set the java property `sys.ai.h2o.pojo.import.enabled` to true.");
+                    }
                 }
                 genericModel.write_lock(_job);
                 genericModel.unlock(_job);

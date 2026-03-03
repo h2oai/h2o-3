@@ -7,12 +7,11 @@ test.glrm.pubdev.3788 <- function() {
     # Create data frame with a constant column
     data <- data.frame('NumericCol' = runif(50),
     'ConstantCol' = rep(1, 50),
-    'CategoricalCol' = sample(c("A", "B", "C", "D"), size = 50, replace = T))
+    'CategoricalCol' = sample(c("A", "B", "C", "D"), size = 50, replace = T),
+    stringsAsFactors = TRUE)
 
     data <- as.h2o(data)
 
-    browser()
-    
     # Specify loss by column and set ignore_const_cols to TRUE
     glrm_model <- h2o.glrm(data, k = 2, model_id = "glrm_test.hex",
     loss_by_col = c("Quadratic", "Categorical", "Categorical"),

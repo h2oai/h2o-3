@@ -1,7 +1,7 @@
 Contributing to H2O
 ============================
 
-H2O is an open source project released under the Apache Software Licence v2.  Open Source projects live by their user and developer communities.  We welcome and encourage your contributions of any kind!
+H2O is an open source project released under the Apache Software License v2.  Open Source projects live by their user and developer communities.  We welcome and encourage your contributions of any kind!
 
 There are many different kinds of people who make use of H2O for their daily work: 
 
@@ -28,7 +28,7 @@ If you're an Open Source community member you should send these to one of:
 
 You can file a bug report or feature request directly on the [GitHub issues](https://github.com/h2oai/h2o-3/issues) page.
 
-Once inside the Github issues page, click the **New issue** button.
+Once inside the GitHub issues page, click the **New issue** button.
 
  ![create](h2o-docs/src/product/images/issue_create.png)
 
@@ -59,7 +59,7 @@ Answering questions for other users on h2ostream, Gitter, Stack Overflow and oth
 
 ### Blogs
 
-Some of the most interesting written materials on the use of H2O for real world problems has been published by community members to their personal blogs.  If you've written something about H2O that you think should be more widely known contact us on h2ostream or Gitter and we will help you get the word out.
+Some of the most interesting written materials on the use of H2O for real-world problems has been published by community members to their personal blogs.  If you've written something about H2O that you think should be more widely known contact us on h2ostream or Gitter and we will help you get the word out.
 
 ## Tests and Demos
 
@@ -82,12 +82,12 @@ For Scala tests see the Sparkling Water GitHub repo.
 
 You can contribute R, Python, Java or Scala code for H2O, either for bug fixes or new features.  If you have your own idea about what to work on a good place to begin is to discuss it with us on [Gitter](https://gitter.im/h2oai/h2o-3) so that we can help point you in the right direction.
 
-For ideas about what to work on see the H2O-3 [Github issues](https://github.com/h2oai/h2o-3/issues).
+For ideas about what to work on see the H2O-3 [GitHub issues](https://github.com/h2oai/h2o-3/issues).
 
 To contribute code, fork the H2O-3 GitHub repo, create a branch for your work and when you're done, create a pull request.  Once a PR has been created, it will trigger the H2O-3 Jenkins test system and should start automatically running tests (this will show up in the comment history on the PR).  Make sure all the tests pass.  A few notes:
 
 * If there's not already a GitHub issue associated with this task, please create one.
 * If there is a GitHub issue associated with your changes, choose a branch name that includes that  number.  e.g. `gh-1234_new_pca`
-* New code must come with unit tests.  Here are some examples of [runits](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests), [pyunits](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests) and [junits](https://github.com/h2oai/h2o-3/tree/master/h2o-algos/src/test/java/hex) to help get you started.
+* New code must come with unit tests.  Here are some examples of [runits](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests), [pyunits](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests) and [JUnits](https://github.com/h2oai/h2o-3/tree/master/h2o-algos/src/test/java/hex) to help get you started.
 * Use the GitHub number in the PR title.  e.g. "GH-1234: Added new `pca_method` option in the PCA algorithm".
 * Write a summary of all changes & additions to the code in the PR description and add a link to the GitHub issue.

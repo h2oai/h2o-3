@@ -11,8 +11,9 @@ dependencies {
     testImplementation "com.pholser:junit-quickcheck-core:0.9"
     testImplementation 'com.pholser:junit-quickcheck-generators:0.9'
     testRuntimeOnly project(":${defaultWebserverModule}")
-    
-    jmh project(":${defaultWebserverModule}") 
+    if (project.hasProperty("doUBench") && project.doUBench == "true") {
+        jmh project(":${defaultWebserverModule}")
+    }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

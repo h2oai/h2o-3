@@ -40,32 +40,16 @@ public class SplitToChunksApplyCombine {
 
 
   public static Frame splitApplyCombine(Frame frameToSplit, Function<Frame, Frame> fun, Key<Frame> destinationKey) {
-    LinkedList<Frame> resultSubFrames = new LinkedList<>();
-    Frame result = null;
-    try {
+    try (Scope.Safe safe = Scope.safe(frameToSplit)) {
+      List<Frame> resultSubFrames = new LinkedList<>();
       int nChunks = frameToSplit.anyVec().nChunks();
       for (int cidx = 0; cidx < nChunks; cidx++) {
         Frame subFrame = createSubFrame(frameToSplit, cidx, destinationKey.toString());
-        try {
-          if (subFrame.numRows() == 0) continue;
-          DKV.put(subFrame);
-          resultSubFrames.add(fun.apply(subFrame));
-        } finally {
-          for (Vec v : subFrame.vecs())
-            DKV.remove(v._key);
-          subFrame.delete();
-        }
+        if (subFrame.numRows() == 0) continue;
+        DKV.put(subFrame);
+        resultSubFrames.add(Scope.track(fun.apply(subFrame)));
       }
-      result = concatFrames(resultSubFrames, destinationKey);
-      return result;
-    } finally {
-      if (null != result) {
-        for (Frame fr : resultSubFrames)
-          Frame.deleteTempFrameAndItsNonSharedVecs(fr, frameToSplit);
-      } else {
-        for (Frame fr : resultSubFrames)
-          fr.delete();
-      }
+      return Scope.untrack(concatFrames(resultSubFrames, destinationKey));
     }
   }
 }

@@ -20,7 +20,7 @@ test.binomial.gam.mojo <-
     h2o.downloadCSV(twoFrames$h2oPredict,
                     sprintf("%s/h2oPred.csv", modelAndDir$dirName))
     h2o.downloadCSV(twoFrames$mojoPredict,
-                    sprintf("%s/mojoOut.csv", modelAndDir$dirname))
+                    sprintf("%s/mojoOut.csv", modelAndDir$dirName))
     compareFrames(
       twoFrames$h2oPredict,
       twoFrames$mojoPredict,

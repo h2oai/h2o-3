@@ -65,7 +65,7 @@ public class NewChunk extends Chunk {
       }
       if(_vals1 != null){
         byte b = (byte)x;
-        if(x == b && b > Byte.MIN_VALUE-1) {
+        if(x == b && b > Byte.MIN_VALUE) {  // -128 is reserved for categorical variables in _vals1
           _vals1[idx] = b;
         } else {
           // need to switch to 4 byte values

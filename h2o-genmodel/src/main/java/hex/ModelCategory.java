@@ -11,7 +11,6 @@ public enum ModelCategory {
   Multinomial,
   Ordinal,
   Regression,
-  HGLMRegression,
   Clustering,
   AutoEncoder,
   TargetEncoder,

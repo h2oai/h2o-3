@@ -21,7 +21,7 @@ Running time for all tests should be a few minutes.
 
 #### Test environment:
 
-* Driven by java unit test runners
+* Driven by Java unit test runners
 
 #### How to get the data:
 
@@ -39,7 +39,7 @@ Running time for all tests should be less than an hour.
 
 #### Hardware assumptions:
 
-* At least 12 GB of RAM.  At least 2 CPUs.  (Most H2O developers use a 16 GB Macbook Pro with 4 CPUs and 8 hardware threads.)
+* At least 12 GB of RAM.  At least 2 CPUs.  (Most H2O developers use a 16 GB MacBook Pro with 4 CPUs and 8 hardware threads.)
 
 #### Data assumptions:
 
@@ -59,7 +59,7 @@ Running time for all tests should be less than an hour.
 
 #### How to get the data:
 
-`$ ./gradlew syncBigdataLaptop`  
+`$ ./gradlew syncBigdataLaptop`
 
 
 #### How to run tests:

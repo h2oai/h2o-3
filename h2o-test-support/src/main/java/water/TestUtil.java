@@ -1,9 +1,13 @@
 package water;
 
+import Jama.Matrix;
 import hex.CreateFrame;
 import hex.Model;
 import hex.SplitFrame;
-import hex.genmodel.*;
+import hex.genmodel.GenModel;
+import hex.genmodel.ModelMojoReader;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.easy.RowData;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -14,12 +18,14 @@ import org.junit.runners.model.Statement;
 import water.api.StreamingSchema;
 import water.fvec.*;
 import water.init.NetworkInit;
+import water.junit.Priority;
+import water.junit.rules.RulesPriorities;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.*;
 import water.util.Timer;
+import water.util.*;
 import water.util.fp.Function;
 
 import java.io.*;
@@ -30,6 +36,7 @@ import java.net.URLConnection;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static water.util.ArrayUtils.gaussianVector;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
@@ -187,6 +194,30 @@ public class TestUtil extends Iced {
     new KeyCleaner(objectType).doAllNodes();
   }
 
+  public static double[][] genRandomMatrix(int row, int col, long seedValue) {
+    double[][] randomMat = new double[row][];
+    Random random = new Random(seedValue);
+    for (int rInd = 0; rInd < row; rInd++)
+      randomMat[rInd] = gaussianVector(col, random);
+    return randomMat;
+  }
+
+  public static double[][] genSymPsdMatrix(int matSize, long seedValue, int multiplier) {
+    double[][] mat = genRandomMatrix(matSize, matSize, seedValue);
+    // generate symmetric matrix
+    Matrix matT = new Matrix(mat);
+    Matrix symMat = matT.plus(matT.transpose()).times(0.5);
+    for (int index=0; index<matSize; index++) {
+      symMat.set(index, index, Math.abs(genRandomMatrix(1,1,123)[0][0])*multiplier);
+    }
+    return symMat.getArray();
+  }
+
+  public static double[] genRandomArray(int length, long seedValue) {
+    Random random = new Random(seedValue);
+    return gaussianVector(length, random);
+  }
+
   public static void checkArrays(double[] expected, double[] actual, double threshold) {
     for (int i = 0; i < actual.length; i++) {
       if (!Double.isNaN(expected[i]) && !Double.isNaN(actual[i])) // only compare when both are not NaN
@@ -201,6 +232,14 @@ public class TestUtil extends Iced {
     for (int ind = 0; ind < len1; ind++) {
       assertEquals(expected[ind].length, actual[ind].length);
       checkArrays(expected[ind], actual[ind], threshold);
+    }
+  }
+  
+  public static void check3DArrays(double[][][] expected, double[][][] actual, double threshold) {
+    int len = expected.length;
+    assertEquals(len, actual.length);
+    for (int ind=0; ind < len; ind++) {
+      checkDoubleArrays(expected[ind], actual[ind], threshold);
     }
   }
   
@@ -402,9 +441,9 @@ public class TestUtil extends Iced {
     }
   };
 
-  /* Ignore tests specified in the ignore.tests system property */
+  /* Ignore tests specified in the ignore.tests system property: applied last, if test is ignored, no other rule with be evaluated */
   @Rule
-  transient public TestRule runRule = new TestRule() {
+  transient public TestRule runRule = new @Priority(RulesPriorities.RUN_TEST) TestRule() {
     @Override
     public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
@@ -450,7 +489,6 @@ public class TestUtil extends Iced {
     class TimerStatement extends Statement {
       private final Statement _base;
       private final String _tname;
-      Throwable _ex;
 
       public TimerStatement(Statement base, String tname) {
         _base = base;
@@ -462,11 +500,8 @@ public class TestUtil extends Iced {
         Timer t = new Timer();
         try {
           _base.evaluate();
-        } catch (Throwable ex) {
-          _ex = ex;
-          throw _ex;
         } finally {
-          Log.info("#### TEST " + _tname + " EXECUTION TIME: " + t.toString());
+          Log.info("#### TEST " + _tname + " EXECUTION TIME: " + t);
         }
       }
     }
@@ -880,7 +915,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO, (byte) ',', false,
-            check_header, 0, null, null, null, null, null, null, null));
+            check_header, 0, null, null, null, null, null, null, null, false));
     if (skippedColumns != null) {
       p.setSkippedColumns(skippedColumns);
       p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
@@ -918,7 +953,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO, (byte) ',', false,
-            check_header, 0, null, null, null, null, null, null, null));
+            check_header, 0, null, null, null, null, null, null, null, false));
     if (skippedColumns != null) {
       p.setSkippedColumns(skippedColumns);
       p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
@@ -1058,7 +1093,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO, (byte) ',', true,
-            check_header, 0, null, null, null, null, null, null, null));
+            check_header, 0, null, null, null, null, null, null, null, false));
     if (skipped_columns != null) {
       p.setSkippedColumns(skipped_columns);
       p.setParseColumnIndices(p.getNumberColumns(), skipped_columns);
@@ -1417,6 +1452,24 @@ public class TestUtil extends Iced {
     assertEquals("colHeaderForRowHeaders different", expected.getColHeaderForRowHeaders(), actual.getColHeaderForRowHeaders());
     for (int r = 0; r < expected.getRowDim(); r++) {
       for (int c = 0; c < expected.getColDim(); c++) {
+        Object ex = expected.get(r, c);
+        Object act = actual.get(r, c);
+        assertEquals("cellValues different at row " + r + ", col " + c, ex, act);
+      }
+    }
+  }
+
+  public static void assertTwoDimTableEquals(TwoDimTable expected, TwoDimTable actual, int[] ignoredColumnsIdxs) {
+    assertEquals("tableHeader different", expected.getTableHeader(), actual.getTableHeader());
+    assertEquals("tableDescriptionDifferent", expected.getTableDescription(), actual.getTableDescription());
+    assertArrayEquals("rowHeaders different", expected.getRowHeaders(), actual.getRowHeaders());
+    assertArrayEquals("colHeaders different", expected.getColHeaders(), actual.getColHeaders());
+    assertArrayEquals("colTypes different", expected.getColTypes(), actual.getColTypes());
+    assertArrayEquals("colFormats different", expected.getColFormats(), actual.getColFormats());
+    assertEquals("colHeaderForRowHeaders different", expected.getColHeaderForRowHeaders(), actual.getColHeaderForRowHeaders());
+    for (int c = 0; c < expected.getColDim(); c++) {
+      if (ArrayUtils.find(ignoredColumnsIdxs, c) != -1) continue;
+      for (int r = 0; r < expected.getRowDim(); r++) {
         Object ex = expected.get(r, c);
         Object act = actual.get(r, c);
         assertEquals("cellValues different at row " + r + ", col " + c, ex, act);
@@ -2011,6 +2064,28 @@ public class TestUtil extends Iced {
     final Random random = RandomUtils.getRNG(randomSeed);
     for (int i = 0; i < vec.length(); i++) {
       vec.set(i, random.nextInt(domain.length));
+    }
+    return vec;
+  }
+
+
+  /**
+   * @param len Length of the resulting vector
+   * @param type Type of column. Possible options are Vec.T_NUM, Vec.T_STR, Vec.T_UUID
+   * @return id column vec
+   */
+  public static Vec createIdVec(final long len,  byte type) {
+    assert type == Vec.T_UUID || type == Vec.T_STR || type == Vec.T_NUM: "Unsupported type for id vec creation: "+type;
+    final Vec vec = Vec.makeZero(len, type);
+    for (int i = 0; i < vec.length(); i++) {
+      switch (type) {
+        case Vec.T_STR:
+          vec.set(i, String.valueOf(i));
+        case Vec.T_UUID:   
+          vec.set(i, UUID.fromString(String.valueOf(i)));
+        default:
+          vec.set(i, i);
+      }
     }
     return vec;
   }

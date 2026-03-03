@@ -177,7 +177,7 @@ When you call ``score`` in Java or ``predict`` in Python or R with a new dataset
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Generalized Low Rank model.
+This example demonstrates how to build a Generalized Low Rank Model (GLRM) using H2O-3 for dimensionality reduction on the USArrests dataset. The model is trained with a quadratic loss function, and the dataset is standardized before training. After training, the model can be used to generate predictions and retrieve transformed coefficients using a validation set.
 
 .. tabs::
    .. code-tab:: r R

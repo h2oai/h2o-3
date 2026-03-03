@@ -1,7 +1,7 @@
 ``ignore_const_cols``
 ---------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Aggregator, Isolation Forest, Extended Isolation Forest, Uplift DRF, AdaBoost
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, HGLM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Aggregator, Isolation Forest, Extended Isolation Forest, Uplift DRF, AdaBoost, Decision Tree, ANOVAGLM, ModelSelection
 - Hyperparameter: no
 
 Description

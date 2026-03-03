@@ -5,7 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
-import water.ScopeTracker;
+import water.junit.rules.ScopeTracker;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;

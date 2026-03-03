@@ -200,6 +200,9 @@ public abstract class AbstractMojoWriter {
     if (model.offsetColumn() != null) {
       writekv("offset_column", model.offsetColumn());
     }
+    if (model.foldColumn() != null) {
+      writekv("fold_column", model.foldColumn());
+    }
     writekv("balance_classes", model.balanceClasses());
     writekv("default_threshold", model.defaultThreshold());
     writekv("prior_class_distrib", Arrays.toString(model.priorClassDist()));

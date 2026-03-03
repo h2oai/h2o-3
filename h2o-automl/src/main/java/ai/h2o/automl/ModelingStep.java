@@ -788,7 +788,7 @@ final LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toSt
                         } else if (state.is(ResultStatus.failed)) {
                             throw (RuntimeException)state.error();
                         } else if (state.is(ResultStatus.cancelled)) {
-                            throw new Job.JobCancelledException();
+                            throw new Job.JobCancelledException(innerTraining);
                         }
                     } finally {
                         result.unlock(job);

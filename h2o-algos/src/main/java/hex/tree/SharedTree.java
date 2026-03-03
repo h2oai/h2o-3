@@ -83,6 +83,8 @@ public abstract class SharedTree<
   private transient SharedTreeDebugParams _debugParms;
 
   public boolean isSupervised(){return true;}
+  
+  public boolean isUplift() {return false;}
 
   public boolean providesVarImp() {
     return isSupervised();
@@ -529,7 +531,7 @@ public abstract class SharedTree<
           _job.update(_parms._ntrees-tid-1); // add remaining trees to progress bar
           break; // If timed out, do the final scoring
         }
-        if (stop_requested()) throw new Job.JobCancelledException();
+        if (stop_requested()) throw new Job.JobCancelledException(_job);
         if (tid == _ntrees - 1 && _coordinator != null) {
           _coordinator.updateParameters();
         }
@@ -551,7 +553,7 @@ public abstract class SharedTree<
   
   protected ScoreKeeper.ProblemType getProblemType() {
     assert isSupervised();
-    return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
+    return ScoreKeeper.ProblemType.forSupervised(isClassifier(), isUplift());
   }
   
   // --------------------------------------------------------------------------
@@ -700,7 +702,13 @@ public abstract class SharedTree<
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
-          float improvement = (float) (s.pre_split_se() - s.se());
+          float improvement;
+          if(_st.isUplift()){
+            // gain after split should be higher, gain can be negative
+            improvement = (float) Math.abs(s.upliftGain() - s.preSplitUpliftGain());
+          } else {
+            improvement = (float) (s.pre_split_se() - s.se());
+          }
           assert (improvement >= 0);
           AtomicUtils.FloatArray.add(_improvPerVar, s.col(), improvement);
         }
