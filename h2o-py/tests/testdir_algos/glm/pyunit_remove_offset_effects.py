@@ -44,15 +44,21 @@ def glm_remove_offset_effects():
         pyunit_utils.check_model_metrics(glm_model, glm_model_roe, "")
     except AssertionError as err:
         assert "Scoring history is not the same" in str(err)
+    else:
+        assert False, "Expected check_model_metrics to fail because scoring history should differ " \
+                      "between glm_model and glm_model_roe"
 
     # check predictions are different
     for i in range(predictions_train.shape[0]):
-        pyunit_utils.assert_not_equal(predictions_train.iloc[i, 1], predictions_train_roe.iloc[i, 1], f"Predictions at position {i} should differ but they don't!")
+        pyunit_utils.assert_not_equal(predictions_train.iloc[i, 1], predictions_train_roe.iloc[i, 1], 
+                                      f"Predictions at position {i} should differ but they don't!")
 
     # check predictions are the same with and without generate_scoring history
     for i in range(predictions_train.shape[0]):
-        pyunit_utils.assert_equals(predictions_train.iloc[i, 1], predictions_train_2.iloc[i, 1], f"Predictions at position {i} should not differ but they do!")
-        pyunit_utils.assert_equals(predictions_train_roe.iloc[i, 1], predictions_train_roe2.iloc[i, 1], f"Predictions at position {i} should not differ but they do!")
+        pyunit_utils.assert_equals(predictions_train.iloc[i, 1], predictions_train_2.iloc[i, 1], 
+                                   f"Predictions at position {i} should not differ but they do!")
+        pyunit_utils.assert_equals(predictions_train_roe.iloc[i, 1], predictions_train_roe2.iloc[i, 1], 
+                                   f"Predictions at position {i} should not differ but they do!")
 
 
 if __name__ == "__main__":
