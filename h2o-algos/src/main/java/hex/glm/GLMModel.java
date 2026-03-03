@@ -1632,7 +1632,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     private int[] _control_values_idxs_in_adapted_frame;
     private String[] _control_values_names;
 
-    // Unrestricted model is produced when control variables are used.
+    // Unrestricted model is produced when control variables or remove offset features are used.
     public TwoDimTable _scoring_history_unrestricted_model;
     public ModelMetrics _training_metrics_unrestricted_model;
     public ModelMetrics _validation_metrics_unrestricted_model;
