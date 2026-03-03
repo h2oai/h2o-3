@@ -1431,8 +1431,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _scoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
       }
       if (_model._parms._control_variables != null || _model._parms._remove_offset_effects) {
-        TwoDimTable scoringHistoryControlVal = _model._output._scoring_history_unrestricted_model;
-        _scoringHistoryUnrestrictedModel.restoreFromCheckpoint(scoringHistoryControlVal, colHeadersIndex);
+        TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
+        _scoringHistoryUnrestrictedModel.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
       }
   }
   
