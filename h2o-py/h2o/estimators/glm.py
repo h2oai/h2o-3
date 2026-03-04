@@ -2821,20 +2821,24 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
-
-    def make_unrestricted_glm_model(self, dest=None):
+    def make_unrestricted_glm_model(self, dest=None, control_variables_enabled=False, remove_offset_effects_enabled=False):
         """
         Make unrestricted GLM model when control variables are defined.
 
         Needs to be passed source model trained with control variables enabled. 
 
         :param dest: (optional) destination key
+        :param control_variables_enabled: (optional) set control variables flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+        :param remove_offset_effects_enabled: (optional) set remove offset effets flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
 
         :examples:
 
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
         ...                                   solver='COORDINATE_DESCENT',
+        ...                                   remove_offset_effects = True,
         ...                                   control_variables=["PSA"])
         >>> m.train(training_frame=d,
         ...         x=[2,3,4,5,6,7,8],
@@ -2844,11 +2848,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
+        >>> m3 = m.make_unrestricted_glm_model(dest="unrestricted_glm", control_variables_enabled=True)
+        >>> p3 = m3.model_performance(d)
+        >>> print(p3)
         """
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
             data={"model": self._model_json["model_id"]["name"],
-                  "dest": dest}
+                  "dest": dest,
+                  "control_variables_enabled": control_variables_enabled,
+                  "remove_offset_effects_enabled": remove_offset_effects_enabled}
         )
         m = H2OGeneralizedLinearEstimator()
         if dest is None:
