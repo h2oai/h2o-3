@@ -72,12 +72,16 @@ h2o.makeGLMModel <- function(model,beta) {
 #' Make unrestricted GLM model when control variables are defined.
 #'
 #' Needs source model trained with control variables enabled.
-#' @param model a GLM \linkS4class{H2OModel} trained with control variable
+#' @param model a GLM \linkS4class{H2OModel} trained with control variable or with remove offset effects
 #' @param destination_key a string or a NULL
+#' @param control_variables_enabled a logical flag set control variables flag to get model affected only by
+#'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
+#' @param remove_offset_effects_enabled a logical flag set remove offset effects flag to get model affected only by
+#'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
 #' @export
-h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
-  stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
-  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
+h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL, control_variables_enabled = FALSE, remove_offset_effects_enabled = FALSE) {
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id, control_variables_enabled=control_variables_enabled, remove_offset_effects_enabled=remove_offset_effects_enabled)
   if (!missing(destination_key) && !is.null(destination_key)) {
     query <- c(query, list(dest = destination_key))
   }

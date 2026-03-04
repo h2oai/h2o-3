@@ -162,18 +162,18 @@ public class GLMUtils {
    *             timestamp    duration  iterations  Unrestricted negative_log_likelihood  Unrestricted objective = training metrics calculated during optimization with control variables included (in glmSc)
    *             Training RMSE  Training LogLoss  Training r2  Training AUC Training pr_auc  Training Lift  Training Classification Error = early stopping training metrics with control variables excluded (in earlyStopSc)
    *             Validation RMSE  Validation LogLoss  Validation r2  Validation AUC  Validation pr_auc  Validation Lift  Validation Classification Error = early stopping validation metrics with control variables excluded (in earlyStopSc)
-   *             Unrestricted Training AUC Unrestricted Validation AUC = stopping metrics with control variables included (in earlyStopScControlVariables)
+   *             Unrestricted Training AUC Unrestricted Validation AUC = stopping metrics with control variables included (in earlyStopScRestricted)
    * @param glmSc
    * @param earlyStopSc
    * @param stoppingMetric
-   * @param earlyStopScControlVariables
+   * @param earlyStopScRestricted
    * @return Combined scoring history table
    */
-  public static TwoDimTable combineScoringHistoryControlVariables(TwoDimTable glmSc, TwoDimTable glmScControlVariables, 
-                                                                  TwoDimTable earlyStopSc, 
-                                                                  TwoDimTable earlyStopScControlVariables, 
-                                                                  ScoreKeeper.StoppingMetric stoppingMetric, 
-                                                                  boolean hasValidationMetrics) {
+  public static TwoDimTable combineScoringHistoryRestricted(TwoDimTable glmSc, TwoDimTable glmScRestricted,
+                                                            TwoDimTable earlyStopSc,
+                                                            TwoDimTable earlyStopScRestricted,
+                                                            ScoreKeeper.StoppingMetric stoppingMetric,
+                                                            boolean hasValidationMetrics) {
     String[] esColTypes = earlyStopSc.getColTypes();
     String[] esColFormats = earlyStopSc.getColFormats();
     List<String> finalColHeaders = new ArrayList<>(Arrays.asList(glmSc.getColHeaders()));
@@ -186,13 +186,13 @@ public class GLMUtils {
     List<String> finalColTypes = new ArrayList<>(Arrays.asList(glmSc.getColTypes()));
     List<String> finalColFormats = new ArrayList<>(Arrays.asList(glmSc.getColFormats()));
     List<Integer> earlyStopColIndices = new ArrayList<>();
-    List<Integer> earlyStopColIndicesContrVals = getStoppingMetricIndices(stoppingMetric, earlyStopScControlVariables.getColHeaders());
+    List<Integer> earlyStopColIndicesContrVals = getStoppingMetricIndices(stoppingMetric, earlyStopScRestricted.getColHeaders());
 
     int colCounter = 0;
-    String[] glmSCContrColTypes = glmScControlVariables.getColTypes();
-    String[] glmSCContrColFormats = glmScControlVariables.getColFormats();
+    String[] glmSCContrColTypes = glmScRestricted.getColTypes();
+    String[] glmSCContrColFormats = glmScRestricted.getColFormats();
     List<Integer> glmScContrValsColIndices = new ArrayList<>();
-    String[] glmScControlVariablesHeaders = glmScControlVariables.getColHeaders();
+    String[] glmScControlVariablesHeaders = glmScRestricted.getColHeaders();
     for(int i=0; i < glmScControlVariablesHeaders.length; i++){
       String colName = glmScControlVariablesHeaders[i];
       String colNameLower = colName.toLowerCase();
@@ -233,7 +233,7 @@ public class GLMUtils {
     TwoDimTable res = new TwoDimTable("Scoring History", "",
             rowHeaders, finalColHeaders.toArray(new String[tableSize]), finalColTypes.toArray(new String[tableSize]),
             finalColFormats.toArray(new String[tableSize]), "");
-    res = combineTableContentsControlVariables(glmSc, glmScControlVariables, earlyStopSc, earlyStopScControlVariables, res, glmScContrValsColIndices, earlyStopColIndices, earlyStopColIndicesContrVals, indexOfIter, earlyStopSCIterIndex,
+    res = combineTableContentsControlVariables(glmSc, glmScRestricted, earlyStopSc, earlyStopScRestricted, res, glmScContrValsColIndices, earlyStopColIndices, earlyStopColIndicesContrVals, indexOfIter, earlyStopSCIterIndex,
             overlapSize);
     return res;
   }

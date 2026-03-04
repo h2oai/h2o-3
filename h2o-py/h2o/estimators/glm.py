@@ -95,6 +95,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  control_variables=None,  # type: Optional[List[str]]
+                 remove_offset_effects=False,  # type: bool
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
@@ -341,6 +342,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Experimental.
                Defaults to ``None``.
         :type control_variables: List[str], optional
+        :param remove_offset_effects: Remove offset effects from scoring and metric calculation. Experimental.
+               Defaults to ``False``.
+        :type remove_offset_effects: bool
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
                Defaults to ``False``.
         :type balance_classes: bool
@@ -504,6 +508,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.stopping_metric = stopping_metric
         self.stopping_tolerance = stopping_tolerance
         self.control_variables = control_variables
+        self.remove_offset_effects = remove_offset_effects
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -2057,6 +2062,20 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["control_variables"] = control_variables
 
     @property
+    def remove_offset_effects(self):
+        """
+        Remove offset effects from scoring and metric calculation. Experimental.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("remove_offset_effects")
+
+    @remove_offset_effects.setter
+    def remove_offset_effects(self, remove_offset_effects):
+        assert_is_type(remove_offset_effects, None, bool)
+        self._parms["remove_offset_effects"] = remove_offset_effects
+
+    @property
     def balance_classes(self):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -2802,20 +2821,24 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
-
-    def make_unrestricted_glm_model(self, dest=None):
+    def make_unrestricted_glm_model(self, dest=None, control_variables_enabled=False, remove_offset_effects_enabled=False):
         """
         Make unrestricted GLM model when control variables are defined.
 
         Needs to be passed source model trained with control variables enabled. 
 
         :param dest: (optional) destination key
+        :param control_variables_enabled: (optional) set control variables flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+        :param remove_offset_effects_enabled: (optional) set remove offset effets flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
 
         :examples:
 
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
         ...                                   solver='COORDINATE_DESCENT',
+        ...                                   remove_offset_effects = True,
         ...                                   control_variables=["PSA"])
         >>> m.train(training_frame=d,
         ...         x=[2,3,4,5,6,7,8],
@@ -2825,11 +2848,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
+        >>> m3 = m.make_unrestricted_glm_model(dest="unrestricted_glm", control_variables_enabled=True)
+        >>> p3 = m3.model_performance(d)
+        >>> print(p3)
         """
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
             data={"model": self._model_json["model_id"]["name"],
-                  "dest": dest}
+                  "dest": dest,
+                  "control_variables_enabled": control_variables_enabled,
+                  "remove_offset_effects_enabled": remove_offset_effects_enabled}
         )
         m = H2OGeneralizedLinearEstimator()
         if dest is None:
