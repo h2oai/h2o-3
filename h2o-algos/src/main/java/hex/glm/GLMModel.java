@@ -50,7 +50,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
 
+  // if control variables feature or remove offset feature is enabled we need to save unrestricted model scoring info here
   protected ScoringInfo[] _unrestrictedModelScoringInfo;
+
+  // if control variables feature and remove offset feature are enabled we need to save restricted models scoring info here
+  protected ScoringInfo[] _restrictedModelScoringInfoCV;
+  protected ScoringInfo[] _restrictedModelScoringInfoRO;
 
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
@@ -148,6 +153,82 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       currInfo.scored_valid.fillFrom(_output._validation_metrics_unrestricted_model);
     }
     _unrestrictedModelScoringInfo = ScoringInfo.prependScoringInfo(currInfo, _unrestrictedModelScoringInfo);
+  }
+
+  public ScoringInfo[] getRestrictedModelScoringInfoCV() { return _restrictedModelScoringInfoCV;}
+
+  public ScoreKeeper[] restrictedModelCVScoreKeepers() {
+    int size = _restrictedModelScoringInfoCV ==null? 0: _restrictedModelScoringInfoCV.length;
+    ScoreKeeper[] sk = new ScoreKeeper[size];
+    for (int i=0;i<size;++i) {
+      if (_restrictedModelScoringInfoCV[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = _restrictedModelScoringInfoCV[i].scored_xval;
+      else if (_restrictedModelScoringInfoCV[i].validation)
+        sk[i] = _restrictedModelScoringInfoCV[i].scored_valid;
+      else
+        sk[i] = _restrictedModelScoringInfoCV[i].scored_train;
+    }
+    return sk;
+  }
+
+  public void addRestrictedModelScoringInfoCV(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (_restrictedModelScoringInfoCV != null && (((GLMScoringInfo) _restrictedModelScoringInfoCV[_restrictedModelScoringInfoCV.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
+    currInfo.is_classification = nclasses > 1;
+    currInfo.validation = parms.valid() != null;
+    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
+    currInfo.time_stamp_ms = currTime;
+    currInfo.total_training_time_ms = _output._training_time_ms;
+    if (_output._training_metrics_restricted_model_cv != null) {
+      currInfo.scored_train = new ScoreKeeper(Double.NaN);
+      currInfo.scored_train.fillFrom(_output._training_metrics_restricted_model_cv);
+    }
+    if (_output._validation_metrics_restricted_model_cv != null) {
+      currInfo.scored_valid = new ScoreKeeper(Double.NaN);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_restricted_model_cv);
+    }
+    _restrictedModelScoringInfoCV = ScoringInfo.prependScoringInfo(currInfo, _restrictedModelScoringInfoCV);
+  }
+
+  public ScoringInfo[] getRestrictedModelScoringInfoRO() { return _restrictedModelScoringInfoRO;}
+
+  public ScoreKeeper[] restrictedModelROScoreKeepers() {
+    int size = _restrictedModelScoringInfoRO ==null? 0: _restrictedModelScoringInfoRO.length;
+    ScoreKeeper[] sk = new ScoreKeeper[size];
+    for (int i=0;i<size;++i) {
+      if (_restrictedModelScoringInfoRO[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = _restrictedModelScoringInfoRO[i].scored_xval;
+      else if (_restrictedModelScoringInfoRO[i].validation)
+        sk[i] = _restrictedModelScoringInfoRO[i].scored_valid;
+      else
+        sk[i] = _restrictedModelScoringInfoRO[i].scored_train;
+    }
+    return sk;
+  }
+
+  public void addRestrictedModelScoringInfoRO(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (_restrictedModelScoringInfoRO != null && (((GLMScoringInfo) _restrictedModelScoringInfoRO[_restrictedModelScoringInfoRO.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
+    currInfo.is_classification = nclasses > 1;
+    currInfo.validation = parms.valid() != null;
+    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
+    currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
+    currInfo.total_training_time_ms = _output._training_time_ms;
+    if (_output._training_metrics_restricted_model_ro != null) {
+      currInfo.scored_train = new ScoreKeeper(Double.NaN);
+      currInfo.scored_train.fillFrom(_output._training_metrics_restricted_model_ro);
+    }
+    if (_output._validation_metrics_restricted_model_ro != null) {
+      currInfo.scored_valid = new ScoreKeeper(Double.NaN);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_restricted_model_ro);
+    }
+    _restrictedModelScoringInfoRO = ScoringInfo.prependScoringInfo(currInfo, _restrictedModelScoringInfoRO);
   }
   
   
@@ -1630,21 +1711,36 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean hasVIF() { return _vif_predictor_names != null; }
     
     private int[] _control_values_idxs_in_adapted_frame;
-    private String[] _control_values_names;
+    private String[] _control_variables_names;
 
     // Unrestricted model is produced when control variables or remove offset features are used.
     public TwoDimTable _scoring_history_unrestricted_model;
     public ModelMetrics _training_metrics_unrestricted_model;
     public ModelMetrics _validation_metrics_unrestricted_model;
+
+    // Other two restricted models is produced when control variables and remove offset features are used together
+    // Output for restricted model where control variables feature is enabled
+    public TwoDimTable _scoring_history_restricted_model_cv;
+    public ModelMetrics _training_metrics_restricted_model_cv;
+    public ModelMetrics _validation_metrics_restricted_model_cv;
+    // Output for restricted model where remove offset feature is enabled
+    public TwoDimTable _scoring_history_restricted_model_ro;
+    public ModelMetrics _training_metrics_restricted_model_ro;
+    public ModelMetrics _validation_metrics_restricted_model_ro;
+    
+    public void setAndMapControlVariablesNames(String[] controlVariablesNames){
+      this._control_variables_names = controlVariablesNames;
+      mapControlVariables();
+    }
     
     public void mapControlVariables() {
-      if(_control_values_names == null || _names == null) {
+      if(_control_variables_names == null || _names == null) {
         return;
       }
-      _control_values_idxs_in_adapted_frame = new int[_control_values_names.length];
-      for(int i = 0; i < _control_values_names.length; i++) {
+      _control_values_idxs_in_adapted_frame = new int[_control_variables_names.length];
+      for(int i = 0; i < _control_variables_names.length; i++) {
         for(int j = 0; j < _names.length; j++) {
-          if(_control_values_names[i].equals(_names[j]) ) {
+          if(_control_variables_names[i].equals(_names[j]) ) {
             _control_values_idxs_in_adapted_frame[i] = j; break;
           }
         }
@@ -1814,7 +1910,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _global_beta=beta;
       _submodels = new Submodel[]{new Submodel(0, 0, beta, -1, Double.NaN, Double.NaN,
               _totalBetaLength, null, false)};
-      _control_values_names = controlVarNames;
+      _control_variables_names = controlVarNames;
       mapControlVariables();
     }
     
@@ -1870,7 +1966,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _multinomial = glm._parms._family == Family.multinomial;
       _ordinal = glm._parms._family == Family.ordinal;
       // setup control variables idxs from model parameters
-      _control_values_names = glm._parms._control_variables;
+      _control_variables_names = glm._parms._control_variables;
       mapControlVariables();
     }
     
