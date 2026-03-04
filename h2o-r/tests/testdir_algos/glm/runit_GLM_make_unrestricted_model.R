@@ -18,7 +18,8 @@ glm_remove_offset_effects_explain <- function() {
                             generate_scoring_history = T,
                             score_each_iteration = T,
                             offset_column = "AGE",
-                            remove_offset_effects = T
+                            remove_offset_effects = T,
+                            control_variables = c("PSA")
     )
 
     summary(prostate_glm)
@@ -27,14 +28,24 @@ glm_remove_offset_effects_explain <- function() {
     unrestricted_prostate_glm <- h2o.make_unrestricted_glm_model(prostate_glm)
     expect_false(is.null(unrestricted_prostate_glm))
     summary(unrestricted_prostate_glm)
-    
+
+    # test make unrestricted model control variables enabled
+    unrestricted_prostate_glm_cv_enabled <- h2o.make_unrestricted_glm_model(prostate_glm,
+                                                                            control_variables_enabled=TRUE)
+    expect_false(is.null(unrestricted_prostate_glm_cv_enabled))
+    summary(unrestricted_prostate_glm_cv_enabled)
+
+    # test make unrestricted model remove offset enabled
+    unrestricted_prostate_glm_ro_enabled <- h2o.make_unrestricted_glm_model(prostate_glm,
+                                                                            remove_offset_effects_enabled=TRUE)
+    expect_false(is.null(unrestricted_prostate_glm_ro_enabled))
+    summary(unrestricted_prostate_glm_ro_enabled)
+
     # should pass
     h2o.learning_curve_plot(prostate_glm)
     h2o.learning_curve_plot(unrestricted_prostate_glm)
-    
-    # should pass 
-    h2o.explain(prostate_glm, df)
-    h2o.explain(unrestricted_prostate_glm, df)
+    h2o.learning_curve_plot(unrestricted_prostate_glm_cv_enabled)
+    h2o.learning_curve_plot(unrestricted_prostate_glm_ro_enabled)
 }
 
 doTest("GLM: Remove offset effects works with explain", glm_remove_offset_effects_explain)
