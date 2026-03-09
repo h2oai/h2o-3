@@ -50,7 +50,7 @@ public class SQLManager {
           "allowLoadLocalInfileInPath", "allowUrlInLocalInfile", "allowPublicKeyRetrieval", //mysql
           "statementInterceptors", //mysql
           "socketFactory", "socketFactoryArg", "sslfactory", "sslfactoryarg", //postgresql
-          "loggerLevel", "loggerFile", //postgresql
+          "loggerLevel", "loggerFile", //postgresql -- not dangerous but user should not have a reason to use them
           "init", "script", "shutdown" //h2
   ).map(String::toLowerCase).collect(Collectors.toList());
   private static AtomicLong NEXT_TABLE_NUM = new AtomicLong(0);

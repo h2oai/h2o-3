@@ -267,9 +267,9 @@ public class SQLManagerTest {
   }
 
   @Test
-  public void testValidateJdbcConnectionStringPostgresqlLoggerFile() {
+  public void testValidateJdbcConnectionStringPostgresqlLoggerLevel() {
     exception.expect(IllegalArgumentException.class);
-    exception.expectMessage("Potentially dangerous JDBC parameter found: loggerFile");
+    exception.expectMessage("Potentially dangerous JDBC parameter found: loggerLevel");
 
     String jdbcConnection = "jdbc:postgresql://127.0.0.1:5432/test?loggerLevel=DEBUG&loggerFile=/tmp/pwned.jsp";
 
