@@ -46,8 +46,11 @@ public class SQLManager {
   private static final Pattern JDBC_PARAMETERS_REGEX_PATTERN = Pattern.compile("(?i)([a-z0-9_]+)\\s*=\\s*");
 
   private static final List<String> DEFAULT_JDBC_DISALLOWED_PARAMETERS = Stream.of(
-          "autoDeserialize", "queryInterceptors", "allowLoadLocalInfile", "allowMultiQueries", //mysql 
-          "allowLoadLocalInfileInPath", "allowUrlInLocalInfile", "allowPublicKeyRetrieval", //mysql 
+          "autoDeserialize", "queryInterceptors", "allowLoadLocalInfile", "allowMultiQueries", //mysql
+          "allowLoadLocalInfileInPath", "allowUrlInLocalInfile", "allowPublicKeyRetrieval", //mysql
+          "statementInterceptors", //mysql
+          "socketFactory", "socketFactoryArg", "sslfactory", "sslfactoryarg", //postgresql
+          "loggerLevel", "loggerFile", //postgresql -- not dangerous but user should not have a reason to use them
           "init", "script", "shutdown" //h2
   ).map(String::toLowerCase).collect(Collectors.toList());
   private static AtomicLong NEXT_TABLE_NUM = new AtomicLong(0);

