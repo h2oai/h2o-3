@@ -3416,7 +3416,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._useRemoveOffsetEffects = false;
         }
       }
-      
+      _model.update(_job._key);
     }
 
     private void scorePostProcessingRestrictedModel(Frame train, long t1) {
@@ -3470,7 +3470,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _job.update(_workPerIteration, _state.toString());
       }
       _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, null, null) : null;
-      _model.update(_job._key);
     }
 
     private void scorePostProcessingRestrictedModelCVEnabled(Frame train, long t1) {
@@ -3509,10 +3508,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   objectiveControlVal, _state.deviance(task._likelihood), Double.NaN, mtrain._nobs, 1, _state.lambda(),
                   _state.alpha());
 
-          _job.update(_workPerIteration, _state.toString());
         }
         _model._output._scoring_history_restricted_model_cv = _scoringHistoryControlValEnabled != null ? _scoringHistoryControlValEnabled.to2dTable(_parms, null, null) : null;
-        _model.update(_job._key);
       }
     }
 
@@ -3548,10 +3545,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),
                   _state.alpha());
         }
-        _job.update(_workPerIteration, _state.toString());
       }
       _model._output._scoring_history_restricted_model_ro = _scoringHistoryRemoveOffsetEnabled != null ? _scoringHistoryRemoveOffsetEnabled.to2dTable(_parms, null, null) : null;
-      _model.update(_job._key);
     }
 
     private void scorePostProcessing(Frame train, long t1) {
@@ -3629,7 +3624,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     _state.alpha());
           }
         }
-        _job.update(_workPerIteration, _state.toString());
       }
       if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
@@ -3640,8 +3634,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
       }
-      
-      _model.update(_job._key);
       _model.generateSummary(_parms._train, _state._iter);
       _lastScore = System.currentTimeMillis();
       long scoringTime = System.currentTimeMillis() - t1;

@@ -335,10 +335,16 @@ def class_extensions():
         >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
-        >>> m3 = m.make_unrestricted_glm_model(dest="unrestricted_glm", control_variables_enabled=True)
+        >>> m3 = m.make_unrestricted_glm_model(dest="unrestricted_glm_cv", control_variables_enabled=True)
         >>> p3 = m3.model_performance(d)
         >>> print(p3)
         """
+        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
+            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
+        if (self.actual_params["control_variables"] is None or not(self.actual_params["remove_offset_effects"])) and (control_variables_enabled or remove_offset_effects_enabled):
+            raise H2OValueError("GLM wasn't trained with both control variables and with remove offset effects feature set, the control_variables_enabled and remove_offset_effects_enabled features cannot be used.")
+        if self.actual_params["control_variables"] is not None and self.actual_params["remove_offset_effects"] and (control_variables_enabled and remove_offset_effects_enabled):
+            raise H2OValueError("The control_variables_enabled and remove_offset_effects_enabled feature cannot be used together. It produces the same model as the main model.")
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
             data={"model": self._model_json["model_id"]["name"],
