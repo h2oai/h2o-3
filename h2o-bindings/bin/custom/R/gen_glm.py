@@ -80,8 +80,18 @@ h2o.makeGLMModel <- function(model,beta) {
 #'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
 #' @export
 h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL, control_variables_enabled = FALSE, remove_offset_effects_enabled = FALSE) {
-  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
-  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id, control_variables_enabled=control_variables_enabled, remove_offset_effects_enabled=remove_offset_effects_enabled)
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = 
+    !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+  if (is.null(model@params$actual[["control_variables"]]) && isFALSE(model@params$actual[["remove_offset_effects"]]) 
+      && (isTRUE(control_variables_enabled) || isTRUE(remove_offset_effects_enabled))) { 
+       stop("GLM wasn't trained with both control variables and with remove offset effects feature set, the control_variables_enabled and remove_offset_effects_enabled features cannot be used.")  
+  }
+  if ((!is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+      && (isTRUE(control_variables_enabled) && isTRUE(remove_offset_effects_enabled))){
+      stop("The control_variables_enabled and remove_offset_effects_enabled feature cannot be used together. It produces the same model as the main model.")
+  }
+  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id, 
+    control_variables_enabled=control_variables_enabled, remove_offset_effects_enabled=remove_offset_effects_enabled)
   if (!missing(destination_key) && !is.null(destination_key)) {
     query <- c(query, list(dest = destination_key))
   }
