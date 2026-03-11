@@ -46,6 +46,21 @@ glm_remove_offset_effects_explain <- function() {
     h2o.learning_curve_plot(unrestricted_prostate_glm)
     h2o.learning_curve_plot(unrestricted_prostate_glm_cv_enabled)
     h2o.learning_curve_plot(unrestricted_prostate_glm_ro_enabled)
+    
+    #should fail
+    assertError(h2o.make_unrestricted_glm_model(prostate_glm, remove_offset_effects_enabled=TRUE, 
+                                                control_variables_enabled=TRUE))
+
+    prostate_glm_2 <- h2o.glm(family = "binomial",
+                            y = response,
+                            training_frame = df,
+                            generate_scoring_history = T,
+                            score_each_iteration = T,
+                            offset_column = "AGE",
+                            control_variables = c("PSA"))
+
+    assertError(h2o.make_unrestricted_glm_model(prostate_glm_2, remove_offset_effects_enabled=TRUE))
+    assertError(h2o.make_unrestricted_glm_model(prostate_glm_2, control_variables_enabled=TRUE))
 }
 
 doTest("GLM: Remove offset effects works with explain", glm_remove_offset_effects_explain)
