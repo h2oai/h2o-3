@@ -14,9 +14,9 @@ test.glm.aic.likelihood <- function() {
   # hand derived correct answer is from R calculation and using the correct formula
   nobs <- 192512
   dev <- 157465
-  rRank <- 9
+  rRank <- 8 + 1 + 1 # coeffs + intercept + sigma
   loglikeR <- -0.5*((nobs-1) + nobs*log(2*pi*dev/(nobs-1)))
-  aicR <- 2*loglikeR+2*rRank
+  aicR <- -2*loglikeR+2*rRank
   perf <- h2o.performance(model.h2o.gaussian.identity)
   print("GLM Gaussian")
   print("H2O AIC")
@@ -24,12 +24,16 @@ test.glm.aic.likelihood <- function() {
   print("H2O log likelihood")
   print(h2o.loglikelihood(perf))
   print("R AIC")
-  print( aicR)
+  print(aicR)
   print("R loglikelihood")
   print(loglikeR)
   expect_true(abs(h2o.aic(perf)-aicR) < 1e-1)
   expect_true(abs(h2o.loglikelihood(perf)-loglikeR)<1e-1)
   
+  r_glm <- glm(GLEASON ~ ID + AGE + RACE + CAPSULE + DCAPS + PSA + VOL + DPROS, data=R.data)
+  print("R GLM AIC")
+  print(AIC(r_glm))
+  expect_true(abs(h2o.aic(perf) - AIC(r_glm)) < 1e-1)
  }
 
 doTest("Testing AIC/likelihood for GLM", test.glm.aic.likelihood)

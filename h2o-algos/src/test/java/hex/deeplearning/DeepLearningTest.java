@@ -9,6 +9,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -18,6 +19,8 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.*;
 
 import java.io.File;
@@ -33,9 +36,12 @@ import java.util.concurrent.Future;
 import static hex.genmodel.utils.DistributionFamily.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 
-public class DeepLearningTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DeepLearningTest {
 
   @Rule
   public transient TemporaryFolder tmp = new TemporaryFolder();
@@ -2328,7 +2334,7 @@ public class DeepLearningTest extends TestUtil {
       model = new DeepLearning(p).trainModel().get();
 
       preds = model.score(train);
-      preds.remove(0); //remove label, keep only probs
+      preds.remove(0).remove(); //remove label, keep only probs
       Vec labels = train.vec("pclass"); //actual
       String[] fullDomain = train.vec("pclass").domain(); //actual
 

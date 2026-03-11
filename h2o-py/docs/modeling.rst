@@ -56,6 +56,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OHGLMEstimator`
+-----------------------
+.. autoclass:: h2o.estimators.hglm.H2OHGLMEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OInfogram`
 ------------------
 .. autoclass:: h2o.estimators.infogram.H2OInfogram

@@ -45,10 +45,8 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
     final IcedHashMap<AstGroup.G, IcedInt> strataMap = model._output._strataMap;
     writekv("strata_count", strataMap.size());
     
-    int strataNum = 0;
-    for (AstGroup.G g : strataMap.keySet()) {
-      writekv("strata_" + strataNum, g._gs);
-      strataNum++;
+    for (IcedHashMap.Entry<AstGroup.G, IcedInt> entry: strataMap.entrySet()) {
+      writekv("strata_" + entry.getValue(), entry.getKey()._gs);
     }
   }
 

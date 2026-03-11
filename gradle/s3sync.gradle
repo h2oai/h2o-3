@@ -103,9 +103,11 @@ def syncData(subdir) {
 
   println("Going to download ${downloadList.size} files...")
   downloadList.each {
-    def fpath = 'https://h2o-public-test-data.s3.amazonaws.com/'+it.Key
+    def key = it.Key.toString().replaceAll(" ", "+") // handle filenames with spaces
+    def fpath = 'https://h2o-public-test-data.s3.amazonaws.com/'+key
     def localDestPath = localDestDir + it.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))
-    try { 
+    try {
+      println "Downloading  " + fpath
       download {
         src fpath
         dest localDestPath

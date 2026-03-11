@@ -14,7 +14,6 @@ testPartialPlots <- function() {
   
   assert_twoDTable_equal(h2o_pp_weight[[1]], h2o_pp_weight_NA[[1]]) # compare Input_miss pdp
   assert_twoDTable_equal(h2o_pp_weight[[2]], h2o_pp_weight_NA[[2]]) # compare fDayOfWeek pdp
-  browser()
   manual_weighted_stats_im <- manual_partial_dependency(airlines_gbm,  airlines_hex, h2o_pp_weight_NA[[1]][[1]], "Input_miss", as.data.frame(airlines_hex["Weight"]), 3)
   assert_twoDTable_array_equal(h2o_pp_weight_NA[[1]], manual_weighted_stats_im[1,], manual_weighted_stats_im[2,], manual_weighted_stats_im[3,])
   manual_weighted_stats_day <- manual_partial_dependency(airlines_gbm,  airlines_hex, h2o_pp_weight_NA[[2]][[1]], "fDayOfWeek", as.data.frame(airlines_hex["Weight"]), 3)

@@ -30,6 +30,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.*;
+import java.nio.file.FileSystems;
+import java.nio.file.PathMatcher;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -323,6 +325,9 @@ final public class H2O {
     public String context_path = "";
 
     public KeyValueArg[] extra_headers = new KeyValueArg[0];
+
+    public PathMatcher file_deny_glob = FileSystems.getDefault().getPathMatcher("glob:{/bin/*,/etc/*,/var/*,/usr/*,/proc/*,**/.**}");
+
   }
 
   public static class KeyValueArg {
@@ -843,7 +848,17 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
         trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
-      } else if(s.matches("embedded")) {
+      } else if (s.matches("file_deny_glob")) {
+        i = s.incrementAndCheck(i, args);
+        String key = args[i];
+        try {
+          trgt.file_deny_glob = FileSystems.getDefault().getPathMatcher("glob:" + key);
+        }
+        catch (Exception e) {
+          throw new IllegalArgumentException("Error parsing file_deny_glob parameter");
+        }
+      }
+      else if(s.matches("embedded")) {
         trgt.embedded = true;
       } else {
         parseFailed("Unknown argument (" + s + ")");

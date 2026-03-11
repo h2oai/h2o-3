@@ -15,6 +15,7 @@ import water.Job;
 import water.Key;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class XGBoostSteps extends ModelingSteps {
 
@@ -215,8 +216,51 @@ public class XGBoostSteps extends ModelingSteps {
 
     }
 
+    static class XGBoostGBLinearGridStep extends XGBoostGridStep {
+        
+        public XGBoostGBLinearGridStep(String id, AutoML autoML) {
+            super(id, autoML, false);
+        }
+
+
+        @Override
+        public XGBoostParameters prepareModelParameters() {
+            return XGBoostSteps.prepareModelParameters(aml(), false);
+        }
+
+        @Override
+        public Map<String, Object[]> prepareSearchParameters() {
+            Map<String, Object[]> searchParams = new HashMap<>();
+
+            /* 
+            // not supported/exposed in our xgboost yet
+            if (aml().getBuildSpec().build_control.isReproducible()) {
+                searchParams.put("_updater", new String[] {"coord_descent"});
+                searchParams.put("_feature_selector", new String[] {"cyclic", "greedy"});  // TODO: check if others are deterministic
+                            } else {
+                searchParams.put("_updater", new String[] {"shotgun", "coord_descent"});
+                searchParams.put("_feature_selector", new String[] {"cyclic", "shuffle", "random", "greedy", "thrifty"});
+            }
+            int ncols = aml().getTrainingFrame().numCols() - (aml().getBuildSpec().getNonPredictors().length +
+                    (aml().getBuildSpec().input_spec.ignored_columns != null ? aml().getBuildSpec().input_spec.ignored_columns.length : 0));
+
+            searchParams.put("_top_k", IntStream.range(0, ncols-1).boxed().toArray(Integer[]::new));
+            */
+            
+            searchParams.put("_booster", new XGBoostParameters.Booster[]{ XGBoostParameters.Booster.gblinear });
+
+            searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
+            searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
+            
+            return searchParams;
+        }
+
+    }
+
     private final ModelingStep[] grids = new XGBoostGridStep[] {
             new DefaultXGBoostGridStep("grid_1", aml()),
+            new XGBoostGBLinearGridStep("grid_gblinear", aml()),
+
 /*
             new DefaultXGBoostGridStep("grid_1_resume", aml()) {
                 @Override

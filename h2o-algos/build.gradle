@@ -53,7 +53,9 @@ dependencies {
   testRuntimeOnly project(":${defaultWebserverModule}")
   testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
   
-  jmh project(":${defaultWebserverModule}")
+  if (project.hasProperty("doUBench") && project.doUBench == "true") {
+    jmh project(":${defaultWebserverModule}")
+  }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

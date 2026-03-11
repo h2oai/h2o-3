@@ -3,7 +3,7 @@
 ``max_runtime_secs``
 -----------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost, Word2vec, Isolation Forest, Stacked Ensembles, Uplift DRF
+- Available in: GBM, DRF, Deep Learning, GLM, HGLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost, Word2vec, Isolation Forest, Stacked Ensembles, Uplift DRF, ANOVAGLM, ModelSelection
 - Hyperparameter: yes
 
 Description

@@ -8,7 +8,7 @@ if [[ ! ${H2O_BRANCH} ]]; then
 fi
 if [[ ! -n ${PYTHON_VERSION} ]]; then
   echo "Using default Python version"
-  PYTHON_VERSION='3.6'
+  PYTHON_VERSION='3.7'
 fi
 
 # cd home
