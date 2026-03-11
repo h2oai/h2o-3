@@ -2,6 +2,34 @@
 
 ## H2O
 
+### 3.46.0.10 - 3/12/2026
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/10/index.html</a>
+
+#### Bug
+- [[#16433]](https://github.com/h2oai/h2o-3/issues/16433) – Fixed minor errors in GAM, GLM, and ModelSelection.
+- [[#16129]](https://github.com/h2oai/h2o-3/issues/16129) – Fixed issues building Docker image using Dockerfile.
+- [[#16736]](https://github.com/h2oai/h2o-3/issues/16736) – Fixed R CRAN check.
+- [[#16755]](https://github.com/h2oai/h2o-3/issues/16755) – Fixed XGBoost H-statistic example.
+
+#### New Feature
+- [[#16769]](https://github.com/h2oai/h2o-3/issues/16769) – Added control variables MOJO support for regression and binomial distribution.
+
+#### Improvement
+- [[#16718]](https://github.com/h2oai/h2o-3/issues/16718) – Removed support for Python 3.6.
+- [[#16707]](https://github.com/h2oai/h2o-3/issues/16707) – Added support for R 4.5.
+
+#### Docs
+- [[#15991]](https://github.com/h2oai/h2o-3/issues/15991) – Updated Infogram pydocs.
+- [[#16216]](https://github.com/h2oai/h2o-3/issues/16216) – Updated AutoML user guide page to adhere to style guide.
+- [[#16604]](https://github.com/h2oai/h2o-3/issues/16604) – Removed HDP from supported version in the documentation.
+
+#### Security
+- [[#16744]](https://github.com/h2oai/h2o-3/issues/16744) – Fixed CVE-2025-68161 in log4j.
+- [[#16754]](https://github.com/h2oai/h2o-3/issues/16754) – FedRAMP vulnerability remediation (2026-02-02).
+- [[#16773]](https://github.com/h2oai/h2o-3/issues/16773) – Upgraded jackson-databind because of GHSA-72hv-8253-57qq.
+- [[#16775]](https://github.com/h2oai/h2o-3/issues/16775) – Added vulnerable PostgreSQL JDBC parameters to default disallowed parameters.
+
 ### 3.46.0.9 - 11/24/2025
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/9/index.html</a>
