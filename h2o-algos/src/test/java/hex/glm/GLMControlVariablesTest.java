@@ -107,7 +107,7 @@ public class GLMControlVariablesTest extends TestUtil {
                 if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
             }
             System.out.println(differ + " " + threshold);
-            assert differ > threshold;
+            assertTrue(differ > threshold);
 
             System.out.println("Scoring history control val enabled");
             TwoDimTable glmSH = glm._output._scoring_history;
@@ -421,7 +421,6 @@ public class GLMControlVariablesTest extends TestUtil {
             Vec cat2 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"a","b"},Vec.newKey());
             Vec res = Vec.makeVec(new double[]{1,1,2,0,0},cat1.group().addVec());
             train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "y"},new Vec[]{cat1, cat2,res});
-            DKV.put(train);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._train = train._key;
@@ -990,7 +989,7 @@ public class GLMControlVariablesTest extends TestUtil {
                 if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
             }
             System.out.println(differ + " " + threshold);
-            assert differ > threshold;
+            assertTrue(differ > threshold);
 
             System.out.println("Scoring history remove offset enabled");
             TwoDimTable glmSH = glm._output._scoring_history;
@@ -1365,6 +1364,96 @@ public class GLMControlVariablesTest extends TestUtil {
             if (preds != null) preds.remove();
             if (predsCVOffset != null) predsCVOffset.remove();
             if (predsR != null) predsR.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetWithInteraction() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._offset_column = "offset";
+            params._interactions = new String[]{"x1", "x2"};
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetWithLambdaSearch() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._offset_column = "offset";
+            params._lambda_search = true;
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetWithCrossValiadation() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._offset_column = "offset";
+            params._nfolds = 3;
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
             Scope.exit();
         }
     }

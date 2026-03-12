@@ -51,7 +51,7 @@ def glm_unrestricted_model():
     print(metrics_ro)
 
     print("-- Unrestricted model with remove offset effects --")
-    glm_model_unrestricted_ro = glm_model_cv.make_unrestricted_glm_model(dest="unrestricted_ro")
+    glm_model_unrestricted_ro = glm_model_ro.make_unrestricted_glm_model(dest="unrestricted_ro")
     print(glm_model_unrestricted_ro)
     metrics_unrestricted_ro = glm_model_unrestricted_ro.training_model_metrics()
     print(metrics_unrestricted_ro)
@@ -82,8 +82,8 @@ def glm_unrestricted_model():
     glm_model_unrestricted_cv_false_ro_true = glm_model_cv_ro.make_unrestricted_glm_model(dest="ro_true",
                                                                                           remove_offset_effects_enabled=True)
     print(glm_model_unrestricted_cv_false_ro_true)
-    metrics_unrestricted_cv_true_ro_false = glm_model_unrestricted_cv_false_ro_true.training_model_metrics()
-    print(metrics_unrestricted_cv_true_ro_false)
+    metrics_unrestricted_cv_false_ro_true = glm_model_unrestricted_cv_false_ro_true.training_model_metrics()
+    print(metrics_unrestricted_cv_false_ro_true)
 
     # predictions with  basic model
     predictions = glm_model.predict(cars).as_data_frame()
