@@ -13,8 +13,8 @@ Model metrics and scoring history are calculated for both the restricted model (
 
 To get the unrestricted model with its own metrics use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
 
-If you set up ``remove_offset_effects`` together with ``control_variables`` feature, model metrics and scoring history is calculated with both effects enabled. 
-If you need to get model only with one feature enabled, you can get it using ``glm.make_unrestricted_glm_model(control_variables_enabled=True)`` or ``glm.make_unrestricted_glm_model(remove_offset_effects_enabled=True)``
+If you set up the ``remove_offset_effects`` together with the ``control_variables`` feature, model metrics and scoring history are calculated with both effects enabled. 
+If you need to get a model with only one feature enabled, you can get it using ``glm.make_unrestricted_glm_model(control_variables_enabled=True)`` or ``glm.make_unrestricted_glm_model(remove_offset_effects_enabled=True)``
 
 **Notes**:
 

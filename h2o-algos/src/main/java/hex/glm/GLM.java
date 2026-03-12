@@ -3416,8 +3416,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._useRemoveOffsetEffects = false;
         }
       }
-        _model.update(_job._key);
-        _model.generateSummary(_parms._train, _state._iter);
+      _model.generateSummary(_parms._train, _state._iter);
+      _lastScore = System.currentTimeMillis();
+      long scoringTime = System.currentTimeMillis() - t1;
+      _scoringInterval = Math.max(_scoringInterval, 20 * scoringTime); // at most 5% overhead for scoring
+      _model.update(_job._key);
+      _model.generateSummary(_parms._train, _state._iter);
     }
 
     private void scorePostProcessingRestrictedModel(Frame train, long t1) {
@@ -3634,10 +3638,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
       }
-      _model.generateSummary(_parms._train, _state._iter);
-      _lastScore = System.currentTimeMillis();
-      long scoringTime = System.currentTimeMillis() - t1;
-      _scoringInterval = Math.max(_scoringInterval, 20 * scoringTime); // at most 5% overhead for scoring
     }
 
     private void coldStart(double[] devHistoryTrain, double[] devHistoryTest) {
