@@ -63,7 +63,7 @@ public class MakeGLMModelHandler extends Handler {
     }
     Key generatedKey;
     if (args.control_variables_enabled && args.remove_offset_effects_enabled) {
-      throw new IllegalArgumentException("The control_variables_enabled and remove_offset_effects_enabled feature" +
+      throw new IllegalArgumentException("The control_variables_enabled and remove_offset_effects_enabled feature " +
               "cannot be used together. It produces the same model as the main model.");
     } else if((args.control_variables_enabled || args.remove_offset_effects_enabled) && 
             (model._parms._control_variables == null || !model._parms._remove_offset_effects)) {
@@ -87,16 +87,20 @@ public class MakeGLMModelHandler extends Handler {
             Double.NaN, Double.NaN, -1);
     m.setInputParms(inputParms);
     if (args.control_variables_enabled){
-      m._input_parms._control_variables = model._parms._control_variables;
-      m._parms._control_variables = model._parms._control_variables;
+        m._input_parms._control_variables = model._parms._control_variables;
+        m._parms._control_variables = model._parms._control_variables;
+        m._input_parms._remove_offset_effects = false;
+        m._parms._remove_offset_effects = false;
     } else if(args.remove_offset_effects_enabled){
-      m._input_parms._remove_offset_effects = true;
-      m._parms._remove_offset_effects = true;
+        m._input_parms._remove_offset_effects = true;
+        m._parms._remove_offset_effects = true;
+        m._input_parms._control_variables = null;
+        m._parms._control_variables = null;
     } else {
-      m._input_parms._control_variables = null;
-      m._input_parms._remove_offset_effects = false;
-      m._parms._control_variables = null;
-      m._parms._remove_offset_effects = false;
+        m._input_parms._control_variables = null;
+        m._parms._control_variables = null;
+        m._input_parms._remove_offset_effects = false;
+        m._parms._remove_offset_effects = false;
     }
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);

@@ -3539,7 +3539,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if ((mtrain != null) && (_valid != null)) {
           _scoringHistoryRemoveOffsetEnabled.addIterationScore(true, true, _state._iter, _state.likelihood(),
                   _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics_restricted_model_ro).residual_deviance(),
-                  mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
+                  mtrain._nobs, _model._output._validation_metrics_restricted_model_ro._nobs, _state.lambda(), _state.alpha());
         } else { // only doing training deviance
           _scoringHistoryRemoveOffsetEnabled.addIterationScore(true, false, _state._iter, _state.likelihood(),
                   _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),

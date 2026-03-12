@@ -105,7 +105,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       Arrays.fill(preds,0);
       double previousCDF = 0.0;
       for (int cInd = 0; cInd < lastClass; cInd++) {
-        double eta = r.innerProduct(bm[cInd]);
+        double eta = r.innerProduct(bm[cInd]) + o;
         double currCDF = 1.0 / (1 + Math.exp(-eta));
         preds[cInd + 1] = currCDF - previousCDF;
         previousCDF = currCDF;
@@ -118,7 +118,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       double sumExp = 0;
       double maxRow = 0;
       for (int c = 0; c < bm.length; ++c) {
-        eta[c] = r.innerProduct(bm[c]);
+        eta[c] = r.innerProduct(bm[c]) + o;
         if(eta[c] > maxRow)
           maxRow = eta[c];
       }

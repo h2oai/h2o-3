@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-glm_remove_offset_effects_explain <- function() {
+glm_make_unrestricted_model_test <- function() {
     df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
     df$CAPSULE <- as.factor(df$CAPSULE)
     df$RACE <- as.factor(df$RACE)
@@ -63,4 +63,4 @@ glm_remove_offset_effects_explain <- function() {
     assertError(h2o.make_unrestricted_glm_model(prostate_glm_2, control_variables_enabled=TRUE))
 }
 
-doTest("GLM: Remove offset effects works with explain", glm_remove_offset_effects_explain)
+doTest("GLM: Remove offset effects works with explain", glm_make_unrestricted_model_test)
