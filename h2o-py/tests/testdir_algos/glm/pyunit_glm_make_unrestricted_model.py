@@ -14,7 +14,7 @@ def glm_unrestricted_model():
     cars["name"] = cars["name"].asfactor()
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
     offset_col = "offset"
-    offset = h2o.H2OFrame([[.5]] * 398)
+    offset = h2o.H2OFrame([[.5]] * cars.nrows)
     offset.set_names([offset_col])
     cars = cars.cbind(offset)
 
@@ -68,13 +68,13 @@ def glm_unrestricted_model():
     print("-- Unrestricted model with control variables and remove offset effects disabled --")
     glm_model_unrestricted_cv_ro = glm_model_cv_ro.make_unrestricted_glm_model(dest="all_false")
     print(glm_model_unrestricted_cv_ro)
-    metrics_unrestricted_cv_ro = glm_model_unrestricted_cv.training_model_metrics()
+    metrics_unrestricted_cv_ro = glm_model_unrestricted_cv_ro.training_model_metrics()
     print(metrics_unrestricted_cv_ro)
 
     print("-- Unrestricted model with control variables enabled and remove offset effects disabled --")
     glm_model_unrestricted_cv_true_ro_false = glm_model_cv_ro.make_unrestricted_glm_model(dest="cv_true",
                                                                                           control_variables_enabled=True)
-    print(glm_model_unrestricted_cv_ro)
+    print(glm_model_unrestricted_cv_true_ro_false)
     metrics_unrestricted_cv_true_ro_false = glm_model_unrestricted_cv_true_ro_false.training_model_metrics()
     print(metrics_unrestricted_cv_true_ro_false)
 
