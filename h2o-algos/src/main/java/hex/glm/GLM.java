@@ -3416,7 +3416,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._useRemoveOffsetEffects = false;
         }
       }
-      _model.update(_job._key);
+        _model.update(_job._key);
+        _model.generateSummary(_parms._train, _state._iter);
     }
 
     private void scorePostProcessingRestrictedModel(Frame train, long t1) {
@@ -3467,7 +3468,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                         _state.alpha());
             }
         }
-        _job.update(_workPerIteration, _state.toString());
       }
       _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, null, null) : null;
     }
@@ -3766,7 +3766,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if (_parms._keepBetaDiffVar)
               keepFrameKeys(keep, _model._output._betadiff_var);
             Scope.untrack(keep.toArray(new Key[keep.size()]));
-          }
+          }_model.update(_job._key);
+          _model.generateSummary(_parms._train, _state._iter);
           _model.unlock(_job);
         }
       }
