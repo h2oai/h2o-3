@@ -2830,7 +2830,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param dest: (optional) destination key
         :param control_variables_enabled: (optional) set control variables flag to get model affected only 
             by this feature (available only if control_variables and remove_offset_effects parameters are both set)
-        :param remove_offset_effects_enabled: (optional) set remove offset effets flag to get model affected only 
+        :param remove_offset_effects_enabled: (optional) set remove offset effects flag to get model affected only 
             by this feature (available only if control_variables and remove_offset_effects parameters are both set)
 
         :examples:
