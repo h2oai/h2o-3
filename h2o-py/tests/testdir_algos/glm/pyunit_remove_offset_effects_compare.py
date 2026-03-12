@@ -13,7 +13,7 @@ def glm_remove_offset_effects():
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
     offset_col = "offset"
-    offset = h2o.H2OFrame([[.5]]*398)
+    offset = h2o.H2OFrame([[.5]]*cars.nrows)
     offset.set_names([offset_col])
     cars = cars.cbind(offset)
 
