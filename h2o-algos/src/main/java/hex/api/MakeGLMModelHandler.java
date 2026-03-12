@@ -63,17 +63,16 @@ public class MakeGLMModelHandler extends Handler {
     }
     Key generatedKey;
     if (args.control_variables_enabled && args.remove_offset_effects_enabled) {
-      throw new IllegalArgumentException("You can set only control_variable_enabled to true or " +
-              "remove_offset_effects_enabled to true. These flags cannot be enabled together.");
+      throw new IllegalArgumentException("The control_variables_enabled and remove_offset_effects_enabled feature" +
+              "cannot be used together. It produces the same model as the main model.");
     } else if((args.control_variables_enabled || args.remove_offset_effects_enabled) && 
             (model._parms._control_variables == null || !model._parms._remove_offset_effects)) {
-      throw new IllegalArgumentException("You can set control_variable_enabled to true or " +
-              "remove_offset_effects_enabled to true only if both control_variables and remove_offset_effects are " +
-              "both set.");
+      throw new IllegalArgumentException("You can set control_variables_enabled to true or " +
+              "remove_offset_effects_enabled to true only if control_variables and remove_offset_effects are both set.");
     } else if (args.remove_offset_effects_enabled) {
       generatedKey = Key.make(model._key.toString() + "_remove_offset_effects_enabled");
     } else if (args.control_variables_enabled) {
-      generatedKey = Key.make(model._key.toString() + "_control_variable_enabled");
+      generatedKey = Key.make(model._key.toString() + "_control_variables_enabled");
     } else {
       generatedKey = Key.make(model._key.toString()+"_unrestricted_model");
     }    
