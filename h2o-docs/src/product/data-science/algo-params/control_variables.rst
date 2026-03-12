@@ -21,8 +21,8 @@ To get the unrestricted model with its own metrics use ``glm.make_unrestricted_g
 
 The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. 
 
-If you set up ``control_variables`` together with ``remove_offset_effects`` feature, model metrics and scoring history is calculated with both effects enabled. 
-If you need to get model only with one feature enabled, you can get it using ``glm.make_unrestricted_glm_model(control_variables_enabled=True)`` or ``glm.make_unrestricted_glm_model(remove_offset_effects_enabled=True)``
+If you set up the ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history are calculated with both effects enabled. 
+If you need to get a model with only one feature enabled, you can get it using ``glm.make_unrestricted_glm_model(control_variables_enabled=True)`` or ``glm.make_unrestricted_glm_model(remove_offset_effects_enabled=True)``
 
 
 **Notes**:
