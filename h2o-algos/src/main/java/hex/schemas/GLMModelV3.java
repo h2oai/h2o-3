@@ -2,12 +2,16 @@ package hex.schemas;
 
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
+import water.DKV;
+import water.Key;
 import water.MemoryManager;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
@@ -35,6 +39,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help = "Variable Importances", direction = API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableV3 variable_importances;
 
+    @API(help = "Variance-Covariance Matrix")
+    KeyV3.FrameKeyV3 vcov_table;
+    
     @API(help="Lambda minimizing the objective value, only applicable with lambda search or when arrays of alpha and " +
             "lambdas are provided")
     double lambda_best;
@@ -84,7 +91,7 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
-        return this; // no coefificients yet
+        return this; // no coefficients yet
       String [] names = impl.coefficientNames().clone();
       int len = names.length-1;
       String [] names2 = new String[len]; // this one decides the length of standardized table length
@@ -289,6 +296,49 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         }
       }
       coefficients_table.fillFromImpl(tdt);
+
+      if(impl.hasPValues()) { // vcov is only populated if p values are calculated
+        double [][] vcov;
+        vcov = impl.vcov();
+        double [][] vcov_reordered = new double[vcov.length][vcov.length];
+
+        long[] vcov_indices = new long[vcov.length];
+        for (int i = 0; i < vcov.length; ++i)
+          vcov_indices[i] = i;
+
+        // move intercept from last row and column to first row and column to match reordering done with coefficients
+        vcov_reordered[0][0] = vcov[vcov.length - 1][vcov.length - 1];
+        for(int i = 1; i < vcov.length; ++i) {
+          vcov_reordered[0][i] = vcov[vcov.length-1][i-1];
+        }
+        for(int i = 1; i < vcov.length; ++i) {
+          vcov_reordered[i][0] = vcov[i-1][vcov.length-1];
+        }
+        for(int i = 1; i < vcov.length; ++i) {
+          for(int j = 1; j < vcov.length; ++j) {
+            vcov_reordered[i][j] = vcov[i - 1][j - 1];
+          }
+        }
+
+        String [] vcov_colnames = ArrayUtils.append(new String[]{"Names"},Arrays.copyOf(ns,ns.length));
+        Vec [] vec_arr = new Vec[vcov.length+1]; // one extra vec for column names
+        Vec.VectorGroup group = new Vec.VectorGroup();
+        Key<Vec> vec_key = group.addVec(); 
+
+        // load vcov info into vec_arr
+        vec_arr[0] = Vec.makeVec(vcov_indices, ns, vec_key);
+        for(int i = 0; i < vcov.length; ++i) {
+          vec_key = group.addVec();
+          vec_arr[i+1] = Vec.makeVec(vcov_reordered[i], vec_key);
+        }
+
+        Key<Frame> frameKey = Key.make();
+        Frame frame = new Frame(frameKey, vcov_colnames, vec_arr);
+        DKV.put(frameKey, frame);
+        vcov_table = new KeyV3.FrameKeyV3();
+        vcov_table.fillFromImpl(frameKey);
+      }
+      
       if(impl.beta() != null) { // get varImp
         calculateVarimpBase(magnitudes, indices, impl.getNormBeta());
         
