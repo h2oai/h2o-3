@@ -11,7 +11,7 @@ def glm_remove_offset_effects():
     cars = cars[cars["economy_20mpg"].isna() == 0]
     cars["name"] = cars["name"].asfactor()
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-    offset = h2o.H2OFrame([[.5]]*cars.nrow)
+    offset = h2o.H2OFrame([[.5]] * cars.nrows)
     offset.set_names(["offset"])
     cars = cars.cbind(offset)
 

@@ -3416,7 +3416,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._useRemoveOffsetEffects = false;
         }
       }
-      _model.generateSummary(_parms._train, _state._iter);
       _lastScore = System.currentTimeMillis();
       long scoringTime = System.currentTimeMillis() - t1;
       _scoringInterval = Math.max(_scoringInterval, 20 * scoringTime); // at most 5% overhead for scoring
@@ -3572,14 +3571,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Training metrics computed in " + (t2 - t1) + "ms"));
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
+        ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
         _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
         if(_model._parms._control_variables != null || _model._parms._remove_offset_effects){
           _model._output._validation_metrics_unrestricted_model = ModelMetrics.getFromDKV(_model, valid);
+          validScore.fillFrom(_model._output._validation_metrics_unrestricted_model);
         } else {
           _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
+          validScore.fillFrom(_model._output._validation_metrics);
         }
-        ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
-        validScore.fillFrom(_model._output._validation_metrics);
+
       }
       if(_model._parms._control_variables != null || _model._parms._remove_offset_effects) {
         _model.addUnrestrictedModelScoringInfo(_parms, nclasses(), t2, _state._iter);
