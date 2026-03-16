@@ -416,11 +416,11 @@ public class GLMControlVariablesTest extends TestUtil {
         GLMModel glm = null;
         try {
             Scope.enter();
-
             Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
             Vec cat2 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"a","b"},Vec.newKey());
             Vec res = Vec.makeVec(new double[]{1,1,2,0,0},cat1.group().addVec());
             train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "y"},new Vec[]{cat1, cat2,res});
+            DKV.put(train);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._train = train._key;

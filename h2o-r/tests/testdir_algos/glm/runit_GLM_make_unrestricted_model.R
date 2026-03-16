@@ -63,4 +63,4 @@ glm_make_unrestricted_model_test <- function() {
     assertError(h2o.make_unrestricted_glm_model(prostate_glm_2, control_variables_enabled=TRUE))
 }
 
-doTest("GLM: Remove offset effects works with explain", glm_make_unrestricted_model_test)
+doTest("GLM: Test make unrestricted model", glm_make_unrestricted_model_test)
