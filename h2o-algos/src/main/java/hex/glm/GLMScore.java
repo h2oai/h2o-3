@@ -94,10 +94,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
       _beta_multinomial = null;
     }
-
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
-
-    m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
     _defaultThreshold = m.defaultThreshold();
   }
 
@@ -132,8 +129,11 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         preds[c + 1] = eta[c] * sumExp;
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
-      double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
-      
+      double x = r.innerProduct(_beta);
+      if(!_m._useRemoveOffsetEffects) {
+        x += o;
+      }
+      double mu = _m._parms.linkInv(x);
       if (_m._parms._family == GLMModel.GLMParameters.Family.binomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction

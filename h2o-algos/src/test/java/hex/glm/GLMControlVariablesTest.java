@@ -62,7 +62,7 @@ public class GLMControlVariablesTest extends TestUtil {
             params._control_variables = control_variables;
             params._score_each_iteration = true;
 
-            // train model witch control variables enabled
+            // train model with control variables enabled
             glm = new GLM(params).trainModel().get();
             Scope.track_generic(glm);
 
@@ -107,7 +107,7 @@ public class GLMControlVariablesTest extends TestUtil {
                 if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
             }
             System.out.println(differ + " " + threshold);
-            assert differ > threshold;
+            assertTrue(differ > threshold);
 
             System.out.println("Scoring history control val enabled");
             TwoDimTable glmSH = glm._output._scoring_history;
@@ -138,9 +138,9 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable vi = glm._output._variable_importances;
             TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
             TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
-            
-            assertNotEquals(vi, vi_unrestricted);
-            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
+
+            assertFalse(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
+            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
 
         } finally {
             if(train != null) train.remove();
@@ -416,7 +416,6 @@ public class GLMControlVariablesTest extends TestUtil {
         GLMModel glm = null;
         try {
             Scope.enter();
-
             Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
             Vec cat2 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"a","b"},Vec.newKey());
             Vec res = Vec.makeVec(new double[]{1,1,2,0,0},cat1.group().addVec());
@@ -695,8 +694,8 @@ public class GLMControlVariablesTest extends TestUtil {
                     -0.1541507, 0.1541507, 0.1541507, 0.8109302, 0.8109302, 1.1192316, 0.8109302, 0.1541507, -0.1541507},Vec.newKey());
             predsR = new Frame(Key.<Frame>make("predsR"),new String[]{"predict"},new Vec[]{predsRVec});
 
-            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", null, true);
-            Frame manualPredsH2o = scoreManualWithCoefficients(coefficients, train, "manualPredsH2o", null, true);
+            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", true);
+            Frame manualPredsH2o = scoreManualWithCoefficients(coefficients, train, "manualPredsH2o", true);
             Frame manualPredsControl = scoreManualWithCoefficients(coefficientsControl, train, "manualPredsControl", new int[]{0}, true);
             Frame manualPredsRControl = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", new int[]{0}, true);
 
@@ -737,14 +736,26 @@ public class GLMControlVariablesTest extends TestUtil {
     }
 
     private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName){
-        return scoreManualWithCoefficients(coefficients, data, frameName, null, false);
+        return scoreManualWithCoefficients(coefficients, data, frameName, null, false, null);
+    }
+
+    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, boolean binomial){
+        return scoreManualWithCoefficients(coefficients, data, frameName, null, binomial, null);
     }
 
     private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, int[] controlVariablesIdx){
-        return scoreManualWithCoefficients(coefficients, data, frameName, controlVariablesIdx, false);
+        return scoreManualWithCoefficients(coefficients, data, frameName, controlVariablesIdx, false, null);
+    }
+
+    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, int[] controlVariablesIdx, boolean binomial){
+        return scoreManualWithCoefficients(coefficients, data, frameName, controlVariablesIdx, binomial, null);
+    }
+
+    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, boolean binomial, Vec offset){
+        return scoreManualWithCoefficients(coefficients, data, frameName, null, binomial, offset);
     }
     
-    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, int[] controlVariablesIdxs, boolean binomial){
+    private Frame scoreManualWithCoefficients(Double[] coefficients, Frame data, String frameName, int[] controlVariablesIdxs, boolean binomial, Vec offset){
         Vec predictions = Vec.makeZero(data.numRows(), Vec.T_NUM);
         for (long i = 0; i < data.numRows(); i++) {
             double prediction = 0;
@@ -756,12 +767,694 @@ public class GLMControlVariablesTest extends TestUtil {
                 }
             }
             prediction += coefficients[coefficients.length-1];
-            if(binomial){
+            if (offset != null) prediction += offset.at(i);
+            if (binomial){
                 prediction = 1.0 / (Math.exp(-prediction) + 1.0);
             }
             predictions.set(i, prediction);
         }
         return new Frame(Key.<Frame>make(frameName),new String[]{"predict"},new Vec[]{predictions});
     }
-    
+
+    @Test
+    public void compareModelWithOffsetEnabledAndDisabled() {
+        Frame train = null;
+        Frame test = null;
+        Frame preds = null;
+        GLMModel glm = null;
+        Frame preds2 = null;
+        GLMModel glm2 = null;
+        try {
+            Scope.enter();
+            train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+            GLMModel.GLMParameters.Family family = GLMModel.GLMParameters.Family.binomial;
+            String responseColumn = "C21";
+
+            // set cat columns
+            int numCols = train.numCols();
+            int enumCols = (numCols - 1) / 2;
+            for (int cindex = 0; cindex < enumCols; cindex++) {
+                train.replace(cindex, train.vec(cindex).toCategoricalVec()).remove();
+            }
+            int response_index = numCols - 1;
+
+            train.replace((response_index), train.vec(response_index).toCategoricalVec()).remove();
+
+            DKV.put(train);
+            Scope.track_generic(train);
+
+            test = new Frame(train);
+            test.remove(responseColumn);
+
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(family);
+            params._response_column = responseColumn;
+            params._train = train._key;
+            params._score_each_iteration = true;
+            params._offset_column = "C20";
+            params._remove_offset_effects = true;
+
+            // train model with remove offset effects enabled
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            System.out.println("_________________________________");
+            System.out.println(glm);
+            System.out.println("______");
+
+            preds = glm.score(test);
+            Scope.track_generic(preds);
+
+            // train model with offset effect removed
+            params._remove_offset_effects = false;
+
+            glm2 = new GLM(params).trainModel().get();
+            Scope.track_generic(glm2);
+
+            preds2 = glm2.score(test);
+            Scope.track_generic(preds2);
+
+            // check result training metrics are not the same
+            double delta = 10e-10;
+            assertNotEquals(glm.auc(), glm2.auc(), delta);
+            assertNotEquals(glm.mse(), glm2.mse(), delta);
+            //assertNotEquals(glm.logloss(), glm2.logloss(), delta);
+
+            double tMse = glm._output._training_metrics._MSE;
+            double tMse2 = glm2._output._training_metrics._MSE;
+            System.out.println(tMse+" "+tMse2);
+            assertNotEquals(tMse, tMse2, delta);
+
+            // check result training metrics unrestricted model and glm model with remove offset effects disabled are the same
+            assertEquals(glm2._output._training_metrics.auc_obj()._auc, glm._output._training_metrics_unrestricted_model.auc_obj()._auc, delta);
+            assertEquals(glm2._output._training_metrics.mse(), glm._output._training_metrics_unrestricted_model.mse(), delta);
+            assertEquals(glm2._output._training_metrics.rmse(), glm._output._training_metrics_unrestricted_model.rmse(), delta);
+
+            // check preds differ
+            int differ = 0;
+            int testRowNumber = 100;
+            double threshold = (2 * testRowNumber)/1.1;
+            for (int i = 0; i < testRowNumber; i++) {
+                if(preds.vec(1).at(i) != preds2.vec(1).at(i)) differ++;
+                if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
+            }
+            
+            assertTrue("Expected number of differing predictions to exceed threshold", differ > threshold);
+
+            System.out.println("Scoring history remove offset enabled");
+            TwoDimTable glmSH = glm._output._scoring_history;
+            System.out.println(glmSH);
+            System.out.println("Scoring history remove offset disabled");
+            TwoDimTable glm2SH = glm2._output._scoring_history;
+            System.out.println(glm2SH);
+            System.out.println("Scoring history remove offset enabled unrestricted model");
+            TwoDimTable glmSHROE = glm._output._scoring_history_unrestricted_model;
+            System.out.println(glmSHROE);
+            System.out.println("Scoring history remove offset disabled unrestricted model");
+            TwoDimTable glm2SHROE = glm2._output._scoring_history_unrestricted_model;
+            System.out.println(glm2SHROE);
+            
+            // check scoring history is the same (instead of timestamp and duration column)
+            // change table header because it contains " unrestricted model"
+            glm2SH.setTableHeader(glmSHROE.getTableHeader());
+            assertTwoDimTableEquals(glmSHROE, glm2SH, new int[]{0,1});
+
+            // check control val scoring history is not null when remove offset effects feature is enabled
+            assertNotNull(glmSHROE);
+
+            // check control val scoring history is null when remove offset effects feature is disabled
+            assertNull(glm2SHROE);
+
+            //check variable importance
+            TwoDimTable vi = glm._output._variable_importances;
+            TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
+            TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
+
+            assertTrue(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
+            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
+
+        } finally {
+            if(train != null) train.remove();
+            if(test != null) test.remove();
+            if(preds != null) preds.remove();
+            if(glm != null) glm.remove();
+            if(preds2 != null) preds2.remove();
+            if(glm2 != null) glm2.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void compareModelWithOffsetAndControlVariablesEnabledAndDisabled() {
+        Frame train = null;
+        Frame test = null;
+        Frame preds = null;
+        GLMModel glm = null;
+        Frame preds2 = null;
+        GLMModel glm2 = null;
+        try {
+            Scope.enter();
+            train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+            GLMModel.GLMParameters.Family family = GLMModel.GLMParameters.Family.binomial;
+            String responseColumn = "C21";
+
+            // set cat columns
+            int numCols = train.numCols();
+            int enumCols = (numCols - 1) / 2;
+            for (int cindex = 0; cindex < enumCols; cindex++) {
+                train.replace(cindex, train.vec(cindex).toCategoricalVec()).remove();
+            }
+            int response_index = numCols - 1;
+
+            train.replace((response_index), train.vec(response_index).toCategoricalVec()).remove();
+
+            DKV.put(train);
+            Scope.track_generic(train);
+
+            test = new Frame(train);
+            test.remove(responseColumn);
+
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(family);
+            params._response_column = responseColumn;
+            params._train = train._key;
+            params._score_each_iteration = true;
+            params._offset_column = "C20";
+            params._remove_offset_effects = true;
+            params._control_variables = new String[]{"C5"};
+
+            // train model with remove offset effects enabled
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            System.out.println("_________________________________");
+            System.out.println(glm);
+            System.out.println("______");
+
+            preds = glm.score(test);
+            Scope.track_generic(preds);
+
+            // train model with offset effect removed
+            params._remove_offset_effects = false;
+            params._control_variables = null;
+
+            glm2 = new GLM(params).trainModel().get();
+            Scope.track_generic(glm2);
+
+            preds2 = glm2.score(test);
+            Scope.track_generic(preds2);
+
+            // check result training metrics are not the same
+            double delta = 10e-10;
+            assertNotEquals(glm.auc(), glm2.auc(), delta);
+            assertNotEquals(glm.mse(), glm2.mse(), delta);
+            //assertNotEquals(glm.logloss(), glm2.logloss(), delta);
+
+            double tMse = glm._output._training_metrics._MSE;
+            double tMse2 = glm2._output._training_metrics._MSE;
+            System.out.println(tMse+" "+tMse2);
+            assertNotEquals(tMse, tMse2, delta);
+
+            // check result training metrics unrestricted model and glm model with remove offset effects disabled are the same
+            assertEquals(glm2._output._training_metrics.auc_obj()._auc, glm._output._training_metrics_unrestricted_model.auc_obj()._auc, delta);
+            assertEquals(glm2._output._training_metrics.mse(), glm._output._training_metrics_unrestricted_model.mse(), delta);
+            assertEquals(glm2._output._training_metrics.rmse(), glm._output._training_metrics_unrestricted_model.rmse(), delta);
+
+            // check preds differ
+            int differ = 0;
+            int testRowNumber = 100;
+            double threshold = (2 * testRowNumber)/1.1;
+            for (int i = 0; i < testRowNumber; i++) {
+                if(preds.vec(1).at(i) != preds2.vec(1).at(i)) differ++;
+                if(preds.vec(2).at(i) != preds2.vec(2).at(i)) differ++;
+            }
+            System.out.println(differ + " " + threshold);
+            assertTrue(differ > threshold);
+
+            System.out.println("Scoring history remove offset enabled");
+            TwoDimTable glmSH = glm._output._scoring_history;
+            System.out.println(glmSH);
+            System.out.println("Scoring history remove offset disabled");
+            TwoDimTable glm2SH = glm2._output._scoring_history;
+            System.out.println(glm2SH);
+            System.out.println("Scoring history remove offset enabled unrestricted model");
+            TwoDimTable glmSHCV = glm._output._scoring_history_unrestricted_model;
+            System.out.println(glmSHCV);
+            System.out.println("Scoring history remove offset disabled unrestricted model");
+            TwoDimTable glm2SHCV = glm2._output._scoring_history_unrestricted_model;
+            System.out.println(glm2SHCV);
+
+            // check scoring history is the same (instead of timestamp and duration column)
+            // change table header because it contains " unrestricted model"
+            glm2SH.setTableHeader(glmSHCV.getTableHeader());
+            assertTwoDimTableEquals(glmSHCV, glm2SH, new int[]{0,1});
+
+            // check control val scoring history is not null when control vals is enabled
+            assertNotNull(glmSHCV);
+
+            // check control val scoring history is null when control vals is disabled
+            assertNull(glm2SHCV);
+
+            //check variable importance
+            TwoDimTable vi = glm._output._variable_importances;
+            TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
+            TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
+
+            assertFalse(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
+            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
+        } finally {
+            if(train != null) train.remove();
+            if(test != null) test.remove();
+            if(preds != null) preds.remove();
+            if(glm != null) glm.remove();
+            if(preds2 != null) preds2.remove();
+            if(glm2 != null) glm2.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetEffectsMissingOffsetColumn() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"a","b"},Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,2,0,0},cat1.group().addVec());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "y"},new Vec[]{cat1, cat2,res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            glm = new GLM(params).trainModel().get();
+
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetEffectsMultinomial() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new double[]{1,1,1,0,0}, cat1.group().addVec());
+            Vec res = Vec.makeVec(new double[]{1,1,2,0,0},cat1.group().addVec());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "y"},new Vec[]{cat1, cat2, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._offset_column = "x2";
+            params._distribution = DistributionFamily.multinomial;
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicDataBinomialOffset(){
+        /** Test against GLM in R 
+         * cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
+         * cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
+         * offset <- c(0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0)
+         * res <- factor(c(1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1))
+         * data <- data.frame(cat1, cat2, offset, res)
+         * glm <- glm(res ~ cat1 + cat2 + offset(offset), data=data, family = binomial)
+         * summary(glm)
+         * predict(glm)
+         *
+         * Call:
+         * glm(formula = res ~ cat1 + cat2 + offset(offset), family = binomial, 
+         *     data = data)
+         *
+         * Coefficients:
+         *             Estimate Std. Error z value Pr(>|z|)
+         * (Intercept)  -0.3310     0.7256  -0.456    0.648
+         * cat11         0.9780     0.8467   1.155    0.248
+         * cat21         0.2295     0.8586   0.267    0.789
+         *
+         * (Dispersion parameter for binomial family taken to be 1)
+         *
+         *     Null deviance: 33.557  on 25  degrees of freedom
+         * Residual deviance: 32.173  on 23  degrees of freedom
+         * AIC: 38.173
+         *
+         * Number of Fisher Scoring iterations: 4
+         *
+         *            1            2            3            4            5            6 
+         *  0.976506946  0.847045758  1.076506946 -0.130997049 -0.230997049  0.647045758 
+         *            7            8            9           10           11           12 
+         *  0.647045758  0.098464139  0.198464139  1.147045758  0.198464139  1.047045758 
+         *           13           14           15           16           17           18 
+         *  0.469002951  1.276506946  1.047045758  1.376506946 -0.330997049 -0.330997049 
+         *           19           20           21           22           23           24 
+         *  0.398464139 -0.001535861  0.647045758  0.647045758  0.976506946  0.647045758 
+         *           25           26 
+         * -0.001535861 -0.330997049
+         **/
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel glmOffset = null;
+        Frame preds = null;
+        Frame predsOffset = null;
+        Frame predsR = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"cat1", "cat2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._lambda = new double[]{0};
+            params._alpha = new double[]{0};
+            params._standardize = false;
+            params._non_negative = true;
+            params._intercept = true;
+            params._objective_epsilon = 1e-10;
+            params._gradient_epsilon = 1e-6;
+            params._response_column = "y";
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._max_iterations = 4;
+            params._dispersion_epsilon = 1;
+            params._offset_column = "offset";
+            glm = new GLM(params).trainModel().get();
+            preds = glm.score(train);
+            System.out.println(preds.toTwoDimTable().toString());
+
+            System.out.println(glm._output._variable_importances);
+            System.out.println(glm.coefficients().toString());
+            Double[] coefficients = glm.coefficients().values().toArray(new Double[0]);
+            
+            params._remove_offset_effects = true;
+            glmOffset = new GLM(params).trainModel().get();
+            predsOffset = glmOffset.score(train);
+            System.out.println(predsOffset.toTwoDimTable().toString());
+            Double[] coefficientsOffset = glmOffset.coefficients().values().toArray(new Double[0]);
+
+            Double[] coefficientsR = new Double[]{0.9780, 0.2295, -0.3310};
+            Vec predsRVec = Vec.makeVec(new double[]{0.976506946, 0.847045758, 1.076506946, -0.130997049, -0.230997049, 
+                    0.647045758, 0.647045758, 0.098464139, 0.198464139, 1.147045758, 0.198464139, 1.047045758, 
+                    0.469002951, 1.276506946, 1.047045758, 1.376506946, -0.330997049, -0.330997049, 0.398464139,
+                    -0.001535861, 0.647045758, 0.647045758, 0.976506946, 0.647045758, -0.001535861, -0.330997049},
+                    Vec.newKey());
+            predsR = new Frame(Key.<Frame>make("predsR"),new String[]{"predict"},new Vec[]{predsRVec});
+
+            Frame trainWithoutOffset = train.deepCopy("trainWithoutOffset");
+            Vec offsetVec = trainWithoutOffset.remove("offset");
+            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, trainWithoutOffset, "manualPredsR", true, offsetVec);
+            Frame manualPredsH2o = scoreManualWithCoefficients(coefficients, trainWithoutOffset, "manualPredsH2o", true, offsetVec);
+            Frame manualPredsRemoveOffset = scoreManualWithCoefficients(coefficientsOffset, trainWithoutOffset, "manualPredsRemoveOffset", true);
+            Frame manualPredsRRemoveOffset = scoreManualWithCoefficients(coefficientsR, trainWithoutOffset, "manualPredsR", true);
+
+            double tol = 1e-3;
+            for (long i = 0; i < manualPredsH2o.numRows(); i++) {
+                double h2o = preds.vec(2).at(i);
+                double manualH2o = manualPredsH2o.vec(0).at(i);
+                // predict output from glm in R is not in logit
+                double r = (1.0 / (Math.exp(-predsR.vec(0).at(i)) + 1.0));
+                double manualR = manualPredsR.vec(0).at(i);
+                double h2oOffset = predsOffset.vec(2).at(i);
+                double manualH2oOffset = manualPredsRemoveOffset.vec(0).at(i);
+                double manualROffset = manualPredsRRemoveOffset.vec(0).at(i);
+
+                System.out.println(i+" h2o: "+h2o+ " h2o manual:" +manualH2o+
+                        " R: "+r+" R manual: "+manualR +
+                        " h2o remove offset: "+h2oOffset+" h2o remove offset manual "+manualH2oOffset+
+                        " R remove offset manual: "+manualROffset);
+
+                // glm score calculation check
+                Assert.assertEquals(h2o, manualH2o, tol);
+                Assert.assertEquals(h2o, r, tol);
+                Assert.assertEquals(h2o, manualR, tol);
+
+                // offset calculation check
+                Assert.assertEquals(h2oOffset, manualH2oOffset, tol);
+                Assert.assertEquals(h2oOffset, manualROffset, tol);
+            }
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmOffset != null) glmOffset.remove();
+            if (preds != null) preds.remove();
+            if (predsOffset != null) predsOffset.remove();
+            if (predsR != null) predsR.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicDataBinomialControlValuesAndOffset(){
+        /** Test against GLM in R 
+         * cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
+         * cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
+         * offset <- c(0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0)
+         * res <- factor(c(1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1))
+         * data <- data.frame(cat1, cat2, offset, res)
+         * glm <- glm(res ~ cat1 + cat2 + offset(offset), data=data, family = binomial)
+         * summary(glm)
+         * predict(glm)
+         *
+         * Call:
+         * glm(formula = res ~ cat1 + cat2 + offset(offset), family = binomial, 
+         *     data = data)
+         *
+         * Coefficients:
+         *             Estimate Std. Error z value Pr(>|z|)
+         * (Intercept)  -0.3310     0.7256  -0.456    0.648
+         * cat11         0.9780     0.8467   1.155    0.248
+         * cat21         0.2295     0.8586   0.267    0.789
+         *
+         * (Dispersion parameter for binomial family taken to be 1)
+         *
+         *     Null deviance: 33.557  on 25  degrees of freedom
+         * Residual deviance: 32.173  on 23  degrees of freedom
+         * AIC: 38.173
+         *
+         * Number of Fisher Scoring iterations: 4
+         *
+         *            1            2            3            4            5            6 
+         *  0.976506946  0.847045758  1.076506946 -0.130997049 -0.230997049  0.647045758 
+         *            7            8            9           10           11           12 
+         *  0.647045758  0.098464139  0.198464139  1.147045758  0.198464139  1.047045758 
+         *           13           14           15           16           17           18 
+         *  0.469002951  1.276506946  1.047045758  1.376506946 -0.330997049 -0.330997049 
+         *           19           20           21           22           23           24 
+         *  0.398464139 -0.001535861  0.647045758  0.647045758  0.976506946  0.647045758 
+         *           25           26 
+         * -0.001535861 -0.330997049
+         **/
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel glmCVOffset = null;
+        Frame preds = null;
+        Frame predsCVOffset = null;
+        Frame predsR = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"cat1", "cat2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._lambda = new double[]{0};
+            params._alpha = new double[]{0};
+            params._standardize = false;
+            params._non_negative = true;
+            params._intercept = true;
+            params._objective_epsilon = 1e-10;
+            params._gradient_epsilon = 1e-6;
+            params._response_column = "y";
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._max_iterations = 4;
+            params._dispersion_epsilon = 1;
+            params._offset_column = "offset";
+            glm = new GLM(params).trainModel().get();
+            preds = glm.score(train);
+            System.out.println(preds.toTwoDimTable().toString());
+
+            System.out.println(glm._output._variable_importances);
+            System.out.println(glm.coefficients().toString());
+            Double[] coefficients = glm.coefficients().values().toArray(new Double[0]);
+
+            params._control_variables = new String[]{"cat1"};
+            params._remove_offset_effects = true;
+            
+            glmCVOffset = new GLM(params).trainModel().get();
+            predsCVOffset = glmCVOffset.score(train);
+            System.out.println(predsCVOffset.toTwoDimTable().toString());
+            Double[] coefficientsOffset = glmCVOffset.coefficients().values().toArray(new Double[0]);
+
+            Double[] coefficientsR = new Double[]{0.9780, 0.2295, -0.3310};
+            Vec predsRVec = Vec.makeVec(new double[]{0.976506946, 0.847045758, 1.076506946, -0.130997049, -0.230997049,
+                            0.647045758, 0.647045758, 0.098464139, 0.198464139, 1.147045758, 0.198464139, 1.047045758,
+                            0.469002951, 1.276506946, 1.047045758, 1.376506946, -0.330997049, -0.330997049, 0.398464139,
+                            -0.001535861, 0.647045758, 0.647045758, 0.976506946, 0.647045758, -0.001535861, -0.330997049},
+                    Vec.newKey());
+            predsR = new Frame(Key.<Frame>make("predsR"),new String[]{"predict"},new Vec[]{predsRVec});
+
+            Frame trainWithoutOffset = train.deepCopy("trainWithoutOffset");
+            Vec offsetVec = trainWithoutOffset.remove("offset");
+            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, trainWithoutOffset, "manualPredsR", true, offsetVec);
+            Frame manualPredsH2o = scoreManualWithCoefficients(coefficients, trainWithoutOffset, "manualPredsH2o", true, offsetVec);
+            Frame manualPredsRemoveCVOffset = scoreManualWithCoefficients(coefficientsOffset, trainWithoutOffset, "manualPredsCVRemoveOffset", new int[]{0}, true);
+            Frame manualPredsRRemoveCVOffset = scoreManualWithCoefficients(coefficientsR, trainWithoutOffset, "manualPredsR", new int[]{0}, true);
+
+            double tol = 1e-3;
+            for (long i = 0; i < manualPredsH2o.numRows(); i++) {
+                double h2o = preds.vec(2).at(i);
+                double manualH2o = manualPredsH2o.vec(0).at(i);
+                // predict output from glm in R is not in logit
+                double r = (1.0 / (Math.exp(-predsR.vec(0).at(i)) + 1.0));
+                double manualR = manualPredsR.vec(0).at(i);
+                double h2oCVOffset = predsCVOffset.vec(2).at(i);
+                double manualH2oCVOffset = manualPredsRemoveCVOffset.vec(0).at(i);
+                double manualRCVOffset = manualPredsRRemoveCVOffset.vec(0).at(i);
+
+                System.out.println(i+" h2o: "+h2o+ " h2o manual:" +manualH2o+
+                        " R: "+r+" R manual: "+manualR +
+                        " h2o control and remove offset: "+h2oCVOffset+" h2o control variables and remove offset manual "+manualH2oCVOffset+
+                        " R control variables and remove offset manual: "+manualRCVOffset);
+
+                // glm score calculation checkmanualROffset
+                Assert.assertEquals(h2o, manualH2o, tol);
+                Assert.assertEquals(h2o, r, tol);
+                Assert.assertEquals(h2o, manualR, tol);
+
+                // offset calculation check
+                Assert.assertEquals(h2oCVOffset, manualH2oCVOffset, tol);
+                Assert.assertEquals(h2oCVOffset, manualRCVOffset, tol);
+            }
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmCVOffset != null) glmCVOffset.remove();
+            if (preds != null) preds.remove();
+            if (predsCVOffset != null) predsCVOffset.remove();
+            if (predsR != null) predsR.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetWithInteraction() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._offset_column = "offset";
+            params._interactions = new String[]{"x1", "x2"};
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetWithLambdaSearch() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._offset_column = "offset";
+            params._lambda_search = true;
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetWithCrossValiadation() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._alpha = new double[]{0};
+            params._response_column = "y";
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._offset_column = "offset";
+            params._nfolds = 3;
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
 }
