@@ -4,6 +4,7 @@ import hex.*;
 import hex.DataInfo.TransformType;
 import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -2529,7 +2530,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean haveMojo() {
-    if (_parms._control_variables != null && _parms._control_variables.length > 0)
+    if ((_parms._control_variables != null && _parms._control_variables.length > 0) || _parms._remove_offset_effects)
       return _parms.interactionSpec() == null &&
               !_parms._family.equals(Family.multinomial) &&
               !_parms._family.equals(Family.ordinal) &&
@@ -2541,19 +2542,33 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean havePojo() {
-    if (_parms._control_variables != null && _parms._control_variables.length > 0)
+    // POJO doesn't support offset; only allow when offset is absent or remove_offset_effects strips it
+    if ((_parms._control_variables != null && _parms._control_variables.length > 0) || _parms._remove_offset_effects)
       return _parms.interactionSpec() == null &&
-              _parms._offset_column == null &&
+              (_parms._offset_column == null || _parms._remove_offset_effects) &&
               !_parms._family.equals(Family.multinomial) &&
               !_parms._family.equals(Family.ordinal) &&
               super.havePojo();
-    if (_parms.interactionSpec() == null && _parms._offset_column == null) return super.havePojo();
-    else return false;
+    if (_parms.interactionSpec() == null && _parms._offset_column == null)
+      return super.havePojo();
+    return false;
   }
 
   @Override
   public GLMMojoWriter getMojo() {
     return new GLMMojoWriter(this);
+  }
+
+  @Override
+  public ModelDescriptor modelDescriptor() {
+    if (!_parms._remove_offset_effects)
+      return super.modelDescriptor();
+    return new H2OModelDescriptor() {
+      @Override
+      public String offsetColumn() {
+        return null;
+      }
+    };
   }
 
   private boolean isFeatureUsedInPredict(int featureIdx, double[] beta) {
