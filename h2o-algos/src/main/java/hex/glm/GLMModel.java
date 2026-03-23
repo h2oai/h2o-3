@@ -840,7 +840,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
       if (_remove_offset_effects) {
           if (_offset_column == null) {
-              glm.error("_remove_offset_effects", "The offset_column is missing.");
+              glm.error("_remove_offset_effects", "Remove offset effects option (remove_offset_effects=True) requires the offset_column to be specified.");
           }
           if (_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
               glm.error("_remove_offset_effects", "The "+_distribution.name()+ " distribution is not supported with remove offset effects.");
@@ -2529,6 +2529,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean haveMojo() {
+    if (_parms._remove_offset_effects) {
+        return false;
+    }
     if (_parms._control_variables != null && _parms._control_variables.length > 0)
       return _parms.interactionSpec() == null &&
               !_parms._family.equals(Family.multinomial) &&
