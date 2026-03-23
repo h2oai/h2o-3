@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.genmodel.utils.ArrayUtils;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.Test;
@@ -468,7 +469,7 @@ public class GLMControlVariablesTest extends TestUtil {
     }
     
     @Test
-    public void testBasicDataGaussian(){
+    public void testBasicDataGaussianControlVariables(){
         /** Test against GLM in R 
          * cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
          * cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
@@ -602,13 +603,13 @@ public class GLMControlVariablesTest extends TestUtil {
     }
 
     @Test
-    public void testBasicDataBinomial(){
+    public void testBasicDataBinomialControlVariables(){
         /** Test against GLM in R 
          * cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
          * cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
          * res <- factor(c(1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1))
          * data <- data.frame(cat1, cat2, res)
-         * glm <- glm(res ~ cat1 + cat2, data=data, family = binomial)
+         * glm <- glm(res ~ cat1 + cat2, data=data, family=binomial)
          * summary(glm)
          * predict(glm)
          *
@@ -1217,6 +1218,144 @@ public class GLMControlVariablesTest extends TestUtil {
                 // offset calculation check
                 Assert.assertEquals(h2oOffset, manualH2oOffset, tol);
                 Assert.assertEquals(h2oOffset, manualROffset, tol);
+            }
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmOffset != null) glmOffset.remove();
+            if (preds != null) preds.remove();
+            if (predsOffset != null) predsOffset.remove();
+            if (predsR != null) predsR.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicDataGaussianOffset(){
+        /** Test against GLM in R 
+         * cat1 <- factor(c(1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0))
+         * cat2 <- factor(c(1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0))
+         * offset <- c(0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0)
+         * res <- c(1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1)
+         * data <- data.frame(cat1, cat2, res, offset)
+         * glm <- glm(res ~ cat1 + cat2 + offset(offset), data=data)
+         * summary(glm)
+         * predict(glm)
+         *
+         * Call:
+         * glm(formula = res ~ cat1 + cat2 + offset(offset), data = data)
+         *
+         * Coefficients:
+         *             Estimate Std. Error t value Pr(>|t|)
+         * (Intercept)  0.28908    0.17334   1.668    0.109
+         * cat11        0.22931    0.19604   1.170    0.254
+         * cat21       -0.01149    0.19782  -0.058    0.954
+         *
+         * (Dispersion parameter for gaussian family taken to be 0.2431734)
+         *
+         *     Null deviance: 5.9385  on 25  degrees of freedom
+         * Residual deviance: 5.5930  on 23  degrees of freedom
+         * AIC: 41.834
+         *
+         * Number of Fisher Scoring iterations: 2
+         *
+         *         1         2         3         4         5         6         7         8 
+         * 0.6068966 0.7183908 0.7068966 0.4890805 0.3890805 0.5183908 0.5183908 0.4775862 
+         *         9        10        11        12        13        14        15        16 
+         * 0.5775862 1.0183908 0.5775862 0.9183908 1.0890805 0.9068966 0.9183908 1.0068966 
+         *        17        18        19        20        21        22        23        24 
+         * 0.2890805 0.2890805 0.7775862 0.3775862 0.5183908 0.5183908 0.6068966 0.5183908 
+         *        25        26 
+         * 0.3775862 0.2890805
+         * */
+
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel glmOffset = null;
+        Frame preds = null;
+        Frame predsOffset = null;
+        Frame predsR = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1},cat1.group().addVec());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"cat1", "cat2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._lambda = new double[]{0};
+            params._alpha = new double[]{0};
+            params._standardize = false;
+            params._non_negative = true;
+            params._intercept = true;
+            params._objective_epsilon = 1e-10;
+            params._gradient_epsilon = 1e-6;
+            params._response_column = "y";
+            params._distribution = DistributionFamily.gaussian;
+            params._link = GLMModel.GLMParameters.Link.identity;
+            params._max_iterations = 2;
+            params._dispersion_epsilon = 0.2431734;
+            params._offset_column = "offset";
+            glm = new GLM(params).trainModel().get();
+            preds = glm.score(train);
+            
+            //System.out.println(preds.toTwoDimTable().toString());
+            //System.out.println(glm._output._variable_importances);
+            System.out.println(glm.coefficients().toString());
+            Double[] coefficients = glm.coefficients().values().toArray(new Double[0]);
+
+            params._remove_offset_effects = true;
+            glmOffset = new GLM(params).trainModel().get();
+            predsOffset = glmOffset.score(train);
+            //System.out.println(predsOffset.toTwoDimTable().toString());
+            //System.out.println(glmOffset._output._variable_importances);
+            System.out.println(glmOffset.coefficients().toString());
+            Double[] coefficientsOffset = glmOffset.coefficients().values().toArray(new Double[0]);
+
+            Double[] coefficientsR = new Double[]{0.22931, 0.06897, -0.01149};
+
+            Vec predsRVec = Vec.makeVec(new double[]{0.6068966, 0.7183908, 0.7068966, 0.4890805, 0.3890805, 0.5183908, 
+                    0.5183908, 0.4775862, 0.5775862, 1.0183908, 0.5775862, 0.9183908, 1.0890805, 0.9068966, 0.9183908,
+                    1.0068966, 0.2890805, 0.2890805, 0.7775862, 0.3775862, 0.5183908, 0.5183908, 0.6068966, 0.5183908, 
+                    0.3775862, 0.2890805},Vec.newKey());
+            predsR = new Frame(Key.<Frame>make("predsR"),new String[]{"predict"},new Vec[]{predsRVec});
+
+            System.out.println("GLM offset ceoef:       " + glm.coefficients().toString());
+            System.out.println("GLM remove offset coef: " + glmOffset.coefficients().toString());
+            System.out.println("GLM R offset coef:      " + Arrays.toString(coefficientsR));
+
+            Frame manualPredsR = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR");
+            Frame manualPredsH2o = scoreManualWithCoefficients(coefficients, train, "manualPredsH2o");
+            Frame manualPredsOffset = scoreManualWithCoefficients(coefficientsOffset, train, "manualPredsOffset", null, false, offset);
+            Frame manualPredsROffset = scoreManualWithCoefficients(coefficientsR, train, "manualPredsR", null, false, offset);
+
+            double tol = 1e-3;
+            for (long i = 0; i < manualPredsH2o.numRows(); i++) {
+                double h2o = preds.vec(0).at(i);
+                double manualH2o = manualPredsH2o.vec(0).at(i);
+                double r = predsR.vec(0).at(i);
+                double manualR = manualPredsR.vec(0).at(i);
+                double h2oOffset = predsOffset.vec(0).at(i);
+                double manualH2oOffset = manualPredsOffset.vec(0).at(i);
+                double manualROffset = manualPredsROffset.vec(0).at(i);
+
+                System.out.println("h2o: "+h2o+ " h2o manual:" +manualH2o+
+                        " R: "+r+" R manual: "+manualR +
+                        " h2o offset: "+h2oOffset+" h2o offset manual "+manualH2oOffset+
+                        " R offset manual: "+manualROffset);
+
+                // glm score calculation check
+                //Assert.assertEquals(h2o, manualH2o, tol);
+                //Assert.assertEquals(h2o, r, tol);
+                //Assert.assertEquals(h2o, manualR, tol);
+
+                // offset values calculation check
+                //Assert.assertEquals(h2oOffset, manualH2oOffset, tol);
+                //Assert.assertEquals(h2oOffset, manualROffset, tol);
             }
         } finally {
             if (train != null) train.remove();
