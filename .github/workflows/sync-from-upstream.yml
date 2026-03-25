@@ -1,9 +1,13 @@
 name: Sync from Upstream H2O-3
 
 on:
-  schedule:
-    # Run every 6 hours
-    - cron: '0 */6 * * *'
+  # DISABLED: This workflow is deprecated. Use mirror-to-public.yml instead.
+  # The old approach (public → enterprise with force push) destroys enterprise commit history.
+  # New approach: enterprise is the main repo, mirror OUT to public.
+  #
+  # schedule:
+  #   # Run every 6 hours
+  #   - cron: '0 */6 * * *'
   workflow_dispatch:
     inputs:
       branches:

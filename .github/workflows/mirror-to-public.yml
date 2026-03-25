@@ -1,0 +1,224 @@
+# ==============================================================================
+#                    MIRROR TO PUBLIC H2O-3
+# ==============================================================================
+#
+# PURPOSE:
+#   Mirrors changes from h2o-3-enterprise (primary dev repo) to public h2o-3.
+#   Enterprise-only paths are excluded from the public repo.
+#
+# PRINCIPLES:
+#   - h2o-3-enterprise is the PRIMARY development repository
+#   - Public h2o-3 receives a SUBSET of enterprise (minus enterprise-only code)
+#   - NEVER force push - maintain linear commit history
+#   - Use merge commits when necessary to preserve history
+#
+# ==============================================================================
+
+name: Mirror to Public H2O-3
+
+on:
+  # Manual trigger only for now - enable schedule after testing
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: 'Comma-separated branches to mirror (leave empty for all configured)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run - show what would be pushed without actually pushing'
+        required: false
+        default: true
+        type: boolean
+
+  # Uncomment to enable scheduled mirroring after testing
+  # schedule:
+  #   # Run daily at midnight UTC
+  #   - cron: '0 0 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Mirror to Public
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout enterprise repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add public remote
+        run: |
+          # Use PAT with push access to public repo
+          git remote add public https://x-access-token:${{ secrets.H2O3_PUBLIC_MIRROR_PAT }}@github.com/h2oai/h2o-3.git || true
+          git fetch public --prune
+
+      - name: Read mirror config
+        id: config
+        run: |
+          # Read branches from config file
+          CONFIGURED_BRANCHES=$(yq -r '.branches[]' .github/mirror-config.yml | tr '\n' ' ')
+
+          # Read enterprise-only paths to exclude
+          if yq -e '.enterprise_only_paths' .github/mirror-config.yml > /dev/null 2>&1; then
+            ENTERPRISE_PATHS=$(yq -r '.enterprise_only_paths[]' .github/mirror-config.yml | grep -v '^#' | tr '\n' ' ')
+          else
+            ENTERPRISE_PATHS=""
+          fi
+
+          # Use input branches if provided, otherwise use configured branches
+          if [ -n "${{ inputs.branches }}" ]; then
+            BRANCHES="${{ inputs.branches }}"
+            BRANCHES=$(echo "$BRANCHES" | tr ',' ' ')
+          else
+            BRANCHES="$CONFIGURED_BRANCHES"
+          fi
+
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          echo "enterprise_paths=$ENTERPRISE_PATHS" >> $GITHUB_OUTPUT
+          echo "Branches to mirror: $BRANCHES"
+          echo "Enterprise-only paths (excluded): $ENTERPRISE_PATHS"
+
+      - name: Mirror branches to public
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          BRANCHES="${{ steps.config.outputs.branches }}"
+          ENTERPRISE_PATHS="${{ steps.config.outputs.enterprise_paths }}"
+
+          for branch in $BRANCHES; do
+            echo "========================================"
+            echo "Mirroring branch: $branch"
+            echo "========================================"
+
+            # Check if branch exists in enterprise (origin)
+            if ! git ls-remote --heads origin "$branch" | grep -q "$branch"; then
+              echo "⚠ Branch '$branch' not found in enterprise repo, skipping"
+              continue
+            fi
+
+            # Checkout the enterprise branch
+            git checkout -B "$branch" "origin/$branch"
+
+            # Check if branch exists in public
+            PUBLIC_EXISTS=false
+            if git ls-remote --heads public "$branch" | grep -q "$branch"; then
+              PUBLIC_EXISTS=true
+              git fetch public "$branch:refs/remotes/public/$branch"
+            fi
+
+            # Create a temporary branch for the filtered content
+            MIRROR_BRANCH="mirror-temp-$branch"
+            git checkout -B "$MIRROR_BRANCH"
+
+            # Remove enterprise-only paths
+            echo "Removing enterprise-only paths..."
+            for path in $ENTERPRISE_PATHS; do
+              if [ -e "$path" ]; then
+                git rm -rf --ignore-unmatch "$path"
+                echo "  ✓ Removed: $path"
+              fi
+            done
+
+            # Check if there are changes to commit
+            if [ -n "$(git status --porcelain)" ]; then
+              git add -A
+              git commit -m "Remove enterprise-only files for public mirror"
+            fi
+
+            # Determine push strategy
+            if [ "$PUBLIC_EXISTS" = "true" ]; then
+              # Check if we can fast-forward
+              MERGE_BASE=$(git merge-base HEAD "public/$branch" 2>/dev/null || echo "")
+              PUBLIC_HEAD=$(git rev-parse "public/$branch")
+
+              if [ "$MERGE_BASE" = "$PUBLIC_HEAD" ]; then
+                echo "✓ Can fast-forward public/$branch"
+                PUSH_STRATEGY="fast-forward"
+              else
+                echo "⚠ Cannot fast-forward - branches have diverged"
+                echo "  Merge base: $MERGE_BASE"
+                echo "  Public HEAD: $PUBLIC_HEAD"
+
+                # Try to merge public into our branch to create a merge commit
+                echo "Attempting merge with public/$branch..."
+                if git merge "public/$branch" --no-edit -m "Merge public h2o-3 history"; then
+                  echo "✓ Merged successfully"
+                  PUSH_STRATEGY="merged"
+                else
+                  echo "✗ Merge conflict detected - manual intervention required"
+                  git merge --abort
+                  PUSH_STRATEGY="conflict"
+                fi
+              fi
+            else
+              echo "Branch doesn't exist in public - will create it"
+              PUSH_STRATEGY="new-branch"
+            fi
+
+            # Push to public (unless dry run or conflict)
+            if [ "$DRY_RUN" = "true" ]; then
+              echo ""
+              echo "=== DRY RUN - Would push with strategy: $PUSH_STRATEGY ==="
+              echo "Commits that would be pushed:"
+              if [ "$PUBLIC_EXISTS" = "true" ]; then
+                git log --oneline "public/$branch"..HEAD | head -20
+              else
+                git log --oneline HEAD | head -20
+              fi
+              echo ""
+            elif [ "$PUSH_STRATEGY" = "conflict" ]; then
+              echo "✗ Skipping push due to merge conflict"
+              echo "  Manual intervention required to resolve conflicts"
+            else
+              echo "Pushing to public/$branch (strategy: $PUSH_STRATEGY)..."
+              # NEVER use --force - this is the key principle
+              if git push public HEAD:"$branch"; then
+                echo "✓ Successfully pushed to public/$branch"
+              else
+                echo "✗ Push failed - this should not happen without --force"
+                echo "  Check if public repo has commits not in enterprise"
+              fi
+            fi
+
+            # Cleanup
+            git checkout -f "origin/$branch" 2>/dev/null || git checkout -f master
+            git branch -D "$MIRROR_BRANCH" 2>/dev/null || true
+
+            echo ""
+          done
+
+      - name: Mirror tags
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          SYNC_TAGS=$(yq -r '.sync_tags // false' .github/mirror-config.yml)
+
+          if [ "$SYNC_TAGS" = "true" ]; then
+            echo "Syncing tags to public..."
+            # Push all tags (this won't overwrite existing tags)
+            git push public --tags --no-force || echo "Some tags may already exist in public"
+            echo "✓ Tags synced"
+          else
+            echo "Tag syncing disabled in config"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Mirror Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Source:** h2oai/h2o-3-enterprise" >> $GITHUB_STEP_SUMMARY
+          echo "**Target:** h2oai/h2o-3 (public)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branches mirrored:** ${{ steps.config.outputs.branches }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Enterprise paths excluded:** ${{ steps.config.outputs.enterprise_paths }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "⚠️ **DRY RUN** - No changes were pushed" >> $GITHUB_STEP_SUMMARY
+          fi
