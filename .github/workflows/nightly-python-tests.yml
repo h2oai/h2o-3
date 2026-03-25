@@ -183,12 +183,12 @@ jobs:
       name: xgboost-stress
     secrets: inherit
 
-  start-persist-drive:
-    name: Start EC2 - Persist Drive
-    uses: ./.github/workflows/ec2-runner-start.yml
-    with:
-      name: persist-drive
-    secrets: inherit
+  # start-persist-drive:
+  #   name: Start EC2 - Persist Drive
+  #   uses: ./.github/workflows/ec2-runner-start.yml
+  #   with:
+  #     name: persist-drive
+  #   secrets: inherit
 
   # ============================================================================
   # RUN TESTS (on dedicated EC2 runners)
@@ -642,31 +642,31 @@ jobs:
           name: XGBoost Stress
           job_status: ${{ job.status }}
 
-  persist-drive:
-    name: Persist Drive (GraalVM)
-    needs: start-persist-drive
-    runs-on: ${{ needs.start-persist-drive.outputs.label }}
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/run-test
-        with:
-          name: Persist Drive (GraalVM)
-          make_target: test-py-persist-drive-jenkins
-          test_package: py
-          python: "3.7"
-          java: "17"
-          image: python-3.7-jdk-17
-          h2o3_branch: ${{ inputs.h2o3_branch }}
-          mount_efs: "true"
-          smalldata_path: ${{ env.EFS_SMALLDATA }}
-          bigdata_path: ${{ env.EFS_BIGDATA }}
-      - name: Publish Results
-        if: always()
-        uses: ./.github/actions/publish-results
-        with:
-          name: Persist Drive (GraalVM)
-          job_status: ${{ job.status }}
+  # persist-drive:
+  #   name: Persist Drive (GraalVM)
+  #   needs: start-persist-drive
+  #   runs-on: ${{ needs.start-persist-drive.outputs.label }}
+  #   timeout-minutes: 45
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ./.github/actions/run-test
+  #       with:
+  #         name: Persist Drive (GraalVM)
+  #         make_target: test-py-persist-drive-jenkins
+  #         test_package: py
+  #         python: "3.7"
+  #         java: "17"
+  #         image: python-3.7-jdk-17
+  #         h2o3_branch: ${{ inputs.h2o3_branch }}
+  #         mount_efs: "true"
+  #         smalldata_path: ${{ env.EFS_SMALLDATA }}
+  #         bigdata_path: ${{ env.EFS_BIGDATA }}
+  #     - name: Publish Results
+  #       if: always()
+  #       uses: ./.github/actions/publish-results
+  #       with:
+  #         name: Persist Drive (GraalVM)
+  #         job_status: ${{ job.status }}
 
   # ============================================================================
   # STOP EC2 RUNNERS (Always run for cleanup)
@@ -864,12 +864,12 @@ jobs:
       ec2_id: ${{ needs.start-xgboost-stress.outputs.ec2_id }}
     secrets: inherit
 
-  stop-persist-drive:
-    name: Stop EC2 - Persist Drive
-    needs: [start-persist-drive, persist-drive]
-    if: always()
-    uses: ./.github/workflows/ec2-runner-stop.yml
-    with:
-      label: ${{ needs.start-persist-drive.outputs.label }}
-      ec2_id: ${{ needs.start-persist-drive.outputs.ec2_id }}
-    secrets: inherit
+  # stop-persist-drive:
+  #   name: Stop EC2 - Persist Drive
+  #   needs: [start-persist-drive, persist-drive]
+  #   if: always()
+  #   uses: ./.github/workflows/ec2-runner-stop.yml
+  #   with:
+  #     label: ${{ needs.start-persist-drive.outputs.label }}
+  #     ec2_id: ${{ needs.start-persist-drive.outputs.ec2_id }}
+  #   secrets: inherit
