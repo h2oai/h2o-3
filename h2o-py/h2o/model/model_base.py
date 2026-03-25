@@ -890,7 +890,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
     def vcov(self):
         """
-        Return an H2OFrame with the variance-covariance matrix for a GLM (requires ``compute_p_values=True``).
+        :returns: Return an H2OFrame with the variance-covariance matrix for a GLM (requires ``compute_p_values=True``).
         """
         if self.algo == 'glm':
             if self.parms["compute_p_values"]["actual_value"]:
