@@ -1,0 +1,183 @@
+# ==============================================================================
+#                              NIGHTLY BUILD
+# ==============================================================================
+#
+# PURPOSE:
+#   Compiles H2O-3 and creates test packages for all downstream tests.
+#
+# ARTIFACTS PRODUCED:
+#   - h2o-3-build      : Main JAR and assemblies
+#   - test-package-py  : Python tests
+#   - test-package-r   : R tests
+#   - test-package-java: Java tests
+#   - test-package-js  : Flow/JavaScript tests
+#   - test-package-*   : Assembly packages (main, minimal, steam, gradle)
+#
+# ==============================================================================
+
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        description: 'Branch to build'
+        required: true
+        type: string
+
+    outputs:
+      build_sha:
+        description: 'Git commit SHA'
+        value: ${{ jobs.build.outputs.sha }}
+      build_commit_message:
+        description: 'Commit message'
+        value: ${{ jobs.build.outputs.message }}
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 3
+
+# ==============================================================================
+# JOB
+# ==============================================================================
+jobs:
+  build:
+    name: Build H2O-3
+    runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 120
+
+    outputs:
+      sha: ${{ steps.info.outputs.sha }}
+      message: ${{ steps.info.outputs.message }}
+
+    steps:
+      # ========================================================================
+      # SETUP
+      # ========================================================================
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Checkout H2O-3
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.H2O3_REPO }}
+          ref: ${{ inputs.h2o3_branch }}
+          fetch-depth: 0
+
+      - name: Get Build Info
+        id: info
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "message=$(git log -1 --format=%s)" >> $GITHUB_OUTPUT
+
+      # ========================================================================
+      # BUILD
+      # ========================================================================
+      - name: Pull Build Image
+        run: docker pull ${{ env.ECR_REGISTRY }}/h2o-3/dev-build-base:${{ env.DOCKER_VERSION }}
+
+      - name: Build & Package
+        run: |
+          docker run --rm \
+            --user root \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            -e PYTHON_VERSION=3.7 \
+            -e R_VERSION=3.4.1 \
+            -e JAVA_VERSION=8 \
+            ${{ env.ECR_REGISTRY }}/h2o-3/dev-build-base:${{ env.DOCKER_VERSION }} \
+            /bin/bash -c "
+              set -ex
+              git config --global --add safe.directory '*'
+              . /envs/h2o_env_python3.7/bin/activate || true
+
+              # Build H2O-3
+              make -f scripts/jenkins/Makefile.jenkins build-h2o-3
+
+              # Create test packages
+              make -f scripts/jenkins/Makefile.jenkins test-package-py
+              make -f scripts/jenkins/Makefile.jenkins test-package-r
+              make -f scripts/jenkins/Makefile.jenkins test-package-java
+              make -f scripts/jenkins/Makefile.jenkins test-package-js
+              make -f scripts/jenkins/Makefile.jenkins test-package-main
+              make -f scripts/jenkins/Makefile.jenkins test-package-minimal
+              make -f scripts/jenkins/Makefile.jenkins test-package-steam
+              make -f scripts/jenkins/Makefile.jenkins test-package-gradle
+            "
+
+      # ========================================================================
+      # UPLOAD ARTIFACTS
+      # ========================================================================
+      - name: Upload Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-3-build
+          retention-days: ${{ env.RETENTION }}
+          path: |
+            build/h2o.jar
+            h2o-py/build/dist/*.whl
+            h2o-assemblies/*/build/libs/*.jar
+
+      - name: Upload Test Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-package-py
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-py.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-package-r
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-r.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-package-java
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-java.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-package-js
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-js.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-package-main
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-main.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-package-minimal
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-minimal.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-package-steam
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-steam.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-package-gradle
+          retention-days: ${{ env.RETENTION }}
+          path: test-package-gradle.zip

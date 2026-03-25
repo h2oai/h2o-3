@@ -1,0 +1,294 @@
+# ==============================================================================
+#                         XGBOOST RUNTIME TEST SUITE
+# ==============================================================================
+#
+# 9 XGBoost runtime environment tests - All on EC2 runners
+#
+# TESTS:
+#   - CentOS 7.3: Minimal, OMP
+#   - CentOS 7.4: GPU (skipped - requires GPU runner)
+#   - Ubuntu 16.04: Minimal, OMP, GPU (skipped)
+#   - Ubuntu 18.04: Minimal, OMP, GPU (skipped)
+#
+# ARCHITECTURE:
+#   1. Start 6 EC2 runners in parallel (non-GPU tests)
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Nightly XGBoost Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+  XGB_BUILD_TAG: b1
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (6 non-GPU tests in parallel)
+  # ============================================================================
+  start-xgb-centos73-minimal:
+    name: Start EC2 - CentOS 7.3 Minimal
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-centos73-minimal
+    secrets: inherit
+
+  start-xgb-centos73-omp:
+    name: Start EC2 - CentOS 7.3 OMP
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-centos73-omp
+    secrets: inherit
+
+  start-xgb-ubuntu16-minimal:
+    name: Start EC2 - Ubuntu 16.04 Minimal
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-ubuntu16-minimal
+    secrets: inherit
+
+  start-xgb-ubuntu16-omp:
+    name: Start EC2 - Ubuntu 16.04 OMP
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-ubuntu16-omp
+    secrets: inherit
+
+  start-xgb-ubuntu18-minimal:
+    name: Start EC2 - Ubuntu 18.04 Minimal
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-ubuntu18-minimal
+    secrets: inherit
+
+  start-xgb-ubuntu18-omp:
+    name: Start EC2 - Ubuntu 18.04 OMP
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-ubuntu18-omp
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS (on dedicated EC2 runners)
+  # ============================================================================
+  xgb-centos73-minimal:
+    name: XGB on CentOS 7.3 Minimal
+    needs: start-xgb-centos73-minimal
+    runs-on: ${{ needs.start-xgb-centos73-minimal.outputs.label }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: XGB on CentOS 7.3 Minimal
+          make_target: test-xgb-smoke-minimal-jenkins
+          test_package: java
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: XGB on CentOS 7.3 Minimal
+          job_status: ${{ job.status }}
+
+  xgb-centos73-omp:
+    name: XGB on CentOS 7.3 OMP
+    needs: start-xgb-centos73-omp
+    runs-on: ${{ needs.start-xgb-centos73-omp.outputs.label }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: XGB on CentOS 7.3 OMP
+          make_target: test-xgb-smoke-omp-jenkins
+          test_package: java
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: XGB on CentOS 7.3 OMP
+          job_status: ${{ job.status }}
+
+  xgb-ubuntu16-minimal:
+    name: XGB on Ubuntu 16.04 Minimal
+    needs: start-xgb-ubuntu16-minimal
+    runs-on: ${{ needs.start-xgb-ubuntu16-minimal.outputs.label }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: XGB on Ubuntu 16.04 Minimal
+          make_target: test-xgb-smoke-minimal-jenkins
+          test_package: java
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: XGB on Ubuntu 16.04 Minimal
+          job_status: ${{ job.status }}
+
+  xgb-ubuntu16-omp:
+    name: XGB on Ubuntu 16.04 OMP
+    needs: start-xgb-ubuntu16-omp
+    runs-on: ${{ needs.start-xgb-ubuntu16-omp.outputs.label }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: XGB on Ubuntu 16.04 OMP
+          make_target: test-xgb-smoke-omp-jenkins
+          test_package: java
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: XGB on Ubuntu 16.04 OMP
+          job_status: ${{ job.status }}
+
+  xgb-ubuntu18-minimal:
+    name: XGB on Ubuntu 18.04 Minimal
+    needs: start-xgb-ubuntu18-minimal
+    runs-on: ${{ needs.start-xgb-ubuntu18-minimal.outputs.label }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: XGB on Ubuntu 18.04 Minimal
+          make_target: test-xgb-smoke-minimal-jenkins
+          test_package: java
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: XGB on Ubuntu 18.04 Minimal
+          job_status: ${{ job.status }}
+
+  xgb-ubuntu18-omp:
+    name: XGB on Ubuntu 18.04 OMP
+    needs: start-xgb-ubuntu18-omp
+    runs-on: ${{ needs.start-xgb-ubuntu18-omp.outputs.label }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: XGB on Ubuntu 18.04 OMP
+          make_target: test-xgb-smoke-omp-jenkins
+          test_package: java
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: XGB on Ubuntu 18.04 OMP
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-xgb-centos73-minimal:
+    name: Stop EC2 - CentOS 7.3 Minimal
+    needs: [start-xgb-centos73-minimal, xgb-centos73-minimal]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-centos73-minimal.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-centos73-minimal.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-centos73-omp:
+    name: Stop EC2 - CentOS 7.3 OMP
+    needs: [start-xgb-centos73-omp, xgb-centos73-omp]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-centos73-omp.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-centos73-omp.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-ubuntu16-minimal:
+    name: Stop EC2 - Ubuntu 16.04 Minimal
+    needs: [start-xgb-ubuntu16-minimal, xgb-ubuntu16-minimal]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-ubuntu16-minimal.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-ubuntu16-minimal.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-ubuntu16-omp:
+    name: Stop EC2 - Ubuntu 16.04 OMP
+    needs: [start-xgb-ubuntu16-omp, xgb-ubuntu16-omp]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-ubuntu16-omp.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-ubuntu16-omp.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-ubuntu18-minimal:
+    name: Stop EC2 - Ubuntu 18.04 Minimal
+    needs: [start-xgb-ubuntu18-minimal, xgb-ubuntu18-minimal]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-ubuntu18-minimal.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-ubuntu18-minimal.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-ubuntu18-omp:
+    name: Stop EC2 - Ubuntu 18.04 OMP
+    needs: [start-xgb-ubuntu18-omp, xgb-ubuntu18-omp]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-ubuntu18-omp.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-ubuntu18-omp.outputs.ec2_id }}
+    secrets: inherit

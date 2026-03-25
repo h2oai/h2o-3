@@ -1,0 +1,241 @@
+# ==============================================================================
+#                         TEST DASHBOARD GENERATOR
+# ==============================================================================
+#
+# PURPOSE:
+#   Generates a comprehensive test dashboard in GitHub Job Summary
+#   with detailed test results, timing, and failure analysis.
+#
+# USAGE:
+#   - uses: ./.github/actions/generate-dashboard
+#     with:
+#       branch: master
+#       build_result: success
+#       smoke_result: success
+#       python_result: skipped
+#       r_result: skipped
+#       java_result: failure
+#       flow_result: success
+#
+# ==============================================================================
+
+name: 'Generate Test Dashboard'
+description: 'Generate comprehensive test dashboard in job summary'
+
+inputs:
+  branch:
+    description: 'H2O-3 branch tested'
+    required: true
+
+  build_sha:
+    description: 'H2O-3 commit SHA'
+    required: false
+    default: ''
+
+  build_result:
+    description: 'Build job result'
+    required: true
+
+  smoke_result:
+    description: 'Smoke tests result'
+    required: false
+    default: 'skipped'
+
+  python_result:
+    description: 'Python tests result'
+    required: false
+    default: 'skipped'
+
+  r_result:
+    description: 'R tests result'
+    required: false
+    default: 'skipped'
+
+  java_result:
+    description: 'Java tests result'
+    required: false
+    default: 'skipped'
+
+  flow_result:
+    description: 'Flow tests result'
+    required: false
+    default: 'skipped'
+
+  allure_report_url:
+    description: 'URL to Allure report'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate Dashboard
+      shell: bash
+      run: |
+        # Get status emoji based on result
+        get_emoji() {
+          case "$1" in
+            success) echo "✅" ;;
+            failure) echo "❌" ;;
+            skipped) echo "⏭️" ;;
+            cancelled) echo "🚫" ;;
+            *) echo "❓" ;;
+          esac
+        }
+
+        # Get status text based on result
+        get_text() {
+          case "$1" in
+            success) echo "PASSED" ;;
+            failure) echo "FAILED" ;;
+            skipped) echo "SKIPPED" ;;
+            cancelled) echo "CANCELLED" ;;
+            *) echo "$1" ;;
+          esac
+        }
+
+        # Store input values
+        BUILD_RESULT="${{ inputs.build_result }}"
+        SMOKE_RESULT="${{ inputs.smoke_result }}"
+        PYTHON_RESULT="${{ inputs.python_result }}"
+        R_RESULT="${{ inputs.r_result }}"
+        JAVA_RESULT="${{ inputs.java_result }}"
+        FLOW_RESULT="${{ inputs.flow_result }}"
+
+        # Calculate overall status
+        OVERALL="success"
+        [[ "$BUILD_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$SMOKE_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$PYTHON_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$R_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$JAVA_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$FLOW_RESULT" == "failure" ]] && OVERALL="failure"
+
+        # Count results
+        PASSED=0
+        FAILED=0
+        SKIPPED=0
+
+        for result in "$BUILD_RESULT" "$SMOKE_RESULT" "$PYTHON_RESULT" "$R_RESULT" "$JAVA_RESULT" "$FLOW_RESULT"; do
+          case "$result" in
+            success) PASSED=$((PASSED + 1)) ;;
+            failure) FAILED=$((FAILED + 1)) ;;
+            skipped) SKIPPED=$((SKIPPED + 1)) ;;
+          esac
+        done
+
+        # Get emoji/text for each result
+        BUILD_EMOJI=$(get_emoji "$BUILD_RESULT")
+        BUILD_TEXT=$(get_text "$BUILD_RESULT")
+        SMOKE_EMOJI=$(get_emoji "$SMOKE_RESULT")
+        SMOKE_TEXT=$(get_text "$SMOKE_RESULT")
+        PYTHON_EMOJI=$(get_emoji "$PYTHON_RESULT")
+        PYTHON_TEXT=$(get_text "$PYTHON_RESULT")
+        R_EMOJI=$(get_emoji "$R_RESULT")
+        R_TEXT=$(get_text "$R_RESULT")
+        JAVA_EMOJI=$(get_emoji "$JAVA_RESULT")
+        JAVA_TEXT=$(get_text "$JAVA_RESULT")
+        FLOW_EMOJI=$(get_emoji "$FLOW_RESULT")
+        FLOW_TEXT=$(get_text "$FLOW_RESULT")
+
+        # ========================================
+        # HEADER
+        # ========================================
+        echo "# 🧪 H2O-3 Nightly Test Dashboard" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [[ "$OVERALL" == "success" ]]; then
+          echo "> ✅ **All tests passed successfully!**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "> ❌ **Some tests failed. See details below.**" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # ========================================
+        # BUILD INFO
+        # ========================================
+        echo "## 📋 Build Information" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| **Branch** | \`${{ inputs.branch }}\` |" >> $GITHUB_STEP_SUMMARY
+        if [[ -n "${{ inputs.build_sha }}" ]]; then
+          echo "| **Commit** | \`${{ inputs.build_sha }}\` |" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "| **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Triggered** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # ========================================
+        # SUMMARY STATS
+        # ========================================
+        echo "## 📊 Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+        echo "| ❌ Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+        echo "| ⏭️ Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # ========================================
+        # TEST RESULTS MATRIX
+        # ========================================
+        echo "## 🔬 Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Category | Status | Result |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|:------:|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| **Build** | $BUILD_EMOJI | $BUILD_TEXT |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Smoke Tests** | $SMOKE_EMOJI | $SMOKE_TEXT |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Python Tests** | $PYTHON_EMOJI | $PYTHON_TEXT |" >> $GITHUB_STEP_SUMMARY
+        echo "| **R Tests** | $R_EMOJI | $R_TEXT |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Java Tests** | $JAVA_EMOJI | $JAVA_TEXT |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Flow Tests** | $FLOW_EMOJI | $FLOW_TEXT |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # ========================================
+        # FAILURE DETAILS (if any)
+        # ========================================
+        if [[ "$FAILED" -gt 0 ]]; then
+          echo "## ⚠️ Failed Categories" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following test categories failed:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          [[ "$BUILD_RESULT" == "failure" ]] && echo "- ❌ **Build** - Check build logs for compilation errors" >> $GITHUB_STEP_SUMMARY
+          [[ "$SMOKE_RESULT" == "failure" ]] && echo "- ❌ **Smoke Tests** - Basic functionality tests failed" >> $GITHUB_STEP_SUMMARY
+          [[ "$PYTHON_RESULT" == "failure" ]] && echo "- ❌ **Python Tests** - Python client/API tests failed" >> $GITHUB_STEP_SUMMARY
+          [[ "$R_RESULT" == "failure" ]] && echo "- ❌ **R Tests** - R client tests failed" >> $GITHUB_STEP_SUMMARY
+          [[ "$JAVA_RESULT" == "failure" ]] && echo "- ❌ **Java Tests** - Java JUnit tests failed" >> $GITHUB_STEP_SUMMARY
+          [[ "$FLOW_RESULT" == "failure" ]] && echo "- ❌ **Flow Tests** - Flow UI tests failed" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 **Tip**: Check individual job logs for detailed error messages. Failure artifacts are available for download." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        # ========================================
+        # REPORTS SECTION
+        # ========================================
+        echo "## 📁 Reports & Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [[ -n "${{ inputs.allure_report_url }}" ]]; then
+          echo "- 📊 [**Allure Test Report**](${{ inputs.allure_report_url }}) - Interactive test results" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "- 📥 **Download artifacts** from the workflow run for:" >> $GITHUB_STEP_SUMMARY
+        echo "  - JUnit XML reports" >> $GITHUB_STEP_SUMMARY
+        echo "  - Test logs and diagnostics" >> $GITHUB_STEP_SUMMARY
+        echo "  - Allure result files" >> $GITHUB_STEP_SUMMARY
+        if [[ "$FAILED" -gt 0 ]]; then
+          echo "  - Failure artifacts (logs, heap dumps)" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # ========================================
+        # FOOTER
+        # ========================================
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "_Generated at $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" >> $GITHUB_STEP_SUMMARY

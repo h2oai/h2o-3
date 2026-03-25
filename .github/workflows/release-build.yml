@@ -1,0 +1,363 @@
+# ==============================================================================
+#                              RELEASE BUILD
+# ==============================================================================
+#
+# PURPOSE:
+#   Builds H2O-3 for release with optional signing and Nexus upload.
+#   This is the core build stage of the release pipeline.
+#
+# ARTIFACTS PRODUCED:
+#   - h2o-*.zip distribution package
+#   - Python wheels
+#   - R packages
+#   - Documentation
+#   - HAR assemblies
+#
+# ==============================================================================
+#
+# WORKFLOW MODES (matches Jenkins Jenkinsfile-Release build logic):
+#
+# 1. TEST BUILD (Development/Testing):
+#    - upload_nexus: false
+#    - test_release: true
+#    - build_hadoop: false (optional, for faster builds)
+#    - Result: Builds without signing, no upload, relaxed validation
+#    - Use case: Testing changes, development builds
+#    - Jenkins equivalent: TEST_RELEASE=true, UPLOAD_NEXUS=false
+#
+# 2. RELEASE CANDIDATE BUILD:
+#    - upload_nexus: false
+#    - test_release: false
+#    - build_hadoop: true
+#    - Result: Builds with strict validation (-PvalidateRelease) but no signing/upload
+#    - Use case: Pre-release validation, testing release process
+#    - Jenkins equivalent: TEST_RELEASE=false, UPLOAD_NEXUS=false
+#
+# 3. PRODUCTION RELEASE:
+#    - upload_nexus: true
+#    - test_release: false
+#    - build_hadoop: true
+#    - Result: Builds with signing (DO_RELEASE=true), uploads to Maven Central
+#    - Use case: Official releases to Maven Central
+#    - Requires: RELEASE_GRADLE_PROPERTIES, RELEASE_SECRET_KEY_RING,
+#                CENTRAL_PORTAL_BEARER_TOKEN secrets configured
+#    - Jenkins equivalent: UPLOAD_NEXUS=true, DO_RELEASE is set based on UPLOAD_NEXUS
+#
+# PARAMETER MAPPING (from release-main.yml):
+# ------------------------------------------
+# - branch: H2O-3 branch to build
+# - build_number: Unique build identifier
+# - build_hadoop: Enable Hadoop support (BUILD_HADOOP env var)
+# - upload_nexus: Controls DO_RELEASE and Nexus upload
+# - test_release: Controls validation level (TEST_RELEASE env var)
+#
+# These match Jenkins environment variables set in Jenkinsfile-Release lines 153-154, 205-217
+#
+# ==============================================================================
+
+name: Release Build
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'H2O-3 branch to build'
+        required: true
+        type: string
+
+      build_number:
+        description: 'Build number'
+        required: true
+        type: string
+
+      build_hadoop:
+        description: 'Build with Hadoop support'
+        required: false
+        type: boolean
+        default: true
+
+      upload_nexus:
+        description: 'Upload to Maven Central (Nexus)'
+        required: false
+        type: boolean
+        default: false
+
+      test_release:
+        description: 'Test release (skip signing validation)'
+        required: false
+        type: boolean
+        default: false
+
+    outputs:
+      project_version:
+        description: 'H2O project version'
+        value: ${{ jobs.build.outputs.project_version }}
+      git_sha:
+        description: 'Git commit SHA'
+        value: ${{ jobs.build.outputs.git_sha }}
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "47"
+  H2O3_REPO: h2oai/h2o-3
+  PYTHON_VERSION: "3.7"
+  R_VERSION: "3.4.1"
+
+# ==============================================================================
+# JOB
+# ==============================================================================
+jobs:
+  build:
+    name: Build H2O-3
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 180
+
+    outputs:
+      project_version: ${{ steps.version.outputs.project_version }}
+      git_sha: ${{ steps.info.outputs.sha }}
+
+    steps:
+      # ========================================================================
+      # SETUP
+      # ========================================================================
+
+      - name: Configure AWS for ECR
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: release-build-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Checkout H2O-3
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.H2O3_REPO }}
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Get Build Info
+        id: info
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git describe --always)" >> $GITHUB_OUTPUT
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          echo "branch_safe=${BRANCH_SAFE}" >> $GITHUB_OUTPUT
+
+      # ========================================================================
+      # CREDENTIALS SETUP (Only for real releases with Nexus upload)
+      # ========================================================================
+      # These credentials are required ONLY when upload_nexus=true:
+      #   - release-gradle.properties: Contains signing.keyId, signing.password,
+      #     ossrhUsername, ossrhPassword for Maven Central
+      #   - secring.gpg: GPG secret key ring for artifact signing
+      #
+      # When upload_nexus=false (test builds), this step is skipped entirely
+      # and the build proceeds without signing credentials.
+      #
+      # The credentials are mounted into the container at /root/.gradle/
+      # via the -v ~/.gradle:/root/.gradle mount in the Build step.
+      # ========================================================================
+      - name: Setup Gradle Properties
+        if: inputs.upload_nexus == true
+        run: |
+          mkdir -p ~/.gradle
+          echo "${{ secrets.RELEASE_GRADLE_PROPERTIES }}" | base64 -d > ~/.gradle/gradle.properties
+          echo "${{ secrets.RELEASE_SECRET_KEY_RING }}" | base64 -d > ~/.gradle/secring.gpg
+          echo "signing.secretKeyRingFile=$HOME/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
+          chmod 600 ~/.gradle/gradle.properties
+
+      # ========================================================================
+      # BUILD
+      # ========================================================================
+      - name: Pull Release Image
+        run: docker pull ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }}
+
+      # ========================================================================
+      # RELEASE MODE EXPLANATION:
+      #
+      # DO_RELEASE: Controls whether to use release credentials for signing
+      #   - Set to "true" when upload_nexus=true (real release with signing)
+      #   - Unset/empty when upload_nexus=false (test build, no signing)
+      #   - When true, Gradle will use credentials from ~/.gradle/gradle.properties
+      #
+      # UPLOAD_NEXUS: Controls whether to actually upload to Maven Central
+      #   - Passed to build script to conditionally run upload commands
+      #   - Checked separately from DO_RELEASE in the build script
+      #
+      # TEST_RELEASE: Controls validation level
+      #   - When true: Uses buildH2oDevDist (skips release validation)
+      #   - When false: Uses -PvalidateRelease buildH2oDevDist (strict validation)
+      # ========================================================================
+
+      - name: Build H2O-3
+        run: |
+          docker run --rm \
+            --user root \
+            -v ${{ github.workspace }}:/workspace \
+            -v ~/.gradle:/root/.gradle \
+            -w /workspace \
+            -e BUILD_HADOOP=${{ inputs.build_hadoop }} \
+            -e PYTHON_VERSION=${{ env.PYTHON_VERSION }} \
+            -e R_VERSION=${{ env.R_VERSION }} \
+            -e JAVA_HOME=/usr/lib/jvm/java-8-oracle \
+            ${{ inputs.upload_nexus == true && '-e DO_RELEASE=true' || '' }} \
+            -e UPLOAD_NEXUS=${{ inputs.upload_nexus }} \
+            -e TEST_RELEASE=${{ inputs.test_release }} \
+            ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
+            /bin/bash -c "
+              set -ex
+
+              # Git config for safe directory
+              git config --global --add safe.directory '*'
+
+              # Activate Python environment
+              . /envs/h2o_env_python${PYTHON_VERSION}/bin/activate || true
+
+              # Install required Python packages
+              pip install docutils==0.16
+              pip install 'jinja2<3.1'
+              pip install sphinx-sitemap==2.7.2
+
+              # Set build properties
+              mkdir -p ci gradle
+              echo 'BUILD_NUMBER=${{ inputs.build_number }}' > gradle/buildnumber.properties
+              echo 'BUILD_BRANCH_NAME=${{ steps.info.outputs.branch_safe }}' > gradle/git.properties
+              echo 'BUILD_HASH=${{ steps.info.outputs.sha }}' >> gradle/git.properties
+              echo 'BUILD_HASH_SHORT=${{ steps.info.outputs.sha_short }}' >> gradle/git.properties
+
+              # Log build info
+              echo '=== Build Info ==='
+              date
+              pwd
+              java -version
+              python --version
+
+              # Build H2O-3
+              ./gradlew build -x test
+
+              # Build distribution
+              if [ '\$TEST_RELEASE' = 'true' ]; then
+                ./gradlew buildH2oDevDist
+              else
+                ./gradlew -PvalidateRelease buildH2oDevDist
+              fi
+            "
+
+      - name: Get Project Version
+        id: version
+        run: |
+          VERSION=$(cat target/project_version)
+          echo "project_version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Project Version: ${VERSION}"
+
+      # ========================================================================
+      # NEXUS UPLOAD (Only runs when upload_nexus=true)
+      # ========================================================================
+      # This step uploads the built artifacts to Maven Central via OSSRH.
+      # It requires:
+      #   - Artifacts to be signed (handled by DO_RELEASE=true in build step)
+      #   - CENTRAL_PORTAL_BEARER_TOKEN secret for authentication
+      #
+      # The upload uses "user_managed" publishing, which means artifacts are
+      # uploaded but not auto-published - they require manual approval in
+      # the Sonatype Central Portal before going live.
+      # ========================================================================
+      - name: Upload to Maven Central
+        if: inputs.upload_nexus == true
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
+        run: |
+          echo "=== Checking OSSRH Staging ==="
+          curl -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
+
+          echo "=== Uploading to Central Portal ==="
+          curl -X 'POST' \
+            'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
+            -H 'accept: */*' \
+            -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            -d '' \
+            --connect-timeout 120 \
+            --max-time 1200 \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-max-time 2400
+
+      # ========================================================================
+      # UPLOAD ARTIFACTS
+      # ========================================================================
+      - name: Upload Distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-dist
+          retention-days: 14
+          path: |
+            target/h2o-*.zip
+            target/project_version
+
+      - name: Upload Python Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-python
+          retention-days: 14
+          path: |
+            target/Python/
+            h2o-py/build/
+
+      - name: Upload R Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-r
+          retention-days: 14
+          path: target/R/
+
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-docs
+          retention-days: 14
+          path: target/docs-website/
+
+      - name: Upload Assemblies
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-assemblies
+          retention-days: 14
+          path: |
+            h2o-assemblies/main/build/libs/h2o.jar
+            h2o-assemblies/steam/build/libs/h2o.jar
+
+      - name: Upload Full Target
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-full
+          retention-days: 14
+          path: target/
+
+      # ========================================================================
+      # SUMMARY
+      # ========================================================================
+      - name: Build Summary
+        run: |
+          SHA256=$(sha256sum target/h2o-*${{ inputs.build_number }}.zip 2>/dev/null || echo "N/A")
+
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ inputs.branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.version.outputs.project_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Number | \`${{ inputs.build_number }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Git SHA | \`${{ steps.info.outputs.sha_short }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Hadoop | ${{ inputs.build_hadoop }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Nexus Upload | ${{ inputs.upload_nexus }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SHA256 | \`${SHA256}\` |" >> $GITHUB_STEP_SUMMARY

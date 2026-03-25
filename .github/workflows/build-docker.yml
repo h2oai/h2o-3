@@ -1,0 +1,1206 @@
+# ==============================================================================
+#                          BUILD DOCKER IMAGES
+# ==============================================================================
+#
+# PURPOSE:
+#   Builds all H2O-3 development Docker images and pushes them to AWS ECR.
+#   This is a migration of the Jenkins build-docker pipeline to GitHub Actions.
+#
+# IMAGES BUILT (in dependency order):
+#   Tier 1: dev-base (foundation image)
+#   Tier 2: dev-jdk-8-base, dev-jdk-others-base
+#   Tier 3: dev-python-base
+#   Tier 4: dev-python-{3.7-3.11}, dev-r-base
+#   Tier 5: dev-r-{3.4.1,3.5.3,4.0.2,4.4.0,4.5.2}, dev-jdk-{8,11,17}, dev-mojocompat
+#   Tier 6: dev-build-base
+#   Tier 7: dev-build-hadoop
+#   Tier 8: dev-release
+#   Tier 9: dev-python-{version}-jdk-{version}, dev-r-{version}-jdk-{version}
+#
+# USAGE:
+#   Run manually via workflow_dispatch with optional parameters.
+#
+# ==============================================================================
+
+name: Build Docker Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      h2o_branch:
+        description: 'H2O-3 branch for dependencies'
+        required: false
+        default: 'master'
+        type: string
+
+      force_build:
+        description: 'Build even if image already exists in ECR'
+        required: false
+        default: false
+        type: boolean
+
+      publish:
+        description: 'Push images to ECR'
+        required: false
+        default: false
+        type: boolean
+
+      no_cache:
+        description: 'Build without Docker cache'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+  # ============================================================================
+  # INIT: Read version from buildConfig.groovy in h2o-3 repo
+  # ============================================================================
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout h2o-3 repo
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+          sparse-checkout: scripts/jenkins/groovy/buildConfig.groovy
+          sparse-checkout-cone-mode: false
+
+      - name: Get version from buildConfig.groovy
+        id: version
+        run: |
+          VERSION=$(grep 'DEFAULT_IMAGE_VERSION_TAG' scripts/jenkins/groovy/buildConfig.groovy | grep -oP '\d+' | head -1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Docker image version: $VERSION"
+
+  # ============================================================================
+  # TIER 1: Base Image
+  # ============================================================================
+  dev-base:
+    name: Build dev-base
+    needs: init
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    outputs:
+      built: ${{ steps.check.outputs.should_build }}
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-base' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-base
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-base:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-base \
+            --build-arg FROM_IMAGE=nvidia/cuda:12.1.0-devel-ubuntu22.04 \
+            .
+
+      - name: Push dev-base
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-base:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 2: JDK Base Images
+  # ============================================================================
+  dev-jdk-8-base:
+    name: Build dev-jdk-8-base
+    needs: [init, dev-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    outputs:
+      built: ${{ steps.check.outputs.should_build }}
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-jdk-8-base' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS for S3
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: build-docker-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download JDK from S3
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz .
+
+      - name: Configure AWS for ECR
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Build dev-jdk-8-base
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-jdk-8-base:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-jdk-8-base \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            .
+
+      - name: Push dev-jdk-8-base
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-jdk-8-base:${{ needs.init.outputs.version }}
+
+  dev-jdk-others-base:
+    name: Build dev-jdk-others-base
+    needs: [init, dev-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    outputs:
+      built: ${{ steps.check.outputs.should_build }}
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-jdk-others-base' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS for S3
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: build-docker-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download JDKs from S3
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz .
+
+      - name: Configure AWS for ECR
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Build dev-jdk-others-base
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-jdk-others-base:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-jdk-others-base \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-jdk-others-base
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-jdk-others-base:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 3: Python Base Image
+  # ============================================================================
+  dev-python-base:
+    name: Build dev-python-base
+    needs: [init, dev-jdk-8-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    outputs:
+      built: ${{ steps.check.outputs.should_build }}
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-python-base' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-python-base
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-python-base:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-python-base \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            .
+
+      - name: Push dev-python-base
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-python-base:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 4: Python Version Images
+  # ============================================================================
+  dev-python-versions:
+    name: Build dev-python-${{ matrix.python }}
+    needs: [init, dev-python-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.7', '3.8', '3.9', '3.10', '3.11']
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-python-${{ matrix.python }}' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-python-${{ matrix.python }}
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-python-${{ matrix.python }}:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-python \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg PYTHON_VERSION=${{ matrix.python }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-python-${{ matrix.python }}
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-python-${{ matrix.python }}:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 4b: R Base Image (depends on dev-python-3.7)
+  # ============================================================================
+  dev-r-base:
+    name: Build dev-r-base
+    needs: [init, dev-python-versions]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    outputs:
+      built: ${{ steps.check.outputs.should_build }}
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-r-base' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-r-base
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-r-base:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-r-base \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            .
+
+      - name: Push dev-r-base
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-r-base:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 5: R Versions, JDK Versions, and Mojocompat
+  # ============================================================================
+  dev-r-versions:
+    name: Build dev-r-${{ matrix.r }}
+    needs: [init, dev-r-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        r: ['3.4.1', '3.5.3', '4.0.2', '4.4.0', '4.5.2']
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-r-${{ matrix.r }}' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-r-${{ matrix.r }}
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-r-${{ matrix.r }}:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-r \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg R_VERSION=${{ matrix.r }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-r-${{ matrix.r }}
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-r-${{ matrix.r }}:${{ needs.init.outputs.version }}
+
+  dev-jdk-versions:
+    name: Build dev-jdk-${{ matrix.jdk }}
+    needs: [init, dev-jdk-others-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        jdk: ['8', '11', '17']
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-jdk-${{ matrix.jdk }}' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS for S3
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: build-docker-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download JDKs from S3
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz .
+
+      - name: Configure AWS for ECR
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Build dev-jdk-${{ matrix.jdk }}
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-jdk-${{ matrix.jdk }}:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-jdk-others \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg INSTALL_JAVA_VERSION=${{ matrix.jdk }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-jdk-${{ matrix.jdk }}
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-jdk-${{ matrix.jdk }}:${{ needs.init.outputs.version }}
+
+  dev-mojocompat:
+    name: Build dev-mojocompat
+    needs: [init, dev-r-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-mojocompat' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-mojocompat
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-mojocompat:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-mojocompat \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            .
+
+      - name: Push dev-mojocompat
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-mojocompat:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 6: Build Base Image
+  # ============================================================================
+  dev-build-base:
+    name: Build dev-build-base
+    needs: [init, dev-r-versions]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 90
+    outputs:
+      built: ${{ steps.check.outputs.should_build }}
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-build-base' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-build-base
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-build-base:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-build-base \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-build-base
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-build-base:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 7: Build Hadoop Image
+  # ============================================================================
+  dev-build-hadoop:
+    name: Build dev-build-hadoop
+    needs: [init, dev-build-base]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 60
+    outputs:
+      built: ${{ steps.check.outputs.should_build }}
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-build-hadoop' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-build-hadoop
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-build-hadoop:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-build-hadoop \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-build-hadoop
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-build-hadoop:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 8: Release Image
+  # ============================================================================
+  dev-release:
+    name: Build dev-release
+    needs: [init, dev-build-hadoop]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 600
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-release' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build dev-release
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-release \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-release
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 9: Python + JDK Combination Images
+  # ============================================================================
+  dev-python-jdk:
+    name: Build dev-python-${{ matrix.python }}-jdk-${{ matrix.jdk }}
+    needs: [init, dev-release]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        jdk: ['8', '11', '17']
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-python-${{ matrix.python }}-jdk-${{ matrix.jdk }}' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS for S3
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: build-docker-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download JDKs from S3
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz .
+
+      - name: Configure AWS for ECR
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Build dev-python-${{ matrix.python }}-jdk-${{ matrix.jdk }}
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-python-${{ matrix.python }}-jdk-${{ matrix.jdk }}:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-jdk-others \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg FROM_IMAGE=${{ env.ECR_REGISTRY }}/h2o-3/dev-python-${{ matrix.python }} \
+            --build-arg INSTALL_JAVA_VERSION=${{ matrix.jdk }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-python-${{ matrix.python }}-jdk-${{ matrix.jdk }}
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-python-${{ matrix.python }}-jdk-${{ matrix.jdk }}:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # TIER 9b: R + JDK Combination Images
+  # ============================================================================
+  dev-r-jdk:
+    name: Build dev-r-${{ matrix.r }}-jdk-${{ matrix.jdk }}
+    needs: [init, dev-release]
+    runs-on: ubuntu-latest-16-cores
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        r: ['3.4.1', '3.5.3', '4.0.2', '4.4.0', '4.5.2']
+        jdk: ['8', '11', '17']
+    steps:
+
+      - name: Checkout h2o-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          ref: ${{ inputs.h2o_branch }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check
+        run: |
+          RESULT=$(aws ecr batch-get-image \
+            --registry-id=353750902984 \
+            --repository-name='h2o-3/dev-r-${{ matrix.r }}-jdk-${{ matrix.jdk }}' \
+            --image-ids=imageTag='${{ needs.init.outputs.version }}' \
+            --query 'images[].imageId.imageTag' \
+            --output text 2>/dev/null || echo "")
+
+          if [ "$RESULT" = "${{ needs.init.outputs.version }}" ] && [ "${{ inputs.force_build }}" = "false" ]; then
+            echo "Image already exists, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS for S3
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: build-docker-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download JDKs from S3
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz .
+          aws s3 cp s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz .
+
+      - name: Configure AWS for ECR
+        if: steps.check.outputs.should_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: build-docker-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Build dev-r-${{ matrix.r }}-jdk-${{ matrix.jdk }}
+        if: steps.check.outputs.should_build == 'true'
+        working-directory: docker
+        run: |
+          NO_CACHE_FLAG="${{ inputs.no_cache == true && '--no-cache' || '' }}"
+
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/h2o-3/dev-r-${{ matrix.r }}-jdk-${{ matrix.jdk }}:${{ needs.init.outputs.version }} \
+            $NO_CACHE_FLAG \
+            -f jenkins-images/Dockerfile-jdk-others \
+            --build-arg FROM_VERSION=${{ needs.init.outputs.version }} \
+            --build-arg FROM_IMAGE=${{ env.ECR_REGISTRY }}/h2o-3/dev-r-${{ matrix.r }} \
+            --build-arg INSTALL_JAVA_VERSION=${{ matrix.jdk }} \
+            --build-arg H2O_BRANCH=${{ inputs.h2o_branch }} \
+            .
+
+      - name: Push dev-r-${{ matrix.r }}-jdk-${{ matrix.jdk }}
+        if: steps.check.outputs.should_build == 'true' && inputs.publish
+        run: docker push ${{ env.ECR_REGISTRY }}/h2o-3/dev-r-${{ matrix.r }}-jdk-${{ matrix.jdk }}:${{ needs.init.outputs.version }}
+
+  # ============================================================================
+  # SUMMARY
+  # ============================================================================
+  summary:
+    name: Build Summary
+    needs:
+      - init
+      - dev-base
+      - dev-jdk-8-base
+      - dev-jdk-others-base
+      - dev-python-base
+      - dev-python-versions
+      - dev-r-base
+      - dev-r-versions
+      - dev-jdk-versions
+      - dev-mojocompat
+      - dev-build-base
+      - dev-build-hadoop
+      - dev-release
+      - dev-python-jdk
+      - dev-r-jdk
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## Docker Image Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ needs.init.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| H2O Branch | \`${{ inputs.h2o_branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Force Build | ${{ inputs.force_build }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish | ${{ inputs.publish }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| No Cache | ${{ inputs.no_cache }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Images Built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Base Images" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-base" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-jdk-8-base" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-jdk-others-base" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-python-base" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-r-base" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Python Version Images" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-python-{3.7, 3.8, 3.9, 3.10, 3.11}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### R Version Images" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-r-{3.4.1, 3.5.3, 4.0.2, 4.4.0, 4.5.2}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### JDK Version Images" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-jdk-{8, 11, 17}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Build Images" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-build-base" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-build-hadoop" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-release" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-mojocompat" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Combination Images (15 Python + 15 R)" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-python-{version}-jdk-{8,11,17}" >> $GITHUB_STEP_SUMMARY
+          echo "- dev-r-{version}-jdk-{8,11,17}" >> $GITHUB_STEP_SUMMARY

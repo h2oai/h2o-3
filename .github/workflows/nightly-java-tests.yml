@@ -1,0 +1,506 @@
+# ==============================================================================
+#                            JAVA TEST SUITE
+# ==============================================================================
+#
+# 11 Java/JUnit tests on dedicated EC2 runners (EFS data access required)
+#
+# TESTS:
+#   - Java 8  : RuleFit, JUnit, Core JUnit, AutoML JUnit, REST Smoke,
+#               Mojo Pipeline, Clustering, XGBoost Multinode, Logger Init
+#   - Java 11 : JUnit
+#   - Java 17 : JUnit
+#
+# ARCHITECTURE:
+#   1. Start 11 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Java Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (11 in parallel)
+  # ============================================================================
+  start-java8-rulefit:
+    name: Start - Java 8 RuleFit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-rulefit
+    secrets: inherit
+
+  start-java8-junit:
+    name: Start - Java 8 JUnit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-junit
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  start-java8-core:
+    name: Start - Java 8 Core
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-core
+    secrets: inherit
+
+  start-java8-automl:
+    name: Start - Java 8 AutoML
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-automl
+    secrets: inherit
+
+  start-java11-junit:
+    name: Start - Java 11 JUnit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-junit
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  start-java17-junit:
+    name: Start - Java 17 JUnit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-junit
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  start-java8-rest-smoke:
+    name: Start - Java 8 REST Smoke
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-rest-smoke
+    secrets: inherit
+
+  start-java8-mojo-pipeline:
+    name: Start - Java 8 Mojo Pipeline
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-mojo-pipeline
+    secrets: inherit
+
+  start-java8-clustering:
+    name: Start - Java 8 Clustering
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-clustering
+    secrets: inherit
+
+  start-java8-xgb-multi:
+    name: Start - Java 8 XGBoost Multinode
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-xgb-multi
+    secrets: inherit
+
+  start-java8-logger:
+    name: Start - Java 8 Logger Init
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-logger
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA TESTS (Run on dedicated EC2 runners)
+  # ============================================================================
+  java8-rulefit:
+    name: Java 8 RuleFit
+    needs: start-java8-rulefit
+    runs-on: ${{ needs.start-java8-rulefit.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 RuleFit
+          make_target: test-junit-rulefit-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 RuleFit
+          job_status: ${{ job.status }}
+
+  java8-junit:
+    name: Java 8 JUnit
+    needs: start-java8-junit
+    runs-on: ${{ needs.start-java8-junit.outputs.label }}
+    timeout-minutes: 900
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 JUnit
+          make_target: test-junit-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 JUnit
+          job_status: ${{ job.status }}
+
+  java8-core:
+    name: Java 8 Core JUnit
+    needs: start-java8-core
+    runs-on: ${{ needs.start-java8-core.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Core JUnit
+          make_target: test-junit-core-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Core JUnit
+          job_status: ${{ job.status }}
+
+  java8-automl:
+    name: Java 8 AutoML JUnit
+    needs: start-java8-automl
+    runs-on: ${{ needs.start-java8-automl.outputs.label }}
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 AutoML JUnit
+          make_target: test-junit-automl-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 AutoML JUnit
+          job_status: ${{ job.status }}
+
+  java11-junit:
+    name: Java 11 JUnit
+    needs: start-java11-junit
+    runs-on: ${{ needs.start-java11-junit.outputs.label }}
+    timeout-minutes: 900
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 JUnit
+          make_target: test-junit-11-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 JUnit
+          job_status: ${{ job.status }}
+
+  java17-junit:
+    name: Java 17 JUnit
+    needs: start-java17-junit
+    runs-on: ${{ needs.start-java17-junit.outputs.label }}
+    timeout-minutes: 900
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 JUnit
+          make_target: test-junit-17-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 JUnit
+          job_status: ${{ job.status }}
+
+  java8-rest-smoke:
+    name: Java 8 REST Smoke
+    needs: start-java8-rest-smoke
+    runs-on: ${{ needs.start-java8-rest-smoke.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 REST Smoke
+          make_target: test-rest-smoke
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 REST Smoke
+          job_status: ${{ job.status }}
+
+  java8-mojo-pipeline:
+    name: Java 8 Mojo Pipeline JUnit
+    needs: start-java8-mojo-pipeline
+    runs-on: ${{ needs.start-java8-mojo-pipeline.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Mojo Pipeline JUnit
+          make_target: test-junit-mojo-pipeline-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Mojo Pipeline JUnit
+          job_status: ${{ job.status }}
+
+  java8-clustering:
+    name: Java 8 Clustering JUnit
+    needs: start-java8-clustering
+    runs-on: ${{ needs.start-java8-clustering.outputs.label }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Clustering JUnit
+          make_target: test-junit-clustering-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Clustering JUnit
+          job_status: ${{ job.status }}
+
+  java8-xgb-multi:
+    name: Java 8 XGBoost Multinode JUnit
+    needs: start-java8-xgb-multi
+    runs-on: ${{ needs.start-java8-xgb-multi.outputs.label }}
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 XGBoost Multinode JUnit
+          make_target: test-junit-xgb-multi-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 XGBoost Multinode JUnit
+          job_status: ${{ job.status }}
+
+  java8-logger:
+    name: Java 8 Logger Init
+    needs: start-java8-logger
+    runs-on: ${{ needs.start-java8-logger.outputs.label }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Logger Init
+          make_target: test-logger-initialize-properly
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Logger Init
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-java8-rulefit:
+    name: Stop - Java 8 RuleFit
+    needs: [start-java8-rulefit, java8-rulefit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-rulefit.outputs.label }}
+      ec2_id: ${{ needs.start-java8-rulefit.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-junit:
+    name: Stop - Java 8 JUnit
+    needs: [start-java8-junit, java8-junit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-junit.outputs.label }}
+      ec2_id: ${{ needs.start-java8-junit.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-core:
+    name: Stop - Java 8 Core
+    needs: [start-java8-core, java8-core]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-core.outputs.label }}
+      ec2_id: ${{ needs.start-java8-core.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-automl:
+    name: Stop - Java 8 AutoML
+    needs: [start-java8-automl, java8-automl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-automl.outputs.label }}
+      ec2_id: ${{ needs.start-java8-automl.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java11-junit:
+    name: Stop - Java 11 JUnit
+    needs: [start-java11-junit, java11-junit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-junit.outputs.label }}
+      ec2_id: ${{ needs.start-java11-junit.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java17-junit:
+    name: Stop - Java 17 JUnit
+    needs: [start-java17-junit, java17-junit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-junit.outputs.label }}
+      ec2_id: ${{ needs.start-java17-junit.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-rest-smoke:
+    name: Stop - Java 8 REST Smoke
+    needs: [start-java8-rest-smoke, java8-rest-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-rest-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-java8-rest-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-mojo-pipeline:
+    name: Stop - Java 8 Mojo Pipeline
+    needs: [start-java8-mojo-pipeline, java8-mojo-pipeline]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-mojo-pipeline.outputs.label }}
+      ec2_id: ${{ needs.start-java8-mojo-pipeline.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-clustering:
+    name: Stop - Java 8 Clustering
+    needs: [start-java8-clustering, java8-clustering]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-clustering.outputs.label }}
+      ec2_id: ${{ needs.start-java8-clustering.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-xgb-multi:
+    name: Stop - Java 8 XGBoost Multinode
+    needs: [start-java8-xgb-multi, java8-xgb-multi]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-xgb-multi.outputs.label }}
+      ec2_id: ${{ needs.start-java8-xgb-multi.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java8-logger:
+    name: Stop - Java 8 Logger Init
+    needs: [start-java8-logger, java8-logger]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-logger.outputs.label }}
+      ec2_id: ${{ needs.start-java8-logger.outputs.ec2_id }}
+    secrets: inherit

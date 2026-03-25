@@ -1,0 +1,229 @@
+# ==============================================================================
+#                              PUBLISH DOCKER IMAGES
+# ==============================================================================
+#
+# PURPOSE:
+#   Builds and pushes H2O Docker images to Docker Hub.
+#
+# IMAGES:
+#   - h2o-open-source-k8s: Full-featured H2O image (main assembly)
+#   - h2o-open-source-k8s-minimal: Minimal H2O image (steam assembly)
+#
+# TAGS:
+#   - Test releases: opsh2oai/{image}-test:{branch}-{build_number}
+#   - Nightly: h2oai/{image}:nightly
+#   - Release: h2oai/{image}:{version} and optionally :latest
+#
+# ==============================================================================
+
+name: Publish Docker Images
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'H2O-3 branch'
+        required: true
+        type: string
+
+      build_number:
+        description: 'Build number'
+        required: true
+        type: string
+
+      project_version:
+        description: 'H2O project version'
+        required: true
+        type: string
+
+      test_release:
+        description: 'Test release'
+        required: false
+        type: boolean
+        default: false
+
+      is_nightly:
+        description: 'Nightly build'
+        required: false
+        type: boolean
+        default: false
+
+      update_latest:
+        description: 'Update latest tag'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+  # ============================================================================
+  # BUILD AND PUSH DOCKER IMAGES
+  # ============================================================================
+  build-docker:
+    name: Build ${{ matrix.image_type }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - assembly: main
+            image_type: h2o-open-source-k8s
+          - assembly: steam
+            image_type: h2o-open-source-k8s-minimal
+
+    steps:
+      # ========================================================================
+      # SETUP
+      # ========================================================================
+      - name: Checkout Devops Repo
+        uses: actions/checkout@v4
+
+      - name: Download Assembly Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: h2o-release-assemblies
+          path: artifacts/
+
+      - name: Prepare Docker Build Context
+        run: |
+          mkdir -p docker-build
+
+          # Copy the appropriate assembly JAR
+          if [ "${{ matrix.assembly }}" = "main" ]; then
+            cp artifacts/h2o-assemblies/main/build/libs/h2o.jar docker-build/h2o.jar
+          else
+            cp artifacts/h2o-assemblies/steam/build/libs/h2o.jar docker-build/h2o.jar
+          fi
+
+          # Copy Dockerfile and LICENSE
+          cp docker/public/Dockerfile-h2o-release docker-build/Dockerfile
+          echo "Apache License 2.0" > docker-build/LICENSE
+
+          ls -la docker-build/
+
+      # ========================================================================
+      # DETERMINE IMAGE NAME AND TAGS
+      # ========================================================================
+      - name: Determine Image Tags
+        id: tags
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          IMAGE_TYPE="${{ matrix.image_type }}"
+
+          if [ "${{ inputs.test_release }}" = "true" ]; then
+            # Test release: push to opsh2oai namespace
+            IMAGE_NAME="opsh2oai/${IMAGE_TYPE}-test"
+            IMAGE_TAG="${BRANCH_SAFE}-${{ inputs.build_number }}"
+            LATEST_TAG="latest"
+            PUSH_LATEST="true"
+          elif [ "${{ inputs.is_nightly }}" = "true" ]; then
+            # Nightly build
+            IMAGE_NAME="h2oai/${IMAGE_TYPE}"
+            IMAGE_TAG="nightly"
+            LATEST_TAG=""
+            PUSH_LATEST="false"
+          else
+            # Production release
+            IMAGE_NAME="h2oai/${IMAGE_TYPE}"
+            IMAGE_TAG="${{ inputs.project_version }}"
+            if [ "${{ inputs.update_latest }}" = "true" ]; then
+              LATEST_TAG="latest"
+              PUSH_LATEST="true"
+            else
+              LATEST_TAG=""
+              PUSH_LATEST="false"
+            fi
+          fi
+
+          echo "image_name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "latest_tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "push_latest=${PUSH_LATEST}" >> $GITHUB_OUTPUT
+
+          echo "Image: ${IMAGE_NAME}:${IMAGE_TAG}"
+          [ -n "${LATEST_TAG}" ] && echo "Also tagging as: ${IMAGE_NAME}:${LATEST_TAG}"
+
+      # ========================================================================
+      # BUILD AND PUSH
+      # ========================================================================
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: docker-build
+          file: docker-build/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.image_name }}:${{ steps.tags.outputs.image_tag }}
+          build-args: |
+            H2O_VERSION=${{ inputs.project_version }}
+          platforms: linux/amd64
+
+      - name: Push Latest Tag
+        if: steps.tags.outputs.push_latest == 'true'
+        run: |
+          IMAGE_NAME="${{ steps.tags.outputs.image_name }}"
+          IMAGE_TAG="${{ steps.tags.outputs.image_tag }}"
+          LATEST_TAG="${{ steps.tags.outputs.latest_tag }}"
+
+          docker pull "${IMAGE_NAME}:${IMAGE_TAG}"
+          docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:${LATEST_TAG}"
+          docker push "${IMAGE_NAME}:${LATEST_TAG}"
+
+      # ========================================================================
+      # SUMMARY
+      # ========================================================================
+      - name: Summary
+        run: |
+          echo "## Docker Build: ${{ matrix.image_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`${{ steps.tags.outputs.image_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | \`${{ steps.tags.outputs.image_tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Latest Tag | \`${{ steps.tags.outputs.latest_tag || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Assembly | \`${{ matrix.assembly }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # SUMMARY
+  # ============================================================================
+  summary:
+    name: Docker Summary
+    needs: build-docker
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Overall Summary
+        run: |
+          echo "## Docker Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ inputs.project_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Release | ${{ inputs.test_release }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Nightly | ${{ inputs.is_nightly }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Latest | ${{ inputs.update_latest }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Images Built" >> $GITHUB_STEP_SUMMARY
+          echo "- h2o-open-source-k8s (main assembly)" >> $GITHUB_STEP_SUMMARY
+          echo "- h2o-open-source-k8s-minimal (steam assembly)" >> $GITHUB_STEP_SUMMARY

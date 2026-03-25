@@ -1,0 +1,933 @@
+# ==============================================================================
+#
+#                         H2O-3 RELEASE PIPELINE
+#                         ======================
+#
+#   Complete release pipeline migrated from Jenkins to GitHub Actions.
+#   Handles building, signing, and publishing H2O-3 to multiple channels.
+#
+#   Migrated from: scripts/jenkins/jenkinsfiles/Jenkinsfile-Release
+#
+# ==============================================================================
+#
+#   WORKFLOW ARCHITECTURE
+#   ---------------------
+#
+#   ┌──────────────────────────────────────────────────────────────────────────┐
+#   │                           RELEASE-MAIN                                   │
+#   │                         (Orchestrator)                                   │
+#   └──────────────────────────────────────────────────────────────────────────┘
+#                                     │
+#                                     ▼
+#   ┌──────────────────────────────────────────────────────────────────────────┐
+#   │  1. INIT                    Determine configuration based on branch      │
+#   │     └─► TEST-CREDENTIALS    Test AWS/PyPI/Docker/Anaconda (optional)     │
+#   └──────────────────────────────────────────────────────────────────────────┘
+#                                     │
+#                                     ▼
+#   ┌──────────────────────────────────────────────────────────────────────────┐
+#   │  2. BUILD                   Compile H2O-3, sign artifacts, upload Nexus  │
+#   │     └─► CREATE-TAG          Push git tags to h2oai/h2o-3 (non-test only) │
+#   └──────────────────────────────────────────────────────────────────────────┘
+#                                     │
+#                                     ▼
+#   ┌──────────────────────────────────────────────────────────────────────────┐
+#   │  3. PUBLISH-S3              Upload artifacts, update latest links        │
+#   │     │                       (captures previous state for rollback)       │
+#   │     │                                                                    │
+#   │     ├─► PUBLISH-PYPI        Build/upload to PyPI (rel-* branches)        │
+#   │     ├─► PUBLISH-CONDA       Build/upload to Anaconda (rel-* branches)    │
+#   │     ├─► PUBLISH-HELM        Package/publish Helm chart (rel-* branches)  │
+#   │     └─► PUBLISH-DOCKER      Build/push Docker images (rel-* branches)    │
+#   └──────────────────────────────────────────────────────────────────────────┘
+#                                     │
+#                          ┌──────────┴──────────┐
+#                          ▼                     ▼
+#   ┌─────────────────────────────┐  ┌─────────────────────────────────────────┐
+#   │  4. ROLLBACK (on failure)   │  │  5. SUMMARY                             │
+#   │     Restore previous latest │  │     Generate workflow summary report    │
+#   │     links (branch + global) │  │                                         │
+#   └─────────────────────────────┘  └─────────────────────────────────────────┘
+#
+#   TRIGGERS
+#   --------
+#   • Schedule:  Nightly builds (master branch) - cron at 10:20 AM UTC
+#   • Manual:    workflow_dispatch for releases and test builds
+#
+#   S3 OUTPUT STRUCTURE
+#   -------------------
+#   Production:  s3://h2o-release/h2o/{branch}/{build_number}/
+#   Test:        s3://test.0xdata.com/test-release/h2o/{branch}/{build_number}/
+#
+#   Public URL:  https://h2o-release.s3.amazonaws.com/h2o/{branch}/{build_number}/index.html
+#   Latest:      https://h2o-release.s3.amazonaws.com/h2o/{branch}/latest.html
+#
+# ==============================================================================
+#
+#   INPUT PARAMETERS
+#   ----------------
+#
+#   Branch Control:
+#   • branch          H2O-3 branch to build (default: master)
+#   • build_number    Build number (auto: run_number + BUILD_NUMBER_OFFSET)
+#
+#   Release Mode:
+#   • dry_run         Skip external publishing (default: true for safety)
+#   • test_release    Use test S3 bucket (default: false)
+#   • test_credentials Test credentials before build (default: false)
+#
+#   Build Options:
+#   • build_hadoop    Include Hadoop support (default: true)
+#   • build_pypi      Build PyPI packages (default: true)
+#   • build_conda     Build Conda packages (default: true)
+#   • build_docker    Build Docker images (default: false)
+#
+#   Publishing (auto-enabled for rel-* branches when test_release=false):
+#   • upload_pypi     Upload to PyPI.org
+#   • upload_conda    Upload to Anaconda.org
+#   • upload_nexus    Upload to Maven Central
+#   • update_latest   Update global latest_stable links
+#   • update_latest_branch  Update branch latest links (default: true)
+#
+#   BRANCH-BASED DEFAULTS
+#   ---------------------
+#   rel-* branches:  All uploads enabled (production release)
+#   master branch:   Uploads disabled (nightly build to S3 only)
+#   other branches:  Uploads disabled (test builds)
+#
+# ==============================================================================
+
+run-name: "H2O-3 Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}${{ inputs.test_release && ' [TEST]' || '' }}"
+name: H2O-3 Release - Nightly
+
+# ==============================================================================
+# TRIGGERS
+# ==============================================================================
+on:
+  schedule:
+    - cron: '00 16 * * *'
+
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release [e.g., master, rel-3.42]'
+        required: true
+        default: 'master'
+        type: string
+
+      build_number:
+        description: "Build number [leave empty to auto-generate as run_number + BUILD_NUMBER_OFFSET]"
+        required: false
+        type: string
+
+      dry_run:
+        description: 'Dry run mode [skip all external publishing: Nexus, PyPI, Conda, Docker, Git tags]'
+        required: false
+        type: boolean
+        default: true
+
+      test_release:
+        description: "Test release [use test S3 bucket s3://test.0xdata.com/test-release/h2o, skip PyPI/Conda uploads]"
+        required: false
+        type: boolean
+        default: false
+
+      test_credentials:
+        description: 'Test credentials before building [PyPI, Anaconda, Docker, S3]'
+        required: false
+        type: boolean
+        default: false
+
+      update_latest:
+        description: 'Update top-level latest links [/latest_stable, Docker latest tag]'
+        required: false
+        type: boolean
+        default: false
+
+      update_latest_branch:
+        description: 'Update branch latest links [/{branch}/latest]'
+        required: false
+        type: boolean
+        default: true
+
+      upload_nexus:
+        description: 'Publish to Nexus [Maven Central repository]'
+        required: false
+        type: boolean
+        default: false
+
+      build_hadoop:
+        description: 'Build with Hadoop support [slower build, uncheck for quick test releases]'
+        required: false
+        type: boolean
+        default: true
+
+      build_pypi:
+        description: 'Build PyPI package [always uploads to S3]'
+        required: false
+        type: boolean
+        default: true
+
+      upload_pypi:
+        description: 'Publish to PyPI [PyPI.org, only for rel-* branches]'
+        required: false
+        type: boolean
+        default: false
+
+      build_conda:
+        description: 'Build Conda packages [always uploads to S3]'
+        required: false
+        type: boolean
+        default: true
+
+      upload_conda:
+        description: 'Publish to Anaconda [Anaconda.org, only for rel-* branches]'
+        required: false
+        type: boolean
+        default: false
+
+      build_docker:
+        description: 'Build Docker images [push to H2O official Docker Hub]'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+# ==============================================================================
+# ENVIRONMENT
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  DOCKER_VERSION: "47"
+  H2O3_REPO: h2oai/h2o-3
+  TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
+  RELEASE_BUCKET: s3://h2o-release/h2o
+  # Build number offset to continue from Jenkins' last build number
+  # Set this to Jenkins' last build number before switching to GHA
+  # GHA build number = github.run_number + BUILD_NUMBER_OFFSET
+  # Jenkins last build: 7204, adding 100 buffer to avoid conflicts
+  BUILD_NUMBER_OFFSET: 7400
+  # Slack channel for nig  BUILD_NUMBER_OFFSET: 7380
+  SLACK_CHANNEL: "#h2o-3-alerts"
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+
+  # ============================================================================
+  # INIT: Determine configuration based on branch and inputs
+  # ============================================================================
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.config.outputs.branch }}
+      build_number: ${{ steps.config.outputs.build_number }}
+      dry_run: ${{ steps.config.outputs.dry_run }}
+      is_release_branch: ${{ steps.config.outputs.is_release_branch }}
+      is_nightly: ${{ steps.config.outputs.is_nightly }}
+      test_release: ${{ steps.config.outputs.test_release }}
+      s3_root: ${{ steps.config.outputs.s3_root }}
+      upload_nexus: ${{ steps.config.outputs.upload_nexus }}
+      build_hadoop: ${{ steps.config.outputs.build_hadoop }}
+      build_pypi: ${{ steps.config.outputs.build_pypi }}
+      upload_pypi: ${{ steps.config.outputs.upload_pypi }}
+      build_conda: ${{ steps.config.outputs.build_conda }}
+      upload_conda: ${{ steps.config.outputs.upload_conda }}
+      build_docker: ${{ steps.config.outputs.build_docker }}
+      update_latest: ${{ steps.config.outputs.update_latest }}
+      update_latest_branch: ${{ steps.config.outputs.update_latest_branch }}
+      test_credentials: ${{ steps.config.outputs.test_credentials }}
+
+    steps:
+      - name: Determine Configuration
+        id: config
+        run: |
+          # ================================================================
+          # STEP 1: Determine basic build info (branch, build number, type)
+          # ================================================================
+
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
+            BRANCH="master"
+            IS_NIGHTLY="true"
+          else
+            BRANCH="${{ inputs.branch || 'master' }}"
+            IS_NIGHTLY="false"
+          fi
+
+          # Check if release branch (rel-*)
+          [[ "${BRANCH}" == rel-* ]] && IS_RELEASE_BRANCH="true" || IS_RELEASE_BRANCH="false"
+
+          # Build number: user input or auto-generated (run_number + offset)
+          if [ -n "${{ inputs.build_number }}" ]; then
+            BUILD_NUMBER="${{ inputs.build_number }}"
+          else
+            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.BUILD_NUMBER_OFFSET }} ))
+          fi
+
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "is_nightly=${IS_NIGHTLY}" >> $GITHUB_OUTPUT
+          echo "is_release_branch=${IS_RELEASE_BRANCH}" >> $GITHUB_OUTPUT
+
+          # ================================================================
+          # STEP 2: Determine release mode (dry_run, test_release, S3 bucket)
+          # ================================================================
+
+          # dry_run: false for scheduled/push builds, respects input for manual runs
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
+            DRY_RUN="false"
+          elif [ "${{ inputs.dry_run }}" = "false" ]; then
+            DRY_RUN="false"
+          else
+            DRY_RUN="true"
+          fi
+
+          # test_release: false for release/master branches, true for others
+          if [ "${{ inputs.test_release }}" = "true" ]; then
+            TEST_RELEASE="true"
+          elif [ "${IS_RELEASE_BRANCH}" = "true" ] || [ "${BRANCH}" = "master" ]; then
+            TEST_RELEASE="${{ inputs.test_release || 'false' }}"
+          else
+            TEST_RELEASE="true"
+          fi
+
+          # S3 bucket: test bucket for test releases, production for real releases
+          if [ "${TEST_RELEASE}" = "true" ]; then
+            S3_ROOT="${{ env.TEST_RELEASE_BUCKET }}"
+          else
+            S3_ROOT="${{ env.RELEASE_BUCKET }}"
+          fi
+
+          echo "dry_run=${DRY_RUN}" >> $GITHUB_OUTPUT
+          echo "test_release=${TEST_RELEASE}" >> $GITHUB_OUTPUT
+          echo "s3_root=${S3_ROOT}" >> $GITHUB_OUTPUT
+
+          # ================================================================
+          # STEP 3: Determine publishing options
+          # Default: enabled for rel-* branches when not test_release
+          # ================================================================
+
+          if [ "${IS_RELEASE_BRANCH}" = "true" ] && [ "${TEST_RELEASE}" = "false" ]; then
+            DEFAULT_UPLOAD="true"
+          else
+            DEFAULT_UPLOAD="false"
+          fi
+
+          # Helper function to get upload setting (input or default)
+          get_upload_setting() {
+            local input_val="$1"
+            [ -n "${input_val}" ] && echo "${input_val}" || echo "${DEFAULT_UPLOAD}"
+          }
+
+          UPLOAD_NEXUS=$(get_upload_setting "${{ inputs.upload_nexus }}")
+          UPLOAD_PYPI=$(get_upload_setting "${{ inputs.upload_pypi }}")
+          UPLOAD_CONDA=$(get_upload_setting "${{ inputs.upload_conda }}")
+          BUILD_DOCKER=$(get_upload_setting "${{ inputs.build_docker }}")
+          UPDATE_LATEST=$(get_upload_setting "${{ inputs.update_latest }}")
+
+          echo "upload_nexus=${UPLOAD_NEXUS}" >> $GITHUB_OUTPUT
+          echo "upload_pypi=${UPLOAD_PYPI}" >> $GITHUB_OUTPUT
+          echo "upload_conda=${UPLOAD_CONDA}" >> $GITHUB_OUTPUT
+          echo "build_docker=${BUILD_DOCKER}" >> $GITHUB_OUTPUT
+          echo "update_latest=${UPDATE_LATEST}" >> $GITHUB_OUTPUT
+
+          # Build options
+          # For scheduled/push builds: enable Hadoop, PyPI, Conda (build packages, upload to S3 only)
+          # For manual runs: use input values
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
+            echo "build_hadoop=true" >> $GITHUB_OUTPUT
+            echo "build_pypi=true" >> $GITHUB_OUTPUT
+            echo "build_conda=true" >> $GITHUB_OUTPUT
+          else
+            # For manual runs, use input values (default true if not specified)
+            BUILD_HADOOP="${{ inputs.build_hadoop }}"
+            [ -z "${BUILD_HADOOP}" ] && BUILD_HADOOP="true"
+            echo "build_hadoop=${BUILD_HADOOP}" >> $GITHUB_OUTPUT
+            echo "build_pypi=${{ inputs.build_pypi }}" >> $GITHUB_OUTPUT
+            echo "build_conda=${{ inputs.build_conda }}" >> $GITHUB_OUTPUT
+          fi
+          echo "update_latest_branch=${{ inputs.update_latest_branch || 'true' }}" >> $GITHUB_OUTPUT
+
+          # ================================================================
+          # STEP 4: Determine credential testing
+          # Default: true for scheduled/push builds and master branch
+          # ================================================================
+
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
+            TEST_CREDENTIALS="true"
+          elif [ -n "${{ inputs.test_credentials }}" ]; then
+            TEST_CREDENTIALS="${{ inputs.test_credentials }}"
+          elif [ "${BRANCH}" = "master" ]; then
+            TEST_CREDENTIALS="true"
+          else
+            TEST_CREDENTIALS="false"
+          fi
+          echo "test_credentials=${TEST_CREDENTIALS}" >> $GITHUB_OUTPUT
+
+          # ================================================================
+          # STEP 5: Generate configuration summary
+          # ================================================================
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## Release Configuration
+
+          | Setting | Value |
+          |---------|-------|
+          | Branch | \`${BRANCH}\` |
+          | Build Number | \`${BUILD_NUMBER}\` |
+          | **Dry Run** | **${DRY_RUN}** |
+          | Release Branch | ${IS_RELEASE_BRANCH} |
+          | Nightly Build | ${IS_NIGHTLY} |
+          | Test Release | ${TEST_RELEASE} |
+          | S3 Bucket | \`${S3_ROOT}\` |
+
+          ### Publishing Options
+          | Option | Enabled |
+          |--------|---------|
+          | Upload Nexus | ${UPLOAD_NEXUS} |
+          | Upload PyPI | ${UPLOAD_PYPI} |
+          | Upload Conda | ${UPLOAD_CONDA} |
+          | Build Docker | ${BUILD_DOCKER} |
+          | Update Latest | ${UPDATE_LATEST} |
+          | Update Latest Branch | ${{ inputs.update_latest_branch || 'true' }} |
+          EOF
+
+  # ============================================================================
+  # TEST CREDENTIALS (Optional)
+  # ============================================================================
+  test-credentials:
+    name: Test Credentials
+    needs: init
+    if: needs.init.outputs.test_credentials == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS for ECR
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: release-test-creds-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Test AWS Credentials
+        run: |
+          echo "=== Testing AWS Credentials ==="
+          aws sts get-caller-identity
+          echo "AWS credentials: OK"
+
+      - name: Test PyPI Credentials
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          echo "=== Testing PyPI Credentials ==="
+          if [ -n "$TWINE_USERNAME" ] && [ -n "$TWINE_PASSWORD" ]; then
+            echo "PyPI credentials: Configured"
+          else
+            echo "::warning::PyPI credentials not configured"
+          fi
+
+      - name: Test Docker Hub Credentials
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          echo "=== Testing Docker Hub Credentials ==="
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_PASSWORD" ]; then
+            echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+            echo "Docker Hub credentials: OK"
+            docker logout
+          else
+            echo "::warning::Docker Hub credentials not configured"
+          fi
+
+      - name: Test Anaconda Credentials
+        env:
+          ANACONDA_USERNAME: ${{ secrets.ANACONDA_USERNAME }}
+          ANACONDA_PASSWORD: ${{ secrets.ANACONDA_PASSWORD }}
+        run: |
+          echo "=== Testing Anaconda Credentials ==="
+          if [ -n "$ANACONDA_USERNAME" ] && [ -n "$ANACONDA_PASSWORD" ]; then
+            echo "Anaconda credentials: Configured"
+          else
+            echo "::warning::Anaconda credentials not configured"
+          fi
+
+  # ============================================================================
+  # BUILD: Compile H2O-3 with signing
+  # ============================================================================
+  build:
+    name: Build
+    needs: [init, test-credentials]
+    if: always() && (needs.test-credentials.result == 'success' || needs.test-credentials.result == 'skipped')
+    uses: ./.github/workflows/release-build.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      build_hadoop: ${{ needs.init.outputs.build_hadoop == 'true' }}
+      # Skip Nexus upload in dry_run mode
+      upload_nexus: ${{ needs.init.outputs.upload_nexus == 'true' && needs.init.outputs.dry_run == 'false' }}
+      test_release: ${{ needs.init.outputs.test_release == 'true' }}
+    secrets: inherit
+
+  # ============================================================================
+  # CREATE GIT TAG (Non-test releases only, skip in dry_run)
+  # For nightly: creates basic tag gha-{branch}-{build_number}
+  # For releases: also creates gha-rel-latest-stable and gha-{version} tags
+  # ============================================================================
+  create-tag:
+    name: Create Git Tag
+    needs: [init, build]
+    if: needs.init.outputs.test_release == 'false' && needs.init.outputs.dry_run == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout H2O-3
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.H2O3_REPO }}
+          ref: ${{ needs.init.outputs.branch }}
+          token: ${{ secrets.H2O3_UPSTREAM_SYNC_PAT }}
+          fetch-depth: 0
+
+      - name: Create and Push Tags
+        env:
+          GH_TOKEN: ${{ secrets.H2O_3_REPO_TOKEN }}
+        run: |
+          VERSION="${{ needs.build.outputs.project_version }}"
+          BRANCH="${{ needs.init.outputs.branch }}"
+          # Replace / with _ in branch name (same as Jenkins)
+          BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
+          BUILD_NUMBER="${{ needs.init.outputs.build_number }}"
+          IS_NIGHTLY="${{ needs.init.outputs.is_nightly }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch --tags
+
+          # Always create build tag: gha-{branch}-{build_number}
+          git tag -a "gha-${BRANCH_SAFE}-${BUILD_NUMBER}" \
+            -m "GHA build branch_name ${BRANCH_SAFE} build_number ${VERSION}"
+
+          # For non-nightly builds, also create version and latest-stable tags
+          if [ "${IS_NIGHTLY}" != "true" ]; then
+            echo "Process release tags"
+            # Delete existing latest-stable tag (ignore errors if doesn't exist)
+            git tag -d gha-rel-latest-stable 2>/dev/null || true
+            git push origin :refs/tags/gha-rel-latest-stable 2>/dev/null || true
+
+            # Create latest-stable tag
+            git tag -a gha-rel-latest-stable -f \
+              -m "GHA build branch_name ${BRANCH_SAFE} build_number ${VERSION}"
+
+            # Create version tag: gha-{version}
+            git tag -a "gha-${VERSION}" \
+              -m "GHA build branch_name ${BRANCH_SAFE} build_number ${VERSION}"
+          fi
+
+          # Push all tags
+          git push --tags
+
+  # ============================================================================
+  # PUBLISH TO S3
+  # ============================================================================
+  publish-s3:
+    name: Publish to S3
+    needs: [init, build, create-tag]
+    if: always() && (needs.create-tag.result == 'success' || needs.create-tag.result == 'skipped')
+    uses: ./.github/workflows/release-publish-s3.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      update_latest: ${{ needs.init.outputs.update_latest == 'true' }}
+      update_latest_branch: ${{ needs.init.outputs.update_latest_branch == 'true' }}
+    secrets: inherit
+
+  # ============================================================================
+  # BUILD AND PUBLISH PYPI
+  # Only for test releases or release branches (matches Jenkins line 415)
+  # Nightly builds skip PyPI/Conda/Helm entirely
+  # ============================================================================
+  publish-pypi:
+    name: Publish PyPI
+    needs: [init, build, publish-s3]
+    if: needs.init.outputs.build_pypi == 'true' && (needs.init.outputs.test_release == 'true' || needs.init.outputs.is_release_branch == 'true')
+    uses: ./.github/workflows/release-publish-pypi.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      # Skip PyPI upload in dry_run mode
+      upload_pypi: ${{ needs.init.outputs.upload_pypi == 'true' && needs.init.outputs.test_release == 'false' && needs.init.outputs.dry_run == 'false' }}
+    secrets: inherit
+
+  # ============================================================================
+  # BUILD AND PUBLISH CONDA
+  # Only for test releases or release branches (matches Jenkins line 415)
+  # Nightly builds skip PyPI/Conda/Helm entirely
+  # ============================================================================
+  publish-conda:
+    name: Publish Conda
+    needs: [init, build, publish-s3]
+    if: needs.init.outputs.build_conda == 'true' && (needs.init.outputs.test_release == 'true' || needs.init.outputs.is_release_branch == 'true')
+    uses: ./.github/workflows/release-publish-conda.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      # Skip Conda upload in dry_run mode
+      upload_conda: ${{ needs.init.outputs.upload_conda == 'true' && needs.init.outputs.test_release == 'false' && needs.init.outputs.dry_run == 'false' }}
+    secrets: inherit
+
+  # ============================================================================
+  # PUBLISH HELM CHART
+  # Only for test releases or release branches (matches Jenkins line 415)
+  # Nightly builds skip PyPI/Conda/Helm entirely
+  # ============================================================================
+  publish-helm:
+    name: Publish Helm
+    needs: [init, build, publish-s3]
+    if: needs.init.outputs.dry_run == 'false' && (needs.init.outputs.test_release == 'true' || needs.init.outputs.is_release_branch == 'true')
+    uses: ./.github/workflows/release-publish-helm.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      test_release: ${{ needs.init.outputs.test_release == 'true' }}
+      is_nightly: ${{ needs.init.outputs.is_nightly == 'true' }}
+    secrets: inherit
+
+  # ============================================================================
+  # BUILD AND PUBLISH DOCKER (skip in dry_run mode)
+  # ============================================================================
+  publish-docker:
+    name: Publish Docker
+    needs: [init, build, publish-s3]
+    if: needs.init.outputs.build_docker == 'true' && needs.init.outputs.dry_run == 'false'
+    uses: ./.github/workflows/release-publish-docker.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      test_release: ${{ needs.init.outputs.test_release == 'true' }}
+      is_nightly: ${{ needs.init.outputs.is_nightly == 'true' }}
+      update_latest: ${{ needs.init.outputs.update_latest == 'true' }}
+    secrets: inherit
+
+  # ============================================================================
+  # ROLLBACK (on failure - restore previous latest links)
+  # ============================================================================
+  rollback:
+    name: Rollback on Failure
+    needs: [init, build, publish-s3, publish-pypi, publish-conda, publish-helm, publish-docker]
+    if: failure() && needs.publish-s3.outputs.previous_latest_build != ''
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-rollback-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Restore Previous Branch Latest Links
+        env:
+          PREVIOUS_BUILD: ${{ needs.publish-s3.outputs.previous_latest_build }}
+          BRANCH: ${{ needs.init.outputs.branch }}
+          S3_ROOT: ${{ needs.init.outputs.s3_root }}
+        run: |
+          echo "::warning::Rolling back branch latest links to previous build: ${PREVIOUS_BUILD}"
+
+          BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
+          mkdir -p tmpdir
+
+          # Create rollback pointer files
+          echo "${PREVIOUS_BUILD}" > tmpdir/latest
+
+          cat > tmpdir/latest.html << EOF
+          <head>
+          <meta http-equiv="refresh" content="0; url=${PREVIOUS_BUILD}/index.html" />
+          </head>
+          EOF
+
+          # Restore branch latest links
+          echo "=== Restoring branch latest links to ${PREVIOUS_BUILD} ==="
+          aws s3 cp tmpdir/latest "${S3_ROOT}/${BRANCH_SAFE}/latest" --acl public-read
+          aws s3 cp tmpdir/latest.html "${S3_ROOT}/${BRANCH_SAFE}/latest.html" --acl public-read
+          aws s3 cp tmpdir/latest.html "${S3_ROOT}/${BRANCH_SAFE}/index.html" --acl public-read
+
+          echo "::notice::Branch latest links restored to build ${PREVIOUS_BUILD}"
+
+      - name: Restore Previous Top-Level Latest Links
+        if: needs.init.outputs.update_latest == 'true' && needs.publish-s3.outputs.previous_latest_stable != ''
+        env:
+          PREVIOUS_STABLE: ${{ needs.publish-s3.outputs.previous_latest_stable }}
+          PREVIOUS_STABLE_BRANCH: ${{ needs.publish-s3.outputs.previous_latest_stable_branch }}
+          S3_ROOT: ${{ needs.init.outputs.s3_root }}
+        run: |
+          echo "::warning::Rolling back top-level latest_stable links"
+          echo "Previous latest_stable URL: ${PREVIOUS_STABLE}"
+          echo "Previous latest_stable branch: ${PREVIOUS_STABLE_BRANCH}"
+
+          mkdir -p tmpdir
+
+          # Restore the latest_stable file (contains URL to zip)
+          echo "${PREVIOUS_STABLE}" > tmpdir/latest_stable
+          aws s3 cp tmpdir/latest_stable "${S3_ROOT}/latest_stable" --acl public-read
+
+          # We need to extract build number from the previous URL to recreate redirects
+          # URL format: https://h2o-release.s3.amazonaws.com/h2o/{branch}/{build}/h2o-{version}.zip
+          PREV_BUILD=$(echo "${PREVIOUS_STABLE}" | sed -n 's|.*/h2o/[^/]*/\([^/]*\)/.*|\1|p')
+          PREV_VERSION=$(echo "${PREVIOUS_STABLE}" | sed -n 's|.*/h2o-\([^/]*\)\.zip|\1|p')
+
+          if [ -n "${PREV_BUILD}" ] && [ -n "${PREVIOUS_STABLE_BRANCH}" ]; then
+            echo "Restoring redirects: branch=${PREVIOUS_STABLE_BRANCH}, build=${PREV_BUILD}, version=${PREV_VERSION}"
+
+            # Recreate latest_stable.html redirect
+            cat > tmpdir/latest_stable.html << EOF
+          <head>
+          <meta http-equiv="refresh" content="0; url=/h2o/${PREVIOUS_STABLE_BRANCH}/${PREV_BUILD}/index.html" />
+          </head>
+          EOF
+            aws s3 cp tmpdir/latest_stable.html "${S3_ROOT}/latest_stable.html" --acl public-read
+
+            # Restore R and Python latest links by syncing from previous build
+            echo "=== Restoring latest R/Python packages from previous build ==="
+            aws s3 sync "${S3_ROOT}/${PREVIOUS_STABLE_BRANCH}/${PREV_BUILD}/R/" "${S3_ROOT}/latest_stable_R/" --acl public-read 2>/dev/null || echo "Warning: Could not restore R packages"
+            aws s3 sync "${S3_ROOT}/${PREVIOUS_STABLE_BRANCH}/${PREV_BUILD}/Python/" "${S3_ROOT}/latest_stable_Py/" --acl public-read 2>/dev/null || echo "Warning: Could not restore Python packages"
+
+            echo "::notice::Top-level latest_stable links restored"
+          else
+            echo "::warning::Could not extract build info from previous URL, skipping redirect restoration"
+          fi
+
+      - name: Rollback Summary
+        env:
+          UPDATE_LATEST: ${{ needs.init.outputs.update_latest }}
+          PREVIOUS_STABLE: ${{ needs.publish-s3.outputs.previous_latest_stable }}
+        run: |
+          echo "## ⚠️ Rollback Executed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The release workflow failed and latest links have been restored." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Restored Links" >> $GITHUB_STEP_SUMMARY
+          echo "| Link Type | Restored To |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch Latest | \`${{ needs.publish-s3.outputs.previous_latest_build }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ "${UPDATE_LATEST}" = "true" ] && [ -n "${PREVIOUS_STABLE}" ]; then
+            echo "| Top-Level latest_stable | \`${PREVIOUS_STABLE}\` |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Failed Build Details" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Failed Build | \`${{ needs.init.outputs.build_number }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ needs.init.outputs.branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** The failed build artifacts may still exist in S3 at:" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # SUMMARY
+  # ============================================================================
+  summary:
+    name: Summary
+    needs: [init, build, create-tag, publish-s3, publish-pypi, publish-conda, publish-helm, publish-docker, rollback]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Release Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Create Tag | ${{ needs.create-tag.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish S3 | ${{ needs.publish-s3.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish PyPI | ${{ needs.publish-pypi.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Conda | ${{ needs.publish-conda.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Helm | ${{ needs.publish-helm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Docker | ${{ needs.publish-docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run:** ${{ needs.init.outputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Release:** ${{ needs.init.outputs.test_release }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.init.outputs.dry_run }}" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Note:** Dry run mode - external publishing (PyPI, Conda, Docker, Helm, Nexus, Git tags) was skipped." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check Overall Status
+        id: status
+        run: |
+          FAILED=false
+          [[ "${{ needs.build.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.publish-s3.result }}" == "failure" ]] && FAILED=true
+
+          echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::Release pipeline has critical failures"
+          fi
+
+      # ========================================================================
+      # SLACK NOTIFICATION
+      # ========================================================================
+      - name: Build Slack Notification
+        if: always()
+        id: slack_message
+        env:
+          BRANCH: ${{ needs.init.outputs.branch }}
+          VERSION: ${{ needs.build.outputs.project_version }}
+          BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
+          S3_ROOT: ${{ needs.init.outputs.s3_root }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          S3_RESULT: ${{ needs.publish-s3.result }}
+          TAG_RESULT: ${{ needs.create-tag.result }}
+          FAILED: ${{ steps.status.outputs.failed }}
+          IS_NIGHTLY: ${{ needs.init.outputs.is_nightly }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Determine build mode
+          if [ "${IS_NIGHTLY}" = "true" ]; then
+            BUILD_MODE="Nightly"
+          else
+            BUILD_MODE="On-Demand"
+          fi
+
+          # Determine S3 public URL
+          if [[ "${S3_ROOT}" == *"test.0xdata.com"* ]]; then
+            S3_URL="https://test.0xdata.com/test-release/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
+          else
+            S3_URL="https://h2o-release.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
+          fi
+
+          # Determine overall status
+          if [ "${FAILED}" = "true" ]; then
+            STATUS_EMOJI=":red_circle:"
+            STATUS_TEXT="FAILED"
+            HEADER_EMOJI="❌"
+          else
+            STATUS_EMOJI=":white_check_mark:"
+            STATUS_TEXT="SUCCESS"
+            HEADER_EMOJI="✅"
+          fi
+
+          # Build Slack payload
+          BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          GIT_TAG_URL="https://github.com/h2oai/h2o-3/releases/tag/gha-${BRANCH}-${BUILD_NUMBER}"
+
+          # Build links column based on success/failure
+          if [ "${FAILED}" = "true" ]; then
+            LINKS_COLUMN="*Links:*\n• <${RUN_URL}|Workflow Run>"
+            FOOTER_BLOCKS='{
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "cc <@D074ECSNT6U> <@U05TMBGGJJF>"
+                  }
+                ]
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "H2O-3 Release Pipeline | GitHub Actions"
+                  }
+                ]
+              }'
+          else
+            LINKS_COLUMN="*Links:*\n• <${S3_URL}|S3 Release Page>\n• <${RUN_URL}|Workflow Run>\n• <${GIT_TAG_URL}|Git Tag>"
+            FOOTER_BLOCKS='{
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "H2O-3 Release Pipeline | GitHub Actions"
+                  }
+                ]
+              }'
+          fi
+
+          cat > /tmp/slack_payload.json << EOF
+          {
+            "channel": "${{ env.SLACK_CHANNEL }}",
+            "text": "${HEADER_EMOJI} H2O-3 Release Workflow Alert - ${STATUS_TEXT}",
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "${HEADER_EMOJI} H2O-3 Release Workflow Alert"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "${BUILD_MODE}  |  ${BUILD_DATE}"
+                }
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*Tag:* gha-${BRANCH}-${BUILD_NUMBER}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "${LINKS_COLUMN}"
+                  }
+                ]
+              },
+              {
+                "type": "divider"
+              },
+              ${FOOTER_BLOCKS}
+            ]
+          }
+          EOF
+
+          echo "=== Slack Payload ==="
+          cat /tmp/slack_payload.json
+
+      - name: Send Slack Notification
+        if: always()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.H2O_OPS_SLACK_BOT_TOKEN }}
+          payload-file-path: /tmp/slack_payload.json
+
+      - name: Fail if Critical Errors
+        if: steps.status.outputs.failed == 'true'
+        run: exit 1

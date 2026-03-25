@@ -1,0 +1,195 @@
+# ==============================================================================
+#                              PUBLISH HELM CHART
+# ==============================================================================
+#
+# PURPOSE:
+#   Packages and publishes H2O Helm chart to S3-hosted Helm repository.
+#
+# HELM REPOSITORIES:
+#   - Test: s3://h2oai-test-helm-charts/
+#   - Nightly: s3://h2oai-test-helm-charts/
+#   - Production: s3://h2oai-charts/
+#
+# CHART NAMES:
+#   - Test: h2o-test-3
+#   - Nightly: h2o-3-nightly
+#   - Production: h2o-3
+#
+# ==============================================================================
+
+name: Publish Helm Chart
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'H2O-3 branch'
+        required: true
+        type: string
+
+      project_version:
+        description: 'H2O project version'
+        required: true
+        type: string
+
+      test_release:
+        description: 'Test release'
+        required: false
+        type: boolean
+        default: false
+
+      is_nightly:
+        description: 'Nightly build'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  DOCKER_VERSION: "47"
+  H2O3_REPO: h2oai/h2o-3
+
+# ==============================================================================
+# JOB
+# ==============================================================================
+jobs:
+  publish-helm:
+    name: Publish Helm Chart
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ========================================================================
+      # SETUP
+      # ========================================================================
+      - name: Checkout H2O-3 (for helm chart)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.H2O3_REPO }}
+          ref: ${{ inputs.branch }}
+          sparse-checkout: h2o-helm
+          sparse-checkout-cone-mode: false
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.0'
+
+      # ========================================================================
+      # DETERMINE CHART NAME AND BUCKET
+      # ========================================================================
+      - name: Determine Helm Configuration
+        id: config
+        run: |
+          # Extract 3-digit version (e.g., 3.46.0.1 -> 46.0.1)
+          THREE_DIGITS_VERSION=$(echo "${{ inputs.project_version }}" | sed "s/[0-9]*\.\([0-9]*\.[0-9]*\.[0-9]*\)/\1/g")
+
+          if [ "${{ inputs.test_release }}" = "true" ]; then
+            CHART_NAME="h2o-test-3"
+            BUCKET="h2oai-test-helm-charts"
+            VERSION="${THREE_DIGITS_VERSION}"
+          elif [ "${{ inputs.is_nightly }}" = "true" ]; then
+            CHART_NAME="h2o-3-nightly"
+            BUCKET="h2oai-test-helm-charts"
+            VERSION="${THREE_DIGITS_VERSION}"
+          else
+            CHART_NAME="h2o-3"
+            BUCKET="h2oai-charts"
+            VERSION="${THREE_DIGITS_VERSION}"
+          fi
+
+          echo "chart_name=${CHART_NAME}" >> $GITHUB_OUTPUT
+          echo "bucket=${BUCKET}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+          echo "Chart: ${CHART_NAME}"
+          echo "Bucket: ${BUCKET}"
+          echo "Version: ${VERSION}"
+
+      # ========================================================================
+      # DOWNLOAD EXISTING INDEX
+      # ========================================================================
+      - name: Configure AWS for S3
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-helm-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download Existing Helm Index
+        run: |
+          cd h2o-helm
+          aws s3 cp "s3://${{ steps.config.outputs.bucket }}/index.yaml" index.yaml || echo "No existing index found"
+
+      # ========================================================================
+      # PACKAGE HELM CHART
+      # ========================================================================
+      - name: Package Helm Chart
+        run: |
+          cd h2o-helm
+
+          # Update chart name
+          sed -i "s/name: h2o-3/name: ${{ steps.config.outputs.chart_name }}/" Chart.yaml
+
+          # Package the chart
+          helm package . \
+            --app-version "${{ steps.config.outputs.version }}" \
+            --version "${{ steps.config.outputs.version }}"
+
+          # Create output directory
+          mkdir -p h2o-3
+          mv "${{ steps.config.outputs.chart_name }}-${{ steps.config.outputs.version }}.tgz" h2o-3/
+
+          # Update index
+          helm repo index . --merge index.yaml 2>/dev/null || helm repo index .
+
+          echo "=== Packaged chart ==="
+          ls -la h2o-3/
+
+      # ========================================================================
+      # UPLOAD TO S3
+      # ========================================================================
+      - name: Upload Helm Chart to S3
+        run: |
+          cd h2o-helm
+          BUCKET="${{ steps.config.outputs.bucket }}"
+          CHART_NAME="${{ steps.config.outputs.chart_name }}"
+          VERSION="${{ steps.config.outputs.version }}"
+
+          # Upload chart package
+          aws s3 cp "h2o-3/${CHART_NAME}-${VERSION}.tgz" \
+            "s3://${BUCKET}/h2o-3/${CHART_NAME}-${VERSION}.tgz" \
+            --acl public-read
+
+          # Upload updated index
+          aws s3 cp index.yaml "s3://${BUCKET}/index.yaml" --acl public-read
+
+          echo "Helm chart uploaded to s3://${BUCKET}/"
+
+      # ========================================================================
+      # SUMMARY
+      # ========================================================================
+      - name: Summary
+        run: |
+          echo "## Helm Chart Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Chart Name | \`${{ steps.config.outputs.chart_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.config.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bucket | \`${{ steps.config.outputs.bucket }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Release | ${{ inputs.test_release }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Nightly | ${{ inputs.is_nightly }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "helm repo add h2oai https://${{ steps.config.outputs.bucket }}.s3.amazonaws.com" >> $GITHUB_STEP_SUMMARY
+          echo "helm install h2o h2oai/${{ steps.config.outputs.chart_name }} --version ${{ steps.config.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

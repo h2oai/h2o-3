@@ -1,0 +1,131 @@
+# ==============================================================================
+#                          CODE COVERAGE SUITE
+# ==============================================================================
+#
+# JaCoCo code coverage for H2O-3 Java tests - On EC2 runner
+#
+# OUTPUTS:
+#   - JaCoCo exec files (for aggregation)
+#   - HTML coverage reports
+#   - XML coverage reports (for PR comments)
+#   - Coverage summary in job summary
+#
+# ==============================================================================
+
+name: Nightly Code Coverage
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+  pull-requests: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNER
+  # ============================================================================
+  start-coverage:
+    name: Start EC2 - Coverage
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: coverage
+    secrets: inherit
+
+  # ============================================================================
+  # RUN COVERAGE
+  # ============================================================================
+  coverage:
+    name: h2o-algos Coverage
+    needs: start-coverage
+    runs-on: ${{ needs.start-coverage.outputs.label }}
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: h2o-algos Coverage
+          make_target: coverage-junit-algos
+          test_package: java
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+
+      - name: Upload JaCoCo Coverage Data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-jacoco
+          retention-days: 30
+          path: |
+            build/reports/jacoco/*.exec
+            **/build/reports/jacoco/**
+
+      - name: Upload Coverage Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          retention-days: 30
+          path: |
+            **/build/reports/jacoco/**/*.html
+            **/build/reports/jacoco/**/*.xml
+
+      - name: Generate JaCoCo Coverage Summary
+        if: always()
+        run: |
+          echo "### JaCoCo Coverage Analysis" >> \$GITHUB_STEP_SUMMARY
+          echo "" >> \$GITHUB_STEP_SUMMARY
+          JACOCO_FILES=\$(find . -name "jacoco*.xml" -path "*/reports/jacoco/*" -type f 2>/dev/null)
+          if [ -z "\$JACOCO_FILES" ]; then
+            echo "_No JaCoCo reports found_" >> \$GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          JACOCO_XML=\$(echo "\$JACOCO_FILES" | head -1)
+          echo "Parsing: \$JACOCO_XML"
+          INSTRUCTION_COVERED=\$(grep -o 'type="INSTRUCTION" missed="[0-9]*" covered="[0-9]*"' "\$JACOCO_XML" 2>/dev/null | head -1 | grep -oP 'covered="\K[0-9]+' || echo "0")
+          INSTRUCTION_MISSED=\$(grep -o 'type="INSTRUCTION" missed="[0-9]*" covered="[0-9]*"' "\$JACOCO_XML" 2>/dev/null | head -1 | grep -oP 'missed="\K[0-9]+' || echo "0")
+          LINE_COVERED=\$(grep -o 'type="LINE" missed="[0-9]*" covered="[0-9]*"' "\$JACOCO_XML" 2>/dev/null | head -1 | grep -oP 'covered="\K[0-9]+' || echo "0")
+          LINE_MISSED=\$(grep -o 'type="LINE" missed="[0-9]*" covered="[0-9]*"' "\$JACOCO_XML" 2>/dev/null | head -1 | grep -oP 'missed="\K[0-9]+' || echo "0")
+          echo "| Metric | Covered | Missed |" >> \$GITHUB_STEP_SUMMARY
+          echo "|--------|---------|--------|" >> \$GITHUB_STEP_SUMMARY
+          echo "| Instructions | \$INSTRUCTION_COVERED | \$INSTRUCTION_MISSED |" >> \$GITHUB_STEP_SUMMARY
+          echo "| Lines | \$LINE_COVERED | \$LINE_MISSED |" >> \$GITHUB_STEP_SUMMARY
+
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Coverage (h2o-algos)
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNER
+  # ============================================================================
+  stop-coverage:
+    name: Stop EC2 - Coverage
+    needs: [start-coverage, coverage]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-coverage.outputs.label }}
+      ec2_id: ${{ needs.start-coverage.outputs.ec2_id }}
+    secrets: inherit

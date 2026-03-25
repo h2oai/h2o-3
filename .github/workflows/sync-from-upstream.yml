@@ -1,0 +1,145 @@
+name: Sync from Upstream H2O-3
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: 'Comma-separated branches to sync (leave empty for all configured)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout enterprise repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use PAT with workflow scope to allow pushing workflow files
+          token: ${{ secrets.H2O3_UPSTREAM_SYNC_PAT }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/h2oai/h2o-3.git || true
+          git fetch upstream --prune --tags
+
+      - name: Read mirror config
+        id: config
+        run: |
+          # Read branches from config file
+          CONFIGURED_BRANCHES=$(yq -r '.branches[]' .github/mirror-config.yml | tr '\n' ' ')
+          # Read protected paths (handle missing key gracefully)
+          if yq -e '.protected_paths' .github/mirror-config.yml > /dev/null 2>&1; then
+            PROTECTED_PATHS=$(yq -r '.protected_paths[]' .github/mirror-config.yml | tr '\n' '|')
+          else
+            PROTECTED_PATHS=""
+          fi
+
+          # Use input branches if provided, otherwise use configured branches
+          if [ -n "${{ inputs.branches }}" ]; then
+            BRANCHES="${{ inputs.branches }}"
+            BRANCHES=$(echo "$BRANCHES" | tr ',' ' ')
+          else
+            BRANCHES="$CONFIGURED_BRANCHES"
+          fi
+
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          echo "protected_paths=$PROTECTED_PATHS" >> $GITHUB_OUTPUT
+          echo "Branches to sync: $BRANCHES"
+          echo "Protected paths: $PROTECTED_PATHS"
+
+      - name: Sync branches
+        run: |
+          BRANCHES="${{ steps.config.outputs.branches }}"
+          PROTECTED_PATHS="${{ steps.config.outputs.protected_paths }}"
+          BACKUP_DIR="/tmp/enterprise-backup"
+
+          for branch in $BRANCHES; do
+            echo "========================================"
+            echo "Syncing branch: $branch"
+            echo "========================================"
+
+            # Check if branch exists in upstream
+            if ! git ls-remote --heads upstream "$branch" | grep -q "$branch"; then
+              echo "⚠ Branch '$branch' not found in upstream, skipping"
+              continue
+            fi
+
+            # Fetch the specific branch from upstream
+            git fetch upstream "$branch:refs/remotes/upstream/$branch"
+
+            # Check if branch exists locally/in origin
+            if git ls-remote --heads origin "$branch" | grep -q "$branch"; then
+              # Explicitly checkout from origin to avoid ambiguity with upstream
+              git checkout -B "$branch" "origin/$branch"
+
+              # Backup enterprise-specific protected paths
+              echo "Backing up enterprise-specific files..."
+              rm -rf "$BACKUP_DIR"
+              mkdir -p "$BACKUP_DIR"
+
+              IFS='|' read -ra PATHS <<< "$PROTECTED_PATHS"
+              for path in "${PATHS[@]}"; do
+                if [ -n "$path" ] && [ -e "$path" ]; then
+                  # Create parent directory in backup
+                  mkdir -p "$BACKUP_DIR/$(dirname "$path")"
+                  cp -r "$path" "$BACKUP_DIR/$path"
+                  echo "  ✓ Backed up: $path"
+                fi
+              done
+
+              # Reset to upstream
+              git reset --hard "upstream/$branch"
+
+              # Restore enterprise-specific files
+              echo "Restoring enterprise-specific files..."
+              for path in "${PATHS[@]}"; do
+                if [ -n "$path" ] && [ -e "$BACKUP_DIR/$path" ]; then
+                  # Create parent directory if needed
+                  mkdir -p "$(dirname "$path")"
+
+                  # Remove existing path first to avoid nested copies
+                  rm -rf "$path"
+
+                  cp -r "$BACKUP_DIR/$path" "$path"
+                  echo "  ✓ Restored: $path"
+                fi
+              done
+
+              # Commit restored files if there are changes
+              if [ -n "$(git status --porcelain)" ]; then
+                git add -A
+                git commit -m "Sync from upstream h2o-3 (preserve enterprise files)"
+              fi
+
+              git push origin "$branch" --force-with-lease
+              echo "✓ Updated branch: $branch"
+            else
+              # Branch doesn't exist in enterprise, create it from upstream
+              git checkout -b "$branch" "upstream/$branch"
+              git push origin "$branch" -u
+              echo "✓ Created branch: $branch"
+            fi
+          done
+
+      - name: Summary
+        run: |
+          echo "## Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branches synced:** ${{ steps.config.outputs.branches }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Protected paths:** ${{ steps.config.outputs.protected_paths }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Upstream:** h2oai/h2o-3" >> $GITHUB_STEP_SUMMARY
+          echo "**Target:** h2oai/h2o-3-enterprise" >> $GITHUB_STEP_SUMMARY

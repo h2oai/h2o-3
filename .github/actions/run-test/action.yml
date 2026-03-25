@@ -1,0 +1,441 @@
+# ==============================================================================
+#                         RUN-TEST: Universal Test Action
+# ==============================================================================
+#
+# PURPOSE:
+#   Single reusable action for ALL H2O-3 tests (Python, R, Java, Flow, Smoke).
+#   Eliminates code duplication across 5+ test workflows.
+#
+# WHAT IT DOES:
+#   1. Authenticates with AWS (OIDC)
+#   2. Logs into ECR
+#   3. Checks out H2O-3 source code
+#   4. Downloads build artifacts
+#   5. Downloads test package
+#   6. Pulls and runs Docker container
+#   7. Executes make target
+#   8. Uploads test results
+#   9. Reports pass/fail status
+#
+# NOTE: JUnit reporting should be done in the calling workflow, not here,
+#       as composite actions don't properly propagate GitHub token context.
+#
+# USAGE EXAMPLE:
+#   - uses: ./.github/actions/run-test
+#     with:
+#       name: "Py3.7 Small"
+#       make_target: test-pyunit-small
+#       test_package: py
+#       python: "3.7"
+#
+# ==============================================================================
+
+name: 'Run H2O-3 Test'
+description: 'Universal action for running any H2O-3 test in Docker'
+
+# ==============================================================================
+# INPUTS
+# ==============================================================================
+inputs:
+  # ---------- REQUIRED ----------
+  name:
+    description: 'Test display name (e.g., "Py3.7 Small")'
+    required: true
+
+  make_target:
+    description: 'Makefile target to run (e.g., test-pyunit-small)'
+    required: true
+
+  test_package:
+    description: 'Test package artifact name (py, r, java, js, main, minimal, steam)'
+    required: true
+
+  # ---------- VERSIONS ----------
+  python:
+    description: 'Python version'
+    required: false
+    default: '3.7'
+
+  r:
+    description: 'R version'
+    required: false
+    default: '3.5.3'
+
+  java:
+    description: 'Java version'
+    required: false
+    default: '8'
+
+  # ---------- DOCKER IMAGE ----------
+  image:
+    description: 'Docker image specifier (e.g., python-3.7, r-3.5.3, jdk-8, python-3.7-jdk-11)'
+    required: false
+    default: ''
+
+  docker_args:
+    description: 'Additional docker run arguments'
+    required: false
+    default: ''
+
+  # ---------- AWS/ECR ----------
+  ecr_registry:
+    description: 'ECR registry URL'
+    required: false
+    default: '353750902984.dkr.ecr.us-east-1.amazonaws.com'
+
+  ecr_role:
+    description: 'IAM role for ECR access'
+    required: false
+    default: 'arn:aws:iam::353750902984:role/GitHub-OIDC-Role'
+
+  aws_region:
+    description: 'AWS region'
+    required: false
+    default: 'us-east-1'
+
+  docker_version:
+    description: 'Docker image version tag'
+    required: false
+    default: '46'
+
+  # ---------- H2O-3 SOURCE ----------
+  h2o3_repo:
+    description: 'H2O-3 repository'
+    required: false
+    default: 'h2oai/h2o-3'
+
+  h2o3_branch:
+    description: 'H2O-3 branch to test'
+    required: true
+
+  # ---------- EFS (EC2 ONLY) ----------
+  mount_efs:
+    description: 'Mount EFS directories (for EC2 runners)'
+    required: false
+    default: 'false'
+
+  smalldata_path:
+    description: 'Path to smalldata EFS mount'
+    required: false
+    default: '/home/ubuntu/smalldata'
+
+  bigdata_path:
+    description: 'Path to bigdata EFS mount'
+    required: false
+    default: '/home/ubuntu/bigdata'
+
+  # ---------- RESULTS ----------
+  artifact_retention:
+    description: 'Days to keep test artifacts'
+    required: false
+    default: '14'
+
+# ==============================================================================
+# OUTPUTS
+# ==============================================================================
+outputs:
+  exit_code:
+    description: 'Test exit code (0 = success)'
+    value: ${{ steps.test.outputs.exit_code }}
+
+  result:
+    description: 'Test result (success/failure)'
+    value: ${{ steps.verify.outputs.result }}
+
+# ==============================================================================
+# EXECUTION
+# ==============================================================================
+runs:
+  using: 'composite'
+  steps:
+    # -------------------------------------------------------------------------
+    # STEP 1: AWS Authentication
+    # -------------------------------------------------------------------------
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v4.0.2
+      with:
+        role-to-assume: ${{ inputs.ecr_role }}
+        role-session-name: test-${{ github.run_id }}
+        aws-region: ${{ inputs.aws_region }}
+        audience: sts.amazonaws.com
+
+    # -------------------------------------------------------------------------
+    # STEP 2: ECR Login
+    # -------------------------------------------------------------------------
+    - name: Login to ECR
+      uses: aws-actions/amazon-ecr-login@v2
+
+    # -------------------------------------------------------------------------
+    # STEP 3: Checkout H2O-3
+    # -------------------------------------------------------------------------
+    - name: Checkout H2O-3
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.h2o3_repo }}
+        ref: ${{ inputs.h2o3_branch }}
+        path: h2o-3
+
+    # -------------------------------------------------------------------------
+    # STEP 4: Download Build Artifacts
+    # -------------------------------------------------------------------------
+    - name: Download Build
+      uses: actions/download-artifact@v4
+      with:
+        name: h2o-3-build
+        path: h2o-3
+
+    # -------------------------------------------------------------------------
+    # STEP 5: Download Test Package
+    # -------------------------------------------------------------------------
+    - name: Download Test Package
+      uses: actions/download-artifact@v4
+      with:
+        name: test-package-${{ inputs.test_package }}
+        path: h2o-3
+
+    # -------------------------------------------------------------------------
+    # STEP 6: Determine Docker Image
+    # -------------------------------------------------------------------------
+    - name: Resolve Docker Image
+      id: docker
+      shell: bash
+      run: |
+        # Build image URL based on inputs
+        REGISTRY="${{ inputs.ecr_registry }}"
+        VERSION="${{ inputs.docker_version }}"
+
+        if [ -n "${{ inputs.image }}" ]; then
+          # Custom image specifier provided
+          IMAGE="${REGISTRY}/h2o-3/dev-${{ inputs.image }}:${VERSION}"
+        elif [ "${{ inputs.test_package }}" = "java" ]; then
+          # Java tests use JDK image
+          IMAGE="${REGISTRY}/h2o-3/dev-jdk-${{ inputs.java }}:${VERSION}"
+        elif [ "${{ inputs.test_package }}" = "r" ]; then
+          # R tests use R image
+          IMAGE="${REGISTRY}/h2o-3/dev-r-${{ inputs.r }}:${VERSION}"
+        else
+          # Default to Python image
+          IMAGE="${REGISTRY}/h2o-3/dev-python-${{ inputs.python }}:${VERSION}"
+        fi
+
+        echo "image=${IMAGE}" >> $GITHUB_OUTPUT
+        echo "Using image: ${IMAGE}"
+
+    # -------------------------------------------------------------------------
+    # STEP 7: Pull Docker Image
+    # -------------------------------------------------------------------------
+    - name: Pull Docker Image
+      shell: bash
+      run: docker pull ${{ steps.docker.outputs.image }}
+
+    # -------------------------------------------------------------------------
+    # STEP 8: Extract Test Package
+    # -------------------------------------------------------------------------
+    - name: Extract Test Package
+      shell: bash
+      working-directory: h2o-3
+      run: unzip -o test-package-${{ inputs.test_package }}.zip || true
+
+    # -------------------------------------------------------------------------
+    # STEP 9: Run Test
+    # -------------------------------------------------------------------------
+    - name: Run ${{ inputs.name }}
+      id: test
+      shell: bash
+      run: |
+        set +e
+
+        # Build EFS mount arguments if needed
+        # Mount EFS directories inside the h2o-3 workspace so tests can find them
+        # H2O tests expect smalldata/bigdata relative to repo root (after gradlew syncSmalldata)
+        EFS_MOUNTS=""
+        if [ "${{ inputs.mount_efs }}" = "true" ]; then
+          EFS_MOUNTS="-v ${{ inputs.smalldata_path }}:/workspace/smalldata -v ${{ inputs.bigdata_path }}:/workspace/bigdata"
+        fi
+
+        # Execute test in Docker
+        docker run --rm \
+          --user root \
+          -v ${{ github.workspace }}/h2o-3:/workspace \
+          ${EFS_MOUNTS} \
+          -w /workspace \
+          -e PYTHON_VERSION=${{ inputs.python }} \
+          -e R_VERSION=${{ inputs.r }} \
+          -e JAVA_VERSION=${{ inputs.java }} \
+          -e TEST_PACKAGE=${{ inputs.test_package }} \
+          ${{ inputs.docker_args }} \
+          ${{ steps.docker.outputs.image }} \
+          /bin/bash -c "
+            set -e
+            git config --global --add safe.directory '*'
+
+            # Activate Python environment if available
+            if [ -d /envs/h2o_env_python\${PYTHON_VERSION} ]; then
+              . /envs/h2o_env_python\${PYTHON_VERSION}/bin/activate 2>/dev/null || true
+            fi
+
+            # Setup h2o.jar for Python tests that need to start local H2O server
+            # h2o.init() searches for h2o.jar in specific locations - copy it there
+            echo '=== Setting up h2o.jar for Python/R init tests ==='
+            echo 'Looking for h2o.jar in workspace...'
+            find /workspace -name 'h2o.jar' -type f 2>/dev/null | head -5 || echo '  (no h2o.jar found)'
+
+            # Try multiple possible locations for h2o.jar
+            H2O_JAR=''
+            if [ -f /workspace/build/h2o.jar ]; then
+              H2O_JAR='/workspace/build/h2o.jar'
+            elif [ -f /workspace/h2o-3/build/h2o.jar ]; then
+              H2O_JAR='/workspace/h2o-3/build/h2o.jar'
+            else
+              # Search for it
+              H2O_JAR=\$(find /workspace -name 'h2o.jar' -type f 2>/dev/null | head -1)
+            fi
+
+            if [ -n \"\${H2O_JAR}\" ]; then
+              echo \"Found h2o.jar at: \${H2O_JAR}\"
+              mkdir -p /workspace/h2o-py/h2o/backend/bin
+              cp \"\${H2O_JAR}\" /workspace/h2o-py/h2o/backend/bin/h2o.jar
+              echo 'Copied h2o.jar to /workspace/h2o-py/h2o/backend/bin/'
+              ls -la /workspace/h2o-py/h2o/backend/bin/
+            else
+              echo 'WARNING: h2o.jar not found - Python init tests may fail'
+            fi
+
+            # Install H2O R package if running R tests
+            if [ \"\${TEST_PACKAGE}\" = \"r\" ]; then
+              echo '=== Setting up R environment ==='
+
+              # Configure R environment (same as your working pipeline)
+              echo 'suppressWarnings(try(RNGkind(sample.kind=\"Rounding\"), silent=TRUE))' >> ~/.Rprofile
+              echo 'try(options(expressions = max(getOption(\"expressions\"), 5e5)), silent=TRUE)' >> ~/.Rprofile
+
+              # Install R test dependencies
+              echo '=== Installing R dependencies ==='
+              Rscript -e 'needed <- c(\"testthat\",\"RUnit\",\"curl\",\"RCurl\");
+                          inst <- rownames(installed.packages());
+                          miss <- setdiff(needed, inst);
+                          if(length(miss)) install.packages(miss, repos=\"https://cloud.r-project.org\", Ncpus=2);' 2>/dev/null || true
+
+              echo '=== Installing H2O R Package ==='
+              echo 'Searching for R package tarball...'
+
+              # Debug: show directory structure
+              echo 'Current directory:' && pwd
+              echo 'Contents of h2o-r/R/src/contrib/ (if exists):'
+              ls -la h2o-r/R/src/contrib/ 2>/dev/null || echo '  (not found)'
+              echo 'Looking for any .tar.gz files in h2o-r/:'
+              find h2o-r -name '*.tar.gz' 2>/dev/null || echo '  (none found)'
+
+              # Find and install the H2O R package
+              R_PACKAGE=\$(find h2o-r -name 'h2o*.tar.gz' -type f 2>/dev/null | head -1)
+
+              if [ -n \"\${R_PACKAGE}\" ]; then
+                echo \"Installing: \${R_PACKAGE}\"
+                R CMD INSTALL \"\${R_PACKAGE}\"
+              else
+                echo 'ERROR: H2O R package tarball not found!'
+                echo 'This usually means the build step did not include the R package.'
+                echo 'Check that test-package-r.zip contains h2o-r/R/src/contrib/h2o_*.tar.gz'
+              fi
+            fi
+
+            # Show environment
+            echo '=== Environment ==='
+            java -version 2>&1 || true
+            python --version 2>&1 || true
+            R --version 2>&1 | head -1 || true
+
+            # Workaround: Remove directories that Makefile tries to create without -p flag
+            # The Makefile's lookup-demos-tests target uses 'mkdir' without -p, so it fails
+            # if directories already exist. Remove them so Makefile can create them fresh.
+            rm -rf h2o-r/tests/testdir_demos h2o-py/tests/testdir_demos 2>/dev/null || true
+
+            # Run tests
+            echo '=== Running: ${{ inputs.make_target }} ==='
+            make -f scripts/jenkins/Makefile.jenkins ${{ inputs.make_target }} check-leaks
+
+            # Fix permissions so GitHub runner can access results
+            echo '=== Fixing file permissions ==='
+            chmod -R a+rw . 2>/dev/null || true
+            find . -type d -exec chmod a+rx {} \\; 2>/dev/null || true
+          "
+
+        EXIT_CODE=$?
+        echo "exit_code=${EXIT_CODE}" >> $GITHUB_OUTPUT
+        echo "Test completed with exit code: ${EXIT_CODE}"
+
+    # -------------------------------------------------------------------------
+    # STEP 10: List Test Results (Debug)
+    # -------------------------------------------------------------------------
+    # NOTE: This is a debug step only - it should NEVER affect the job outcome.
+    # The actual pass/fail decision is in the "Verify Result" step below.
+    - name: List Test Results
+      if: always()
+      shell: bash
+      run: |
+        set +e  # This debug step should never fail the job
+
+        echo "=== Jenkins Pattern: h2o-3/**/test-results/*.xml ==="
+        find h2o-3 -type d -name "test-results" 2>/dev/null | while read dir; do
+          echo "Directory: $dir"
+          ls -la "$dir"/*.xml 2>/dev/null || echo "  (no XML files)"
+        done || true
+        echo ""
+        echo "=== All test-results XML files ==="
+        XML_FILES=$(find h2o-3 -path "*/test-results/*.xml" 2>/dev/null | head -30) || true
+        if [ -n "$XML_FILES" ]; then
+          echo "$XML_FILES"
+        else
+          echo "No test-results XML found (this is OK for some test types)"
+        fi
+        echo ""
+        echo "=== Sample XML content (first file) ==="
+        FIRST_XML=$(find h2o-3 -path "*/test-results/*.xml" 2>/dev/null | head -1) || true
+        if [ -n "$FIRST_XML" ]; then
+          echo "File: $FIRST_XML"
+          head -20 "$FIRST_XML" || true
+        else
+          echo "No XML files found to display"
+        fi
+
+        true  # Always exit successfully - pass/fail is determined by "Verify Result" step
+
+    # -------------------------------------------------------------------------
+    # STEP 11: Upload Test Results
+    # -------------------------------------------------------------------------
+    - name: Upload Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: results-${{ inputs.name }}
+        retention-days: ${{ inputs.artifact_retention }}
+        if-no-files-found: warn
+        path: |
+          h2o-3/h2o-py/tests/results/**
+          h2o-3/h2o-py/build/test-results/**
+          h2o-3/h2o-r/tests/results/**
+          h2o-3/h2o-r/build/test-results/**
+          h2o-3/h2o-web/tests/results/**
+          h2o-3/h2o-core/build/test-results/**
+          h2o-3/h2o-algos/build/test-results/**
+          h2o-3/build/test-results/**
+          h2o-3/results/**
+          h2o-3/**/java*.out.txt
+          h2o-3/**/summary.txt
+          h2o-3/**/failed.txt
+
+    # -------------------------------------------------------------------------
+    # STEP 12: Verify Result
+    # -------------------------------------------------------------------------
+    - name: Verify Result
+      id: verify
+      if: always()
+      shell: bash
+      run: |
+        if [ "${{ steps.test.outputs.exit_code }}" != "0" ]; then
+          echo "result=failure" >> $GITHUB_OUTPUT
+          echo "::error::Test failed: ${{ inputs.name }}"
+          exit 1
+        fi
+        echo "result=success" >> $GITHUB_OUTPUT
+        echo "Test passed: ${{ inputs.name }}"

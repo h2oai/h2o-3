@@ -1,0 +1,299 @@
+# ==============================================================================
+#                              PUBLISH TO S3
+# ==============================================================================
+#
+# PURPOSE:
+#   Uploads H2O-3 release artifacts to S3 and updates latest links.
+#
+# UPLOADS TO:
+#   - ${S3_ROOT}/${BRANCH}/${BUILD_NUMBER}/  (all artifacts)
+#   - ${S3_ROOT}/${BRANCH}/latest            (branch latest pointer)
+#   - ${S3_ROOT}/latest_stable*              (global latest pointers)
+#
+# ==============================================================================
+
+name: Publish to S3
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'H2O-3 branch'
+        required: true
+        type: string
+
+      build_number:
+        description: 'Build number'
+        required: true
+        type: string
+
+      project_version:
+        description: 'H2O project version'
+        required: true
+        type: string
+
+      s3_root:
+        description: 'S3 bucket root (e.g., s3://h2o-release/h2o)'
+        required: true
+        type: string
+
+      update_latest:
+        description: 'Update top-level latest links'
+        required: false
+        type: boolean
+        default: false
+
+      update_latest_branch:
+        description: 'Update branch-specific latest links'
+        required: false
+        type: boolean
+        default: true
+
+    outputs:
+      previous_latest_build:
+        description: 'Previous latest build number (for rollback)'
+        value: ${{ jobs.publish.outputs.previous_latest_build }}
+      previous_latest_stable:
+        description: 'Previous latest_stable URL (for rollback)'
+        value: ${{ jobs.publish.outputs.previous_latest_stable }}
+      previous_latest_stable_branch:
+        description: 'Previous latest_stable branch (for rollback)'
+        value: ${{ jobs.publish.outputs.previous_latest_stable_branch }}
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+
+# ==============================================================================
+# JOB
+# ==============================================================================
+jobs:
+  publish:
+    name: Publish to S3
+    runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 60
+
+    outputs:
+      previous_latest_build: ${{ steps.previous.outputs.build_number }}
+      previous_latest_stable: ${{ steps.previous.outputs.latest_stable }}
+      previous_latest_stable_branch: ${{ steps.previous.outputs.latest_stable_branch }}
+
+    steps:
+      # ========================================================================
+      # SETUP
+      # ========================================================================
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      # ========================================================================
+      # CAPTURE PREVIOUS STATE (for rollback)
+      # ========================================================================
+      - name: Get Previous Latest Build
+        id: previous
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          S3_LATEST="${{ inputs.s3_root }}/${BRANCH_SAFE}/latest"
+
+          echo "=== Fetching previous latest build number ==="
+          PREVIOUS_BUILD=$(aws s3 cp "${S3_LATEST}" - 2>/dev/null || echo "")
+
+          if [ -n "${PREVIOUS_BUILD}" ]; then
+            echo "Previous latest build: ${PREVIOUS_BUILD}"
+            echo "build_number=${PREVIOUS_BUILD}" >> $GITHUB_OUTPUT
+          else
+            echo "No previous latest build found (first release for this branch)"
+            echo "build_number=" >> $GITHUB_OUTPUT
+          fi
+
+          # Capture top-level latest_stable state for rollback (only if update_latest will be true)
+          if [ "${{ inputs.update_latest }}" = "true" ]; then
+            echo "=== Fetching previous latest_stable URL ==="
+            PREVIOUS_STABLE=$(aws s3 cp "${{ inputs.s3_root }}/latest_stable" - 2>/dev/null || echo "")
+
+            if [ -n "${PREVIOUS_STABLE}" ]; then
+              echo "Previous latest_stable: ${PREVIOUS_STABLE}"
+              echo "latest_stable=${PREVIOUS_STABLE}" >> $GITHUB_OUTPUT
+
+              # Extract branch from URL (e.g., https://...h2o/rel-3.46.0/7200/... -> rel-3.46.0)
+              PREV_BRANCH=$(echo "${PREVIOUS_STABLE}" | sed -n 's|.*/h2o/\([^/]*\)/.*|\1|p')
+              echo "Previous latest_stable branch: ${PREV_BRANCH}"
+              echo "latest_stable_branch=${PREV_BRANCH}" >> $GITHUB_OUTPUT
+            else
+              echo "No previous latest_stable found"
+              echo "latest_stable=" >> $GITHUB_OUTPUT
+              echo "latest_stable_branch=" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "latest_stable=" >> $GITHUB_OUTPUT
+            echo "latest_stable_branch=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h2o-release-*
+          path: artifacts/
+
+      - name: Prepare Target Directory
+        run: |
+          mkdir -p target
+
+          # Move distribution files
+          if [ -d "artifacts/h2o-release-dist" ]; then
+            cp -r artifacts/h2o-release-dist/* target/ 2>/dev/null || true
+          fi
+
+          # Move Python packages
+          if [ -d "artifacts/h2o-release-python" ]; then
+            mkdir -p target/Python
+            cp -r artifacts/h2o-release-python/target/Python/* target/Python/ 2>/dev/null || true
+          fi
+
+          # Move R packages
+          if [ -d "artifacts/h2o-release-r" ]; then
+            mkdir -p target/R
+            cp -r artifacts/h2o-release-r/* target/R/ 2>/dev/null || true
+          fi
+
+          # Move documentation
+          if [ -d "artifacts/h2o-release-docs" ]; then
+            mkdir -p target/docs-website
+            cp -r artifacts/h2o-release-docs/* target/docs-website/ 2>/dev/null || true
+          fi
+
+          # Move full target if available
+          if [ -d "artifacts/h2o-release-full" ]; then
+            cp -r artifacts/h2o-release-full/* target/ 2>/dev/null || true
+          fi
+
+          echo "=== Target directory contents ==="
+          ls -la target/
+          du -sh target/
+
+      # ========================================================================
+      # PUBLISH
+      # ========================================================================
+      - name: Publish to S3
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          S3_DEST="${{ inputs.s3_root }}/${BRANCH_SAFE}/${{ inputs.build_number }}/"
+
+          echo "=== Uploading to ${S3_DEST} ==="
+          aws s3 sync target/ "${S3_DEST}" --acl public-read
+
+          echo "Upload complete!"
+
+      - name: Update Latest R/Python Packages
+        if: inputs.update_latest == true
+        run: |
+          echo "=== Updating latest R and Python packages ==="
+          aws s3 sync target/R/ "${{ inputs.s3_root }}/latest_stable_R/" --acl public-read
+          aws s3 sync target/Python/ "${{ inputs.s3_root }}/latest_stable_Py/" --acl public-read
+
+      # ========================================================================
+      # UPDATE LATEST POINTERS
+      # ========================================================================
+      - name: Create Latest Pointer Files
+        run: |
+          mkdir -p tmpdir
+
+          # Create latest pointer
+          echo "${{ inputs.build_number }}" > tmpdir/latest
+
+          # Create latest.html redirect
+          cat > tmpdir/latest.html << 'EOF'
+          <head>
+          <meta http-equiv="refresh" content="0; url=${{ inputs.build_number }}/index.html" />
+          </head>
+          EOF
+
+      - name: Update Branch Latest Links
+        if: inputs.update_latest_branch == true
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          S3_BRANCH="${{ inputs.s3_root }}/${BRANCH_SAFE}"
+
+          echo "=== Updating branch latest links for ${BRANCH_SAFE} ==="
+          aws s3 cp tmpdir/latest "${S3_BRANCH}/latest" --acl public-read
+          aws s3 cp tmpdir/latest.html "${S3_BRANCH}/latest.html" --acl public-read
+          aws s3 cp tmpdir/latest.html "${S3_BRANCH}/index.html" --acl public-read
+
+      - name: Update Top-Level Latest Links
+        if: inputs.update_latest == true
+        env:
+          PROJECT_VERSION: ${{ inputs.project_version }}
+          BRANCH: ${{ inputs.branch }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: |
+          BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
+          S3_ROOT="${{ inputs.s3_root }}"
+
+          echo "=== Updating top-level latest links ==="
+
+          # Create stable link file
+          echo "https://h2o-release.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${BUILD_NUMBER}/h2o-${PROJECT_VERSION}.zip" > tmpdir/latest_stable
+
+          # Define all redirect links
+          declare -A LINKS=(
+            ["latest_stable"]="index.html"
+            ["latest_stable_doc"]="docs-website/h2o-docs/index.html"
+            ["latest_stable_Py"]="Python/h2o-${PROJECT_VERSION}-py2.py3-none-any.whl"
+            ["latest_stable_R"]="R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz"
+            ["latest_stable_Rdoc"]="docs-website/h2o-r/h2o_package.pdf"
+            ["latest_stable_Pydoc"]="docs-website/h2o-py/docs/index.html"
+            ["latest_stable_GLM_booklet"]="docs-website/h2o-docs/booklets/GLM_Vignette.pdf"
+            ["latest_stable_GBM_booklet"]="docs-website/h2o-docs/booklets/GBM_Vignette.pdf"
+            ["latest_stable_DeepLearning_booklet"]="docs-website/h2o-docs/booklets/DeepLearning_Vignette.pdf"
+            ["latest_stable_R_booklet"]="docs-website/h2o-docs/booklets/R_Vignette.pdf"
+            ["latest_stable_Python_booklet"]="docs-website/h2o-docs/booklets/Python_booklet.pdf"
+            ["latest_stable_SparklingWater_booklet"]="docs-website/h2o-docs/booklets/SparklingWaterVignette.pdf"
+            ["latest_stable_javadoc_genmodel"]="docs-website/h2o-genmodel/javadoc/index.html"
+            ["latest_stable_javadoc_core"]="docs-website/h2o-core/javadoc/index.html"
+            ["latest_stable_javadoc_algos"]="docs-website/h2o-algos/javadoc/index.html"
+            ["latest_stable_restdoc_route_reference"]="docs-website/h2o-docs/index.html#route-reference"
+            ["latest_stable_restdoc_schema_reference"]="docs-website/h2o-docs/index.html#schema-reference"
+          )
+
+          # Create redirect HTML files
+          for link in "${!LINKS[@]}"; do
+            dest="${LINKS[$link]}"
+            cat > "tmpdir/${link}.html" << EOF
+          <head>
+          <meta http-equiv="refresh" content="0; url=/h2o/${BRANCH_SAFE}/${BUILD_NUMBER}/${dest}" />
+          </head>
+          EOF
+          done
+
+          # Upload stable link
+          aws s3 cp tmpdir/latest_stable "${S3_ROOT}/latest_stable" --acl public-read
+
+          # Upload all redirect files
+          for link in "${!LINKS[@]}"; do
+            aws s3 cp "tmpdir/${link}.html" "${S3_ROOT}/${link}.html" --acl public-read
+          done
+
+          echo "Top-level latest links updated!"
+
+      # ========================================================================
+      # SUMMARY
+      # ========================================================================
+      - name: Summary
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+
+          echo "## S3 Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| S3 Location | \`${{ inputs.s3_root }}/${BRANCH_SAFE}/${{ inputs.build_number }}/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ inputs.project_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Latest | ${{ inputs.update_latest }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Branch Latest | ${{ inputs.update_latest_branch }} |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,59 @@
+# ==============================================================================
+#                         NIGHTLY SCHEDULER
+# ==============================================================================
+#
+# PURPOSE:
+#   Triggers the nightly pipeline for multiple H2O-3 branches in parallel.
+#
+# BRANCHES:
+#   - master
+#   - rel-3.46.0
+#
+# SCHEDULE:
+#   Daily at 2:00 AM UTC
+#
+# ==============================================================================
+
+name: Nightly Scheduler
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: 'Branches to run (comma-separated, or "all" for default branches)'
+        required: false
+        default: 'all'
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  trigger:
+    name: Trigger ${{ matrix.branch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch: [master, rel-3.46.0]
+      fail-fast: false
+    steps:
+      - name: Trigger Nightly Pipeline
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering nightly pipeline for branch: ${{ matrix.branch }}"
+
+          gh workflow run nightly-main.yml \
+            --repo ${{ github.repository }} \
+            -f branch="${{ matrix.branch }}" \
+            -f run_smoke=true \
+            -f run_python=true \
+            -f run_r=true \
+            -f run_java=true \
+            -f run_flow=true
+
+          echo "Pipeline triggered for ${{ matrix.branch }}"

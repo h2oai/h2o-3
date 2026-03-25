@@ -1,0 +1,324 @@
+# ==============================================================================
+#                              PUBLISH TO CONDA
+# ==============================================================================
+#
+# PURPOSE:
+#   Builds Conda packages for multiple Python versions and uploads to Anaconda.
+#   Builds for osx-64, linux-64, and win-64 platforms.
+#
+# PACKAGES:
+#   - h2o-main: Main H2O Conda package
+#   - h2o-client: H2O CLI client Conda package
+#
+# PYTHON VERSIONS:
+#   - 3.7, 3.8, 3.9, 3.10, 3.11
+#
+# ==============================================================================
+
+name: Publish to Conda
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'H2O-3 branch'
+        required: true
+        type: string
+
+      build_number:
+        description: 'Build number'
+        required: true
+        type: string
+
+      project_version:
+        description: 'H2O project version'
+        required: true
+        type: string
+
+      s3_root:
+        description: 'S3 bucket root'
+        required: true
+        type: string
+
+      upload_conda:
+        description: 'Upload to Anaconda'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  DOCKER_VERSION: "47"
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+  # ============================================================================
+  # BUILD CONDA PACKAGES (Matrix: Python versions x Artifacts)
+  # ============================================================================
+  build-conda:
+    name: Build Conda Py${{ matrix.python }} - ${{ matrix.artifact }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        artifact: ['main', 'client']
+
+    steps:
+      # ========================================================================
+      # SETUP
+      # ========================================================================
+      - name: Configure AWS for ECR
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: release-conda-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Download Python Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: h2o-release-python
+          path: artifacts/
+
+      - name: Prepare Build Directory
+        run: |
+          mkdir -p h2o-py/build/${{ matrix.artifact }}
+
+          # Copy the build artifacts
+          if [ -d "artifacts/h2o-py/build/${{ matrix.artifact }}" ]; then
+            cp -r artifacts/h2o-py/build/${{ matrix.artifact }}/* h2o-py/build/${{ matrix.artifact }}/ || true
+          fi
+
+          # Copy conda recipe
+          if [ -d "artifacts/h2o-py/conda" ]; then
+            cp -r artifacts/h2o-py/conda h2o-py/build/${{ matrix.artifact }}/
+          fi
+
+          ls -la h2o-py/build/${{ matrix.artifact }}/ || echo "Directory setup complete"
+
+      # ========================================================================
+      # BUILD CONDA PACKAGE
+      # ========================================================================
+      - name: Build Conda Package
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
+            /bin/bash -c "
+              set -ex
+
+              export CONDA_PKGS_DIRS=/workspace/conda_cache
+              mkdir -p \$CONDA_PKGS_DIRS
+
+              cd h2o-py/build/${{ matrix.artifact }}/conda
+
+              # Build conda package for current platform
+              conda build h2o-${{ matrix.artifact }} \
+                --output-folder '.' \
+                --no-anaconda-upload \
+                --py ${{ matrix.python }} \
+                --channel anaconda
+
+              # Get package path
+              CONDA_PKG_PATH=\$(conda build h2o-${{ matrix.artifact }} --py ${{ matrix.python }} --output-folder '.' --output | tail -1)
+              PKG_NAME=\$(basename \$CONDA_PKG_PATH)
+
+              echo \"Built package: \$PKG_NAME\"
+
+              # Convert to all platforms
+              conda convert \$CONDA_PKG_PATH -p all
+
+              echo '=== Built packages ==='
+              ls -la osx-64/ linux-64/ win-64/ 2>/dev/null || true
+            "
+
+      # ========================================================================
+      # UPLOAD TO S3
+      # ========================================================================
+      - name: Configure AWS for S3
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-conda-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Upload to S3
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          CONDA_S3_DIR="${{ inputs.s3_root }}/${BRANCH_SAFE}/${{ inputs.build_number }}/Python/Conda"
+          CONDA_DIR="h2o-py/build/${{ matrix.artifact }}/conda"
+
+          # Find the package name
+          PKG_NAME=$(ls ${CONDA_DIR}/linux-64/*.tar.bz2 2>/dev/null | head -1 | xargs basename)
+
+          if [ -n "$PKG_NAME" ]; then
+            echo "Uploading ${PKG_NAME} to S3..."
+
+            aws s3 cp "${CONDA_DIR}/osx-64/${PKG_NAME}" "${CONDA_S3_DIR}/osx-64/${PKG_NAME}" --acl public-read || true
+            aws s3 cp "${CONDA_DIR}/linux-64/${PKG_NAME}" "${CONDA_S3_DIR}/linux-64/${PKG_NAME}" --acl public-read || true
+            aws s3 cp "${CONDA_DIR}/win-64/${PKG_NAME}" "${CONDA_S3_DIR}/win-64/${PKG_NAME}" --acl public-read || true
+
+            echo "Uploaded to S3: ${CONDA_S3_DIR}"
+          else
+            echo "::warning::No conda package found to upload"
+          fi
+
+      # ========================================================================
+      # UPLOAD TO ANACONDA
+      # ========================================================================
+      - name: Upload to Anaconda
+        if: inputs.upload_conda == true
+        env:
+          ANACONDA_USERNAME: ${{ secrets.ANACONDA_USERNAME }}
+          ANACONDA_PASSWORD: ${{ secrets.ANACONDA_PASSWORD }}
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            -e ANACONDA_USERNAME="${ANACONDA_USERNAME}" \
+            -e ANACONDA_PASSWORD="${ANACONDA_PASSWORD}" \
+            ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
+            /bin/bash -c "
+              set -ex
+              cd h2o-py/build/${{ matrix.artifact }}/conda
+
+              # Find package
+              PKG_NAME=\$(ls linux-64/*.tar.bz2 2>/dev/null | head -1 | xargs basename)
+
+              if [ -n \"\$PKG_NAME\" ]; then
+                echo '=== Uploading to Anaconda ==='
+                anaconda login --username \"\$ANACONDA_USERNAME\" --password \"\$ANACONDA_PASSWORD\"
+
+                anaconda upload osx-64/\${PKG_NAME} || echo 'osx-64 upload failed'
+                anaconda upload linux-64/\${PKG_NAME} || echo 'linux-64 upload failed'
+                anaconda upload win-64/\${PKG_NAME} || echo 'win-64 upload failed'
+
+                anaconda logout
+              else
+                echo 'No package found to upload'
+              fi
+            "
+
+      - name: Upload Conda Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-py${{ matrix.python }}-${{ matrix.artifact }}
+          retention-days: 7
+          path: |
+            h2o-py/build/${{ matrix.artifact }}/conda/osx-64/*.tar.bz2
+            h2o-py/build/${{ matrix.artifact }}/conda/linux-64/*.tar.bz2
+            h2o-py/build/${{ matrix.artifact }}/conda/win-64/*.tar.bz2
+
+  # ============================================================================
+  # VERIFY CONDA PACKAGES (Offline test)
+  # ============================================================================
+  verify-conda:
+    name: Verify Conda Py${{ matrix.python }}
+    needs: build-conda
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.7', '3.8', '3.9', '3.10', '3.11']
+
+    steps:
+      - name: Configure AWS for ECR
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: release-conda-verify-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Download Conda Package
+        uses: actions/download-artifact@v4
+        with:
+          name: conda-py${{ matrix.python }}-main
+          path: conda-pkg/
+
+      - name: Create H2O Version Check Script
+        run: |
+          cat > h2o_test.py << 'EOF'
+          import h2o
+          actual_version = h2o.__version__
+          expected_version = "${{ inputs.project_version }}"
+          assert actual_version == expected_version, f"Version should be {expected_version} but was {actual_version}"
+          print(f"H2O version: {actual_version} - OK")
+          # Skip h2o.init() as it requires a running H2O cluster
+          EOF
+
+      - name: Verify Conda Package Offline
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
+            /bin/bash -c "
+              set -ex
+
+              # Find the package
+              PKG_PATH=\$(find conda-pkg -name '*.tar.bz2' -path '*linux-64*' | head -1)
+
+              if [ -n \"\$PKG_PATH\" ]; then
+                echo \"Testing package: \$PKG_PATH\"
+
+                # Create conda environment
+                conda create -y -n py${{ matrix.python }} python=${{ matrix.python }} tabulate requests
+
+                # Install package offline
+                source activate py${{ matrix.python }}
+                conda install \"\$PKG_PATH\" --offline -y
+
+                # Verify version
+                python h2o_test.py
+
+                echo 'Conda package verification: OK'
+              else
+                echo '::warning::No conda package found to verify'
+              fi
+            "
+
+  # ============================================================================
+  # SUMMARY
+  # ============================================================================
+  summary:
+    name: Conda Summary
+    needs: [build-conda, verify-conda]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Summary
+        run: |
+          echo "## Conda Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ inputs.project_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload to Anaconda | ${{ inputs.upload_conda }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Versions | 3.7, 3.8, 3.9, 3.10, 3.11 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Platforms | osx-64, linux-64, win-64 |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Jobs: ${{ needs.build-conda.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Verification: ${{ needs.verify-conda.result }}" >> $GITHUB_STEP_SUMMARY

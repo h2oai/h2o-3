@@ -1,0 +1,334 @@
+# ==============================================================================
+#                         HADOOP TEST SUITE
+# ==============================================================================
+#
+# 7 Hadoop distribution tests - All on EC2 runners
+#
+# TESTS:
+#   - CDH 5.10: STANDALONE, HADOOP
+#   - CDH 6.1: STANDALONE, HADOOP
+#   - CDH 6.3: STANDALONE, HADOOP, HADOOP Java 11 (Hash Login)
+#
+# ARCHITECTURE:
+#   1. Start 7 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Nightly Hadoop Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+  HADOOP_IMAGE_VERSION: 84
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (7 in parallel)
+  # ============================================================================
+  start-cdh510-standalone:
+    name: Start EC2 - CDH 5.10 Standalone
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-standalone
+    secrets: inherit
+
+  start-cdh510-hadoop:
+    name: Start EC2 - CDH 5.10 Hadoop
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-hadoop
+    secrets: inherit
+
+  start-cdh61-standalone:
+    name: Start EC2 - CDH 6.1 Standalone
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-standalone
+    secrets: inherit
+
+  start-cdh61-hadoop:
+    name: Start EC2 - CDH 6.1 Hadoop
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-hadoop
+    secrets: inherit
+
+  start-cdh63-standalone:
+    name: Start EC2 - CDH 6.3 Standalone
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh63-standalone
+    secrets: inherit
+
+  start-cdh63-hadoop:
+    name: Start EC2 - CDH 6.3 Hadoop
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh63-hadoop
+    secrets: inherit
+
+  start-cdh63-hadoop-java11:
+    name: Start EC2 - CDH 6.3 Java 11
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh63-hadoop-java11
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS (on dedicated EC2 runners)
+  # ============================================================================
+  cdh510-standalone:
+    name: CDH 5.10 - STANDALONE
+    needs: start-cdh510-standalone
+    runs-on: ${{ needs.start-cdh510-standalone.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - STANDALONE
+          make_target: test-hadoop-2-smoke
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - STANDALONE
+          job_status: ${{ job.status }}
+
+  cdh510-hadoop:
+    name: CDH 5.10 - HADOOP
+    needs: start-cdh510-hadoop
+    runs-on: ${{ needs.start-cdh510-hadoop.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - HADOOP
+          make_target: test-hadoop-2-smoke
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - HADOOP
+          job_status: ${{ job.status }}
+
+  cdh61-standalone:
+    name: CDH 6.1 - STANDALONE
+    needs: start-cdh61-standalone
+    runs-on: ${{ needs.start-cdh61-standalone.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - STANDALONE
+          make_target: test-hadoop-3-smoke
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - STANDALONE
+          job_status: ${{ job.status }}
+
+  cdh61-hadoop:
+    name: CDH 6.1 - HADOOP
+    needs: start-cdh61-hadoop
+    runs-on: ${{ needs.start-cdh61-hadoop.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - HADOOP
+          make_target: test-hadoop-3-smoke
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - HADOOP
+          job_status: ${{ job.status }}
+
+  cdh63-standalone:
+    name: CDH 6.3 - STANDALONE
+    needs: start-cdh63-standalone
+    runs-on: ${{ needs.start-cdh63-standalone.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.3 - STANDALONE
+          make_target: test-hadoop-3-smoke
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.3 - STANDALONE
+          job_status: ${{ job.status }}
+
+  cdh63-hadoop:
+    name: CDH 6.3 - HADOOP
+    needs: start-cdh63-hadoop
+    runs-on: ${{ needs.start-cdh63-hadoop.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.3 - HADOOP
+          make_target: test-hadoop-3-smoke
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.3 - HADOOP
+          job_status: ${{ job.status }}
+
+  cdh63-hadoop-java11:
+    name: CDH 6.3 - HADOOP - Java 11 (Hash Login)
+    needs: start-cdh63-hadoop-java11
+    runs-on: ${{ needs.start-cdh63-hadoop-java11.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.3 - HADOOP - Java 11 (Hash Login)
+          make_target: test-hadoop-3-smoke
+          test_package: hadoop
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.3 - HADOOP - Java 11 (Hash Login)
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-cdh510-standalone:
+    name: Stop EC2 - CDH 5.10 Standalone
+    needs: [start-cdh510-standalone, cdh510-standalone]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-standalone.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-standalone.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-hadoop:
+    name: Stop EC2 - CDH 5.10 Hadoop
+    needs: [start-cdh510-hadoop, cdh510-hadoop]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-hadoop.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-hadoop.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-standalone:
+    name: Stop EC2 - CDH 6.1 Standalone
+    needs: [start-cdh61-standalone, cdh61-standalone]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-standalone.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-standalone.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-hadoop:
+    name: Stop EC2 - CDH 6.1 Hadoop
+    needs: [start-cdh61-hadoop, cdh61-hadoop]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-hadoop.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-hadoop.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh63-standalone:
+    name: Stop EC2 - CDH 6.3 Standalone
+    needs: [start-cdh63-standalone, cdh63-standalone]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh63-standalone.outputs.label }}
+      ec2_id: ${{ needs.start-cdh63-standalone.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh63-hadoop:
+    name: Stop EC2 - CDH 6.3 Hadoop
+    needs: [start-cdh63-hadoop, cdh63-hadoop]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh63-hadoop.outputs.label }}
+      ec2_id: ${{ needs.start-cdh63-hadoop.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh63-hadoop-java11:
+    name: Stop EC2 - CDH 6.3 Java 11
+    needs: [start-cdh63-hadoop-java11, cdh63-hadoop-java11]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh63-hadoop-java11.outputs.label }}
+      ec2_id: ${{ needs.start-cdh63-hadoop-java11.outputs.ec2_id }}
+    secrets: inherit

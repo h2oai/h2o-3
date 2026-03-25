@@ -1,0 +1,516 @@
+# ==============================================================================
+#                        BENCHMARK TEST SUITE
+# ==============================================================================
+#
+# 11 benchmark tests - All on EC2 runners (excluding GPU)
+#
+# TESTS:
+#   - GBM Benchmark
+#   - GBM Benchmark noscoring-graalvm
+#   - GBM Benchmark noscoring-java8
+#   - GLM Benchmark
+#   - GAM Benchmark
+#   - H2O XGB Benchmark
+#   - Vanilla XGB Benchmark
+#   - DMLC XGB Benchmark
+#   - MERGE Benchmark
+#   - SORT Benchmark
+#   - Rulefit Benchmark
+#
+# ARCHITECTURE:
+#   1. Start 11 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Nightly Benchmark Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (11 in parallel)
+  # ============================================================================
+  start-gbm-benchmark:
+    name: Start EC2 - GBM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: gbm-benchmark
+    secrets: inherit
+
+  start-gbm-noscoring-graalvm:
+    name: Start EC2 - GBM Noscoring GraalVM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: gbm-noscoring-graalvm
+    secrets: inherit
+
+  start-gbm-noscoring-java8:
+    name: Start EC2 - GBM Noscoring Java8
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: gbm-noscoring-java8
+    secrets: inherit
+
+  start-glm-benchmark:
+    name: Start EC2 - GLM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: glm-benchmark
+    secrets: inherit
+
+  start-gam-benchmark:
+    name: Start EC2 - GAM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: gam-benchmark
+    secrets: inherit
+
+  start-xgb-benchmark:
+    name: Start EC2 - H2O XGB
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-benchmark
+    secrets: inherit
+
+  start-xgb-vanilla:
+    name: Start EC2 - Vanilla XGB
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-vanilla
+    secrets: inherit
+
+  start-xgb-dmlc:
+    name: Start EC2 - DMLC XGB
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgb-dmlc
+    secrets: inherit
+
+  start-merge-benchmark:
+    name: Start EC2 - MERGE
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: merge-benchmark
+    secrets: inherit
+
+  start-sort-benchmark:
+    name: Start EC2 - SORT
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: sort-benchmark
+    secrets: inherit
+
+  start-rulefit-benchmark:
+    name: Start EC2 - Rulefit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: rulefit-benchmark
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS (on dedicated EC2 runners)
+  # ============================================================================
+  gbm-benchmark:
+    name: GBM Benchmark
+    needs: start-gbm-benchmark
+    runs-on: ${{ needs.start-gbm-benchmark.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: GBM Benchmark
+          make_target: benchmark
+          test_package: benchmark
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: GBM Benchmark
+          job_status: ${{ job.status }}
+
+  gbm-noscoring-graalvm:
+    name: GBM Benchmark noscoring-graalvm
+    needs: start-gbm-noscoring-graalvm
+    runs-on: ${{ needs.start-gbm-noscoring-graalvm.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: GBM Benchmark noscoring-graalvm
+          make_target: benchmark
+          test_package: benchmark
+          java: "17"
+          python: "3.8"
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: GBM Benchmark noscoring-graalvm
+          job_status: ${{ job.status }}
+
+  gbm-noscoring-java8:
+    name: GBM Benchmark noscoring-java8
+    needs: start-gbm-noscoring-java8
+    runs-on: ${{ needs.start-gbm-noscoring-java8.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: GBM Benchmark noscoring-java8
+          make_target: benchmark
+          test_package: benchmark
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: GBM Benchmark noscoring-java8
+          job_status: ${{ job.status }}
+
+  glm-benchmark:
+    name: GLM Benchmark
+    needs: start-glm-benchmark
+    runs-on: ${{ needs.start-glm-benchmark.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: GLM Benchmark
+          make_target: benchmark
+          test_package: benchmark
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: GLM Benchmark
+          job_status: ${{ job.status }}
+
+  gam-benchmark:
+    name: GAM Benchmark
+    needs: start-gam-benchmark
+    runs-on: ${{ needs.start-gam-benchmark.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: GAM Benchmark
+          make_target: benchmark
+          test_package: benchmark
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: GAM Benchmark
+          job_status: ${{ job.status }}
+
+  xgb-benchmark:
+    name: H2O XGB Benchmark
+    needs: start-xgb-benchmark
+    runs-on: ${{ needs.start-xgb-benchmark.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: H2O XGB Benchmark
+          make_target: benchmark
+          test_package: benchmark
+          python: "3.7"
+          r: "4.0.2"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: H2O XGB Benchmark
+          job_status: ${{ job.status }}
+
+  xgb-vanilla:
+    name: Vanilla XGB Benchmark
+    needs: start-xgb-vanilla
+    runs-on: ${{ needs.start-xgb-vanilla.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Vanilla XGB Benchmark
+          make_target: benchmark-xgb-vanilla
+          test_package: benchmark
+          python: "3.7"
+          r: "4.0.2"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Vanilla XGB Benchmark
+          job_status: ${{ job.status }}
+
+  xgb-dmlc:
+    name: DMLC XGB Benchmark
+    needs: start-xgb-dmlc
+    runs-on: ${{ needs.start-xgb-dmlc.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: DMLC XGB Benchmark
+          make_target: benchmark-dmlc-r-xgboost
+          test_package: benchmark
+          python: "3.7"
+          r: "4.0.2"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: DMLC XGB Benchmark
+          job_status: ${{ job.status }}
+
+  merge-benchmark:
+    name: MERGE Benchmark
+    needs: start-merge-benchmark
+    runs-on: ${{ needs.start-merge-benchmark.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: MERGE Benchmark
+          make_target: benchmark
+          test_package: benchmark
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: MERGE Benchmark
+          job_status: ${{ job.status }}
+
+  sort-benchmark:
+    name: SORT Benchmark
+    needs: start-sort-benchmark
+    runs-on: ${{ needs.start-sort-benchmark.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: SORT Benchmark
+          make_target: benchmark
+          test_package: benchmark
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: SORT Benchmark
+          job_status: ${{ job.status }}
+
+  rulefit-benchmark:
+    name: Rulefit Benchmark
+    needs: start-rulefit-benchmark
+    runs-on: ${{ needs.start-rulefit-benchmark.outputs.label }}
+    timeout-minutes: 165
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Rulefit Benchmark
+          make_target: benchmark
+          test_package: benchmark
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Rulefit Benchmark
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-gbm-benchmark:
+    name: Stop EC2 - GBM
+    needs: [start-gbm-benchmark, gbm-benchmark]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-gbm-benchmark.outputs.label }}
+      ec2_id: ${{ needs.start-gbm-benchmark.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-gbm-noscoring-graalvm:
+    name: Stop EC2 - GBM Noscoring GraalVM
+    needs: [start-gbm-noscoring-graalvm, gbm-noscoring-graalvm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-gbm-noscoring-graalvm.outputs.label }}
+      ec2_id: ${{ needs.start-gbm-noscoring-graalvm.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-gbm-noscoring-java8:
+    name: Stop EC2 - GBM Noscoring Java8
+    needs: [start-gbm-noscoring-java8, gbm-noscoring-java8]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-gbm-noscoring-java8.outputs.label }}
+      ec2_id: ${{ needs.start-gbm-noscoring-java8.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-glm-benchmark:
+    name: Stop EC2 - GLM
+    needs: [start-glm-benchmark, glm-benchmark]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-glm-benchmark.outputs.label }}
+      ec2_id: ${{ needs.start-glm-benchmark.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-gam-benchmark:
+    name: Stop EC2 - GAM
+    needs: [start-gam-benchmark, gam-benchmark]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-gam-benchmark.outputs.label }}
+      ec2_id: ${{ needs.start-gam-benchmark.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-benchmark:
+    name: Stop EC2 - H2O XGB
+    needs: [start-xgb-benchmark, xgb-benchmark]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-benchmark.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-benchmark.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-vanilla:
+    name: Stop EC2 - Vanilla XGB
+    needs: [start-xgb-vanilla, xgb-vanilla]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-vanilla.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-vanilla.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgb-dmlc:
+    name: Stop EC2 - DMLC XGB
+    needs: [start-xgb-dmlc, xgb-dmlc]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgb-dmlc.outputs.label }}
+      ec2_id: ${{ needs.start-xgb-dmlc.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-merge-benchmark:
+    name: Stop EC2 - MERGE
+    needs: [start-merge-benchmark, merge-benchmark]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-merge-benchmark.outputs.label }}
+      ec2_id: ${{ needs.start-merge-benchmark.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-sort-benchmark:
+    name: Stop EC2 - SORT
+    needs: [start-sort-benchmark, sort-benchmark]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-sort-benchmark.outputs.label }}
+      ec2_id: ${{ needs.start-sort-benchmark.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-rulefit-benchmark:
+    name: Stop EC2 - Rulefit
+    needs: [start-rulefit-benchmark, rulefit-benchmark]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-rulefit-benchmark.outputs.label }}
+      ec2_id: ${{ needs.start-rulefit-benchmark.outputs.ec2_id }}
+    secrets: inherit

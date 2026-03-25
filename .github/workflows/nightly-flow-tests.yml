@@ -1,0 +1,174 @@
+# ==============================================================================
+#                             FLOW TEST SUITE
+# ==============================================================================
+#
+# 3 Flow headless UI tests - All on EC2 runners
+#
+# TESTS:
+#   - Flow Headless       (PR_STAGES)
+#   - Flow Headless Small (MASTER_STAGES)
+#   - Flow Headless Medium(MASTER_STAGES)
+#
+# ARCHITECTURE:
+#   1. Start 3 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Flow Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (3 in parallel)
+  # ============================================================================
+  start-flow-headless:
+    name: Start EC2 - Flow Headless
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: flow-headless
+    secrets: inherit
+
+  start-flow-headless-small:
+    name: Start EC2 - Flow Headless Small
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: flow-headless-small
+    secrets: inherit
+
+  start-flow-headless-medium:
+    name: Start EC2 - Flow Headless Medium
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: flow-headless-medium
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS (on dedicated EC2 runners)
+  # ============================================================================
+  flow-headless:
+    name: Flow Headless
+    needs: start-flow-headless
+    runs-on: ${{ needs.start-flow-headless.outputs.label }}
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Flow Headless
+          make_target: test-flow-headless
+          test_package: js
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Flow Headless
+          job_status: ${{ job.status }}
+
+  flow-headless-small:
+    name: Flow Headless Small
+    needs: start-flow-headless-small
+    runs-on: ${{ needs.start-flow-headless-small.outputs.label }}
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Flow Headless Small
+          make_target: test-flow-headless-small
+          test_package: js
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Flow Headless Small
+          job_status: ${{ job.status }}
+
+  flow-headless-medium:
+    name: Flow Headless Medium
+    needs: start-flow-headless-medium
+    runs-on: ${{ needs.start-flow-headless-medium.outputs.label }}
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Flow Headless Medium
+          make_target: test-flow-headless-medium
+          test_package: js
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Flow Headless Medium
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-flow-headless:
+    name: Stop EC2 - Flow Headless
+    needs: [start-flow-headless, flow-headless]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-flow-headless.outputs.label }}
+      ec2_id: ${{ needs.start-flow-headless.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-flow-headless-small:
+    name: Stop EC2 - Flow Headless Small
+    needs: [start-flow-headless-small, flow-headless-small]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-flow-headless-small.outputs.label }}
+      ec2_id: ${{ needs.start-flow-headless-small.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-flow-headless-medium:
+    name: Stop EC2 - Flow Headless Medium
+    needs: [start-flow-headless-medium, flow-headless-medium]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-flow-headless-medium.outputs.label }}
+      ec2_id: ${{ needs.start-flow-headless-medium.outputs.ec2_id }}
+    secrets: inherit

@@ -1,0 +1,159 @@
+# ==============================================================================
+#                           NIGHTLY MERGE
+# ==============================================================================
+#
+# PURPOSE:
+#   Automatically merges the latest release branch into master as part of
+#   nightly maintenance. This ensures master stays up-to-date with hotfixes
+#   and patches from the release branch.
+#
+# MIGRATED FROM:
+#   Jenkins: Jenkinsfile-NightlyMerge
+#
+# SCHEDULE:
+#   Daily at midnight UTC (same as Jenkins: 'H 0 * * *')
+#
+# PROCESS:
+#   1. Find the latest release branch (rel-X.Y.Z pattern)
+#   2. Check if there are changes to merge
+#   3. If changes exist, merge release branch into master with --no-ff
+#   4. Push the merged result to origin
+#
+# ==============================================================================
+
+name: Nightly Merge
+run-name: Nightly Merge [rel -> master]
+
+on:
+  schedule:
+    # Daily at midnight UTC (equivalent to Jenkins 'H 0 * * *')
+    - cron: '0 0 * * *'
+
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (do not push)'
+        required: false
+        default: false
+        type: boolean
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+  contents: write
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+  merge:
+    name: Merge Release to Master
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout H2O-3
+        uses: actions/checkout@v4
+        with:
+          repository: h2oai/h2o-3
+          token: ${{ secrets.H2O3_UPSTREAM_SYNC_PAT }}
+          fetch-depth: 0
+
+      - name: Find Latest Release Branch
+        id: find-release
+        run: |
+          # Find the latest release branch matching rel-X.Y.Z pattern
+          # sort -V performs version sorting (e.g., rel-3.46.0 > rel-3.8.0)
+          # This correctly sorts by major.minor.patch version numbers
+          LATEST_RELEASE=$(git branch -r | grep -oE 'rel-[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n 1)
+
+          if [ -z "$LATEST_RELEASE" ]; then
+            echo "::error::Could not find latest release branch. Release branch should match: rel-X.Y.Z"
+            exit 1
+          fi
+
+          echo "release_branch=${LATEST_RELEASE}" >> $GITHUB_OUTPUT
+          echo "Found latest release branch: ${LATEST_RELEASE}"
+
+      - name: Check for Changes
+        id: check-changes
+        run: |
+          RELEASE_BRANCH="${{ steps.find-release.outputs.release_branch }}"
+
+          # Checkout the release branch
+          git checkout "origin/${RELEASE_BRANCH}"
+
+          # Find merge base with master
+          MERGE_BASE=$(git merge-base origin/master HEAD)
+
+          # Check if there are changes
+          if git diff --quiet "${MERGE_BASE}" HEAD; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes to merge from ${RELEASE_BRANCH} to master"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected - will merge ${RELEASE_BRANCH} into master"
+          fi
+
+      - name: Merge Release into Master
+        if: steps.check-changes.outputs.has_changes == 'true'
+        run: |
+          RELEASE_BRANCH="${{ steps.find-release.outputs.release_branch }}"
+          COMMIT_MESSAGE="Merge remote-tracking branch origin/${RELEASE_BRANCH}"
+
+          # Configure git
+          git config --global user.name "h2o-ops"
+          git config --global user.email "${{ secrets.H2O_OPS_GH_EMAIL }}"
+
+          # Checkout master and merge
+          git checkout master
+          git merge --no-ff "origin/${RELEASE_BRANCH}" -m "${COMMIT_MESSAGE}"
+
+          # Push (unless dry run)
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "Dry run - not pushing changes"
+            echo "Would have pushed merge commit:"
+            git log -1 --oneline
+          else
+            git push origin master
+            echo "Successfully merged ${RELEASE_BRANCH} into master"
+          fi
+
+      - name: Summary
+        run: |
+          RELEASE_BRANCH="${{ steps.find-release.outputs.release_branch }}"
+          HAS_CHANGES="${{ steps.check-changes.outputs.has_changes }}"
+          DRY_RUN="${{ inputs.dry_run }}"
+
+          echo "## Nightly Merge Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Branch | \`${RELEASE_BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Target Branch | \`master\` |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${HAS_CHANGES}" == "true" ]; then
+            if [ "${DRY_RUN}" == "true" ]; then
+              echo "| Status | Dry run - merge not pushed |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Status | Merged successfully |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| Status | No changes to merge |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # ==========================================================================
+      # SLACK NOTIFICATION ON FAILURE
+      # ==========================================================================
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          channel-id: "dev-h2o-3"
+          payload: |
+            {
+              "text": ":x: *H2O-3 Nightly Merge Failed*\n\n• *Source Branch:* `${{ steps.find-release.outputs.release_branch }}`\n• *Target Branch:* `master`\n• *Likely Cause:* Merge conflict detected. Manual intervention required.\n• <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.H2O_OPS_SLACK_BOT_TOKEN }}

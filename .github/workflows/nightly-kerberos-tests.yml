@@ -1,0 +1,914 @@
+# ==============================================================================
+#                          KERBEROS TEST SUITE
+# ==============================================================================
+#
+# 20 Kerberos authentication tests - All on EC2 runners
+# (2 distributions x 10 auth modes)
+#
+# DISTRIBUTIONS:
+#   - CDH 5.10 (Hadoop 2)
+#   - CDH 6.1 (Hadoop 3)
+#
+# AUTH MODES (10 per distribution):
+#   - STANDALONE
+#   - STANDALONE KEYTAB
+#   - DRIVER KEYTAB
+#   - HADOOP
+#   - HADOOP WITH SPNEGO
+#   - HADOOP WITH HDFS TOKEN REFRESH
+#   - STEAM DRIVER
+#   - STEAM MAPPER
+#   - SPARKLING
+#   - STEAM SPARKLING
+#
+# ARCHITECTURE:
+#   1. Start 20 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Nightly Kerberos Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+  HADOOP_IMAGE_VERSION: 84
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (20 in parallel)
+  # ============================================================================
+
+  # CDH 5.10 (Hadoop 2) - 10 modes
+  start-cdh510-standalone:
+    name: Start EC2 - CDH 5.10 Standalone
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-standalone
+    secrets: inherit
+
+  start-cdh510-standalone-keytab:
+    name: Start EC2 - CDH 5.10 Standalone Keytab
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-standalone-keytab
+    secrets: inherit
+
+  start-cdh510-driver-keytab:
+    name: Start EC2 - CDH 5.10 Driver Keytab
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-driver-keytab
+    secrets: inherit
+
+  start-cdh510-hadoop:
+    name: Start EC2 - CDH 5.10 Hadoop
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-hadoop
+    secrets: inherit
+
+  start-cdh510-hadoop-spnego:
+    name: Start EC2 - CDH 5.10 Hadoop SPNEGO
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-hadoop-spnego
+    secrets: inherit
+
+  start-cdh510-hadoop-hdfs-refresh:
+    name: Start EC2 - CDH 5.10 HDFS Refresh
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-hdfs-refresh
+    secrets: inherit
+
+  start-cdh510-steam-driver:
+    name: Start EC2 - CDH 5.10 Steam Driver
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-steam-driver
+    secrets: inherit
+
+  start-cdh510-steam-mapper:
+    name: Start EC2 - CDH 5.10 Steam Mapper
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-steam-mapper
+    secrets: inherit
+
+  start-cdh510-sparkling:
+    name: Start EC2 - CDH 5.10 Sparkling
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-sparkling
+    secrets: inherit
+
+  start-cdh510-steam-sparkling:
+    name: Start EC2 - CDH 5.10 Steam Sparkling
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh510-krb-steam-sparkling
+    secrets: inherit
+
+  # CDH 6.1 (Hadoop 3) - 10 modes
+  start-cdh61-standalone:
+    name: Start EC2 - CDH 6.1 Standalone
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-standalone
+    secrets: inherit
+
+  start-cdh61-standalone-keytab:
+    name: Start EC2 - CDH 6.1 Standalone Keytab
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-standalone-keytab
+    secrets: inherit
+
+  start-cdh61-driver-keytab:
+    name: Start EC2 - CDH 6.1 Driver Keytab
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-driver-keytab
+    secrets: inherit
+
+  start-cdh61-hadoop:
+    name: Start EC2 - CDH 6.1 Hadoop
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-hadoop
+    secrets: inherit
+
+  start-cdh61-hadoop-spnego:
+    name: Start EC2 - CDH 6.1 Hadoop SPNEGO
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-hadoop-spnego
+    secrets: inherit
+
+  start-cdh61-hadoop-hdfs-refresh:
+    name: Start EC2 - CDH 6.1 HDFS Refresh
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-hdfs-refresh
+    secrets: inherit
+
+  start-cdh61-steam-driver:
+    name: Start EC2 - CDH 6.1 Steam Driver
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-steam-driver
+    secrets: inherit
+
+  start-cdh61-steam-mapper:
+    name: Start EC2 - CDH 6.1 Steam Mapper
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-steam-mapper
+    secrets: inherit
+
+  start-cdh61-sparkling:
+    name: Start EC2 - CDH 6.1 Sparkling
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-sparkling
+    secrets: inherit
+
+  start-cdh61-steam-sparkling:
+    name: Start EC2 - CDH 6.1 Steam Sparkling
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: cdh61-krb-steam-sparkling
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS - CDH 5.10 (Hadoop 2)
+  # ============================================================================
+  cdh510-standalone:
+    name: CDH 5.10 - STANDALONE
+    needs: start-cdh510-standalone
+    runs-on: ${{ needs.start-cdh510-standalone.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - STANDALONE (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STANDALONE
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - STANDALONE (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-standalone-keytab:
+    name: CDH 5.10 - STANDALONE KEYTAB
+    needs: start-cdh510-standalone-keytab
+    runs-on: ${{ needs.start-cdh510-standalone-keytab.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - STANDALONE KEYTAB (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STANDALONE_KEYTAB
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - STANDALONE KEYTAB (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-driver-keytab:
+    name: CDH 5.10 - DRIVER KEYTAB
+    needs: start-cdh510-driver-keytab
+    runs-on: ${{ needs.start-cdh510-driver-keytab.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - DRIVER KEYTAB (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STANDALONE_DRIVER_KEYTAB
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - DRIVER KEYTAB (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-hadoop:
+    name: CDH 5.10 - HADOOP
+    needs: start-cdh510-hadoop
+    runs-on: ${{ needs.start-cdh510-hadoop.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - HADOOP (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: ON_HADOOP
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - HADOOP (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-hadoop-spnego:
+    name: CDH 5.10 - HADOOP WITH SPNEGO
+    needs: start-cdh510-hadoop-spnego
+    runs-on: ${{ needs.start-cdh510-hadoop-spnego.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - HADOOP WITH SPNEGO (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: ON_HADOOP_WITH_SPNEGO
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - HADOOP WITH SPNEGO (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-hadoop-hdfs-refresh:
+    name: CDH 5.10 - HDFS TOKEN REFRESH
+    needs: start-cdh510-hadoop-hdfs-refresh
+    runs-on: ${{ needs.start-cdh510-hadoop-hdfs-refresh.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - HDFS TOKEN REFRESH (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: ON_HADOOP_WITH_HDFS_TOKEN_REFRESH
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - HDFS TOKEN REFRESH (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-steam-driver:
+    name: CDH 5.10 - STEAM DRIVER
+    needs: start-cdh510-steam-driver
+    runs-on: ${{ needs.start-cdh510-steam-driver.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - STEAM DRIVER (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STEAM_DRIVER
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - STEAM DRIVER (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-steam-mapper:
+    name: CDH 5.10 - STEAM MAPPER
+    needs: start-cdh510-steam-mapper
+    runs-on: ${{ needs.start-cdh510-steam-mapper.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - STEAM MAPPER (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STEAM_MAPPER
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - STEAM MAPPER (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-sparkling:
+    name: CDH 5.10 - SPARKLING
+    needs: start-cdh510-sparkling
+    runs-on: ${{ needs.start-cdh510-sparkling.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - SPARKLING (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: SPARKLING
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - SPARKLING (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh510-steam-sparkling:
+    name: CDH 5.10 - STEAM SPARKLING
+    needs: start-cdh510-steam-sparkling
+    runs-on: ${{ needs.start-cdh510-steam-sparkling.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 5.10 - STEAM SPARKLING (Kerberos)
+          make_target: test-kerberos-hadoop-2
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STEAM_SPARKLING
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 5.10 - STEAM SPARKLING (Kerberos)
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # RUN TESTS - CDH 6.1 (Hadoop 3)
+  # ============================================================================
+  cdh61-standalone:
+    name: CDH 6.1 - STANDALONE
+    needs: start-cdh61-standalone
+    runs-on: ${{ needs.start-cdh61-standalone.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - STANDALONE (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STANDALONE
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - STANDALONE (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-standalone-keytab:
+    name: CDH 6.1 - STANDALONE KEYTAB
+    needs: start-cdh61-standalone-keytab
+    runs-on: ${{ needs.start-cdh61-standalone-keytab.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - STANDALONE KEYTAB (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STANDALONE_KEYTAB
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - STANDALONE KEYTAB (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-driver-keytab:
+    name: CDH 6.1 - DRIVER KEYTAB
+    needs: start-cdh61-driver-keytab
+    runs-on: ${{ needs.start-cdh61-driver-keytab.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - DRIVER KEYTAB (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STANDALONE_DRIVER_KEYTAB
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - DRIVER KEYTAB (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-hadoop:
+    name: CDH 6.1 - HADOOP
+    needs: start-cdh61-hadoop
+    runs-on: ${{ needs.start-cdh61-hadoop.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - HADOOP (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: ON_HADOOP
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - HADOOP (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-hadoop-spnego:
+    name: CDH 6.1 - HADOOP WITH SPNEGO
+    needs: start-cdh61-hadoop-spnego
+    runs-on: ${{ needs.start-cdh61-hadoop-spnego.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - HADOOP WITH SPNEGO (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: ON_HADOOP_WITH_SPNEGO
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - HADOOP WITH SPNEGO (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-hadoop-hdfs-refresh:
+    name: CDH 6.1 - HDFS TOKEN REFRESH
+    needs: start-cdh61-hadoop-hdfs-refresh
+    runs-on: ${{ needs.start-cdh61-hadoop-hdfs-refresh.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - HDFS TOKEN REFRESH (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: ON_HADOOP_WITH_HDFS_TOKEN_REFRESH
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - HDFS TOKEN REFRESH (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-steam-driver:
+    name: CDH 6.1 - STEAM DRIVER
+    needs: start-cdh61-steam-driver
+    runs-on: ${{ needs.start-cdh61-steam-driver.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - STEAM DRIVER (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STEAM_DRIVER
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - STEAM DRIVER (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-steam-mapper:
+    name: CDH 6.1 - STEAM MAPPER
+    needs: start-cdh61-steam-mapper
+    runs-on: ${{ needs.start-cdh61-steam-mapper.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - STEAM MAPPER (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STEAM_MAPPER
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - STEAM MAPPER (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-sparkling:
+    name: CDH 6.1 - SPARKLING
+    needs: start-cdh61-sparkling
+    runs-on: ${{ needs.start-cdh61-sparkling.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - SPARKLING (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: SPARKLING
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - SPARKLING (Kerberos)
+          job_status: ${{ job.status }}
+
+  cdh61-steam-sparkling:
+    name: CDH 6.1 - STEAM SPARKLING
+    needs: start-cdh61-steam-sparkling
+    runs-on: ${{ needs.start-cdh61-steam-sparkling.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: CDH 6.1 - STEAM SPARKLING (Kerberos)
+          make_target: test-kerberos-hadoop-3
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+        env:
+          KERBEROS_MODE: STEAM_SPARKLING
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: CDH 6.1 - STEAM SPARKLING (Kerberos)
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS - CDH 5.10 (Always run for cleanup)
+  # ============================================================================
+  stop-cdh510-standalone:
+    name: Stop EC2 - CDH 5.10 Standalone
+    needs: [start-cdh510-standalone, cdh510-standalone]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-standalone.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-standalone.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-standalone-keytab:
+    name: Stop EC2 - CDH 5.10 Standalone Keytab
+    needs: [start-cdh510-standalone-keytab, cdh510-standalone-keytab]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-standalone-keytab.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-standalone-keytab.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-driver-keytab:
+    name: Stop EC2 - CDH 5.10 Driver Keytab
+    needs: [start-cdh510-driver-keytab, cdh510-driver-keytab]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-driver-keytab.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-driver-keytab.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-hadoop:
+    name: Stop EC2 - CDH 5.10 Hadoop
+    needs: [start-cdh510-hadoop, cdh510-hadoop]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-hadoop.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-hadoop.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-hadoop-spnego:
+    name: Stop EC2 - CDH 5.10 Hadoop SPNEGO
+    needs: [start-cdh510-hadoop-spnego, cdh510-hadoop-spnego]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-hadoop-spnego.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-hadoop-spnego.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-hadoop-hdfs-refresh:
+    name: Stop EC2 - CDH 5.10 HDFS Refresh
+    needs: [start-cdh510-hadoop-hdfs-refresh, cdh510-hadoop-hdfs-refresh]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-hadoop-hdfs-refresh.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-hadoop-hdfs-refresh.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-steam-driver:
+    name: Stop EC2 - CDH 5.10 Steam Driver
+    needs: [start-cdh510-steam-driver, cdh510-steam-driver]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-steam-driver.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-steam-driver.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-steam-mapper:
+    name: Stop EC2 - CDH 5.10 Steam Mapper
+    needs: [start-cdh510-steam-mapper, cdh510-steam-mapper]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-steam-mapper.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-steam-mapper.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-sparkling:
+    name: Stop EC2 - CDH 5.10 Sparkling
+    needs: [start-cdh510-sparkling, cdh510-sparkling]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-sparkling.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-sparkling.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh510-steam-sparkling:
+    name: Stop EC2 - CDH 5.10 Steam Sparkling
+    needs: [start-cdh510-steam-sparkling, cdh510-steam-sparkling]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh510-steam-sparkling.outputs.label }}
+      ec2_id: ${{ needs.start-cdh510-steam-sparkling.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # STOP EC2 RUNNERS - CDH 6.1 (Always run for cleanup)
+  # ============================================================================
+  stop-cdh61-standalone:
+    name: Stop EC2 - CDH 6.1 Standalone
+    needs: [start-cdh61-standalone, cdh61-standalone]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-standalone.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-standalone.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-standalone-keytab:
+    name: Stop EC2 - CDH 6.1 Standalone Keytab
+    needs: [start-cdh61-standalone-keytab, cdh61-standalone-keytab]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-standalone-keytab.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-standalone-keytab.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-driver-keytab:
+    name: Stop EC2 - CDH 6.1 Driver Keytab
+    needs: [start-cdh61-driver-keytab, cdh61-driver-keytab]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-driver-keytab.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-driver-keytab.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-hadoop:
+    name: Stop EC2 - CDH 6.1 Hadoop
+    needs: [start-cdh61-hadoop, cdh61-hadoop]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-hadoop.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-hadoop.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-hadoop-spnego:
+    name: Stop EC2 - CDH 6.1 Hadoop SPNEGO
+    needs: [start-cdh61-hadoop-spnego, cdh61-hadoop-spnego]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-hadoop-spnego.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-hadoop-spnego.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-hadoop-hdfs-refresh:
+    name: Stop EC2 - CDH 6.1 HDFS Refresh
+    needs: [start-cdh61-hadoop-hdfs-refresh, cdh61-hadoop-hdfs-refresh]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-hadoop-hdfs-refresh.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-hadoop-hdfs-refresh.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-steam-driver:
+    name: Stop EC2 - CDH 6.1 Steam Driver
+    needs: [start-cdh61-steam-driver, cdh61-steam-driver]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-steam-driver.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-steam-driver.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-steam-mapper:
+    name: Stop EC2 - CDH 6.1 Steam Mapper
+    needs: [start-cdh61-steam-mapper, cdh61-steam-mapper]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-steam-mapper.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-steam-mapper.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-sparkling:
+    name: Stop EC2 - CDH 6.1 Sparkling
+    needs: [start-cdh61-sparkling, cdh61-sparkling]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-sparkling.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-sparkling.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-cdh61-steam-sparkling:
+    name: Stop EC2 - CDH 6.1 Steam Sparkling
+    needs: [start-cdh61-steam-sparkling, cdh61-steam-sparkling]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-cdh61-steam-sparkling.outputs.label }}
+      ec2_id: ${{ needs.start-cdh61-steam-sparkling.outputs.ec2_id }}
+    secrets: inherit

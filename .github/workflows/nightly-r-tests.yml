@@ -1,0 +1,795 @@
+# ==============================================================================
+#                              R TEST SUITE
+# ==============================================================================
+#
+# 18 R tests across R 3.4.1, 3.5.3, 4.0.2, and 4.4.0
+# All tests run on EC2 runners with EFS access for test data
+#
+# CATEGORIES:
+#   - PR_STAGES (11)      : Init, small, AutoML, CMD check, booklets, demos
+#   - MASTER_STAGES (1)   : Datatable
+#   - NIGHTLY_REPEATED (4): Multi-version compatibility
+#   - NIGHTLY_STAGES (2)  : Explain tests
+#
+# ==============================================================================
+
+name: R Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (18 in parallel)
+  # ============================================================================
+  start-r35-init-java8:
+    name: Start - R3.5 Init Java 8
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-init-java8
+    secrets: inherit
+
+  start-r35-small:
+    name: Start - R3.5 Small
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-small
+    secrets: inherit
+
+  start-r35-automl:
+    name: Start - R3.5 AutoML
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-automl
+    secrets: inherit
+
+  start-r35-cmd-check:
+    name: Start - R3.5 CMD Check
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-cmd-check
+    secrets: inherit
+
+  start-r40-small:
+    name: Start - R4.0 Small
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r40-small
+    secrets: inherit
+
+  start-r40-cmd-check:
+    name: Start - R4.0 CMD Check
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r40-cmd-check
+    secrets: inherit
+
+  start-r35-booklets:
+    name: Start - R3.5 Booklets
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-booklets
+    secrets: inherit
+
+  start-r35-demos-small:
+    name: Start - R3.5 Demos Small
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-demos-small
+    secrets: inherit
+
+  start-r35-medium-large:
+    name: Start - R3.5 Medium-large
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-medium-large
+    secrets: inherit
+
+  start-r35-demos-medium-large:
+    name: Start - R3.5 Demos Medium-large
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-demos-ml
+    secrets: inherit
+
+  start-r35-generate-docs:
+    name: Start - R3.5 Generate Docs
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-docs
+    secrets: inherit
+
+  start-r35-datatable:
+    name: Start - R3.5 Datatable
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-datatable
+    secrets: inherit
+
+  start-r35-init-java11:
+    name: Start - R3.5 Init Java 11
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-init-java11
+    secrets: inherit
+
+  start-r34-medium-large:
+    name: Start - R3.4 Medium-large
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r34-medium-large
+    secrets: inherit
+
+  start-r34-small:
+    name: Start - R3.4 Small
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r34-small
+    secrets: inherit
+
+  start-r34-automl:
+    name: Start - R3.4 AutoML
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r34-automl
+    secrets: inherit
+
+  start-r40-explain:
+    name: Start - R4.0 Explain
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r40-explain
+    secrets: inherit
+
+  start-r44-explain:
+    name: Start - R4.4 Explain
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r44-explain
+    secrets: inherit
+
+  # ============================================================================
+  # R TESTS (Run on dedicated EC2 runners)
+  # ============================================================================
+
+  # ===================== PR_STAGES =====================
+  r35-init-java8:
+    name: R3.5 Init Java 8
+    needs: start-r35-init-java8
+    runs-on: ${{ needs.start-r35-init-java8.outputs.label }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Init Java 8
+          make_target: test-r-init
+          test_package: r
+          r: "3.5.3"
+          java: "8"
+          image: r-3.5.3-jdk-8
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Init Java 8
+          job_status: ${{ job.status }}
+
+  r35-small:
+    name: R3.5 Small
+    needs: start-r35-small
+    runs-on: ${{ needs.start-r35-small.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Small
+          make_target: test-r-small
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Small
+          job_status: ${{ job.status }}
+
+  r35-automl:
+    name: R3.5 AutoML
+    needs: start-r35-automl
+    runs-on: ${{ needs.start-r35-automl.outputs.label }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 AutoML
+          make_target: test-r-automl
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 AutoML
+          job_status: ${{ job.status }}
+
+  r35-cmd-check:
+    name: R3.5 CMD Check as CRAN
+    needs: start-r35-cmd-check
+    runs-on: ${{ needs.start-r35-cmd-check.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 CMD Check as CRAN
+          make_target: test-r-cmd-check-as-cran
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 CMD Check as CRAN
+          job_status: ${{ job.status }}
+
+  r40-small:
+    name: R4.0 Small
+    needs: start-r40-small
+    runs-on: ${{ needs.start-r40-small.outputs.label }}
+    timeout-minutes: 210
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R4.0 Small
+          make_target: test-r-small
+          test_package: r
+          r: "4.0.2"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R4.0 Small
+          job_status: ${{ job.status }}
+
+  r40-cmd-check:
+    name: R4.0 CMD Check as CRAN
+    needs: start-r40-cmd-check
+    runs-on: ${{ needs.start-r40-cmd-check.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R4.0 CMD Check as CRAN
+          make_target: test-r-cmd-check-as-cran
+          test_package: r
+          r: "4.0.2"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R4.0 CMD Check as CRAN
+          job_status: ${{ job.status }}
+
+  r35-booklets:
+    name: R3.5 Booklets
+    needs: start-r35-booklets
+    runs-on: ${{ needs.start-r35-booklets.outputs.label }}
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Booklets
+          make_target: test-r-booklets
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Booklets
+          job_status: ${{ job.status }}
+
+  r35-demos-small:
+    name: R3.5 Demos Small
+    needs: start-r35-demos-small
+    runs-on: ${{ needs.start-r35-demos-small.outputs.label }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Demos Small
+          make_target: test-r-demos-small
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Demos Small
+          job_status: ${{ job.status }}
+
+  r35-medium-large:
+    name: R3.5 Medium-large
+    needs: start-r35-medium-large
+    runs-on: ${{ needs.start-r35-medium-large.outputs.label }}
+    timeout-minutes: 230
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Medium-large
+          make_target: test-r-medium-large
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Medium-large
+          job_status: ${{ job.status }}
+
+  r35-demos-medium-large:
+    name: R3.5 Demos Medium-large
+    needs: start-r35-demos-medium-large
+    runs-on: ${{ needs.start-r35-demos-medium-large.outputs.label }}
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Demos Medium-large
+          make_target: test-r-demos-medium-large
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Demos Medium-large
+          job_status: ${{ job.status }}
+
+  r35-generate-docs:
+    name: R3.5 Generate Docs
+    needs: start-r35-generate-docs
+    runs-on: ${{ needs.start-r35-generate-docs.outputs.label }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Generate Docs
+          make_target: r-generate-docs-jenkins
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Generate Docs
+          job_status: ${{ job.status }}
+
+  # ===================== MASTER_STAGES =====================
+  r35-datatable:
+    name: R3.5 Datatable
+    needs: start-r35-datatable
+    runs-on: ${{ needs.start-r35-datatable.outputs.label }}
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Datatable
+          make_target: test-r-datatable
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Datatable
+          job_status: ${{ job.status }}
+
+  # ===================== NIGHTLY_REPEATED =====================
+  r35-init-java11:
+    name: R3.5 Init Java 11
+    needs: start-r35-init-java11
+    runs-on: ${{ needs.start-r35-init-java11.outputs.label }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Init Java 11
+          make_target: test-r-init
+          test_package: r
+          r: "3.5.3"
+          java: "11"
+          image: r-3.5.3-jdk-11
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Init Java 11
+          job_status: ${{ job.status }}
+
+  r34-medium-large:
+    name: R3.4 Medium-large
+    needs: start-r34-medium-large
+    runs-on: ${{ needs.start-r34-medium-large.outputs.label }}
+    timeout-minutes: 230
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.4 Medium-large
+          make_target: test-r-medium-large
+          test_package: r
+          r: "3.4.1"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.4 Medium-large
+          job_status: ${{ job.status }}
+
+  r34-small:
+    name: R3.4 Small
+    needs: start-r34-small
+    runs-on: ${{ needs.start-r34-small.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.4 Small
+          make_target: test-r-small
+          test_package: r
+          r: "3.4.1"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.4 Small
+          job_status: ${{ job.status }}
+
+  r34-automl:
+    name: R3.4 AutoML
+    needs: start-r34-automl
+    runs-on: ${{ needs.start-r34-automl.outputs.label }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.4 AutoML
+          make_target: test-r-automl
+          test_package: r
+          r: "3.4.1"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.4 AutoML
+          job_status: ${{ job.status }}
+
+  # ===================== NIGHTLY_STAGES =====================
+  r40-explain:
+    name: R4.0 Explain
+    needs: start-r40-explain
+    runs-on: ${{ needs.start-r40-explain.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R4.0 Explain
+          make_target: test-r-explain
+          test_package: r
+          r: "4.0.2"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R4.0 Explain
+          job_status: ${{ job.status }}
+
+  r44-explain:
+    name: R4.4 Explain
+    needs: start-r44-explain
+    runs-on: ${{ needs.start-r44-explain.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R4.4 Explain
+          make_target: test-r-explain
+          test_package: r
+          r: "4.4.0"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R4.4 Explain
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-r35-init-java8:
+    name: Stop - R3.5 Init Java 8
+    needs: [start-r35-init-java8, r35-init-java8]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-init-java8.outputs.label }}
+      ec2_id: ${{ needs.start-r35-init-java8.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-small:
+    name: Stop - R3.5 Small
+    needs: [start-r35-small, r35-small]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-small.outputs.label }}
+      ec2_id: ${{ needs.start-r35-small.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-automl:
+    name: Stop - R3.5 AutoML
+    needs: [start-r35-automl, r35-automl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-automl.outputs.label }}
+      ec2_id: ${{ needs.start-r35-automl.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-cmd-check:
+    name: Stop - R3.5 CMD Check
+    needs: [start-r35-cmd-check, r35-cmd-check]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-cmd-check.outputs.label }}
+      ec2_id: ${{ needs.start-r35-cmd-check.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r40-small:
+    name: Stop - R4.0 Small
+    needs: [start-r40-small, r40-small]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r40-small.outputs.label }}
+      ec2_id: ${{ needs.start-r40-small.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r40-cmd-check:
+    name: Stop - R4.0 CMD Check
+    needs: [start-r40-cmd-check, r40-cmd-check]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r40-cmd-check.outputs.label }}
+      ec2_id: ${{ needs.start-r40-cmd-check.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-booklets:
+    name: Stop - R3.5 Booklets
+    needs: [start-r35-booklets, r35-booklets]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-booklets.outputs.label }}
+      ec2_id: ${{ needs.start-r35-booklets.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-demos-small:
+    name: Stop - R3.5 Demos Small
+    needs: [start-r35-demos-small, r35-demos-small]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-demos-small.outputs.label }}
+      ec2_id: ${{ needs.start-r35-demos-small.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-medium-large:
+    name: Stop - R3.5 Medium-large
+    needs: [start-r35-medium-large, r35-medium-large]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-medium-large.outputs.label }}
+      ec2_id: ${{ needs.start-r35-medium-large.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-demos-medium-large:
+    name: Stop - R3.5 Demos Medium-large
+    needs: [start-r35-demos-medium-large, r35-demos-medium-large]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-demos-medium-large.outputs.label }}
+      ec2_id: ${{ needs.start-r35-demos-medium-large.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-generate-docs:
+    name: Stop - R3.5 Generate Docs
+    needs: [start-r35-generate-docs, r35-generate-docs]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-generate-docs.outputs.label }}
+      ec2_id: ${{ needs.start-r35-generate-docs.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-datatable:
+    name: Stop - R3.5 Datatable
+    needs: [start-r35-datatable, r35-datatable]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-datatable.outputs.label }}
+      ec2_id: ${{ needs.start-r35-datatable.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r35-init-java11:
+    name: Stop - R3.5 Init Java 11
+    needs: [start-r35-init-java11, r35-init-java11]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-init-java11.outputs.label }}
+      ec2_id: ${{ needs.start-r35-init-java11.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r34-medium-large:
+    name: Stop - R3.4 Medium-large
+    needs: [start-r34-medium-large, r34-medium-large]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r34-medium-large.outputs.label }}
+      ec2_id: ${{ needs.start-r34-medium-large.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r34-small:
+    name: Stop - R3.4 Small
+    needs: [start-r34-small, r34-small]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r34-small.outputs.label }}
+      ec2_id: ${{ needs.start-r34-small.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r34-automl:
+    name: Stop - R3.4 AutoML
+    needs: [start-r34-automl, r34-automl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r34-automl.outputs.label }}
+      ec2_id: ${{ needs.start-r34-automl.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r40-explain:
+    name: Stop - R4.0 Explain
+    needs: [start-r40-explain, r40-explain]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r40-explain.outputs.label }}
+      ec2_id: ${{ needs.start-r40-explain.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r44-explain:
+    name: Stop - R4.4 Explain
+    needs: [start-r44-explain, r44-explain]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r44-explain.outputs.label }}
+      ec2_id: ${{ needs.start-r44-explain.outputs.ec2_id }}
+    secrets: inherit

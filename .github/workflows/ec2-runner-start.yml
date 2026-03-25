@@ -1,0 +1,159 @@
+# ==============================================================================
+#                         EC2 RUNNER START
+# ==============================================================================
+#
+# PURPOSE:
+#   Reusable workflow to start an EC2 self-hosted runner.
+#   Includes retry logic with exponential backoff for API rate limiting.
+#
+# OUTPUTS:
+#   - label: Runner label for runs-on
+#   - ec2_id: EC2 instance ID for cleanup
+#
+# ==============================================================================
+
+name: Start EC2 Runner
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: 'Runner name for EC2 tagging'
+        required: true
+        type: string
+
+      instance_type:
+        description: 'EC2 instance type'
+        required: false
+        type: string
+        default: 'm5.4xlarge'
+
+    outputs:
+      label:
+        description: 'Runner label for runs-on'
+        value: ${{ jobs.start.outputs.label }}
+
+      ec2_id:
+        description: 'EC2 instance ID'
+        value: ${{ jobs.start.outputs.ec2_id }}
+
+env:
+  AWS_REGION: us-east-1
+  EC2_ROLE: arn:aws:iam::041740254655:role/GitHub-OIDC-Role
+  AMI_ID: ami-0b754f369244f678b
+  SUBNET_ID: subnet-0b990c6f0c5a7f708
+  SECURITY_GROUP: sg-0624a8f944a8e8b57
+
+jobs:
+  start:
+    name: Start EC2
+    runs-on: ubuntu-latest
+    timeout-minutes: 600
+    outputs:
+      label: ${{ steps.final.outputs.label }}
+      ec2_id: ${{ steps.final.outputs.ec2_id }}
+
+    steps:
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-start-${{ inputs.name }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Stagger Start
+        run: |
+          # Increased stagger delay to avoid EC2 API throttling when starting many runners
+          DELAY=$((RANDOM % 60 + 30))
+          echo "Waiting ${DELAY}s to stagger EC2 API calls..."
+          sleep $DELAY
+
+      - name: Start EC2 (Attempt 1)
+        id: start1
+        continue-on-error: true
+        uses: machulav/ec2-github-runner@v2.3.9
+        with:
+          mode: start
+          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          ec2-image-id: ${{ env.AMI_ID }}
+          ec2-instance-type: ${{ inputs.instance_type }}
+          subnet-id: ${{ env.SUBNET_ID }}
+          security-group-id: ${{ env.SECURITY_GROUP }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
+              {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
+              {"Key": "h2o/environment", "Value": "prd"},
+              {"Key": "h2o/scheduling", "Value": "self-managed"},
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+            ]
+
+      - name: Retry Delay 1
+        if: steps.start1.outcome == 'failure'
+        run: sleep $((RANDOM % 60 + 60))
+
+      - name: Start EC2 (Attempt 2)
+        id: start2
+        if: steps.start1.outcome == 'failure'
+        continue-on-error: true
+        uses: machulav/ec2-github-runner@v2.3.9
+        with:
+          mode: start
+          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          ec2-image-id: ${{ env.AMI_ID }}
+          ec2-instance-type: ${{ inputs.instance_type }}
+          subnet-id: ${{ env.SUBNET_ID }}
+          security-group-id: ${{ env.SECURITY_GROUP }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
+              {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
+              {"Key": "h2o/environment", "Value": "prd"},
+              {"Key": "h2o/scheduling", "Value": "self-managed"},
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+            ]
+
+      - name: Retry Delay 2
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
+        run: sleep $((RANDOM % 120 + 120))
+
+      - name: Start EC2 (Attempt 3)
+        id: start3
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
+        uses: machulav/ec2-github-runner@v2.3.9
+        with:
+          mode: start
+          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          ec2-image-id: ${{ env.AMI_ID }}
+          ec2-instance-type: ${{ inputs.instance_type }}
+          subnet-id: ${{ env.SUBNET_ID }}
+          security-group-id: ${{ env.SECURITY_GROUP }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
+              {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
+              {"Key": "h2o/environment", "Value": "prd"},
+              {"Key": "h2o/scheduling", "Value": "self-managed"},
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+            ]
+
+      - name: Set Outputs
+        id: final
+        run: |
+          if [ -n "${{ steps.start1.outputs.label }}" ]; then
+            echo "label=${{ steps.start1.outputs.label }}" >> $GITHUB_OUTPUT
+            echo "ec2_id=${{ steps.start1.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ steps.start2.outputs.label }}" ]; then
+            echo "label=${{ steps.start2.outputs.label }}" >> $GITHUB_OUTPUT
+            echo "ec2_id=${{ steps.start2.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ steps.start3.outputs.label }}" ]; then
+            echo "label=${{ steps.start3.outputs.label }}" >> $GITHUB_OUTPUT
+            echo "ec2_id=${{ steps.start3.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+          else
+            echo "::error::All EC2 start attempts failed"
+            exit 1
+          fi

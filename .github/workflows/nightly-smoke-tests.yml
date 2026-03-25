@@ -1,0 +1,440 @@
+# ==============================================================================
+#                            SMOKE TEST SUITE
+# ==============================================================================
+#
+# Quick validation tests (9 total) - All on EC2 runners
+#
+# TESTS:
+#   - Python Smoke (2)  : Py3.7, Py3.11         → EC2 runners
+#   - R Smoke (2)       : R3.5, R4.0            → EC2 runners
+#   - Flow Smoke (1)    : Headless              → EC2 runners
+#   - INFO Check (1)    : Java info             → EC2 runners
+#   - Java Smoke (3)    : Java 8, 11, 17        → EC2 runners
+#
+# ARCHITECTURE:
+#   1. Start 9 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Smoke Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (10 in parallel)
+  # ============================================================================
+
+  # Python Smoke Tests
+  start-py37-smoke:
+    name: Start EC2 - Py3.7
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-smoke
+    secrets: inherit
+
+  start-py311-smoke:
+    name: Start EC2 - Py3.11
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py311-smoke
+    secrets: inherit
+
+  # R Smoke Tests
+  start-r35-smoke:
+    name: Start EC2 - R3.5
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r35-smoke
+    secrets: inherit
+
+  start-r40-smoke:
+    name: Start EC2 - R4.0
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: r40-smoke
+    secrets: inherit
+
+  # Flow Smoke Test
+  start-flow-smoke:
+    name: Start EC2 - Flow
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: flow-smoke
+    secrets: inherit
+
+  # INFO Check
+  start-info-check:
+    name: Start EC2 - INFO
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: info-check
+    secrets: inherit
+
+  # Java Smoke Tests
+  start-java8-smoke:
+    name: Start EC2 - Java 8
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-smoke
+    secrets: inherit
+
+  start-java11-smoke:
+    name: Start EC2 - Java 11
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-smoke
+    secrets: inherit
+
+  start-java17-smoke:
+    name: Start EC2 - Java 17
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-smoke
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS (on dedicated EC2 runners)
+  # ============================================================================
+
+  # Python Smoke Tests
+  py37-smoke:
+    name: Py3.7 Smoke
+    needs: start-py37-smoke
+    runs-on: ${{ needs.start-py37-smoke.outputs.label }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Smoke
+          make_target: test-py-smoke
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Smoke
+          job_status: ${{ job.status }}
+
+  py311-smoke:
+    name: Py3.11 Smoke
+    needs: start-py311-smoke
+    runs-on: ${{ needs.start-py311-smoke.outputs.label }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.11 Smoke
+          make_target: test-py-smoke
+          test_package: py
+          python: "3.11"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.11 Smoke
+          job_status: ${{ job.status }}
+
+  # R Smoke Tests
+  r35-smoke:
+    name: R3.5 Smoke
+    needs: start-r35-smoke
+    runs-on: ${{ needs.start-r35-smoke.outputs.label }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R3.5 Smoke
+          make_target: test-r-smoke
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R3.5 Smoke
+          job_status: ${{ job.status }}
+
+  r40-smoke:
+    name: R4.0 Smoke
+    needs: start-r40-smoke
+    runs-on: ${{ needs.start-r40-smoke.outputs.label }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: R4.0 Smoke
+          make_target: test-r-smoke
+          test_package: r
+          r: "4.0.2"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: R4.0 Smoke
+          job_status: ${{ job.status }}
+
+  # Flow Smoke Test
+  flow-smoke:
+    name: Flow Headless Smoke
+    needs: start-flow-smoke
+    runs-on: ${{ needs.start-flow-smoke.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Flow Headless Smoke
+          make_target: test-flow-headless-smoke
+          test_package: js
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Flow Headless Smoke
+          job_status: ${{ job.status }}
+
+  # INFO Check - requires R environment (test-info uses R scripts)
+  info-check:
+    name: INFO Check
+    needs: start-info-check
+    runs-on: ${{ needs.start-info-check.outputs.label }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: INFO Check
+          make_target: test-info
+          test_package: r
+          r: "3.5.3"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: INFO Check
+          job_status: ${{ job.status }}
+
+  # Java Smoke Tests
+  java8-smoke:
+    name: Java 8 Smoke
+    needs: start-java8-smoke
+    runs-on: ${{ needs.start-java8-smoke.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Smoke
+          make_target: test-junit-smoke-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Smoke
+          job_status: ${{ job.status }}
+
+  java11-smoke:
+    name: Java 11 Smoke
+    needs: start-java11-smoke
+    runs-on: ${{ needs.start-java11-smoke.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Smoke
+          make_target: test-junit-smoke-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Smoke
+          job_status: ${{ job.status }}
+
+  java17-smoke:
+    name: Java 17 Smoke
+    needs: start-java17-smoke
+    runs-on: ${{ needs.start-java17-smoke.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Smoke
+          make_target: test-junit-17-smoke-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Smoke
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+
+  # Python Smoke Tests
+  stop-py37-smoke:
+    name: Stop EC2 - Py3.7
+    needs: [start-py37-smoke, py37-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-py37-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py311-smoke:
+    name: Stop EC2 - Py3.11
+    needs: [start-py311-smoke, py311-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py311-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-py311-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  # R Smoke Tests
+  stop-r35-smoke:
+    name: Stop EC2 - R3.5
+    needs: [start-r35-smoke, r35-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r35-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-r35-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-r40-smoke:
+    name: Stop EC2 - R4.0
+    needs: [start-r40-smoke, r40-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-r40-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-r40-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  # Flow Smoke Test
+  stop-flow-smoke:
+    name: Stop EC2 - Flow
+    needs: [start-flow-smoke, flow-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-flow-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-flow-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  # INFO Check
+  stop-info-check:
+    name: Stop EC2 - INFO
+    needs: [start-info-check, info-check]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-info-check.outputs.label }}
+      ec2_id: ${{ needs.start-info-check.outputs.ec2_id }}
+    secrets: inherit
+
+  # Java Smoke Tests
+  stop-java8-smoke:
+    name: Stop EC2 - Java 8
+    needs: [start-java8-smoke, java8-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-java8-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java11-smoke:
+    name: Stop EC2 - Java 11
+    needs: [start-java11-smoke, java11-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-java11-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java17-smoke:
+    name: Stop EC2 - Java 17
+    needs: [start-java17-smoke, java17-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-java17-smoke.outputs.ec2_id }}
+    secrets: inherit

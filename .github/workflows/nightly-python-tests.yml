@@ -1,0 +1,875 @@
+# ==============================================================================
+#                           PYTHON TEST SUITE
+# ==============================================================================
+#
+# 17 Python tests across Python 3.7 and 3.11 - All on EC2 runners
+#
+# CATEGORIES:
+#   - Assembly Smoke (3)  : Main, Minimal, Steam package validation
+#   - PR_STAGES (9)       : Core functionality tests
+#   - NIGHTLY_STAGES (5)  : Extended tests (Explain, XGBoost stress)
+#
+# ARCHITECTURE:
+#   1. Start 17 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Python Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (27 in parallel)
+  # ============================================================================
+
+  # Assembly Smoke Tests
+  start-py37-smoke-main:
+    name: Start EC2 - Py3.7 Main
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-smoke-main
+    secrets: inherit
+
+  start-py37-smoke-minimal:
+    name: Start EC2 - Py3.7 Minimal
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-smoke-minimal
+    secrets: inherit
+
+  start-py37-smoke-steam:
+    name: Start EC2 - Py3.7 Steam
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-smoke-steam
+    secrets: inherit
+
+  # PR_STAGES
+
+
+  start-py37-single-node:
+    name: Start EC2 - Py3.7 Single Node
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-single-node
+    secrets: inherit
+
+
+  start-py37-small:
+    name: Start EC2 - Py3.7 Small
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-small
+    secrets: inherit
+
+  start-py37-mojo2:
+    name: Start EC2 - Py3.7 MOJO2
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-mojo2
+    secrets: inherit
+
+  start-py37-automl:
+    name: Start EC2 - Py3.7 AutoML
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-automl
+    secrets: inherit
+
+  start-py37-automl-smoke:
+    name: Start EC2 - Py3.7 AutoML Smoke
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-automl-smoke
+    secrets: inherit
+
+  start-py37-fault-tolerance:
+    name: Start EC2 - Py3.7 Fault Tolerance
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-fault-tolerance
+    secrets: inherit
+
+  start-py37-medium-large:
+    name: Start EC2 - Py3.7 Medium-large
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-medium-large
+    secrets: inherit
+
+  start-py37-xlarge:
+    name: Start EC2 - Py3.7 X-large
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-xlarge
+    secrets: inherit
+
+  start-py37-demos:
+    name: Start EC2 - Py3.7 Demos
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-demos
+    secrets: inherit
+
+  start-py37-demos-scikit:
+    name: Start EC2 - Py3.7 Demos Scikit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-demos-scikit
+    secrets: inherit
+
+
+  start-external-xgboost:
+    name: Start EC2 - External XGBoost
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: external-xgboost
+    secrets: inherit
+
+
+
+
+
+
+  # NIGHTLY_STAGES
+  start-py37-explain:
+    name: Start EC2 - Py3.7 Explain
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py37-explain
+    secrets: inherit
+
+  start-py311-single-node:
+    name: Start EC2 - Py3.11 Single Node
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py311-single-node
+    secrets: inherit
+
+  start-py311-fault-tolerance:
+    name: Start EC2 - Py3.11 Fault Tolerance
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: py311-fault-tolerance
+    secrets: inherit
+
+  start-xgboost-stress:
+    name: Start EC2 - XGBoost Stress
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: xgboost-stress
+    secrets: inherit
+
+  start-persist-drive:
+    name: Start EC2 - Persist Drive
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: persist-drive
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS (on dedicated EC2 runners)
+  # ============================================================================
+
+  # Assembly Smoke Tests
+  py37-smoke-main:
+    name: Py3.7 Smoke (Main)
+    needs: start-py37-smoke-main
+    runs-on: ${{ needs.start-py37-smoke-main.outputs.label }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Smoke (Main)
+          make_target: test-py-smoke-main
+          test_package: main
+          python: "3.7"
+          image: python-3.7-jdk-8
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Smoke (Main)
+          job_status: ${{ job.status }}
+
+  py37-smoke-minimal:
+    name: Py3.7 Smoke (Minimal)
+    needs: start-py37-smoke-minimal
+    runs-on: ${{ needs.start-py37-smoke-minimal.outputs.label }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Smoke (Minimal)
+          make_target: test-py-smoke-minimal
+          test_package: minimal
+          python: "3.7"
+          image: python-3.7-jdk-8
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Smoke (Minimal)
+          job_status: ${{ job.status }}
+
+  py37-smoke-steam:
+    name: Py3.7 Smoke (Steam)
+    needs: start-py37-smoke-steam
+    runs-on: ${{ needs.start-py37-smoke-steam.outputs.label }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Smoke (Steam)
+          make_target: test-py-smoke-steam
+          test_package: steam
+          python: "3.7"
+          image: python-3.7-jdk-8
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Smoke (Steam)
+          job_status: ${{ job.status }}
+
+  # PR_STAGES
+
+
+  py37-single-node:
+    name: Py3.7 Single Node
+    needs: start-py37-single-node
+    runs-on: ${{ needs.start-py37-single-node.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Single Node
+          make_target: test-pyunit-single-node
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Single Node
+          job_status: ${{ job.status }}
+
+
+  py37-small:
+    name: Py3.7 Small
+    needs: start-py37-small
+    runs-on: ${{ needs.start-py37-small.outputs.label }}
+    timeout-minutes: 210
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Small
+          make_target: test-pyunit-small
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Small
+          job_status: ${{ job.status }}
+
+  py37-mojo2:
+    name: Py3.7 MOJO2
+    needs: start-py37-mojo2
+    runs-on: ${{ needs.start-py37-mojo2.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 MOJO2
+          make_target: test-pyunit-mojo2
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 MOJO2
+          job_status: ${{ job.status }}
+
+  py37-automl:
+    name: Py3.7 AutoML
+    needs: start-py37-automl
+    runs-on: ${{ needs.start-py37-automl.outputs.label }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 AutoML
+          make_target: test-pyunit-automl
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 AutoML
+          job_status: ${{ job.status }}
+
+  py37-automl-smoke:
+    name: Py3.7 AutoML Smoke (NO XGB)
+    needs: start-py37-automl-smoke
+    runs-on: ${{ needs.start-py37-automl-smoke.outputs.label }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 AutoML Smoke (NO XGB)
+          make_target: test-pyunit-automl-smoke-noxgb
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 AutoML Smoke (NO XGB)
+          job_status: ${{ job.status }}
+
+  py37-fault-tolerance:
+    name: Py3.7 Fault Tolerance
+    needs: start-py37-fault-tolerance
+    runs-on: ${{ needs.start-py37-fault-tolerance.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Fault Tolerance
+          make_target: test-pyunit-fault-tolerance
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Fault Tolerance
+          job_status: ${{ job.status }}
+
+  py37-medium-large:
+    name: Py3.7 Medium-large
+    needs: start-py37-medium-large
+    runs-on: ${{ needs.start-py37-medium-large.outputs.label }}
+    timeout-minutes: 450
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Medium-large
+          make_target: test-pyunit-medium-large
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Medium-large
+          job_status: ${{ job.status }}
+
+  py37-xlarge:
+    name: Py3.7 X-large
+    needs: start-py37-xlarge
+    runs-on: ${{ needs.start-py37-xlarge.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 X-large
+          make_target: test-pyunit-xlarge
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 X-large
+          job_status: ${{ job.status }}
+
+  py37-demos:
+    name: Py3.7 Demo Notebooks
+    needs: start-py37-demos
+    runs-on: ${{ needs.start-py37-demos.outputs.label }}
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Demo Notebooks
+          make_target: test-py-demos
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Demo Notebooks
+          job_status: ${{ job.status }}
+
+  py37-demos-scikit:
+    name: Py3.7 Demo Notebooks (Scikit)
+    needs: start-py37-demos-scikit
+    runs-on: ${{ needs.start-py37-demos-scikit.outputs.label }}
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Demo Notebooks (Scikit)
+          make_target: test-py-demos-new-scikit
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Demo Notebooks (Scikit)
+          job_status: ${{ job.status }}
+
+
+  external-xgboost:
+    name: External XGBoost
+    needs: start-external-xgboost
+    runs-on: ${{ needs.start-external-xgboost.outputs.label }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: External XGBoost
+          make_target: test-external-xgboost
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: External XGBoost
+          job_status: ${{ job.status }}
+
+
+
+
+
+
+  # NIGHTLY_STAGES
+  py37-explain:
+    name: Py3.7 Explain
+    needs: start-py37-explain
+    runs-on: ${{ needs.start-py37-explain.outputs.label }}
+    timeout-minutes: 220
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.7 Explain
+          make_target: test-pyunit-explain
+          test_package: py
+          python: "3.7"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.7 Explain
+          job_status: ${{ job.status }}
+
+  py311-single-node:
+    name: Py3.11 Single Node
+    needs: start-py311-single-node
+    runs-on: ${{ needs.start-py311-single-node.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.11 Single Node
+          make_target: test-pyunit-single-node
+          test_package: py
+          python: "3.11"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.11 Single Node
+          job_status: ${{ job.status }}
+
+  py311-fault-tolerance:
+    name: Py3.11 Fault Tolerance
+    needs: start-py311-fault-tolerance
+    runs-on: ${{ needs.start-py311-fault-tolerance.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Py3.11 Fault Tolerance
+          make_target: test-pyunit-fault-tolerance
+          test_package: py
+          python: "3.11"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Py3.11 Fault Tolerance
+          job_status: ${{ job.status }}
+
+  xgboost-stress:
+    name: XGBoost Stress
+    needs: start-xgboost-stress
+    runs-on: ${{ needs.start-xgboost-stress.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: XGBoost Stress
+          make_target: test-pyunit-xgboost-stress
+          test_package: py
+          python: "3.7"
+          docker_args: "--ulimit nofile=150:150"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: XGBoost Stress
+          job_status: ${{ job.status }}
+
+  persist-drive:
+    name: Persist Drive (GraalVM)
+    needs: start-persist-drive
+    runs-on: ${{ needs.start-persist-drive.outputs.label }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Persist Drive (GraalVM)
+          make_target: test-py-persist-drive-jenkins
+          test_package: py
+          python: "3.7"
+          java: "17"
+          image: python-3.7-jdk-17
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Persist Drive (GraalVM)
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+
+  # Assembly Smoke Tests
+  stop-py37-smoke-main:
+    name: Stop EC2 - Py3.7 Main
+    needs: [start-py37-smoke-main, py37-smoke-main]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-smoke-main.outputs.label }}
+      ec2_id: ${{ needs.start-py37-smoke-main.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-smoke-minimal:
+    name: Stop EC2 - Py3.7 Minimal
+    needs: [start-py37-smoke-minimal, py37-smoke-minimal]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-smoke-minimal.outputs.label }}
+      ec2_id: ${{ needs.start-py37-smoke-minimal.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-smoke-steam:
+    name: Stop EC2 - Py3.7 Steam
+    needs: [start-py37-smoke-steam, py37-smoke-steam]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-smoke-steam.outputs.label }}
+      ec2_id: ${{ needs.start-py37-smoke-steam.outputs.ec2_id }}
+    secrets: inherit
+
+  # PR_STAGES
+
+
+  stop-py37-single-node:
+    name: Stop EC2 - Py3.7 Single Node
+    needs: [start-py37-single-node, py37-single-node]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-single-node.outputs.label }}
+      ec2_id: ${{ needs.start-py37-single-node.outputs.ec2_id }}
+    secrets: inherit
+
+
+  stop-py37-small:
+    name: Stop EC2 - Py3.7 Small
+    needs: [start-py37-small, py37-small]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-small.outputs.label }}
+      ec2_id: ${{ needs.start-py37-small.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-mojo2:
+    name: Stop EC2 - Py3.7 MOJO2
+    needs: [start-py37-mojo2, py37-mojo2]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-mojo2.outputs.label }}
+      ec2_id: ${{ needs.start-py37-mojo2.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-automl:
+    name: Stop EC2 - Py3.7 AutoML
+    needs: [start-py37-automl, py37-automl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-automl.outputs.label }}
+      ec2_id: ${{ needs.start-py37-automl.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-automl-smoke:
+    name: Stop EC2 - Py3.7 AutoML Smoke
+    needs: [start-py37-automl-smoke, py37-automl-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-automl-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-py37-automl-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-fault-tolerance:
+    name: Stop EC2 - Py3.7 Fault Tolerance
+    needs: [start-py37-fault-tolerance, py37-fault-tolerance]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-fault-tolerance.outputs.label }}
+      ec2_id: ${{ needs.start-py37-fault-tolerance.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-medium-large:
+    name: Stop EC2 - Py3.7 Medium-large
+    needs: [start-py37-medium-large, py37-medium-large]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-medium-large.outputs.label }}
+      ec2_id: ${{ needs.start-py37-medium-large.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-xlarge:
+    name: Stop EC2 - Py3.7 X-large
+    needs: [start-py37-xlarge, py37-xlarge]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-xlarge.outputs.label }}
+      ec2_id: ${{ needs.start-py37-xlarge.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-demos:
+    name: Stop EC2 - Py3.7 Demos
+    needs: [start-py37-demos, py37-demos]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-demos.outputs.label }}
+      ec2_id: ${{ needs.start-py37-demos.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py37-demos-scikit:
+    name: Stop EC2 - Py3.7 Demos Scikit
+    needs: [start-py37-demos-scikit, py37-demos-scikit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-demos-scikit.outputs.label }}
+      ec2_id: ${{ needs.start-py37-demos-scikit.outputs.ec2_id }}
+    secrets: inherit
+
+
+  stop-external-xgboost:
+    name: Stop EC2 - External XGBoost
+    needs: [start-external-xgboost, external-xgboost]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-external-xgboost.outputs.label }}
+      ec2_id: ${{ needs.start-external-xgboost.outputs.ec2_id }}
+    secrets: inherit
+
+
+
+
+
+
+  # NIGHTLY_STAGES
+  stop-py37-explain:
+    name: Stop EC2 - Py3.7 Explain
+    needs: [start-py37-explain, py37-explain]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py37-explain.outputs.label }}
+      ec2_id: ${{ needs.start-py37-explain.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py311-single-node:
+    name: Stop EC2 - Py3.11 Single Node
+    needs: [start-py311-single-node, py311-single-node]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py311-single-node.outputs.label }}
+      ec2_id: ${{ needs.start-py311-single-node.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-py311-fault-tolerance:
+    name: Stop EC2 - Py3.11 Fault Tolerance
+    needs: [start-py311-fault-tolerance, py311-fault-tolerance]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-py311-fault-tolerance.outputs.label }}
+      ec2_id: ${{ needs.start-py311-fault-tolerance.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-xgboost-stress:
+    name: Stop EC2 - XGBoost Stress
+    needs: [start-xgboost-stress, xgboost-stress]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-xgboost-stress.outputs.label }}
+      ec2_id: ${{ needs.start-xgboost-stress.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-persist-drive:
+    name: Stop EC2 - Persist Drive
+    needs: [start-persist-drive, persist-drive]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-persist-drive.outputs.label }}
+      ec2_id: ${{ needs.start-persist-drive.outputs.ec2_id }}
+    secrets: inherit

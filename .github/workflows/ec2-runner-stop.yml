@@ -1,0 +1,56 @@
+# ==============================================================================
+#                         EC2 RUNNER STOP
+# ==============================================================================
+#
+# PURPOSE:
+#   Reusable workflow to stop an EC2 self-hosted runner.
+#   Gracefully handles cases where no instance was started.
+#
+# ==============================================================================
+
+name: Stop EC2 Runner
+
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: 'Runner label from ec2-runner-start'
+        required: true
+        type: string
+
+      ec2_id:
+        description: 'EC2 instance ID from ec2-runner-start'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+  EC2_ROLE: arn:aws:iam::041740254655:role/GitHub-OIDC-Role
+
+jobs:
+  stop:
+    name: Stop EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS
+        if: inputs.label != '' && inputs.ec2_id != ''
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-stop-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Stop EC2 Runner
+        if: inputs.label != '' && inputs.ec2_id != ''
+        uses: machulav/ec2-github-runner@v2.3.9
+        with:
+          mode: stop
+          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          label: ${{ inputs.label }}
+          ec2-instance-id: ${{ inputs.ec2_id }}
+
+      - name: Skip Notice
+        if: inputs.label == '' || inputs.ec2_id == ''
+        run: echo "Skipping EC2 stop - no instance was started (label='${{ inputs.label }}', ec2_id='${{ inputs.ec2_id }}')"

@@ -1,0 +1,188 @@
+# ==============================================================================
+#                              PUBLISH TO PYPI
+# ==============================================================================
+#
+# PURPOSE:
+#   Builds PyPI source distribution and uploads to PyPI.
+#   Handles both h2o and h2o_client packages.
+#
+# PACKAGES:
+#   - h2o: Main H2O Python package
+#   - h2o_client: H2O CLI client package
+#
+# ==============================================================================
+
+name: Publish to PyPI
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'H2O-3 branch'
+        required: true
+        type: string
+
+      build_number:
+        description: 'Build number'
+        required: true
+        type: string
+
+      project_version:
+        description: 'H2O project version'
+        required: true
+        type: string
+
+      s3_root:
+        description: 'S3 bucket root'
+        required: true
+        type: string
+
+      upload_pypi:
+        description: 'Upload to PyPI'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  DOCKER_VERSION: "47"
+  PYTHON_VERSION: "3.7"
+
+# ==============================================================================
+# JOB
+# ==============================================================================
+jobs:
+  build-pypi:
+    name: Build PyPI Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ========================================================================
+      # SETUP
+      # ========================================================================
+      - name: Configure AWS for ECR
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: release-pypi-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Download Python Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: h2o-release-python
+          path: artifacts/
+
+      - name: Prepare Build Directory
+        run: |
+          mkdir -p h2o-py/build
+          if [ -d "artifacts/target/Python" ]; then
+            cp -r artifacts/target/Python h2o-py/build/ || true
+          fi
+          if [ -d "artifacts/h2o-py/build" ]; then
+            cp -r artifacts/h2o-py/build/* h2o-py/build/ || true
+          fi
+          ls -la h2o-py/build/ || echo "Build directory not ready"
+
+      # ========================================================================
+      # BUILD PYPI PACKAGE
+      # ========================================================================
+      - name: Build PyPI Source Distribution
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            -e PYTHON_VERSION=${{ env.PYTHON_VERSION }} \
+            ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
+            /bin/bash -c "
+              set -ex
+              . /envs/h2o_env_python${PYTHON_VERSION}/bin/activate || true
+
+              cd h2o-py/build/main
+              python setup.py sdist
+
+              echo '=== Built packages ==='
+              ls -la dist/
+            "
+
+      # ========================================================================
+      # UPLOAD TO S3
+      # ========================================================================
+      - name: Configure AWS for S3
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-pypi-s3-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Upload to S3
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          S3_DEST="${{ inputs.s3_root }}/${BRANCH_SAFE}/${{ inputs.build_number }}/Python/"
+
+          aws s3 cp h2o-py/build/main/dist/h2o-${{ inputs.project_version }}.tar.gz "${S3_DEST}" --acl public-read
+
+          echo "Uploaded PyPI package to S3"
+
+      # ========================================================================
+      # UPLOAD TO PYPI
+      # ========================================================================
+      - name: Upload to PyPI
+        if: inputs.upload_pypi == true
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            -e TWINE_USERNAME="${TWINE_USERNAME}" \
+            -e TWINE_PASSWORD="${TWINE_PASSWORD}" \
+            -e PYTHON_VERSION=${{ env.PYTHON_VERSION }} \
+            ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
+            /bin/bash -c "
+              set -ex
+              . /envs/h2o_env_python${PYTHON_VERSION}/bin/activate || true
+
+              echo '=== Uploading h2o to PyPI ==='
+              cd h2o-py/build/main
+              twine upload dist/h2o-${{ inputs.project_version }}.tar.gz
+
+              echo '=== Uploading h2o_client to PyPI ==='
+              cd ../client/dist
+              if [ -f h2o_client-${{ inputs.project_version }}-py2.py3-none-any.whl ]; then
+                twine upload h2o_client-${{ inputs.project_version }}-py2.py3-none-any.whl
+              else
+                echo 'h2o_client wheel not found, skipping'
+              fi
+            "
+
+      - name: Skip PyPI Upload Notice
+        if: inputs.upload_pypi == false
+        run: |
+          echo "::notice::PyPI upload skipped (upload_pypi=false)"
+
+      # ========================================================================
+      # SUMMARY
+      # ========================================================================
+      - name: Summary
+        run: |
+          echo "## PyPI Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ inputs.project_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload to PyPI | ${{ inputs.upload_pypi }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | \`h2o-${{ inputs.project_version }}.tar.gz\` |" >> $GITHUB_STEP_SUMMARY

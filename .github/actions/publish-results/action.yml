@@ -1,0 +1,123 @@
+# ==============================================================================
+#                         PUBLISH TEST RESULTS
+# ==============================================================================
+#
+# PURPOSE:
+#   Reusable action to upload Allure results, publish JUnit reports, and
+#   archive failure artifacts (logs, leak checks, results) similar to Jenkins.
+#
+# USAGE:
+#   - uses: ./.github/actions/publish-results
+#     with:
+#       name: Java 8 Smoke
+#
+# ==============================================================================
+
+name: 'Publish Test Results'
+description: 'Upload Allure results, publish JUnit report, and archive failure artifacts'
+
+inputs:
+  name:
+    description: 'Test name for artifact and report naming'
+    required: true
+
+  report_paths:
+    description: 'Glob patterns for JUnit XML reports (newline-separated)'
+    required: false
+    default: '**/results/**/*.xml'
+
+  additional_report_paths:
+    description: 'Additional JUnit report paths'
+    required: false
+    default: ''
+
+  retention_days:
+    description: 'Artifact retention days'
+    required: false
+    default: '7'
+
+  archive_logs_on_failure:
+    description: 'Whether to archive logs and diagnostics on test failure'
+    required: false
+    default: 'true'
+
+  job_status:
+    description: 'Status of the job (success/failure) for conditional archiving'
+    required: false
+    default: 'success'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Sanitize JUnit XML files
+      if: inputs.job_status == 'failure'
+      shell: bash
+      run: |
+        # Fix invalid XML character entities and control characters in JUnit XML files
+        # XML 1.0 only allows: #x9 (tab), #xA (newline), #xD (carriage return), #x20-#xD7FF, #xE000-#xFFFD
+        echo "Sanitizing JUnit XML files..."
+
+        # Find all XML files in test-results directories
+        find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | while read -r file; do
+          if [ -f "$file" ]; then
+            # Remove invalid XML character references using perl (more robust than sed)
+            # Removes &#x0; through &#x1F; except &#x9; &#xA; &#xD; (tab, newline, CR)
+            perl -i -pe '
+              s/&#x[0-8];//g;
+              s/&#x[Bb];|&#x[Cc];|&#x[Ee];|&#x[Ff];//g;
+              s/&#x1[0-9A-Fa-f];//g;
+              s/&#[0-8];//g;
+              s/&#1[0-24-9];//g;
+              s/&#2[0-9];//g;
+              s/&#3[0-1];//g;
+            ' "$file" 2>/dev/null || true
+
+            # Remove actual control characters (keep tab, newline, CR)
+            # Use tr to remove bytes 0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F
+            tr -d '\000-\010\013\014\016-\037' < "$file" > "${file}.tmp" 2>/dev/null && mv "${file}.tmp" "$file" || rm -f "${file}.tmp"
+          fi
+        done
+
+        echo "XML sanitization complete"
+
+    - name: Debug - List XML files
+      if: inputs.job_status == 'failure'
+      shell: bash
+      run: |
+        echo "=== Searching for JUnit XML files ==="
+        find . -type f -name "*.xml" -path "*test-results*" 2>/dev/null | head -20
+        echo ""
+        echo "=== Total XML files in test-results ==="
+        find . -type f -name "*.xml" -path "*test-results*" 2>/dev/null | wc -l
+
+    - name: Publish JUnit Report
+      if: inputs.job_status == 'failure'
+      uses: mikepenz/action-junit-report@v5
+      with:
+        report_paths: |
+          **/test-results/**/*.xml
+        check_name: Test Report (${{ inputs.name }})
+        fail_on_failure: false
+        include_passed: false
+        detailed_summary: true
+        require_tests: false
+        check_annotations: true
+        job_summary: true
+
+    # Archive failure artifacts (similar to Jenkins archiveArtifacts on failure)
+    # Jenkins archives: leak-check.out, **/*.log, **/out.*, **/results/*.txt, **/results/failed/*.txt
+    - name: Archive Failure Artifacts
+      if: inputs.archive_logs_on_failure == 'true' && inputs.job_status == 'failure'
+      uses: actions/upload-artifact@v4
+      with:
+        name: failure-artifacts-${{ inputs.name }}
+        path: |
+          **/leak-check.out
+          **/*.log
+          **/out.*
+          **/results/*.txt
+          **/results/failed/*.txt
+          **/hs_err_*.log
+          **/core.*
+        if-no-files-found: ignore
+        retention-days: ${{ inputs.retention_days }}

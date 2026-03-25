@@ -1,0 +1,174 @@
+# ==============================================================================
+#                      HADOOP MULTINODE TEST SUITE
+# ==============================================================================
+#
+# 3 Hadoop multinode tests - All on EC2 runners
+# Note: Requires actual Hadoop cluster connectivity via VPN/networking
+#
+# TESTS:
+#   - Hadoop Multinode Test
+#   - External XGBoost on Hadoop
+#   - Fault Tolerance on Hadoop
+#
+# ARCHITECTURE:
+#   1. Start 3 EC2 runners in parallel
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# ==============================================================================
+
+name: Nightly Hadoop Multinode Tests
+
+on:
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+  HADOOP_IMAGE_VERSION: 84
+
+jobs:
+  # ============================================================================
+  # START EC2 RUNNERS (3 in parallel)
+  # ============================================================================
+  start-hadoop-multinode:
+    name: Start EC2 - Hadoop Multinode
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: hadoop-multinode
+    secrets: inherit
+
+  start-ext-xgb-hadoop:
+    name: Start EC2 - Ext XGBoost Hadoop
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: ext-xgb-hadoop
+    secrets: inherit
+
+  start-fault-tolerance-hadoop:
+    name: Start EC2 - Fault Tolerance Hadoop
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: fault-tolerance-hadoop
+    secrets: inherit
+
+  # ============================================================================
+  # RUN TESTS (on dedicated EC2 runners)
+  # ============================================================================
+  hadoop-multinode:
+    name: Hadoop Multinode Test
+    needs: start-hadoop-multinode
+    runs-on: ${{ needs.start-hadoop-multinode.outputs.label }}
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Hadoop Multinode Test
+          make_target: test-hadoop-multinode
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Hadoop Multinode
+          job_status: ${{ job.status }}
+
+  external-xgboost-hadoop:
+    name: External XGBoost on Hadoop
+    needs: start-ext-xgb-hadoop
+    runs-on: ${{ needs.start-ext-xgb-hadoop.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: External XGBoost on Hadoop
+          make_target: test-steam-websocket
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: External XGBoost on Hadoop
+          job_status: ${{ job.status }}
+
+  fault-tolerance-hadoop:
+    name: Fault Tolerance on Hadoop
+    needs: start-fault-tolerance-hadoop
+    runs-on: ${{ needs.start-fault-tolerance-hadoop.outputs.label }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Fault Tolerance on Hadoop
+          make_target: test-hadoop-fault-tolerance
+          test_package: hadoop
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Fault Tolerance on Hadoop
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-hadoop-multinode:
+    name: Stop EC2 - Hadoop Multinode
+    needs: [start-hadoop-multinode, hadoop-multinode]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-hadoop-multinode.outputs.label }}
+      ec2_id: ${{ needs.start-hadoop-multinode.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-ext-xgb-hadoop:
+    name: Stop EC2 - Ext XGBoost Hadoop
+    needs: [start-ext-xgb-hadoop, external-xgboost-hadoop]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-ext-xgb-hadoop.outputs.label }}
+      ec2_id: ${{ needs.start-ext-xgb-hadoop.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-fault-tolerance-hadoop:
+    name: Stop EC2 - Fault Tolerance Hadoop
+    needs: [start-fault-tolerance-hadoop, fault-tolerance-hadoop]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-fault-tolerance-hadoop.outputs.label }}
+      ec2_id: ${{ needs.start-fault-tolerance-hadoop.outputs.ec2_id }}
+    secrets: inherit
