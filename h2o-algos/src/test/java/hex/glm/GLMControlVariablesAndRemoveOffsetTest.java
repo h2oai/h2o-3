@@ -1,5 +1,8 @@
 package hex.glm;
 
+import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,7 +25,7 @@ import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class GLMControlVariablesTest extends TestUtil {
+public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
     
     @Test
     public void compareModelWithControlVariablesEnabledAndDisabled() {
@@ -894,8 +897,8 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable vi_unrestricted = glm._output._variable_importances_unrestricted_model;
             TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
 
-            assertTrue(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
-            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
+            assertArrayEquals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders());
+            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
 
         } finally {
             if(train != null) train.remove();
@@ -1025,7 +1028,7 @@ public class GLMControlVariablesTest extends TestUtil {
             TwoDimTable vi_unrestristed_2 = glm2._output._variable_importances;
 
             assertFalse(Arrays.equals(vi.getRowHeaders(), vi_unrestricted.getRowHeaders()));
-            assertTrue(Arrays.equals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders()));
+            assertArrayEquals(vi_unrestricted.getRowHeaders(), vi_unrestristed_2.getRowHeaders());
         } finally {
             if(train != null) train.remove();
             if(test != null) test.remove();
@@ -1858,6 +1861,70 @@ public class GLMControlVariablesTest extends TestUtil {
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicDataBinomialOffsetValidation(){
+        Frame train = null;
+        Frame valid = null;
+        GLMModel glm = null;
+        GLMModel glmOffset = null;
+        try {
+            Scope.enter();
+
+            Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            train = new Frame(Key.<Frame>make("train"),new String[]{"cat1", "cat2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            DKV.put(train);
+
+            Vec cat1V = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,0,1,1,0,1,1,1,0,1,0,0,0,1,1,1,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec cat2V = Vec.makeVec(new long[]{1,0,1,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,1,1,1,0,0,0,0,0},new String[]{"0","1"},Vec.newKey());
+            Vec offsetV = Vec.makeVec(new double[]{0.1,0.2,0.3,0.2,0.3,0,0,0.1,0.3,0.3,0.2,0.4,0.1,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+            Vec resV = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
+            valid = new Frame(Key.<Frame>make("valid"),new String[]{"cat1", "cat2", "offset", "y"},new Vec[]{cat1V, cat2V, offsetV, resV});
+            DKV.put(valid);
+
+            DistributionFamily family = DistributionFamily.bernoulli;
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._valid = valid._key;
+            params._lambda = new double[]{0};
+            params._alpha = new double[]{0};
+            params._standardize = false;
+            params._intercept = true;
+            params._objective_epsilon = 1e-10;
+            params._gradient_epsilon = 1e-6;
+            params._response_column = "y";
+            params._distribution = family;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._max_iterations = 4;
+            params._dispersion_epsilon = 1;
+            params._offset_column = "offset";
+            glm = new GLM(params).trainModel().get();
+
+            System.out.println(glm._output._variable_importances);
+            System.out.println(glm.coefficients().toString());
+
+            params._remove_offset_effects = true;
+            glmOffset = new GLM(params).trainModel().get();
+            
+            ModelMetricsBinomial mmVal = (ModelMetricsBinomial) glm._output._validation_metrics;
+            ModelMetricsBinomial mmOffsetValUnrestricted = (ModelMetricsBinomial) glmOffset._output._validation_metrics_unrestricted_model;
+            
+            assertEquals("MSE is not the same. ", mmVal._MSE, mmOffsetValUnrestricted._MSE, 0);
+            assertEquals("AUC is not the same. ", mmVal._auc._auc, mmOffsetValUnrestricted._auc._auc, 0);
+            assertEquals("Logloss is not the same. ", mmVal._logloss, mmOffsetValUnrestricted._logloss, 0);
+            assertEquals("Loglikelihood is not the same. ", mmVal._loglikelihood, mmOffsetValUnrestricted._loglikelihood, 0);
+        }
+        finally {
+            if (train != null) train.remove();
+            if (valid != null) valid.remove();
+            if (glm != null) glm.remove();
+            if (glmOffset != null) glmOffset.remove();
             Scope.exit();
         }
     }
