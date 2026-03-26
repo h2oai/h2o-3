@@ -1,8 +1,8 @@
 from collections import OrderedDict
 
-from builtins import range
 import sys
 
+from h2o.exceptions import H2OResponseError
 from h2o.grid import H2OGridSearch
 
 sys.path.insert(1, "../../../")
@@ -11,7 +11,7 @@ from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 
-def glm_grid_search_on_weights():
+def glm_grid_search_remove_offset_effects():
     train = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     train = train.drop("ID")
     train["CAPSULE"] = train["CAPSULE"].asfactor()
@@ -20,25 +20,18 @@ def glm_grid_search_on_weights():
     features = list(train.col_names)
     features.remove(response)
 
-    train['wt_2'] = (train["CAPSULE"] == "1").ifelse(2, 1)
-    train['wt_100'] = (train['CAPSULE'] == "1").ifelse(100, 1)
-
     hyper_parameters = OrderedDict()
-    hyper_parameters["weights_column"] = ["wt_2", "wt_100"]
     hyper_parameters["remove_offset_effects"] = [True, False]
     print("GLM grid with the following hyper_parameters:", hyper_parameters)
 
     gs = H2OGridSearch(H2OGeneralizedLinearEstimator, hyper_params=hyper_parameters)
-    gs.train(x=features, y=response, training_frame=train)
-    for m in gs.get_grid().models:
-        used_features = map(lambda x: x[1], m.varimp())
-        assert not ("wt_2" in used_features)
-        assert not ("wt_100" in used_features)
-    loglosses = gs.sorted_metric_table()["logloss"]
-    assert loglosses.nunique() == 2 # models are not identical (=> weights are considered)
-
+    try:
+        gs.train(x=features, y=response, training_frame=train)
+    except H2OResponseError as e:
+        assert "Illegal hyper parameter for grid search! The parameter 'remove_offset_effects is not gridable!" in str(e)
+    assert True, "The test should fail."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(glm_grid_search_on_weights)
+    pyunit_utils.standalone_test(glm_grid_search_remove_offset_effects)
 else:
-    glm_grid_search_on_weights()
+    glm_grid_search_remove_offset_effects()

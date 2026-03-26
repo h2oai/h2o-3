@@ -108,6 +108,8 @@ def glm_unrestricted_model():
     for k in glm_model.coef().keys():
         pyunit_utils.assert_equals(glm_model.coef()[k], glm_model_unrestricted_cv.coef().get(k, float("NaN")),
                                    f"Coefficient {k} differs!")
+        pyunit_utils.assert_equals(glm_model.coef()[k], glm_model_unrestricted_cv_ro.coef().get(k, float("NaN")),
+                                   f"Coefficient {k} differs!")
 
     # check predictions are the same
     for i in range(predictions.shape[0]):
@@ -121,6 +123,9 @@ def glm_unrestricted_model():
                                    f"{i}th prediction differs!")
         pyunit_utils.assert_equals(predictions_ro.iloc[i, 1], predictions_unrestricted_cv_false_ro_true.iloc[i, 1],
                                    f"{i}th prediction differs!")
+        pyunit_utils.assert_equals(predictions_unrestricted_cv_ro.iloc[i, 1], predictions.iloc[i, 1],
+                                   f"{i}th prediction differs!")
+        
 
     # check predictions differ
     for i in range(predictions.shape[0]):
@@ -166,6 +171,26 @@ def glm_unrestricted_model():
         temp = str(ex)
         assert "The control_variables_enabled and remove_offset_effects_enabled feature cannot be used together. It produces the same model as the main model." in temp, \
             "Wrong exception was received."
+
+
+    print("-- Model with control variables and remove offset effects with validation dataset --")
+    glm_model_cv_ro_valid = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["year"],
+                                                    remove_offset_effects=True, generate_scoring_history=True,
+                                                    score_each_iteration=True, seed=0xC0FFEE)
+    glm_model_cv_ro_valid.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars, validation_frame=cars, offset_column=offset_col)
+    print(glm_model_cv_ro_valid)
+    metrics_cv_ro_valid = glm_model_cv_ro_valid.training_model_metrics()
+    print(metrics_cv_ro_valid)
+
+    glm_model_unrestricted_cv_ro_valid = glm_model_cv_ro_valid.make_unrestricted_glm_model(dest="all_false_valid")
+    print(glm_model_unrestricted_cv_ro_valid)
+    metrics_unrestricted_cv_ro_valid_train = glm_model_unrestricted_cv_ro.training_model_metrics()
+    print(metrics_unrestricted_cv_ro_valid_train)
+    metrics_unrestricted_cv_ro_valid_valid = glm_model_unrestricted_cv_ro.model_performance(test_data=None, train=False, valid=True)
+    print(metrics_unrestricted_cv_ro_valid_valid)
+
+    print(metrics_unrestricted_cv_ro)
+    print(metrics)
 
 
 if __name__ == "__main__":
