@@ -1,17 +1,22 @@
 # Mirror Configuration
-# Defines which branches to sync from public h2oai/h2o-3 to h2o-3-enterprise
+# h2o-3-enterprise is the PRIMARY development repo
+# Changes are mirrored OUT to the public h2oai/h2o-3 repo
 
 branches:
   - master
   - rel-3.46.0
 
-# Sync tags from upstream
+# Sync tags to public repo
 sync_tags: true
 
-# Enterprise-only paths that should NOT be overwritten by upstream
-# These files/directories are preserved during sync
-protected_paths:
+# Enterprise-only paths that should NOT be mirrored to public h2o-3
+# These files/directories exist only in enterprise and are excluded from public sync
+enterprise_only_paths:
   - .github/workflows/
   - .github/actions/
   - .github/mirror-config.yml
   - CLAUDE.md
+  - LICENSE
+  # Add other enterprise-only paths here as needed
+  # - h2o-enterprise-algos/
+  # - enterprise-features/

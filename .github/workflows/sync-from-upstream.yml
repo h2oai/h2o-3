@@ -1,15 +1,29 @@
 name: Sync from Upstream H2O-3
 
 on:
-  schedule:
-    # Run every 6 hours
-    - cron: '0 */6 * * *'
+  # DISABLED: This workflow is currently disabled.
+  #
+  # IMPORTANT: Do not enable until 90 days after the last Enterprise release.
+  # This ensures enterprise-specific changes have time to stabilize before syncing.
+  #
+  # The old approach (public → enterprise with force push) destroys enterprise commit history.
+  # New approach: enterprise is the main repo, mirror OUT to public via mirror-to-public.yml.
+  #
+  # To enable: uncomment the schedule and/or workflow_dispatch sections below.
+  #
+  # schedule:
+  #   # Run every 6 hours
+  #   - cron: '0 */6 * * *'
+  #
+  # workflow_dispatch:
+  #   inputs:
+  #     branches:
+  #       description: 'Comma-separated branches to sync (leave empty for all configured)'
+  #       required: false
+  #       type: string
+  #
+  # Placeholder to keep workflow valid (GitHub requires at least one trigger)
   workflow_dispatch:
-    inputs:
-      branches:
-        description: 'Comma-separated branches to sync (leave empty for all configured)'
-        required: false
-        type: string
 
 permissions:
   contents: write
