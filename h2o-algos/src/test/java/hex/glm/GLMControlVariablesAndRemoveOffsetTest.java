@@ -1913,7 +1913,9 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             glmOffset = new GLM(params).trainModel().get();
             
             ModelMetricsBinomial mmVal = (ModelMetricsBinomial) glm._output._validation_metrics;
+            System.out.println(mmVal.toString());
             ModelMetricsBinomial mmOffsetValUnrestricted = (ModelMetricsBinomial) glmOffset._output._validation_metrics_unrestricted_model;
+            System.out.println(mmOffsetValUnrestricted.toString());
             
             assertEquals("MSE is not the same. ", mmVal._MSE, mmOffsetValUnrestricted._MSE, 0);
             assertEquals("AUC is not the same. ", mmVal._auc._auc, mmOffsetValUnrestricted._auc._auc, 0);
