@@ -2821,17 +2821,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
-    def make_unrestricted_glm_model(self, dest=None, control_variables_enabled=False, remove_offset_effects_enabled=False):
+    def make_unrestricted_glm_model(self, dest=None):
         """
         Make unrestricted GLM model when control variables are defined.
 
         Needs to be passed source model trained with control variables enabled. 
 
         :param dest: (optional) destination key
-        :param control_variables_enabled: (optional) set control variables flag to get model affected only 
-            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
-        :param remove_offset_effects_enabled: (optional) set remove offset effects flag to get model affected only 
-            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
 
         :examples:
 
@@ -2848,25 +2844,66 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
-        >>> m3 = m.make_unrestricted_glm_model(dest="unrestricted_glm_cv", control_variables_enabled=True)
-        >>> p3 = m3.model_performance(d)
-        >>> print(p3)
         """
         if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
             raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
-        if (self.actual_params["control_variables"] is None or not(self.actual_params["remove_offset_effects"])) and (control_variables_enabled or remove_offset_effects_enabled):
-            raise H2OValueError("GLM wasn't trained with both control variables and with remove offset effects feature set, the control_variables_enabled and remove_offset_effects_enabled features cannot be used.")
-        if self.actual_params["control_variables"] is not None and self.actual_params["remove_offset_effects"] and (control_variables_enabled and remove_offset_effects_enabled):
-            raise H2OValueError("The control_variables_enabled and remove_offset_effects_enabled feature cannot be used together. It produces the same model as the main model.")
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
             data={"model": self._model_json["model_id"]["name"],
-                  "dest": dest,
-                  "control_variables_enabled": control_variables_enabled,
-                  "remove_offset_effects_enabled": remove_offset_effects_enabled}
+                  "dest": dest}
         )
         m = H2OGeneralizedLinearEstimator()
         if dest is None:
             dest = model_json["model_id"]["name"]
         m._resolve_model(dest, model_json)
         return m
+
+    def make_derived_glm_model(self, dest=None, remove_control_variables_effects=False, remove_offset_effects=False):
+        """
+        Make derived GLM model when control variables or remove offset effects are defined.
+
+        Needs to be passed source model trained with control variables enabled or remove offset effects enabled. 
+
+        :param dest: (optional) destination key
+        :param remove_control_variables_effects: (optional) set control variables flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+        :param remove_offset_effects: (optional) set remove offset effects flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   solver='COORDINATE_DESCENT',
+        ...                                   remove_offset_effects = True,
+        ...                                   control_variables=["PSA"])
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,7,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = m.make_derived_glm_model(dest="unrestricted_glm")
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        >>> m3 = m.make_derived_glm_model(dest="derived_glm_cv", remove_control_variables_effects=True)
+        >>> p3 = m3.model_performance(d)
+        >>> print(p3)
+        """
+        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
+            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
+        if (self.actual_params["control_variables"] is None or not(self.actual_params["remove_offset_effects"])) and (remove_control_variables_effects or remove_offset_effects):
+            raise H2OValueError("GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used.")
+        if self.actual_params["control_variables"] is not None and self.actual_params["remove_offset_effects"] and (remove_control_variables_effects and remove_offset_effects):
+            raise H2OValueError("The remove_control_variables_effects and remove_offset_effects feature cannot be used together. It produces the same model as the main model.")
+        model_json = h2o.api(
+            "POST /3/MakeDerivedGLMModel",
+            data={"model": self._model_json["model_id"]["name"],
+                  "dest": dest,
+                  "remove_control_variables_effects": remove_control_variables_effects,
+                  "remove_offset_effects": remove_offset_effects}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        if dest is None:
+            dest = model_json["model_id"]["name"]
+        m._resolve_model(dest, model_json)
+        return m 

@@ -15,10 +15,4 @@ public class MakeUnrestrictedGLMModelV3 extends SchemaV3<Iced,MakeUnrestrictedGL
 
     @API(help = "destination key", required = false, direction = API.Direction.INPUT)
     public String dest;
-
-    @API(help = "remove offset effects enabled flag", required = false, direction = API.Direction.INPUT)
-    public boolean remove_offset_effects_enabled;
-
-    @API(help = "control variables enabled flag", required = false, direction = API.Direction.INPUT)
-    public boolean control_variables_enabled;
 }
