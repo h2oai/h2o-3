@@ -4101,17 +4101,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     protected void updateProgress(boolean canScore) {
       assert !_parms._lambda_search || _parms._generate_scoring_history;
       if (!_parms._generate_scoring_history && !_parms._lambda_search) { // same as before, _state._iter is not updated
-        if (_model._parms._control_variables != null){
+        if (_model._parms._control_variables != null && !_model._parms._remove_offset_effects){
             _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
           double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
           GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, betaContrVal).doAll(_state._dinfo._adaptedFrame);
           double objectiveControlVal = _state.objective(betaContrVal, task._likelihood);
           _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
-        } else if (_model._parms._remove_offset_effects) {
+        } else if (_model._parms._control_variables == null && _model._parms._remove_offset_effects) {
             _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
-            GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, _model.beta(), true).doAll(_state._dinfo._adaptedFrame);
+            GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, _model.beta(), true).doAll(_state._dinfo._adaptedFrame);
             double objectiveOffset = _state.objective(_model.beta(), task._likelihood);
-            _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveOffset); 
+            _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveOffset);
+        } else if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
+            _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
+            double[] betaContrVal = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
+            GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, betaContrVal, true).doAll(_state._dinfo._adaptedFrame);
+            double objectiveOffset = _state.objective(betaContrVal, task._likelihood);
+            _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveOffset);
         } else {
           _scoringHistory.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
         }
