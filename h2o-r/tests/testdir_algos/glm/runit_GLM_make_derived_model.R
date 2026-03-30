@@ -47,7 +47,7 @@ glm_make_derived_model_test <- function() {
 
     #should fail
     assertError(h2o.make_derived_glm_model(prostate_glm, remove_offset_effects=TRUE,
-                                           remove_control_variables=TRUE))
+                                           remove_control_variables_effects=TRUE))
 
     prostate_glm_2 <- h2o.glm(family = "binomial",
                               y = response,

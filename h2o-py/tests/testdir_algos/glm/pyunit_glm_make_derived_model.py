@@ -179,20 +179,22 @@ def glm_derived_model():
                                                           score_each_iteration=True, seed=0xC0FFEE)
     glm_model_cv_ro_valid.train(x=["name", "power", "year"], y="economy_20mpg", training_frame=cars, validation_frame=cars, offset_column=offset_col)
     print(glm_model_cv_ro_valid)
-    metrics_cv_ro_valid = glm_model_cv_ro_valid.training_model_metrics()
-    print(metrics_cv_ro_valid)
+    metrics_cv_ro_valid_train = glm_model_cv_ro_valid.training_model_metrics()
+    print(metrics_cv_ro_valid_train)
+    metrics_cv_ro_valid_valid = glm_model_cv_ro_valid.model_performance(test_data=None, train=False, valid=True)
 
     glm_model_derived_cv_ro_valid = glm_model_cv_ro_valid.make_derived_glm_model(dest="all_false_valid")
     print(glm_model_derived_cv_ro_valid)
-    metrics_derived_cv_ro_valid_train = glm_model_derived_cv_ro.training_model_metrics()
+    metrics_derived_cv_ro_valid_train = glm_model_derived_cv_ro_valid.training_model_metrics()
     print(metrics_derived_cv_ro_valid_train)
-    metrics_derived_cv_ro_valid_valid = glm_model_derived_cv_ro.model_performance(test_data=None, train=False, valid=True)
+    metrics_derived_cv_ro_valid_valid = glm_model_derived_cv_ro_valid.model_performance(test_data=None, train=False, valid=True)
     print(metrics_derived_cv_ro_valid_valid)
-
-    print(metrics_derived_cv_ro)
-    print(metrics)
-
-
+    
+    metrics_to_check = ['AUC', 'Gini', 'MSE', 'RMSE', 'AIC']
+    for metric in metrics_to_check:
+        pyunit_utils.assert_not_equal(metrics_cv_ro_valid_train[metric], metrics_derived_cv_ro_valid_train[metric])
+        pyunit_utils.assert_not_equal(metrics_cv_ro_valid_valid[metric], metrics_derived_cv_ro_valid_valid[metric])
+    
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_derived_model)
 else:
