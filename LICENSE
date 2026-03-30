@@ -1,202 +1,25 @@
-Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
+H2O.AI
 
-   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+END USER SOFTWARE LICENSE AGREEMENT
 
-   1. Definitions.
+(Last Updated: March 26, 2020)
 
-      "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
+IMPORTANT: PLEASE READ BEFORE INSTALLATION OR USE OF THE H2O.AI (“LICENSOR”) SOFTWARE. YOU HAVE PURCHASED A LICENSE TO (“SOFTWARE”).  BY INSTALLING OR IN ANY WAY USING THE SOFTWARE, THE ENTITY OR COMPANY THAT YOU REPRESENT ("LICENSEE") IS UNCONDITIONALLY CONSENTING TO BE BOUND BY AND IS BECOMING A PARTY TO THIS LICENSE AGREEMENT ("AGREEMENT") WITH LICENSOR.  IF LICENSEE DOES NOT UNCONDITIONALLY AGREE TO ALL OF THE TERMS OF THIS AGREEMENT, INSTALLATION OR USE SOFTWARE IS STRICTLY PROHIBITED. IF THESE TERMS ARE CONSIDERED AN OFFER, ACCEPTANCE IS EXPRESSLY LIMITED TO THESE TERMS.
 
-      "Licensor" shall mean the copyright owner or entity authorized by
-      the copyright owner that is granting the License.
+IN THE EVENT THERE IS A SEPARATELY NEGOTIATED AND EXECUTED MASTER SERVICES AGREEMENT BETWEEN LICENSOR AND LICENSEE WITH RESPECT TO PROCUREMENT OF THE SOFTWARE, SUCH AGREEMENT SHALL CONTROL AND THIS AGREEMENT WILL NOT APPLY.
 
-      "Legal Entity" shall mean the union of the acting entity and all
-      other entities that control, are controlled by, or are under common
-      control with that entity. For the purposes of this definition,
-      "control" means (i) the power, direct or indirect, to cause the
-      direction or management of such entity, whether by contract or
-      otherwise, or (ii) ownership of fifty percent (50%) or more of the
-      outstanding shares, or (iii) beneficial ownership of such entity.
-
-      "You" (or "Your") shall mean an individual or Legal Entity
-      exercising permissions granted by this License.
-
-      "Source" form shall mean the preferred form for making modifications,
-      including but not limited to software source code, documentation
-      source, and configuration files.
-
-      "Object" form shall mean any form resulting from mechanical
-      transformation or translation of a Source form, including but
-      not limited to compiled object code, generated documentation,
-      and conversions to other media types.
-
-      "Work" shall mean the work of authorship, whether in Source or
-      Object form, made available under the License, as indicated by a
-      copyright notice that is included in or attached to the work
-      (an example is provided in the Appendix below).
-
-      "Derivative Works" shall mean any work, whether in Source or Object
-      form, that is based on (or derived from) the Work and for which the
-      editorial revisions, annotations, elaborations, or other modifications
-      represent, as a whole, an original work of authorship. For the purposes
-      of this License, Derivative Works shall not include works that remain
-      separable from, or merely link (or bind by name) to the interfaces of,
-      the Work and Derivative Works thereof.
-
-      "Contribution" shall mean any work of authorship, including
-      the original version of the Work and any modifications or additions
-      to that Work or Derivative Works thereof, that is intentionally
-      submitted to Licensor for inclusion in the Work by the copyright owner
-      or by an individual or Legal Entity authorized to submit on behalf of
-      the copyright owner. For the purposes of this definition, "submitted"
-      means any form of electronic, verbal, or written communication sent
-      to the Licensor or its representatives, including but not limited to
-      communication on electronic mailing lists, source code control systems,
-      and issue tracking systems that are managed by, or on behalf of, the
-      Licensor for the purpose of discussing and improving the Work, but
-      excluding communication that is conspicuously marked or otherwise
-      designated in writing by the copyright owner as "Not a Contribution."
-
-      "Contributor" shall mean Licensor and any individual or Legal Entity
-      on behalf of whom a Contribution has been received by Licensor and
-      subsequently incorporated within the Work.
-
-   2. Grant of Copyright License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      copyright license to reproduce, prepare Derivative Works of,
-      publicly display, publicly perform, sublicense, and distribute the
-      Work and such Derivative Works in Source or Object form.
-
-   3. Grant of Patent License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      (except as stated in this section) patent license to make, have made,
-      use, offer to sell, sell, import, and otherwise transfer the Work,
-      where such license applies only to those patent claims licensable
-      by such Contributor that are necessarily infringed by their
-      Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
-      institute patent litigation against any entity (including a
-      cross-claim or counterclaim in a lawsuit) alleging that the Work
-      or a Contribution incorporated within the Work constitutes direct
-      or contributory patent infringement, then any patent licenses
-      granted to You under this License for that Work shall terminate
-      as of the date such litigation is filed.
-
-   4. Redistribution. You may reproduce and distribute copies of the
-      Work or Derivative Works thereof in any medium, with or without
-      modifications, and in Source or Object form, provided that You
-      meet the following conditions:
-
-      (a) You must give any other recipients of the Work or
-          Derivative Works a copy of this License; and
-
-      (b) You must cause any modified files to carry prominent notices
-          stating that You changed the files; and
-
-      (c) You must retain, in the Source form of any Derivative Works
-          that You distribute, all copyright, patent, trademark, and
-          attribution notices from the Source form of the Work,
-          excluding those notices that do not pertain to any part of
-          the Derivative Works; and
-
-      (d) If the Work includes a "NOTICE" text file as part of its
-          distribution, then any Derivative Works that You distribute must
-          include a readable copy of the attribution notices contained
-          within such NOTICE file, excluding those notices that do not
-          pertain to any part of the Derivative Works, in at least one
-          of the following places: within a NOTICE text file distributed
-          as part of the Derivative Works; within the Source form or
-          documentation, if provided along with the Derivative Works; or,
-          within a display generated by the Derivative Works, if and
-          wherever such third-party notices normally appear. The contents
-          of the NOTICE file are for informational purposes only and
-          do not modify the License. You may add Your own attribution
-          notices within Derivative Works that You distribute, alongside
-          or as an addendum to the NOTICE text from the Work, provided
-          that such additional attribution notices cannot be construed
-          as modifying the License.
-
-      You may add Your own copyright statement to Your modifications and
-      may provide additional or different license terms and conditions
-      for use, reproduction, or distribution of Your modifications, or
-      for any such Derivative Works as a whole, provided Your use,
-      reproduction, and distribution of the Work otherwise complies with
-      the conditions stated in this License.
-
-   5. Submission of Contributions. Unless You explicitly state otherwise,
-      any Contribution intentionally submitted for inclusion in the Work
-      by You to the Licensor shall be under the terms and conditions of
-      this License, without any additional terms or conditions.
-      Notwithstanding the above, nothing herein shall supersede or modify
-      the terms of any separate license agreement you may have executed
-      with Licensor regarding such Contributions.
-
-   6. Trademarks. This License does not grant permission to use the trade
-      names, trademarks, service marks, or product names of the Licensor,
-      except as required for reasonable and customary use in describing the
-      origin of the Work and reproducing the content of the NOTICE file.
-
-   7. Disclaimer of Warranty. Unless required by applicable law or
-      agreed to in writing, Licensor provides the Work (and each
-      Contributor provides its Contributions) on an "AS IS" BASIS,
-      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-      implied, including, without limitation, any warranties or conditions
-      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-      PARTICULAR PURPOSE. You are solely responsible for determining the
-      appropriateness of using or redistributing the Work and assume any
-      risks associated with Your exercise of permissions under this License.
-
-   8. Limitation of Liability. In no event and under no legal theory,
-      whether in tort (including negligence), contract, or otherwise,
-      unless required by applicable law (such as deliberate and grossly
-      negligent acts) or agreed to in writing, shall any Contributor be
-      liable to You for damages, including any direct, indirect, special,
-      incidental, or consequential damages of any character arising as a
-      result of this License or out of the use or inability to use the
-      Work (including but not limited to damages for loss of goodwill,
-      work stoppage, computer failure or malfunction, or any and all
-      other commercial damages or losses), even if such Contributor
-      has been advised of the possibility of such damages.
-
-   9. Accepting Warranty or Additional Liability. While redistributing
-      the Work or Derivative Works thereof, You may choose to offer,
-      and charge a fee for, acceptance of support, warranty, indemnity,
-      or other liability obligations and/or rights consistent with this
-      License. However, in accepting such obligations, You may act only
-      on Your own behalf and on Your sole responsibility, not on behalf
-      of any other Contributor, and only if You agree to indemnify,
-      defend, and hold each Contributor harmless for any liability
-      incurred by, or claims asserted against, such Contributor by reason
-      of your accepting any such warranty or additional liability.
-
-   END OF TERMS AND CONDITIONS
-
-   APPENDIX: How to apply the Apache License to your work.
-
-      To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "{}"
-      replaced with your own identifying information. (Don't include
-      the brackets!)  The text should be enclosed in the appropriate
-      comment syntax for the file format. We also recommend that a
-      file or class name and description of purpose be included on the
-      same "printed page" as the copyright notice for easier
-      identification within third-party archives.
-
-   Copyright 2014-2021 H2O.ai, Inc.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+    1. LICENSE GRANT. Subject to the terms of this Agreement, Licensor hereby grants Licensee a limited, personal, non-sublicensable, non-transferable, nonexclusive license to use the Software (in object code form only) only for Licensee’s internal use for the purpose for which it is provided and only in accordance with any Licensor-provided documentation (including as provided electronically). The Software may be accessed by the number of users agreed to by the Licensor and Licensee during the purchase process (e.g. on an order form). Such users will be specific individuals named by Licensee during the purchase process, or subsequently, in writing (email is sufficient). Once such named individuals are selected by Licensee – they may be changed only on written notice to Licensor (email is sufficient). The named individuals will not allow any other Licensee personnel to use their Software log-in credentials (passwords, etc.). No source code will be provided. To the extent the Software is provided for no charge or on an evaluation basis (in either case, “Evaluation Basis”), this Agreement may be terminated by Licensor at any time, for any or no reason, on five (5) days written notice. Licensee acknowledges that other sections of this Agreement contain terms and conditions specific to services provided on an Evaluation Basis. In the event Licensee purchases additional modules or add-ons to Software (including, without limitation, any features or functions that H2O charges other customers for), they will be deemed “Software” and, therefore, subject to this Agreement (unless Licensor provides them pursuant to different terms and conditions). With respect to any Licensee proposed modifications, derivatives, enhancements or improvements to the Software (“Feedback”), Licensee hereby grants H2O.ai a perpetual, irrevocable, royalty free, fully paid-up, sub-licensable, right and license to use, display, reproduce, distribute and otherwise fully exploit such Feedback for any purposes. All Feedback is provided by Licensee “AS IS”.
+    1. LICENSE RESTRICTIONS. Except as expressly and unambiguously permitted by this Agreement, Licensee shall not, nor permit anyone else to, directly or indirectly: (i) copy, modify, resell or distribute the Software; (ii) reverse engineer, disassemble, decompile or otherwise attempt to discover the source code or structure, sequence and organization of the Software (except the foregoing will not apply to the extent prohibited by applicable local law); (iii) rent, lease, or use the Software for timesharing or service bureau purposes, or otherwise use the Software on behalf of any third party; (iv) use the Software to develop any other product or services whether delivered internally or as an external service offering or (v) use the Software for performing comparisons or other "benchmarking" activities, either alone or in connection with any other software (and Licensee will not publish or disclose any such performance information or comparisons). Licensee shall maintain and not remove or obscure any proprietary notices on or in the Software. As between the parties, title, ownership rights, and intellectual property rights in and to the Software, and any copies or portions thereof, shall remain in Licensor and its suppliers or licensors. Licensee understands that Licensor may modify or discontinue offering the Software at any time (provided that, if Licensee has purchased a term-based license – such discontinuance will only take place at the end of the then-current term). The Software is protected by the copyright laws and treaties. This Agreement does not give Licensee any rights not expressly granted herein.  On ten (10) days notice, Licensor shall have the right to (itself or through a designated third party) audit Licensee’s facilities, networks, systems, books and records to confirm Licensee’s use of the Software is in accordance with the terms and conditions of this Agreement. Licensee will fully cooperate and assist with such audits.
+    2. SUPPORT AND UPGRADES. During the term of this Agreement Licensor will provide Licensee with Software support according to Licensor’s general support practices and procedures. Licensee acknowledges that the Software contains features that allow Licensor to remotely and automatically identify, track and analyze certain aspects of use and performance of Software and/or the systems on which it is installed, as well as the operator and operating environment (including problems and issues that arise in connection therewith).
+    3. FEES. To the extent the Software is procured via a reseller – and Licensee pays such reseller for the Software – Licensee will not owe fees directly to Licensor hereunder. With respect to any other procurement of the Software, Licensee shall pay Licensor (or its applicable authorized reseller) the fees (if any) for the Software as agree to by the parties in writing at the time of purchase. Such fees are payable within thirty (30) days from the date of invoice , are non-refundable and payable in US dollars.  Licensee shall also pay all sales, use, value-added and other taxes, tariffs and duties of any type assessed against Licensor except for taxes on Licensor’s income.  Late fees will be subject to a finance charge of the lesser of (i) 1.5% per thirty (30) day period and (ii) the greatest amount allowed by applicable law.
+    4. INDEMNITY. Licensee shall indemnify and hold harmless Licensor from any claims, damages, liabilities, costs and fees (including reasonable attorney fees) arising from Licensee’s use of the Software as well as from Licensee’s negligence, willful misconduct or failure to comply with any term of this Agreement.
+    5. LIMITED WARRANTY. Licensor warrants to Licensee that all Software will conform materially with the Documentation.  In the event of a breach of this Section, Licensee’s sole remedy, and Licensor’s exclusive liability, shall be for H2O to use commercially reasonable efforts to correct any such defect(s); provided that, Licensee specifically notifies Licensor in writing of the defect(s) within thirty (30) days form the date Licensee first experiences the defect. Such corrections will be in accordance with Licensor’s standard practices (such as release cycles) that it provides to its other general customers. This Section 6 will not apply to Software provided on an evaluation basis (or any other no-fee basis).
+    6. WARRANTY DISCLAIMER.  EXCEPT AS EXPRESSLY SET FORTH IN SECTION 6, LICENSOR AND ITS SUPPLIERS PROVIDE The SOFTWARE "AS IS" and without warranty of any kind, AND hereby disclaims all express or implied warranties, including without limitation warranties of merchantability, fitness for a particular purpose, PERFORMANCE, ACCURACY, RELIABILITY, and non-infringement. This disclaimer of warranty constitutes an essential part of this Agreement. SOME STATES DO NOT ALLOW LIMITATIONS ON HOW LONG AN IMPLIED WARRANTY LAST SO THE FOREGOING LIMITATIONS MAY NOT APPLY TO LICENSEE. NOTWITHSTANDING ANY OF THE FOREGOING (INCLUDING SECTION 6) – NO WARRANTIES OF ANY KIND ARE MADE WITH RESPECT TO SOFTWARE PROVIDED ON AN EVALUATION BASIS).
+    7. LIMITATION OF LIABILITY. UNDER NO CIRCUMSTANCES AND UNDER NO LEGAL THEORY, INCLUDING, BUT NOT LIMITED TO, TORT, CONTRACT, NEGLIGENCE, STRICT LIABILITY, OR OTHERWISE, SHALL LICENSOR OR ITS SUPPLIERS OR RESELLERS BE LIABLE TO LICENSEE OR ANY OTHER PERSON IN CONNECTION WITH THE SOFTWARE OR ANY OTHER SUBJECT MATTER OF THIS AGREEMENT FOR ANY: (I) INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES OF ANY CHARACTER INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOST PROFITS, LOSS OF GOODWILL, WORK STOPPAGE, ACCURACY OF RESULTS, COMPUTER FAILURE OR MALFUNCTION, (II) ANY AMOUNTS IN THE AGGREGATE IN EXCESS OF THE FEES PAID BY LICENSEE HEREUNDER DURING THE TWELVE (12) MONTH PERIOD PRIOR TO THE DATE THE CAUSE OF ACTION ACCRUES (BUT IF NO FEES HAVE BEEN PAID, SUCH AS FOR SOFTWARE PROVIDED ON AN EVALUATION BASIS, THE DAMAGES CAP WILL BE US$1,000.00), (III) THE COST OF PROCUREMENT OF SUBSTITUTE SOFTWARE OR (IV) MATTERS BEYOND ITS REASONABLE CONTROL. THE FOREGOING LIMITATIONS SHALL APPLY EVEN IF LICENSOR SHALL HAVE BEEN INFORMED OF THE POSSIBILITY OF SUCH DAMAGES. SOME STATES DO NOT ALLOW THE EXCLUSION OR LIMITATION OF INCIDENTAL OR CONSEQUENTIAL DAMAGES, SO THE ABOVE LIMITATION AND EXCLUSION MAY NOT APPLY TO LICENSEE.
+    8. TERM AND TERMINATION. This Agreement is effective as of the Effective Date and, unless otherwise agreed to by the parties in writing, will have the initial subscription term of one (1) year. Thereafter, it will automatically renew for successive renewal subscription terms of equal length to its initial subscription term, unless either party provides the other party with written notice of non-renewal at least sixty (60) days prior to the expiration of the then-current subscription term. The initial subscription term and all renewals are referred to collectively as the “Subscription Term”. Notwithstanding the foregoing, Software provided on an Evaluation Basis will, unless otherwise agreed in writing, have a term of thirty (30) days. In addition, either party may terminate this Agreement on written notice if the other party (a) fails to cure any material breach of this Agreement within thirty (30) days after written notice (ten (10) days in the case of non-payment or in the event Licensee breaches any license or use restrictions); (b) ceases operation without a successor; or (c) seeks protection under any bankruptcy, receivership, trust deed, creditors’ arrangement, composition, or comparable proceeding, or if any such proceeding is instituted against that party (and not dismissed within ninety (90) days thereafter). With respect to Customer’s breach of its payment obligations, or any license or use restrictions, electronic notice to Customer is sufficient hereunder. Any termination of this Agreement shall also terminate the licenses granted hereunder. Upon termination of this Agreement for any reason, Licensee shall destroy and remove from all computers, hard drives, networks, and other storage media all copies of the Software, and shall, if requested by Licensor, so certify to Licensor in writing that such actions have occurred. Sections 2 and 4 through 14, and all accrued rights to payment, shall survive termination of this Agreement.
+    9. GOVERNMENT USE.  If Licensee is part of an agency, department, or other entity of the United States Government ("Government"), the use, duplication, reproduction, release, modification, disclosure or transfer of the Software is restricted in accordance with the Federal Acquisition Regulations as applied to civilian agencies and the Defense Federal Acquisition Regulation Supplement as applied to military agencies. The Software is "commercial computer software" and "commercial computer software documentation." In accordance with such provisions, any use of the Software by the Government shall be governed solely by the terms of this Agreement.
+    10. EXPORT CONTROLS. Licensee shall comply with all export laws and restrictions and regulations of the Department of Commerce, the United States Department of Treasury Office of Foreign Assets Control ("OFAC"), or other United States or foreign agency or authority, and Licensee shall not export, or allow the export or re-export of the Software in violation of any such restrictions, laws or regulations. By installing or using the Software, Licensee agrees to the foregoing and represents and warrants that Licensee is not located in, under the control of, or a national or resident of any restricted country.
+    11. NOTICE. Any notice or communication required or permitted under this Agreement shall be in writing to the parties at: (i) if to Licensee, the address listed by Licensee during the Software registration process (or as otherwise provided by Licensee) and (ii) if to Licensor, H2O.ai, Inc.  Attn: Contract Administration (or at such other address as may be given by Licensor at any time) - and shall be deemed to have been received by the addressee (iii) if given by hand, immediately upon receipt; (iv) if given by overnight courier service, the first business day following dispatch or (v) if given by registered or certified mail, postage prepaid and return receipt requested, the second business day after such notice is deposited in the mail. In addition, to be effective, legal notices to Licensor (such as for breach) must also be provided in email to: salesops@h2o.ai (subject heading: Attn: Legal Notice) (but, notwithstanding earlier receipt via email, legal notices will be deemed received when the physical notice is received as set forth in preceding sentence). Notwithstanding the foregoing, an electronic notice to Licensee (such as via email) is sufficient to the extent related to breach or termination.
+    12. LOGO USAGE. During the term of this Agreement and for a reasonable wind-down period thereafter, Licensor may use Licensee’s name and logo on its website and in marketing materials as part of a general list of customers.
+    13. MISCELLANEOUS. Licensor shall have the right to inspect and audit Licensee’s facilities to confirm Licensee’s compliance with this Agreement. This Agreement represents the complete agreement concerning the Software between the parties, to the exclusion of any pre-printed or contrary terms of any Licensee purchase order (or similar document), and supersedes all prior agreements and representations between them; provided, however, that if there is already a mutually signed agreement between Licensor and Licensee (not including any Licensee purchase order or similar document) covering Licensee’s purchase of a license to use the Software, then the express terms of that signed agreement will govern to the extent they are expressly contrary to this Agreement. This Agreement may be amended only by a writing executed by both parties. If any provision of this Agreement is held to be unenforceable for any reason, such provision shall be reformed only to the extent necessary to make it enforceable. The failure of Licensor to act with respect to a breach of this Agreement by Licensee or others does not constitute a waiver and shall not limit Licensor’s rights with respect to such breach or any subsequent breaches. This Agreement is personal to Licensee and may not be assigned or transferred for any reason whatsoever without Licensor’s consent and any action or conduct in violation of the foregoing shall be void and without effect. Licensor expressly reserves the right to assign this Agreement and to delegate any of its obligations hereunder. This Agreement shall be governed by and construed under California law as such law applies to agreements between California residents entered into and to be performed within California, without regard to the Uniform Computer Information Transactions Act.  Without limiting Company’s right to seek injunctive or other equitable relief in court, either party may elect (by written notice given prior filing a complaint or, in the case of the defendant, prior to answering a complaint) to resolve a dispute by binding arbitration in the English language in San Francisco, California under the Rules and Procedures of the Judicial Arbitration and Mediation Service, Inc.; the decision of the arbitrator will be enforceable in any court.  The JAMS Streamlined Rules will be used if available. Subject to the foregoing, all disputes will be subject to the sole and exclusive jurisdiction of, and venue in, the state and federal courts located in San Francisco, California. The party prevailing in any dispute under this Agreement shall be entitled to its costs and legal fees.
 
