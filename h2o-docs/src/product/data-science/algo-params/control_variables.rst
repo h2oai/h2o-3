@@ -21,9 +21,9 @@ To get the unrestricted model with its own metrics use ``glm.make_unrestricted_g
 
 The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. 
 
-If you set up the ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history are calculated with both effects enabled. 
-If you need to get a model with only one feature enabled, you can get it using ``glm.make_derived_glm_model(remove_control_variables_effects=True)`` or ``glm.make_derived_glm_model(remove_offset_effects=True)``
-If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, the training the model with big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
+If you set up the ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history are calculated with both features enabled (that is, with both offset and control-variable effects removed during scoring).  
+If you need to get a model with only one feature enabled, you can get it using ``glm.make_derived_glm_model(remove_control_variables_effects=True)`` or ``glm.make_derived_glm_model(remove_offset_effects=True)``.
+If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
 
 **Notes**:
 

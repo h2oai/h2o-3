@@ -4109,11 +4109,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
         } else if (_model._parms._remove_offset_effects) {
             _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
-            Frame frameWithoutOffset = _state._dinfo._adaptedFrame.deepCopy("frWithoutOffsetForScoringOnly");
-            Vec offset = frameWithoutOffset.remove(_model._parms._offset_column);
-            GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, _model.beta()).doAll(frameWithoutOffset);
-            offset.remove();
-            frameWithoutOffset.remove();
+            Frame frameZeroOffset = _state._dinfo._adaptedFrame.deepCopy("frWithoutOffsetForScoringOnly");
+            int offsetIdx = frameZeroOffset.find(_model._parms._offset_column);
+            assert offsetIdx > -1;
+            Vec originalOffset = frameZeroOffset.vec(offsetIdx);
+            Vec zeroOffset = originalOffset.makeZero();
+            frameZeroOffset.replace(offsetIdx, zeroOffset).remove();
+            GLMResDevTask task = new GLMResDevTask(_job._key,_dinfo,_parms, _model.beta()).doAll(frameZeroOffset);
+            originalOffset.remove();
+            zeroOffset.remove();
+            frameZeroOffset.remove();
             double objectiveOffset = _state.objective(_model.beta(), task._likelihood);
             _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveOffset); 
         } else {

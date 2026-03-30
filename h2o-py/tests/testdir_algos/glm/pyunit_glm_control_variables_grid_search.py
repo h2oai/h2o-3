@@ -24,7 +24,7 @@ def glm_grid_search_control_variables():
     train['wt_100'] = (train['CAPSULE'] == "1").ifelse(100, 1)
 
     hyper_parameters = OrderedDict()
-    hyper_parameters["control_variables"] = [["wt_2"], [["wt_100"]]]
+    hyper_parameters["control_variables"] = [["wt_2"], ["wt_100"]]
     print("GLM grid with the following hyper_parameters:", hyper_parameters)
 
     gs = H2OGridSearch(H2OGeneralizedLinearEstimator, hyper_params=hyper_parameters)
