@@ -13,7 +13,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.special.Gamma;
 import water.*;
-import water.codegen.CodeGenerator;
+import water.codegen.CodeGenerator; conflict
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
@@ -2362,7 +2362,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     classCtx.add(new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
-        JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
+        if (_parms._control_variables != null && _parms._control_variables.length > 0)
+          JCodeGen.toClassWithArray(out, "public static", "BETA", _output.getControlValBeta(beta_internal().clone())); // "The Control Variables Coefficients"
+        else
+          JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numNAFill,"Imputed numeric values");
         JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo.catNAFill(),"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");
@@ -2526,11 +2529,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean haveMojo() {
-    if (_parms._control_variables != null && _parms._control_variables.length>0)
-      return false;
-    if (_parms._remove_offset_effects) {
-        return false;
-    }
+    if (_parms._control_variables != null && _parms._control_variables.length > 0)
+      return _parms.interactionSpec() == null &&
+              !_parms._family.equals(Family.multinomial) &&
+              !_parms._family.equals(Family.ordinal) &&
+              super.haveMojo();
     if (_parms.interactionSpec() == null)
       return super.haveMojo();
     return false;
@@ -2538,6 +2541,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean havePojo() {
+    if (_parms._control_variables != null && _parms._control_variables.length > 0)
+      return _parms.interactionSpec() == null &&
+              _parms._offset_column == null &&
+              !_parms._family.equals(Family.multinomial) &&
+              !_parms._family.equals(Family.ordinal) &&
+              super.havePojo();
     if (_parms.interactionSpec() == null && _parms._offset_column == null) return super.havePojo();
     else return false;
   }
