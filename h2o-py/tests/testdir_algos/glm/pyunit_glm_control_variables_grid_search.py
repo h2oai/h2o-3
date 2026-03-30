@@ -32,7 +32,8 @@ def glm_grid_search_control_variables():
         gs.train(x=features, y=response, training_frame=train)
     except H2OResponseError as e:
         assert "Illegal hyper parameter for grid search! The parameter 'control_variables is not gridable!" in str(e)
-    assert True, "The test should fail."
+    else:
+        assert False, "The test should fail when no H2OResponseError is raised."
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_grid_search_control_variables)

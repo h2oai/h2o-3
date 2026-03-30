@@ -87,14 +87,14 @@ h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
   h2o.getModel(model_id = res$model_id$name)
 }
 
-#' Make unrestricted GLM model when control variables are defined.
+#' Make derived GLM model when control variables or remove offset effects features are defined.
 #'
 #' Needs source model trained with control variables or remove offset effects.
 #' @param model a GLM \linkS4class{H2OModel} trained with control variables or with remove offset effects features
 #' @param destination_key a string or a NULL
-#' @param remove_control_variables_effects a logical flag set control variables flag to get model affected only by
+#' @param remove_control_variables_effects logical; set control variables flag to get model affected only by
 #'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
-#' @param remove_offset_effects a logical flag set remove offset effects flag to get model affected only by
+#' @param remove_offset_effects logical; set remove offset effects flag to get model affected only by
 #'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
 #' @export
 h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_control_variables_effects = FALSE, remove_offset_effects = FALSE) {
