@@ -461,61 +461,85 @@ test-junit-xgb-multi-jenkins:
 test-junit-xgb-multi:
 	./gradlew h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
-# Split JUnit targets - algos multinode (Java 8 & 11, no special JVM opts)
-test-junit-algos-multi-jenkins:
+# Per-package h2o-algos JUnit targets using DOONLY filter
+test-junit-algos-glm-jenkins:
 	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-algos-multi
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-glm
 
-test-junit-algos-multi:
-	./gradlew h2o-algos:testMultiNode h2o-admissibleml:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+test-junit-algos-glm:
+	DOONLY="hex.glm,hex.hglm" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
-# Split JUnit targets - algos singlenode (Java 8 & 11, no special JVM opts)
-test-junit-algos-single-jenkins:
+test-junit-algos-gbm-jenkins:
 	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-algos-single
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-gbm
 
-test-junit-algos-single:
-	./gradlew h2o-algos:testSingleNode h2o-algos:testSSLEncryption h2o-admissibleml:testSingleNode $$ADDITIONAL_GRADLE_OPTS
+test-junit-algos-gbm:
+	DOONLY="hex.tree.gbm" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
-# Split JUnit targets - remaining modules (Java 8, excludes core)
+test-junit-algos-drf-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-drf
+
+test-junit-algos-drf:
+	DOONLY="hex.tree.drf" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-deeplearning-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-deeplearning
+
+test-junit-algos-deeplearning:
+	DOONLY="hex.deeplearning" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-gam-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-gam
+
+test-junit-algos-gam:
+	DOONLY="hex.gam" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-tree-generic-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-tree-generic
+
+test-junit-algos-tree-generic:
+	DOONLY="hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-ensemble-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-ensemble
+
+test-junit-algos-ensemble:
+	DOONLY="hex.ensemble" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-kmeans-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-kmeans
+
+test-junit-algos-kmeans:
+	DOONLY="hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-misc-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-misc
+
+test-junit-algos-misc:
+	DOONLY="hex.AAA_PreCloudLock,hex.CrossValidFoldAssignments,hex.DKVManager,hex.DTMatrix,hex.DataInfo,hex.GLMHelper,hex.ModelMetricsRegression,hex.ModelParameters,hex.XValPredictions,hex.adaboost,hex.anovaglm,hex.coxph,hex.example,hex.generic,hex.glrm,hex.grep,hex.grid,hex.isotonic,hex.knn,hex.modelselection,hex.mojo,hex.naivebayes,hex.optimization,hex.pca,hex.pdp,hex.psvm,hex.quantile,hex.rulefit,hex.splitframe,hex.svd,hex.util,hex.word2vec,water" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+# Remaining non-algos modules (Java 8, excludes core)
 test-junit-other-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-other
 
 test-junit-other:
-	./gradlew test -x h2o-core:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-clustering:test -x h2o-algos:testMultiNode -x h2o-algos:testSingleNode -x h2o-algos:testSSLEncryption -x h2o-admissibleml:testMultiNode -x h2o-admissibleml:testSingleNode $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-core:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test $$ADDITIONAL_GRADLE_OPTS
 
-# Split JUnit targets - remaining modules (Java 11, includes core)
+# Remaining non-algos modules (Java 11, includes core)
 test-junit-11-other-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11-other
 
 test-junit-11-other:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-algos:testMultiNode -x h2o-algos:testSingleNode -x h2o-algos:testSSLEncryption -x h2o-admissibleml:testMultiNode -x h2o-admissibleml:testSingleNode $$ADDITIONAL_GRADLE_OPTS
-
-# Split JUnit targets - algos multinode (Java 17, with add-opens)
-test-junit-17-algos-multi-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-multi
-
-test-junit-17-algos-multi:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew h2o-algos:testMultiNode h2o-admissibleml:testMultiNode $$ADDITIONAL_GRADLE_OPTS
-
-# Split JUnit targets - algos singlenode (Java 17, with add-opens)
-test-junit-17-algos-single-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-single
-
-test-junit-17-algos-single:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew h2o-algos:testSingleNode h2o-algos:testSSLEncryption h2o-admissibleml:testSingleNode $$ADDITIONAL_GRADLE_OPTS
-
-# Split JUnit targets - remaining modules (Java 17, includes core, with add-opens)
-test-junit-17-other-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-17-other
-
-test-junit-17-other:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-algos:testMultiNode -x h2o-algos:testSingleNode -x h2o-algos:testSSLEncryption -x h2o-admissibleml:testMultiNode -x h2o-admissibleml:testSingleNode $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11:
 	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
