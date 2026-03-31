@@ -4132,7 +4132,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private boolean updateEarlyStop() {
-    ScoreKeeper[] sk = _parms._control_variables != null || _parms._remove_offset_effects ? _model.unrestritedModelScoreKeepers() : _model.scoreKeepers();
+    ScoreKeeper[] sk = _parms._control_variables != null || _parms._remove_offset_effects ? _model.unrestrictedModelScoreKeepers() : _model.scoreKeepers();
     return _earlyStop || ScoreKeeper.stopEarly(sk,
             _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric,
             _parms._stopping_tolerance, "model's last", true);
