@@ -146,7 +146,7 @@ on:
 
       update_latest_branch:
         description: 'Update branch latest links [/{branch}/latest]'
-        required: false
+        required: true
         type: boolean
         default: true
 
