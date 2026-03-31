@@ -213,7 +213,6 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             Scope.exit();
         }
     }
-
     @Test(expected = H2OModelBuilderIllegalArgumentException.class)
     public void testIncorrectControlVariable(){
         Frame train = null;

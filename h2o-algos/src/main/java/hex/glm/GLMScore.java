@@ -153,10 +153,11 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     } else if(r.weight == 0) {
       Arrays.fill(ps,0);
     } else {
-      scoreRow(r, r.offset, ps);
+      double offset = _m._useRemoveOffsetEffects ? 0 : r.offset;  
+      scoreRow(r, offset, ps);
       if (_computeMetrics && !r.response_bad) {
-        _mb.perRow(ps, res, r.weight, r.offset, _m);
-        customMetricPerRow(ps, res, r.weight, r.offset, _m);
+        _mb.perRow(ps, res, r.weight, offset, _m);
+        customMetricPerRow(ps, res, r.weight, offset, _m);
       }
     }
     if (_generatePredictions) {

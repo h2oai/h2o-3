@@ -54,7 +54,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   protected ScoringInfo[] _unrestrictedModelScoringInfo;
 
   // if control variables feature and remove offset feature are enabled we need to save restricted models scoring info here
-  protected ScoringInfo[] _restrictedModelScoringInfoCV;
+  protected ScoringInfo[] _restrictedModelScoringInfoContrVals;
   protected ScoringInfo[] _restrictedModelScoringInfoRO;
 
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
@@ -155,24 +155,24 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _unrestrictedModelScoringInfo = ScoringInfo.prependScoringInfo(currInfo, _unrestrictedModelScoringInfo);
   }
 
-  public ScoringInfo[] getRestrictedModelScoringInfoCV() { return _restrictedModelScoringInfoCV;}
+  public ScoringInfo[] getRestrictedModelScoringInfoContrVals() { return _restrictedModelScoringInfoContrVals;}
 
-  public ScoreKeeper[] restrictedModelCVScoreKeepers() {
-    int size = _restrictedModelScoringInfoCV ==null? 0: _restrictedModelScoringInfoCV.length;
+  public ScoreKeeper[] restrictedModelContrValsScoreKeepers() {
+    int size = _restrictedModelScoringInfoContrVals ==null? 0: _restrictedModelScoringInfoContrVals.length;
     ScoreKeeper[] sk = new ScoreKeeper[size];
     for (int i=0;i<size;++i) {
-      if (_restrictedModelScoringInfoCV[i].cross_validation) // preference is to use xval first, then valid and last train.
-        sk[i] = _restrictedModelScoringInfoCV[i].scored_xval;
-      else if (_restrictedModelScoringInfoCV[i].validation)
-        sk[i] = _restrictedModelScoringInfoCV[i].scored_valid;
+      if (_restrictedModelScoringInfoContrVals[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = _restrictedModelScoringInfoContrVals[i].scored_xval;
+      else if (_restrictedModelScoringInfoContrVals[i].validation)
+        sk[i] = _restrictedModelScoringInfoContrVals[i].scored_valid;
       else
-        sk[i] = _restrictedModelScoringInfoCV[i].scored_train;
+        sk[i] = _restrictedModelScoringInfoContrVals[i].scored_train;
     }
     return sk;
   }
 
-  public void addRestrictedModelScoringInfoCV(GLMParameters parms, int nclasses, long currTime, int iter) {
-    if (_restrictedModelScoringInfoCV != null && (((GLMScoringInfo) _restrictedModelScoringInfoCV[_restrictedModelScoringInfoCV.length-1]).iterations() >= iter)) {  // no duplication
+  public void addRestrictedModelScoringInfoContrVals(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (_restrictedModelScoringInfoContrVals != null && (((GLMScoringInfo) _restrictedModelScoringInfoContrVals[_restrictedModelScoringInfoContrVals.length-1]).iterations() >= iter)) {  // no duplication
       return;
     }
     GLMScoringInfo currInfo = new GLMScoringInfo();
@@ -182,15 +182,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
-    if (_output._training_metrics_restricted_model_cv != null) {
+    if (_output._training_metrics_restricted_model_contr_vals != null) {
       currInfo.scored_train = new ScoreKeeper(Double.NaN);
-      currInfo.scored_train.fillFrom(_output._training_metrics_restricted_model_cv);
+      currInfo.scored_train.fillFrom(_output._training_metrics_restricted_model_contr_vals);
     }
-    if (_output._validation_metrics_restricted_model_cv != null) {
+    if (_output._validation_metrics_restricted_model_contr_vals != null) {
       currInfo.scored_valid = new ScoreKeeper(Double.NaN);
-      currInfo.scored_valid.fillFrom(_output._validation_metrics_restricted_model_cv);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_restricted_model_contr_vals);
     }
-    _restrictedModelScoringInfoCV = ScoringInfo.prependScoringInfo(currInfo, _restrictedModelScoringInfoCV);
+    _restrictedModelScoringInfoContrVals = ScoringInfo.prependScoringInfo(currInfo, _restrictedModelScoringInfoContrVals);
   }
 
   public ScoringInfo[] getRestrictedModelScoringInfoRO() { return _restrictedModelScoringInfoRO;}
@@ -1720,9 +1720,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     // Other two restricted models is produced when control variables and remove offset features are used together
     // Output for restricted model where control variables feature is enabled
-    public TwoDimTable _scoring_history_restricted_model_cv;
-    public ModelMetrics _training_metrics_restricted_model_cv;
-    public ModelMetrics _validation_metrics_restricted_model_cv;
+    public TwoDimTable _scoring_history_restricted_model_contr_vals;
+    public ModelMetrics _training_metrics_restricted_model_contr_vals;
+    public ModelMetrics _validation_metrics_restricted_model_contr_vals;
     // Output for restricted model where remove offset feature is enabled
     public TwoDimTable _scoring_history_restricted_model_ro;
     public ModelMetrics _training_metrics_restricted_model_ro;
