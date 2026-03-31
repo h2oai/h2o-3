@@ -236,7 +236,17 @@ runs:
           duration=$(calc_duration "$started" "$completed")
           status_icon=$(get_status_icon "$result")
 
-          job_entry="${status_icon}|${name}|${duration}|${url}|${result}"
+          # Map category to display name
+          case "$category" in
+            smoke) category_name="Smoke" ;;
+            python) category_name="Python" ;;
+            r) category_name="R" ;;
+            java) category_name="Java" ;;
+            flow) category_name="Flow" ;;
+            *) category_name="Other" ;;
+          esac
+
+          job_entry="${status_icon}|${name}|${duration}|${url}|${result}|${category_name}"
 
           case "$category" in
             smoke)
@@ -329,19 +339,6 @@ runs:
           echo "| **Build** | $(get_status_icon "$BUILD_RESULT") $(get_text "$BUILD_RESULT") |"
           echo ""
 
-          # Failed Jobs Section (if any failures)
-          if [[ ${#failed_jobs[@]} -gt 0 ]]; then
-            echo "## Failed Jobs (${#failed_jobs[@]})"
-            echo ""
-            for entry in "${failed_jobs[@]}"; do
-              IFS='|' read -r status_icon name duration url result <<< "$entry"
-              echo "- [**${name}**](${url}) - failed after ${duration}"
-            done
-            echo ""
-            echo "> **Tip**: Click on job names above to view detailed logs and error messages."
-            echo ""
-          fi
-
           # Test Results Section - Single table with Test Type column
           echo "## Test Results"
           echo ""
@@ -383,6 +380,23 @@ runs:
           render_jobs "Flow" "$FLOW_RESULT" flow_jobs
 
           echo ""
+
+          # Failed Jobs Section (if any failures)
+          if [[ ${#failed_jobs[@]} -gt 0 ]]; then
+            echo "## Failed Jobs (${#failed_jobs[@]})"
+            echo ""
+            echo "| Test Type | Test | Status | Duration |"
+            echo "|-----------|------|:------:|----------|"
+            for entry in "${failed_jobs[@]}"; do
+              IFS='|' read -r status_icon name duration url result category <<< "$entry"
+              if [[ -n "$url" && "$url" != "null" ]]; then
+                echo "| ${category:-Unknown} | [${name}](${url}) | ${status_icon} | ${duration} |"
+              else
+                echo "| ${category:-Unknown} | ${name} | ${status_icon} | ${duration} |"
+              fi
+            done
+            echo ""
+          fi
 
           # Summary Statistics
           echo "## Summary Statistics"
