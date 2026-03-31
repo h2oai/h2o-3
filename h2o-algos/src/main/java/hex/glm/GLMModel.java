@@ -119,7 +119,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public ScoringInfo[] getUnrestrictedModelScoringInfo() { return _unrestrictedModelScoringInfo;}
 
-  public ScoreKeeper[] unrestritedModelScoreKeepers() {
+  public ScoreKeeper[] unrestrictedModelScoreKeepers() {
     int size = _unrestrictedModelScoringInfo ==null? 0: _unrestrictedModelScoringInfo.length;
     ScoreKeeper[] sk = new ScoreKeeper[size];
     for (int i=0;i<size;++i) {
@@ -218,7 +218,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     currInfo.validation = parms.valid() != null;
     currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
-    currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
+    currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
     if (_output._training_metrics_restricted_model_ro != null) {
       currInfo.scored_train = new ScoreKeeper(Double.NaN);
