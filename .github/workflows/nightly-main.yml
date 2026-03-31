@@ -248,114 +248,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # ALLURE REPORT: Generate and publish test report
-  # ============================================================================
-  allure-report:
-    name: Allure Report
-    needs: [init, build, smoke, python, r, java, flow]
-    if: always()
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Checkout GitHub Pages
-        uses: actions/checkout@v4
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages-dir
-
-      - name: Create gh-pages directory if not exists
-        run: mkdir -p gh-pages-dir/allure-reports
-
-      - name: Download Allure Results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: allure-results-*
-          path: allure-results
-          merge-multiple: true
-        continue-on-error: true
-
-      - name: Check for Allure Results
-        id: check-results
-        run: |
-          if [ -d "allure-results" ] && [ "$(ls -A allure-results 2>/dev/null)" ]; then
-            echo "has_results=true" >> $GITHUB_OUTPUT
-            echo "Found Allure results:"
-            find allure-results -type f | head -20
-          else
-            echo "has_results=false" >> $GITHUB_OUTPUT
-            echo "No Allure results found"
-          fi
-
-      - name: Setup Java for Allure
-        if: steps.check-results.outputs.has_results == 'true'
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-
-      - name: Install Allure CLI
-        if: steps.check-results.outputs.has_results == 'true'
-        run: |
-          # Download and install Allure CLI
-          ALLURE_VERSION="2.25.0"
-          wget -q "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz"
-          tar -xzf "allure-${ALLURE_VERSION}.tgz"
-          echo "$PWD/allure-${ALLURE_VERSION}/bin" >> $GITHUB_PATH
-
-      - name: Generate Allure Report
-        if: steps.check-results.outputs.has_results == 'true'
-        id: allure-report
-        run: |
-          # Create report directory with timestamp
-          REPORT_DIR="gh-pages-dir/allure-reports/${{ github.run_number }}"
-          mkdir -p "$REPORT_DIR"
-
-          # Copy history from previous reports if exists
-          if [ -d "gh-pages-dir/allure-reports/latest/history" ]; then
-            cp -r gh-pages-dir/allure-reports/latest/history allure-results/
-          fi
-
-          # Generate Allure report
-          allure generate allure-results -o "$REPORT_DIR" --clean
-
-          # Update latest symlink
-          rm -f gh-pages-dir/allure-reports/latest
-          ln -sf "${{ github.run_number }}" gh-pages-dir/allure-reports/latest
-
-          # Output report URL
-          REPO_NAME="${{ github.repository }}"
-          echo "report-url=https://${REPO_NAME%%/*}.github.io/${REPO_NAME##*/}/allure-reports/${{ github.run_number }}" >> $GITHUB_OUTPUT
-
-      - name: Publish Allure Report to GitHub Pages
-        if: steps.check-results.outputs.has_results == 'true'
-        run: |
-          cd gh-pages-dir
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --staged --quiet || git commit -m "Update Allure report for run #${{ github.run_number }}"
-          git push origin gh-pages || echo "No changes to push"
-
-      - name: Report URL
-        if: steps.check-results.outputs.has_results == 'true'
-        run: |
-          echo "## Allure Test Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 **[View Latest Report](${{ steps.allure-report.outputs.report-url }})**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          REPO_NAME="${{ github.repository }}"
-          echo "📁 [All Reports History](https://${REPO_NAME%%/*}.github.io/${REPO_NAME##*/}/allure-reports/)" >> $GITHUB_STEP_SUMMARY
-
-  # ============================================================================
   # SUMMARY: Generate comprehensive test dashboard
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, smoke, python, r, java, flow, allure-report]
+    needs: [init, build, smoke, python, r, java, flow]
     if: always()
     runs-on: ubuntu-latest
 

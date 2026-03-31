@@ -73,11 +73,6 @@ inputs:
     required: false
     default: 'skipped'
 
-  allure_report_url:
-    description: 'URL to Allure report'
-    required: false
-    default: ''
-
 runs:
   using: 'composite'
   steps:

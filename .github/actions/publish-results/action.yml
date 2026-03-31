@@ -3,8 +3,8 @@
 # ==============================================================================
 #
 # PURPOSE:
-#   Reusable action to upload Allure results, publish JUnit reports, and
-#   archive failure artifacts (logs, leak checks, results) similar to Jenkins.
+#   Reusable action to publish JUnit reports and archive failure artifacts
+#   (logs, leak checks, results) similar to Jenkins.
 #
 # USAGE:
 #   - uses: ./.github/actions/publish-results
@@ -14,7 +14,7 @@
 # ==============================================================================
 
 name: 'Publish Test Results'
-description: 'Upload Allure results, publish JUnit report, and archive failure artifacts'
+description: 'Publish JUnit report and archive failure artifacts'
 
 inputs:
   name:
