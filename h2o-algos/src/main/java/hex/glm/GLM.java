@@ -1443,6 +1443,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
         _scoringHistoryUnrestrictedModel.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
       }
+      if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
+          TwoDimTable scoringHistoryRestrictedRO = _model._output._scoring_history_restricted_model_ro;
+          _scoringHistoryRemoveOffsetEnabled.restoreFromCheckpoint(scoringHistoryRestrictedRO, colHeadersIndex);
+          TwoDimTable scoringHistoryRestrictedContrVals = _model._output._scoring_history_restricted_model_contr_vals;
+          _scoringHistoryRemoveOffsetEnabled.restoreFromCheckpoint(scoringHistoryRestrictedContrVals, colHeadersIndex);
+      }
   }
   
   static int[] grabHeaderIndex(TwoDimTable sHist, int numHeaders, String[] colHeadersUseful) {
@@ -3413,11 +3419,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               t2 = System.currentTimeMillis();
               _model.score(train, null, CFuncRef.from(_parms._custom_metric_func)).delete();
               scorePostProcessingRestricted(train, t2,
-                      m -> _model._output._training_metrics_restricted_model_cv = m,
-                      m -> _model._output._validation_metrics_restricted_model_cv = m,
+                      m -> _model._output._training_metrics_restricted_model_contr_vals = m,
+                      m -> _model._output._validation_metrics_restricted_model_contr_vals = m,
                       _scoringHistoryControlValEnabled, true);
-              _model.addRestrictedModelScoringInfoCV(_parms, nclasses(), t2, _state._iter);
-              _model._output._scoring_history_restricted_model_cv = _scoringHistoryControlValEnabled != null 
+              _model.addRestrictedModelScoringInfoContrVals(_parms, nclasses(), t2, _state._iter);
+              _model._output._scoring_history_restricted_model_contr_vals = _scoringHistoryControlValEnabled != null 
                       ? _scoringHistoryControlValEnabled.to2dTable(_parms, null, null) : null;
 
               // RO-only

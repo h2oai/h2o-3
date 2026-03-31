@@ -117,11 +117,11 @@ public class MakeGLMModelHandler extends Handler {
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
               model._output._ordinal, null);
       if (args.remove_control_variables_effects) {
-          ModelMetrics mt = model._output._training_metrics_restricted_model_cv;
-          ModelMetrics mv = model._output._validation_metrics_restricted_model_cv;
+          ModelMetrics mt = model._output._training_metrics_restricted_model_contr_vals;
+          ModelMetrics mv = model._output._validation_metrics_restricted_model_contr_vals;
           m._output._training_metrics = mt;
           m._output._validation_metrics = mv;
-          m._output._scoring_history = model._output._scoring_history_restricted_model_cv;
+          m._output._scoring_history = model._output._scoring_history_restricted_model_contr_vals;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances;
           m._output.setAndMapControlVariablesNames(model._parms._control_variables);
