@@ -366,6 +366,7 @@ jobs:
       - name: Generate Test Dashboard
         uses: ./.github/actions/generate-dashboard
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ needs.init.outputs.branch }}
           build_sha: ${{ needs.build.outputs.build_sha }}
           build_result: ${{ needs.build.result }}
