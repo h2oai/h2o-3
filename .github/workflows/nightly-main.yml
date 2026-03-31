@@ -71,10 +71,6 @@ on:
         options:
           - master
           - rel-3.46.0
-          - rel-3.44.0
-          - rel-3.42.0
-          - rel-3.40.0
-          - rel-3.38.0
 
       branch_custom:
         description: 'Custom branch (overrides dropdown - run list-branches workflow to see all)'
