@@ -531,7 +531,7 @@ test-junit-other-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-other
 
 test-junit-other:
-	./gradlew test -x h2o-core:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-core:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test -x h2o-persist-hdfs:test -x h2o-persist-s3:test -x h2o-persist-gcs:test -x h2o-persist-drive:test -x h2o-persist-http:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 11, includes core)
 test-junit-11-other-jenkins:
@@ -539,7 +539,7 @@ test-junit-11-other-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-11-other
 
 test-junit-11-other:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test -x h2o-persist-hdfs:test -x h2o-persist-s3:test -x h2o-persist-gcs:test -x h2o-persist-drive:test -x h2o-persist-http:test $$ADDITIONAL_GRADLE_OPTS
 
 # Per-package h2o-algos JUnit targets for Java 17 (with add-opens)
 test-junit-17-algos-glm-jenkins:
@@ -611,7 +611,7 @@ test-junit-17-other-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-17-other
 
 test-junit-17-other:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test -x h2o-persist-hdfs:test -x h2o-persist-s3:test -x h2o-persist-gcs:test -x h2o-persist-drive:test -x h2o-persist-http:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11:
 	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
