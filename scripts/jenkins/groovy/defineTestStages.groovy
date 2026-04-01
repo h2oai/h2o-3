@@ -139,25 +139,133 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.7-jdk-8'
     ],
-    // Java 11 JUnit (monolithic - just to confirm same issue)
+    // Java 11 h2o-algos per-package (reuses Java 8 Makefile targets, no JVM opts needed)
     [
       stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '3.7', javaVersion: 11,
-      timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      stageName: 'Java 11 Algos GLM', target: 'test-junit-algos-glm-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.7-jdk-11"
     ],
-    // Java 17 JUnit (monolithic - just to confirm same issue)
+    [
+      stageName: 'Java 11 Algos GBM', target: 'test-junit-algos-gbm-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos DRF', target: 'test-junit-algos-drf-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos DeepLearning', target: 'test-junit-algos-deeplearning-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos GAM', target: 'test-junit-algos-gam-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos Tree+IsoFor+DT+Uplift', target: 'test-junit-algos-tree-generic-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos Ensemble', target: 'test-junit-algos-ensemble-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos KMeans', target: 'test-junit-algos-kmeans-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos Misc', target: 'test-junit-algos-misc-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 JUnit Other', target: 'test-junit-11-other-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    // Java 17 h2o-algos per-package (uses Java 17 Makefile targets with add-opens)
     [
       stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '3.7', javaVersion: 17,
-      timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      stageName: 'Java 17 Algos GLM', target: 'test-junit-17-algos-glm-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos GBM', target: 'test-junit-17-algos-gbm-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos DRF', target: 'test-junit-17-algos-drf-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos DeepLearning', target: 'test-junit-17-algos-deeplearning-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos GAM', target: 'test-junit-17-algos-gam-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos Tree+IsoFor+DT+Uplift', target: 'test-junit-17-algos-tree-generic-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos Ensemble', target: 'test-junit-17-algos-ensemble-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos KMeans', target: 'test-junit-17-algos-kmeans-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos Misc', target: 'test-junit-17-algos-misc-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 JUnit Other', target: 'test-junit-17-other-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.7-jdk-17"
     ]
