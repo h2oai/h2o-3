@@ -139,6 +139,28 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.7-jdk-8'
     ],
+    // Persist modules (run once on Java 8 - infrastructure tests, not algo-specific)
+    // Note: h2o-persist-hdfs is NOT here - it requires Hadoop infrastructure and runs in MODE_HADOOP pipeline
+    [
+      stageName: 'Java 8 Persist S3', target: 'test-junit-persist-s3-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Persist GCS', target: 'test-junit-persist-gcs-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Persist HTTP', target: 'test-junit-persist-http-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Persist Drive', target: 'test-junit-persist-drive-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
     // Java 11 h2o-algos per-package (reuses Java 8 Makefile targets, no JVM opts needed)
     [
       stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 40,
