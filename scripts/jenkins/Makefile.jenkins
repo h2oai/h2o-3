@@ -523,7 +523,7 @@ test-junit-algos-misc-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-algos-misc
 
 test-junit-algos-misc:
-	DOONLY="hex.AAA_PreCloudLock,hex.CrossValidFoldAssignments,hex.DKVManager,hex.DTMatrix,hex.DataInfo,hex.GLMHelper,hex.ModelMetricsRegression,hex.ModelParameters,hex.XValPredictions,hex.adaboost,hex.anovaglm,hex.coxph,hex.example,hex.generic,hex.glrm,hex.grep,hex.grid,hex.isotonic,hex.knn,hex.modelselection,hex.mojo,hex.naivebayes,hex.optimization,hex.pca,hex.pdp,hex.psvm,hex.quantile,hex.rulefit,hex.splitframe,hex.svd,hex.util,hex.word2vec,water" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 8, excludes core)
 test-junit-other-jenkins:
@@ -603,7 +603,7 @@ test-junit-17-algos-misc-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-misc
 
 test-junit-17-algos-misc:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.AAA_PreCloudLock,hex.CrossValidFoldAssignments,hex.DKVManager,hex.DTMatrix,hex.DataInfo,hex.GLMHelper,hex.ModelMetricsRegression,hex.ModelParameters,hex.XValPredictions,hex.adaboost,hex.anovaglm,hex.coxph,hex.example,hex.generic,hex.glrm,hex.grep,hex.grid,hex.isotonic,hex.knn,hex.modelselection,hex.mojo,hex.naivebayes,hex.optimization,hex.pca,hex.pdp,hex.psvm,hex.quantile,hex.rulefit,hex.splitframe,hex.svd,hex.util,hex.word2vec,water" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 17, includes core, with add-opens)
 test-junit-17-other-jenkins:
@@ -834,7 +834,7 @@ h2o-k8s-docker-build:
 	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
 
 h2o-k8s-docker-build-latest:
-	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
+	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG ) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
 
 h2o-k8s-docker-push:
 	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
