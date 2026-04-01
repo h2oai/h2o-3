@@ -526,6 +526,7 @@ test-junit-algos-misc:
 	IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 8, excludes core)
+# Note: h2o-persist-* modules are excluded - they require Hadoop/S3/GCS/Drive infrastructure and run in dedicated pipeline modes (MODE_HADOOP etc.)
 test-junit-other-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-other
@@ -534,6 +535,7 @@ test-junit-other:
 	./gradlew test -x h2o-core:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-clustering:test -x h2o-algos:test -x h2o-admissibleml:test -x h2o-persist-hdfs:test -x h2o-persist-s3:test -x h2o-persist-gcs:test -x h2o-persist-drive:test -x h2o-persist-http:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 11, includes core)
+# Note: h2o-persist-* modules are excluded - they require Hadoop/S3/GCS/Drive infrastructure and run in dedicated pipeline modes (MODE_HADOOP etc.)
 test-junit-11-other-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11-other
@@ -606,6 +608,7 @@ test-junit-17-algos-misc:
 	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 17, includes core, with add-opens)
+# Note: h2o-persist-* modules are excluded - they require Hadoop/S3/GCS/Drive infrastructure and run in dedicated pipeline modes (MODE_HADOOP etc.)
 test-junit-17-other-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-17-other
