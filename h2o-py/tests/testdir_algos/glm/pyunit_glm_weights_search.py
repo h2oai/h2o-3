@@ -25,7 +25,6 @@ def glm_grid_search_on_weights():
 
     hyper_parameters = OrderedDict()
     hyper_parameters["weights_column"] = ["wt_2", "wt_100"]
-    hyper_parameters["remove_offset_effects"] = [True, False]
     print("GLM grid with the following hyper_parameters:", hyper_parameters)
 
     gs = H2OGridSearch(H2OGeneralizedLinearEstimator, hyper_params=hyper_parameters)

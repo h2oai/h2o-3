@@ -71,13 +71,13 @@ public class MakeGLMModelHandler extends Handler {
           throw new IllegalArgumentException("Source model is not trained with control variables or remove offset effects.");
       }
       Key generatedKey;
-      if (args.remove_control_variables_effects && args.remove_offset_effects) {
-          throw new IllegalArgumentException("The remove_control_variables_effects and remove_offset_effects feature " +
-                  "cannot be used together. It produces the same model as the main model.");
-      } else if((args.remove_control_variables_effects || args.remove_offset_effects) &&
+      if ((args.remove_control_variables_effects || args.remove_offset_effects) &&
               (model._parms._control_variables == null || !model._parms._remove_offset_effects)) {
           throw new IllegalArgumentException("You can set remove_control_variables_effects to true or " +
                   "remove_offset_effects to true only if control_variables and remove_offset_effects are both set.");
+      } else if (args.remove_control_variables_effects && args.remove_offset_effects) {
+          throw new IllegalArgumentException("The remove_control_variables_effects and remove_offset_effects feature " +
+                  "cannot be used together. It produces the same model as the main model.");
       } else if (args.remove_offset_effects) {
           generatedKey = Key.make(model._key.toString() + "_remove_offset_effects");
       } else if (args.remove_control_variables_effects) {
@@ -111,7 +111,7 @@ public class MakeGLMModelHandler extends Handler {
           m._input_parms._remove_offset_effects = false;
           m._parms._remove_offset_effects = false;
       }
-      DataInfo dinfo = model.dinfo();
+      DataInfo dinfo = model.dinfo().clone();
       dinfo.setPredictorTransform(TransformType.NONE);
       m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,

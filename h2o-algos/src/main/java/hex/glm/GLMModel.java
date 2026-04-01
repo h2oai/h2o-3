@@ -1745,6 +1745,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
         }
       }
+      // Sort required for Arrays.binarySearch in isFeatureUsedInPredict
+      java.util.Arrays.sort(_control_values_idxs_in_adapted_frame);
     }
     
     public double[] getControlValBeta(double[] beta){
@@ -2125,25 +2127,53 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // calculate variable importance which is derived from the standardized coefficients
     public VarImp calculateVarimp(boolean contrVal) {
       String[] names = coefficientNames();
-      
+
       final double [] magnitudes = new double[names.length];
       int len = magnitudes.length - 1;
       if (len == 0) // GLM model contains only intercepts and no predictor coefficients.
         return null;
-      
+
       int[] indices = new int[len];
       for (int i = 0; i < indices.length; ++i)
         indices[i] = i;
-      float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
-      String[] namesSort = new String[len];
-      
+
       if (contrVal)
         calculateVarimpBase(magnitudes, indices, getControlValBeta(getNormBeta()));
       else if (_nclasses > 2)
         calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
-      
+
+      // When computing restricted varimp, exclude control variables entirely
+      if (contrVal && _control_variables_names != null) {
+        int excluded = 0;
+        boolean[] isControl = new boolean[len];
+        for (int index = 0; index < len; index++) {
+          String name = names[indices[index]];
+          for (String cv : _control_variables_names) {
+            if (name.equals(cv) || name.startsWith(cv + ".")) {
+              isControl[index] = true;
+              excluded++;
+              break;
+            }
+          }
+        }
+        int filteredLen = len - excluded;
+        float[] magnitudesSort = new float[filteredLen];
+        String[] namesSort = new String[filteredLen];
+        int j = 0;
+        for (int index = 0; index < len; index++) {
+          if (!isControl[index]) {
+            magnitudesSort[j] = (float) magnitudes[indices[index]];
+            namesSort[j] = names[indices[index]];
+            j++;
+          }
+        }
+        return new VarImp(magnitudesSort, namesSort);
+      }
+
+      float[] magnitudesSort = new float[len];
+      String[] namesSort = new String[len];
       for (int index = 0; index < len; index++) {
         magnitudesSort[index] = (float) magnitudes[indices[index]];
         namesSort[index] = names[indices[index]];
@@ -2529,6 +2559,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean haveMojo() {
+    if (_parms._remove_offset_effects)
+      return false;
     if (_parms._control_variables != null && _parms._control_variables.length > 0)
       return _parms.interactionSpec() == null &&
               !_parms._family.equals(Family.multinomial) &&
@@ -2541,6 +2573,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean havePojo() {
+    if (_parms._remove_offset_effects)
+      return false;
     if (_parms._control_variables != null && _parms._control_variables.length > 0)
       return _parms.interactionSpec() == null &&
               _parms._offset_column == null &&

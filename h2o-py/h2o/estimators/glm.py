@@ -2709,7 +2709,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ...                                   lambda_search=True,
         ...                                   solver='COORDINATE_DESCENT')
         >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,7,8],
+        ...         x=[2,3,4,5,6,8],
         ...         y=1)
         >>> r = H2OGeneralizedLinearEstimator.getGLMRegularizationPath(m)
         >>> m2 = H2OGeneralizedLinearEstimator.makeGLMModel(model=m,
@@ -2823,9 +2823,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     def make_unrestricted_glm_model(self, dest=None):
         """
-        Make unrestricted GLM model when control variables are defined.
+        Make unrestricted GLM model when control variables or remove offset effects are defined.
 
-        Needs to be passed source model trained with control variables enabled. 
+        Needs to be passed source model trained with control variables or remove offset effects enabled.
 
         :param dest: (optional) destination key
 
@@ -2833,14 +2833,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
-        ...                                   solver='COORDINATE_DESCENT',
-        ...                                   remove_offset_effects = True,
-        ...                                   control_variables=["PSA"])
+        ...                                   control_variables=["PSA"],
+        ...                                   remove_offset_effects=True)
         >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,7,8],
-        ...         y=1)
-        >>> p = m.model_performance(d)
-        >>> print(p)
+        ...         x=[2,3,4,5,6,8],
+        ...         y=1,
+        ...         offset_column="VOL")
         >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
@@ -2862,32 +2860,29 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Make derived GLM model when control variables or remove offset effects are defined.
 
-        Needs to be passed source model trained with control variables enabled or remove offset effects enabled. 
+        Needs to be passed source model trained with control variables or remove offset effects enabled.
+        When neither flag is set, the returned model is equivalent to the unrestricted model.
+        The ``remove_control_variables_effects`` and ``remove_offset_effects`` flags are only available
+        when the source model was trained with both ``control_variables`` and ``remove_offset_effects``.
 
         :param dest: (optional) destination key
-        :param remove_control_variables_effects: (optional) set control variables flag to get model affected only 
+        :param remove_control_variables_effects: (optional) set control variables flag to get model affected only
             by this feature (available only if control_variables and remove_offset_effects parameters are both set)
-        :param remove_offset_effects: (optional) set remove offset effects flag to get model affected only 
+        :param remove_offset_effects: (optional) set remove offset effects flag to get model affected only
             by this feature (available only if control_variables and remove_offset_effects parameters are both set)
 
         :examples:
 
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
-        ...                                   solver='COORDINATE_DESCENT',
-        ...                                   remove_offset_effects = True,
-        ...                                   control_variables=["PSA"])
+        ...                                   control_variables=["PSA"],
+        ...                                   remove_offset_effects=True)
         >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,7,8],
-        ...         y=1)
-        >>> p = m.model_performance(d)
-        >>> print(p)
-        >>> m2 = m.make_derived_glm_model(dest="unrestricted_glm")
-        >>> p2 = m2.model_performance(d)
-        >>> print(p2)
+        ...         x=[2,3,4,5,6,8],
+        ...         y=1,
+        ...         offset_column="VOL")
+        >>> m2 = m.make_derived_glm_model(dest="derived_glm")
         >>> m3 = m.make_derived_glm_model(dest="derived_glm_cv", remove_control_variables_effects=True)
-        >>> p3 = m3.model_performance(d)
-        >>> print(p3)
         """
         if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
             raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
