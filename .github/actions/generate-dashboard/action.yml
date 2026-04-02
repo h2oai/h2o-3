@@ -160,11 +160,13 @@ runs:
         categorize_job() {
           local name="$1"
 
-          # Skip infrastructure jobs
+          # Skip infrastructure jobs (Start/Stop EC2 runners, Initialize, Summary, etc.)
           if [[ "$name" =~ ^(Start|Stop|Initialize|Summary|Allure|Build) ]] || \
              [[ "$name" == "Initialize" ]] || \
              [[ "$name" == "Summary" ]] || \
-             [[ "$name" =~ "Allure Report" ]]; then
+             [[ "$name" =~ "Allure Report" ]] || \
+             [[ "$name" =~ "Start EC2" ]] || \
+             [[ "$name" =~ "Stop EC2" ]]; then
             echo "skip"
             return
           fi
