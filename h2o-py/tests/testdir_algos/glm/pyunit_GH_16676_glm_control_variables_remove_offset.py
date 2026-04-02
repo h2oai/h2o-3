@@ -104,33 +104,6 @@ def test_glm_cv_ro_checkpoint_preserves_distinct_metrics():
         f"After checkpoint: RO ({dev_ro}) and CV ({dev_cv}) deviance must differ"
 
 
-def test_glm_cv_varimp_excludes_control_variables():
-    """
-    GH-16676: Control variables must not appear in the restricted model's variable importance,
-    even when control variable column indices are not in ascending order.
-    """
-    train = h2o.H2OFrame({
-        "a": list(range(1, 11)) + [x + 0.5 for x in range(1, 11)],
-        "b": [x * 0.1 for x in range(1, 11)] + [x * 0.1 + 0.05 for x in range(1, 11)],
-        "c": list(range(10, 110, 10)) + list(range(15, 115, 10)),
-        "d": [x * 0.5 for x in range(1, 11)] + [x * 0.5 + 0.25 for x in range(1, 11)],
-        "y": [1,0,1,0,1,0,1,0,1,0,1,1,0,0,1,1,0,0,1,1],
-    })
-    train["y"] = train["y"].asfactor()
-
-    glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=[0], control_variables=["d", "b"])
-    glm.train(x=["a", "b", "c", "d"], y="y", training_frame=train)
-
-    restricted_names = [row[0] for row in glm.varimp()]
-    assert "b" not in restricted_names, "'b' should not appear in restricted varimp"
-    assert "d" not in restricted_names, "'d' should not appear in restricted varimp"
-
-    unrestricted = glm.make_derived_glm_model(dest="unrest_varimp")
-    unrestricted_names = [row[0] for row in unrestricted.varimp()]
-    assert "b" in unrestricted_names and "d" in unrestricted_names, \
-        "Unrestricted varimp must contain control variables 'b' and 'd'"
-
-
 def test_glm_cv_ro_scoring_history_deviance_matches_metrics():
     """
     GH-16676: With both control_variables and remove_offset_effects enabled and
@@ -287,25 +260,6 @@ def test_glm_ro_tweedie():
     assert unrestricted._model_json["output"]["training_metrics"] is not None
 
 
-def test_glm_cv_varimp_excludes_named_control():
-    """
-    GH-16676: control_variables specified by column name (not index) must be
-    excluded from the restricted model's variable importance.
-    """
-    train = h2o.H2OFrame({
-        "predictor_a": list(range(1, 11)) + list(range(1, 11)),
-        "control_b": list(range(10, 110, 10)) + list(range(15, 115, 10)),
-        "y": [1,0,1,0,1,0,1,0,1,0,1,1,0,0,1,1,0,0,1,1],
-    })
-    train["y"] = train["y"].asfactor()
-
-    glm = H2OGeneralizedLinearEstimator(family="binomial", control_variables=["control_b"])
-    glm.train(x=["predictor_a", "control_b"], y="y", training_frame=train)
-
-    varimp_names = [row[0] for row in glm.varimp()]
-    assert "control_b" not in varimp_names, "'control_b' should not appear in restricted varimp"
-
-
 def test_glm_ro_requires_offset_column():
     """
     GH-16676: Setting remove_offset_effects=True without an offset_column
@@ -355,14 +309,12 @@ def test_glm_cv_ro_derived_models_have_metrics():
 
 pyunit_utils.run_tests([
     test_glm_cv_ro_checkpoint_preserves_distinct_metrics,
-    test_glm_cv_varimp_excludes_control_variables,
     test_glm_cv_ro_scoring_history_deviance_matches_metrics,
     test_glm_ro_scoring_history_deviance_matches_metrics,
     test_glm_ro_standardize_invariant,
     test_glm_ro_lbfgs_matches_irlsm,
     test_glm_cv_ro_lbfgs_produces_distinct_derived_models,
     test_glm_ro_tweedie,
-    test_glm_cv_varimp_excludes_named_control,
     test_glm_ro_requires_offset_column,
     test_glm_cv_ro_derived_models_have_metrics,
 ])

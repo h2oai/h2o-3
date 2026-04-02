@@ -2144,34 +2144,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
 
-      // When computing restricted varimp, exclude control variables entirely
-      if (contrVal && _control_variables_names != null) {
-        int excluded = 0;
-        boolean[] isControl = new boolean[len];
-        for (int index = 0; index < len; index++) {
-          String name = names[indices[index]];
-          for (String cv : _control_variables_names) {
-            if (name.equals(cv) || name.startsWith(cv + ".")) {
-              isControl[index] = true;
-              excluded++;
-              break;
-            }
-          }
-        }
-        int filteredLen = len - excluded;
-        float[] magnitudesSort = new float[filteredLen];
-        String[] namesSort = new String[filteredLen];
-        int j = 0;
-        for (int index = 0; index < len; index++) {
-          if (!isControl[index]) {
-            magnitudesSort[j] = (float) magnitudes[indices[index]];
-            namesSort[j] = names[indices[index]];
-            j++;
-          }
-        }
-        return new VarImp(magnitudesSort, namesSort);
-      }
-
       float[] magnitudesSort = new float[len];
       String[] namesSort = new String[len];
       for (int index = 0; index < len; index++) {
