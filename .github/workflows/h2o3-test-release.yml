@@ -1,0 +1,108 @@
+# ==============================================================================
+#
+#                         H2O-3 TEST RELEASE
+#                         ==================
+#
+#   Trigger a test release of H2O-3 with pre-configured parameters.
+#   Uses test S3 bucket (s3://test.0xdata.com/test-release/h2o) and skips
+#   external publishing (PyPI, Anaconda).
+#
+#   Default Configuration:
+#   - TEST_RELEASE: true          (use test S3 bucket)
+#   - TEST_CREDENTIALS: false     (skip credential testing)
+#   - UPDATE_LATEST: false        (don't update global latest links)
+#   - UPDATE_LATEST_BRANCH: true  (update branch latest links)
+#   - UPLOAD_NEXUS: false         (skip Nexus upload)
+#   - BUILD_HADOOP: true          (include Hadoop support)
+#   - BUILD_PYPI: true            (build PyPI package)
+#   - UPLOAD_TO_PYPI: false       (skip PyPI.org upload)
+#   - BUILD_CONDA: true           (build Conda packages)
+#   - UPLOAD_TO_ANACONDA: false   (skip Anaconda.org upload)
+#   - BUILD_H2O_DOCKER: true      (build Docker images)
+#
+# ==============================================================================
+
+name: H2O-3 Test Release
+
+run-name: "H2O-3 Test Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release [e.g., master, rel-3.42]'
+        required: true
+        default: 'master'
+        type: string
+
+      build_number:
+        description: "Build number [leave empty to auto-generate]"
+        required: false
+        type: string
+
+      dry_run:
+        description: 'Dry run mode [skip all external publishing]'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+  actions: write
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+  trigger-test-release:
+    name: Trigger Test Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Release Main Workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run release-main.yml \
+            --repo ${{ github.repository }} \
+            --ref ${{ github.ref }} \
+            -f branch="${{ inputs.branch }}" \
+            -f build_number="${{ inputs.build_number }}" \
+            -f dry_run="${{ inputs.dry_run }}" \
+            -f test_release=true \
+            -f test_credentials=false \
+            -f update_latest=false \
+            -f update_latest_branch=true \
+            -f upload_nexus=false \
+            -f build_hadoop=true \
+            -f build_pypi=true \
+            -f upload_pypi=false \
+            -f build_conda=true \
+            -f upload_conda=false \
+            -f build_docker=true
+
+          echo "## Test Release Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ inputs.branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Number | \`${{ inputs.build_number || 'auto-generated' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dry Run | ${{ inputs.dry_run }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Release | true |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Credentials | false |" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Latest | false |" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Latest Branch | true |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload Nexus | false |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Hadoop | true |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build PyPI | true |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload PyPI | false |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Conda | true |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload Conda | false |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Docker | true |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the [release-main.yml](/${{ github.repository }}/actions/workflows/release-main.yml) workflow for progress." >> $GITHUB_STEP_SUMMARY
