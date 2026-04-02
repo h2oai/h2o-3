@@ -518,12 +518,62 @@ test-junit-algos-kmeans-jenkins:
 test-junit-algos-kmeans:
 	DOONLY="hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
+test-junit-algos-rulefit-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-rulefit
+
+test-junit-algos-rulefit:
+	DOONLY="hex.rulefit" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-pca-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-pca
+
+test-junit-algos-pca:
+	DOONLY="hex.pca" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-glrm-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-glrm
+
+test-junit-algos-glrm:
+	DOONLY="hex.glrm" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-adaboost-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-adaboost
+
+test-junit-algos-adaboost:
+	DOONLY="hex.adaboost" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-modelselection-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-modelselection
+
+test-junit-algos-modelselection:
+	DOONLY="hex.modelselection" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-generic-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-generic
+
+test-junit-algos-generic:
+	DOONLY="hex.generic" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-algos-grid-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-algos-grid
+
+test-junit-algos-grid:
+	DOONLY="hex.grid" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+# Catch-all for remaining small algos packages (uses IGNORE to exclude all dedicated stages)
 test-junit-algos-misc-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-algos-misc
 
 test-junit-algos-misc:
-	IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans,hex.rulefit,hex.pca,hex.glrm,hex.adaboost,hex.modelselection,hex.generic,hex.grid" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 8, excludes core)
 # Note: h2o-persist-* modules are excluded - they have dedicated stages; h2o-persist-hdfs runs in MODE_HADOOP pipeline
@@ -623,12 +673,61 @@ test-junit-17-algos-kmeans-jenkins:
 test-junit-17-algos-kmeans:
 	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
+test-junit-17-algos-rulefit-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-rulefit
+
+test-junit-17-algos-rulefit:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.rulefit" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-algos-pca-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-pca
+
+test-junit-17-algos-pca:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.pca" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-algos-glrm-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-glrm
+
+test-junit-17-algos-glrm:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.glrm" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-algos-adaboost-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-adaboost
+
+test-junit-17-algos-adaboost:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.adaboost" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-algos-modelselection-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-modelselection
+
+test-junit-17-algos-modelselection:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.modelselection" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-algos-generic-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-generic
+
+test-junit-17-algos-generic:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.generic" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-algos-grid-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-grid
+
+test-junit-17-algos-grid:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" DOONLY="hex.grid" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
 test-junit-17-algos-misc-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-17-algos-misc
 
 test-junit-17-algos-misc:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" IGNORE="hex.glm,hex.hglm,hex.tree.gbm,hex.tree.drf,hex.deeplearning,hex.gam,hex.tree.BranchInteraction,hex.tree.Calibration,hex.tree.CompressedTree,hex.tree.Constraints,hex.tree.DHisto,hex.tree.DTree,hex.tree.Friedman,hex.tree.Global,hex.tree.Guided,hex.tree.Histogram,hex.tree.Print,hex.tree.Score,hex.tree.SharedTree,hex.tree.TreeHandler,hex.tree.TreeStats,hex.tree.dt,hex.tree.isofor,hex.tree.uplift,hex.ensemble,hex.kmeans,hex.rulefit,hex.pca,hex.glrm,hex.adaboost,hex.modelselection,hex.generic,hex.grid" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 # Remaining non-algos modules (Java 17, includes core, with add-opens)
 # Note: h2o-persist-* modules are excluded - they have dedicated stages; h2o-persist-hdfs runs in MODE_HADOOP pipeline
