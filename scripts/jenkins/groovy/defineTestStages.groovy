@@ -97,8 +97,50 @@ def call(final pipelineContext) {
       imageSpecifier: 'python-3.7-jdk-8'
     ],
     [
+      stageName: 'Java 8 Algos RuleFit', target: 'test-junit-algos-rulefit-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Algos PCA', target: 'test-junit-algos-pca-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Algos GLRM', target: 'test-junit-algos-glrm-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Algos AdaBoost', target: 'test-junit-algos-adaboost-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Algos ModelSelection', target: 'test-junit-algos-modelselection-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Algos Generic', target: 'test-junit-algos-generic-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Algos Grid', target: 'test-junit-algos-grid-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.7-jdk-8'
+    ],
+    [
       stageName: 'Java 8 Algos Misc', target: 'test-junit-algos-misc-jenkins', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.7-jdk-8'
     ],
@@ -210,8 +252,50 @@ def call(final pipelineContext) {
       imageSpecifier: "python-3.7-jdk-11"
     ],
     [
+      stageName: 'Java 11 Algos RuleFit', target: 'test-junit-algos-rulefit-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos PCA', target: 'test-junit-algos-pca-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos GLRM', target: 'test-junit-algos-glrm-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos AdaBoost', target: 'test-junit-algos-adaboost-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos ModelSelection', target: 'test-junit-algos-modelselection-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos Generic', target: 'test-junit-algos-generic-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
+      stageName: 'Java 11 Algos Grid', target: 'test-junit-algos-grid-jenkins', pythonVersion: '3.7', javaVersion: 11,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-11"
+    ],
+    [
       stageName: 'Java 11 Algos Misc', target: 'test-junit-algos-misc-jenkins', pythonVersion: '3.7', javaVersion: 11,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.7-jdk-11"
     ],
@@ -275,8 +359,50 @@ def call(final pipelineContext) {
       imageSpecifier: "python-3.7-jdk-17"
     ],
     [
+      stageName: 'Java 17 Algos RuleFit', target: 'test-junit-17-algos-rulefit-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos PCA', target: 'test-junit-17-algos-pca-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos GLRM', target: 'test-junit-17-algos-glrm-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos AdaBoost', target: 'test-junit-17-algos-adaboost-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos ModelSelection', target: 'test-junit-17-algos-modelselection-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos Generic', target: 'test-junit-17-algos-generic-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
+      stageName: 'Java 17 Algos Grid', target: 'test-junit-17-algos-grid-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-3.7-jdk-17"
+    ],
+    [
       stageName: 'Java 17 Algos Misc', target: 'test-junit-17-algos-misc-jenkins', pythonVersion: '3.7', javaVersion: 17,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-3.7-jdk-17"
     ],
