@@ -14,6 +14,14 @@ def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('custom')
         return param
+    if name in ('alpha', 'lambda'):
+        param['ptype'] = 'numeric, [numeric]'
+        param['dtype'] = 'Union[float, List[float]]'
+        return param
+    if name == 'beta_constraints':
+        param['ptype'] = 'str, dict, H2OFrame'
+        param['dtype'] = 'Union[str, dict, H2OFrame]'
+        return param
     return None  # param untouched
 
 
@@ -364,11 +372,14 @@ self._parms["{sname}"] = {pname}
     ),
     beta_constraints=dict(
         setter="""
-# beta_constraints can be specified as a H2OFrame or python dict
-assert_is_type({pname}, None, dict, H2OFrame)
-if type({pname}) is H2OFrame:
+# beta_constraints can be specified as a H2OFrame, python dict, or frame key (str)
+assert_is_type({pname}, None, str, dict, H2OFrame)
+if isinstance({pname}, str):
+    {pname} = H2OFrame._validate({pname}, '{pname}')
+    self._parms["{sname}"] = {pname}
+elif type({pname}) is H2OFrame:
     self._parms["{sname}"]={pname}
-if type({pname}) is dict:
+elif type({pname}) is dict:
     colnames = {pname}.keys()
     col_names = []
     upper_bounds = []
@@ -380,6 +391,8 @@ if type({pname}) is dict:
         lower_bounds.append(one_col_bounds.get('lower_bound'))
     constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
     self._parms["{sname}"] = constraints[["names", "lower_bounds", "upper_bounds"]]
+else:
+    self._parms["{sname}"] = {pname}
 """
     )
 )

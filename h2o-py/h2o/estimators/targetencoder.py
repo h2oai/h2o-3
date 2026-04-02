@@ -32,7 +32,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                  fold_column=None,  # type: Optional[str]
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
-                 columns_to_encode=None,  # type: Optional[List[List[str]]]
+                 columns_to_encode=None,  # type: Optional[List[Union[str, List[str]]]]
                  keep_original_categorical_columns=True,  # type: bool
                  blending=False,  # type: bool
                  inflection_point=10.0,  # type: float
@@ -60,7 +60,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         :param columns_to_encode: List of categorical columns or groups of categorical columns to encode. When groups of
                columns are specified, each group is encoded as a single column (interactions are created internally).
                Defaults to ``None``.
-        :type columns_to_encode: List[List[str]], optional
+        :type columns_to_encode: List[Union[str, List[str]]], optional
         :param keep_original_categorical_columns: If true, the original non-encoded categorical features will remain in
                the result frame.
                Defaults to ``True``.
@@ -207,7 +207,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         List of categorical columns or groups of categorical columns to encode. When groups of columns are specified,
         each group is encoded as a single column (interactions are created internally).
 
-        Type: ``List[List[str]]``.
+        Type: ``List[Union[str, List[str]]]``.
         """
         return self._parms.get("columns_to_encode")
 
