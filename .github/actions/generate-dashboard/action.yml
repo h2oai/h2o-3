@@ -4,11 +4,19 @@
 #
 # PURPOSE:
 #   Generates a comprehensive test dashboard in GitHub Job Summary
-#   with detailed test results, timing, and failure analysis.
+#   with detailed individual job results, timing, and failure analysis.
+#
+# FEATURES:
+#   - Individual job results per test category
+#   - Collapsible sections (expanded by default)
+#   - Duration tracking per job
+#   - Direct links to failed job logs
+#   - Summary statistics
 #
 # USAGE:
 #   - uses: ./.github/actions/generate-dashboard
 #     with:
+#       github_token: ${{ secrets.GITHUB_TOKEN }}
 #       branch: master
 #       build_result: success
 #       smoke_result: success
@@ -20,9 +28,13 @@
 # ==============================================================================
 
 name: 'Generate Test Dashboard'
-description: 'Generate comprehensive test dashboard in job summary'
+description: 'Generate comprehensive test dashboard with individual job results'
 
 inputs:
+  github_token:
+    description: 'GitHub token for API calls to fetch job details'
+    required: true
+
   branch:
     description: 'H2O-3 branch tested'
     required: true
@@ -61,40 +73,234 @@ inputs:
     required: false
     default: 'skipped'
 
-  allure_report_url:
-    description: 'URL to Allure report'
-    required: false
-    default: ''
-
 runs:
   using: 'composite'
   steps:
+    - name: Fetch Job Details
+      id: fetch-jobs
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        # Fetch all jobs for current workflow run
+        echo "Fetching jobs for run ${{ github.run_id }}..."
+
+        gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+          --paginate \
+          --jq '.jobs[] | {name: .name, status: .status, conclusion: .conclusion, started_at: .started_at, completed_at: .completed_at, html_url: .html_url}' \
+          > /tmp/jobs.json 2>/dev/null || echo "[]" > /tmp/jobs.json
+
+        echo "Jobs fetched:"
+        cat /tmp/jobs.json | head -50
+
     - name: Generate Dashboard
       shell: bash
       run: |
-        # Get status emoji based on result
-        get_emoji() {
+        # ==================================================
+        # HELPER FUNCTIONS
+        # ==================================================
+
+        get_status_icon() {
           case "$1" in
-            success) echo "✅" ;;
-            failure) echo "❌" ;;
-            skipped) echo "⏭️" ;;
-            cancelled) echo "🚫" ;;
-            *) echo "❓" ;;
+            success) echo "[PASS]" ;;
+            failure) echo "[FAIL]" ;;
+            skipped) echo "[SKIP]" ;;
+            cancelled) echo "[CANCEL]" ;;
+            in_progress) echo "[RUNNING]" ;;
+            *) echo "[?]" ;;
           esac
         }
 
-        # Get status text based on result
         get_text() {
           case "$1" in
-            success) echo "PASSED" ;;
-            failure) echo "FAILED" ;;
-            skipped) echo "SKIPPED" ;;
-            cancelled) echo "CANCELLED" ;;
+            success) echo "Passed" ;;
+            failure) echo "Failed" ;;
+            skipped) echo "Skipped" ;;
+            cancelled) echo "Cancelled" ;;
+            in_progress) echo "Running" ;;
             *) echo "$1" ;;
           esac
         }
 
-        # Store input values
+        # Calculate duration between two ISO timestamps
+        calc_duration() {
+          local start="$1"
+          local end="$2"
+
+          if [[ -z "$start" || -z "$end" || "$start" == "null" || "$end" == "null" ]]; then
+            echo "-"
+            return
+          fi
+
+          # Convert to seconds since epoch
+          local start_sec=$(date -d "$start" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$start" +%s 2>/dev/null || echo "0")
+          local end_sec=$(date -d "$end" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$end" +%s 2>/dev/null || echo "0")
+
+          if [[ "$start_sec" == "0" || "$end_sec" == "0" ]]; then
+            echo "-"
+            return
+          fi
+
+          local diff=$((end_sec - start_sec))
+
+          if [[ $diff -lt 60 ]]; then
+            echo "${diff}s"
+          elif [[ $diff -lt 3600 ]]; then
+            local mins=$((diff / 60))
+            local secs=$((diff % 60))
+            echo "${mins}m ${secs}s"
+          else
+            local hours=$((diff / 3600))
+            local mins=$(((diff % 3600) / 60))
+            echo "${hours}h ${mins}m"
+          fi
+        }
+
+        # Categorize job by name
+        categorize_job() {
+          local name="$1"
+
+          # Skip infrastructure jobs (Start/Stop EC2 runners, Initialize, Summary, etc.)
+          if [[ "$name" =~ ^(Start|Stop|Initialize|Summary|Allure|Build) ]] || \
+             [[ "$name" == "Initialize" ]] || \
+             [[ "$name" == "Summary" ]] || \
+             [[ "$name" =~ "Allure Report" ]] || \
+             [[ "$name" =~ "Start EC2" ]] || \
+             [[ "$name" =~ "Stop EC2" ]]; then
+            echo "skip"
+            return
+          fi
+
+          # Categorize by workflow prefix first (e.g., "Python Tests / Py3.7 Smoke")
+          # This ensures jobs from reusable workflows are categorized by their parent workflow
+          if [[ "$name" == "Python Tests /"* ]]; then
+            echo "python"
+          elif [[ "$name" == "R Tests /"* ]]; then
+            echo "r"
+          elif [[ "$name" == "Java Tests /"* ]]; then
+            echo "java"
+          elif [[ "$name" == "Flow Tests /"* ]]; then
+            echo "flow"
+          elif [[ "$name" == "Smoke Tests /"* ]] || [[ "$name" == "INFO Check" ]]; then
+            echo "smoke"
+          # Fallback patterns for direct job names (non-reusable workflow jobs)
+          elif [[ "$name" =~ Smoke ]] || [[ "$name" == "INFO Check" ]]; then
+            echo "smoke"
+          elif [[ "$name" =~ ^Py[0-9] ]]; then
+            echo "python"
+          elif [[ "$name" =~ ^R[0-9] ]]; then
+            echo "r"
+          elif [[ "$name" =~ ^Java ]]; then
+            echo "java"
+          elif [[ "$name" =~ ^Flow ]]; then
+            echo "flow"
+          else
+            echo "other"
+          fi
+        }
+
+        # ==================================================
+        # PARSE JOB DATA
+        # ==================================================
+
+        declare -A smoke_jobs python_jobs r_jobs java_jobs flow_jobs other_jobs
+        declare -a failed_jobs
+
+        smoke_passed=0
+        smoke_failed=0
+        smoke_total=0
+        python_passed=0
+        python_failed=0
+        python_total=0
+        r_passed=0
+        r_failed=0
+        r_total=0
+        java_passed=0
+        java_failed=0
+        java_total=0
+        flow_passed=0
+        flow_failed=0
+        flow_total=0
+
+        # Process each job
+        while IFS= read -r line; do
+          [[ -z "$line" ]] && continue
+
+          name=$(echo "$line" | jq -r '.name // empty')
+          [[ -z "$name" ]] && continue
+
+          conclusion=$(echo "$line" | jq -r '.conclusion // "pending"')
+          status=$(echo "$line" | jq -r '.status // "queued"')
+          started=$(echo "$line" | jq -r '.started_at // ""')
+          completed=$(echo "$line" | jq -r '.completed_at // ""')
+          url=$(echo "$line" | jq -r '.html_url // ""')
+
+          # Use conclusion if available, otherwise status
+          result="$conclusion"
+          [[ "$result" == "null" || -z "$result" ]] && result="$status"
+
+          category=$(categorize_job "$name")
+          [[ "$category" == "skip" ]] && continue
+
+          duration=$(calc_duration "$started" "$completed")
+          status_icon=$(get_status_icon "$result")
+
+          # Map category to display name
+          case "$category" in
+            smoke) category_name="Smoke" ;;
+            python) category_name="Python" ;;
+            r) category_name="R" ;;
+            java) category_name="Java" ;;
+            flow) category_name="Flow" ;;
+            *) category_name="Other" ;;
+          esac
+
+          job_entry="${status_icon}|${name}|${duration}|${url}|${result}|${category_name}"
+
+          case "$category" in
+            smoke)
+              smoke_jobs["$name"]="$job_entry"
+              smoke_total=$((smoke_total + 1))
+              [[ "$result" == "success" ]] && smoke_passed=$((smoke_passed + 1))
+              [[ "$result" == "failure" ]] && smoke_failed=$((smoke_failed + 1))
+              ;;
+            python)
+              python_jobs["$name"]="$job_entry"
+              python_total=$((python_total + 1))
+              [[ "$result" == "success" ]] && python_passed=$((python_passed + 1))
+              [[ "$result" == "failure" ]] && python_failed=$((python_failed + 1))
+              ;;
+            r)
+              r_jobs["$name"]="$job_entry"
+              r_total=$((r_total + 1))
+              [[ "$result" == "success" ]] && r_passed=$((r_passed + 1))
+              [[ "$result" == "failure" ]] && r_failed=$((r_failed + 1))
+              ;;
+            java)
+              java_jobs["$name"]="$job_entry"
+              java_total=$((java_total + 1))
+              [[ "$result" == "success" ]] && java_passed=$((java_passed + 1))
+              [[ "$result" == "failure" ]] && java_failed=$((java_failed + 1))
+              ;;
+            flow)
+              flow_jobs["$name"]="$job_entry"
+              flow_total=$((flow_total + 1))
+              [[ "$result" == "success" ]] && flow_passed=$((flow_passed + 1))
+              [[ "$result" == "failure" ]] && flow_failed=$((flow_failed + 1))
+              ;;
+          esac
+
+          # Track failed jobs
+          if [[ "$result" == "failure" ]]; then
+            failed_jobs+=("$job_entry")
+          fi
+
+        done < /tmp/jobs.json
+
+        # ==================================================
+        # CALCULATE OVERALL STATUS
+        # ==================================================
+
         BUILD_RESULT="${{ inputs.build_result }}"
         SMOKE_RESULT="${{ inputs.smoke_result }}"
         PYTHON_RESULT="${{ inputs.python_result }}"
@@ -102,7 +308,6 @@ runs:
         JAVA_RESULT="${{ inputs.java_result }}"
         FLOW_RESULT="${{ inputs.flow_result }}"
 
-        # Calculate overall status
         OVERALL="success"
         [[ "$BUILD_RESULT" == "failure" ]] && OVERALL="failure"
         [[ "$SMOKE_RESULT" == "failure" ]] && OVERALL="failure"
@@ -111,131 +316,107 @@ runs:
         [[ "$JAVA_RESULT" == "failure" ]] && OVERALL="failure"
         [[ "$FLOW_RESULT" == "failure" ]] && OVERALL="failure"
 
-        # Count results
-        PASSED=0
-        FAILED=0
-        SKIPPED=0
+        total_failed=${#failed_jobs[@]}
 
-        for result in "$BUILD_RESULT" "$SMOKE_RESULT" "$PYTHON_RESULT" "$R_RESULT" "$JAVA_RESULT" "$FLOW_RESULT"; do
-          case "$result" in
-            success) PASSED=$((PASSED + 1)) ;;
-            failure) FAILED=$((FAILED + 1)) ;;
-            skipped) SKIPPED=$((SKIPPED + 1)) ;;
-          esac
-        done
+        # ==================================================
+        # GENERATE SUMMARY
+        # ==================================================
 
-        # Get emoji/text for each result
-        BUILD_EMOJI=$(get_emoji "$BUILD_RESULT")
-        BUILD_TEXT=$(get_text "$BUILD_RESULT")
-        SMOKE_EMOJI=$(get_emoji "$SMOKE_RESULT")
-        SMOKE_TEXT=$(get_text "$SMOKE_RESULT")
-        PYTHON_EMOJI=$(get_emoji "$PYTHON_RESULT")
-        PYTHON_TEXT=$(get_text "$PYTHON_RESULT")
-        R_EMOJI=$(get_emoji "$R_RESULT")
-        R_TEXT=$(get_text "$R_RESULT")
-        JAVA_EMOJI=$(get_emoji "$JAVA_RESULT")
-        JAVA_TEXT=$(get_text "$JAVA_RESULT")
-        FLOW_EMOJI=$(get_emoji "$FLOW_RESULT")
-        FLOW_TEXT=$(get_text "$FLOW_RESULT")
+        {
+          # Header
+          echo "# H2O-3 Nightly Test Dashboard"
+          echo ""
 
-        # ========================================
-        # HEADER
-        # ========================================
-        echo "# 🧪 H2O-3 Nightly Test Dashboard" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "$OVERALL" == "success" ]]; then
+            echo "> **All tests passed successfully!**"
+          else
+            echo "> **${total_failed} test(s) failed. See details below.**"
+          fi
+          echo ""
 
-        if [[ "$OVERALL" == "success" ]]; then
-          echo "> ✅ **All tests passed successfully!**" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "> ❌ **Some tests failed. See details below.**" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
+          # Build Information
+          echo "## Build Information"
+          echo ""
+          echo "| Property | Value |"
+          echo "|----------|-------|"
+          echo "| **Branch** | \`${{ inputs.branch }}\` |"
+          if [[ -n "${{ inputs.build_sha }}" ]]; then
+            echo "| **Commit** | [\`${{ inputs.build_sha }}\`](https://github.com/h2oai/h2o-3/commit/${{ inputs.build_sha }}) |"
+          fi
+          echo "| **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
+          echo "| **Triggered** | ${{ github.event_name }} |"
+          echo "| **Build** | $(get_status_icon "$BUILD_RESULT") $(get_text "$BUILD_RESULT") |"
+          echo ""
 
-        # ========================================
-        # BUILD INFO
-        # ========================================
-        echo "## 📋 Build Information" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-        echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-        echo "| **Branch** | \`${{ inputs.branch }}\` |" >> $GITHUB_STEP_SUMMARY
-        if [[ -n "${{ inputs.build_sha }}" ]]; then
-          echo "| **Commit** | \`${{ inputs.build_sha }}\` |" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "| **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
-        echo "| **Triggered** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+          # Test Results Section - Single table with Test Type column
+          echo "## Test Results"
+          echo ""
+          echo "| Test Type | Test | Status | Duration |"
+          echo "|-----------|------|:------:|----------|"
 
-        # ========================================
-        # SUMMARY STATS
-        # ========================================
-        echo "## 📊 Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
-        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-        echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
-        echo "| ❌ Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
-        echo "| ⏭️ Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+          # Helper function to render jobs for a category
+          render_jobs() {
+            local category="$1"
+            local result="$2"
+            shift 2
+            local -n jobs_ref=$1
 
-        # ========================================
-        # TEST RESULTS MATRIX
-        # ========================================
-        echo "## 🔬 Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Category | Status | Result |" >> $GITHUB_STEP_SUMMARY
-        echo "|----------|:------:|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| **Build** | $BUILD_EMOJI | $BUILD_TEXT |" >> $GITHUB_STEP_SUMMARY
-        echo "| **Smoke Tests** | $SMOKE_EMOJI | $SMOKE_TEXT |" >> $GITHUB_STEP_SUMMARY
-        echo "| **Python Tests** | $PYTHON_EMOJI | $PYTHON_TEXT |" >> $GITHUB_STEP_SUMMARY
-        echo "| **R Tests** | $R_EMOJI | $R_TEXT |" >> $GITHUB_STEP_SUMMARY
-        echo "| **Java Tests** | $JAVA_EMOJI | $JAVA_TEXT |" >> $GITHUB_STEP_SUMMARY
-        echo "| **Flow Tests** | $FLOW_EMOJI | $FLOW_TEXT |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+            if [[ "$result" == "skipped" ]]; then
+              echo "| ${category} | _Skipped_ | [SKIP] | - |"
+              return
+            fi
 
-        # ========================================
-        # FAILURE DETAILS (if any)
-        # ========================================
-        if [[ "$FAILED" -gt 0 ]]; then
-          echo "## ⚠️ Failed Categories" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The following test categories failed:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+            if [[ ${#jobs_ref[@]} -eq 0 ]]; then
+              echo "| ${category} | _No jobs found_ | [?] | - |"
+              return
+            fi
 
-          [[ "$BUILD_RESULT" == "failure" ]] && echo "- ❌ **Build** - Check build logs for compilation errors" >> $GITHUB_STEP_SUMMARY
-          [[ "$SMOKE_RESULT" == "failure" ]] && echo "- ❌ **Smoke Tests** - Basic functionality tests failed" >> $GITHUB_STEP_SUMMARY
-          [[ "$PYTHON_RESULT" == "failure" ]] && echo "- ❌ **Python Tests** - Python client/API tests failed" >> $GITHUB_STEP_SUMMARY
-          [[ "$R_RESULT" == "failure" ]] && echo "- ❌ **R Tests** - R client tests failed" >> $GITHUB_STEP_SUMMARY
-          [[ "$JAVA_RESULT" == "failure" ]] && echo "- ❌ **Java Tests** - Java JUnit tests failed" >> $GITHUB_STEP_SUMMARY
-          [[ "$FLOW_RESULT" == "failure" ]] && echo "- ❌ **Flow Tests** - Flow UI tests failed" >> $GITHUB_STEP_SUMMARY
+            for name in "${!jobs_ref[@]}"; do
+              IFS='|' read -r j_status_icon j_name j_duration j_url j_result <<< "${jobs_ref[$name]}"
+              if [[ -n "$j_url" && "$j_url" != "null" ]]; then
+                echo "| ${category} | [${j_name}](${j_url}) | ${j_status_icon} | ${j_duration} |"
+              else
+                echo "| ${category} | ${j_name} | ${j_status_icon} | ${j_duration} |"
+              fi
+            done
+          }
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> 💡 **Tip**: Check individual job logs for detailed error messages. Failure artifacts are available for download." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-        fi
+          # Render all categories in single table
+          render_jobs "Smoke" "$SMOKE_RESULT" smoke_jobs
+          render_jobs "Python" "$PYTHON_RESULT" python_jobs
+          render_jobs "R" "$R_RESULT" r_jobs
+          render_jobs "Java" "$JAVA_RESULT" java_jobs
+          render_jobs "Flow" "$FLOW_RESULT" flow_jobs
 
-        # ========================================
-        # REPORTS SECTION
-        # ========================================
-        echo "## 📁 Reports & Artifacts" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+          echo ""
 
-        if [[ -n "${{ inputs.allure_report_url }}" ]]; then
-          echo "- 📊 [**Allure Test Report**](${{ inputs.allure_report_url }}) - Interactive test results" >> $GITHUB_STEP_SUMMARY
-        fi
+          # Failed Jobs Section (if any failures)
+          if [[ ${#failed_jobs[@]} -gt 0 ]]; then
+            echo "## Failed Jobs (${#failed_jobs[@]})"
+            echo ""
+            echo "| Test Type | Test | Status | Duration |"
+            echo "|-----------|------|:------:|----------|"
+            for entry in "${failed_jobs[@]}"; do
+              IFS='|' read -r status_icon name duration url result category <<< "$entry"
+              if [[ -n "$url" && "$url" != "null" ]]; then
+                echo "| ${category:-Unknown} | [${name}](${url}) | ${status_icon} | ${duration} |"
+              else
+                echo "| ${category:-Unknown} | ${name} | ${status_icon} | ${duration} |"
+              fi
+            done
+            echo ""
+          fi
 
-        echo "- 📥 **Download artifacts** from the workflow run for:" >> $GITHUB_STEP_SUMMARY
-        echo "  - JUnit XML reports" >> $GITHUB_STEP_SUMMARY
-        echo "  - Test logs and diagnostics" >> $GITHUB_STEP_SUMMARY
-        echo "  - Allure result files" >> $GITHUB_STEP_SUMMARY
-        if [[ "$FAILED" -gt 0 ]]; then
-          echo "  - Failure artifacts (logs, heap dumps)" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
+          # Summary Statistics
+          echo "## Summary Statistics"
+          echo ""
+          echo "| Category | Status | Passed | Failed |"
+          echo "|----------|:------:|:------:|:------:|"
+          echo "| Smoke Tests | $(get_status_icon "$SMOKE_RESULT") | ${smoke_passed} | ${smoke_failed} |"
+          echo "| Python Tests | $(get_status_icon "$PYTHON_RESULT") | ${python_passed} | ${python_failed} |"
+          echo "| R Tests | $(get_status_icon "$R_RESULT") | ${r_passed} | ${r_failed} |"
+          echo "| Java Tests | $(get_status_icon "$JAVA_RESULT") | ${java_passed} | ${java_failed} |"
+          echo "| Flow Tests | $(get_status_icon "$FLOW_RESULT") | ${flow_passed} | ${flow_failed} |"
+          echo ""
 
-        # ========================================
-        # FOOTER
-        # ========================================
-        echo "---" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "_Generated at $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" >> $GITHUB_STEP_SUMMARY
+        } >> $GITHUB_STEP_SUMMARY
