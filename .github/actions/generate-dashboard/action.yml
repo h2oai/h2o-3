@@ -171,16 +171,28 @@ runs:
             return
           fi
 
-          # Categorize by name patterns
-          if [[ "$name" =~ Smoke ]] || [[ "$name" == "INFO Check" ]]; then
-            echo "smoke"
-          elif [[ "$name" =~ ^Py[0-9] ]] && [[ ! "$name" =~ Smoke ]]; then
+          # Categorize by workflow prefix first (e.g., "Python Tests / Py3.7 Smoke")
+          # This ensures jobs from reusable workflows are categorized by their parent workflow
+          if [[ "$name" =~ ^"Python Tests /" ]]; then
             echo "python"
-          elif [[ "$name" =~ ^R[0-9] ]] && [[ ! "$name" =~ Smoke ]]; then
+          elif [[ "$name" =~ ^"R Tests /" ]]; then
             echo "r"
-          elif [[ "$name" =~ ^Java ]] && [[ ! "$name" =~ Smoke ]]; then
+          elif [[ "$name" =~ ^"Java Tests /" ]]; then
             echo "java"
-          elif [[ "$name" =~ ^Flow ]] && [[ ! "$name" =~ Smoke ]]; then
+          elif [[ "$name" =~ ^"Flow Tests /" ]]; then
+            echo "flow"
+          elif [[ "$name" =~ ^"Smoke Tests /" ]] || [[ "$name" == "INFO Check" ]]; then
+            echo "smoke"
+          # Fallback patterns for direct job names (non-reusable workflow jobs)
+          elif [[ "$name" =~ Smoke ]] || [[ "$name" == "INFO Check" ]]; then
+            echo "smoke"
+          elif [[ "$name" =~ ^Py[0-9] ]]; then
+            echo "python"
+          elif [[ "$name" =~ ^R[0-9] ]]; then
+            echo "r"
+          elif [[ "$name" =~ ^Java ]]; then
+            echo "java"
+          elif [[ "$name" =~ ^Flow ]]; then
             echo "flow"
           else
             echo "other"
