@@ -173,15 +173,15 @@ runs:
 
           # Categorize by workflow prefix first (e.g., "Python Tests / Py3.7 Smoke")
           # This ensures jobs from reusable workflows are categorized by their parent workflow
-          if [[ "$name" =~ ^"Python Tests /" ]]; then
+          if [[ "$name" == "Python Tests /"* ]]; then
             echo "python"
-          elif [[ "$name" =~ ^"R Tests /" ]]; then
+          elif [[ "$name" == "R Tests /"* ]]; then
             echo "r"
-          elif [[ "$name" =~ ^"Java Tests /" ]]; then
+          elif [[ "$name" == "Java Tests /"* ]]; then
             echo "java"
-          elif [[ "$name" =~ ^"Flow Tests /" ]]; then
+          elif [[ "$name" == "Flow Tests /"* ]]; then
             echo "flow"
-          elif [[ "$name" =~ ^"Smoke Tests /" ]] || [[ "$name" == "INFO Check" ]]; then
+          elif [[ "$name" == "Smoke Tests /"* ]] || [[ "$name" == "INFO Check" ]]; then
             echo "smoke"
           # Fallback patterns for direct job names (non-reusable workflow jobs)
           elif [[ "$name" =~ Smoke ]] || [[ "$name" == "INFO Check" ]]; then
