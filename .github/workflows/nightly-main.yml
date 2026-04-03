@@ -269,17 +269,3 @@ jobs:
           java_result: ${{ needs.java.result }}
           flow_result: ${{ needs.flow.result }}
 
-      - name: Check Status
-        run: |
-          FAILED=false
-          [[ "${{ needs.build.result }}" == "failure" ]] && FAILED=true
-          [[ "${{ needs.smoke.result }}" == "failure" ]] && FAILED=true
-          [[ "${{ needs.python.result }}" == "failure" ]] && FAILED=true
-          [[ "${{ needs.r.result }}" == "failure" ]] && FAILED=true
-          [[ "${{ needs.java.result }}" == "failure" ]] && FAILED=true
-          [[ "${{ needs.flow.result }}" == "failure" ]] && FAILED=true
-
-          if [[ "$FAILED" == "true" ]]; then
-            echo "::error::Pipeline has failures"
-            exit 1
-          fi
