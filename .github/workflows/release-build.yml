@@ -245,7 +245,9 @@ jobs:
               ./gradlew build -x test
 
               # Build distribution
-              if [ '\$TEST_RELEASE' = 'true' ]; then
+              # TEST_RELEASE=true skips release branch validation (for test builds)
+              # TEST_RELEASE=false runs with -PvalidateRelease (for production releases)
+              if [ '${{ inputs.test_release }}' = 'true' ]; then
                 ./gradlew buildH2oDevDist
               else
                 ./gradlew -PvalidateRelease buildH2oDevDist
