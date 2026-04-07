@@ -348,8 +348,9 @@ jobs:
           name: h2o-release-assemblies
           retention-days: 14
           path: |
-            h2o-assemblies/main/build/libs/h2o.jar
-            h2o-assemblies/steam/build/libs/h2o.jar
+            h2o-assemblies/main/build/libs/*.jar
+            h2o-assemblies/steam/build/libs/*.jar
+          if-no-files-found: error
 
       - name: Upload Full Target
         uses: actions/upload-artifact@v4

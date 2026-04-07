@@ -99,12 +99,23 @@ jobs:
         run: |
           mkdir -p docker-build
 
-          # Copy the appropriate assembly JAR
+          echo "=== Available artifacts ==="
+          find artifacts/ -name "*.jar" -type f
+
+          # Copy the appropriate assembly JAR (find the JAR file regardless of name)
           if [ "${{ matrix.assembly }}" = "main" ]; then
-            cp artifacts/h2o-assemblies/main/build/libs/h2o.jar docker-build/h2o.jar
+            JAR_FILE=$(find artifacts/ -path "*/main/build/libs/*.jar" -type f | head -1)
           else
-            cp artifacts/h2o-assemblies/steam/build/libs/h2o.jar docker-build/h2o.jar
+            JAR_FILE=$(find artifacts/ -path "*/steam/build/libs/*.jar" -type f | head -1)
           fi
+
+          if [ -z "$JAR_FILE" ]; then
+            echo "::error::No JAR file found for ${{ matrix.assembly }} assembly"
+            exit 1
+          fi
+
+          echo "Using JAR: $JAR_FILE"
+          cp "$JAR_FILE" docker-build/h2o.jar
 
           # Copy Dockerfile and LICENSE
           cp docker/public/Dockerfile-h2o-release docker-build/Dockerfile
