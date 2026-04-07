@@ -44,6 +44,11 @@ on:
         type: boolean
         default: false
 
+      s3_role:
+        description: 'IAM role for S3 access (optional, uses default if not provided)'
+        required: false
+        type: string
+
 # ==============================================================================
 # CONFIGURATION
 # ==============================================================================
@@ -51,7 +56,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
-  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  DEFAULT_S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
   DOCKER_VERSION: "47"
   H2O3_REPO: h2oai/h2o-3
 

@@ -49,6 +49,11 @@ on:
         type: boolean
         default: true
 
+      s3_role:
+        description: 'IAM role for S3 access (optional, uses default if not provided)'
+        required: false
+        type: string
+
     outputs:
       previous_latest_build:
         description: 'Previous latest build number (for rollback)'
@@ -65,7 +70,7 @@ on:
 # ==============================================================================
 env:
   AWS_REGION: us-east-1
-  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  DEFAULT_S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
 
 # ==============================================================================
 # JOB
@@ -88,7 +93,7 @@ jobs:
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
-          role-to-assume: ${{ env.S3_ROLE }}
+          role-to-assume: ${{ inputs.s3_role || env.DEFAULT_S3_ROLE }}
           role-session-name: release-s3-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
