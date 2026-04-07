@@ -70,7 +70,7 @@ jobs:
   # ============================================================================
   build-conda:
     name: Build Conda Py${{ matrix.python }} - ${{ matrix.artifact }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16-cores
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -236,7 +236,7 @@ jobs:
   verify-conda:
     name: Verify Conda Py${{ matrix.python }}
     needs: build-conda
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16-cores
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -310,7 +310,7 @@ jobs:
     name: Conda Summary
     needs: [build-conda, verify-conda]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16-cores
 
     steps:
       - name: Summary
