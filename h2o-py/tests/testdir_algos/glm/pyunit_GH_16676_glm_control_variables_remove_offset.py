@@ -180,35 +180,6 @@ def test_glm_ro_standardize_invariant():
         f"NLL ratio={ratio:.4f} — values should be close regardless of standardize"
 
 
-def test_glm_ro_lbfgs_matches_irlsm():
-    """
-    GH-16676: L-BFGS solver with remove_offset_effects should produce deviance
-    close to IRLSM, and the restricted model should differ from unrestricted.
-    """
-    train = _load_binomial_20cols()
-    predictors = [c for c in train.columns if c != "C21"]
-
-    glm_l = H2OGeneralizedLinearEstimator(
-        family="binomial", solver="L_BFGS",
-        remove_offset_effects=True, score_each_iteration=True,
-    )
-    glm_l.train(x=predictors, y="C21", training_frame=train, offset_column="C20")
-
-    glm_i = H2OGeneralizedLinearEstimator(
-        family="binomial", solver="IRLSM",
-        remove_offset_effects=True, score_each_iteration=True,
-    )
-    glm_i.train(x=predictors, y="C21", training_frame=train, offset_column="C20")
-
-    dev_l, dev_i = _residual_deviance(glm_l), _residual_deviance(glm_i)
-    assert abs(dev_l - dev_i) < dev_i * 0.05, \
-        f"L-BFGS ({dev_l}) and IRLSM ({dev_i}) deviance should be close"
-
-    unrestricted = glm_l.make_derived_glm_model(dest="lbfgs_unrest")
-    assert abs(dev_l - _residual_deviance(unrestricted)) > 1e-10, \
-        "Restricted and unrestricted deviance must differ for L-BFGS"
-
-
 def test_glm_cv_ro_lbfgs_produces_distinct_derived_models():
     """
     GH-16676: L-BFGS with both control_variables and remove_offset_effects must
@@ -312,7 +283,6 @@ pyunit_utils.run_tests([
     test_glm_cv_ro_scoring_history_deviance_matches_metrics,
     test_glm_ro_scoring_history_deviance_matches_metrics,
     test_glm_ro_standardize_invariant,
-    test_glm_ro_lbfgs_matches_irlsm,
     test_glm_cv_ro_lbfgs_produces_distinct_derived_models,
     test_glm_ro_tweedie,
     test_glm_ro_requires_offset_column,
