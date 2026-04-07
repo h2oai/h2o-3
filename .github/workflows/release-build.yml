@@ -252,6 +252,18 @@ jobs:
               else
                 ./gradlew -PvalidateRelease buildH2oDevDist
               fi
+
+              # Build H2O assemblies (main and steam JARs for Docker images)
+              ./gradlew :h2o-assemblies:main:shadowJar :h2o-assemblies:steam:shadowJar
+
+              # Debug: Show what was built
+              echo '=== Assemblies ==='
+              ls -la h2o-assemblies/main/build/libs/ || echo 'main assembly not found'
+              ls -la h2o-assemblies/steam/build/libs/ || echo 'steam assembly not found'
+              echo '=== h2o-py/build ==='
+              ls -laR h2o-py/build/ | head -50 || echo 'h2o-py/build not found'
+              echo '=== h2o-py/conda ==='
+              ls -la h2o-py/conda/ || echo 'h2o-py/conda not found'
             "
 
       - name: Get Project Version
@@ -314,6 +326,7 @@ jobs:
           path: |
             target/Python/
             h2o-py/build/
+            h2o-py/conda/
 
       - name: Upload R Packages
         uses: actions/upload-artifact@v4

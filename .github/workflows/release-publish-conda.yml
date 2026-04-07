@@ -101,6 +101,11 @@ jobs:
 
       - name: Prepare Build Directory
         run: |
+          echo "=== Debug: Artifact structure ==="
+          find artifacts/ -type f -name "*.tar.bz2" -o -name "*.whl" -o -name "meta.yaml" 2>/dev/null | head -50 || true
+          echo "=== Directories in artifacts ==="
+          find artifacts/ -type d | head -30 || true
+
           mkdir -p h2o-py/build/${{ matrix.artifact }}
 
           # Copy the build artifacts
@@ -108,12 +113,25 @@ jobs:
             cp -r artifacts/h2o-py/build/${{ matrix.artifact }}/* h2o-py/build/${{ matrix.artifact }}/ || true
           fi
 
-          # Copy conda recipe
+          # Copy conda recipe from various possible locations
           if [ -d "artifacts/h2o-py/conda" ]; then
             cp -r artifacts/h2o-py/conda h2o-py/build/${{ matrix.artifact }}/
+          elif [ -d "artifacts/conda" ]; then
+            cp -r artifacts/conda h2o-py/build/${{ matrix.artifact }}/
+          elif [ -d "artifacts/h2o-py/build/conda" ]; then
+            cp -r artifacts/h2o-py/build/conda h2o-py/build/${{ matrix.artifact }}/
           fi
 
-          ls -la h2o-py/build/${{ matrix.artifact }}/ || echo "Directory setup complete"
+          echo "=== Result: h2o-py/build/${{ matrix.artifact }} ==="
+          ls -laR h2o-py/build/${{ matrix.artifact }}/ || echo "Directory setup complete"
+
+          # Verify conda recipe exists
+          if [ ! -d "h2o-py/build/${{ matrix.artifact }}/conda" ]; then
+            echo "::error::Conda recipe not found at h2o-py/build/${{ matrix.artifact }}/conda"
+            echo "Available directories in artifacts:"
+            find artifacts/ -type d
+            exit 1
+          fi
 
       # ========================================================================
       # BUILD CONDA PACKAGE
