@@ -20,7 +20,7 @@ If both features are enabled and ``score_each_iteration=True`` or ``generate_sco
 **Notes**:
 
 - This option is experimental.
-- This option is applicable only for regression and binomial distribution.
+- This option is not supported for multinomial, ordinal, or custom distributions.
 - This option is not available when cross validation is enabled.
 - This option is not available when Lambda search is enabled.
 - This option is not available when interactions are enabled.
@@ -62,7 +62,7 @@ Example
 		# try using the `remove_offset_effects` parameter:
 		airlines_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
                         validation_frame = valid,
-                        remove_collinear_columns = FALSE,
+                        remove_collinear_columns = TRUE,
                         score_each_iteration = TRUE,
                         generate_scoring_history = TRUE,
                         offset_column = "Distance",

@@ -1745,6 +1745,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
         }
       }
+      // Sort required for Arrays.binarySearch in isFeatureUsedInPredict
+      java.util.Arrays.sort(_control_values_idxs_in_adapted_frame);
     }
     
     public double[] getControlValBeta(double[] beta){
@@ -2134,16 +2136,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int[] indices = new int[len];
       for (int i = 0; i < indices.length; ++i)
         indices[i] = i;
-      float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
-      String[] namesSort = new String[len];
-      
+
       if (contrVal)
         calculateVarimpBase(magnitudes, indices, getControlValBeta(getNormBeta()));
       else if (_nclasses > 2)
         calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
-      
+
+      float[] magnitudesSort = new float[len];
+      String[] namesSort = new String[len];
       for (int index = 0; index < len; index++) {
         magnitudesSort[index] = (float) magnitudes[indices[index]];
         namesSort[index] = names[indices[index]];
@@ -2544,6 +2546,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean havePojo() {
+    if (_parms._remove_offset_effects)
+      return false;
     if (_parms._control_variables != null && _parms._control_variables.length > 0)
       return _parms.interactionSpec() == null &&
               _parms._offset_column == null &&

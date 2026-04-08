@@ -1447,7 +1447,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           TwoDimTable scoringHistoryRestrictedRO = _model._output._scoring_history_restricted_model_ro;
           _scoringHistoryRemoveOffsetEnabled.restoreFromCheckpoint(scoringHistoryRestrictedRO, colHeadersIndex);
           TwoDimTable scoringHistoryRestrictedContrVals = _model._output._scoring_history_restricted_model_contr_vals;
-          _scoringHistoryRemoveOffsetEnabled.restoreFromCheckpoint(scoringHistoryRestrictedContrVals, colHeadersIndex);
+          _scoringHistoryControlValEnabled.restoreFromCheckpoint(scoringHistoryRestrictedContrVals, colHeadersIndex);
       }
   }
   
@@ -3477,7 +3477,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double likelihood, objective, deviance;
             if (useControlVarBeta) {
                 double[] beta = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
-                GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, beta).doAll(_dinfo._adaptedFrame);
+                GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, beta, _model._useRemoveOffsetEffects).doAll(_dinfo._adaptedFrame);
+                likelihood = task._likelihood;
+                objective = _state.objective(beta, task._likelihood);
+                deviance = _state.deviance(task._likelihood);
+            } else if (_model._parms._remove_offset_effects) {
+                double[] beta = _state.expandBeta(_state.beta());
+                GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, beta, true).doAll(_dinfo._adaptedFrame);
                 likelihood = task._likelihood;
                 objective = _state.objective(beta, task._likelihood);
                 deviance = _state.deviance(task._likelihood);
@@ -4073,6 +4079,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state.updateState(beta, gginfo);
         if (!_parms._lambda_search)
           updateProgress(false);
+        _job.update(_workPerIteration, _state.toString());
         return !stop_requested() && _state._iter < _parms._max_iterations && !_earlyStop;
       } else {
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
@@ -4082,6 +4089,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state.updateState(beta, gginfo);
         if ((!_parms._lambda_search || _parms._generate_scoring_history) && !_insideCVCheck)
           updateProgress(true);
+        _job.update(_workPerIteration, _state.toString());
         boolean converged = !_earlyStopEnabled && _state.converged(); // GLM specific early stop.  Disabled if early stop is enabled
         if (converged) Log.info(LogMsg(_state.convergenceMsg));
         return !stop_requested() && !converged && _state._iter < _parms._max_iterations && !_earlyStop;
@@ -4115,8 +4123,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveControlVal);
         } else if (_model._parms._control_variables == null && _model._parms._remove_offset_effects) {
             _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
-            GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, _model.beta(), true).doAll(_state._dinfo._adaptedFrame);
-            double objectiveOffset = _state.objective(_model.beta(), task._likelihood);
+            double[] beta = _state.expandBeta(_state.beta());
+            GLMResDevTask task = new GLMResDevTask(_job._key, _dinfo, _parms, beta, true).doAll(_state._dinfo._adaptedFrame);
+            double objectiveOffset = _state.objective(beta, task._likelihood);
             _scoringHistory.addIterationScore(_state._iter, task._likelihood, objectiveOffset);
         } else if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
             _scoringHistoryUnrestrictedModel.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
