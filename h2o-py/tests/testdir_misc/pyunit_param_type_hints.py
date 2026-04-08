@@ -7,6 +7,8 @@ Each test sets the parameter via the property setter and verifies it doesn't rai
 For types that require an H2O cluster (H2OFrame, str frame keys), we test with
 actual frames. For simple types (None, float, int, list, dict), we test directly.
 """
+import sys
+sys.path.insert(1, "../../")
 import h2o
 from h2o.estimators import (
     H2OGeneralizedLinearEstimator,
@@ -344,28 +346,16 @@ def test_xgboost_gpu_id_types():
         pass
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-def test_all_type_hints():
-    # Tests that don't need data
-    test_glm_alpha_lambda_types()
-    test_gam_alpha_lambda_types()
-    test_anovaglm_alpha_lambda_types()
-    test_modelselection_alpha_lambda_types()
-    test_rulefit_lambda_types()
-    test_gam_columns_types()
-    test_target_encoder_columns_to_encode_types()
-    test_xgboost_gpu_id_types()
-
-    # Tests that need H2O frames / model training
-    test_glm_alpha_scalar_end_to_end()
-    test_glm_beta_constraints_types()
-    test_stacked_ensemble_base_models_types()
-
-
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_all_type_hints)
-else:
-    test_all_type_hints()
+pyunit_utils.run_tests([
+    test_glm_alpha_lambda_types,
+    test_gam_alpha_lambda_types,
+    test_anovaglm_alpha_lambda_types,
+    test_modelselection_alpha_lambda_types,
+    test_rulefit_lambda_types,
+    test_gam_columns_types,
+    test_target_encoder_columns_to_encode_types,
+    test_xgboost_gpu_id_types,
+    test_glm_alpha_scalar_end_to_end,
+    test_glm_beta_constraints_types,
+    test_stacked_ensemble_base_models_types,
+])

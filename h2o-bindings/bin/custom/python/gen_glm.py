@@ -376,9 +376,6 @@ self._parms["{sname}"] = {pname}
 assert_is_type({pname}, None, str, dict, H2OFrame)
 if isinstance({pname}, str):
     {pname} = H2OFrame._validate({pname}, '{pname}')
-    self._parms["{sname}"] = {pname}
-elif type({pname}) is H2OFrame:
-    self._parms["{sname}"]={pname}
 elif type({pname}) is dict:
     colnames = {pname}.keys()
     col_names = []
@@ -390,9 +387,9 @@ elif type({pname}) is dict:
         upper_bounds.append(one_col_bounds.get('upper_bound'))
         lower_bounds.append(one_col_bounds.get('lower_bound'))
     constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
-    self._parms["{sname}"] = constraints[["names", "lower_bounds", "upper_bounds"]]
-else:
-    self._parms["{sname}"] = {pname}
+    {pname} = constraints[["names", "lower_bounds", "upper_bounds"]]
+
+self._parms["{sname}"] = {pname}
 """
     )
 )
