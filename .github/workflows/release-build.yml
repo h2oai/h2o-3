@@ -172,7 +172,7 @@ jobs:
       # via the -v ~/.gradle:/root/.gradle mount in the Build step.
       # ========================================================================
       - name: Setup Gradle Properties
-        if: inputs.upload_nexus == true
+        if: ${{ inputs.upload_nexus }}
         run: |
           mkdir -p ~/.gradle
           echo "${{ secrets.RELEASE_GRADLE_PROPERTIES }}" | base64 -d > ~/.gradle/gradle.properties
@@ -214,7 +214,7 @@ jobs:
             -e PYTHON_VERSION=${{ env.PYTHON_VERSION }} \
             -e R_VERSION=${{ env.R_VERSION }} \
             -e JAVA_HOME=/usr/lib/jvm/java-8-oracle \
-            ${{ inputs.upload_nexus == true && '-e DO_RELEASE=true' || '' }} \
+            ${{ inputs.upload_nexus && '-e DO_RELEASE=true' || '' }} \
             -e UPLOAD_NEXUS=${{ inputs.upload_nexus }} \
             -e TEST_RELEASE=${{ inputs.test_release }} \
             ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
