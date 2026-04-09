@@ -1,0 +1,268 @@
+# ==============================================================================
+#
+#                         H2O-3 ENTERPRISE RELEASE
+#                         ========================
+#
+#   Release pipeline for H2O-3 Enterprise.
+#   This is for internal/enterprise releases (NOT public Maven Central).
+#
+#   Pipeline Stages:
+#   1. Checkout + Build
+#   2. Publish to S3
+#   3. Build Conda Packages (Py3.7-3.11, main + client)
+#   4. Check Conda Packages Offline
+#   5. Publish HELM to S3
+#   6. Build Docker Images
+#
+#   Key Differences from Public Release:
+#   - No Nexus/Maven Central upload (enterprise releases are not public)
+#   - Uses production S3 bucket by default
+#   - Can update latest links when releasing
+#
+#   Configurable Settings:
+#   - TEST_RELEASE: configurable (affects S3 bucket)
+#   - UPDATE_LATEST: configurable (update top-level latest links)
+#   - UPDATE_LATEST_BRANCH: true
+#   - BUILD_HADOOP: configurable
+#   - BUILD_CONDA: true
+#   - BUILD_H2O_DOCKER: true
+#
+# ==============================================================================
+
+name: Enterprise H2O-3 Test Release
+
+run-name: "Enterprise H2O-3 Test Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release [e.g., master, rel-3.46]'
+        required: true
+        default: 'master'
+        type: string
+
+      build_number:
+        description: "Build number [leave empty to auto-generate]"
+        required: false
+        type: string
+
+      test_release:
+        description: "Test release (uses test S3 bucket, skips validation)"
+        required: false
+        type: boolean
+        default: false
+
+      update_latest:
+        description: "Update top-level latest links (for production releases)"
+        required: false
+        type: boolean
+        default: false
+
+      build_hadoop:
+        description: "Build with Hadoop support (uncheck for faster builds)"
+        required: false
+        type: boolean
+        default: true
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+# ==============================================================================
+# ENVIRONMENT
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  # Production S3 bucket for enterprise releases
+  RELEASE_BUCKET: s3://h2o-release/h2o
+  TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
+  # S3 roles
+  RELEASE_S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  TEST_S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+  BUILD_NUMBER_OFFSET: 7400
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+
+  # ============================================================================
+  # INIT: Configuration
+  # ============================================================================
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.config.outputs.branch }}
+      build_number: ${{ steps.config.outputs.build_number }}
+      s3_root: ${{ steps.config.outputs.s3_root }}
+      s3_role: ${{ steps.config.outputs.s3_role }}
+
+    steps:
+      - name: Determine Configuration
+        id: config
+        run: |
+          BRANCH="${{ inputs.branch || 'master' }}"
+
+          # Build number: user input or auto-generated
+          if [ -n "${{ inputs.build_number }}" ]; then
+            BUILD_NUMBER="${{ inputs.build_number }}"
+          else
+            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.BUILD_NUMBER_OFFSET }} ))
+          fi
+
+          # S3 bucket and role based on test_release flag
+          if [ "${{ inputs.test_release }}" = "true" ]; then
+            S3_ROOT="${{ env.TEST_RELEASE_BUCKET }}"
+            S3_ROLE="${{ env.TEST_S3_ROLE }}"
+          else
+            S3_ROOT="${{ env.RELEASE_BUCKET }}"
+            S3_ROLE="${{ env.RELEASE_S3_ROLE }}"
+          fi
+
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "s3_root=${S3_ROOT}" >> $GITHUB_OUTPUT
+          echo "s3_role=${S3_ROLE}" >> $GITHUB_OUTPUT
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## Enterprise Release Configuration
+
+          | Setting | Value |
+          |---------|-------|
+          | Branch | \`${BRANCH}\` |
+          | Build Number | \`${BUILD_NUMBER}\` |
+          | S3 Bucket | \`${S3_ROOT}\` |
+          | Test Release | ${{ inputs.test_release }} |
+          | Update Latest | ${{ inputs.update_latest }} |
+          | Build Hadoop | ${{ inputs.build_hadoop }} |
+          | Build Conda | true |
+          | Build Docker | true |
+          EOF
+
+  # ============================================================================
+  # BUILD: Compile H2O-3
+  # ============================================================================
+  build:
+    name: Build
+    needs: init
+    uses: ./.github/workflows/release-build.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      build_hadoop: ${{ inputs.build_hadoop }}
+      upload_nexus: false  # Enterprise releases don't go to Maven Central
+      test_release: ${{ inputs.test_release }}
+    secrets: inherit
+
+  # ============================================================================
+  # PUBLISH TO S3
+  # ============================================================================
+  publish-s3:
+    name: Publish to S3
+    needs: [init, build]
+    uses: ./.github/workflows/release-publish-s3.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      update_latest: ${{ inputs.update_latest }}
+      update_latest_branch: true
+      s3_role: ${{ needs.init.outputs.s3_role }}
+    secrets: inherit
+
+  # ============================================================================
+  # BUILD CONDA PACKAGES (Py3.7-3.11, main + client)
+  # ============================================================================
+  publish-conda:
+    name: Build Conda
+    needs: [init, build, publish-s3]
+    uses: ./.github/workflows/release-publish-conda.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      upload_conda: false  # Don't upload to public Anaconda for enterprise
+      s3_role: ${{ needs.init.outputs.s3_role }}
+    secrets: inherit
+
+  # ============================================================================
+  # PUBLISH HELM CHART
+  # ============================================================================
+  publish-helm:
+    name: Publish Helm
+    needs: [init, build, publish-s3]
+    uses: ./.github/workflows/release-publish-helm.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      test_release: ${{ inputs.test_release }}
+      is_nightly: false
+      s3_role: ${{ needs.init.outputs.s3_role }}
+    secrets: inherit
+
+  # ============================================================================
+  # BUILD DOCKER IMAGES
+  # ============================================================================
+  publish-docker:
+    name: Build Docker
+    needs: [init, build, publish-s3]
+    uses: ./.github/workflows/release-publish-docker.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      test_release: ${{ inputs.test_release }}
+      is_nightly: false
+      update_latest: ${{ inputs.update_latest }}
+    secrets: inherit
+
+  # ============================================================================
+  # SUMMARY
+  # ============================================================================
+  summary:
+    name: Summary
+    needs: [init, build, publish-s3, publish-conda, publish-helm, publish-docker]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## Enterprise Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish S3 | ${{ needs.publish-s3.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Conda | ${{ needs.publish-conda.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Helm | ${{ needs.publish-helm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Docker | ${{ needs.publish-docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Release:** ${{ inputs.test_release }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Update Latest:** ${{ inputs.update_latest }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check Overall Status
+        run: |
+          FAILED=false
+          [[ "${{ needs.build.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.publish-s3.result }}" == "failure" ]] && FAILED=true
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::Enterprise release pipeline has critical failures"
+            exit 1
+          fi
