@@ -53,7 +53,7 @@ on:
         default: true
 
       upload_nexus:
-        description: "Upload artifacts to Nexus (Maven Central)"
+        description: "Upload to Nexus"
         required: false
         type: boolean
         default: false
