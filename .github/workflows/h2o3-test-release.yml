@@ -52,6 +52,12 @@ on:
         type: boolean
         default: true
 
+      upload_nexus:
+        description: "Upload artifacts to Nexus (Maven Central)"
+        required: false
+        type: boolean
+        default: false
+
 # ==============================================================================
 # PERMISSIONS
 # ==============================================================================
