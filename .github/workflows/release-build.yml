@@ -173,12 +173,20 @@ jobs:
       # ========================================================================
       - name: Setup Gradle Properties
         if: ${{ inputs.upload_nexus }}
+        env:
+          GRADLE_PROPERTIES: ${{ secrets.RELEASE_GRADLE_PROPERTIES }}
+          SECRET_KEY_RING: ${{ secrets.RELEASE_SECRET_KEY_RING }}
         run: |
           mkdir -p ~/.gradle
-          echo "${{ secrets.RELEASE_GRADLE_PROPERTIES }}" | base64 -d > ~/.gradle/gradle.properties
-          echo "${{ secrets.RELEASE_SECRET_KEY_RING }}" | base64 -d > ~/.gradle/secring.gpg
+
+          # Write gradle.properties (plain text secret)
+          echo "${GRADLE_PROPERTIES}" > ~/.gradle/gradle.properties
           echo "signing.secretKeyRingFile=$HOME/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
           chmod 600 ~/.gradle/gradle.properties
+
+          # Write GPG key ring (try base64 decode first, fall back to direct write)
+          echo "${SECRET_KEY_RING}" | base64 -d > ~/.gradle/secring.gpg 2>/dev/null || \
+            echo "${SECRET_KEY_RING}" > ~/.gradle/secring.gpg
 
       # ========================================================================
       # BUILD
