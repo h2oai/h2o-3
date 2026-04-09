@@ -28,7 +28,7 @@
 #
 # ==============================================================================
 
-name: H2O-3 Test Release
+name: Public H2O-3 Test Release
 
 run-name: "H2O-3 Test Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
 
@@ -36,9 +36,9 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to release [e.g., master, rel-3.42]'
+        description: 'Branch to release [e.g., master, rel-3.42, valenad-test-release]'
         required: true
-        default: 'master'
+        default: 'valenad-test-release'
         type: string
 
       build_number:
