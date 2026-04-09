@@ -36,7 +36,7 @@ on:
       branch:
         description: 'Branch to release [e.g., master, rel-3.42, valenad-test-release]'
         required: true
-        default: 'valenad-test-release'
+        default: 'master'
         type: string
 
       build_number:
