@@ -1,0 +1,119 @@
+# ==============================================================================
+#                              PUBLISH TO NEXUS (MAVEN CENTRAL)
+# ==============================================================================
+#
+# PURPOSE:
+#   Uploads signed H2O artifacts from OSSRH staging to Maven Central Portal.
+#   Artifacts must be signed during the build step (DO_RELEASE=true).
+#
+# PROCESS:
+#   1. Gradle build publishes signed artifacts to OSSRH staging (during build)
+#   2. This workflow checks staging repos
+#   3. Uploads from staging to Central Portal (user_managed = manual publish)
+#
+# REQUIRED SECRETS:
+#   - CENTRAL_PORTAL_BEARER_TOKEN: Bearer token for Sonatype Central Portal API
+#
+# ==============================================================================
+
+name: Publish to Nexus (Maven Central)
+
+on:
+  workflow_call:
+    inputs:
+      project_version:
+        description: 'H2O project version'
+        required: true
+        type: string
+
+      upload_nexus:
+        description: 'Enable upload to Maven Central'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# JOB
+# ==============================================================================
+jobs:
+  publish-nexus:
+    name: Publish to Maven Central
+    runs-on: ubuntu-latest
+    if: inputs.upload_nexus == true
+    timeout-minutes: 30
+
+    steps:
+      # ========================================================================
+      # CHECK STAGING REPOSITORIES
+      # ========================================================================
+      - name: Check OSSRH Staging
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
+        run: |
+          echo "=== Checking OSSRH Staging Repositories ==="
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o')
+
+          echo "Staging repositories:"
+          echo "$RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
+
+      # ========================================================================
+      # UPLOAD TO CENTRAL PORTAL
+      # ========================================================================
+      - name: Upload to Central Portal
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
+        run: |
+          echo "=== Uploading to Central Portal ==="
+          echo "Publishing type: user_managed (requires manual approval)"
+
+          curl -X 'POST' \
+            'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
+            -H 'accept: */*' \
+            -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            -d '' \
+            --connect-timeout 120 \
+            --max-time 1200 \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-max-time 2400
+
+          echo ""
+          echo "Upload complete!"
+          echo "Artifacts are now in Central Portal staging."
+          echo "Visit https://central.sonatype.com to review and publish (or drop for testing)."
+
+      # ========================================================================
+      # SUMMARY
+      # ========================================================================
+      - name: Summary
+        run: |
+          echo "## Maven Central (Nexus) Upload Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ inputs.project_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publishing Type | user_managed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Uploaded to staging |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to [Sonatype Central Portal](https://central.sonatype.com)" >> $GITHUB_STEP_SUMMARY
+          echo "2. Review the staged artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Publish** to release to Maven Central, or **Drop** for testing" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # SKIP MESSAGE (when upload_nexus is false)
+  # ============================================================================
+  skip-nexus:
+    name: Skip Nexus Upload
+    runs-on: ubuntu-latest
+    if: inputs.upload_nexus != true
+
+    steps:
+      - name: Nexus Upload Skipped
+        run: |
+          echo "## Maven Central (Nexus) Upload" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Nexus upload was **skipped** (upload_nexus: false)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To enable, run the workflow with \`upload_nexus: true\`" >> $GITHUB_STEP_SUMMARY

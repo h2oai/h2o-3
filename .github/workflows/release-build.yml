@@ -279,40 +279,11 @@ jobs:
           echo "Project Version: ${VERSION}"
 
       # ========================================================================
-      # NEXUS UPLOAD (Only runs when upload_nexus=true)
-      # ========================================================================
-      # This step uploads the built artifacts to Maven Central via OSSRH.
-      # It requires:
-      #   - Artifacts to be signed (handled by DO_RELEASE=true in build step)
-      #   - CENTRAL_PORTAL_BEARER_TOKEN secret for authentication
-      #
-      # The upload uses "user_managed" publishing, which means artifacts are
-      # uploaded but not auto-published - they require manual approval in
-      # the Sonatype Central Portal before going live.
-      # ========================================================================
-      - name: Upload to Maven Central
-        if: inputs.upload_nexus == true
-        env:
-          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
-        run: |
-          echo "=== Checking OSSRH Staging ==="
-          curl -H "Authorization: Bearer ${BEARER_TOKEN}" \
-            'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
-
-          echo "=== Uploading to Central Portal ==="
-          curl -X 'POST' \
-            'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
-            -H 'accept: */*' \
-            -H "Authorization: Bearer ${BEARER_TOKEN}" \
-            -d '' \
-            --connect-timeout 120 \
-            --max-time 1200 \
-            --retry 5 \
-            --retry-delay 5 \
-            --retry-max-time 2400
-
-      # ========================================================================
       # UPLOAD ARTIFACTS
+      # ========================================================================
+      # Note: Nexus upload (Maven Central) is handled by release-publish-nexus.yml
+      # which runs after this build completes. The signing credentials setup
+      # above ensures artifacts are signed during gradle build when upload_nexus=true.
       # ========================================================================
       - name: Upload Distribution
         uses: actions/upload-artifact@v4
