@@ -321,10 +321,11 @@ def class_extensions():
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
         ...                                   solver='COORDINATE_DESCENT',
-        ...                                   remove_offset_effects = True,
+        ...                                   remove_offset_effects=True,
+        ...                                   offset_column="VOL",
         ...                                   control_variables=["PSA"])
         >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,7,8],
+        ...         x=[2,3,4,5,6,8],
         ...         y=1)
         >>> p = m.model_performance(d)
         >>> print(p)
@@ -362,17 +363,18 @@ def class_extensions():
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
         ...                                   solver='COORDINATE_DESCENT',
-        ...                                   remove_offset_effects = True,
+        ...                                   remove_offset_effects=True,
+        ...                                   offset_column="VOL",
         ...                                   control_variables=["PSA"])
         >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,7,8],
+        ...         x=[2,3,4,5,6,8],
         ...         y=1)
         >>> p = m.model_performance(d)
         >>> print(p)
         >>> m2 = m.make_derived_glm_model(dest="unrestricted_glm")
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
-        >>> m3 = m.make_derived_glm_model(dest="derived_glm_cv", remove_control_variables_effects=True)
+        >>> m3 = m.make_derived_glm_model(dest="derived_glm_control_variables", remove_control_variables_effects=True)
         >>> p3 = m3.model_performance(d)
         >>> print(p3)
         """
