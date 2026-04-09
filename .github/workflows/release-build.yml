@@ -88,6 +88,12 @@ on:
         type: boolean
         default: false
 
+      repository:
+        description: 'Repository to build (default: h2oai/h2o-3)'
+        required: false
+        type: string
+        default: 'h2oai/h2o-3'
+
     outputs:
       project_version:
         description: 'H2O project version'
@@ -104,7 +110,6 @@ env:
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
   DOCKER_VERSION: "47"
-  H2O3_REPO: h2oai/h2o-3
   PYTHON_VERSION: "3.7"
   R_VERSION: "3.4.1"
 
@@ -140,7 +145,7 @@ jobs:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.H2O3_REPO }}
+          repository: ${{ inputs.repository }}
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 

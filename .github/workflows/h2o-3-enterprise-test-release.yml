@@ -139,6 +139,7 @@ jobs:
           |---------|-------|
           | Branch | \`${BRANCH}\` |
           | Build Number | \`${BUILD_NUMBER}\` |
+          | Repository | \`h2oai/h2o-3-enterprise\` |
           | S3 Bucket | \`${S3_ROOT}\` |
           | Test Release | ${{ inputs.test_release }} |
           | Update Latest | ${{ inputs.update_latest }} |
@@ -160,6 +161,7 @@ jobs:
       build_hadoop: ${{ inputs.build_hadoop }}
       upload_nexus: false  # Enterprise releases don't go to Maven Central
       test_release: ${{ inputs.test_release }}
+      repository: h2oai/h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
@@ -208,6 +210,7 @@ jobs:
       test_release: ${{ inputs.test_release }}
       is_nightly: false
       s3_role: ${{ needs.init.outputs.s3_role }}
+      repository: h2oai/h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================

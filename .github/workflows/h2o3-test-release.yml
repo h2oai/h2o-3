@@ -46,6 +46,12 @@ on:
         required: false
         type: string
 
+      build_hadoop:
+        description: "Build with Hadoop support"
+        required: false
+        type: boolean
+        default: true
+
 # ==============================================================================
 # PERMISSIONS
 # ==============================================================================
@@ -106,9 +112,10 @@ jobs:
           |---------|-------|
           | Branch | \`${BRANCH}\` |
           | Build Number | \`${BUILD_NUMBER}\` |
+          | Repository | \`h2oai/h2o-3\` |
           | S3 Bucket | \`${{ env.TEST_RELEASE_BUCKET }}\` |
           | Test Release | true |
-          | Build Hadoop | true |
+          | Build Hadoop | ${{ inputs.build_hadoop }} |
           | Build PyPI | true |
           | Build Conda | true |
           | Build Docker | true |
@@ -124,9 +131,10 @@ jobs:
     with:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
-      build_hadoop: true
+      build_hadoop: ${{ inputs.build_hadoop }}
       upload_nexus: false
       test_release: true
+      repository: h2oai/h2o-3
     secrets: inherit
 
   # ============================================================================
@@ -175,6 +183,7 @@ jobs:
       test_release: true
       is_nightly: false
       s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+      repository: h2oai/h2o-3
     secrets: inherit
 
   # ============================================================================

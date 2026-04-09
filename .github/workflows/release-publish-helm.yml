@@ -49,6 +49,12 @@ on:
         required: false
         type: string
 
+      repository:
+        description: 'Repository to use (default: h2oai/h2o-3)'
+        required: false
+        type: string
+        default: 'h2oai/h2o-3'
+
 # ==============================================================================
 # CONFIGURATION
 # ==============================================================================
@@ -58,7 +64,6 @@ env:
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
   DEFAULT_S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
   DOCKER_VERSION: "47"
-  H2O3_REPO: h2oai/h2o-3
 
 # ==============================================================================
 # JOB
@@ -76,7 +81,7 @@ jobs:
       - name: Checkout H2O-3 (for helm chart)
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.H2O3_REPO }}
+          repository: ${{ inputs.repository }}
           ref: ${{ inputs.branch }}
           sparse-checkout: h2o-helm
           sparse-checkout-cone-mode: false
