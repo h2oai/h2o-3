@@ -14,6 +14,7 @@ import water.runner.H2ORunner;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 
 import static org.junit.Assert.*;
 
@@ -188,7 +189,7 @@ public class GLMMojoControlVarsOffsetTest extends TestUtil {
             Scope.track(h2oPreds);
 
             // Save MOJO, reimport as GenericModel, score, and compare
-            File mojoFile = File.createTempFile("glm_mojo", ".zip");
+            File mojoFile = Files.createTempFile("glm_mojo", ".zip").toFile();
             mojoFile.deleteOnExit();
             try (FileOutputStream fos = new FileOutputStream(mojoFile)) {
                 model.getMojo().writeTo(fos);
