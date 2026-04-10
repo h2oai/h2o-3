@@ -75,6 +75,7 @@ public abstract class GLMTask  {
     double _resDev = 0;
     long _nobs;
     double _likelihood;
+    boolean _removeOffsetEffects;
 
     public GLMResDevTask(Key jobKey, DataInfo dinfo,GLMParameters parms, double [] beta) {
       super(null,dinfo, jobKey);
@@ -82,6 +83,15 @@ public abstract class GLMTask  {
       _beta = beta;
       _sparseOffset = _sparse?GLM.sparseOffset(_beta,_dinfo):0;
     }
+
+    public GLMResDevTask(Key jobKey, DataInfo dinfo,GLMParameters parms, double [] beta, boolean removeOffsetEffects) {
+        super(null,dinfo, jobKey);
+        _glmf = new GLMWeightsFun(parms);
+        _beta = beta;
+        _removeOffsetEffects = removeOffsetEffects;
+        _sparseOffset = _sparse ? (!_removeOffsetEffects ? GLM.sparseOffset(_beta,_dinfo) : 0) : 0;
+    }
+    
     private transient GLMWeights _glmw;
     private final double _sparseOffset;
 
@@ -92,7 +102,7 @@ public abstract class GLMTask  {
     }
     @Override
     protected void processRow(Row r) {
-      _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _glmw);
+      _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + _sparseOffset, _removeOffsetEffects ? 0 : r.offset, r.weight, _glmw);
       _resDev += _glmw.dev;
       _likelihood += _glmw.l;
       ++_nobs;

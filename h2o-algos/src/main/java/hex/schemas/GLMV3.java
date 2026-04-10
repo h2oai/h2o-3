@@ -74,6 +74,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "stopping_metric",
             "stopping_tolerance",
             "control_variables",
+            "remove_offset_effects",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
@@ -281,9 +282,12 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="A list of predictor column indices which is used for training but removed for scoring. Experimental.", 
             direction=Direction.INPUT, level=Level.expert)
     public String[] control_variables;
-    
 
-    // dead unused args, formely inherited from supervised model schema
+    @API(help="Remove offset effects from scoring and metric calculation. Experimental.",
+            direction=Direction.INPUT, level=Level.expert)
+    public boolean remove_offset_effects;
+
+      // dead unused args, formely inherited from supervised model schema
     /**
      * For imbalanced data, balance training data class counts via
      * over/under-sampling. This can result in improved predictive accuracy.
