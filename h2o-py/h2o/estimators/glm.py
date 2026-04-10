@@ -62,8 +62,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  tweedie_link_power=1.0,  # type: float
                  theta=1e-10,  # type: float
                  solver="auto",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
-                 alpha=None,  # type: Optional[List[float]]
-                 lambda_=None,  # type: Optional[List[float]]
+                 alpha=None,  # type: Optional[Union[float, List[float]]]
+                 lambda_=None,  # type: Optional[Union[float, List[float]]]
                  lambda_search=False,  # type: bool
                  early_stopping=True,  # type: bool
                  nlambdas=-1,  # type: int
@@ -86,7 +86,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  prior=-1.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=-1.0,  # type: float
-                 beta_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 beta_constraints=None,  # type: Optional[Union[str, dict, H2OFrame]]
                  max_active_predictors=-1,  # type: int
                  interactions=None,  # type: Optional[List[str]]
                  interaction_pairs=None,  # type: Optional[List[tuple]]
@@ -214,10 +214,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5
                otherwise.
                Defaults to ``None``.
-        :type alpha: List[float], optional
+        :type alpha: Union[float, List[float]], optional
         :param lambda_: Regularization strength
                Defaults to ``None``.
-        :type lambda_: List[float], optional
+        :type lambda_: Union[float, List[float]], optional
         :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min.
                Defaults to ``False``.
         :type lambda_search: bool
@@ -308,7 +308,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :type lambda_min_ratio: float
         :param beta_constraints: Beta constraints
                Defaults to ``None``.
-        :type beta_constraints: Union[None, str, H2OFrame], optional
+        :type beta_constraints: Union[str, dict, H2OFrame], optional
         :param max_active_predictors: Maximum number of active predictors during computation. Use as a stopping
                criterion to prevent expensive model building with many predictors. Default indicates: If the IRLSM
                solver is used, the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.
@@ -1177,7 +1177,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
         amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
 
         :examples:
 
@@ -1206,7 +1206,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Regularization strength
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
 
         :examples:
 
@@ -1834,7 +1834,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Beta constraints
 
-        Type: ``Union[None, str, H2OFrame]``.
+        Type: ``Union[str, dict, H2OFrame]``.
 
         :examples:
 
@@ -1860,11 +1860,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @beta_constraints.setter
     def beta_constraints(self, beta_constraints):
-        # beta_constraints can be specified as a H2OFrame or python dict
-        assert_is_type(beta_constraints, None, dict, H2OFrame)
-        if type(beta_constraints) is H2OFrame:
-            self._parms["beta_constraints"]=beta_constraints
-        if type(beta_constraints) is dict:
+        # beta_constraints can be specified as a H2OFrame, python dict, or frame key (str)
+        assert_is_type(beta_constraints, None, str, dict, H2OFrame)
+        if isinstance(beta_constraints, str):
+            beta_constraints = H2OFrame._validate(beta_constraints, 'beta_constraints')
+        elif type(beta_constraints) is dict:
             colnames = beta_constraints.keys()
             col_names = []
             upper_bounds = []
@@ -1875,7 +1875,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                 upper_bounds.append(one_col_bounds.get('upper_bound'))
                 lower_bounds.append(one_col_bounds.get('lower_bound'))
             constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
-            self._parms["beta_constraints"] = constraints[["names", "lower_bounds", "upper_bounds"]]
+            beta_constraints = constraints[["names", "lower_bounds", "upper_bounds"]]
+
+        self._parms["beta_constraints"] = beta_constraints
 
     @property
     def max_active_predictors(self):

@@ -72,7 +72,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  response_column=None,  # type: Optional[str]
                  validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  blending_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
-                 base_models=[],  # type: List[str]
+                 base_models=[],  # type: List[Union[str, H2OEstimator, H2OGridSearch]]
                  metalearner_algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
                  metalearner_nfolds=0,  # type: int
                  metalearner_fold_assignment=None,  # type: Optional[Literal["auto", "random", "modulo", "stratified"]]
@@ -111,7 +111,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                individual models. If not using blending frame, then models must have been cross-validated using nfolds >
                1, and folds must be identical across models.
                Defaults to ``[]``.
-        :type base_models: List[str]
+        :type base_models: List[Union[str, H2OEstimator, H2OGridSearch]]
         :param metalearner_algorithm: Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non
                negative weights; if validation_frame is present, a lambda search is performed), 'deeplearning' (Deep
                Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default
@@ -361,7 +361,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be
         identical across models.
 
-        Type: ``List[str]``, defaults to ``[]``.
+        Type: ``List[Union[str, H2OEstimator, H2OGridSearch]]``, defaults to ``[]``.
 
         :examples:
 
