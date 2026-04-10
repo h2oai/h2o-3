@@ -116,6 +116,7 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param control_variables A list of predictor column indices which is used for training but removed for scoring. Experimental.
+#' @param remove_offset_effects \code{Logical}. Remove offset effects from scoring and metric calculation. Experimental. Defaults to FALSE.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -267,6 +268,7 @@ h2o.glm <- function(x,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
                     control_variables = NULL,
+                    remove_offset_effects = FALSE,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
@@ -429,6 +431,8 @@ h2o.glm <- function(x,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(control_variables))
     parms$control_variables <- control_variables
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -563,6 +567,7 @@ h2o.glm <- function(x,
                                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                     stopping_tolerance = 0.001,
                                     control_variables = NULL,
+                                    remove_offset_effects = FALSE,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
@@ -730,6 +735,8 @@ h2o.glm <- function(x,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(control_variables))
     parms$control_variables <- control_variables
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -825,15 +832,47 @@ h2o.makeGLMModel <- function(model,beta) {
   m
 }
 
-#' Make unrestricted GLM model when control variables are defined.
+#' Make unrestricted GLM model when control variables or remove offset effects features are defined.
 #'
-#' Needs source model trained with control variables enabled.
-#' @param model a GLM \linkS4class{H2OModel} trained with control variable
+#' Needs source model trained with control variables or remove offset effects feature enabled.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variable or with remove offset effects
 #' @param destination_key a string or a NULL
 #' @export
 h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
-  stopifnot("GLM wasn't trained with control variables." = !is.null(model@params$actual[["control_variables"]]))
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = 
+    !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+  
   query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
+  if (!missing(destination_key) && !is.null(destination_key)) {
+    query <- c(query, list(dest = destination_key))
+  }
+  res <- do.call(.h2o.__remoteSend, query)
+  h2o.getModel(model_id = res$model_id$name)
+}
+
+#' Make derived GLM model when control variables or remove offset effects features are defined.
+#'
+#' Needs source model trained with control variables or remove offset effects.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variables or with remove offset effects features
+#' @param destination_key a string or a NULL
+#' @param remove_control_variables_effects logical; set control variables flag to get model affected only by
+#'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
+#' @param remove_offset_effects logical; set remove offset effects flag to get model affected only by
+#'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
+#' @export
+h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_control_variables_effects = FALSE, remove_offset_effects = FALSE) {
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = 
+    !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+  if ((is.null(model@params$actual[["control_variables"]]) || isFALSE(model@params$actual[["remove_offset_effects"]])) 
+      && (isTRUE(remove_control_variables_effects) || isTRUE(remove_offset_effects))) { 
+       stop("GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used.")  
+  }
+  if ((!is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+      && (isTRUE(remove_control_variables_effects) && isTRUE(remove_offset_effects))){
+      stop("The remove_control_variables_effects and remove_offset_effects feature cannot be used together. It produces the same model as the main model.")
+  }
+  query <- list(method = "POST", .h2o.__GLMMakeDerivedModel, model = model@model_id, 
+    remove_control_variables_effects=remove_control_variables_effects, remove_offset_effects=remove_offset_effects)
   if (!missing(destination_key) && !is.null(destination_key)) {
     query <- c(query, list(dest = destination_key))
   }

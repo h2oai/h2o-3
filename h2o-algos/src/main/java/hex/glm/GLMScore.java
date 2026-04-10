@@ -94,10 +94,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       }
       _beta_multinomial = null;
     }
-
     _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
-
-    m._output._score_control_vals_used_but_disabled = m._parms._control_variables != null && !m._useControlVariables;
     _defaultThreshold = m.defaultThreshold();
   }
 
@@ -132,8 +129,11 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
         preds[c + 1] = eta[c] * sumExp;
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
-      double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
-      
+      double x = r.innerProduct(_beta);
+      if(!_m._useRemoveOffsetEffects) {
+        x += o;
+      }
+      double mu = _m._parms.linkInv(x);
       if (_m._parms._family == GLMModel.GLMParameters.Family.binomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
               || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction
@@ -153,10 +153,11 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     } else if(r.weight == 0) {
       Arrays.fill(ps,0);
     } else {
-      scoreRow(r, r.offset, ps);
+      double offset = _m._useRemoveOffsetEffects ? 0 : r.offset;  
+      scoreRow(r, offset, ps);
       if (_computeMetrics && !r.response_bad) {
-        _mb.perRow(ps, res, r.weight, r.offset, _m);
-        customMetricPerRow(ps, res, r.weight, r.offset, _m);
+        _mb.perRow(ps, res, r.weight, offset, _m);
+        customMetricPerRow(ps, res, r.weight, offset, _m);
       }
     }
     if (_generatePredictions) {

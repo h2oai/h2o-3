@@ -15,5 +15,4 @@ public class MakeUnrestrictedGLMModelV3 extends SchemaV3<Iced,MakeUnrestrictedGL
 
     @API(help = "destination key", required = false, direction = API.Direction.INPUT)
     public String dest;
-
 }

@@ -186,7 +186,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
     @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, 1, 0, m);}
-    @Override public double[] perRow(double ds[], float[] yact, double w, double o, Model m) {
+    @Override public double[] perRow(double ds[], float[] yact, double w, double offset, Model m) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
       if(w == 0 || Double.isNaN(w)) return ds;
