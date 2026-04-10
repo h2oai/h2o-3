@@ -42,7 +42,7 @@ class H2ORuleFitEstimator(H2OEstimator):
                  rule_generation_ntrees=50,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  remove_duplicates=True,  # type: bool
-                 lambda_=None,  # type: Optional[List[float]]
+                 lambda_=None,  # type: Optional[Union[float, List[float]]]
                  max_categorical_levels=10,  # type: int
                  ):
         """
@@ -105,7 +105,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         :type remove_duplicates: bool
         :param lambda_: Lambda for LASSO regressor.
                Defaults to ``None``.
-        :type lambda_: List[float], optional
+        :type lambda_: Union[float, List[float]], optional
         :param max_categorical_levels: For every categorical feature, only use this many most frequent categorical
                levels for model training. Only used for categorical_encoding == EnumLimited.
                Defaults to ``10``.
@@ -465,7 +465,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Lambda for LASSO regressor.
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
         """
         return self._parms.get("lambda")
 
