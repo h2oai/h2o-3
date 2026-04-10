@@ -11,6 +11,14 @@ def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('custom')
         return param
+    if name in ('alpha', 'lambda'):
+        param['ptype'] = 'numeric, [numeric]'
+        param['dtype'] = 'Union[float, List[float]]'
+        return param
+    if name == 'gam_columns':
+        param['ptype'] = '[U(str, [str])]'
+        param['dtype'] = 'List[Union[str, List[str]]]'
+        return param
     return None  # param untouched
 
 

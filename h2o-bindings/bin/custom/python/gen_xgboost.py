@@ -88,6 +88,14 @@ extensions = dict(
     __class__=class_extensions,
 )
 
+def update_param(name, param):
+    if name == 'gpu_id':
+        param['ptype'] = 'int, [int]'
+        param['dtype'] = 'Union[int, List[int]]'
+        return param
+    return None  # param untouched
+
+
 overrides = dict(
     gpu_id=dict(
         setter="""

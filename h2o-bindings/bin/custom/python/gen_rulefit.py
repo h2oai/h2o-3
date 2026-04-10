@@ -1,5 +1,14 @@
 deprecated_params = dict(Lambda='lambda_')
 
+
+def update_param(name, param):
+    if name == 'lambda':
+        param['ptype'] = 'numeric, [numeric]'
+        param['dtype'] = 'Union[float, List[float]]'
+        return param
+    return None  # param untouched
+
+
 def class_extensions():
     def rule_importance(self):
         """
