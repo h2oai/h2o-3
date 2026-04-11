@@ -50,7 +50,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
 
+  // if control variables feature or remove offset feature is enabled we need to save unrestricted model scoring info here
   protected ScoringInfo[] _unrestrictedModelScoringInfo;
+
+  // if control variables feature and remove offset feature are enabled we need to save restricted models scoring info here
+  protected ScoringInfo[] _restrictedModelScoringInfoContrVals;
+  protected ScoringInfo[] _restrictedModelScoringInfoRO;
 
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
@@ -114,7 +119,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public ScoringInfo[] getUnrestrictedModelScoringInfo() { return _unrestrictedModelScoringInfo;}
 
-  public ScoreKeeper[] unrestritedModelScoreKeepers() {
+  public ScoreKeeper[] unrestrictedModelScoreKeepers() {
     int size = _unrestrictedModelScoringInfo ==null? 0: _unrestrictedModelScoringInfo.length;
     ScoreKeeper[] sk = new ScoreKeeper[size];
     for (int i=0;i<size;++i) {
@@ -148,6 +153,82 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       currInfo.scored_valid.fillFrom(_output._validation_metrics_unrestricted_model);
     }
     _unrestrictedModelScoringInfo = ScoringInfo.prependScoringInfo(currInfo, _unrestrictedModelScoringInfo);
+  }
+
+  public ScoringInfo[] getRestrictedModelScoringInfoContrVals() { return _restrictedModelScoringInfoContrVals;}
+
+  public ScoreKeeper[] restrictedModelContrValsScoreKeepers() {
+    int size = _restrictedModelScoringInfoContrVals ==null? 0: _restrictedModelScoringInfoContrVals.length;
+    ScoreKeeper[] sk = new ScoreKeeper[size];
+    for (int i=0;i<size;++i) {
+      if (_restrictedModelScoringInfoContrVals[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = _restrictedModelScoringInfoContrVals[i].scored_xval;
+      else if (_restrictedModelScoringInfoContrVals[i].validation)
+        sk[i] = _restrictedModelScoringInfoContrVals[i].scored_valid;
+      else
+        sk[i] = _restrictedModelScoringInfoContrVals[i].scored_train;
+    }
+    return sk;
+  }
+
+  public void addRestrictedModelScoringInfoContrVals(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (_restrictedModelScoringInfoContrVals != null && (((GLMScoringInfo) _restrictedModelScoringInfoContrVals[_restrictedModelScoringInfoContrVals.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
+    currInfo.is_classification = nclasses > 1;
+    currInfo.validation = parms.valid() != null;
+    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
+    currInfo.time_stamp_ms = currTime;
+    currInfo.total_training_time_ms = _output._training_time_ms;
+    if (_output._training_metrics_restricted_model_contr_vals != null) {
+      currInfo.scored_train = new ScoreKeeper(Double.NaN);
+      currInfo.scored_train.fillFrom(_output._training_metrics_restricted_model_contr_vals);
+    }
+    if (_output._validation_metrics_restricted_model_contr_vals != null) {
+      currInfo.scored_valid = new ScoreKeeper(Double.NaN);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_restricted_model_contr_vals);
+    }
+    _restrictedModelScoringInfoContrVals = ScoringInfo.prependScoringInfo(currInfo, _restrictedModelScoringInfoContrVals);
+  }
+
+  public ScoringInfo[] getRestrictedModelScoringInfoRO() { return _restrictedModelScoringInfoRO;}
+
+  public ScoreKeeper[] restrictedModelROScoreKeepers() {
+    int size = _restrictedModelScoringInfoRO ==null? 0: _restrictedModelScoringInfoRO.length;
+    ScoreKeeper[] sk = new ScoreKeeper[size];
+    for (int i=0;i<size;++i) {
+      if (_restrictedModelScoringInfoRO[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = _restrictedModelScoringInfoRO[i].scored_xval;
+      else if (_restrictedModelScoringInfoRO[i].validation)
+        sk[i] = _restrictedModelScoringInfoRO[i].scored_valid;
+      else
+        sk[i] = _restrictedModelScoringInfoRO[i].scored_train;
+    }
+    return sk;
+  }
+
+  public void addRestrictedModelScoringInfoRO(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (_restrictedModelScoringInfoRO != null && (((GLMScoringInfo) _restrictedModelScoringInfoRO[_restrictedModelScoringInfoRO.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
+    currInfo.is_classification = nclasses > 1;
+    currInfo.validation = parms.valid() != null;
+    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
+    currInfo.time_stamp_ms = currTime;
+    currInfo.total_training_time_ms = _output._training_time_ms;
+    if (_output._training_metrics_restricted_model_ro != null) {
+      currInfo.scored_train = new ScoreKeeper(Double.NaN);
+      currInfo.scored_train.fillFrom(_output._training_metrics_restricted_model_ro);
+    }
+    if (_output._validation_metrics_restricted_model_ro != null) {
+      currInfo.scored_valid = new ScoreKeeper(Double.NaN);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics_restricted_model_ro);
+    }
+    _restrictedModelScoringInfoRO = ScoringInfo.prependScoringInfo(currInfo, _restrictedModelScoringInfoRO);
   }
   
   
@@ -579,6 +660,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
     public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
     public String[] _control_variables; // control variables definition, list of column names
+    public boolean _remove_offset_effects; // control offset effect from prediction and metric calculation 
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -724,10 +806,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           glm.error("_control_variables", "Control variables option is not supported with interactions.");
         }
         if(_lambda_search) {
-          glm.error("_control_variables", "Control variables option is not supported with lambda search.");
+          glm.error("_control_variables", "Control variables option is not supported with Lambda search.");
         }
         if(_fold_column != null || _nfolds > 0){
-          glm.error("_control_variables", "Control variables option is not supported with cross validation.");
+          glm.error("_control_variables", "Control variables option is not supported with cross-validation.");
         }
         for(String col: _control_variables){
           Vec v = train().vec(col);
@@ -756,6 +838,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
         }
       }
+      if (_remove_offset_effects) {
+          if (_offset_column == null) {
+              glm.error("_remove_offset_effects", "Remove offset effects option (remove_offset_effects=True) requires the offset_column to be specified.");
+          }
+          if (_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
+              glm.error("_remove_offset_effects", "The "+_distribution.name()+ " distribution is not supported with remove offset effects.");
+          }
+          if (_interactions != null || _interaction_pairs != null) {
+              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with interactions.");
+          }
+          if (_lambda_search) {
+              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
+          }
+          if (_fold_column != null || _nfolds > 0) {
+              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with cross-validation.");
+          }
+        }
     }
     
     public GLMParameters() {
@@ -1531,6 +1630,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
+  public boolean _useRemoveOffsetEffects = false;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1611,25 +1711,42 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean hasVIF() { return _vif_predictor_names != null; }
     
     private int[] _control_values_idxs_in_adapted_frame;
-    private String[] _control_values_names;
+    private String[] _control_variables_names;
 
-    // Unrestricted model is produced when control variables are used.
+    // Unrestricted model is produced when control variables or remove offset features are used.
     public TwoDimTable _scoring_history_unrestricted_model;
     public ModelMetrics _training_metrics_unrestricted_model;
     public ModelMetrics _validation_metrics_unrestricted_model;
+
+    // Other two restricted models is produced when control variables and remove offset features are used together
+    // Output for restricted model where control variables feature is enabled
+    public TwoDimTable _scoring_history_restricted_model_contr_vals;
+    public ModelMetrics _training_metrics_restricted_model_contr_vals;
+    public ModelMetrics _validation_metrics_restricted_model_contr_vals;
+    // Output for restricted model where remove offset feature is enabled
+    public TwoDimTable _scoring_history_restricted_model_ro;
+    public ModelMetrics _training_metrics_restricted_model_ro;
+    public ModelMetrics _validation_metrics_restricted_model_ro;
+    
+    public void setAndMapControlVariablesNames(String[] controlVariablesNames){
+      this._control_variables_names = controlVariablesNames;
+      mapControlVariables();
+    }
     
     public void mapControlVariables() {
-      if(_control_values_names == null || _names == null) {
+      if(_control_variables_names == null || _names == null) {
         return;
       }
-      _control_values_idxs_in_adapted_frame = new int[_control_values_names.length];
-      for(int i = 0; i < _control_values_names.length; i++) {
+      _control_values_idxs_in_adapted_frame = new int[_control_variables_names.length];
+      for(int i = 0; i < _control_variables_names.length; i++) {
         for(int j = 0; j < _names.length; j++) {
-          if(_control_values_names[i].equals(_names[j]) ) {
+          if(_control_variables_names[i].equals(_names[j]) ) {
             _control_values_idxs_in_adapted_frame[i] = j; break;
           }
         }
       }
+      // Sort required for Arrays.binarySearch in isFeatureUsedInPredict
+      java.util.Arrays.sort(_control_values_idxs_in_adapted_frame);
     }
     
     public double[] getControlValBeta(double[] beta){
@@ -1718,7 +1835,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _binomial;
     public boolean _multinomial;
     public boolean _ordinal;
-    public boolean _score_control_vals_used_but_disabled;
 
     public void setLambdas(GLMParameters parms) {
       if (parms._lambda_search) {
@@ -1796,7 +1912,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _global_beta=beta;
       _submodels = new Submodel[]{new Submodel(0, 0, beta, -1, Double.NaN, Double.NaN,
               _totalBetaLength, null, false)};
-      _control_values_names = controlVarNames;
+      _control_variables_names = controlVarNames;
       mapControlVariables();
     }
     
@@ -1852,7 +1968,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _multinomial = glm._parms._family == Family.multinomial;
       _ordinal = glm._parms._family == Family.ordinal;
       // setup control variables idxs from model parameters
-      _control_values_names = glm._parms._control_variables;
+      _control_variables_names = glm._parms._control_variables;
       mapControlVariables();
     }
     
@@ -2020,16 +2136,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int[] indices = new int[len];
       for (int i = 0; i < indices.length; ++i)
         indices[i] = i;
-      float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
-      String[] namesSort = new String[len];
-      
+
       if (contrVal)
         calculateVarimpBase(magnitudes, indices, getControlValBeta(getNormBeta()));
       else if (_nclasses > 2)
         calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
       else
         calculateVarimpBase(magnitudes, indices, getNormBeta());
-      
+
+      float[] magnitudesSort = new float[len];
+      String[] namesSort = new String[len];
       for (int index = 0; index < len; index++) {
         magnitudesSort[index] = (float) magnitudes[indices[index]];
         namesSort[index] = names[indices[index]];
@@ -2202,7 +2318,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     } else {
       double[] b = beta();
-      double eta = b[b.length - 1] + o; // intercept + offset
+      double eta = b[b.length - 1]; // intercept 
+      if (!this._useRemoveOffsetEffects){ // offset
+          eta += o;
+      }
       double[] bcv = b.clone();
       if (this._useControlVariables)
         bcv = _output.getControlValBeta(bcv); // make beta connected to control variables zero
@@ -2412,6 +2531,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean haveMojo() {
+    if (_parms._remove_offset_effects) {
+        return false;
+    }
     if (_parms._control_variables != null && _parms._control_variables.length > 0)
       return _parms.interactionSpec() == null &&
               !_parms._family.equals(Family.multinomial) &&
@@ -2424,6 +2546,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean havePojo() {
+    if (_parms._remove_offset_effects)
+      return false;
     if (_parms._control_variables != null && _parms._control_variables.length > 0)
       return _parms.interactionSpec() == null &&
               _parms._offset_column == null &&

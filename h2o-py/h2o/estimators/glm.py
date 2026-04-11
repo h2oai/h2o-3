@@ -62,8 +62,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  tweedie_link_power=1.0,  # type: float
                  theta=1e-10,  # type: float
                  solver="auto",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
-                 alpha=None,  # type: Optional[List[float]]
-                 lambda_=None,  # type: Optional[List[float]]
+                 alpha=None,  # type: Optional[Union[float, List[float]]]
+                 lambda_=None,  # type: Optional[Union[float, List[float]]]
                  lambda_search=False,  # type: bool
                  early_stopping=True,  # type: bool
                  nlambdas=-1,  # type: int
@@ -86,7 +86,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  prior=-1.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=-1.0,  # type: float
-                 beta_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 beta_constraints=None,  # type: Optional[Union[str, dict, H2OFrame]]
                  max_active_predictors=-1,  # type: int
                  interactions=None,  # type: Optional[List[str]]
                  interaction_pairs=None,  # type: Optional[List[tuple]]
@@ -95,6 +95,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  control_variables=None,  # type: Optional[List[str]]
+                 remove_offset_effects=False,  # type: bool
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
@@ -213,10 +214,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5
                otherwise.
                Defaults to ``None``.
-        :type alpha: List[float], optional
+        :type alpha: Union[float, List[float]], optional
         :param lambda_: Regularization strength
                Defaults to ``None``.
-        :type lambda_: List[float], optional
+        :type lambda_: Union[float, List[float]], optional
         :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min.
                Defaults to ``False``.
         :type lambda_search: bool
@@ -307,7 +308,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :type lambda_min_ratio: float
         :param beta_constraints: Beta constraints
                Defaults to ``None``.
-        :type beta_constraints: Union[None, str, H2OFrame], optional
+        :type beta_constraints: Union[str, dict, H2OFrame], optional
         :param max_active_predictors: Maximum number of active predictors during computation. Use as a stopping
                criterion to prevent expensive model building with many predictors. Default indicates: If the IRLSM
                solver is used, the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.
@@ -341,6 +342,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Experimental.
                Defaults to ``None``.
         :type control_variables: List[str], optional
+        :param remove_offset_effects: Remove offset effects from scoring and metric calculation. Experimental.
+               Defaults to ``False``.
+        :type remove_offset_effects: bool
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
                Defaults to ``False``.
         :type balance_classes: bool
@@ -504,6 +508,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.stopping_metric = stopping_metric
         self.stopping_tolerance = stopping_tolerance
         self.control_variables = control_variables
+        self.remove_offset_effects = remove_offset_effects
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -1172,7 +1177,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
         amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
 
         :examples:
 
@@ -1201,7 +1206,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Regularization strength
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
 
         :examples:
 
@@ -1829,7 +1834,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Beta constraints
 
-        Type: ``Union[None, str, H2OFrame]``.
+        Type: ``Union[str, dict, H2OFrame]``.
 
         :examples:
 
@@ -1855,11 +1860,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @beta_constraints.setter
     def beta_constraints(self, beta_constraints):
-        # beta_constraints can be specified as a H2OFrame or python dict
-        assert_is_type(beta_constraints, None, dict, H2OFrame)
-        if type(beta_constraints) is H2OFrame:
-            self._parms["beta_constraints"]=beta_constraints
-        if type(beta_constraints) is dict:
+        # beta_constraints can be specified as a H2OFrame, python dict, or frame key (str)
+        assert_is_type(beta_constraints, None, str, dict, H2OFrame)
+        if isinstance(beta_constraints, str):
+            beta_constraints = H2OFrame._validate(beta_constraints, 'beta_constraints')
+        elif type(beta_constraints) is dict:
             colnames = beta_constraints.keys()
             col_names = []
             upper_bounds = []
@@ -1870,7 +1875,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                 upper_bounds.append(one_col_bounds.get('upper_bound'))
                 lower_bounds.append(one_col_bounds.get('lower_bound'))
             constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
-            self._parms["beta_constraints"] = constraints[["names", "lower_bounds", "upper_bounds"]]
+            beta_constraints = constraints[["names", "lower_bounds", "upper_bounds"]]
+
+        self._parms["beta_constraints"] = beta_constraints
 
     @property
     def max_active_predictors(self):
@@ -2055,6 +2062,20 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def control_variables(self, control_variables):
         assert_is_type(control_variables, None, [str])
         self._parms["control_variables"] = control_variables
+
+    @property
+    def remove_offset_effects(self):
+        """
+        Remove offset effects from scoring and metric calculation. Experimental.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("remove_offset_effects")
+
+    @remove_offset_effects.setter
+    def remove_offset_effects(self, remove_offset_effects):
+        assert_is_type(remove_offset_effects, None, bool)
+        self._parms["remove_offset_effects"] = remove_offset_effects
 
     @property
     def balance_classes(self):
@@ -2802,7 +2823,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
-
     def make_unrestricted_glm_model(self, dest=None):
         """
         Make unrestricted GLM model when control variables are defined.
@@ -2816,9 +2836,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family='binomial',
         ...                                   solver='COORDINATE_DESCENT',
+        ...                                   remove_offset_effects=True,
+        ...                                   offset_column="VOL",
         ...                                   control_variables=["PSA"])
         >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,7,8],
+        ...         x=[2,3,4,5,6,8],
         ...         y=1)
         >>> p = m.model_performance(d)
         >>> print(p)
@@ -2826,6 +2848,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> p2 = m2.model_performance(d)
         >>> print(p2)
         """
+        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
+            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
             data={"model": self._model_json["model_id"]["name"],
@@ -2836,3 +2860,54 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
             dest = model_json["model_id"]["name"]
         m._resolve_model(dest, model_json)
         return m
+
+    def make_derived_glm_model(self, dest=None, remove_control_variables_effects=False, remove_offset_effects=False):
+        """
+        Make derived GLM model when control variables or remove offset effects are defined.
+
+        Needs to be passed source model trained with control variables enabled or remove offset effects enabled. 
+
+        :param dest: (optional) destination key
+        :param remove_control_variables_effects: (optional) set control variables flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+        :param remove_offset_effects: (optional) set remove offset effects flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   solver='COORDINATE_DESCENT',
+        ...                                   remove_offset_effects=True,
+        ...                                   offset_column="VOL",
+        ...                                   control_variables=["PSA"])
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = m.make_derived_glm_model(dest="unrestricted_glm")
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        >>> m3 = m.make_derived_glm_model(dest="derived_glm_control_variables", remove_control_variables_effects=True)
+        >>> p3 = m3.model_performance(d)
+        >>> print(p3)
+        """
+        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
+            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
+        if (self.actual_params["control_variables"] is None or not(self.actual_params["remove_offset_effects"])) and (remove_control_variables_effects or remove_offset_effects):
+            raise H2OValueError("GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used.")
+        if self.actual_params["control_variables"] is not None and self.actual_params["remove_offset_effects"] and (remove_control_variables_effects and remove_offset_effects):
+            raise H2OValueError("The remove_control_variables_effects and remove_offset_effects feature cannot be used together. It produces the same model as the main model.")
+        model_json = h2o.api(
+            "POST /3/MakeDerivedGLMModel",
+            data={"model": self._model_json["model_id"]["name"],
+                  "dest": dest,
+                  "remove_control_variables_effects": remove_control_variables_effects,
+                  "remove_offset_effects": remove_offset_effects}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        if dest is None:
+            dest = model_json["model_id"]["name"]
+        m._resolve_model(dest, model_json)
+        return m 

@@ -200,7 +200,9 @@ public final class ComputationState {
     // make sure model._betaCndCheckpoint is of the right size
     if (model._betaCndCheckpoint != null) {
       if (_activeData._activeCols == null || (_activeData._activeCols.length != model._betaCndCheckpoint.length)) {
-        double[] betaCndCheckpoint = ArrayUtils.expandAndScatter(model._betaCndCheckpoint, coefLen,
+        double[] betaCndCheckpoint = modelOutput._submodels[submodelInd].idxs == null
+                ? model._betaCndCheckpoint
+                : ArrayUtils.expandAndScatter(model._betaCndCheckpoint, coefLen,
                 modelOutput._submodels[submodelInd].idxs); // expand betaCndCheckpoint out
         if (_activeData._activeCols != null) // contract the betaCndCheckpoint to the right activeCol length
           betaCndCheckpoint = extractSubRange(betaCndCheckpoint.length, 0, activeData()._activeCols, betaCndCheckpoint);

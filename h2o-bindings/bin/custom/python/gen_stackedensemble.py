@@ -12,6 +12,10 @@ def update_param(name, param):
         param['type'] = 'KeyValue'
         param['default_value'] = None
         return param
+    if name == 'base_models':
+        param['ptype'] = '[H2OEstimator, H2OGridSearch, str]'
+        param['dtype'] = 'List[Union[str, H2OEstimator, H2OGridSearch]]'
+        return param
     return None  # param untouched
 
 
