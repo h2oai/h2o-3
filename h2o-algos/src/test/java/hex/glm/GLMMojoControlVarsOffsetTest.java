@@ -43,7 +43,7 @@ public class GLMMojoControlVarsOffsetTest extends TestUtil {
     @Test
     public void testMojoBinomialControlVarsOnly() throws Exception {
         testCombination(buildBinomialFrame(), GLMModel.GLMParameters.Family.binomial,
-                false, true, "binomial_cv");
+                false, true, "binomial_contr_vals");
     }
 
     @Test
