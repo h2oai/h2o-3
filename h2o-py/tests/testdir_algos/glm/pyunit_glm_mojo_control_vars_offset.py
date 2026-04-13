@@ -26,22 +26,22 @@ def glm_mojo_control_vars_offset():
     ]
 
     # Binomial
-    for label, roe, cv in combinations:
+    for label, roe, contr_vals in combinations:
         params = dict(family="binomial", offset_column="offset_col", lambda_=0)
         if roe:
             params["remove_offset_effects"] = True
-        if cv is not None:
-            params["control_variables"] = cv
+        if contr_vals is not None:
+            params["control_variables"] = contr_vals
         compare_mojo("binomial_" + label, "CAPSULE",
                      ["RACE", "DCAPS", "PSA", "VOL", "DPROS", "GLEASON"], train, params)
 
     # Gaussian
-    for label, roe, cv in combinations:
+    for label, roe, contr_vals in combinations:
         params = dict(family="gaussian", offset_column="offset_col", lambda_=0)
         if roe:
             params["remove_offset_effects"] = True
-        if cv is not None:
-            params["control_variables"] = cv
+        if contr_vals is not None:
+            params["control_variables"] = contr_vals
         compare_mojo("gaussian_" + label, "VOL",
                      ["RACE", "DCAPS", "PSA", "DPROS", "GLEASON"], train, params)
 
@@ -52,13 +52,13 @@ def glm_mojo_control_vars_offset():
 
     # Tweedie (response must be positive)
     train["positive_vol"] = abs(train["VOL"]) + 1
-    for label, roe, cv in combinations:
+    for label, roe, contr_vals in combinations:
         params = dict(family="tweedie", offset_column="offset_col", lambda_=0,
                       tweedie_variance_power=1.5, tweedie_link_power=0)
         if roe:
             params["remove_offset_effects"] = True
-        if cv is not None:
-            params["control_variables"] = cv
+        if contr_vals is not None:
+            params["control_variables"] = contr_vals
         compare_mojo("tweedie_" + label, "positive_vol",
                      ["RACE", "DCAPS", "PSA", "DPROS", "GLEASON"], train, params)
 
@@ -88,19 +88,19 @@ def assert_predictions_differ(pred1, pred2, label):
 
 
 def verify_features_change_predictions(family_label, y, x, data, base_params):
-    """Verify that all combinations of RO and CV produce different predictions from each other."""
+    """Verify that all combinations of RO and ContrVals produce different predictions from each other."""
     pred_base = compare_mojo(family_label + "_base_check", y, x, data, base_params)
     pred_ro   = compare_mojo(family_label + "_ro_check", y, x, data, dict(base_params, remove_offset_effects=True))
-    pred_cv   = compare_mojo(family_label + "_cv_check", y, x, data, dict(base_params, control_variables=["PSA"]))
+    pred_contr_vals   = compare_mojo(family_label + "_contr_vals_check", y, x, data, dict(base_params, control_variables=["PSA"]))
     pred_both = compare_mojo(family_label + "_both_check", y, x, data,
                              dict(base_params, remove_offset_effects=True, control_variables=["PSA"]))
 
     assert_predictions_differ(pred_base, pred_ro,   family_label + " baseline vs RO")
-    assert_predictions_differ(pred_base, pred_cv,   family_label + " baseline vs CV")
-    assert_predictions_differ(pred_base, pred_both, family_label + " baseline vs RO+CV")
-    assert_predictions_differ(pred_ro,   pred_cv,   family_label + " RO vs CV")
-    assert_predictions_differ(pred_ro,   pred_both, family_label + " RO vs RO+CV")
-    assert_predictions_differ(pred_cv,   pred_both, family_label + " CV vs RO+CV")
+    assert_predictions_differ(pred_base, pred_contr_vals,   family_label + " baseline vs ContrVals")
+    assert_predictions_differ(pred_base, pred_both, family_label + " baseline vs RO+ContrVals")
+    assert_predictions_differ(pred_ro,   pred_contr_vals,   family_label + " RO vs ContrVals")
+    assert_predictions_differ(pred_ro,   pred_both, family_label + " RO vs RO+ContrVals")
+    assert_predictions_differ(pred_contr_vals,   pred_both, family_label + " ContrVals vs RO+ContrVals")
 
 
 if __name__ == "__main__":

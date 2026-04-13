@@ -37,7 +37,7 @@ public class GLMMojoControlVarsOffsetTest extends TestUtil {
     @Test
     public void testMojoBinomialRemoveOffsetOnly() throws Exception {
         testCombination(buildBinomialFrame(), GLMModel.GLMParameters.Family.binomial,
-                true, false, "binomial_roe");
+                true, false, "binomial_rem_off_eff");
     }
 
     @Test
@@ -63,13 +63,13 @@ public class GLMMojoControlVarsOffsetTest extends TestUtil {
     @Test
     public void testMojoGaussianRemoveOffsetOnly() throws Exception {
         testCombination(buildRegressionFrame(false), GLMModel.GLMParameters.Family.gaussian,
-                true, false, "gaussian_roe");
+                true, false, "gaussian_rem_off_eff");
     }
 
     @Test
     public void testMojoGaussianControlVarsOnly() throws Exception {
         testCombination(buildRegressionFrame(false), GLMModel.GLMParameters.Family.gaussian,
-                false, true, "gaussian_cv");
+                false, true, "gaussian_contr_vals");
     }
 
     @Test
@@ -89,13 +89,13 @@ public class GLMMojoControlVarsOffsetTest extends TestUtil {
     @Test
     public void testMojoTweedieRemoveOffsetOnly() throws Exception {
         testCombination(buildRegressionFrame(true), GLMModel.GLMParameters.Family.tweedie,
-                true, false, "tweedie_roe");
+                true, false, "tweedie_rem_off_eff");
     }
 
     @Test
     public void testMojoTweedieControlVarsOnly() throws Exception {
         testCombination(buildRegressionFrame(true), GLMModel.GLMParameters.Family.tweedie,
-                false, true, "tweedie_cv");
+                false, true, "tweedie_contr_vals");
     }
 
     @Test
@@ -125,12 +125,12 @@ public class GLMMojoControlVarsOffsetTest extends TestUtil {
             Frame predsBoth = trainAndScore(train, family, true,  true);
 
             // Each combination should produce different predictions from every other
-            assertPredictionsDiffer(predsBase, predsRO,   "baseline vs RO");
-            assertPredictionsDiffer(predsBase, predsCV,   "baseline vs CV");
-            assertPredictionsDiffer(predsBase, predsBoth, "baseline vs RO+CV");
-            assertPredictionsDiffer(predsRO,   predsCV,   "RO vs CV");
-            assertPredictionsDiffer(predsRO,   predsBoth, "RO vs RO+CV");
-            assertPredictionsDiffer(predsCV,   predsBoth, "CV vs RO+CV");
+            assertPredictionsDiffer(predsBase, predsRO,   "baseline vs RemOffEff");
+            assertPredictionsDiffer(predsBase, predsCV,   "baseline vs ContrVals");
+            assertPredictionsDiffer(predsBase, predsBoth, "baseline vs RemOffEff+ContrVals");
+            assertPredictionsDiffer(predsRO,   predsCV,   "RemOffEff vs ContrVals");
+            assertPredictionsDiffer(predsRO,   predsBoth, "RemOffEff vs RemOffEff+ContrVals");
+            assertPredictionsDiffer(predsCV,   predsBoth, "ContrVals vs RemOffEff+ContrVals");
         } finally {
             Scope.exit();
         }

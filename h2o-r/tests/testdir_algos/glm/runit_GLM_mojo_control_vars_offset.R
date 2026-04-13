@@ -20,7 +20,7 @@ test.glm_mojo_control_vars_offset <- function() {
   for (combo in list(
     list(label = "binomial_baseline", roe = FALSE, cv = NULL),
     list(label = "binomial_roe", roe = TRUE, cv = NULL),
-    list(label = "binomial_cv", roe = FALSE, cv = c("PSA")),
+    list(label = "binomial_contr_vars", roe = FALSE, cv = c("PSA")),
     list(label = "binomial_both", roe = TRUE, cv = c("PSA"))
   )) {
     args <- list(family = "binomial", offset_column = "offset_col", lambda = 0)
@@ -33,7 +33,7 @@ test.glm_mojo_control_vars_offset <- function() {
   for (combo in list(
     list(label = "gaussian_baseline", roe = FALSE, cv = NULL),
     list(label = "gaussian_roe", roe = TRUE, cv = NULL),
-    list(label = "gaussian_cv", roe = FALSE, cv = c("PSA")),
+    list(label = "gaussian_contr_vars", roe = FALSE, cv = c("PSA")),
     list(label = "gaussian_both", roe = TRUE, cv = c("PSA"))
   )) {
     args <- list(family = "gaussian", offset_column = "offset_col", lambda = 0)
@@ -50,7 +50,7 @@ test.glm_mojo_control_vars_offset <- function() {
   for (combo in list(
     list(label = "tweedie_baseline", roe = FALSE, cv = NULL),
     list(label = "tweedie_roe", roe = TRUE, cv = NULL),
-    list(label = "tweedie_cv", roe = FALSE, cv = c("PSA")),
+    list(label = "tweedie_contr_vars", roe = FALSE, cv = c("PSA")),
     list(label = "tweedie_both", roe = TRUE, cv = c("PSA"))
   )) {
     args <- list(family = "tweedie", offset_column = "offset_col", lambda = 0,
@@ -88,17 +88,17 @@ verify_features_change_predictions <- function(family_label, x, y, data, base_ar
   pred_base <- compare_mojo(paste0(family_label, "_base_check"), x, y, data, base_args)
   pred_ro   <- compare_mojo(paste0(family_label, "_ro_check"), x, y, data,
     c(base_args, list(remove_offset_effects = TRUE)))
-  pred_cv   <- compare_mojo(paste0(family_label, "_cv_check"), x, y, data,
+  pred_contr_vars   <- compare_mojo(paste0(family_label, "_contr_vars_check"), x, y, data,
     c(base_args, list(control_variables = c("PSA"))))
   pred_both <- compare_mojo(paste0(family_label, "_both_check"), x, y, data,
     c(base_args, list(remove_offset_effects = TRUE, control_variables = c("PSA"))))
 
   assert_predictions_differ(pred_base, pred_ro,   paste(family_label, "baseline vs RO"))
-  assert_predictions_differ(pred_base, pred_cv,   paste(family_label, "baseline vs CV"))
-  assert_predictions_differ(pred_base, pred_both, paste(family_label, "baseline vs RO+CV"))
-  assert_predictions_differ(pred_ro,   pred_cv,   paste(family_label, "RO vs CV"))
-  assert_predictions_differ(pred_ro,   pred_both, paste(family_label, "RO vs RO+CV"))
-  assert_predictions_differ(pred_cv,   pred_both, paste(family_label, "CV vs RO+CV"))
+  assert_predictions_differ(pred_base, pred_contr_vars,   paste(family_label, "baseline vs ContrVals"))
+  assert_predictions_differ(pred_base, pred_both, paste(family_label, "baseline vs RO+ContrVals"))
+  assert_predictions_differ(pred_ro,   pred_contr_vars,   paste(family_label, "RO vs ContrVals"))
+  assert_predictions_differ(pred_ro,   pred_both, paste(family_label, "RO vs RO+ContrVals"))
+  assert_predictions_differ(pred_contr_vars,   pred_both, paste(family_label, "ContrVals vs RO+ContrVals"))
 }
 
 doTest("GLM MOJO with remove_offset_effects and control_variables", test.glm_mojo_control_vars_offset)
