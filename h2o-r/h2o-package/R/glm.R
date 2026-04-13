@@ -863,7 +863,7 @@ h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
 h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_control_variables_effects = FALSE, remove_offset_effects = FALSE) {
   stopifnot("GLM wasn't trained with control variables or with remove offset effects." = 
     !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
-  if ((is.null(model@params$actual[["control_variables"]]) || isFALSE(model@params$actual[["remove_offset_effects"]])) 
+  if ((is.null(model@params$actual[["control_variables"]]) || identical(model@params$actual[["remove_offset_effects"]], FALSE))
       && (isTRUE(remove_control_variables_effects) || isTRUE(remove_offset_effects))) { 
        stop("GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used.")  
   }
