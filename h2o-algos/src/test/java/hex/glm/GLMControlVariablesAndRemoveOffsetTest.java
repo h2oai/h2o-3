@@ -2410,13 +2410,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             glm = new GLM(params).trainModel().get();
             Scope.track_generic(glm);
 
-            // With remove_offset_effects=true, the exported MOJO/POJO would score WITH offset
-            // but the H2O model scores WITHOUT offset. haveMojo()/havePojo() should return false.
-            // Currently haveMojo() only checks control_variables but NOT remove_offset_effects.
-            assertFalse("haveMojo() should return false when remove_offset_effects=true " +
-                    "(MOJO scoring doesn't implement offset removal)", glm.haveMojo());
-            assertFalse("havePojo() should return false when remove_offset_effects=true " +
-                    "(POJO scoring doesn't implement offset removal)", glm.havePojo());
+            assertTrue("haveMojo() should return true when remove_offset_effects=true ", glm.haveMojo());
+            assertTrue("havePojo() should return true when remove_offset_effects=true ", glm.havePojo());
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
