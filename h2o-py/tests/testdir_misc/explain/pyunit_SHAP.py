@@ -262,7 +262,7 @@ def naiveBSHAP(mod, y, train, test, xrow, brow, link=False):
     df = pd.concat([b for _ in range(len(pset))], ignore_index=True)
     for row in tqdm(range(df.shape[0]), desc="Creating data frame", leave=False):
         for col in pset[row]:
-            df.loc[row, col] = x[col].values
+            df.loc[row, col] = x.loc[0, col]
 
     df = h2o.H2OFrame(df, column_types=train.types)
 
