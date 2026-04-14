@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream;
 
 public abstract class AbstractMojoWriter {
   /**
-   * Reference to the model being written. Use this in the subclasses to retreive information from your model.
+   * Reference to the model being written. Use this in the subclasses to retrieve information from your model.
    */
   private ModelDescriptor model;
 
