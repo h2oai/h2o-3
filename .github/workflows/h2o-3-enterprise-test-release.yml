@@ -1,12 +1,12 @@
 # ==============================================================================
 #
-#                         H2O-3 ENTERPRISE RELEASE
-#                         ========================
+#                    ENTERPRISE H2O-3 TEST RELEASE
+#                    =============================
 #
-#   Release pipeline for H2O-3 Enterprise.
-#   This is for internal/enterprise releases (NOT public Maven Central).
+#   Self-contained test release pipeline for Enterprise H2O-3.
+#   Uses test S3 bucket (s3://test.0xdata.com/test-release/h2o).
 #
-#   Pipeline Stages:
+#   Pipeline Stages (matching Jenkins):
 #   1. Checkout + Build
 #   2. Publish to S3
 #   3. Build Conda Packages (Py3.7-3.11, main + client)
@@ -14,18 +14,21 @@
 #   5. Publish HELM to S3
 #   6. Build Docker Images
 #
-#   Key Differences from Public Release:
-#   - No Nexus/Maven Central upload (enterprise releases are not public)
-#   - Uses production S3 bucket by default
-#   - Can update latest links when releasing
-#
-#   Configurable Settings:
-#   - TEST_RELEASE: configurable (affects S3 bucket)
-#   - UPDATE_LATEST: configurable (update top-level latest links)
+#   Pre-configured Settings:
+#   - TEST_RELEASE: true
+#   - TEST_CREDENTIALS: true (always runs)
+#   - UPDATE_LATEST: false
 #   - UPDATE_LATEST_BRANCH: true
-#   - BUILD_HADOOP: configurable
-#   - BUILD_CONDA: true
-#   - BUILD_H2O_DOCKER: true
+#   - UPLOAD_NEXUS: false (Enterprise releases are not public)
+#
+#   Configurable Inputs:
+#   - branch: Branch to build (default: master)
+#   - build_number: Build number (default: workflow run number)
+#   - build_hadoop: Build with Hadoop support (default: true)
+#   - publish_s3: Publish to S3 (default: true)
+#   - publish_conda: Build Conda packages (default: true)
+#   - publish_helm: Build Helm chart (default: true)
+#   - publish_docker: Build Docker images (default: true)
 #
 # ==============================================================================
 
@@ -37,30 +40,42 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to release [e.g., master, rel-3.46]'
+        description: 'Branch to release [e.g., master, rel-3.42, valenad-test-release]'
         required: true
         default: 'master'
         type: string
 
       build_number:
-        description: "Build number [leave empty to auto-generate]"
+        description: "Build number [leave empty to use workflow run number]"
         required: false
         type: string
 
-      test_release:
-        description: "Test release (uses test S3 bucket, skips validation)"
-        required: false
-        type: boolean
-        default: false
-
-      update_latest:
-        description: "Update top-level latest links (for production releases)"
-        required: false
-        type: boolean
-        default: false
-
       build_hadoop:
-        description: "Build with Hadoop support (uncheck for faster builds)"
+        description: "Build with Hadoop support"
+        required: false
+        type: boolean
+        default: true
+
+      publish_s3:
+        description: "Publish artifacts to S3"
+        required: false
+        type: boolean
+        default: true
+
+      publish_conda:
+        description: "Build and publish Conda packages"
+        required: false
+        type: boolean
+        default: true
+
+      publish_helm:
+        description: "Build and publish Helm chart"
+        required: false
+        type: boolean
+        default: true
+
+      publish_docker:
+        description: "Build and publish Docker images"
         required: false
         type: boolean
         default: true
@@ -80,13 +95,9 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
-  # Production S3 bucket for enterprise releases
-  RELEASE_BUCKET: s3://h2o-release/h2o
+  # Test release uses test S3 bucket
+  S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
-  # S3 roles
-  RELEASE_S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
-  TEST_S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
-  BUILD_NUMBER_OFFSET: 7400
 
 # ==============================================================================
 # JOBS
@@ -103,7 +114,6 @@ jobs:
       branch: ${{ steps.config.outputs.branch }}
       build_number: ${{ steps.config.outputs.build_number }}
       s3_root: ${{ steps.config.outputs.s3_root }}
-      s3_role: ${{ steps.config.outputs.s3_role }}
 
     steps:
       - name: Determine Configuration
@@ -111,56 +121,124 @@ jobs:
         run: |
           BRANCH="${{ inputs.branch || 'master' }}"
 
-          # Build number: user input or auto-generated
+          # Build number: user input or workflow run number
           if [ -n "${{ inputs.build_number }}" ]; then
             BUILD_NUMBER="${{ inputs.build_number }}"
           else
-            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.BUILD_NUMBER_OFFSET }} ))
-          fi
-
-          # S3 bucket and role based on test_release flag
-          if [ "${{ inputs.test_release }}" = "true" ]; then
-            S3_ROOT="${{ env.TEST_RELEASE_BUCKET }}"
-            S3_ROLE="${{ env.TEST_S3_ROLE }}"
-          else
-            S3_ROOT="${{ env.RELEASE_BUCKET }}"
-            S3_ROLE="${{ env.RELEASE_S3_ROLE }}"
+            BUILD_NUMBER="${{ github.run_number }}"
           fi
 
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
           echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
-          echo "s3_root=${S3_ROOT}" >> $GITHUB_OUTPUT
-          echo "s3_role=${S3_ROLE}" >> $GITHUB_OUTPUT
+          echo "s3_root=${{ env.TEST_RELEASE_BUCKET }}" >> $GITHUB_OUTPUT
 
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## Enterprise Release Configuration
+          ## Enterprise Test Release Configuration
 
           | Setting | Value |
           |---------|-------|
           | Branch | \`${BRANCH}\` |
           | Build Number | \`${BUILD_NUMBER}\` |
           | Repository | \`h2oai/h2o-3-enterprise\` |
-          | S3 Bucket | \`${S3_ROOT}\` |
-          | Test Release | ${{ inputs.test_release }} |
-          | Update Latest | ${{ inputs.update_latest }} |
+          | S3 Bucket | \`${{ env.TEST_RELEASE_BUCKET }}\` |
+          | Test Release | true |
+          | Test Credentials | true |
           | Build Hadoop | ${{ inputs.build_hadoop }} |
-          | Build Conda | true |
-          | Build Docker | true |
+          | Publish S3 | ${{ inputs.publish_s3 != false }} |
+          | Publish Conda | ${{ inputs.publish_conda != false }} |
+          | Publish Helm | ${{ inputs.publish_helm != false }} |
+          | Publish Docker | ${{ inputs.publish_docker != false }} |
           EOF
+
+  # ============================================================================
+  # TEST CREDENTIALS (Always runs)
+  # ============================================================================
+  test-credentials:
+    name: Test Credentials
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS for ECR
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.ECR_ROLE }}
+          role-session-name: test-creds-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Test AWS/ECR Credentials
+        run: |
+          echo "=== Testing AWS/ECR Credentials ==="
+          aws sts get-caller-identity
+          echo "AWS credentials: OK"
+
+      - name: Configure AWS for S3
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: test-s3-creds-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Test S3 Credentials
+        run: |
+          echo "=== Testing S3 Credentials ==="
+          aws sts get-caller-identity
+          # Test bucket access
+          aws s3 ls ${{ env.TEST_RELEASE_BUCKET }}/ --max-items 1 || echo "Warning: Could not list bucket (may be empty)"
+          echo "S3 credentials: OK"
+
+      - name: Test Docker Hub Credentials
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          echo "=== Testing Docker Hub Credentials ==="
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_PASSWORD" ]; then
+            echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+            echo "Docker Hub credentials: OK"
+            docker logout
+          else
+            echo "::warning::Docker Hub credentials not configured"
+          fi
+
+      - name: Test Anaconda Credentials
+        env:
+          ANACONDA_USERNAME: ${{ secrets.ANACONDA_USERNAME }}
+          ANACONDA_PASSWORD: ${{ secrets.ANACONDA_PASSWORD }}
+        run: |
+          echo "=== Testing Anaconda Credentials ==="
+          if [ -n "$ANACONDA_USERNAME" ] && [ -n "$ANACONDA_PASSWORD" ]; then
+            echo "Anaconda credentials: Configured (username: $ANACONDA_USERNAME)"
+          else
+            echo "::warning::Anaconda credentials not configured"
+          fi
+
+      - name: Credentials Summary
+        run: |
+          echo "## Credentials Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Credential | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| AWS/ECR | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| S3 | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Hub | ${{ secrets.DOCKERHUB_USERNAME != '' && 'OK' || 'Not configured' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Anaconda | ${{ secrets.ANACONDA_USERNAME != '' && 'OK' || 'Not configured' }} |" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # BUILD: Compile H2O-3
   # ============================================================================
   build:
     name: Build
-    needs: init
+    needs: [init, test-credentials]
     uses: ./.github/workflows/release-build.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       build_hadoop: ${{ inputs.build_hadoop }}
-      upload_nexus: false  # Enterprise releases don't go to Maven Central
-      test_release: ${{ inputs.test_release }}
+      upload_nexus: false
+      test_release: true
       repository: h2oai/h2o-3-enterprise
     secrets: inherit
 
@@ -170,15 +248,16 @@ jobs:
   publish-s3:
     name: Publish to S3
     needs: [init, build]
+    if: inputs.publish_s3 != false
     uses: ./.github/workflows/release-publish-s3.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
-      update_latest: ${{ inputs.update_latest }}
+      update_latest: false
       update_latest_branch: true
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
@@ -187,14 +266,15 @@ jobs:
   publish-conda:
     name: Build Conda
     needs: [init, build, publish-s3]
+    if: always() && inputs.publish_conda != false && (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
     uses: ./.github/workflows/release-publish-conda.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
-      upload_conda: false  # Don't upload to public Anaconda for enterprise
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      upload_conda: false
+      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
@@ -203,13 +283,14 @@ jobs:
   publish-helm:
     name: Publish Helm
     needs: [init, build, publish-s3]
+    if: always() && inputs.publish_helm != false && (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
     uses: ./.github/workflows/release-publish-helm.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       project_version: ${{ needs.build.outputs.project_version }}
-      test_release: ${{ inputs.test_release }}
+      test_release: true
       is_nightly: false
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
       repository: h2oai/h2o-3-enterprise
     secrets: inherit
 
@@ -219,14 +300,15 @@ jobs:
   publish-docker:
     name: Build Docker
     needs: [init, build, publish-s3]
+    if: always() && inputs.publish_docker != false && (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
     uses: ./.github/workflows/release-publish-docker.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
-      test_release: ${{ inputs.test_release }}
+      test_release: true
       is_nightly: false
-      update_latest: ${{ inputs.update_latest }}
+      update_latest: false
     secrets: inherit
 
   # ============================================================================
@@ -234,17 +316,18 @@ jobs:
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, publish-s3, publish-conda, publish-helm, publish-docker]
+    needs: [init, test-credentials, build, publish-s3, publish-conda, publish-helm, publish-docker]
     if: always()
     runs-on: ubuntu-latest
 
     steps:
       - name: Generate Summary
         run: |
-          echo "## Enterprise Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Enterprise Test Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Credentials | ${{ needs.test-credentials.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Publish S3 | ${{ needs.publish-s3.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build Conda | ${{ needs.publish-conda.result }} |" >> $GITHUB_STEP_SUMMARY
@@ -256,12 +339,11 @@ jobs:
           echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Release:** ${{ inputs.test_release }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Update Latest:** ${{ inputs.update_latest }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Check Overall Status
         run: |
           FAILED=false
+          [[ "${{ needs.test-credentials.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.build.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.publish-s3.result }}" == "failure" ]] && FAILED=true
 
