@@ -194,6 +194,17 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
 
+  /**
+   * Reduce metric precision for stable comparison by casting to float.
+   * This drops the least significant bits of the mantissa (29 of 52 bits),
+   * ensuring that values differing only by floating-point noise (from JIT
+   * warmup or nondeterministic parallel reduce) compare as equal.
+   * Same technique as DHistogram.reducePrecision() (GH-16662).
+   */
+  public static float reducePrecision(double val) {
+    return (float) val;
+  }
+
   private static class MetricsComparator implements Comparator<Key<Model>> {
     String _sort_by = null;
     boolean decreasing = false;
@@ -206,7 +217,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public int compare(Key<Model> key1, Key<Model> key2) {
       double c1 = getMetricFromModel(key1, _sort_by);
       double c2 = getMetricFromModel(key2, _sort_by);
-      return decreasing ? Double.compare(c2, c1) : Double.compare(c1, c2);
+      // Cast to float to drop noisy low bits, same as DHistogram.reducePrecision() (GH-16662).
+      int result = decreasing ? Float.compare(reducePrecision(c2), reducePrecision(c1))
+                              : Float.compare(reducePrecision(c1), reducePrecision(c2));
+      // Tiebreaker: lexical model key order for deterministic sorting when metrics are near-equal.
+      if (result == 0) {
+        result = key1.toString().compareTo(key2.toString());
+      }
+      return result;
     }
   }
 
@@ -255,7 +273,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
       double c1 = getMetricFromModelMetric(mm1, _sort_by);
       double c2 = getMetricFromModelMetric(mm2, _sort_by);
-      return decreasing ? Double.compare(c2, c1) : Double.compare(c1, c2);
+      // Cast to float to drop noisy low bits, same as DHistogram.reducePrecision() (GH-16662).
+      int result = decreasing ? Float.compare(reducePrecision(c2), reducePrecision(c1))
+                              : Float.compare(reducePrecision(c1), reducePrecision(c2));
+      // Tiebreaker: lexical model key order for deterministic sorting when metrics are near-equal.
+      if (result == 0) {
+        result = key1.toString().compareTo(key2.toString());
+      }
+      return result;
     }
   }
 
