@@ -467,6 +467,50 @@ def test_explanation_single_model_multinomial_classification():
     assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
 
 
+def test_explanation_single_model_ordinal_classification():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris2.csv"))
+    y = "response"
+    train[y] = train[y].asfactor()
+
+    # get at most one column from each type
+    cols_to_test = []
+    for col, typ in train.types.items():
+        for ctt in cols_to_test:
+            if typ == train.types[ctt] or col == y:
+                break
+        else:
+            cols_to_test.append(col)
+
+    glm = H2OGeneralizedLinearEstimator(family="ordinal",
+                                        generate_scoring_history=True,
+                                        score_each_iteration=True,
+                                        seed=42)
+    glm.train(y=y, training_frame=train)
+
+    # test pd_plot
+    for col in cols_to_test:
+        assert isinstance(glm.pd_plot(train, col, target="setosa").figure(), matplotlib.pyplot.Figure)
+
+    # test ICE plot
+    for col in cols_to_test:
+        assert isinstance(glm.ice_plot(train, col, target="setosa").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
+    # test learning curve
+    assert isinstance(glm.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
+    # test explain and verify SHAP is skipped for ordinal
+    explanation = glm.explain(train, render=False)
+    assert isinstance(explanation, H2OExplanation)
+    assert "shap_summary" not in explanation, "SHAP should be skipped for ordinal models"
+
+    # test explain row and verify SHAP is skipped for ordinal
+    explanation_row = glm.explain_row(train, 1, render=False)
+    assert isinstance(explanation_row, H2OExplanation)
+    assert "shap_explain_row" not in explanation_row, "SHAP should be skipped for ordinal models"
+
+
 def test_explanation_automl_multinomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris2.csv"))
     y = "response"
@@ -963,6 +1007,7 @@ pyunit_utils.run_tests([
     test_explanation_single_model_binomial_classification,
     test_explanation_automl_binomial_classification,
     test_explanation_list_of_models_binomial_classification,
+    test_explanation_single_model_ordinal_classification,
     test_explanation_single_model_multinomial_classification,
     test_explanation_automl_multinomial_classification,
     test_explanation_list_of_models_multinomial_classification,

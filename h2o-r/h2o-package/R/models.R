@@ -5866,14 +5866,13 @@ h2o.partialPlot <- function(object, newdata, cols, destination_key, nbins=20, pl
       }
   }
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
-  if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
   if(!is(newdata, "H2OFrame")) stop("newdata must be H2OFrame")
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
   if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
-  if((is(object, "H2OMultinomialModel"))){
-    if(is.null(targets)) stop("targets parameter has to be set for multinomial classification")
+  if((is(object, "H2OMultinomialModel") || is(object, "H2OOrdinalModel"))){
+    if(is.null(targets)) stop("targets parameter has to be set for multinomial classification or ordinal regression")
     for(i in 1:length(targets)){
         if(!is.character(targets[i])) stop("targets parameter must be a list of string values")
     }
