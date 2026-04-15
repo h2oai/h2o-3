@@ -5272,5 +5272,90 @@ public class GBMTest extends TestUtil {
     printNode(n.getLeftChild(), depth + 1, sb);
     printNode(n.getRightChild(), depth + 1, sb);
   }
+
+  @Test
+  public void testFriedmanPopescusHInputValidation() {
+    GBMModel gbm = null;
+    Frame fr = null;
+    try {
+      Scope.enter();
+      fr = parseTestFile("./smalldata/logreg/prostate.csv");
+      fr.remove("ID").remove();
+      Scope.track(fr);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = fr._key;
+      parms._response_column = "CAPSULE";
+      parms._seed = 1234;
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+
+      gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      // Test 1: null vars parameter
+      try {
+        gbm.getFriedmanPopescusH(fr, null);
+        fail("Expected IllegalArgumentException for null vars parameter");
+      } catch (IllegalArgumentException e) {
+        assertTrue("Error message should mention 'vars' parameter",
+                e.getMessage().contains("'vars' parameter"));
+        assertTrue("Error message should mention null",
+                e.getMessage().contains("null"));
+      }
+
+      // Test 2: empty vars parameter
+      try {
+        gbm.getFriedmanPopescusH(fr, new String[]{});
+        fail("Expected IllegalArgumentException for empty vars parameter");
+      } catch (IllegalArgumentException e) {
+        assertTrue("Error message should mention 'vars' parameter",
+                e.getMessage().contains("'vars' parameter"));
+        assertTrue("Error message should mention empty",
+                e.getMessage().contains("empty"));
+      }
+
+      // Test 3: vars parameter with null element
+      try {
+        gbm.getFriedmanPopescusH(fr, new String[]{"AGE", null});
+        fail("Expected IllegalArgumentException for null element in vars");
+      } catch (IllegalArgumentException e) {
+        assertTrue("Error message should mention null value",
+                e.getMessage().contains("null value"));
+      }
+
+      // Test 4: non-existent column
+      try {
+        gbm.getFriedmanPopescusH(fr, new String[]{"AGE", "NONEXISTENT"});
+        fail("Expected IllegalArgumentException for non-existent column");
+      } catch (IllegalArgumentException e) {
+        assertTrue("Error message should mention the column name",
+                e.getMessage().contains("NONEXISTENT"));
+        assertTrue("Error message should mention 'does not exist'",
+                e.getMessage().contains("does not exist"));
+      }
+
+      // Test 5: non-numeric column (GLEASON is categorical in prostate dataset)
+      try {
+        gbm.getFriedmanPopescusH(fr, new String[]{"AGE", "GLEASON"});
+        fail("Expected IllegalArgumentException for non-numeric column");
+      } catch (IllegalArgumentException e) {
+        assertTrue("Error message should mention column is not numeric",
+                e.getMessage().contains("not numeric"));
+      }
+
+      // Test 6: Valid case - should not throw exception
+      try {
+        double h = gbm.getFriedmanPopescusH(fr, new String[]{"AGE", "PSA"});
+        assertTrue("H statistic should be non-negative", h >= 0.0);
+      } catch (Exception e) {
+        fail("Valid input should not throw exception: " + e.getMessage());
+      }
+
+    } finally {
+      if (gbm != null) gbm.delete();
+      Scope.exit();
+    }
+  }
   
 }
