@@ -345,10 +345,15 @@ public final class DHistogram extends Iced<DHistogram> {
   public void init(final double[] vals, double[] valsUplift) {
     assert _vals == null;
     if (_histoType==HistogramType.Random) {
-      // every node makes the same split points
-      Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
-      assert _nbin > 1;
-      _splitPts = makeRandomSplitPoints(_nbin, rng);
+      if (_nbin <= 1) {
+        // Cannot create random split points with only 1 bin (e.g., single-value enum column with NAs).
+        // Fall back to UniformAdaptive which handles this case correctly.
+        _histoType = HistogramType.UniformAdaptive;
+      } else {
+        // every node makes the same split points
+        Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
+        _splitPts = makeRandomSplitPoints(_nbin, rng);
+      }
     }
     else if (_histoType== HistogramType.QuantilesGlobal) {
       assert (_splitPts == null);
