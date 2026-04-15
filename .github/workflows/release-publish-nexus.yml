@@ -182,7 +182,9 @@ jobs:
           # Check common locations for Maven artifacts (in order of preference)
           for path in \
             "target/maven-repo" \
+            "target/maven/repo" \
             "target/maven-repo/ai/h2o" \
+            "target/maven/repo/ai/h2o" \
             "target/repository" \
             "build/repos/mavenRepo" \
             "$HOME/.m2/repository/ai/h2o"; do
