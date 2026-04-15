@@ -711,6 +711,15 @@ case_insensitive_match_arg <- function(arg, choices) {
   return(res)
 }
 
+# GH-16758: Generate a column name guaranteed not to collide with existing columns
+.unique_column <- function(prefix, df) {
+  candidate <- prefix
+  while (candidate %in% names(df)) {
+    candidate <- paste0(candidate, "_")
+  }
+  candidate
+}
+
 .is_datetime <- function(column) {
   if (!is.null(ncol(column)) && ncol(column) > 1) {
     stop("Only one column should be provided!")
@@ -1792,6 +1801,7 @@ h2o.shap_summary_plot <-
       }
 
     })
+    contr_idvar <- .unique_column("id", contributions)
     contr <-
       stats::reshape(
         contributions,
@@ -1799,16 +1809,19 @@ h2o.shap_summary_plot <-
         varying = contributions_names,
         v.names = "contribution",
         times = contributions_names,
-        timevar = "feature"
+        timevar = "feature",
+        idvar = contr_idvar
       )
 
+    values_idvar <- .unique_column("id", newdata_df)
     values <- stats::reshape(
       data.frame(apply(newdata_df, 2, .uniformize)),
       direction = "long",
       varying = names(newdata_df),
       v.names = "normalized_value",
       times = names(newdata_df),
-      timevar = "feature"
+      timevar = "feature",
+      idvar = values_idvar
     )
     values[["original_value"]] <- stats::reshape(
       data.frame(apply(newdata_df, 2, format)),
@@ -1816,9 +1829,9 @@ h2o.shap_summary_plot <-
       varying = names(newdata_df),
       v.names = "original_value",
       times = names(newdata_df),
-      timevar = "feature"
+      timevar = "feature",
+      idvar = values_idvar
     )$original_value
-
 
     contr <- merge(
       contr,
