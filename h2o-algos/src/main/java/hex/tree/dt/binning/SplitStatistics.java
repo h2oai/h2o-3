@@ -1,7 +1,8 @@
 package hex.tree.dt.binning;
 
 import hex.tree.dt.AbstractSplittingRule;
-import org.apache.commons.math3.util.Precision;
+
+import java.util.Arrays;
 
 /**
  * Potential split including splitting rule and statistics on count of samples and distribution of target variable.
@@ -11,36 +12,45 @@ public class SplitStatistics {
     public AbstractSplittingRule _splittingRule;
 
     public int _leftCount;
-    public int _leftCount0;
+    public int[] _leftClassDistribution;
 
     public int _rightCount;
-    public int _rightCount0;
+    public int[] _rightClassDistribution;
+
+    public SplitStatistics(int numClasses) {
+        _leftCount = 0;
+        _leftClassDistribution = new int[numClasses];
+        _rightCount = 0;
+        _rightClassDistribution = new int[numClasses];
+    }
 
     public SplitStatistics() {
-        _leftCount = 0;
-        _leftCount0 = 0;
-        _rightCount = 0;
-        _rightCount0 = 0;
+        // call constructor with default value
+        this(1);
     }
 
-    public void accumulateLeftStatistics(int leftCount, int leftCount0) {
+    public void accumulateLeftStatistics(int leftCount, int[] leftClassDistribution) {
         _leftCount += leftCount;
-        _leftCount0 += leftCount0;
+        for (int i = 0; i < _leftClassDistribution.length; i++) {
+            _leftClassDistribution[i] += leftClassDistribution[i];
+        }
     }
 
-    public void accumulateRightStatistics(int rightCount, int rightCount0) {
+    public void accumulateRightStatistics(int rightCount, int[] rightClassDistribution) {
         _rightCount += rightCount;
-        _rightCount0 += rightCount0;
+        for (int i = 0; i < _rightClassDistribution.length; i++) {
+            _rightClassDistribution[i] += rightClassDistribution[i];
+        }
     }
 
     public void copyLeftValues(SplitStatistics toCopy) {
         _leftCount = toCopy._leftCount;
-        _leftCount0 = toCopy._leftCount0;
+        _leftClassDistribution = Arrays.copyOf(toCopy._leftClassDistribution, toCopy._leftClassDistribution.length);
     }
 
     public void copyRightValues(SplitStatistics toCopy) {
         _rightCount = toCopy._rightCount;
-        _rightCount0 = toCopy._rightCount0;
+        _rightClassDistribution = Arrays.copyOf(toCopy._rightClassDistribution, toCopy._rightClassDistribution.length);
     }
 
     public SplitStatistics setCriterionValue(double criterionOfSplit) {
@@ -53,16 +63,17 @@ public class SplitStatistics {
         return this;
     }
 
-    public static double entropyBinarySplit(final double oneClassFrequency) {
-        return -1 * ((oneClassFrequency < Precision.EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
-                + ((1 - oneClassFrequency) < Precision.EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
+
+    public static double entropyMulticlass(final int[] classCountsDistribution, final int totalCount) {
+        return -1 * Arrays.stream(classCountsDistribution)
+                .mapToDouble(count -> (count == 0) ? 0 : (count * 1.0 / totalCount) * Math.log((count * 1.0 / totalCount)))
+                .sum();
     }
-    
-    public Double binaryEntropy() {
-        double a1 = (entropyBinarySplit(_leftCount0 * 1.0 / _leftCount)
-                * _leftCount / (_leftCount + _rightCount));
-        double a2 = (entropyBinarySplit(_rightCount0 * 1.0 / _rightCount)
-                * _rightCount / (_leftCount + _rightCount));
-        return a1 + a2;
+
+    public Double splitEntropy() {
+        int totalCount = _leftCount + _rightCount;
+        double res =  entropyMulticlass(_leftClassDistribution, _leftCount) * _leftCount / totalCount
+                + entropyMulticlass(_rightClassDistribution, _rightCount) * _rightCount / totalCount;
+        return res;
     }
 }

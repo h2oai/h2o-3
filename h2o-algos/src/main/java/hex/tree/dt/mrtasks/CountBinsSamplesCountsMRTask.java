@@ -1,6 +1,5 @@
 package hex.tree.dt.mrtasks;
 
-import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
@@ -16,25 +15,30 @@ import static hex.tree.dt.binning.NumericBin.*;
  */
 public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsMRTask> {
     public final int _featureSplit;
+    
     // numCol x 2 - min and max for each feature
     final double[][] _featuresLimits;
-    // binsCount x bin_encoding_len (5 or 3), depending on feature type:
-    // for numeric feature bin_encoding_len = 5:      {numeric flag (-1.0), count, count0, min, max}
-    // for categorical feature bin_encoding_len = 3:  {category, count, count0}
+    
+    // binsCount x bin_encoding_len, depending on feature type:
+    // for numeric feature:      {numeric flag (-1.0), min, max, count, count0, count1, count2, ...}
+    // for categorical feature:  {category, count, count0, count1, count2, ...}
+    // for accessing specific class count use {offset+1+class} index - e.g. for numeric count1: _bins[NUM_COUNT_OFFSET+1+1]
     public double[][] _bins;
 
     // indices for the serialized array
     public static final int NUMERICAL_FLAG = 0;
+    public static final int NUM_COUNT_OFFSET = 3; // follows numeric flag, min and max
+    public static final int CAT_COUNT_OFFSET = 1; // follows category
+    
+    private final int _countsOffset;
+    
 
-    // for both numeric and categorical features indices of count and count0 are the same
-    public static final int COUNT = 1;
-    public static final int COUNT_0 = 2;
 
-
-    public CountBinsSamplesCountsMRTask(int featureSplit, double[][] featuresLimits, double[][] bins) {
+    public CountBinsSamplesCountsMRTask(int featureSplit, double[][] featuresLimits, double[][] bins, int countsOffset) {
         _featureSplit = featureSplit;
         _featuresLimits = featuresLimits;
         _bins = bins;
+        _countsOffset = countsOffset;
     }
 
     @Override
@@ -44,6 +48,9 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
             double[][] tmpBins = new double[_bins.length][];
             for (int b = 0; b < _bins.length; b++) {
                 tmpBins[b] = Arrays.copyOf(_bins[b], _bins[b].length);
+                for(int c = _countsOffset; c < _bins[b].length; c++) {
+                    tmpBins[b][c] = 0; // set all the counts to 0 - throw away existing counts if any
+                }
             }
             _bins = tmpBins;
         }
@@ -64,20 +71,18 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
                     for (int i = 0; i < _bins.length; i++) {
                         // find bin by category
                         if (_bins[i][0] == cs[_featureSplit].atd(row)) {
-                            _bins[i][COUNT]++;
-                            if (Precision.equals(cs[classFeature].atd(row), 0, Precision.EPSILON)) {
-                                _bins[i][COUNT_0]++;
-                            }
+                            _bins[i][_countsOffset]++;
+                            // calc index as {offset+1+class}
+                            _bins[i][_countsOffset + 1 + (int)cs[classFeature].atd(row)]++;
                         }
                     }
                 } else {
                     for (int i = 0; i < _bins.length; i++) {
                         // count feature values in the current bin
                         if (checkBinBelonging(cs[_featureSplit].atd(row), i)) {
-                            _bins[i][COUNT]++;
-                            if (Precision.equals(cs[classFeature].atd(row), 0, Precision.EPSILON)) {
-                                _bins[i][COUNT_0]++;
-                            }
+                            _bins[i][_countsOffset]++;
+                            // calc index as {offset+1+class}
+                            _bins[i][_countsOffset + 1 + (int)cs[classFeature].atd(row)]++;
                         }
                     }
                 }
@@ -107,8 +112,9 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
     @Override
     public void reduce(CountBinsSamplesCountsMRTask mrt) {
         for (int i = 0; i < _bins.length; i++) {
-            _bins[i][COUNT] += mrt._bins[i][COUNT];
-            _bins[i][COUNT_0] += mrt._bins[i][COUNT_0];
+            for(int c = _countsOffset; c < _bins[i].length; c++) {
+                _bins[i][c] += mrt._bins[i][c];
+            }
         }
     }
 }
