@@ -58,8 +58,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  tweedie_link_power=0.0,  # type: float
                  theta=0.0,  # type: float
                  solver="auto",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
-                 alpha=None,  # type: Optional[List[float]]
-                 lambda_=None,  # type: Optional[List[float]]
+                 alpha=None,  # type: Optional[Union[float, List[float]]]
+                 lambda_=None,  # type: Optional[Union[float, List[float]]]
                  lambda_search=False,  # type: bool
                  early_stopping=True,  # type: bool
                  nlambdas=-1,  # type: int
@@ -97,7 +97,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  num_knots=None,  # type: Optional[List[int]]
                  spline_orders=None,  # type: Optional[List[int]]
                  knot_ids=None,  # type: Optional[List[str]]
-                 gam_columns=None,  # type: Optional[List[List[str]]]
+                 gam_columns=None,  # type: Optional[List[Union[str, List[str]]]]
                  standardize_tp_gam_cols=False,  # type: bool
                  scale_tp_penalty_mat=False,  # type: bool
                  bs=None,  # type: Optional[List[int]]
@@ -189,10 +189,10 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5
                otherwise.
                Defaults to ``None``.
-        :type alpha: List[float], optional
+        :type alpha: Union[float, List[float]], optional
         :param lambda_: Regularization strength
                Defaults to ``None``.
-        :type lambda_: List[float], optional
+        :type lambda_: Union[float, List[float]], optional
         :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
                Defaults to ``False``.
         :type lambda_search: bool
@@ -345,7 +345,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param gam_columns: Arrays of predictor column names for gam for smoothers using single or multiple predictors
                like {{'c1'},{'c2','c3'},{'c4'},...}
                Defaults to ``None``.
-        :type gam_columns: List[List[str]], optional
+        :type gam_columns: List[Union[str, List[str]]], optional
         :param standardize_tp_gam_cols: standardize tp (thin plate) predictor columns
                Defaults to ``False``.
         :type standardize_tp_gam_cols: bool
@@ -742,7 +742,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
         amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
         """
         return self._parms.get("alpha")
 
@@ -757,7 +757,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Regularization strength
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
         """
         return self._parms.get("lambda")
 
@@ -1390,7 +1390,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Arrays of predictor column names for gam for smoothers using single or multiple predictors like
         {{'c1'},{'c2','c3'},{'c4'},...}
 
-        Type: ``List[List[str]]``.
+        Type: ``List[Union[str, List[str]]]``.
 
         :examples:
 
@@ -1594,12 +1594,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self._parms["gainslift_bins"] = gainslift_bins
 
     Lambda = deprecated_property('Lambda', lambda_)
-
-    def _additional_used_columns(self, parms):
-        """
-        :return: Gam columns if specified.
-        """
-        return parms["gam_columns"]
 
     def _summary(self):
         """Return a detailed summary of the model."""

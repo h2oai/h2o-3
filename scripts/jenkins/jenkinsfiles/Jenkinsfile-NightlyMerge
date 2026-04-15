@@ -1,0 +1,54 @@
+pipeline {
+    agent {
+        label 'h2o3_linux'
+    }
+
+    triggers {
+        cron('H 0 * * *')
+    }
+
+    stages {
+        stage('Merge Release Branch') {
+            steps {
+                script {
+                    checkout scm
+                    def latestReleaseBranch = sh(script: "git branch -r | grep -oE 'rel-[0-9]+\\.[0-9]+\\.[0-9]+' | sort -V | tail -n 1", returnStdout: true).trim()
+
+                    if(latestReleaseBranch == "") {
+                        currentBuild.description = "Failed to find latest release"
+                        currentBuild.result = 'FAILURE'
+                        error "Could not find latest release branch. Release branch should match the regex expression: rel-[0-9]+\\.[0-9]+\\.[0-9]+"
+                    }
+
+                    sh "git checkout origin/${latestReleaseBranch}"
+                    def mergeBase = sh(script: "git merge-base origin/master HEAD", returnStdout: true).trim()
+                    def changes = sh(script: "git diff --quiet ${mergeBase} HEAD || echo 'changed'", returnStdout: true).trim()
+
+                    if (changes == 'changed') {
+                        def commitMessage = "Merge remote-tracking branch origin/${latestReleaseBranch}"
+                        currentBuild.description = commitMessage
+
+                        withCredentials([
+                            usernamePassword(credentialsId: 'H2O-OPS-GH-TOKEN', usernameVariable: 'GH_USERNAME', passwordVariable: 'GH_TOKEN'),
+                            string(credentialsId: "H2O_OPS_GH_EMAIL", variable: "GH_EMAIL"),
+                        ]) {
+                            sh """
+                                git config --global user.name "${GH_USERNAME}"
+                                git config --global user.email "${GH_EMAIL}"
+                                git remote set-url origin https://${GH_TOKEN}@github.com/h2oai/h2o-3.git
+
+                                git checkout master
+                                git merge --no-ff origin/${latestReleaseBranch} -m "${commitMessage}"
+                                git push origin
+                            """
+                        }
+                    } else {
+                        currentBuild.description = "No changes to merge"
+                        currentBuild.result = 'SUCCESS'
+                    }
+                }
+            }
+        }
+
+    }
+}

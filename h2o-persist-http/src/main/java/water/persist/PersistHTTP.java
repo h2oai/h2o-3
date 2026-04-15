@@ -156,7 +156,9 @@ public class PersistHTTP extends PersistEagerHTTP {
   @Override
   public void importFiles(String path, String pattern,
                           /*OUT*/ ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-
+    if (path.contains("/3/ImportFiles")) {
+      throw new IllegalArgumentException("Recursive path reference not allowed");
+    }
     boolean lazyLoadEnabled = Boolean.parseBoolean(System.getProperty(ENABLE_LAZY_LOAD_KEY, "true"));
     if (lazyLoadEnabled) {
       long length = -1L;

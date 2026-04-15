@@ -100,16 +100,32 @@ def checkPull(changeId) {
     connection.setRequestMethod("POST")
     connection.setDoOutput(true)
     connection.setRequestProperty("Authorization", "Bearer ${System.getenv("H2O3_GET_PROJECT_TOKEN")}")
+    connection.setRequestProperty("Content-Type", "application/json")
     connection.connect()
     try(OutputStream os = connection.getOutputStream()) {
         os.write(projectRequest.getBytes());
     }
-    try(InputStream is = connection.getInputStream()) {
-        def responseText = is.getText()
-        def projectResponse = jsonSlurper.parseText(responseText)
-        if (projectResponse.data.repository.issue.projectV2 == null) {
-            errorMessages.add("The associated GitHub issue #${issueId} must be assigned to H2O-3 project.")
+
+    def responseText
+    def responseCode = connection.getResponseCode()
+    if (responseCode == 200) {
+        try(InputStream is = connection.getInputStream()) {
+            responseText = is.getText()
         }
+    } else {
+        try(InputStream es = connection.getErrorStream()) {
+            responseText = es.getText()
+        }
+    }
+
+    println "GraphQL Response (${responseCode}): ${responseText}"
+    def projectResponse = jsonSlurper.parseText(responseText)
+
+    if (projectResponse.errors) {
+        println "GraphQL Errors: ${projectResponse.errors}"
+        errorMessages.add("Failed to check project assignment for GitHub issue #${issueId}: ${projectResponse.errors[0].message}")
+    } else if (projectResponse.data?.repository?.issue?.projectV2 == null) {
+        errorMessages.add("The associated GitHub issue #${issueId} must be assigned to H2O-3 project.")
     }
     
     if (errorMessages.isEmpty()) {

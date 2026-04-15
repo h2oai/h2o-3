@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.pubdev.1383 <- function() {
   k <- 10
   Log.info("Importing fgl_tr.csv...")
-  fgl.dat <- read.csv(locate("smalldata/pca_test/fgl_tr.csv"))
+  fgl.dat <- read.csv(locate("smalldata/pca_test/fgl_tr.csv"), stringsAsFactors = TRUE)
   fgl.hex <- h2o.importFile(locate("smalldata/pca_test/fgl_tr.csv"))
   print(summary(fgl.hex))
   

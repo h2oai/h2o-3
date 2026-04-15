@@ -226,20 +226,16 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   public Frame transform(Frame fr, boolean asTraining, int outOfFold, BlendingParams blendingParams, double noiseLevel) {
     if (!canApplyTargetEncoding(fr)) return fr;
-    Frame adaptFr = null;
-    try {
-      adaptFr = adaptForEncoding(fr);
-      return applyTargetEncoding(
+    try (Scope.Safe safe = Scope.safe(fr)) {
+      Frame adaptFr = adaptForEncoding(fr);
+      return Scope.untrack(applyTargetEncoding(
               adaptFr,
               asTraining,
               outOfFold, 
               blendingParams,
               noiseLevel,
               null
-      );
-    } finally {
-      if (adaptFr != null)
-        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+      ));
     }
   }
 
@@ -258,20 +254,16 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       DKV.put(res);
       return res;
     }
-    Frame adaptFr = null;
-    try {
-      adaptFr = adaptForEncoding(fr);
-      return applyTargetEncoding(
+    try (Scope.Safe safe = Scope.safe(fr)) {
+      Frame adaptFr = adaptForEncoding(fr);
+      return Scope.untrack(applyTargetEncoding(
               adaptFr, 
               false,
               NO_FOLD,
               _parms.getBlendingParameters(),
               _parms._noise, 
               Key.make(destination_key)
-      );
-    } finally {
-      if (adaptFr != null)
-        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+      ));
     }
   }
   

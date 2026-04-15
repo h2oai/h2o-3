@@ -74,7 +74,7 @@ xgboost.random.grid.test <- function() {
                          nfolds = 5, fold_assignment = 'Modulo',
                          keep_cross_validation_predictions = TRUE)
     print(air.grid)
-    expect_that(length(air.grid@model_ids) <= 5, is_true())
+    expect_true(length(air.grid@model_ids) <= 5)
 
     stacker_depthwise <- h2o.stackedEnsemble(x = xVars, y = "IsDepDelayed",
                                    training_frame = air.hex,
@@ -131,7 +131,7 @@ xgboost.random.grid.test <- function() {
     nfolds = 5, fold_assignment = 'Modulo',
     keep_cross_validation_predictions = TRUE)
     print(air.grid)
-    expect_that(length(air.grid@model_ids) <= 5, is_true())
+    expect_true(length(air.grid@model_ids) <= 5)
 
     stacker_lossguide <- h2o.stackedEnsemble(x = xVars, y = "IsDepDelayed",
     training_frame = air.hex,

@@ -7,7 +7,6 @@ test <- function() {
 
   ## Change CAPSULE to Enum
   prostate_hex[, "CAPSULE"] = as.factor(prostate_hex[, "CAPSULE"])
-  browser()
   ## Run Random Forest in H2O
   temp_filename_no_extension <- tempfile(pattern = "pdp", tmpdir = tempdir(), fileext = "")
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"

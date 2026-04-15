@@ -200,40 +200,25 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
 
         Log.warn("Not enough memory to calculate SHAP at once. Calculating in " + (nSubFrames) + " iterations.");
         _isFrameBigger = false; // ensure we map over the BG frame so we can average over the results properly;
-        Frame result = null;
-        List<Frame> subFrames = new LinkedList<Frame>();
-        try {
+        try (Scope.Safe safe = Scope.safe()) {
+          List<Frame> subFrames = new LinkedList<Frame>();
           for (int i = 0; i < nSubFrames; i++) {
             setChunkRange(i * chunksPerIter, Math.min(nChunks - 1, (i + 1) * chunksPerIter - 1));
             Frame indivContribs = clone().withPostMapAction(JobUpdatePostMap.forJob(j))
                     .doAll(namesWithRowIdx.length, Vec.T_NUM, _backgroundFrame)
                     .outputFrame(Key.make(destinationKey + "_individual_contribs_" + i), namesWithRowIdx, null);
 
-            subFrames.add(new ContributionsMeanAggregator(_job,(int) (_endRow - _startRow), names.length, (int) _backgroundFrame.numRows())
+            Frame subFrame = new ContributionsMeanAggregator(_job,(int) (_endRow - _startRow), names.length, (int) _backgroundFrame.numRows())
                     .setStartIndex((int) _startRow)
                     .withPostMapAction(JobUpdatePostMap.forJob(j))
                     .doAll(names.length, Vec.T_NUM, indivContribs)
-                    .outputFrame(Key.make(destinationKey + "_part_" + i), names, null));
+                    .outputFrame(Key.make(destinationKey + "_part_" + i), names, null);
+            subFrames.add(Scope.track(subFrame));
             indivContribs.delete();
           }
           
-          result = concatFrames(subFrames, destinationKey);
-          Set<String> homes = new HashSet<>();
-          for (int i = 0; i < result.anyVec().nChunks(); i++) {
-            for (int k = 0; k < result.numCols(); k++) {
-              homes.add(result.vec(k).chunkKey(i).home_node().getIpPortString());
-            }
-          }
-          return result;
-        } finally {
-          if (null != result) {
-            for (Frame fr : subFrames) {
-              Frame.deleteTempFrameAndItsNonSharedVecs(fr, result);
-            }
-          } else {
-            for (Frame fr : subFrames)
-              fr.delete();
-          }
+          Frame result = concatFrames(subFrames, destinationKey);
+          return Scope.untrack(result);
         }
       } else {
         Frame indivContribs = withPostMapAction(JobUpdatePostMap.forJob(j))

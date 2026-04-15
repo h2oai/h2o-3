@@ -14,6 +14,14 @@ def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('custom')
         return param
+    if name in ('alpha', 'lambda'):
+        param['ptype'] = 'numeric, [numeric]'
+        param['dtype'] = 'Union[float, List[float]]'
+        return param
+    if name == 'beta_constraints':
+        param['ptype'] = 'str, dict, H2OFrame'
+        param['dtype'] = 'Union[str, dict, H2OFrame]'
+        return param
     return None  # param untouched
 
 
@@ -217,6 +225,185 @@ def class_extensions():
         m._resolve_model(model_json["model_id"]["name"], model_json)
         return m
 
+    @staticmethod
+    def getConstraintsInfo(model):
+        """
+        
+        Given a constrained GLM model, the constraints descriptions, constraints values, constraints conditions and 
+        whether the constraints are satisfied (true) or not (false) are returned.
+        
+        :param model: GLM model with linear and beta (if applicable)  constraints
+        :return: H2OTwoDimTable containing the above constraints information.
+        
+        :example:
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> response = "C21"
+        >>> predictors = list(range(0,20))
+        >>> loose_init_const = [] # this constraint is satisfied by default coefficient initialization
+        >>> # add loose constraints
+        >>> name = "C19"
+        >>> values = 0.5
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "C20"
+        >>> values = -0.8
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "constant"
+        >>> values = -1000
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> linear_constraints2 = h2o.H2OFrame(loose_init_const)
+        >>> linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])    
+        >>> # GLM model with GLM coefficients with default initialization
+        >>> h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", compute_p_values=True, remove_collinear_columns=True, 
+        ...                                         lambda_=0.0, solver="irlsm", linear_constraints=linear_constraints2,
+        ...                                         init_optimal_glm = False, seed=12345)
+        >>> h2o_glm.train(x=predictors, y=response, training_frame=train)
+        >>> print(H2OGeneralizedLinearEstimator.getConstraintsInfo(h2o_glm))
+        """
+        if model.actual_params["linear_constraints"] is not None:
+            return model._model_json["output"]["linear_constraints_table"]
+        else:
+            raise H2OValueError("getConstraintsInfo can only be called when there are linear constraints.")
+        
+    @staticmethod
+    def allConstraintsPassed(model):
+        """
+        
+        Given a constrainted GLM model, this will return true  if all beta (if exists) and linear constraints are
+         satified.  It will return false even if one constraint is not satisfied.  To see which ones failed, use
+         getConstraintsInfo function.
+         
+        :param model:  GLM model with linear and beta (if applicable)  constraints
+        :return: boolean True or False
+        
+        :example:
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> response = "C21"
+        >>> predictors = list(range(0,20))
+        >>> loose_init_const = [] # this constraint is satisfied by default coefficient initialization
+        >>> # add loose constraints
+        >>> name = "C19"
+        >>> values = 0.5
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "C20"
+        >>> values = -0.8
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "constant"
+        >>> values = -1000
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> linear_constraints2 = h2o.H2OFrame(loose_init_const)
+        >>> linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])    
+        >>> # GLM model with GLM coefficients with default initialization
+        >>> h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", compute_p_values=True, remove_collinear_columns=True, 
+        ...                                         lambda_=0.0, solver="irlsm", linear_constraints=linear_constraints2,
+        ...                                         init_optimal_glm = False, seed=12345)
+        >>> h2o_glm.train(x=predictors, y=response, training_frame=train)
+        >>> print(H2OGeneralizedLinearEstimator.allConstraintsPassed(h2o_glm))
+        """
+        if model.actual_params["linear_constraints"] is not None:
+            return model._model_json["output"]["all_constraints_satisfied"]
+        else:
+            raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
+
+    def make_unrestricted_glm_model(self, dest=None):
+        """
+        Make unrestricted GLM model when control variables are defined.
+
+        Needs to be passed source model trained with control variables enabled. 
+
+        :param dest: (optional) destination key
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   solver='COORDINATE_DESCENT',
+        ...                                   remove_offset_effects=True,
+        ...                                   offset_column="VOL",
+        ...                                   control_variables=["PSA"])
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        """
+        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
+            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
+        model_json = h2o.api(
+            "POST /3/MakeUnrestrictedGLMModel",
+            data={"model": self._model_json["model_id"]["name"],
+                  "dest": dest}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        if dest is None:
+            dest = model_json["model_id"]["name"]
+        m._resolve_model(dest, model_json)
+        return m
+
+    def make_derived_glm_model(self, dest=None, remove_control_variables_effects=False, remove_offset_effects=False):
+        """
+        Make derived GLM model when control variables or remove offset effects are defined.
+
+        Needs to be passed source model trained with control variables enabled or remove offset effects enabled. 
+
+        :param dest: (optional) destination key
+        :param remove_control_variables_effects: (optional) set control variables flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+        :param remove_offset_effects: (optional) set remove offset effects flag to get model affected only 
+            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   solver='COORDINATE_DESCENT',
+        ...                                   remove_offset_effects=True,
+        ...                                   offset_column="VOL",
+        ...                                   control_variables=["PSA"])
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,8],
+        ...         y=1)
+        >>> p = m.model_performance(d)
+        >>> print(p)
+        >>> m2 = m.make_derived_glm_model(dest="unrestricted_glm")
+        >>> p2 = m2.model_performance(d)
+        >>> print(p2)
+        >>> m3 = m.make_derived_glm_model(dest="derived_glm_control_variables", remove_control_variables_effects=True)
+        >>> p3 = m3.model_performance(d)
+        >>> print(p3)
+        """
+        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
+            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
+        if (self.actual_params["control_variables"] is None or not(self.actual_params["remove_offset_effects"])) and (remove_control_variables_effects or remove_offset_effects):
+            raise H2OValueError("GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used.")
+        if self.actual_params["control_variables"] is not None and self.actual_params["remove_offset_effects"] and (remove_control_variables_effects and remove_offset_effects):
+            raise H2OValueError("The remove_control_variables_effects and remove_offset_effects feature cannot be used together. It produces the same model as the main model.")
+        model_json = h2o.api(
+            "POST /3/MakeDerivedGLMModel",
+            data={"model": self._model_json["model_id"]["name"],
+                  "dest": dest,
+                  "remove_control_variables_effects": remove_control_variables_effects,
+                  "remove_offset_effects": remove_offset_effects}
+        )
+        m = H2OGeneralizedLinearEstimator()
+        if dest is None:
+            dest = model_json["model_id"]["name"]
+        m._resolve_model(dest, model_json)
+        return m 
 
 extensions = dict(
     __imports__="""import h2o""",
@@ -239,11 +426,11 @@ self._parms["{sname}"] = {pname}
     ),
     beta_constraints=dict(
         setter="""
-# beta_constraints can be specified as a H2OFrame or python dict
-assert_is_type({pname}, None, dict, H2OFrame)
-if type({pname}) is H2OFrame:
-    self._parms["{sname}"]={pname}
-if type({pname}) is dict:
+# beta_constraints can be specified as a H2OFrame, python dict, or frame key (str)
+assert_is_type({pname}, None, str, dict, H2OFrame)
+if isinstance({pname}, str):
+    {pname} = H2OFrame._validate({pname}, '{pname}')
+elif type({pname}) is dict:
     colnames = {pname}.keys()
     col_names = []
     upper_bounds = []
@@ -254,7 +441,9 @@ if type({pname}) is dict:
         upper_bounds.append(one_col_bounds.get('upper_bound'))
         lower_bounds.append(one_col_bounds.get('lower_bound'))
     constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
-    self._parms["{sname}"] = constraints[["names", "lower_bounds", "upper_bounds"]]
+    {pname} = constraints[["names", "lower_bounds", "upper_bounds"]]
+
+self._parms["{sname}"] = {pname}
 """
     )
 )

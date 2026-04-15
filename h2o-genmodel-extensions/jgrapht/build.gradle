@@ -17,6 +17,9 @@ dependencies {
         api('org.apache.commons:commons-text:1.10.0') {
             because 'Fixes CVE-2022-42889'
         }
+        api('org.apache.commons:commons-lang3:3.18.0') {
+                because 'Fixes CVE-2024-48924'
+        }
     }
 }
 
