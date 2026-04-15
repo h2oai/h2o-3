@@ -269,6 +269,21 @@ jobs:
               # Build H2O assemblies (main and steam JARs for Docker images)
               ./gradlew :h2o-assemblies:main:shadowJar :h2o-assemblies:steam:shadowJar
 
+              # When DO_RELEASE=true (upload_nexus=true), the gradle build should have
+              # published signed artifacts to OSSRH staging. Copy any maven artifacts
+              # to a known location as a fallback for direct bundle upload.
+              if [ '${{ inputs.upload_nexus }}' = 'true' ]; then
+                echo '=== Copying Maven artifacts (if any) ==='
+                mkdir -p target/maven-repo
+                if [ -d build/repos/mavenRepo ]; then
+                  cp -r build/repos/mavenRepo/* target/maven-repo/ || true
+                fi
+                if [ -d ~/.m2/repository/ai/h2o ]; then
+                  mkdir -p target/maven-repo/ai/h2o
+                  cp -r ~/.m2/repository/ai/h2o/* target/maven-repo/ai/h2o/ || true
+                fi
+              fi
+
               # Debug: Show what was built
               echo '=== Assemblies ==='
               ls -la h2o-assemblies/main/build/libs/ || echo 'main assembly not found'
@@ -277,6 +292,10 @@ jobs:
               ls -laR h2o-py/build/ | head -50 || echo 'h2o-py/build not found'
               echo '=== h2o-py/conda ==='
               ls -la h2o-py/conda/ || echo 'h2o-py/conda not found'
+              if [ '${{ inputs.upload_nexus }}' = 'true' ]; then
+                echo '=== Maven artifacts ==='
+                find target/maven-repo -type f -name '*.jar' -o -name '*.pom' 2>/dev/null | head -20 || echo 'No maven artifacts found'
+              fi
             "
 
       - name: Get Project Version
@@ -342,6 +361,15 @@ jobs:
           name: h2o-release-full
           retention-days: 14
           path: target/
+
+      - name: Upload Maven Artifacts (for Nexus)
+        if: ${{ inputs.upload_nexus }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-maven
+          retention-days: 14
+          path: target/maven-repo/
+          if-no-files-found: warn
 
       # ========================================================================
       # SUMMARY
