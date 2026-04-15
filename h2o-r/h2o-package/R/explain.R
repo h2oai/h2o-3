@@ -1758,6 +1758,9 @@ h2o.shap_summary_plot <-
     if (top_n_features < 0) {
       top_n_features <- Inf
     }
+    if (top_n_features == 0) {
+      stop("top_n_features must be a positive integer or -1 for all features.")
+    }
 
     if (!(is.null(columns) ||
       is.character(columns) ||
@@ -1856,10 +1859,11 @@ h2o.shap_summary_plot <-
       "Contribution: ", contr[["contribution"]]
     )
 
+    contr[["feature"]] <- droplevels(contr[["feature"]])
     features <- levels(contr[["feature"]])
     if (is.null(columns)) {
       if (length(features) > top_n_features) {
-        features <- features[seq(from = length(features), to = length(features) - top_n_features)]
+        features <- features[seq(from = length(features), to = length(features) - top_n_features + 1)]
         contr <- contr[contr[["feature"]] %in% features,]
       }
     } else {
