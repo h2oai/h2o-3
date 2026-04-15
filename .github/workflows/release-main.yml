@@ -769,6 +769,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Release Details" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **H2O-3 Commit:** [\`${{ needs.build.outputs.git_sha }}\`](https://github.com/h2oai/h2o-3/commit/${{ needs.build.outputs.git_sha }})" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Dry Run:** ${{ needs.init.outputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
@@ -802,6 +803,7 @@ jobs:
           BRANCH: ${{ needs.init.outputs.branch }}
           VERSION: ${{ needs.build.outputs.project_version }}
           BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
+          H2O3_COMMIT: ${{ needs.build.outputs.git_sha }}
           S3_ROOT: ${{ needs.init.outputs.s3_root }}
           BUILD_RESULT: ${{ needs.build.result }}
           S3_RESULT: ${{ needs.publish-s3.result }}
@@ -901,7 +903,7 @@ jobs:
                 "fields": [
                   {
                     "type": "mrkdwn",
-                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*Tag:* gha-${BRANCH}-${BUILD_NUMBER}"
+                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*H2O-3 Commit:* <https://github.com/h2oai/h2o-3/commit/${H2O3_COMMIT}|${H2O3_COMMIT:0:7}>"
                   },
                   {
                     "type": "mrkdwn",
