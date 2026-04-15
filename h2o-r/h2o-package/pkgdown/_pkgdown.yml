@@ -249,6 +249,7 @@ reference:
       - h2o.ls
       - h2o.lstrip
       - h2o.mae
+      - h2o.make_derived_glm_model
       - h2o.make_metrics
       - h2o.makeGLMModel
       - h2o.make_leaderboard
