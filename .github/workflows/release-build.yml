@@ -173,6 +173,7 @@ jobs:
       # ========================================================================
       - name: Setup Gradle Properties
         if: ${{ inputs.upload_nexus }}
+        id: gradle-props
         env:
           GRADLE_PROPERTIES: ${{ secrets.RELEASE_GRADLE_PROPERTIES }}
           SECRET_KEY_RING: ${{ secrets.RELEASE_SECRET_KEY_RING }}
@@ -180,14 +181,13 @@ jobs:
           mkdir -p ~/.gradle
 
           # Write gradle.properties - convert CRLF to LF (Windows to Unix line endings)
-          # Note: Use /root/.gradle path since this gets mounted into Docker container at /root/.gradle
           echo "${GRADLE_PROPERTIES}" | tr -d '\r' > ~/.gradle/gradle.properties
           echo "signing.secretKeyRingFile=/root/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
           chmod 600 ~/.gradle/gradle.properties
 
           # Debug: show what was written (property names only, no values)
           echo "=== gradle.properties debug ==="
-          echo "File location: ~/.gradle/gradle.properties ($(realpath ~/.gradle/gradle.properties))"
+          echo "File location: $(realpath ~/.gradle/gradle.properties)"
           echo "File size: $(wc -c < ~/.gradle/gradle.properties) bytes"
           echo "Line count: $(wc -l < ~/.gradle/gradle.properties) lines"
           echo "Property keys found:"
@@ -198,6 +198,12 @@ jobs:
           echo "${SECRET_KEY_RING}" | base64 -d > ~/.gradle/secring.gpg 2>/dev/null || \
             echo "${SECRET_KEY_RING}" > ~/.gradle/secring.gpg
           echo "GPG key ring size: $(wc -c < ~/.gradle/secring.gpg) bytes"
+
+          # Also save to files that we'll copy into the container workspace
+          # This ensures the credentials are available even if volume mount fails
+          mkdir -p gradle-credentials
+          cp ~/.gradle/gradle.properties gradle-credentials/
+          cp ~/.gradle/secring.gpg gradle-credentials/
 
       # ========================================================================
       # BUILD
@@ -261,11 +267,26 @@ jobs:
               echo 'BUILD_HASH=${{ steps.info.outputs.sha }}' >> gradle/git.properties
               echo 'BUILD_HASH_SHORT=${{ steps.info.outputs.sha_short }}' >> gradle/git.properties
 
-              # Debug: Check gradle.properties is mounted correctly
-              echo '=== Checking gradle.properties in container ==='
+              # Setup gradle credentials inside container
+              # First try from volume mount, fallback to workspace copy
+              echo '=== Setting up gradle credentials in container ==='
+              mkdir -p /root/.gradle
+              if [ -f /root/.gradle/gradle.properties ] && grep -q 'oss-releases.username' /root/.gradle/gradle.properties 2>/dev/null; then
+                echo 'Credentials found via volume mount'
+              elif [ -f gradle-credentials/gradle.properties ]; then
+                echo 'Copying credentials from workspace...'
+                cp gradle-credentials/gradle.properties /root/.gradle/
+                cp gradle-credentials/secring.gpg /root/.gradle/ 2>/dev/null || true
+                chmod 600 /root/.gradle/gradle.properties
+              else
+                echo 'WARNING: No gradle credentials found'
+              fi
+
+              # Debug: Verify gradle.properties
+              echo '=== Verifying gradle.properties in container ==='
               ls -la /root/.gradle/ || echo 'No /root/.gradle directory'
               if [ -f /root/.gradle/gradle.properties ]; then
-                echo 'File exists. Size:' \$(wc -c < /root/.gradle/gradle.properties) 'bytes'
+                echo 'File size:' \$(wc -c < /root/.gradle/gradle.properties) 'bytes'
                 echo 'Line count:' \$(wc -l < /root/.gradle/gradle.properties) 'lines'
                 echo 'Property keys:'
                 grep -o '^[^=]*' /root/.gradle/gradle.properties | head -10
