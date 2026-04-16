@@ -180,8 +180,9 @@ jobs:
         run: |
           mkdir -p ~/.gradle
 
-          # Write gradle.properties - convert CRLF to LF (Windows to Unix line endings)
-          echo "${GRADLE_PROPERTIES}" | tr -d '\r' > ~/.gradle/gradle.properties
+          # Write gradle.properties - convert CRLF to LF and remove any existing secretKeyRingFile line
+          # (the secret may contain a local Mac path that won't work in Docker)
+          echo "${GRADLE_PROPERTIES}" | tr -d '\r' | grep -v 'signing.secretKeyRingFile' > ~/.gradle/gradle.properties
           echo "signing.secretKeyRingFile=/root/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
           chmod 600 ~/.gradle/gradle.properties
 
@@ -241,6 +242,7 @@ jobs:
             -e PYTHON_VERSION=${{ env.PYTHON_VERSION }} \
             -e R_VERSION=${{ env.R_VERSION }} \
             -e JAVA_HOME=/usr/lib/jvm/java-8-oracle \
+            -e GRADLE_USER_HOME=/root/.gradle \
             ${{ inputs.upload_nexus && '-e DO_RELEASE=true' || '' }} \
             -e UPLOAD_NEXUS=${{ inputs.upload_nexus }} \
             -e TEST_RELEASE=${{ inputs.test_release }} \
