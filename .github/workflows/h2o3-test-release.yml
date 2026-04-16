@@ -138,7 +138,7 @@ jobs:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       build_hadoop: ${{ inputs.build_hadoop }}
-      upload_nexus: false
+      upload_nexus: ${{ inputs.upload_nexus || false }}
       test_release: true
       repository: h2oai/h2o-3
     secrets: inherit
