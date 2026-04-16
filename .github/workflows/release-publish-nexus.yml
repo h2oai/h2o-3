@@ -167,10 +167,12 @@ jobs:
       - name: Create Maven Bundle
         if: steps.check-staging.outputs.staging_available == 'false' && steps.check-staging.outputs.error != 'missing_token'
         id: create-bundle
+        env:
+          PROJECT_VERSION: ${{ inputs.project_version }}
         run: |
           echo "=== Creating Maven Central Bundle ==="
 
-          VERSION="${{ inputs.project_version }}"
+          VERSION="${PROJECT_VERSION}"
           BUNDLE_DIR="maven-bundle"
           BUNDLE_FILE="h2o-bundle-${VERSION}.zip"
 
