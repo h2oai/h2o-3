@@ -69,7 +69,7 @@
 #
 #   Branch Control:
 #   • branch          H2O-3 branch to build (default: master)
-#   • build_number    Build number (auto: run_number + BUILD_NUMBER_OFFSET)
+#   • build_number    Build number (auto: run_number for test, run_number+offset for nightly)
 #
 #   Release Mode:
 #   • dry_run         Skip external publishing (default: true for safety)
@@ -116,7 +116,7 @@ on:
         type: string
 
       build_number:
-        description: "Build number [leave empty to auto-generate as run_number + BUILD_NUMBER_OFFSET]"
+        description: "Build number [auto: run_number for test releases, run_number+offset for nightly]"
         required: false
         type: string
 
@@ -212,12 +212,9 @@ env:
   H2O3_REPO: h2oai/h2o-3
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
   RELEASE_BUCKET: s3://h2o-release/h2o
-  # Build number offset to continue from Jenkins' last build number
-  # Set this to Jenkins' last build number before switching to GHA
-  # GHA build number = github.run_number + BUILD_NUMBER_OFFSET
-  # Jenkins last build: 7204, adding 100 buffer to avoid conflicts
-  BUILD_NUMBER_OFFSET: 7400
-  # Slack channel for nig  BUILD_NUMBER_OFFSET: 7380
+  # Build number offset for nightly builds to continue from Jenkins' last build number
+  # Test releases use github.run_number directly (no offset)
+  NIGHTLY_BUILD_NUMBER_OFFSET: 7400
   SLACK_CHANNEL: "#h2o-3-alerts"
 
 # ==============================================================================
@@ -269,11 +266,15 @@ jobs:
           # Check if release branch (rel-*)
           [[ "${BRANCH}" == rel-* ]] && IS_RELEASE_BRANCH="true" || IS_RELEASE_BRANCH="false"
 
-          # Build number: user input or auto-generated (run_number + offset)
+          # Build number: user input or auto-generated
+          # - Nightly builds: use offset + run_number (to continue Jenkins sequence)
+          # - Test/manual releases: use run_number directly
           if [ -n "${{ inputs.build_number }}" ]; then
             BUILD_NUMBER="${{ inputs.build_number }}"
+          elif [ "${IS_NIGHTLY}" = "true" ]; then
+            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.NIGHTLY_BUILD_NUMBER_OFFSET }} ))
           else
-            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.BUILD_NUMBER_OFFSET }} ))
+            BUILD_NUMBER="${{ github.run_number }}"
           fi
 
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT

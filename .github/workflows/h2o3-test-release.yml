@@ -209,23 +209,16 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # PUBLISH TO NEXUS (MAVEN CENTRAL)
+  # NOTE: Maven Central (Nexus) publishing is handled inside release-build.yml
+  # via OSSRH staging promotion, matching Jenkins behavior
   # ============================================================================
-  publish-nexus:
-    name: Publish Nexus
-    needs: [init, build]
-    uses: ./.github/workflows/release-publish-nexus.yml
-    with:
-      project_version: ${{ needs.build.outputs.project_version }}
-      upload_nexus: ${{ inputs.upload_nexus || false }}
-    secrets: inherit
 
   # ============================================================================
   # SUMMARY
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, publish-s3, publish-conda, publish-helm, publish-docker, publish-nexus]
+    needs: [init, build, publish-s3, publish-conda, publish-helm, publish-docker]
     if: always()
     runs-on: ubuntu-latest
 
@@ -241,7 +234,6 @@ jobs:
           echo "| Build Conda | ${{ needs.publish-conda.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Publish Helm | ${{ needs.publish-helm.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build Docker | ${{ needs.publish-docker.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Publish Nexus | ${{ needs.publish-nexus.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Release Details" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
