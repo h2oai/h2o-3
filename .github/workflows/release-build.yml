@@ -179,19 +179,25 @@ jobs:
         run: |
           mkdir -p ~/.gradle
 
-          # Write gradle.properties (plain text secret)
+          # Write gradle.properties - convert CRLF to LF (Windows to Unix line endings)
           # Note: Use /root/.gradle path since this gets mounted into Docker container at /root/.gradle
-          echo "${GRADLE_PROPERTIES}" > ~/.gradle/gradle.properties
+          echo "${GRADLE_PROPERTIES}" | tr -d '\r' > ~/.gradle/gradle.properties
           echo "signing.secretKeyRingFile=/root/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
           chmod 600 ~/.gradle/gradle.properties
 
-          # Debug: show what was written
-          echo "=== gradle.properties contents ==="
-          cat ~/.gradle/gradle.properties | grep -v password
+          # Debug: show what was written (property names only, no values)
+          echo "=== gradle.properties debug ==="
+          echo "File location: ~/.gradle/gradle.properties ($(realpath ~/.gradle/gradle.properties))"
+          echo "File size: $(wc -c < ~/.gradle/gradle.properties) bytes"
+          echo "Line count: $(wc -l < ~/.gradle/gradle.properties) lines"
+          echo "Property keys found:"
+          grep -o '^[^=]*' ~/.gradle/gradle.properties | head -10
+          echo "=== end gradle.properties debug ==="
 
           # Write GPG key ring (try base64 decode first, fall back to direct write)
           echo "${SECRET_KEY_RING}" | base64 -d > ~/.gradle/secring.gpg 2>/dev/null || \
             echo "${SECRET_KEY_RING}" > ~/.gradle/secring.gpg
+          echo "GPG key ring size: $(wc -c < ~/.gradle/secring.gpg) bytes"
 
       # ========================================================================
       # BUILD
@@ -258,7 +264,15 @@ jobs:
               # Debug: Check gradle.properties is mounted correctly
               echo '=== Checking gradle.properties in container ==='
               ls -la /root/.gradle/ || echo 'No /root/.gradle directory'
-              cat /root/.gradle/gradle.properties 2>/dev/null | grep -v password || echo 'No gradle.properties found'
+              if [ -f /root/.gradle/gradle.properties ]; then
+                echo 'File exists. Size:' \$(wc -c < /root/.gradle/gradle.properties) 'bytes'
+                echo 'Line count:' \$(wc -l < /root/.gradle/gradle.properties) 'lines'
+                echo 'Property keys:'
+                grep -o '^[^=]*' /root/.gradle/gradle.properties | head -10
+                echo 'Has oss-releases.username:' \$(grep -c 'oss-releases.username' /root/.gradle/gradle.properties || echo 0)
+              else
+                echo 'ERROR: /root/.gradle/gradle.properties NOT FOUND'
+              fi
 
               # Log build info
               echo '=== Build Info ==='
