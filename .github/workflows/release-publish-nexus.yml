@@ -313,6 +313,8 @@ jobs:
       # ========================================================================
       - name: Summary
         if: success()
+        env:
+          PROJECT_VERSION: ${{ inputs.project_version }}
         run: |
           STAGING_MODE="${{ steps.check-staging.outputs.staging_available }}"
 
@@ -320,7 +322,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | \`${{ inputs.project_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`$PROJECT_VERSION\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Publishing Type | user_managed |" >> $GITHUB_STEP_SUMMARY
 
           if [ "${STAGING_MODE}" = "true" ]; then
