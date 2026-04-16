@@ -180,9 +180,14 @@ jobs:
           mkdir -p ~/.gradle
 
           # Write gradle.properties (plain text secret)
+          # Note: Use /root/.gradle path since this gets mounted into Docker container at /root/.gradle
           echo "${GRADLE_PROPERTIES}" > ~/.gradle/gradle.properties
-          echo "signing.secretKeyRingFile=$HOME/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
+          echo "signing.secretKeyRingFile=/root/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
           chmod 600 ~/.gradle/gradle.properties
+
+          # Debug: show what was written
+          echo "=== gradle.properties contents ==="
+          cat ~/.gradle/gradle.properties | grep -v password
 
           # Write GPG key ring (try base64 decode first, fall back to direct write)
           echo "${SECRET_KEY_RING}" | base64 -d > ~/.gradle/secring.gpg 2>/dev/null || \
