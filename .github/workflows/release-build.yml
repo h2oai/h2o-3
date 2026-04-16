@@ -212,6 +212,8 @@ jobs:
       # ========================================================================
 
       - name: Build H2O-3
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
         run: |
           docker run --rm \
             --user root \
@@ -225,6 +227,7 @@ jobs:
             ${{ inputs.upload_nexus && '-e DO_RELEASE=true' || '' }} \
             -e UPLOAD_NEXUS=${{ inputs.upload_nexus }} \
             -e TEST_RELEASE=${{ inputs.test_release }} \
+            ${{ inputs.upload_nexus && format('-e BEARER_TOKEN={0}', env.BEARER_TOKEN) || '' }} \
             ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
             /bin/bash -c "
               set -ex
@@ -282,6 +285,25 @@ jobs:
                   mkdir -p target/maven-repo/ai/h2o
                   cp -r ~/.m2/repository/ai/h2o/* target/maven-repo/ai/h2o/ || true
                 fi
+
+                # OSSRH promotion to Maven Central (same as Jenkins Jenkinsfile-Release lines 220-236)
+                echo '=== Promoting to Maven Central ==='
+
+                # Debug output - see if gradle published to OSSRH Staging API
+                curl -H \"Authorization: Bearer \${BEARER_TOKEN}\" \
+                  'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
+
+                # Close and send to central portal to be able to manually publish
+                curl -X 'POST' \
+                  'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
+                  -H 'accept: */*' \
+                  -H \"Authorization: Bearer \${BEARER_TOKEN}\" \
+                  -d '' \
+                  --connect-timeout 120 \
+                  --max-time 1200 \
+                  --retry 5 \
+                  --retry-delay 5 \
+                  --retry-max-time 2400
               fi
 
               # Debug: Show what was built
