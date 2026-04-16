@@ -246,8 +246,22 @@ jobs:
       update_latest: ${{ steps.config.outputs.update_latest }}
       update_latest_branch: ${{ steps.config.outputs.update_latest_branch }}
       test_credentials: ${{ steps.config.outputs.test_credentials }}
+      h2o3_commit_sha: ${{ steps.h2o3_commit.outputs.sha }}
 
     steps:
+      - name: Get H2O-3 Commit SHA
+        id: h2o3_commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ inputs.branch || 'master' }}"
+          # Fetch the latest commit SHA for the h2o-3 branch
+          SHA=$(gh api repos/h2oai/h2o-3/commits/${BRANCH} --jq '.sha')
+          SHA_SHORT="${SHA:0:7}"
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "sha_short=${SHA_SHORT}" >> $GITHUB_OUTPUT
+          echo "H2O-3 commit: ${SHA_SHORT} (${SHA})"
+
       - name: Determine Configuration
         id: config
         run: |
@@ -387,6 +401,7 @@ jobs:
           | Setting | Value |
           |---------|-------|
           | Branch | \`${BRANCH}\` |
+          | H2O-3 Commit | [\`${{ steps.h2o3_commit.outputs.sha_short }}\`](https://github.com/h2oai/h2o-3/commit/${{ steps.h2o3_commit.outputs.sha }}) |
           | Build Number | \`${BUILD_NUMBER}\` |
           | **Dry Run** | **${DRY_RUN}** |
           | Release Branch | ${IS_RELEASE_BRANCH} |
@@ -770,6 +785,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Release Details" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **H2O-3 Commit:** [\`${{ needs.build.outputs.git_sha }}\`](https://github.com/h2oai/h2o-3/commit/${{ needs.build.outputs.git_sha }})" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Dry Run:** ${{ needs.init.outputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
@@ -803,6 +819,7 @@ jobs:
           BRANCH: ${{ needs.init.outputs.branch }}
           VERSION: ${{ needs.build.outputs.project_version }}
           BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
+          H2O3_COMMIT: ${{ needs.build.outputs.git_sha }}
           S3_ROOT: ${{ needs.init.outputs.s3_root }}
           BUILD_RESULT: ${{ needs.build.result }}
           S3_RESULT: ${{ needs.publish-s3.result }}
@@ -902,7 +919,7 @@ jobs:
                 "fields": [
                   {
                     "type": "mrkdwn",
-                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*Tag:* gha-${BRANCH}-${BUILD_NUMBER}"
+                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*H2O-3 Commit:* <https://github.com/h2oai/h2o-3/commit/${H2O3_COMMIT}|${H2O3_COMMIT:0:7}>"
                   },
                   {
                     "type": "mrkdwn",
