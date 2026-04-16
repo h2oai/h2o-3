@@ -172,13 +172,39 @@ jobs:
       # via the -v ~/.gradle:/root/.gradle mount in the Build step.
       # ========================================================================
       - name: Setup Gradle Properties
-        if: inputs.upload_nexus == true
+        if: ${{ inputs.upload_nexus }}
+        id: gradle-props
+        env:
+          GRADLE_PROPERTIES: ${{ secrets.RELEASE_GRADLE_PROPERTIES }}
+          SECRET_KEY_RING: ${{ secrets.RELEASE_SECRET_KEY_RING }}
         run: |
           mkdir -p ~/.gradle
-          echo "${{ secrets.RELEASE_GRADLE_PROPERTIES }}" | base64 -d > ~/.gradle/gradle.properties
-          echo "${{ secrets.RELEASE_SECRET_KEY_RING }}" | base64 -d > ~/.gradle/secring.gpg
-          echo "signing.secretKeyRingFile=$HOME/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
+
+          # Write gradle.properties - convert CRLF to LF and remove any existing secretKeyRingFile line
+          # (the secret may contain a local Mac path that won't work in Docker)
+          echo "${GRADLE_PROPERTIES}" | tr -d '\r' | grep -v 'signing.secretKeyRingFile' > ~/.gradle/gradle.properties
+          echo "signing.secretKeyRingFile=/root/.gradle/secring.gpg" >> ~/.gradle/gradle.properties
           chmod 600 ~/.gradle/gradle.properties
+
+          # Debug: show what was written (property names only, no values)
+          echo "=== gradle.properties debug ==="
+          echo "File location: $(realpath ~/.gradle/gradle.properties)"
+          echo "File size: $(wc -c < ~/.gradle/gradle.properties) bytes"
+          echo "Line count: $(wc -l < ~/.gradle/gradle.properties) lines"
+          echo "Property keys found:"
+          grep -o '^[^=]*' ~/.gradle/gradle.properties | head -10
+          echo "=== end gradle.properties debug ==="
+
+          # Write GPG key ring (try base64 decode first, fall back to direct write)
+          echo "${SECRET_KEY_RING}" | base64 -d > ~/.gradle/secring.gpg 2>/dev/null || \
+            echo "${SECRET_KEY_RING}" > ~/.gradle/secring.gpg
+          echo "GPG key ring size: $(wc -c < ~/.gradle/secring.gpg) bytes"
+
+          # Also save to files that we'll copy into the container workspace
+          # This ensures the credentials are available even if volume mount fails
+          mkdir -p gradle-credentials
+          cp ~/.gradle/gradle.properties gradle-credentials/
+          cp ~/.gradle/secring.gpg gradle-credentials/
 
       # ========================================================================
       # BUILD
@@ -204,6 +230,8 @@ jobs:
       # ========================================================================
 
       - name: Build H2O-3
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
         run: |
           docker run --rm \
             --user root \
@@ -214,9 +242,11 @@ jobs:
             -e PYTHON_VERSION=${{ env.PYTHON_VERSION }} \
             -e R_VERSION=${{ env.R_VERSION }} \
             -e JAVA_HOME=/usr/lib/jvm/java-8-oracle \
-            ${{ inputs.upload_nexus == true && '-e DO_RELEASE=true' || '' }} \
+            -e GRADLE_USER_HOME=/root/.gradle \
+            ${{ inputs.upload_nexus && '-e DO_RELEASE=true' || '' }} \
             -e UPLOAD_NEXUS=${{ inputs.upload_nexus }} \
             -e TEST_RELEASE=${{ inputs.test_release }} \
+            ${{ inputs.upload_nexus && format('-e BEARER_TOKEN={0}', env.BEARER_TOKEN) || '' }} \
             ${{ env.ECR_REGISTRY }}/h2o-3/dev-release:${{ env.DOCKER_VERSION }} \
             /bin/bash -c "
               set -ex
@@ -238,6 +268,34 @@ jobs:
               echo 'BUILD_BRANCH_NAME=${{ steps.info.outputs.branch_safe }}' > gradle/git.properties
               echo 'BUILD_HASH=${{ steps.info.outputs.sha }}' >> gradle/git.properties
               echo 'BUILD_HASH_SHORT=${{ steps.info.outputs.sha_short }}' >> gradle/git.properties
+
+              # Setup gradle credentials inside container
+              # First try from volume mount, fallback to workspace copy
+              echo '=== Setting up gradle credentials in container ==='
+              mkdir -p /root/.gradle
+              if [ -f /root/.gradle/gradle.properties ] && grep -q 'oss-releases.username' /root/.gradle/gradle.properties 2>/dev/null; then
+                echo 'Credentials found via volume mount'
+              elif [ -f gradle-credentials/gradle.properties ]; then
+                echo 'Copying credentials from workspace...'
+                cp gradle-credentials/gradle.properties /root/.gradle/
+                cp gradle-credentials/secring.gpg /root/.gradle/ 2>/dev/null || true
+                chmod 600 /root/.gradle/gradle.properties
+              else
+                echo 'WARNING: No gradle credentials found'
+              fi
+
+              # Debug: Verify gradle.properties
+              echo '=== Verifying gradle.properties in container ==='
+              ls -la /root/.gradle/ || echo 'No /root/.gradle directory'
+              if [ -f /root/.gradle/gradle.properties ]; then
+                echo 'File size:' \$(wc -c < /root/.gradle/gradle.properties) 'bytes'
+                echo 'Line count:' \$(wc -l < /root/.gradle/gradle.properties) 'lines'
+                echo 'Property keys:'
+                grep -o '^[^=]*' /root/.gradle/gradle.properties | head -10
+                echo 'Has oss-releases.username:' \$(grep -c 'oss-releases.username' /root/.gradle/gradle.properties || echo 0)
+              else
+                echo 'ERROR: /root/.gradle/gradle.properties NOT FOUND'
+              fi
 
               # Log build info
               echo '=== Build Info ==='
@@ -261,6 +319,40 @@ jobs:
               # Build H2O assemblies (main and steam JARs for Docker images)
               ./gradlew :h2o-assemblies:main:shadowJar :h2o-assemblies:steam:shadowJar
 
+              # When DO_RELEASE=true (upload_nexus=true), the gradle build should have
+              # published signed artifacts to OSSRH staging. Copy any maven artifacts
+              # to a known location as a fallback for direct bundle upload.
+              if [ '${{ inputs.upload_nexus }}' = 'true' ]; then
+                echo '=== Copying Maven artifacts (if any) ==='
+                mkdir -p target/maven-repo
+                if [ -d build/repos/mavenRepo ]; then
+                  cp -r build/repos/mavenRepo/* target/maven-repo/ || true
+                fi
+                if [ -d ~/.m2/repository/ai/h2o ]; then
+                  mkdir -p target/maven-repo/ai/h2o
+                  cp -r ~/.m2/repository/ai/h2o/* target/maven-repo/ai/h2o/ || true
+                fi
+
+                # OSSRH promotion to Maven Central (same as Jenkins Jenkinsfile-Release lines 220-236)
+                echo '=== Promoting to Maven Central ==='
+
+                # Debug output - see if gradle published to OSSRH Staging API
+                curl -H \"Authorization: Bearer \${BEARER_TOKEN}\" \
+                  'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
+
+                # Close and send to central portal to be able to manually publish
+                curl -X 'POST' \
+                  'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
+                  -H 'accept: */*' \
+                  -H \"Authorization: Bearer \${BEARER_TOKEN}\" \
+                  -d '' \
+                  --connect-timeout 120 \
+                  --max-time 1200 \
+                  --retry 5 \
+                  --retry-delay 5 \
+                  --retry-max-time 2400
+              fi
+
               # Debug: Show what was built
               echo '=== Assemblies ==='
               ls -la h2o-assemblies/main/build/libs/ || echo 'main assembly not found'
@@ -269,6 +361,10 @@ jobs:
               ls -laR h2o-py/build/ | head -50 || echo 'h2o-py/build not found'
               echo '=== h2o-py/conda ==='
               ls -la h2o-py/conda/ || echo 'h2o-py/conda not found'
+              if [ '${{ inputs.upload_nexus }}' = 'true' ]; then
+                echo '=== Maven artifacts ==='
+                find target/maven-repo -type f -name '*.jar' -o -name '*.pom' 2>/dev/null | head -20 || echo 'No maven artifacts found'
+              fi
             "
 
       - name: Get Project Version
@@ -279,40 +375,11 @@ jobs:
           echo "Project Version: ${VERSION}"
 
       # ========================================================================
-      # NEXUS UPLOAD (Only runs when upload_nexus=true)
-      # ========================================================================
-      # This step uploads the built artifacts to Maven Central via OSSRH.
-      # It requires:
-      #   - Artifacts to be signed (handled by DO_RELEASE=true in build step)
-      #   - CENTRAL_PORTAL_BEARER_TOKEN secret for authentication
-      #
-      # The upload uses "user_managed" publishing, which means artifacts are
-      # uploaded but not auto-published - they require manual approval in
-      # the Sonatype Central Portal before going live.
-      # ========================================================================
-      - name: Upload to Maven Central
-        if: inputs.upload_nexus == true
-        env:
-          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
-        run: |
-          echo "=== Checking OSSRH Staging ==="
-          curl -H "Authorization: Bearer ${BEARER_TOKEN}" \
-            'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o'
-
-          echo "=== Uploading to Central Portal ==="
-          curl -X 'POST' \
-            'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
-            -H 'accept: */*' \
-            -H "Authorization: Bearer ${BEARER_TOKEN}" \
-            -d '' \
-            --connect-timeout 120 \
-            --max-time 1200 \
-            --retry 5 \
-            --retry-delay 5 \
-            --retry-max-time 2400
-
-      # ========================================================================
       # UPLOAD ARTIFACTS
+      # ========================================================================
+      # Note: Nexus upload (Maven Central) is handled by release-publish-nexus.yml
+      # which runs after this build completes. The signing credentials setup
+      # above ensures artifacts are signed during gradle build when upload_nexus=true.
       # ========================================================================
       - name: Upload Distribution
         uses: actions/upload-artifact@v4
@@ -363,6 +430,15 @@ jobs:
           name: h2o-release-full
           retention-days: 14
           path: target/
+
+      - name: Upload Maven Artifacts (for Nexus)
+        if: ${{ inputs.upload_nexus }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2o-release-maven
+          retention-days: 14
+          path: target/maven-repo/
+          if-no-files-found: warn
 
       # ========================================================================
       # SUMMARY

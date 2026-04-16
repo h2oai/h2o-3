@@ -1,0 +1,356 @@
+# ==============================================================================
+#                              PUBLISH TO NEXUS (MAVEN CENTRAL)
+# ==============================================================================
+#
+# PURPOSE:
+#   Uploads signed H2O artifacts to Maven Central via the Central Portal API.
+#   Supports two modes:
+#   1. OSSRH Staging Promotion: Promotes artifacts already staged in OSSRH
+#   2. Direct Bundle Upload: Downloads artifacts and uploads directly to Central Portal
+#
+# PROCESS:
+#   1. Check if artifacts exist in OSSRH staging
+#   2. If staging is empty, download build artifacts and create a bundle
+#   3. Upload bundle directly to Central Portal (user_managed = manual publish)
+#
+# REQUIRED SECRETS:
+#   - CENTRAL_PORTAL_BEARER_TOKEN: Bearer token for Sonatype Central Portal API
+#     (same as Jenkins credential: central-portal-bearer-token)
+#
+# ==============================================================================
+
+name: Publish to Nexus (Maven Central)
+
+on:
+  workflow_call:
+    inputs:
+      project_version:
+        description: 'H2O project version'
+        required: true
+        type: string
+
+      upload_nexus:
+        description: 'Enable upload to Maven Central'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# JOB
+# ==============================================================================
+jobs:
+  publish-nexus:
+    name: Publish to Maven Central
+    runs-on: ubuntu-latest
+    if: inputs.upload_nexus == true
+    timeout-minutes: 60
+
+    steps:
+      # ========================================================================
+      # CHECK OSSRH STAGING REPOSITORIES
+      # ========================================================================
+      - name: Check OSSRH Staging
+        id: check-staging
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
+        run: |
+          echo "=== Checking OSSRH Staging Repositories ==="
+
+          # Check if token is configured
+          if [ -z "${BEARER_TOKEN}" ]; then
+            echo "::error::CENTRAL_PORTAL_BEARER_TOKEN secret is not configured"
+            echo "staging_available=false" >> $GITHUB_OUTPUT
+            echo "error=missing_token" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Use Bearer token auth (same as Jenkins)
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            'https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?profile_id=ai.h2o' 2>/dev/null) || true
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: ${HTTP_CODE}"
+          echo "Response body:"
+          echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
+
+          # Check if we got a valid response
+          if [ "${HTTP_CODE}" != "200" ]; then
+            echo "::warning::Failed to check OSSRH staging (HTTP ${HTTP_CODE})"
+            echo "staging_available=false" >> $GITHUB_OUTPUT
+            echo "error=api_error" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if repositories array is empty
+          REPO_COUNT=$(echo "$BODY" | jq -r '.repositories | length' 2>/dev/null || echo "0")
+
+          if [ "${REPO_COUNT}" = "0" ] || [ "${REPO_COUNT}" = "null" ]; then
+            echo ""
+            echo "::notice::No artifacts found in OSSRH staging. Will attempt direct bundle upload."
+            echo "staging_available=false" >> $GITHUB_OUTPUT
+          else
+            echo ""
+            echo "Found ${REPO_COUNT} staging repository(ies)"
+            echo "staging_available=true" >> $GITHUB_OUTPUT
+            echo "repo_count=${REPO_COUNT}" >> $GITHUB_OUTPUT
+          fi
+
+      # ========================================================================
+      # OPTION 1: PROMOTE FROM OSSRH STAGING (if artifacts exist)
+      # ========================================================================
+      - name: Promote from OSSRH Staging
+        if: steps.check-staging.outputs.staging_available == 'true'
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
+        run: |
+          echo "=== Promoting from OSSRH Staging to Central Portal ==="
+          echo "Publishing type: user_managed (requires manual approval)"
+
+          # Use Bearer token auth (same as Jenkins)
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X 'POST' \
+            'https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/ai.h2o?publishing_type=user_managed' \
+            -H 'accept: */*' \
+            -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            -d '' \
+            --connect-timeout 120 \
+            --max-time 1200 \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-max-time 2400)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: ${HTTP_CODE}"
+          echo "Response: ${BODY}"
+
+          if [ "${HTTP_CODE}" != "200" ] && [ "${HTTP_CODE}" != "201" ]; then
+            echo "::error::Failed to promote from OSSRH staging (HTTP ${HTTP_CODE}): ${BODY}"
+            exit 1
+          fi
+
+          echo ""
+          echo "Promotion complete!"
+          echo "Artifacts are now in Central Portal staging."
+
+      # ========================================================================
+      # OPTION 2: DIRECT BUNDLE UPLOAD (if staging is empty)
+      # ========================================================================
+      - name: Download Maven Artifacts
+        id: download-maven
+        if: steps.check-staging.outputs.staging_available == 'false' && steps.check-staging.outputs.error != 'missing_token'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: h2o-release-maven
+          path: target/maven-repo/
+
+      - name: Download Build Artifacts (fallback)
+        if: steps.check-staging.outputs.staging_available == 'false' && steps.check-staging.outputs.error != 'missing_token' && steps.download-maven.outcome == 'failure'
+        uses: actions/download-artifact@v4
+        with:
+          name: h2o-release-full
+          path: target/
+
+      - name: List Downloaded Artifacts
+        if: steps.check-staging.outputs.staging_available == 'false' && steps.check-staging.outputs.error != 'missing_token'
+        run: |
+          echo "=== Downloaded artifacts ==="
+          find target/ -name "*.jar" -o -name "*.pom" -o -name "*.asc" 2>/dev/null | head -50 || echo "No artifacts found"
+          echo ""
+          echo "=== Maven local repository structure ==="
+          find target/ -path "*/ai/h2o/*" -type f 2>/dev/null | head -50 || echo "No ai/h2o artifacts found"
+
+      - name: Create Maven Bundle
+        if: steps.check-staging.outputs.staging_available == 'false' && steps.check-staging.outputs.error != 'missing_token'
+        id: create-bundle
+        env:
+          PROJECT_VERSION: ${{ inputs.project_version }}
+        run: |
+          echo "=== Creating Maven Central Bundle ==="
+
+          VERSION="${PROJECT_VERSION}"
+          BUNDLE_DIR="maven-bundle"
+          BUNDLE_FILE="h2o-bundle-${VERSION}.zip"
+
+          mkdir -p "${BUNDLE_DIR}"
+
+          # Look for Maven artifacts in various locations
+          MAVEN_REPO=""
+
+          # Check common locations for Maven artifacts (in order of preference)
+          for path in \
+            "target/maven-repo" \
+            "target/maven/repo" \
+            "target/maven-repo/ai/h2o" \
+            "target/maven/repo/ai/h2o" \
+            "target/repository" \
+            "build/repos/mavenRepo" \
+            "$HOME/.m2/repository/ai/h2o"; do
+            if [ -d "$path" ] && [ -n "$(find "$path" -name '*.pom' 2>/dev/null | head -1)" ]; then
+              MAVEN_REPO="$path"
+              echo "Found Maven repository with POM files at: ${MAVEN_REPO}"
+              break
+            fi
+          done
+
+          # If no Maven repo found, look for individual JARs
+          if [ -z "${MAVEN_REPO}" ]; then
+            echo "No Maven repository found. Searching for JAR files..."
+
+            # Find all H2O JARs
+            JARS=$(find target/ -name "h2o-*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" 2>/dev/null || true)
+
+            if [ -z "${JARS}" ]; then
+              echo "::error::No Maven artifacts found to upload."
+              echo "Expected either a Maven repository directory or JAR files in target/"
+              echo ""
+              echo "This workflow requires artifacts to be built with signing enabled."
+              echo "Ensure the build was run with upload_nexus=true to enable artifact signing."
+              echo "bundle_created=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            echo "Found JAR files:"
+            echo "${JARS}"
+
+            # For now, we cannot create a proper bundle without POM files
+            echo "::warning::Found JAR files but missing POM metadata."
+            echo "Direct bundle upload requires POM files alongside JARs."
+            echo "bundle_created=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Copy Maven repository structure to bundle directory
+          echo "Copying Maven artifacts to bundle..."
+          cp -r "${MAVEN_REPO}"/* "${BUNDLE_DIR}/" 2>/dev/null || true
+
+          # Verify bundle has content
+          ARTIFACT_COUNT=$(find "${BUNDLE_DIR}" -name "*.jar" -o -name "*.pom" | wc -l)
+
+          if [ "${ARTIFACT_COUNT}" -eq 0 ]; then
+            echo "::error::Bundle directory is empty - no artifacts to upload"
+            echo "bundle_created=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Bundle contains ${ARTIFACT_COUNT} files"
+
+          # Create the bundle zip
+          cd "${BUNDLE_DIR}"
+          zip -r "../${BUNDLE_FILE}" . -x "*.md5" -x "*.sha1"
+          cd ..
+
+          BUNDLE_SIZE=$(ls -lh "${BUNDLE_FILE}" | awk '{print $5}')
+          echo "Created bundle: ${BUNDLE_FILE} (${BUNDLE_SIZE})"
+
+          echo "bundle_created=true" >> $GITHUB_OUTPUT
+          echo "bundle_file=${BUNDLE_FILE}" >> $GITHUB_OUTPUT
+
+      - name: Upload Bundle to Central Portal
+        if: steps.check-staging.outputs.staging_available == 'false' && steps.create-bundle.outputs.bundle_created == 'true'
+        env:
+          BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
+          BUNDLE_FILE: ${{ steps.create-bundle.outputs.bundle_file }}
+          VERSION: ${{ inputs.project_version }}
+        run: |
+          echo "=== Uploading Bundle to Central Portal ==="
+
+          echo "Uploading ${BUNDLE_FILE}..."
+
+          # Use Bearer token auth for Central Portal direct upload API
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X 'POST' \
+            'https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED' \
+            -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            -H 'Content-Type: multipart/form-data' \
+            -F "bundle=@${BUNDLE_FILE}" \
+            --connect-timeout 120 \
+            --max-time 1800)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: ${HTTP_CODE}"
+          echo "Response: ${BODY}"
+
+          if [ "${HTTP_CODE}" != "200" ] && [ "${HTTP_CODE}" != "201" ]; then
+            echo "::error::Failed to upload bundle to Central Portal (HTTP ${HTTP_CODE})"
+            echo "Response: ${BODY}"
+            exit 1
+          fi
+
+          echo ""
+          echo "Bundle upload complete!"
+          echo "Artifacts are now in Central Portal staging."
+
+      # ========================================================================
+      # ERROR: No artifacts available
+      # ========================================================================
+      - name: Report No Artifacts
+        if: steps.check-staging.outputs.staging_available == 'false' && (steps.create-bundle.outputs.bundle_created == 'false' || steps.check-staging.outputs.error == 'missing_token')
+        run: |
+          echo "::error::Cannot publish to Maven Central - no artifacts available"
+          echo ""
+          echo "## Troubleshooting"
+          echo ""
+          echo "This error occurs when:"
+          echo "1. The build did not produce signed Maven artifacts"
+          echo "2. Artifacts were not uploaded to OSSRH staging during build"
+          echo "3. The CENTRAL_PORTAL_BEARER_TOKEN secret is not configured"
+          echo ""
+          echo "### To fix this:"
+          echo "1. Ensure the build workflow runs with upload_nexus=true (sets DO_RELEASE=true)"
+          echo "2. Verify RELEASE_GRADLE_PROPERTIES and RELEASE_SECRET_KEY_RING secrets are configured"
+          echo "3. Verify CENTRAL_PORTAL_BEARER_TOKEN secret is configured (same as Jenkins central-portal-bearer-token)"
+          echo "4. The gradle build should publish to OSSRH staging when DO_RELEASE=true"
+          exit 1
+
+      # ========================================================================
+      # SUMMARY
+      # ========================================================================
+      - name: Summary
+        if: success()
+        env:
+          PROJECT_VERSION: ${{ inputs.project_version }}
+        run: |
+          STAGING_MODE="${{ steps.check-staging.outputs.staging_available }}"
+
+          echo "## Maven Central (Nexus) Upload Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`$PROJECT_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publishing Type | user_managed |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${STAGING_MODE}" = "true" ]; then
+            echo "| Upload Method | OSSRH Staging Promotion |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Upload Method | Direct Bundle Upload |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "| Status | Uploaded to staging |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to [Sonatype Central Portal](https://central.sonatype.com)" >> $GITHUB_STEP_SUMMARY
+          echo "2. Review the staged artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Publish** to release to Maven Central, or **Drop** for testing" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # SKIP MESSAGE (when upload_nexus is false)
+  # ============================================================================
+  skip-nexus:
+    name: Skip Nexus Upload
+    runs-on: ubuntu-latest
+    if: inputs.upload_nexus != true
+
+    steps:
+      - name: Nexus Upload Skipped
+        run: |
+          echo "## Maven Central (Nexus) Upload" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Nexus upload was **skipped** (upload_nexus: false)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To enable, run the workflow with \`upload_nexus: true\`" >> $GITHUB_STEP_SUMMARY

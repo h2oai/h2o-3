@@ -1,9 +1,9 @@
 # ==============================================================================
 #
-#                    ENTERPRISE H2O-3 TEST RELEASE
-#                    =============================
+#                         H2O-3 ENTERPRISE TEST RELEASE
+#                         =============================
 #
-#   Self-contained test release pipeline for Enterprise H2O-3.
+#   Test release pipeline for H2O-3 Enterprise.
 #   Uses test S3 bucket (s3://test.0xdata.com/test-release/h2o).
 #
 #   Pipeline Stages (matching Jenkins):
@@ -16,19 +16,12 @@
 #
 #   Pre-configured Settings:
 #   - TEST_RELEASE: true
-#   - TEST_CREDENTIALS: true (always runs)
 #   - UPDATE_LATEST: false
 #   - UPDATE_LATEST_BRANCH: true
-#   - UPLOAD_NEXUS: false (Enterprise releases are not public)
-#
-#   Configurable Inputs:
-#   - branch: Branch to build (default: master)
-#   - build_number: Build number (default: workflow run number)
-#   - build_hadoop: Build with Hadoop support (default: true)
-#   - publish_s3: Publish to S3 (default: true)
-#   - publish_conda: Build Conda packages (default: true)
-#   - publish_helm: Build Helm chart (default: true)
-#   - publish_docker: Build Docker images (default: true)
+#   - UPLOAD_NEXUS: false
+#   - BUILD_HADOOP: configurable
+#   - BUILD_CONDA: true
+#   - BUILD_H2O_DOCKER: true
 #
 # ==============================================================================
 
@@ -51,31 +44,7 @@ on:
         type: string
 
       build_hadoop:
-        description: "Build with Hadoop support"
-        required: false
-        type: boolean
-        default: true
-
-      publish_s3:
-        description: "Publish artifacts to S3"
-        required: false
-        type: boolean
-        default: true
-
-      publish_conda:
-        description: "Build and publish Conda packages"
-        required: false
-        type: boolean
-        default: true
-
-      publish_helm:
-        description: "Build and publish Helm chart"
-        required: false
-        type: boolean
-        default: true
-
-      publish_docker:
-        description: "Build and publish Docker images"
+        description: "Build with Hadoop support (uncheck for faster builds)"
         required: false
         type: boolean
         default: true
@@ -96,8 +65,9 @@ env:
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
   # Test release uses test S3 bucket
-  S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
+  TEST_S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+  BUILD_NUMBER_OFFSET: 7400
 
 # ==============================================================================
 # JOBS
@@ -125,8 +95,12 @@ jobs:
           if [ -n "${{ inputs.build_number }}" ]; then
             BUILD_NUMBER="${{ inputs.build_number }}"
           else
-            BUILD_NUMBER="${{ github.run_number }}"
+            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.BUILD_NUMBER_OFFSET }} ))
           fi
+
+          # Always use test bucket for test releases
+          S3_ROOT="${{ env.TEST_RELEASE_BUCKET }}"
+          S3_ROLE="${{ env.TEST_S3_ROLE }}"
 
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
           echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
@@ -140,9 +114,9 @@ jobs:
           | Branch | \`${BRANCH}\` |
           | Build Number | \`${BUILD_NUMBER}\` |
           | Repository | \`h2oai/h2o-3-enterprise\` |
-          | S3 Bucket | \`${{ env.TEST_RELEASE_BUCKET }}\` |
+          | S3 Bucket | \`${S3_ROOT}\` |
           | Test Release | true |
-          | Test Credentials | true |
+          | Update Latest | false |
           | Build Hadoop | ${{ inputs.build_hadoop }} |
           | Publish S3 | ${{ inputs.publish_s3 != false }} |
           | Publish Conda | ${{ inputs.publish_conda != false }} |
@@ -237,7 +211,7 @@ jobs:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       build_hadoop: ${{ inputs.build_hadoop }}
-      upload_nexus: false
+      upload_nexus: false  # Enterprise releases don't go to Maven Central
       test_release: true
       repository: h2oai/h2o-3-enterprise
     secrets: inherit
@@ -339,6 +313,8 @@ jobs:
           echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Release:** true" >> $GITHUB_STEP_SUMMARY
+          echo "- **Update Latest:** false" >> $GITHUB_STEP_SUMMARY
 
       - name: Check Overall Status
         run: |
@@ -348,6 +324,6 @@ jobs:
           [[ "${{ needs.publish-s3.result }}" == "failure" ]] && FAILED=true
 
           if [[ "$FAILED" == "true" ]]; then
-            echo "::error::Enterprise release pipeline has critical failures"
+            echo "::error::Enterprise test release pipeline has critical failures"
             exit 1
           fi
