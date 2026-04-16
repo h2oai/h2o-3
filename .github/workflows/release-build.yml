@@ -255,6 +255,11 @@ jobs:
               echo 'BUILD_HASH=${{ steps.info.outputs.sha }}' >> gradle/git.properties
               echo 'BUILD_HASH_SHORT=${{ steps.info.outputs.sha_short }}' >> gradle/git.properties
 
+              # Debug: Check gradle.properties is mounted correctly
+              echo '=== Checking gradle.properties in container ==='
+              ls -la /root/.gradle/ || echo 'No /root/.gradle directory'
+              cat /root/.gradle/gradle.properties 2>/dev/null | grep -v password || echo 'No gradle.properties found'
+
               # Log build info
               echo '=== Build Info ==='
               date

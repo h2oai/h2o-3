@@ -52,8 +52,32 @@ on:
         type: boolean
         default: true
 
+      publish_s3:
+        description: "Publish artifacts to S3"
+        required: false
+        type: boolean
+        default: true
+
+      build_conda:
+        description: "Build and publish Conda packages"
+        required: false
+        type: boolean
+        default: true
+
+      build_helm:
+        description: "Build and publish Helm chart"
+        required: false
+        type: boolean
+        default: true
+
+      build_docker:
+        description: "Build and publish Docker images"
+        required: false
+        type: boolean
+        default: true
+
       upload_nexus:
-        description: "Upload to Nexus"
+        description: "Upload to Nexus (Maven Central)"
         required: false
         type: boolean
         default: false
@@ -149,6 +173,7 @@ jobs:
   publish-s3:
     name: Publish to S3
     needs: [init, build]
+    if: inputs.publish_s3 != false
     uses: ./.github/workflows/release-publish-s3.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -166,6 +191,7 @@ jobs:
   publish-conda:
     name: Build Conda
     needs: [init, build, publish-s3]
+    if: inputs.build_conda != false && (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
     uses: ./.github/workflows/release-publish-conda.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -182,6 +208,7 @@ jobs:
   publish-helm:
     name: Publish Helm
     needs: [init, build, publish-s3]
+    if: inputs.build_helm != false && (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
     uses: ./.github/workflows/release-publish-helm.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -198,6 +225,7 @@ jobs:
   publish-docker:
     name: Build Docker
     needs: [init, build, publish-s3]
+    if: inputs.build_docker != false && (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
     uses: ./.github/workflows/release-publish-docker.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
