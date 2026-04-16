@@ -252,11 +252,10 @@ jobs:
         if: steps.check-staging.outputs.staging_available == 'false' && steps.create-bundle.outputs.bundle_created == 'true'
         env:
           BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
+          BUNDLE_FILE: ${{ steps.create-bundle.outputs.bundle_file }}
+          VERSION: ${{ inputs.project_version }}
         run: |
           echo "=== Uploading Bundle to Central Portal ==="
-
-          BUNDLE_FILE="${{ steps.create-bundle.outputs.bundle_file }}"
-          VERSION="${{ inputs.project_version }}"
 
           echo "Uploading ${BUNDLE_FILE}..."
 
