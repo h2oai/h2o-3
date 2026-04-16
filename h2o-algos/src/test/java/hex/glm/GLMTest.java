@@ -793,7 +793,7 @@ public class GLMTest {
       DKV.put(fr._key, fr);
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,params,0,beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,model._parms,0,beta).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model.dinfo().coefNames();
       BufferedString tmpStr = new BufferedString();
@@ -1058,7 +1058,7 @@ public class GLMTest {
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo, params, 0, beta_1).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo, model._parms, 0, beta_1).doAll(dinfo._adaptedFrame);
       double[] grad = lt._gradient;
       for (int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
@@ -1720,6 +1720,7 @@ public class GLMTest {
       model = glm.trainModel().get();
       assertTrue(model._output.bestSubmodel().iteration == 5);
       model.delete();
+      params = (GLMParameters) model._parms.clone();
       params._max_iterations = 4;
       glm = new GLM(params);
       model = glm.trainModel().get();
@@ -1748,6 +1749,7 @@ public class GLMTest {
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       double prior = 1e-5;
+      params = (GLMParameters) model._parms.clone();
       params._prior = prior;
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params);
@@ -1758,6 +1760,7 @@ public class GLMTest {
       assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu[0] * (1-prior)/(prior * (1-model._ymu[0]))),model2.beta()[model.beta().length-1],1e-10);
 
       // run with lambda search, check the final submodel
+      params = (GLMParameters) model2._parms.clone();
       params._lambda_search = true;
       params._lambda = null;
       params._alpha = new double[]{0};
@@ -1765,10 +1768,10 @@ public class GLMTest {
       params._obj_reg = -1;
       params._max_iterations = 500;
       params._objective_epsilon = 1e-6;
-      // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params);
       model3 = glm.trainModel().get();
       double lambda =  model3._output._submodels[model3._output._best_lambda_idx].lambda_value;
+      params = (GLMParameters) model3._parms.clone();
       params._lambda_search = false;
       params._lambda = new double[]{lambda};
       ModelMetrics mm3 = ModelMetrics.getFromDKV(model3,fr);
@@ -1781,7 +1784,6 @@ public class GLMTest {
       mm3 = ModelMetrics.getFromDKV(model3,fr);
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
-      // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params);
       model4 = glm.trainModel().get();
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-6);
@@ -2018,7 +2020,7 @@ public class GLMTest {
               }
               double obj_ls = likelihood_ls / nobs + ((1 - alpha) * parms._lambda[i] * .5 * ArrayUtils.l2norm2(beta_ls, true)) + alpha * parms._lambda[i] * ArrayUtils.l1norm(beta_ls, true);
               double obj = likelihood / nobs + ((1 - alpha) * parms._lambda[i] * .5 * ArrayUtils.l2norm2(beta, true)) + alpha * parms._lambda[i] * ArrayUtils.l1norm(beta, true);
-              Assert.assertEquals(obj, obj_ls, 2*parms._objective_epsilon);
+              Assert.assertEquals(obj, obj_ls, 2*model._parms._objective_epsilon);
               model2.delete();
             }
             model.delete();
@@ -2386,6 +2388,7 @@ public class GLMTest {
       ModelMetricsBinomialGLM val = (ModelMetricsBinomialGLM) model._output._training_metrics;
       assertEquals(512.2888, val._nullDev, 1e-1);
       assertTrue(val._resDev <= 388.5);
+      params = (GLMParameters) model._parms.clone();
       model.delete();
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
@@ -2401,7 +2404,7 @@ public class GLMTest {
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,params,0,beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,model._parms,0,beta).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model.dinfo().coefNames();
       BufferedString tmpStr = new BufferedString();
