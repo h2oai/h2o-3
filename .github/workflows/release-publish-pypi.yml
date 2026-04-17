@@ -43,6 +43,11 @@ on:
         type: boolean
         default: false
 
+      s3_role:
+        description: 'IAM role for S3 access (optional, uses default if not provided)'
+        required: false
+        type: string
+
 # ==============================================================================
 # CONFIGURATION
 # ==============================================================================
@@ -122,7 +127,7 @@ jobs:
       - name: Configure AWS for S3
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
-          role-to-assume: ${{ env.S3_ROLE }}
+          role-to-assume: ${{ inputs.s3_role || env.S3_ROLE }}
           role-session-name: release-pypi-s3-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
