@@ -86,6 +86,12 @@ on:
         type: boolean
         default: false
 
+      publish_s3:
+        description: "Upload artifacts to S3"
+        required: false
+        type: boolean
+        default: false
+
       # Publish options (only used when stage=publish or stage=full)
       publish_pypi:
         description: "Publish to PyPI"
@@ -271,6 +277,7 @@ jobs:
           |--------|---------|
           | Hadoop | ${{ inputs.build_hadoop }} |
           | Maven Central (Nexus) | ${{ inputs.upload_nexus }} |
+          | Upload to S3 | ${{ inputs.publish_s3 }} |
 
           ### Publish Options
           | Option | Enabled |
@@ -368,7 +375,7 @@ jobs:
           echo "Git tags created successfully"
 
   # ============================================================================
-  # PUBLISH TO S3 (only when stage=build or stage=full)
+  # PUBLISH TO S3 (only when stage=build or stage=full, and publish_s3=true)
   # ============================================================================
   publish-s3:
     name: Publish to S3
@@ -376,6 +383,7 @@ jobs:
     if: |
       always() &&
       needs.init.outputs.should_build == 'true' &&
+      inputs.publish_s3 == true &&
       (needs.create-tag.result == 'success' || needs.create-tag.result == 'skipped')
     uses: ./.github/workflows/release-publish-s3.yml
     with:
