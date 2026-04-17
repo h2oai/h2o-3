@@ -4,7 +4,7 @@
 #                         =============================
 #
 #   Official release pipeline for H2O-3 (public/open-source).
-#   Uses production S3 bucket (s3://h2o-release/h2o).
+#   Uses test S3 bucket (s3://h2o-release-test/h2o) in shared-services-dev.
 #
 #   Two-Stage Process (for repeatability):
 #   ======================================
@@ -27,9 +27,9 @@
 #   - All publish stages can be run independently
 #   - Repeatable without side effects
 #
-#   PRODUCTION BUCKET:
-#   ==================
-#   s3://h2o-release/h2o/{branch}/{build_number}/
+#   TEST BUCKET (shared-services-dev):
+#   ===================================
+#   s3://h2o-release-test/h2o/{branch}/{build_number}/
 #
 # ==============================================================================
 
@@ -90,7 +90,7 @@ on:
         description: "Upload artifacts to S3"
         required: false
         type: boolean
-        default: false
+        default: true
 
       # Publish options (only used when stage=publish or stage=full)
       publish_pypi:
@@ -144,10 +144,12 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
-  # Production release bucket
-  RELEASE_BUCKET: s3://h2o-release/h2o
-  # IAM role for production S3 access
-  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  # Production release bucket (shared-services-prod) - UNCOMMENT FOR PRODUCTION
+  # RELEASE_BUCKET: s3://h2o-release/h2o
+  # S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  # Test release bucket (shared-services-dev) - for testing only
+  RELEASE_BUCKET: s3://h2o-release-test/h2o
+  S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
   # Public H2O-3 repository
   H2O3_REPO: h2oai/h2o-3
 
@@ -393,7 +395,7 @@ jobs:
       s3_root: ${{ needs.init.outputs.s3_root }}
       update_latest: ${{ inputs.update_latest }}
       update_latest_branch: true
-      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
@@ -460,7 +462,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_pypi: true
-      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
@@ -481,7 +483,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_conda: ${{ inputs.dry_run != true }}
-      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
@@ -502,7 +504,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       test_release: false
       is_nightly: false
-      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
       repository: h2oai/h2o-3
     secrets: inherit
 
@@ -566,7 +568,7 @@ jobs:
 
           # Add public URL
           BRANCH_SAFE=$(echo "${{ needs.init.outputs.branch }}" | tr '/' '_')
-          echo "- **Public URL:** [https://h2o-release.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html](https://h2o-release.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Public URL:** [https://h2o-release-test.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html](https://h2o-release-test.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html)" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
