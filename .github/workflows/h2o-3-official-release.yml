@@ -33,7 +33,7 @@
 #
 # ==============================================================================
 
-name: H2O-3 Official Release
+name: Public H2O-3 Official Release
 
 run-name: "H2O-3 Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
 
