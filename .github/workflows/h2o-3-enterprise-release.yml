@@ -34,7 +34,7 @@
 
 name: Enterprise H2O-3 Official Release
 
-run-name: "Enterprise H2O-3 Official Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
+run-name: "Enterprise H2O-3 Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
 
 on:
   workflow_dispatch:
@@ -80,6 +80,12 @@ on:
         default: false
 
       # Publish options (only used when stage=publish or stage=full)
+      publish_s3:
+        description: "Publish build artifacts to S3"
+        required: false
+        type: boolean
+        default: false
+
       publish_pypi:
         description: "Publish to PyPI"
         required: false
@@ -166,6 +172,7 @@ jobs:
           echo "Inputs validated successfully"
 
       - name: Configure AWS
+        if: inputs.publish_s3 == true
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ env.S3_ROLE }}
@@ -176,6 +183,12 @@ jobs:
       - name: Check Existing Build in S3
         id: check
         run: |
+          if [ "${{ inputs.publish_s3 }}" != "true" ]; then
+            echo "S3 publishing disabled - skipping S3 check"
+            echo "exists=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
           S3_PATH="${{ env.RELEASE_BUCKET }}/${BRANCH_SAFE}/${{ inputs.build_number }}"
 
@@ -254,6 +267,7 @@ jobs:
           ### Publish Options
           | Option | Enabled |
           |--------|---------|
+          | S3 | ${{ inputs.publish_s3 }} |
           | PyPI | ${{ inputs.publish_pypi }} |
           | Conda | ${{ inputs.publish_conda }} |
           | Docker | ${{ inputs.publish_docker }} |
@@ -262,7 +276,7 @@ jobs:
           EOF
 
       - name: Abort if Build Exists Without Override
-        if: steps.check.outputs.exists == 'true' && inputs.override_existing != true && (inputs.stage == 'build' || inputs.stage == 'full')
+        if: steps.check.outputs.exists == 'true' && inputs.override_existing != true && inputs.publish_s3 == true && (inputs.stage == 'build' || inputs.stage == 'full')
         run: |
           echo "::error::Build ${{ inputs.build_number }} already exists in S3. Use 'override_existing=true' to overwrite, or use stage='publish' to only publish."
           exit 1
@@ -285,12 +299,12 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # PUBLISH TO S3 (only when stage=build or stage=full)
+  # PUBLISH TO S3 (only when stage=build or stage=full AND publish_s3=true)
   # ============================================================================
   publish-s3:
     name: Publish to S3
     needs: [init, build]
-    if: needs.init.outputs.should_build == 'true'
+    if: needs.init.outputs.should_build == 'true' && inputs.publish_s3 == true
     uses: ./.github/workflows/release-publish-s3.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -471,7 +485,12 @@ jobs:
 
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> **Note:** Dry run mode - external publishing (PyPI, Conda, Docker, Helm) was skipped." >> $GITHUB_STEP_SUMMARY
+            echo "> **Note:** Dry run mode - external publishing (S3, PyPI, Conda, Docker, Helm) was skipped." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.publish_s3 }}" != "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Note:** S3 publishing is disabled. Set \`publish_s3=true\` to upload artifacts to S3." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Check Overall Status
@@ -481,7 +500,10 @@ jobs:
           # Check critical stages based on what was supposed to run
           if [ "${{ inputs.stage }}" = "build" ] || [ "${{ inputs.stage }}" = "full" ]; then
             [[ "${{ needs.build.result }}" == "failure" ]] && FAILED=true
-            [[ "${{ needs.publish-s3.result }}" == "failure" ]] && FAILED=true
+            # Only check S3 publish if it was enabled
+            if [ "${{ inputs.publish_s3 }}" = "true" ]; then
+              [[ "${{ needs.publish-s3.result }}" == "failure" ]] && FAILED=true
+            fi
           fi
 
           if [[ "$FAILED" == "true" ]]; then
