@@ -1,0 +1,492 @@
+# ==============================================================================
+#
+#                         H2O-3 ENTERPRISE OFFICIAL RELEASE
+#                         ==================================
+#
+#   Official release pipeline for H2O-3 Enterprise.
+#   Uses production S3 bucket (s3://h2o-release/h2o).
+#
+#   Two-Stage Process (for repeatability):
+#   ======================================
+#   Stage 1: BUILD
+#     - Checkout + Build H2O-3
+#     - Upload artifacts to S3
+#     - Can be run multiple times safely
+#
+#   Stage 2: PUBLISH (separate inputs, can be run independently)
+#     - Publish PyPI packages
+#     - Build/Publish Conda packages
+#     - Build/Push Docker images
+#     - Publish Helm chart
+#
+#   SAFETY FEATURES:
+#   ================
+#   - Checks if build already exists in S3 before uploading
+#   - Requires explicit confirmation to override existing builds
+#   - All publish stages can be run independently
+#   - Repeatable without side effects
+#
+#   PRODUCTION BUCKET:
+#   ==================
+#   s3://h2o-release/h2o/{branch}/{build_number}/
+#
+# ==============================================================================
+
+name: Enterprise H2O-3 Official Release
+
+run-name: "Enterprise H2O-3 Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release [e.g., rel-3.46, master]'
+        required: true
+        default: 'master'
+        type: string
+
+      build_number:
+        description: "Build number (REQUIRED - use existing Jenkins build number)"
+        required: true
+        type: string
+
+      stage:
+        description: "Release stage"
+        required: true
+        type: choice
+        options:
+          - build
+          - publish
+          - full
+        default: 'build'
+
+      dry_run:
+        description: 'Dry run mode [skip external publishing]'
+        required: false
+        type: boolean
+        default: true
+
+      override_existing:
+        description: 'Override existing build in S3 [DANGEROUS - will overwrite existing artifacts]'
+        required: false
+        type: boolean
+        default: false
+
+      # Build options
+      build_hadoop:
+        description: "Build with Hadoop support"
+        required: false
+        type: boolean
+        default: false
+
+      # Publish options (only used when stage=publish or stage=full)
+      publish_pypi:
+        description: "Publish to PyPI"
+        required: false
+        type: boolean
+        default: false
+
+      publish_conda:
+        description: "Publish to Anaconda"
+        required: false
+        type: boolean
+        default: false
+
+      publish_docker:
+        description: "Publish to Docker Hub"
+        required: false
+        type: boolean
+        default: false
+
+      publish_helm:
+        description: "Publish Helm chart"
+        required: false
+        type: boolean
+        default: false
+
+      update_latest:
+        description: 'Update latest_stable links'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+# ==============================================================================
+# ENVIRONMENT
+# ==============================================================================
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  # Production release bucket (shared-services-prod)
+  RELEASE_BUCKET: s3://h2o-release/h2o
+  # IAM role for production S3 access
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+
+  # ============================================================================
+  # INIT: Validate inputs and check existing state
+  # ============================================================================
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.config.outputs.branch }}
+      build_number: ${{ steps.config.outputs.build_number }}
+      s3_root: ${{ steps.config.outputs.s3_root }}
+      build_exists: ${{ steps.check.outputs.exists }}
+      should_build: ${{ steps.config.outputs.should_build }}
+      should_publish: ${{ steps.config.outputs.should_publish }}
+      is_release_branch: ${{ steps.config.outputs.is_release_branch }}
+
+    steps:
+      - name: Validate Inputs
+        run: |
+          if [ -z "${{ inputs.build_number }}" ]; then
+            echo "::error::Build number is required for official releases"
+            exit 1
+          fi
+
+          if [[ ! "${{ inputs.build_number }}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Build number must be a positive integer"
+            exit 1
+          fi
+
+          echo "Inputs validated successfully"
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-init-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Check Existing Build in S3
+        id: check
+        run: |
+          BRANCH_SAFE=$(echo "${{ inputs.branch }}" | tr '/' '_')
+          S3_PATH="${{ env.RELEASE_BUCKET }}/${BRANCH_SAFE}/${{ inputs.build_number }}"
+
+          echo "=== Checking for existing build at ${S3_PATH} ==="
+
+          # Check if index.html exists (indicates a completed build)
+          if aws s3 ls "${S3_PATH}/index.html" 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "::warning::Build ${{ inputs.build_number }} already exists in S3!"
+
+            # List existing contents
+            echo "=== Existing build contents ==="
+            aws s3 ls "${S3_PATH}/" --human-readable | head -20
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No existing build found - safe to proceed"
+          fi
+
+      - name: Determine Configuration
+        id: config
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          BUILD_NUMBER="${{ inputs.build_number }}"
+          STAGE="${{ inputs.stage }}"
+          BUILD_EXISTS="${{ steps.check.outputs.exists }}"
+          OVERRIDE="${{ inputs.override_existing }}"
+
+          # Check if release branch
+          [[ "${BRANCH}" == rel-* ]] && IS_RELEASE_BRANCH="true" || IS_RELEASE_BRANCH="false"
+
+          # Determine if we should build
+          if [ "${STAGE}" = "build" ] || [ "${STAGE}" = "full" ]; then
+            if [ "${BUILD_EXISTS}" = "true" ] && [ "${OVERRIDE}" != "true" ]; then
+              echo "::error::Build ${BUILD_NUMBER} already exists. Set 'override_existing=true' to overwrite."
+              echo "should_build=false" >> $GITHUB_OUTPUT
+            else
+              echo "should_build=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Determine if we should publish
+          if [ "${STAGE}" = "publish" ] || [ "${STAGE}" = "full" ]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "s3_root=${{ env.RELEASE_BUCKET }}" >> $GITHUB_OUTPUT
+          echo "is_release_branch=${IS_RELEASE_BRANCH}" >> $GITHUB_OUTPUT
+
+          # Generate summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## Enterprise Official Release Configuration
+
+          | Setting | Value |
+          |---------|-------|
+          | Branch | \`${BRANCH}\` |
+          | Build Number | \`${BUILD_NUMBER}\` |
+          | Stage | **${STAGE}** |
+          | Repository | \`h2oai/h2o-3-enterprise\` |
+          | S3 Bucket | \`${{ env.RELEASE_BUCKET }}\` |
+          | Dry Run | ${{ inputs.dry_run }} |
+          | Build Exists | ${BUILD_EXISTS} |
+          | Override Existing | ${OVERRIDE} |
+
+          ### Stage Decisions
+          | Stage | Will Run |
+          |-------|----------|
+          | Build | $([ "${STAGE}" = "build" ] || [ "${STAGE}" = "full" ] && echo "Yes" || echo "No") |
+          | Publish | $([ "${STAGE}" = "publish" ] || [ "${STAGE}" = "full" ] && echo "Yes" || echo "No") |
+
+          ### Publish Options
+          | Option | Enabled |
+          |--------|---------|
+          | PyPI | ${{ inputs.publish_pypi }} |
+          | Conda | ${{ inputs.publish_conda }} |
+          | Docker | ${{ inputs.publish_docker }} |
+          | Helm | ${{ inputs.publish_helm }} |
+          | Update Latest | ${{ inputs.update_latest }} |
+          EOF
+
+      - name: Abort if Build Exists Without Override
+        if: steps.check.outputs.exists == 'true' && inputs.override_existing != true && (inputs.stage == 'build' || inputs.stage == 'full')
+        run: |
+          echo "::error::Build ${{ inputs.build_number }} already exists in S3. Use 'override_existing=true' to overwrite, or use stage='publish' to only publish."
+          exit 1
+
+  # ============================================================================
+  # BUILD: Compile H2O-3 (only when stage=build or stage=full)
+  # ============================================================================
+  build:
+    name: Build
+    needs: init
+    if: needs.init.outputs.should_build == 'true'
+    uses: ./.github/workflows/release-build.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      build_hadoop: ${{ inputs.build_hadoop }}
+      upload_nexus: false  # Enterprise releases don't go to Maven Central
+      test_release: false  # This is a production release
+      repository: h2oai/h2o-3-enterprise
+    secrets: inherit
+
+  # ============================================================================
+  # PUBLISH TO S3 (only when stage=build or stage=full)
+  # ============================================================================
+  publish-s3:
+    name: Publish to S3
+    needs: [init, build]
+    if: needs.init.outputs.should_build == 'true'
+    uses: ./.github/workflows/release-publish-s3.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      update_latest: ${{ inputs.update_latest }}
+      update_latest_branch: true
+      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+    secrets: inherit
+
+  # ============================================================================
+  # FETCH VERSION (for publish-only runs)
+  # Fetches the version from existing S3 artifacts
+  # ============================================================================
+  fetch-version:
+    name: Fetch Version
+    needs: init
+    if: needs.init.outputs.should_publish == 'true' && needs.init.outputs.should_build != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      project_version: ${{ steps.version.outputs.project_version }}
+
+    steps:
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-version-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Fetch Version from S3
+        id: version
+        run: |
+          BRANCH_SAFE=$(echo "${{ needs.init.outputs.branch }}" | tr '/' '_')
+          S3_PATH="${{ needs.init.outputs.s3_root }}/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}"
+
+          echo "=== Fetching version from ${S3_PATH} ==="
+
+          # Try to get version from project_version file
+          VERSION=$(aws s3 cp "${S3_PATH}/project_version" - 2>/dev/null || echo "")
+
+          if [ -z "${VERSION}" ]; then
+            # Try to extract from h2o-*.zip filename
+            VERSION=$(aws s3 ls "${S3_PATH}/" | grep -o 'h2o-[0-9.]*\.zip' | head -1 | sed 's/h2o-\(.*\)\.zip/\1/')
+          fi
+
+          if [ -z "${VERSION}" ]; then
+            echo "::error::Could not determine version from S3 artifacts"
+            exit 1
+          fi
+
+          echo "project_version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Found version: ${VERSION}"
+
+  # ============================================================================
+  # PUBLISH PYPI (when stage=publish or stage=full)
+  # ============================================================================
+  publish-pypi:
+    name: Publish PyPI
+    needs: [init, build, publish-s3, fetch-version]
+    if: |
+      always() &&
+      needs.init.outputs.should_publish == 'true' &&
+      inputs.publish_pypi == true &&
+      inputs.dry_run != true &&
+      (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
+    uses: ./.github/workflows/release-publish-pypi.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      upload_pypi: true
+      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+    secrets: inherit
+
+  # ============================================================================
+  # PUBLISH CONDA (when stage=publish or stage=full)
+  # ============================================================================
+  publish-conda:
+    name: Publish Conda
+    needs: [init, build, publish-s3, fetch-version]
+    if: |
+      always() &&
+      needs.init.outputs.should_publish == 'true' &&
+      inputs.publish_conda == true &&
+      (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
+    uses: ./.github/workflows/release-publish-conda.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
+      s3_root: ${{ needs.init.outputs.s3_root }}
+      upload_conda: ${{ inputs.dry_run != true }}
+      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+    secrets: inherit
+
+  # ============================================================================
+  # PUBLISH HELM (when stage=publish or stage=full)
+  # ============================================================================
+  publish-helm:
+    name: Publish Helm
+    needs: [init, build, publish-s3, fetch-version]
+    if: |
+      always() &&
+      needs.init.outputs.should_publish == 'true' &&
+      inputs.publish_helm == true &&
+      inputs.dry_run != true &&
+      (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
+    uses: ./.github/workflows/release-publish-helm.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
+      test_release: false
+      is_nightly: false
+      s3_role: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+      repository: h2oai/h2o-3-enterprise
+    secrets: inherit
+
+  # ============================================================================
+  # PUBLISH DOCKER (when stage=publish or stage=full)
+  # ============================================================================
+  publish-docker:
+    name: Publish Docker
+    needs: [init, build, publish-s3, fetch-version]
+    if: |
+      always() &&
+      needs.init.outputs.should_publish == 'true' &&
+      inputs.publish_docker == true &&
+      inputs.dry_run != true &&
+      (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
+    uses: ./.github/workflows/release-publish-docker.yml
+    with:
+      branch: ${{ needs.init.outputs.branch }}
+      build_number: ${{ needs.init.outputs.build_number }}
+      project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
+      test_release: false
+      is_nightly: false
+      update_latest: ${{ inputs.update_latest }}
+    secrets: inherit
+
+  # ============================================================================
+  # SUMMARY
+  # ============================================================================
+  summary:
+    name: Summary
+    needs: [init, build, publish-s3, fetch-version, publish-pypi, publish-conda, publish-helm, publish-docker]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Summary
+        env:
+          VERSION: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version || 'unknown' }}
+        run: |
+          echo "## Enterprise Official Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Initialize | ${{ needs.init.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish S3 | ${{ needs.publish-s3.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Fetch Version | ${{ needs.fetch-version.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish PyPI | ${{ needs.publish-pypi.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Conda | ${{ needs.publish-conda.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Helm | ${{ needs.publish-helm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Docker | ${{ needs.publish-docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Stage:** \`${{ inputs.stage }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run:** ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Note:** Dry run mode - external publishing (PyPI, Conda, Docker, Helm) was skipped." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check Overall Status
+        run: |
+          FAILED=false
+
+          # Check critical stages based on what was supposed to run
+          if [ "${{ inputs.stage }}" = "build" ] || [ "${{ inputs.stage }}" = "full" ]; then
+            [[ "${{ needs.build.result }}" == "failure" ]] && FAILED=true
+            [[ "${{ needs.publish-s3.result }}" == "failure" ]] && FAILED=true
+          fi
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::Enterprise release pipeline has critical failures"
+            exit 1
+          fi
+
+          echo "Release completed successfully!"
