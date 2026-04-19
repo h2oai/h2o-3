@@ -24,6 +24,11 @@ public class DRFStepsProvider
             public DRFParameters prepareModelParameters() {
                 DRFParameters params = new DRFParameters();
                 params._score_tree_interval = 5;
+                // Disable early stopping for DRF and XRT since we only have 50 trees by default.
+                // With only 50 trees and score_tree_interval=5, early stopping has very limited
+                // checkpoints (10 total) to evaluate. Disabling allows the model to use all trees.
+                // See PUBDEV-5884 for benchmark analysis.
+                params._stopping_rounds = 0;
                 return params;
             }
         }
