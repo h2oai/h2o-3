@@ -30,6 +30,62 @@ def print_section(title):
     print("="*80)
 
 
+def _task_metric(ds):
+    return "AUC" if ds.train[ds.target].isfactor() else "R²"
+
+
+def _model_metric(ds, leader):
+    return leader.auc() if ds.train[ds.target].isfactor() else leader.r2()
+
+
+def _run_benchmark_case(ds, test_case):
+    start_time = time.time()
+    try:
+        aml = H2OAutoML(
+            project_name="benchmark_{}".format(test_case['config_id']),
+            include_algos=test_case['include_algos'],
+            max_models=test_case['max_models'],
+            seed=42,
+            verbosity="warn"
+        )
+        aml.train(y=ds.target, training_frame=ds.train)
+
+        elapsed = time.time() - start_time
+        leader = aml.leader
+        base_models = get_partitioned_model_names(aml.leaderboard).base
+        metric_name = _task_metric(ds)
+        metric = _model_metric(ds, leader)
+
+        result = {
+            "test_case": test_case['name'],
+            "max_models": test_case['max_models'],
+            "actual_models": len(base_models),
+            "elapsed_sec": elapsed,
+            "leader_id": leader.model_id,
+            "leader_algo": leader.algo,
+            metric_name: metric,
+            "status": "✓ PASS"
+        }
+
+        print("  Status: ✓ PASS")
+        print("  Training Time: {:.2f}s".format(elapsed))
+        print("  Models Trained: {}".format(len(base_models)))
+        print("  Leader Model: {} ({})".format(leader.model_id, leader.algo))
+        print("  {}: {:.4f}".format(metric_name, metric))
+        return result
+    except Exception as e:
+        elapsed = time.time() - start_time
+        result = {
+            "test_case": test_case['name'],
+            "max_models": test_case['max_models'],
+            "elapsed_sec": elapsed,
+            "status": "✗ FAIL: {}".format(str(e)[:50])
+        }
+        print("  Status: ✗ FAIL")
+        print("  Error: {}".format(str(e)[:100]))
+        return result
+
+
 def benchmark_drf_models():
     """
     Benchmark DRF and XRT models to ensure performance is acceptable
@@ -67,66 +123,10 @@ def benchmark_drf_models():
     results = []
     
     for i, test_case in enumerate(test_cases, 1):
-        print(f"\n{'-'*80}")
-        print(f"Test Case {i}: {test_case['name']}")
-        print(f"{'-'*80}")
-        
-        start_time = time.time()
-        
-        try:
-            aml = H2OAutoML(
-                project_name=f"benchmark_{test_case['config_id']}",
-                include_algos=test_case['include_algos'],
-                max_models=test_case['max_models'],
-                seed=42,
-                verbosity="warn"
-            )
-            
-            aml.train(y=ds.target, training_frame=ds.train)
-            
-            elapsed = time.time() - start_time
-            
-            # Collect metrics
-            leader = aml.leader
-            base_models = get_partitioned_model_names(aml.leaderboard).base
-            
-            # Get performance metric
-            if ds.train[ds.target].isfactor():
-                metric = leader.auc()
-                metric_name = "AUC"
-            else:
-                metric = leader.r2()
-                metric_name = "R²"
-            
-            result = {
-                "test_case": test_case['name'],
-                "max_models": test_case['max_models'],
-                "actual_models": len(base_models),
-                "elapsed_sec": elapsed,
-                "leader_id": leader.model_id,
-                "leader_algo": leader.algo,
-                metric_name: metric,
-                "status": "✓ PASS"
-            }
-            results.append(result)
-            
-            print(f"  Status: ✓ PASS")
-            print(f"  Training Time: {elapsed:.2f}s")
-            print(f"  Models Trained: {len(base_models)}")
-            print(f"  Leader Model: {leader.model_id} ({leader.algo})")
-            print(f"  {metric_name}: {metric:.4f}")
-            
-        except Exception as e:
-            elapsed = time.time() - start_time
-            result = {
-                "test_case": test_case['name'],
-                "max_models": test_case['max_models'],
-                "elapsed_sec": elapsed,
-                "status": f"✗ FAIL: {str(e)[:50]}"
-            }
-            results.append(result)
-            print(f"  Status: ✗ FAIL")
-            print(f"  Error: {str(e)[:100]}")
+        print("\n" + "-"*80)
+        print("Test Case {}: {}".format(i, test_case['name']))
+        print("-"*80)
+        results.append(_run_benchmark_case(ds, test_case))
     
     # Print summary table
     print_section("Benchmark Summary")
@@ -161,7 +161,7 @@ def benchmark_drf_models():
     # Print detailed results
     print_section("Detailed Results")
     
-    metric_name = "AUC" if ds.train[ds.target].isfactor() else "R²"
+    metric_name = _task_metric(ds)
     
     for result in results:
         if '✓' in result['status']:
