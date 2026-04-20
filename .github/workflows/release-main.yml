@@ -844,6 +844,14 @@ jobs:
             S3_URL="https://h2o-release.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
           fi
 
+          # Format H2O-3 commit link (handle empty case)
+          if [ -n "${H2O3_COMMIT}" ]; then
+            COMMIT_SHORT="${H2O3_COMMIT:0:7}"
+            COMMIT_LINK="<https://github.com/h2oai/h2o-3/commit/${H2O3_COMMIT}|${COMMIT_SHORT}>"
+          else
+            COMMIT_LINK="N/A"
+          fi
+
           # Determine overall status
           if [ "${FAILED}" = "true" ]; then
             STATUS_EMOJI=":red_circle:"
@@ -867,7 +875,7 @@ jobs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "cc <@D074ECSNT6U> <@U05TMBGGJJF>"
+                    "text": "cc <@U01CXHW99J7> <@U05TMBGGJJF>"
                   }
                 ]
               },
@@ -920,7 +928,7 @@ jobs:
                 "fields": [
                   {
                     "type": "mrkdwn",
-                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*H2O-3 Commit:* <https://github.com/h2oai/h2o-3/commit/${H2O3_COMMIT}|${H2O3_COMMIT:0:7}>"
+                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*H2O-3 Commit:* ${COMMIT_LINK}"
                   },
                   {
                     "type": "mrkdwn",
