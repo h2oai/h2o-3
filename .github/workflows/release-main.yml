@@ -56,11 +56,11 @@
 #
 #   S3 OUTPUT STRUCTURE
 #   -------------------
-#   Production:  s3://h2o-release-test/h2o/{branch}/{build_number}/ (OSS account - testing only)
+#   Production:  s3://h2o-release/h2o/{branch}/{build_number}/
 #   Test:        s3://test.0xdata.com/test-release/h2o/{branch}/{build_number}/
 #
-#   Public URL:  https://h2o-release-test.s3.amazonaws.com/h2o/{branch}/{build_number}/index.html
-#   Latest:      https://h2o-release-test.s3.amazonaws.com/h2o/{branch}/latest.html
+#   Public URL:  https://h2o-release.s3.amazonaws.com/h2o/{branch}/{build_number}/index.html
+#   Latest:      https://h2o-release.s3.amazonaws.com/h2o/{branch}/latest.html
 #
 # ==============================================================================
 #
@@ -207,12 +207,9 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
-  # Production S3 role (shared-services-prod) - UNCOMMENT FOR PRODUCTION
-  # S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
-  # RELEASE_BUCKET: s3://h2o-release/h2o
-  # Test bucket (OSS account) - for testing only
-  S3_ROLE: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
-  RELEASE_BUCKET: s3://h2o-release-test/h2o
+  # Production S3 role (shared-services-prod)
+  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  RELEASE_BUCKET: s3://h2o-release/h2o
   DOCKER_VERSION: "47"
   H2O3_REPO: h2oai/h2o-3
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
@@ -844,7 +841,7 @@ jobs:
           if [[ "${S3_ROOT}" == *"test.0xdata.com"* ]]; then
             S3_URL="https://test.0xdata.com/test-release/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
           else
-            S3_URL="https://h2o-release-test.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
+            S3_URL="https://h2o-release.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
           fi
 
           # Determine overall status
