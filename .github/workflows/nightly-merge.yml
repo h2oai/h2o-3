@@ -1,5 +1,5 @@
 # ==============================================================================
-#                           NIGHTLY MERGE
+#                        PUBLIC NIGHTLY MERGE
 # ==============================================================================
 #
 # PURPOSE:
@@ -21,8 +21,8 @@
 #
 # ==============================================================================
 
-name: Nightly Merge
-run-name: Nightly Merge [rel -> master]
+name: Public Nightly Merge
+run-name: Public Nightly Merge [rel -> master]
 
 on:
   schedule:

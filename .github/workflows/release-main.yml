@@ -98,7 +98,7 @@
 # ==============================================================================
 
 run-name: "H2O-3 Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}${{ inputs.test_release && ' [TEST]' || '' }}"
-name: H2O-3 Release - Nightly
+name: Public H2O-3 Release - Nightly
 
 # ==============================================================================
 # TRIGGERS
