@@ -116,6 +116,12 @@ on:
         type: boolean
         default: false
 
+      update_latest_branch:
+        description: 'Update branch latest links (/{branch}/latest)'
+        required: false
+        type: boolean
+        default: true
+
 # ==============================================================================
 # PERMISSIONS
 # ==============================================================================
@@ -314,7 +320,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       update_latest: ${{ inputs.update_latest }}
-      update_latest_branch: true
+      update_latest_branch: ${{ inputs.update_latest_branch }}
       s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
     secrets: inherit
 
