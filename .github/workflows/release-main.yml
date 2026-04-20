@@ -56,7 +56,7 @@
 #
 #   S3 OUTPUT STRUCTURE
 #   -------------------
-#   Production:  s3://h2o-release-test/h2o/{branch}/{build_number}/ (shared-services-dev - testing only)
+#   Production:  s3://h2o-release-test/h2o/{branch}/{build_number}/ (OSS account - testing only)
 #   Test:        s3://test.0xdata.com/test-release/h2o/{branch}/{build_number}/
 #
 #   Public URL:  https://h2o-release-test.s3.amazonaws.com/h2o/{branch}/{build_number}/index.html
@@ -210,8 +210,8 @@ env:
   # Production S3 role (shared-services-prod) - UNCOMMENT FOR PRODUCTION
   # S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
   # RELEASE_BUCKET: s3://h2o-release/h2o
-  # Test bucket (shared-services-dev) - for testing only
-  S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+  # Test bucket (OSS account) - for testing only
+  S3_ROLE: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
   RELEASE_BUCKET: s3://h2o-release-test/h2o
   DOCKER_VERSION: "47"
   H2O3_REPO: h2oai/h2o-3
