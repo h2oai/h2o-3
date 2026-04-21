@@ -25,6 +25,12 @@ on:
         required: true
         type: string
 
+      repository:
+        description: 'Repository to build (default: h2oai/h2o-3)'
+        required: false
+        type: string
+        default: 'h2oai/h2o-3'
+
     outputs:
       build_sha:
         description: 'Git commit SHA'
@@ -75,7 +81,7 @@ jobs:
       - name: Checkout H2O-3
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.H2O3_REPO }}
+          repository: ${{ inputs.repository }}
           ref: ${{ inputs.h2o3_branch }}
           fetch-depth: 0
 

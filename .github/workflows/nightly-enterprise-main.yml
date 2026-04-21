@@ -1,9 +1,9 @@
 # ==============================================================================
 #
-#                 PUBLIC H2O-3 NIGHTLY PIPELINE
-#                 ============================
+#                 ENTERPRISE H2O-3 NIGHTLY PIPELINE
+#                 =================================
 #
-#   The master orchestrator for H2O-3 nightly testing.
+#   The master orchestrator for H2O-3 Enterprise nightly testing.
 #
 # ==============================================================================
 #
@@ -11,7 +11,7 @@
 #   ------------
 #
 #   ┌─────────────────────────────────────────────────────────────────────────┐
-#   │                              NIGHTLY-MAIN                               │
+#   │                         NIGHTLY-ENTERPRISE-MAIN                         │
 #   │                           (This Workflow)                               │
 #   └─────────────────────────────────────────────────────────────────────────┘
 #                                      │
@@ -53,8 +53,8 @@
 #
 # ==============================================================================
 
-run-name: "Public H2O-3 Nightly - Tests [${{ inputs.branch_custom || inputs.branch || 'master' }}]"
-name: Public H2O-3 Nightly - Tests
+run-name: "Enterprise H2O-3 Nightly - Tests [${{ inputs.branch_custom || inputs.branch || 'master' }}]"
+name: Enterprise H2O-3 Nightly - Tests
 
 # ==============================================================================
 # TRIGGERS
@@ -112,7 +112,7 @@ on:
 # ==============================================================================
 # Allow parallel runs for different H2O-3 branches
 concurrency:
-  group: nightly-${{ inputs.branch_custom || inputs.branch || 'master' }}
+  group: nightly-enterprise-${{ inputs.branch_custom || inputs.branch || 'master' }}
   cancel-in-progress: false
 
 # ==============================================================================
@@ -145,13 +145,13 @@ jobs:
       run_flow: ${{ steps.config.outputs.run_flow }}
 
     steps:
-      - name: Fetch H2O-3 Branches
+      - name: Fetch H2O-3 Enterprise Branches
         id: fetch-branches
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Fetch branches for validation (no summary output)
-          BRANCHES=$(gh api repos/h2oai/h2o-3/branches --paginate --jq '.[].name' | tr '\n' ' ')
+          BRANCHES=$(gh api repos/h2oai/h2o-3-enterprise/branches --paginate --jq '.[].name' | tr '\n' ' ')
           echo "branches=${BRANCHES}" >> $GITHUB_OUTPUT
 
       - name: Determine Configuration
@@ -163,7 +163,7 @@ jobs:
 
           # Validate branch exists
           if ! echo "${{ steps.fetch-branches.outputs.branches }}" | grep -qw "${BRANCH}"; then
-            echo "::warning::Branch '${BRANCH}' not found in h2o-3 repo. Build may fail."
+            echo "::warning::Branch '${BRANCH}' not found in h2o-3-enterprise repo. Build may fail."
           fi
 
           # Test categories (from checkbox inputs)
@@ -174,9 +174,10 @@ jobs:
           echo "run_flow=${{ inputs.run_flow }}" >> $GITHUB_OUTPUT
 
           # Summary
-          echo "## Pipeline Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "## Enterprise Pipeline Configuration" >> $GITHUB_STEP_SUMMARY
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository | \`h2oai/h2o-3-enterprise\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Smoke | ${{ inputs.run_smoke }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Python | ${{ inputs.run_python }} |" >> $GITHUB_STEP_SUMMARY
@@ -185,7 +186,7 @@ jobs:
           echo "| Flow | ${{ inputs.run_flow }} |" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
-  # BUILD: Compile H2O-3 and create test packages
+  # BUILD: Compile H2O-3 Enterprise and create test packages
   # ============================================================================
   build:
     name: Build
@@ -193,6 +194,7 @@ jobs:
     uses: ./.github/workflows/nightly-build.yml
     with:
       h2o3_branch: ${{ needs.init.outputs.branch }}
+      repository: h2oai/h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
@@ -268,4 +270,3 @@ jobs:
           r_result: ${{ needs.r.result }}
           java_result: ${{ needs.java.result }}
           flow_result: ${{ needs.flow.result }}
-
