@@ -432,31 +432,31 @@ jobs:
           # Upload distribution package
           if [ -d "artifacts/h2o-release-dist" ]; then
             echo "=== Uploading distribution ==="
-            aws s3 cp artifacts/h2o-release-dist/ "${S3_STAGING}/dist/" --recursive --acl public-read
+            aws s3 cp artifacts/h2o-release-dist/ "${S3_STAGING}/dist/" --recursive
           fi
 
           # Upload Python packages
           if [ -d "artifacts/h2o-release-python" ]; then
             echo "=== Uploading Python packages ==="
-            aws s3 cp artifacts/h2o-release-python/ "${S3_STAGING}/Python/" --recursive --acl public-read
+            aws s3 cp artifacts/h2o-release-python/ "${S3_STAGING}/Python/" --recursive
           fi
 
           # Upload R packages
           if [ -d "artifacts/h2o-release-r" ]; then
             echo "=== Uploading R packages ==="
-            aws s3 cp artifacts/h2o-release-r/ "${S3_STAGING}/R/" --recursive --acl public-read
+            aws s3 cp artifacts/h2o-release-r/ "${S3_STAGING}/R/" --recursive
           fi
 
           # Upload documentation
           if [ -d "artifacts/h2o-release-docs" ]; then
             echo "=== Uploading documentation ==="
-            aws s3 cp artifacts/h2o-release-docs/ "${S3_STAGING}/docs/" --recursive --acl public-read
+            aws s3 cp artifacts/h2o-release-docs/ "${S3_STAGING}/docs/" --recursive
           fi
 
           # Upload assemblies
           if [ -d "artifacts/h2o-release-assemblies" ]; then
             echo "=== Uploading assemblies ==="
-            aws s3 cp artifacts/h2o-release-assemblies/ "${S3_STAGING}/assemblies/" --recursive --acl public-read
+            aws s3 cp artifacts/h2o-release-assemblies/ "${S3_STAGING}/assemblies/" --recursive
           fi
 
           # Create staging manifest
@@ -470,7 +470,7 @@ jobs:
             "staging_path": "${S3_STAGING}"
           }
           EOF
-          aws s3 cp staging-manifest.json "${S3_STAGING}/staging-manifest.json" --acl public-read
+          aws s3 cp staging-manifest.json "${S3_STAGING}/staging-manifest.json"
 
           echo "=== Staging upload complete ==="
           echo "Staging URL: https://h2o-release-test.s3.amazonaws.com/h2o/staging/${BRANCH_SAFE}/${BUILD_NUMBER}/"

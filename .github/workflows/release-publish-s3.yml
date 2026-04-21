@@ -192,7 +192,7 @@ jobs:
           S3_DEST="${{ inputs.s3_root }}/${BRANCH_SAFE}/${{ inputs.build_number }}/"
 
           echo "=== Uploading to ${S3_DEST} ==="
-          aws s3 sync target/ "${S3_DEST}" --acl public-read
+          aws s3 sync target/ "${S3_DEST}"
 
           echo "Upload complete!"
 
@@ -200,8 +200,8 @@ jobs:
         if: inputs.update_latest == true
         run: |
           echo "=== Updating latest R and Python packages ==="
-          aws s3 sync target/R/ "${{ inputs.s3_root }}/latest_stable_R/" --acl public-read
-          aws s3 sync target/Python/ "${{ inputs.s3_root }}/latest_stable_Py/" --acl public-read
+          aws s3 sync target/R/ "${{ inputs.s3_root }}/latest_stable_R/"
+          aws s3 sync target/Python/ "${{ inputs.s3_root }}/latest_stable_Py/"
 
       # ========================================================================
       # UPDATE LATEST POINTERS
@@ -227,9 +227,9 @@ jobs:
           S3_BRANCH="${{ inputs.s3_root }}/${BRANCH_SAFE}"
 
           echo "=== Updating branch latest links for ${BRANCH_SAFE} ==="
-          aws s3 cp tmpdir/latest "${S3_BRANCH}/latest" --acl public-read
-          aws s3 cp tmpdir/latest.html "${S3_BRANCH}/latest.html" --acl public-read
-          aws s3 cp tmpdir/latest.html "${S3_BRANCH}/index.html" --acl public-read
+          aws s3 cp tmpdir/latest "${S3_BRANCH}/latest"
+          aws s3 cp tmpdir/latest.html "${S3_BRANCH}/latest.html"
+          aws s3 cp tmpdir/latest.html "${S3_BRANCH}/index.html"
 
       - name: Update Top-Level Latest Links
         if: inputs.update_latest == true
@@ -278,11 +278,11 @@ jobs:
           done
 
           # Upload stable link
-          aws s3 cp tmpdir/latest_stable "${S3_ROOT}/latest_stable" --acl public-read
+          aws s3 cp tmpdir/latest_stable "${S3_ROOT}/latest_stable"
 
           # Upload all redirect files
           for link in "${!LINKS[@]}"; do
-            aws s3 cp "tmpdir/${link}.html" "${S3_ROOT}/${link}.html" --acl public-read
+            aws s3 cp "tmpdir/${link}.html" "${S3_ROOT}/${link}.html"
           done
 
           echo "Top-level latest links updated!"
