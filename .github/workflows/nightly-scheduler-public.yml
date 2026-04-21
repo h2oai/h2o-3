@@ -47,7 +47,7 @@ jobs:
         run: |
           echo "Triggering nightly pipeline for branch: ${{ matrix.branch }}"
 
-          gh workflow run nightly-main-public.yml \
+          gh workflow run h2o-3-nightly-tests-public.yml \
             --repo ${{ github.repository }} \
             -f branch="${{ matrix.branch }}" \
             -f run_smoke=true \
