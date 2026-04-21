@@ -928,7 +928,7 @@ jobs:
                 "fields": [
                   {
                     "type": "mrkdwn",
-                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*H2O-3 Commit:* ${COMMIT_LINK}"
+                    "text": "*Branch:* ${BRANCH}\n*Version:* ${VERSION}\n*Build:* #${BUILD_NUMBER}\n*Commit:* ${COMMIT_LINK}"
                   },
                   {
                     "type": "mrkdwn",
