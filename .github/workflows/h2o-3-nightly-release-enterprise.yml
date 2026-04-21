@@ -816,6 +816,10 @@ jobs:
             S3_URL="https://h2o-release.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
           fi
 
+          if [ -z "${VERSION}" ]; then
+            VERSION="N/A"
+          fi
+
           if [ -n "${H2O3_COMMIT}" ]; then
             COMMIT_SHORT="${H2O3_COMMIT:0:7}"
             COMMIT_LINK="<https://github.com/h2oai/h2o-3-enterprise/commit/${H2O3_COMMIT}|${COMMIT_SHORT}>"
@@ -826,11 +830,11 @@ jobs:
           if [ "${FAILED}" = "true" ]; then
             STATUS_EMOJI=":red_circle:"
             STATUS_TEXT="FAILED"
-            HEADER_EMOJI="X"
+            HEADER_EMOJI="❌"
           else
             STATUS_EMOJI=":white_check_mark:"
             STATUS_TEXT="SUCCESS"
-            HEADER_EMOJI="OK"
+            HEADER_EMOJI="✅"
           fi
 
           BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M UTC')

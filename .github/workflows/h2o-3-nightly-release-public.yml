@@ -844,6 +844,11 @@ jobs:
             S3_URL="https://h2o-release.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
           fi
 
+          # Handle empty version (build failed before version extraction)
+          if [ -z "${VERSION}" ]; then
+            VERSION="N/A"
+          fi
+
           # Format H2O-3 commit link (handle empty case)
           if [ -n "${H2O3_COMMIT}" ]; then
             COMMIT_SHORT="${H2O3_COMMIT:0:7}"
