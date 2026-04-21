@@ -199,12 +199,10 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
-  # Test S3 role (OSS account)
-  S3_ROLE_TEST: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
-  # Production S3 role (shared-services-prod)
-  S3_ROLE_PROD: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
-  RELEASE_BUCKET: s3://h2o-release/h2o
-  TEST_RELEASE_BUCKET: s3://h2o-release-test/h2o
+  # Enterprise S3 role (OSS account)
+  S3_ROLE: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
+  # Enterprise release bucket (same for test and production)
+  RELEASE_BUCKET: s3://h2o-3-enterprise-release/h2o
   DOCKER_VERSION: "47"
   H2O3_ENTERPRISE_REPO: h2oai/h2o-3-enterprise
   # Build number offset for nightly builds
@@ -311,14 +309,9 @@ jobs:
             [ -z "${TEST_RELEASE}" ] && TEST_RELEASE="true"
           fi
 
-          # S3 bucket and role: test bucket for test releases, production for real releases
-          if [ "${TEST_RELEASE}" = "true" ]; then
-            S3_ROOT="${{ env.TEST_RELEASE_BUCKET }}"
-            S3_ROLE="${{ env.S3_ROLE_TEST }}"
-          else
-            S3_ROOT="${{ env.RELEASE_BUCKET }}"
-            S3_ROLE="${{ env.S3_ROLE_PROD }}"
-          fi
+          # Enterprise uses a single bucket for all releases (OSS account)
+          S3_ROOT="${{ env.RELEASE_BUCKET }}"
+          S3_ROLE="${{ env.S3_ROLE }}"
 
           echo "dry_run=${DRY_RUN}" >> $GITHUB_OUTPUT
           echo "test_release=${TEST_RELEASE}" >> $GITHUB_OUTPUT
