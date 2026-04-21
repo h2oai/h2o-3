@@ -566,7 +566,7 @@ jobs:
   publish-s3:
     name: Publish to S3
     needs: [init, build, create-tag]
-    if: always() && (needs.create-tag.result == 'success' || needs.create-tag.result == 'skipped')
+    if: needs.build.result == 'success' && (needs.create-tag.result == 'success' || needs.create-tag.result == 'skipped')
     uses: ./.github/workflows/release-publish-s3.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
