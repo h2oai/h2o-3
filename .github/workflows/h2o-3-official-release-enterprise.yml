@@ -4,7 +4,7 @@
 #                         ==================================
 #
 #   Official release pipeline for H2O-3 Enterprise.
-#   Uses test S3 bucket (s3://h2o-release-test/h2o) in OSS account.
+#   Uses S3 bucket (s3://h2o-3-enterprise-release/h2o) in OSS account.
 #
 #   Two-Stage Process (for repeatability):
 #   ======================================
@@ -26,9 +26,9 @@
 #   - All publish stages can be run independently
 #   - Repeatable without side effects
 #
-#   TEST BUCKET (OSS account):
+#   RELEASE BUCKET (OSS account):
 #   ===================================
-#   s3://h2o-release-test/h2o/{branch}/{build_number}/
+#   s3://h2o-3-enterprise-release/h2o/{branch}/{build_number}/
 #
 # ==============================================================================
 
@@ -137,11 +137,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
-  # Production release bucket (shared-services-prod) - UNCOMMENT FOR PRODUCTION
-  # RELEASE_BUCKET: s3://h2o-release/h2o
-  # S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
-  # Test release bucket (OSS account) - for testing only
-  RELEASE_BUCKET: s3://h2o-release-test/h2o
+  # Enterprise release bucket (OSS account)
+  RELEASE_BUCKET: s3://h2o-3-enterprise-release/h2o
   S3_ROLE: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
 
 # ==============================================================================
@@ -394,7 +391,7 @@ jobs:
           aws s3 cp staging-manifest.json "${S3_STAGING}/staging-manifest.json"
 
           echo "=== Staging upload complete ==="
-          echo "Staging URL: https://h2o-release-test.s3.amazonaws.com/h2o/staging/${BRANCH_SAFE}/${BUILD_NUMBER}/"
+          echo "Staging URL: https://h2o-3-enterprise-release.s3.amazonaws.com/h2o/staging/${BRANCH_SAFE}/${BUILD_NUMBER}/"
 
           # Summary
           echo "## S3 Staging Upload" >> $GITHUB_STEP_SUMMARY
