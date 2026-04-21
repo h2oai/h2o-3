@@ -884,7 +884,7 @@ jobs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "H2O-3 Release Pipeline | GitHub Actions"
+                    "text": "H2O-3 Public Nightly Release Pipeline | GitHub Actions"
                   }
                 ]
               }'
@@ -895,7 +895,7 @@ jobs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "H2O-3 Release Pipeline | GitHub Actions"
+                    "text": "H2O-3 Public Nightly Release Pipeline | GitHub Actions"
                   }
                 ]
               }'
@@ -904,13 +904,13 @@ jobs:
           cat > /tmp/slack_payload.json << EOF
           {
             "channel": "${{ env.SLACK_CHANNEL }}",
-            "text": "${HEADER_EMOJI} H2O-3 Release Workflow Alert - ${STATUS_TEXT}",
+            "text": "${HEADER_EMOJI} H2O-3 Public Nightly Release Alert - ${STATUS_TEXT}",
             "blocks": [
               {
                 "type": "header",
                 "text": {
                   "type": "plain_text",
-                  "text": "${HEADER_EMOJI} H2O-3 Release Workflow Alert"
+                  "text": "${HEADER_EMOJI} H2O-3 Public Nightly Release Alert"
                 }
               },
               {
