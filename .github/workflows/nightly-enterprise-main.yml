@@ -53,7 +53,7 @@
 #
 # ==============================================================================
 
-run-name: "Enterprise H2O-3 Nightly [${{ inputs.branch_custom || inputs.branch || 'master' }}]"
+run-name: "Enterprise H2O-3 Nightly - Tests [${{ inputs.branch_custom || inputs.branch || 'master' }}]"
 name: Enterprise H2O-3 Nightly - Tests
 
 # ==============================================================================
