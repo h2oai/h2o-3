@@ -1,0 +1,272 @@
+# ==============================================================================
+#
+#                 ENTERPRISE H2O-3 NIGHTLY PIPELINE
+#                 =================================
+#
+#   The master orchestrator for H2O-3 Enterprise nightly testing.
+#
+# ==============================================================================
+#
+#   ARCHITECTURE
+#   ------------
+#
+#   ┌─────────────────────────────────────────────────────────────────────────┐
+#   │                         NIGHTLY-ENTERPRISE-MAIN                         │
+#   │                           (This Workflow)                               │
+#   └─────────────────────────────────────────────────────────────────────────┘
+#                                      │
+#                    ┌─────────────────┴─────────────────┐
+#                    │                                   │
+#                    ▼                                   ▼
+#             ┌─────────────┐                    ┌─────────────┐
+#             │    INIT     │                    │    BUILD    │
+#             │  (config)   │                    │   (H2O-3)   │
+#             └─────────────┘                    └─────────────┘
+#                                                       │
+#              ┌────────────────────────────────────────┼────────────────────┐
+#              │                    │                   │                    │
+#              ▼                    ▼                   ▼                    ▼
+#       ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌───────────┐
+#       │   SMOKE     │     │   PYTHON    │     │     R       │     │   FLOW    │
+#       │  (8 tests)  │     │ (27 tests)  │     │ (18 tests)  │     │ (3 tests) │
+#       └─────────────┘     └─────────────┘     └─────────────┘     └───────────┘
+#              │
+#              ▼
+#       ┌─────────────┐
+#       │    JAVA     │  ← Uses EC2 runners (EFS data access)
+#       │  (6 tests)  │
+#       └─────────────┘
+#                                      │
+#                                      ▼
+#                             ┌─────────────┐
+#                             │   SUMMARY   │
+#                             │  (results)  │
+#                             └─────────────┘
+#
+#   CONFIGURATION
+#   -------------
+#   All settings: .github/config/settings.yml
+#
+#   SCHEDULE
+#   --------
+#   Daily at 2:00 AM UTC (or manual trigger)
+#
+# ==============================================================================
+
+run-name: "Enterprise H2O-3 Nightly [${{ inputs.branch_custom || inputs.branch || 'master' }}]"
+name: Enterprise H2O-3 Nightly - Tests
+
+# ==============================================================================
+# TRIGGERS
+# ==============================================================================
+on:
+  # Scheduled runs are handled by nightly-scheduler.yml for multi-branch support
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'H2O-3 branch (use custom field for other branches)'
+        required: true
+        default: 'master'
+        type: choice
+        options:
+          - master
+          - rel-3.46.0
+
+      branch_custom:
+        description: 'Custom branch (overrides dropdown - run list-branches workflow to see all)'
+        required: false
+        type: string
+
+      run_smoke:
+        description: 'Run Smoke Tests'
+        required: false
+        type: boolean
+        default: true
+
+      run_python:
+        description: 'Run Python Tests'
+        required: false
+        type: boolean
+        default: false
+
+      run_r:
+        description: 'Run R Tests'
+        required: false
+        type: boolean
+        default: false
+
+      run_java:
+        description: 'Run Java Tests'
+        required: false
+        type: boolean
+        default: true
+
+      run_flow:
+        description: 'Run Flow Tests'
+        required: false
+        type: boolean
+        default: false
+
+# ==============================================================================
+# CONCURRENCY
+# ==============================================================================
+# Allow parallel runs for different H2O-3 branches
+concurrency:
+  group: nightly-enterprise-${{ inputs.branch_custom || inputs.branch || 'master' }}
+  cancel-in-progress: false
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+  contents: write
+  id-token: write
+  checks: write
+  actions: read
+  pages: write
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+
+  # ============================================================================
+  # INIT: Determine what to run
+  # ============================================================================
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.config.outputs.branch }}
+      run_smoke: ${{ steps.config.outputs.run_smoke }}
+      run_python: ${{ steps.config.outputs.run_python }}
+      run_r: ${{ steps.config.outputs.run_r }}
+      run_java: ${{ steps.config.outputs.run_java }}
+      run_flow: ${{ steps.config.outputs.run_flow }}
+
+    steps:
+      - name: Fetch H2O-3 Enterprise Branches
+        id: fetch-branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Fetch branches for validation (no summary output)
+          BRANCHES=$(gh api repos/h2oai/h2o-3-enterprise/branches --paginate --jq '.[].name' | tr '\n' ' ')
+          echo "branches=${BRANCHES}" >> $GITHUB_OUTPUT
+
+      - name: Determine Configuration
+        id: config
+        run: |
+          # Branch: custom > dropdown > default
+          BRANCH="${{ inputs.branch_custom || inputs.branch || 'master' }}"
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+
+          # Validate branch exists
+          if ! echo "${{ steps.fetch-branches.outputs.branches }}" | grep -qw "${BRANCH}"; then
+            echo "::warning::Branch '${BRANCH}' not found in h2o-3-enterprise repo. Build may fail."
+          fi
+
+          # Test categories (from checkbox inputs)
+          echo "run_smoke=${{ inputs.run_smoke }}" >> $GITHUB_OUTPUT
+          echo "run_python=${{ inputs.run_python }}" >> $GITHUB_OUTPUT
+          echo "run_r=${{ inputs.run_r }}" >> $GITHUB_OUTPUT
+          echo "run_java=${{ inputs.run_java }}" >> $GITHUB_OUTPUT
+          echo "run_flow=${{ inputs.run_flow }}" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "## Enterprise Pipeline Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository | \`h2oai/h2o-3-enterprise\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Smoke | ${{ inputs.run_smoke }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python | ${{ inputs.run_python }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| R | ${{ inputs.run_r }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java | ${{ inputs.run_java }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Flow | ${{ inputs.run_flow }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # BUILD: Compile H2O-3 Enterprise and create test packages
+  # ============================================================================
+  build:
+    name: Build
+    needs: init
+    uses: ./.github/workflows/nightly-build.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+      repository: h2oai/h2o-3-enterprise
+    secrets: inherit
+
+  # ============================================================================
+  # TEST SUITES (Run in parallel after build)
+  # ============================================================================
+  smoke:
+    name: Smoke Tests
+    needs: [init, build]
+    if: needs.init.outputs.run_smoke == 'true'
+    uses: ./.github/workflows/nightly-smoke-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+    secrets: inherit
+
+  python:
+    name: Python Tests
+    needs: [init, build]
+    if: needs.init.outputs.run_python == 'true'
+    uses: ./.github/workflows/nightly-python-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+    secrets: inherit
+
+  r:
+    name: R Tests
+    needs: [init, build]
+    if: needs.init.outputs.run_r == 'true'
+    uses: ./.github/workflows/nightly-r-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+    secrets: inherit
+
+  java:
+    name: Java Tests
+    needs: [init, build]
+    if: needs.init.outputs.run_java == 'true'
+    uses: ./.github/workflows/nightly-java-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+    secrets: inherit
+
+  flow:
+    name: Flow Tests
+    needs: [init, build]
+    if: needs.init.outputs.run_flow == 'true'
+    uses: ./.github/workflows/nightly-flow-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+    secrets: inherit
+
+  # ============================================================================
+  # SUMMARY: Generate comprehensive test dashboard
+  # ============================================================================
+  summary:
+    name: Summary
+    needs: [init, build, smoke, python, r, java, flow]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Test Dashboard
+        uses: ./.github/actions/generate-dashboard
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ needs.init.outputs.branch }}
+          build_sha: ${{ needs.build.outputs.build_sha }}
+          build_result: ${{ needs.build.result }}
+          smoke_result: ${{ needs.smoke.result }}
+          python_result: ${{ needs.python.result }}
+          r_result: ${{ needs.r.result }}
+          java_result: ${{ needs.java.result }}
+          flow_result: ${{ needs.flow.result }}
