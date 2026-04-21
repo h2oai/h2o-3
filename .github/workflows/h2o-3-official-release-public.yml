@@ -383,16 +383,118 @@ jobs:
           echo "Git tags created successfully"
 
   # ============================================================================
-  # PUBLISH TO S3 (only when stage=build or stage=full, and publish_s3=true)
+  # UPLOAD TO S3 STAGING (immediately after build)
+  # Uploads build outputs to S3 versioned staging path for verification
   # ============================================================================
-  publish-s3:
-    name: Publish to S3
+  upload-staging:
+    name: Upload to S3 Staging
     needs: [init, build, create-tag]
     if: |
       always() &&
       needs.init.outputs.should_build == 'true' &&
-      inputs.publish_s3 == true &&
       (needs.create-tag.result == 'success' || needs.create-tag.result == 'skipped')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.S3_ROLE }}
+          role-session-name: release-staging-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h2o-release-*
+          path: artifacts/
+          merge-multiple: false
+
+      - name: Upload to S3 Staging
+        env:
+          BRANCH: ${{ needs.init.outputs.branch }}
+          BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
+          VERSION: ${{ needs.build.outputs.project_version }}
+          S3_ROOT: ${{ needs.init.outputs.s3_root }}
+        run: |
+          BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
+          S3_STAGING="${S3_ROOT}/staging/${BRANCH_SAFE}/${BUILD_NUMBER}"
+
+          echo "=== Uploading build outputs to S3 staging ==="
+          echo "S3 Staging Path: ${S3_STAGING}"
+          echo "Version: ${VERSION}"
+
+          # List downloaded artifacts
+          echo "=== Downloaded artifacts ==="
+          find artifacts/ -type f | head -50
+
+          # Upload distribution package
+          if [ -d "artifacts/h2o-release-dist" ]; then
+            echo "=== Uploading distribution ==="
+            aws s3 cp artifacts/h2o-release-dist/ "${S3_STAGING}/dist/" --recursive --acl public-read
+          fi
+
+          # Upload Python packages
+          if [ -d "artifacts/h2o-release-python" ]; then
+            echo "=== Uploading Python packages ==="
+            aws s3 cp artifacts/h2o-release-python/ "${S3_STAGING}/Python/" --recursive --acl public-read
+          fi
+
+          # Upload R packages
+          if [ -d "artifacts/h2o-release-r" ]; then
+            echo "=== Uploading R packages ==="
+            aws s3 cp artifacts/h2o-release-r/ "${S3_STAGING}/R/" --recursive --acl public-read
+          fi
+
+          # Upload documentation
+          if [ -d "artifacts/h2o-release-docs" ]; then
+            echo "=== Uploading documentation ==="
+            aws s3 cp artifacts/h2o-release-docs/ "${S3_STAGING}/docs/" --recursive --acl public-read
+          fi
+
+          # Upload assemblies
+          if [ -d "artifacts/h2o-release-assemblies" ]; then
+            echo "=== Uploading assemblies ==="
+            aws s3 cp artifacts/h2o-release-assemblies/ "${S3_STAGING}/assemblies/" --recursive --acl public-read
+          fi
+
+          # Create staging manifest
+          cat > staging-manifest.json << EOF
+          {
+            "branch": "${BRANCH}",
+            "build_number": "${BUILD_NUMBER}",
+            "version": "${VERSION}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "git_sha": "${{ needs.build.outputs.git_sha }}",
+            "staging_path": "${S3_STAGING}"
+          }
+          EOF
+          aws s3 cp staging-manifest.json "${S3_STAGING}/staging-manifest.json" --acl public-read
+
+          echo "=== Staging upload complete ==="
+          echo "Staging URL: https://h2o-release-test.s3.amazonaws.com/h2o/staging/${BRANCH_SAFE}/${BUILD_NUMBER}/"
+
+          # Summary
+          echo "## S3 Staging Upload" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Staging Path | \`${S3_STAGING}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Number | \`${BUILD_NUMBER}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # PUBLISH TO S3 (only when stage=build or stage=full, and publish_s3=true)
+  # ============================================================================
+  publish-s3:
+    name: Publish to S3
+    needs: [init, build, create-tag, upload-staging]
+    if: |
+      always() &&
+      needs.init.outputs.should_build == 'true' &&
+      inputs.publish_s3 == true &&
+      (needs.upload-staging.result == 'success' || needs.upload-staging.result == 'skipped')
     uses: ./.github/workflows/release-publish-s3.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
