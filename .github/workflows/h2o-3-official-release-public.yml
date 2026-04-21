@@ -35,7 +35,7 @@
 
 name: Public H2O-3 Official Release
 
-run-name: "Public H2O-3 Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
+run-name: "Public H2O-3 Official Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
 
 on:
   workflow_dispatch:
