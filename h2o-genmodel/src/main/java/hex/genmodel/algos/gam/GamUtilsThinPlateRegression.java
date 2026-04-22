@@ -63,6 +63,7 @@ public class GamUtilsThinPlateRegression {
    *     - https://bugs.openjdk.org/browse/JDK-8189172
    */
   public static double intPow(double base, int exp) {
+    assert exp >= 0;
     switch (exp) {
       case 0: return 1.0;
       case 1: return base;
