@@ -208,6 +208,11 @@ git checkout -b githubusername-gh-1234_add_new_feature
 6. The PR title must include the issue number, and the PR description must link the issue, e.g. `GH-4200: Adding support for Factorization Machines`. This is checked by CI.
 7. If a PR is intentionally not tied to an issue (docs-only cleanups, tooling tweaks), append **`[nocheck]` at the end** of the title — e.g. `Document PR conventions in CLAUDE.md [nocheck]`. `gradle/prCheck.gradle` skips validation when it sees the marker anywhere in the title, but keep it at the end by convention so reviewers read the actual change first. Target the **current fix release branch** (e.g. `rel-3.46.0` today, `rel-3.48.0` once that line is cut) — not `master` — so the change ships in the upcoming release and flows forward into master on the next merge. Target `master` only when the change is inherently master-only.
 
+#### Updating an open PR
+- **Prefer new commits over force-push.** Once a PR is under review, add follow-up commits (`git commit`, `git push`) so reviewers see the incremental diff and GitHub preserves comment anchors.
+- **Use force-push only for genuine history surgery** — rebasing onto a different base branch, resolving a merge conflict before first review, or dropping a committed secret. Not for squashing or amending typos that already landed on the remote.
+- Squashing can happen at merge time via the GitHub "Squash and merge" button if the maintainer prefers a single commit.
+
 #### PR description style
 - **Be brief.** One short paragraph or a handful of bullets. A reviewer should understand the what and the why in under 30 seconds.
 - **Focus on the change and its motivation** — what problem this solves, which CVE/bug it fixes, which user-visible behaviour shifts.
