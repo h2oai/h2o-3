@@ -199,6 +199,65 @@ git checkout -b githubusername-gh-1234_add_new_feature
 - PRs trigger Jenkins CI tests automatically
 - All tests must pass before merge
 
+#### prCheck Rules (enforced by `gradle/prCheck.gradle`)
+1. Always have a GitHub issue before starting work (otherwise you cannot know which branch to start from).
+2. The GitHub issue must have a milestone assigned. If it does not, consult the team for a suitable fix version.
+3. If the milestone ends with `.1`, the change targets the `master` branch. All other changes target the current fix release branch, prefixed `rel-` (e.g. `rel-3.46.0`).
+4. Assign the issue to the H2O-3 project and move it to the "In Progress" state.
+5. Include the GitHub issue number (`GH-XXXX`) in at least one commit message. Not checked by CI, but expected.
+6. The PR title must include the issue number, and the PR description must link the issue, e.g. `GH-4200: Adding support for Factorization Machines`. This is checked by CI.
+7. If a PR is intentionally not tied to an issue (docs-only cleanups, tooling tweaks), append **`[nocheck]` at the end** of the title — e.g. `Document PR conventions in CLAUDE.md [nocheck]`. `gradle/prCheck.gradle` skips validation when it sees the marker anywhere in the title, but keep it at the end by convention so reviewers read the actual change first. Target the **current fix release branch** (e.g. `rel-3.46.0` today, `rel-3.48.0` once that line is cut) — not `master` — so the change ships in the upcoming release and flows forward into master on the next merge. Target `master` only when the change is inherently master-only.
+
+#### Updating an open PR
+- **Prefer new commits over force-push.** Once a PR is under review, add follow-up commits (`git commit`, `git push`) so reviewers see the incremental diff and GitHub preserves comment anchors.
+- **Use force-push only for genuine history surgery** — rebasing onto a different base branch, resolving a merge conflict before first review, or dropping a committed secret. Not for squashing or amending typos that already landed on the remote.
+- Squashing can happen at merge time via the GitHub "Squash and merge" button if the maintainer prefers a single commit.
+
+#### PR description style
+- **Be brief.** One short paragraph or a handful of bullets. A reviewer should understand the what and the why in under 30 seconds.
+- **Focus on the change and its motivation** — what problem this solves, which CVE/bug it fixes, which user-visible behaviour shifts.
+- **Link the issue** (`Closes #N` or similar) so GitHub auto-closes it on merge.
+- **Do not include test-suite results or CI stats** (`All 42 tests passing`, `20/20 green`, runtime numbers, coverage deltas). Tests passing is assumed; CI reports them.
+- **Do not include meaningless stats** (file counts, LOC changes, "refactored 5 classes"). The diff shows them.
+- **Do not narrate the process** (`first I tried X, then Y`, `I investigated…`). Ship the conclusion.
+- **Screenshots / logs only when they add information** the reviewer can't get from the diff (UI changes, runtime traces for a bug reproduction).
+
+#### Issue hygiene
+When creating or editing a GitHub issue:
+- **Don't paste information that already lives elsewhere** (CVE advisories, long error logs, full stack traces). Summarise in a couple of sentences and link the source.
+- **Fix version belongs in the milestone, not the description.** Never write `Fix version: 3.46.0.11` in the body — set the milestone field instead (`gh issue edit N --milestone "3.46.0.11"`).
+- **Assignee is required** (checked by `prCheck`). Set it when you open the issue.
+- **Project is required** (checked by `prCheck`). Add the issue to the `H2O OSS (H2O-3)` project (project number 112).
+- **Labels**: add one when it's obvious (`bug`, `feature`, `docs`, `dependencies`, …). Skip if unclear. **CVE or security-related tasks must carry the `Security Vulnerability` label.**
+- **Relationships**: if a PR already exists for the issue, link it from the Development section of the issue UI.
+- **Project fields** (see `H2O OSS (H2O-3)` side panel): fill what you know — `Status` (set to `In Progress` once work starts), `Customer`, `Support ticket`, `CVEs fixed` (comma-separated CVE IDs), `Complexity` (Story Points 1-5, see scale below), `Private notes`. Leave blank rather than guessing.
+
+#### Issue fields & triage
+Applies to both new issues you open and existing ones you review.
+
+**For existing issues — consider closing when:**
+- You're ~80% sure it's outdated.
+- Nobody can still understand what the issue is about.
+- There's a closed support ticket referenced in the comments.
+- Before closing: assign the project and link the support ticket in the project details.
+- Default to closing rather than asking clarifying questions.
+- **Never close an issue without explicit confirmation from the user first.** Closing is visible to others and reopening is annoying; always propose the close action and wait for a go-ahead.
+
+**For any issue you keep open (or create):**
+- **Assignee** — set a current owner, or clear it if the previous owner no longer works on H2O-3.
+- **Labels** — add what fits:
+  - algo family (`GBM`, `GLM`, `XGBoost`, …),
+  - `Security Vulnerability` (required for any CVE / security task),
+  - `question`, `good_first_issue`, `docs`, `dependencies`, `Build`, …
+  - Optionally a type label: `bug`, `feature`, or a `Task` tag.
+  - **Do not use customer-specific labels on the issue itself** — customer info belongs in the project `Customer` field.
+- **Project** — add the issue to `H2O OSS (H2O-3)` (project number 112). Required by `prCheck`.
+- **Complexity (Story Points)** — fill the project field on a 1–5 scale:
+  - **1** — good first issue.
+  - **2-3** — understandable requirement, just time and effort for an in-house developer (example: [#7518](https://github.com/h2oai/h2o-3/issues/7518)).
+  - **4** — requires study, time, and effort, but no new infrastructure (example: new algorithm like HDBSCAN / KNN, or dropping support for a Python version).
+  - **5** — requires study, time, effort, **and** new infrastructure (example: XGBoost on Windows, adding a new Java / R / Python version).
+
 ### Commit Messages
 Follow the existing style seen in recent commits (concise, descriptive).
 
