@@ -1,0 +1,38 @@
+description = "Jetty 12 minimal (ee8 / javax.servlet) implementation for steam / minimal assemblies"
+
+// Jetty 12 requires Java 17+ at both compile and runtime.
+sourceCompatibility = 17
+targetCompatibility = 17
+[compileJava, compileTestJava].each { t ->
+    t.javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+[test].each { t ->
+    t.javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    api project(":h2o-webserver-iface")
+
+    // Core (EE-agnostic).
+    api "org.eclipse.jetty:jetty-server:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-http:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-util:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-io:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-security:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-session:${jetty12Version}"
+
+    // ee8 — only the servlet + websocket pieces the minimal assembly needs.
+    api "org.eclipse.jetty.ee8:jetty-ee8-servlet:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-jetty-api:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-jetty-server:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-servlet:${jetty12Version}"
+
+    api "javax.servlet:javax.servlet-api:${servletApiVersion}"
+
+    testImplementation group: "junit", name: "junit", version: "4.12"
+    testImplementation "org.mockito:mockito-core:2.23.0"
+}
