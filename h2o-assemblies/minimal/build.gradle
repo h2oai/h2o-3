@@ -18,7 +18,7 @@ dependencies {
         exclude module: "${defaultWebserverModule}"
     }
     api project(":h2o-logging-impl-log4j2")
-    runtimeOnly project(":h2o-jetty-9-minimal")
+    runtimeOnly project(":h2o-jetty-12-minimal")
     api project(":h2o-web")
     api project(":h2o-persist-http")
 

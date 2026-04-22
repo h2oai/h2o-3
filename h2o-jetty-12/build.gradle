@@ -1,0 +1,47 @@
+description = "Jetty 12 (ee8 / javax.servlet) HTTP implementation used in H2O standalone assemblies"
+
+// Jetty 12 requires Java 17+ at both compile and runtime.
+sourceCompatibility = 17
+targetCompatibility = 17
+[compileJava, compileTestJava].each { t ->
+    t.javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+[test].each { t ->
+    t.javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    api project(":h2o-webserver-iface")
+
+    // Core (EE-agnostic) — server, HTTP, util, I/O, security primitives.
+    api "org.eclipse.jetty:jetty-server:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-http:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-util:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-io:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-security:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-session:${jetty12Version}"
+
+    // ee8 — Servlet 3.1 / javax.servlet environment.
+    api "org.eclipse.jetty.ee8:jetty-ee8-servlet:${jetty12Version}"
+    api "org.eclipse.jetty.ee8:jetty-ee8-servlets:${jetty12Version}"
+    api "org.eclipse.jetty.ee8:jetty-ee8-proxy:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-jetty-api:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-jetty-server:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-servlet:${jetty12Version}"
+
+    // Servlet API 3.1 (javax) — matches jetty-ee8-servlet's namespace.
+    api "javax.servlet:javax.servlet-api:${servletApiVersion}"
+
+    testImplementation group: "junit", name: "junit", version: "4.12"
+    testImplementation "org.mockito:mockito-core:2.23.0"
+
+    constraints {
+        api("org.apache.mina:mina-core:2.2.4") {
+            because 'Fixes CVE-2024-52046'
+        }
+    }
+}
