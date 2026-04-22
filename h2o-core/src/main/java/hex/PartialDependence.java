@@ -95,7 +95,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
     }
     int nclasses = m._output.nclasses();
     if(nclasses <= 2 && _targets != null){
-      throw new IllegalArgumentException("Targets parameter is available only for multinomial classification.");
+      throw new IllegalArgumentException("Targets parameter is available only for multinomial classification or ordinal regression.");
     }
     if(nclasses == 1){
       _predictor_column = 0;
@@ -105,7 +105,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
       _predictor_columns = new int[]{_predictor_column};
     } else {
       if (_targets == null) {
-        throw new IllegalArgumentException("Targets parameter has to be set for multinomial classification.");
+        throw new IllegalArgumentException("Targets parameter has to be set for multinomial classification or ordinal regression.");
       } else {
         _predictor_columns = findTargetClassPredictorIndices(m, _targets);
       }
@@ -117,8 +117,8 @@ public class PartialDependence extends Lockable<PartialDependence> {
         _cols_1d_2d.addAll(Arrays.asList(_cols));
       if (_col_pairs_2dpdp != null) {
         _num_2D_pairs = _col_pairs_2dpdp.length * _predictor_columns.length;
-        for (int index=0; index < _num_2D_pairs; index++) {
-          if (!(_cols_1d_2d.contains(_col_pairs_2dpdp[index][0]))) 
+        for (int index = 0; index < _col_pairs_2dpdp.length; index++) {
+          if (!(_cols_1d_2d.contains(_col_pairs_2dpdp[index][0])))
             _cols_1d_2d.add(_col_pairs_2dpdp[index][0]);
           if (!(_cols_1d_2d.contains(_col_pairs_2dpdp[index][1])))
             _cols_1d_2d.add(_col_pairs_2dpdp[index][1]);
@@ -220,10 +220,11 @@ public class PartialDependence extends Lockable<PartialDependence> {
       _partial_dependence_data = new TwoDimTable[num_cols_1d_2d];
       
       int column = 0;
+      int column2D = 0; // separate index into _col_pairs_2dpdp
       for (int i = 0; i < num_cols_1d_2d; ++i) {  // take care of the 1d pdp first, then 2d pdp
         boolean workingOn1D = (i < _num_1D);
-        final String col = workingOn1D ? _cols[column] : _col_pairs_2dpdp[column - _num_1D][0];
-        final String col2 = workingOn1D ? null : _col_pairs_2dpdp[column - _num_1D][1];
+        final String col = workingOn1D ? _cols[column] : _col_pairs_2dpdp[column2D][0];
+        final String col2 = workingOn1D ? null : _col_pairs_2dpdp[column2D][1];
         final int whichPredictorColumn = i % _predictor_columns.length;
         Log.debug("Computing partial dependence of model on '" + col + "'"+(_targets == null ? "." : " and class "+_targets[whichPredictorColumn]+"."));
         double[] colVals = extractColValues(col, _nbins, fr.vec(col));
@@ -314,9 +315,9 @@ public class PartialDependence extends Lockable<PartialDependence> {
           _partial_dependence_data[i].set(j, colIndex++, stdErrorOfTheMeanResponse[j]);
         }
         if(_targets == null){
-          column++;
+          if (workingOn1D) column++; else column2D++;
         } else if((i+1) % _targets.length == 0){
-          column++;
+          if (workingOn1D) column++; else column2D++;
         }
         _job.update(1);
         update(_job);

@@ -3149,7 +3149,7 @@ def _process_models_input(
 
     :param models: H2OAutoML/List of models/H2O Model
     :param frame: H2O Frame
-    :returns: tuple (is_aml, models_to_show, classification, multinomial_classification,
+    :returns: tuple (is_aml, models_to_show, classification, multinomial_or_ordinal,
                     multiple_models, targets, tree_models_to_show)
     """
     is_aml = False
@@ -3179,11 +3179,11 @@ def _process_models_input(
     if any(_get_treatment(x) is not None for x in models_to_show):
         raise ValueError("Uplift models currently cannot be used with explain function.")
     classification = frame[y].isfactor()[0]
-    multinomial_classification = classification and frame[y].nlevels()[0] > 2
+    multinomial_or_ordinal = classification and frame[y].nlevels()[0] > 2
     targets = [None]
-    if multinomial_classification:
+    if multinomial_or_ordinal:
         targets = [[t] for t in frame[y].levels()[0]]
-    return is_aml, models_to_show, classification, multinomial_classification, \
+    return is_aml, models_to_show, classification, multinomial_or_ordinal, \
            multiple_models, targets, tree_models_to_show, models_with_varimp
 
 
@@ -3274,7 +3274,7 @@ def explain(
     >>> aml.leader.explain(test)
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    (is_aml, models_to_show, classification, multinomial_classification, multiple_models, targets,
+    (is_aml, models_to_show, classification, multinomial_or_ordinal, multiple_models, targets,
      tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
 
     if top_n_features < 0:
@@ -3402,8 +3402,9 @@ def explain(
                                        colormap=sequential_colormap,
                                        figsize=figsize)))
 
-    # SHAP Summary
-    if "shap_summary" in explanations and not multinomial_classification:
+    # SHAP Summary -- skipped for multinomial (multi-output visualization not supported)
+    # and ordinal (no ordinal-capable model currently supports TreeSHAP contributions)
+    if "shap_summary" in explanations and not multinomial_or_ordinal:
         shap_models = tree_models_to_show
         if background_frame is not None:
             shap_models = [m for m in models_to_show if has_extension(m, "Contributions")]
@@ -3556,7 +3557,7 @@ def explain_row(
     >>> # Create the leader model explanation
     >>> aml.leader.explain_row(test, row_index=0)
     """
-    (is_aml, models_to_show, _, multinomial_classification, multiple_models,
+    (is_aml, models_to_show, _, multinomial_or_ordinal, multiple_models,
      targets, tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
 
     if columns is not None and isinstance(columns, list):
@@ -3602,7 +3603,8 @@ def explain_row(
                                                                      plot_overrides.get("leaderboard"),
                                                                      frame=frame)))
 
-    if "shap_explain_row" in explanations and not multinomial_classification:
+    # SHAP -- skipped for multinomial/ordinal (see explain() for rationale)
+    if "shap_explain_row" in explanations and not multinomial_or_ordinal:
         shap_models = tree_models_to_show
         if background_frame is not None:
             shap_models = [m for m in models_to_show if has_extension(m, "Contributions")]

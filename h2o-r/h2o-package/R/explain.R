@@ -219,7 +219,7 @@ case_insensitive_match_arg <- function(arg, choices) {
              "leaderboard",
              "model_ids",
              "is_classification",
-             "is_multinomial_classification",
+             "is_multinomial_or_ordinal",
              "x",
              "y",
              "model",
@@ -244,11 +244,11 @@ case_insensitive_match_arg <- function(arg, choices) {
         y <<- single_model@allparameters$y
         if (is.null(newdata)) {
           is_classification <<- NA
-          is_multinomial_classification <<- NA
+          is_multinomial_or_ordinal <<- NA
         } else {
           y_col <- newdata[[.self$y]]
           is_classification <<- is.factor(y_col)
-          is_multinomial_classification <<- is.factor(y_col) && h2o.nlevels(y_col) > 2
+          is_multinomial_or_ordinal <<- is.factor(y_col) && h2o.nlevels(y_col) > 2
         }
       }
       .self
@@ -274,10 +274,10 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param only_with_varimp If TRUE, return only models that have variable importance
 #' @param best_of_family If TRUE, return only the best of family models; if FALSE return all models in \code{object}
 #' @param require_newdata If TRUE, require newdata to be specified; otherwise allow NULL instead, this can be used when
-#'                        there is no need to know if the problem is (multinomial) classification.
+#'                        there is no need to know if the problem is (multinomial) classification or ordinal regression.
 #' @param check_x_y_consistency If TRUE, make sure that when given a list of models all models have the same X and y. Defaults to TRUE.
 #' @return a list with the following names \code{leader}, \code{is_automl}, \code{models},
-#'   \code{is_classification}, \code{is_multinomial_classification}, \code{x}, \code{y}, \code{model}
+#'   \code{is_classification}, \code{is_multinomial_or_ordinal}, \code{x}, \code{y}, \code{model}
 #' @noRd
 .process_models_or_automl <- function(object, newdata,
                                       require_single_model = FALSE,
@@ -1560,7 +1560,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
     margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
 
   targets <- NULL
-  if (models_info$is_multinomial_classification) {
+  if (models_info$is_multinomial_or_ordinal) {
     targets <- h2o.levels(newdata[[models_info$y]])
   }
 
@@ -2724,7 +2724,7 @@ h2o.pd_multi_plot <- function(object,
 
   if (length(models_info$model_ids) == 1) {
     targets <- NULL
-    if (models_info$is_multinomial_classification) {
+    if (models_info$is_multinomial_or_ordinal) {
       targets <- h2o.levels(newdata[[models_info$y]])
     }
     h2o.no_progress({
@@ -3986,8 +3986,9 @@ h2o.explain <- function(object,
     }
   }
 
-  # SHAP summary
-  if (!"shap_summary" %in% skip_explanations && !models_info$is_multinomial_classification) {
+  # SHAP summary -- skipped for multinomial (multi-output visualization not supported)
+  # and ordinal (no ordinal-capable model currently supports TreeSHAP contributions)
+  if (!"shap_summary" %in% skip_explanations && !models_info$is_multinomial_or_ordinal) {
     shap_models <- if (is.H2OFrame(background_frame)) models_info$model_ids else Filter(.is_h2o_tree_model, models_info$model_ids)
     num_of_shap_models <- length(shap_models)
     if (num_of_shap_models > 0) {
@@ -4016,7 +4017,7 @@ h2o.explain <- function(object,
       description = .describe("pdp"),
       plots = list())
     for (col in columns_of_interest) {
-      if (models_info$is_multinomial_classification) {
+      if (models_info$is_multinomial_or_ordinal) {
         targets <- h2o.levels(newdata[[models_info$y]])
         if (!is.null(plot_overrides$pdp[["target"]])) {
           targets <- plot_overrides$pdp[["target"]]
@@ -4076,7 +4077,7 @@ h2o.explain <- function(object,
     for (col in columns_of_interest) {
       for (m in models_info$model_ids) {
         m <- models_info$get_model(m)
-        if (models_info$is_multinomial_classification) {
+        if (models_info$is_multinomial_or_ordinal) {
           targets <- h2o.levels(newdata[[models_info$y]])
           if (!is.null(plot_overrides$ice[["target"]])) {
             targets <- plot_overrides$ice[["target"]]
@@ -4279,7 +4280,8 @@ h2o.explain_row <- function(object,
       data = .leaderboard_for_row(models_info, newdata, row_index))
   }
 
-  if (!"shap_explain_row" %in% skip_explanations && !models_info$is_multinomial_classification) {
+  # SHAP -- skipped for multinomial/ordinal (see h2o.explain for rationale)
+  if (!"shap_explain_row" %in% skip_explanations && !models_info$is_multinomial_or_ordinal) {
     shap_models <- if(is.H2OFrame(background_frame)) models_info$model_ids else Filter(.is_h2o_tree_model, models_info$model_ids)
     num_of_shap_models <- length(shap_models)
     if (num_of_shap_models > 0) {
@@ -4310,7 +4312,7 @@ h2o.explain_row <- function(object,
       plots = list()
     )
     for (col in columns_of_interest) {
-      if (models_info$is_multinomial_classification) {
+      if (models_info$is_multinomial_or_ordinal) {
         targets <- h2o.levels(newdata[[models_info$y]])
         if (!is.null(plot_overrides$ice[["target"]])) {
           targets <- plot_overrides$ice[["target"]]
