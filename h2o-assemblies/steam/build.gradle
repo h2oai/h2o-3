@@ -14,7 +14,7 @@ dependencies {
     api(project(":h2o-app")) {
         exclude module: "${defaultWebserverModule}"
     }
-    runtimeOnly project(":h2o-jetty-9-minimal")
+    runtimeOnly project(":h2o-jetty-12-minimal")
     api project(":h2o-logging-impl-log4j2")
     api project(":h2o-web")
     // Kubernetes support

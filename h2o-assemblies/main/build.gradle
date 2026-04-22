@@ -35,14 +35,19 @@ dependencies {
         exclude group: "org.eclipse.jetty"
     }
 
-    // Upgrade dependencies of h2o-jetty-9
-    api "org.eclipse.jetty:jetty-server:${jetty9MainVersion}"
-    api "org.eclipse.jetty:jetty-servlets:${jetty9MainVersion}"
-    api "org.eclipse.jetty:jetty-jaas:${jetty9MainVersion}"
-    api "org.eclipse.jetty:jetty-proxy:${jetty9MainVersion}"
-    api "org.eclipse.jetty:jetty-servlet:${jetty9MainVersion}"
-    api "org.eclipse.jetty.websocket:websocket-api:${jetty9MainVersion}"
-    api "org.eclipse.jetty.websocket:websocket-server:${jetty9MainVersion}"
+    // Jetty 12 (ee8 / javax.servlet) — fixes CVE-2026-2332, CVE-2024-6763, CVE-2025-11143.
+    api "org.eclipse.jetty:jetty-server:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-http:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-util:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-io:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-security:${jetty12Version}"
+    api "org.eclipse.jetty:jetty-session:${jetty12Version}"
+    api "org.eclipse.jetty.ee8:jetty-ee8-servlet:${jetty12Version}"
+    api "org.eclipse.jetty.ee8:jetty-ee8-servlets:${jetty12Version}"
+    api "org.eclipse.jetty.ee8:jetty-ee8-proxy:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-jetty-api:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-jetty-server:${jetty12Version}"
+    api "org.eclipse.jetty.ee8.websocket:jetty-ee8-websocket-servlet:${jetty12Version}"
     
     // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
     implementation('org.apache.hive.shims:hive-shims-common:2.3.9')
