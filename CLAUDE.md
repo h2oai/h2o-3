@@ -235,6 +235,8 @@ When creating or editing a GitHub issue:
 #### Issue fields & triage
 Applies to both new issues you open and existing ones you review.
 
+**Before triaging, always read the project-side fields.** `gh issue view` shows labels / milestone / assignees but **not** custom project fields (`Customer`, `Support ticket`, `CVEs fixed`, `Complexity`, linked PRs, etc.). Those are only visible via `gh project item-list 112 --owner h2oai --format json | jq '.items | map(select(.content.number == N)) | .[0]'`. Skipping this step is how you wrongly conclude an issue is actionable-less when it actually has a support ticket, customer, or open PR attached.
+
 **For existing issues — consider closing when:**
 - You're ~80% sure it's outdated.
 - Nobody can still understand what the issue is about.
