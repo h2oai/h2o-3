@@ -1,9 +1,9 @@
 # ==============================================================================
 #
-#                         H2O-3 RELEASE PIPELINE
+#                         H2O-3 RELEASE WORKFLOW
 #                         ======================
 #
-#   Complete release pipeline migrated from Jenkins to GitHub Actions.
+#   Complete release workflow migrated from Jenkins to GitHub Actions.
 #   Handles building, signing, and publishing H2O-3 to multiple channels.
 #
 #   Migrated from: scripts/jenkins/jenkinsfiles/Jenkinsfile-Release
@@ -747,7 +747,7 @@ jobs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "H2O-3 Public Nightly Release Pipeline | GitHub Actions"
+                    "text": "H2O-3 Public Nightly Release Workflow | GitHub Actions"
                   }
                 ]
               }'
@@ -758,7 +758,7 @@ jobs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "H2O-3 Public Nightly Release Pipeline | GitHub Actions"
+                    "text": "H2O-3 Public Nightly Release Workflow | GitHub Actions"
                   }
                 ]
               }'

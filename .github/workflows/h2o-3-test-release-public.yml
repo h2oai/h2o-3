@@ -3,10 +3,10 @@
 #                         H2O-3 TEST RELEASE
 #                         ==================
 #
-#   Self-contained test release pipeline for H2O-3.
+#   Self-contained test release workflow for H2O-3.
 #   Uses test S3 bucket (s3://test.0xdata.com/test-release/h2o).
 #
-#   Pipeline Stages (matching Jenkins):
+#   Workflow Stages (matching Jenkins):
 #   1. Checkout + Build
 #   2. Publish to S3
 #   3. Build Conda Packages (Py3.7-3.11, main + client)

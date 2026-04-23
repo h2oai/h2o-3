@@ -3,7 +3,7 @@
 #                         H2O-3 ENTERPRISE OFFICIAL RELEASE
 #                         ==================================
 #
-#   Official release pipeline for H2O-3 Enterprise.
+#   Official release workflow for H2O-3 Enterprise.
 #   Uses S3 bucket (s3://h2o-3-enterprise-release/h2o) in OSS account.
 #
 #   Two-Stage Process (for repeatability):

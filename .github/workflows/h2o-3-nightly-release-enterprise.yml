@@ -1,9 +1,9 @@
 # ==============================================================================
 #
-#                         H2O-3 ENTERPRISE NIGHTLY RELEASE PIPELINE
+#                         H2O-3 ENTERPRISE NIGHTLY RELEASE WORKFLOW
 #                         ==========================================
 #
-#   Nightly release pipeline for H2O-3 Enterprise.
+#   Nightly release workflow for H2O-3 Enterprise.
 #   Builds from h2oai/h2o-3-enterprise and publishes to S3.
 #
 #   Migrated from the public release-main.yml workflow.
@@ -725,7 +725,7 @@ jobs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "H2O-3 Enterprise Nightly Release Pipeline | GitHub Actions"
+                    "text": "H2O-3 Enterprise Nightly Release Workflow | GitHub Actions"
                   }
                 ]
               }'
@@ -736,7 +736,7 @@ jobs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "H2O-3 Enterprise Nightly Release Pipeline | GitHub Actions"
+                    "text": "H2O-3 Enterprise Nightly Release Workflow | GitHub Actions"
                   }
                 ]
               }'

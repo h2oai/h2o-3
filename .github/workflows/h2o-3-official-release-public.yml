@@ -3,7 +3,7 @@
 #                         H2O-3 PUBLIC OFFICIAL RELEASE
 #                         =============================
 #
-#   Official release pipeline for H2O-3 (public/open-source).
+#   Official release workflow for H2O-3 (public/open-source).
 #   Uses test S3 bucket (s3://h2o-release-test/h2o) in OSS account.
 #
 #   Two-Stage Process (for repeatability):

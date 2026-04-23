@@ -3,10 +3,10 @@
 #                         H2O-3 ENTERPRISE TEST RELEASE
 #                         =============================
 #
-#   Test release pipeline for H2O-3 Enterprise.
+#   Test release workflow for H2O-3 Enterprise.
 #   Uses test S3 bucket (s3://h2o-release-test/h2o) in OSS account.
 #
-#   Pipeline Stages (matching Jenkins):
+#   Workflow Stages (matching Jenkins):
 #   1. Checkout + Build
 #   2. Publish to S3
 #   3. Build Conda Packages (Py3.7-3.11, main + client)
