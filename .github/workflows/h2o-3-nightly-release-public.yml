@@ -111,18 +111,18 @@ on:
         type: string
 
       build_number:
-        description: "Build number [auto: run_number for test releases, run_number+offset for nightly]"
+        description: "Build number"
         required: false
         type: string
 
       update_latest:
-        description: 'Update top-level latest links [/latest_stable, Docker latest tag]'
+        description: 'Update top-level latest links'
         required: false
         type: boolean
         default: false
 
       update_latest_branch:
-        description: 'Update branch latest links [/{branch}/latest]'
+        description: 'Update branch latest links'
         required: true
         type: boolean
         default: true
@@ -134,13 +134,13 @@ on:
         default: false
 
       build_hadoop:
-        description: 'Build with Hadoop support [slower build, uncheck for quick test releases]'
+        description: 'Build with Hadoop support'
         required: false
         type: boolean
         default: true
 
       build_pypi:
-        description: 'Build PyPI package [always uploads to S3]'
+        description: 'Build PyPI package'
         required: false
         type: boolean
         default: true
@@ -152,19 +152,19 @@ on:
         default: false
 
       build_conda:
-        description: 'Build Conda packages [always uploads to S3]'
+        description: 'Build Conda packages'
         required: false
         type: boolean
         default: true
 
       upload_conda:
-        description: 'Publish to Anaconda [Anaconda.org, only for rel-* branches]'
+        description: 'Publish to Anaconda'
         required: false
         type: boolean
         default: false
 
       build_docker:
-        description: 'Build Docker images [push to H2O official Docker Hub]'
+        description: 'Build Docker images'
         required: false
         type: boolean
         default: false
