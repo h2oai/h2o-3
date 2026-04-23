@@ -174,7 +174,7 @@ jobs:
           echo "run_flow=${{ inputs.run_flow }}" >> $GITHUB_OUTPUT
 
           # Summary
-          echo "## Enterprise Pipeline Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "## Enterprise Workflow Configuration" >> $GITHUB_STEP_SUMMARY
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Repository | \`h2oai/h2o-3-enterprise\` |" >> $GITHUB_STEP_SUMMARY

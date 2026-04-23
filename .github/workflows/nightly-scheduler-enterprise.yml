@@ -36,11 +36,11 @@ jobs:
     name: Trigger master
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Enterprise Nightly Pipeline
+      - name: Trigger Enterprise Nightly Workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Triggering enterprise nightly pipeline for branch: master"
+          echo "Triggering enterprise nightly workflow for branch: master"
 
           gh workflow run h2o-3-nightly-tests-enterprise.yml \
             --repo ${{ github.repository }} \

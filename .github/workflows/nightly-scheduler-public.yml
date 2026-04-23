@@ -41,11 +41,11 @@ jobs:
         branch: [master, rel-3.46.0]
       fail-fast: false
     steps:
-      - name: Trigger Nightly Pipeline
+      - name: Trigger Nightly Workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Triggering nightly pipeline for branch: ${{ matrix.branch }}"
+          echo "Triggering nightly workflow for branch: ${{ matrix.branch }}"
 
           gh workflow run h2o-3-nightly-tests-public.yml \
             --repo ${{ github.repository }} \
@@ -56,4 +56,4 @@ jobs:
             -f run_java=true \
             -f run_flow=true
 
-          echo "Pipeline triggered for ${{ matrix.branch }}"
+          echo "Workflow triggered for ${{ matrix.branch }}"

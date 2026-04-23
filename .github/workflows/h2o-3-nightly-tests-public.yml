@@ -174,7 +174,7 @@ jobs:
           echo "run_flow=${{ inputs.run_flow }}" >> $GITHUB_OUTPUT
 
           # Summary
-          echo "## Pipeline Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "## Workflow Configuration" >> $GITHUB_STEP_SUMMARY
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
