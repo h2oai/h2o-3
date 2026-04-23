@@ -45,11 +45,18 @@ class Jetty12ServerAdapter implements WebServer {
     final HandlerWrapper handlerWrapper = helper.authWrapper(jettyServer);
     final ServletContextHandler context = helper.createServletContextHandler();
     registerHandlers(handlerWrapper, context);
+    // TODO(GH-16810): wire gate / auth / authExtensions as servlet filters on the ServletContextHandler
+    // (Jetty 12 Server only accepts core Handler; ee8.nested.HandlerCollection can't be attached directly).
+    // For now bind the ServletContextHandler as the Server's root so /3/* endpoints respond; the
+    // ee8 handler chain built in registerHandlers is currently not reached on the wire.
+    jettyServer.setHandler(context);
     try {
       jettyServer.start();
     } catch (IOException e) {
+      e.printStackTrace(System.err);
       throw e;
     } catch (Exception e) {
+      e.printStackTrace(System.err);
       throw new IOException(e);
     }
   }
