@@ -9,7 +9,9 @@ import org.eclipse.jetty.ee8.security.Authenticator;
 import org.eclipse.jetty.ee8.security.ConstraintMapping;
 import org.eclipse.jetty.ee8.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee8.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee8.servlet.FilterHolder;
 import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -32,8 +34,10 @@ import water.webserver.iface.LoginType;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.DispatcherType;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.EnumSet;
 
 class Jetty12Helper {
 
@@ -152,6 +156,11 @@ class Jetty12Helper {
         } else {
             context.setContextPath("/");
         }
+        // Jetty 12 requires explicit WebSocket subsystem registration on the servlet context.
+        JettyWebSocketServletContainerInitializer.configure(context, null);
+        // Gate filter initializes request-scoped ThreadLocals and blocks TRACE (Jetty 9 AbstractHandler equivalent).
+        context.addFilter(new FilterHolder(new H2OGateFilter(h2oHttpView)), "/*",
+                EnumSet.of(DispatcherType.REQUEST));
         return context;
     }
 
