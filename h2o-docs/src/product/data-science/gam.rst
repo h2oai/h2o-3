@@ -85,7 +85,7 @@ Common parameters
     - ``"MACRO_OVO"``
     - ``"WEIGHTED_OVO"``
 
--  `balance_classes <algo-params/balance_classes.html>`__: (Applicable for classification only) Specify whether to oversample the minority classes to balance the class distribution. This option defaults to ``False`` (disabled).
+-  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. Applicable for classification only. This option defaults to ``False`` (disabled).
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``True`` (enabled).
 
