@@ -14,7 +14,7 @@
 #
 # ==============================================================================
 
-name: Nightly Scheduler
+name: 1.f Public Nightly Scheduler
 
 on:
   schedule:
