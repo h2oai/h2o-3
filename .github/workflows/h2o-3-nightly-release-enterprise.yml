@@ -708,8 +708,9 @@ jobs:
           BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
           GIT_TAG_URL="https://github.com/h2oai/h2o-3-enterprise/releases/tag/gha-enterprise-${BRANCH}-${BUILD_NUMBER}"
 
+          # Build links column based on success/failure
           if [ "${FAILED}" = "true" ]; then
-            LINKS_COLUMN="*Links:*\n- <${RUN_URL}|Workflow Run>"
+            LINKS_COLUMN="*Links:*\n• <${RUN_URL}|Workflow Run>"
             FOOTER_BLOCKS='{
                 "type": "context",
                 "elements": [
@@ -729,7 +730,7 @@ jobs:
                 ]
               }'
           else
-            LINKS_COLUMN="*Links:*\n- <${S3_URL}|S3 Release Page>\n- <${RUN_URL}|Workflow Run>\n- <${GIT_TAG_URL}|Git Tag>"
+            LINKS_COLUMN="*Links:*\n• <${S3_URL}|S3 Release Page>\n• <${RUN_URL}|Workflow Run>\n• <${GIT_TAG_URL}|Git Tag>"
             FOOTER_BLOCKS='{
                 "type": "context",
                 "elements": [
