@@ -6,7 +6,7 @@
 - Available in: GBM, DRF, Deep Learning, GLM, HGLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost, Word2vec, Isolation Forest, Stacked Ensembles, Uplift DRF, ANOVAGLM, ModelSelection
 - Hyperparameter: yes
 
-.. note:: This parameter controls total runtime rather than model architecture, so it is typically fixed across a grid search rather than varied. See :ref:`stopping-runtime-controls` on the Grid Search page.
+.. note:: This parameter controls total runtime rather than model structure, so it is typically fixed across a grid search rather than varied. See :ref:`stopping-runtime-controls`.
 
 Description
 ~~~~~~~~~~~

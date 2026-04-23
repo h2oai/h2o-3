@@ -1079,18 +1079,17 @@ Stopping and Runtime Controls
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following parameters apply to all supervised algorithms and are marked
-``Hyperparameter: yes`` on their individual pages, but they control early
-stopping and total runtime rather than model architecture. In practice they
-are typically fixed once per grid rather than varied across a grid search:
+``Hyperparameter: yes`` on their individual pages. They control early
+stopping and total runtime rather than model structure, so fix them once
+per grid rather than varying them across models:
 
 - ``max_runtime_secs``
 - ``stopping_metric``
 - ``stopping_rounds``
 - ``stopping_tolerance``
 
-Set these on the grid's ``search_criteria`` or on the per-model parameters
-passed to the grid to cap wall-clock time or to stop individual models
-early.
+Set these on ``search_criteria`` or on the per-model parameters to cap
+total runtime or stop individual models early.
 
 Grid Testing
 ------------

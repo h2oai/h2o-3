@@ -29,13 +29,12 @@ Algorithm-specific parameters
     - ``2`` specifies monotone splines (or I-splines).
     - ``3`` specifies NBSplineTypeI M-splines (which can support any polynomial order).
 
--  **gam_columns**: *Required* Column names representing the smoothing terms used for prediction. GAM builds one smoother per entry in the outer list. ``gam_columns`` accepts either a flat list or a nested list:
+-  **gam_columns**: *Required* Column names representing the smoothing terms used for prediction. ``gam_columns`` accepts either a flat list or a nested list. GAM builds one GAM predictor per entry:
 
-    - Flat list — one single-column smoother per column, for example ``["C1", "C2", "C3"]``. This form is equivalent to the nested form ``[["C1"], ["C2"], ["C3"]]``.
-    - Nested list — each inner list defines one smoother and may contain multiple columns for multi-column (interaction) smoothers, for example ``[["C11", "C12"], ["C13", "C14"]]``.
+    - Flat list — one single-column GAM predictor per column, for example ``["C1", "C2", "C3"]``. This form is equivalent to the nested form ``[["C1"], ["C2"], ["C3"]]``.
+    - Nested list — each inner list defines one GAM predictor and may contain multiple columns for multi-column (interaction) predictors, for example ``[["C11", "C12"], ["C13", "C14"]]``.
 
-    The ``bs``, ``scale``, and ``num_knots`` arrays must match the length of the outer list in ``gam_columns``, with one entry per smoother.
-
+    The ``bs``, ``scale``, and ``num_knots`` arrays must have one entry per GAM predictor.
 
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 

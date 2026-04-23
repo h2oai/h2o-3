@@ -27,7 +27,7 @@ Certain cases can exist, however, in which the median starting value for this lo
 - If the distribution is ``ordinal``, the response column must be categorical with at least 3 levels.
 - If the distribution is ``custom``, the response column must be numeric/binary/categorical depends on type of custom distribution.
 
-**NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost. ``custom`` is available ONLY in GBM. DRF supports only ``AUTO``, ``bernoulli``, ``multinomial``, and ``gaussian``.
+**NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost. ``custom`` is available ONLY in GBM. DRF supports ONLY ``AUTO``, ``bernoulli``, ``multinomial``, and ``gaussian``.
 
 The following general guidelines apply when selecting a distribution:
 
