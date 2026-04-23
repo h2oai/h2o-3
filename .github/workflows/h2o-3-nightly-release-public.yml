@@ -92,8 +92,8 @@
 #
 # ==============================================================================
 
-run-name: "1.b Public H2O-3 Nightly Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
-name: 1.b Public H2O-3 Nightly Release
+run-name: "1.b  -  Public H2O-3 Nightly Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
+name: 1.b  -  Public H2O-3 Nightly Release
 
 # ==============================================================================
 # TRIGGERS

@@ -21,8 +21,8 @@
 #
 # ==============================================================================
 
-name: 1.e Public Nightly Merge
-run-name: 1.e Public Nightly Merge [rel -> master]
+name: 1.e  -  Public Nightly Merge
+run-name: 1.e  -  Public Nightly Merge [rel -> master]
 
 on:
   schedule:
