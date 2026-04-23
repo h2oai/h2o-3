@@ -13,7 +13,7 @@
 #
 # ==============================================================================
 
-name: 2.f Enterprise Nightly Scheduler
+name: 2.f  -  Enterprise Nightly Scheduler
 
 on:
   schedule:

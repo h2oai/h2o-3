@@ -21,8 +21,8 @@
 #
 # ==============================================================================
 
-name: 2.e Enterprise Nightly Merge
-run-name: 2.e Enterprise Nightly Merge [rel -> master]
+name: 2.e  -  Enterprise Nightly Merge
+run-name: 2.e  -  Enterprise Nightly Merge [rel -> master]
 
 on:
   # Schedule disabled - uncomment to enable nightly runs

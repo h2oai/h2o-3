@@ -28,9 +28,9 @@
 #
 # ==============================================================================
 
-name: 1.d Public H2O-3 Test Release
+name: 1.d  -  Public H2O-3 Test Release
 
-run-name: "1.d Public H2O-3 Test Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
+run-name: "1.d  -  Public H2O-3 Test Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
 
 on:
   workflow_dispatch:
