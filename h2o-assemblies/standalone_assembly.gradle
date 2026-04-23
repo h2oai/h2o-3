@@ -2,8 +2,11 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java-library'
 apply plugin: 'com.github.hierynomus.license'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+// Standalone assemblies bundle Jetty 12 (which requires Java 17). Raise the consumer
+// attribute so Gradle's variant selection accepts the Java 17 artifact of h2o-jetty-12
+// (and Jetty 12 itself) into the runtime classpath.
+sourceCompatibility = 17
+targetCompatibility = 17
 
 
 // Exclude unwanted dependencies

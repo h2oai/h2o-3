@@ -12,7 +12,9 @@ import org.eclipse.jetty.ee8.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee8.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee8.security.authentication.ConfigurableSpnegoAuthenticator;
 import org.eclipse.jetty.ee8.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.ee8.servlet.FilterHolder;
 import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.EmptyLoginService;
 import org.eclipse.jetty.security.HashLoginService;
@@ -37,10 +39,12 @@ import water.webserver.iface.LoginType;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.DispatcherType;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Properties;
 
 class Jetty12Helper {
@@ -189,6 +193,15 @@ class Jetty12Helper {
         } else {
             context.setContextPath("/");
         }
+        // Jetty 12 requires explicit WebSocket subsystem registration on the servlet context
+        // before any JettyWebSocketServlet can be initialized (otherwise throws
+        // IllegalStateException "WebSocketComponents has not been created").
+        JettyWebSocketServletContainerInitializer.configure(context, null);
+        // Gate filter — initializes request-scoped ThreadLocals and blocks TRACE. In Jetty 9 this
+        // was an AbstractHandler above the servlet context; in Jetty 12 Server only accepts core
+        // Handlers, so the equivalent logic moves into a servlet Filter registered on the context.
+        context.addFilter(new FilterHolder(new H2OGateFilter(h2oHttpView)), "/*",
+                EnumSet.of(DispatcherType.REQUEST));
         return context;
     }
 
