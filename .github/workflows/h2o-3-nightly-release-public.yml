@@ -57,7 +57,6 @@
 #   S3 OUTPUT STRUCTURE
 #   -------------------
 #   Production:  s3://h2o-release/h2o/{branch}/{build_number}/
-#   Test:        s3://test.0xdata.com/test-release/h2o/{branch}/{build_number}/
 #
 #   Public URL:  https://h2o-release.s3.amazonaws.com/h2o/{branch}/{build_number}/index.html
 #   Latest:      https://h2o-release.s3.amazonaws.com/h2o/{branch}/latest.html
@@ -69,11 +68,10 @@
 #
 #   Branch Control:
 #   • branch          H2O-3 branch to build (default: master)
-#   • build_number    Build number (auto: run_number for test, run_number+offset for nightly)
+#   • build_number    Build number (auto: run_number+offset for nightly)
 #
 #   Release Mode:
 #   • dry_run         Skip external publishing (default: true for safety)
-#   • test_release    Use test S3 bucket (default: false)
 #   • test_credentials Test credentials before build (default: false)
 #
 #   Build Options:
@@ -82,7 +80,7 @@
 #   • build_conda     Build Conda packages (default: true)
 #   • build_docker    Build Docker images (default: false)
 #
-#   Publishing (auto-enabled for rel-* branches when test_release=false):
+#   Publishing (auto-enabled for rel-* branches):
 #   • upload_pypi     Upload to PyPI.org
 #   • upload_conda    Upload to Anaconda.org
 #   • upload_nexus    Upload to Maven Central
@@ -97,7 +95,7 @@
 #
 # ==============================================================================
 
-run-name: "Public H2O-3 Nightly Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}${{ inputs.test_release && ' [TEST]' || '' }}"
+run-name: "Public H2O-3 Nightly Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
 name: Public H2O-3 Nightly Release
 
 # ==============================================================================
@@ -125,12 +123,6 @@ on:
         required: false
         type: boolean
         default: true
-
-      test_release:
-        description: "Test release [use test S3 bucket s3://test.0xdata.com/test-release/h2o, skip PyPI/Conda uploads]"
-        required: false
-        type: boolean
-        default: false
 
       test_credentials:
         description: 'Test credentials before building [PyPI, Anaconda, Docker, S3]'
@@ -212,9 +204,7 @@ env:
   RELEASE_BUCKET: s3://h2o-release/h2o
   DOCKER_VERSION: "47"
   H2O3_REPO: h2oai/h2o-3
-  TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
   # Build number offset for nightly builds to continue from Jenkins' last build number
-  # Test releases use github.run_number directly (no offset)
   NIGHTLY_BUILD_NUMBER_OFFSET: 7550
   SLACK_CHANNEL: "#h2o-3-alerts"
 
@@ -235,7 +225,6 @@ jobs:
       dry_run: ${{ steps.config.outputs.dry_run }}
       is_release_branch: ${{ steps.config.outputs.is_release_branch }}
       is_nightly: ${{ steps.config.outputs.is_nightly }}
-      test_release: ${{ steps.config.outputs.test_release }}
       s3_root: ${{ steps.config.outputs.s3_root }}
       upload_nexus: ${{ steps.config.outputs.upload_nexus }}
       build_hadoop: ${{ steps.config.outputs.build_hadoop }}
@@ -298,7 +287,7 @@ jobs:
           echo "is_release_branch=${IS_RELEASE_BRANCH}" >> $GITHUB_OUTPUT
 
           # ================================================================
-          # STEP 2: Determine release mode (dry_run, test_release, S3 bucket)
+          # STEP 2: Determine release mode (dry_run, S3 bucket)
           # ================================================================
 
           # dry_run: false for scheduled/push builds, respects input for manual runs
@@ -310,32 +299,18 @@ jobs:
             DRY_RUN="true"
           fi
 
-          # test_release: false for release/master branches, true for others
-          if [ "${{ inputs.test_release }}" = "true" ]; then
-            TEST_RELEASE="true"
-          elif [ "${IS_RELEASE_BRANCH}" = "true" ] || [ "${BRANCH}" = "master" ]; then
-            TEST_RELEASE="${{ inputs.test_release || 'false' }}"
-          else
-            TEST_RELEASE="true"
-          fi
-
-          # S3 bucket: test bucket for test releases, production for real releases
-          if [ "${TEST_RELEASE}" = "true" ]; then
-            S3_ROOT="${{ env.TEST_RELEASE_BUCKET }}"
-          else
-            S3_ROOT="${{ env.RELEASE_BUCKET }}"
-          fi
+          # Always use production S3 bucket
+          S3_ROOT="${{ env.RELEASE_BUCKET }}"
 
           echo "dry_run=${DRY_RUN}" >> $GITHUB_OUTPUT
-          echo "test_release=${TEST_RELEASE}" >> $GITHUB_OUTPUT
           echo "s3_root=${S3_ROOT}" >> $GITHUB_OUTPUT
 
           # ================================================================
           # STEP 3: Determine publishing options
-          # Default: enabled for rel-* branches when not test_release
+          # Default: enabled for rel-* branches
           # ================================================================
 
-          if [ "${IS_RELEASE_BRANCH}" = "true" ] && [ "${TEST_RELEASE}" = "false" ]; then
+          if [ "${IS_RELEASE_BRANCH}" = "true" ]; then
             DEFAULT_UPLOAD="true"
           else
             DEFAULT_UPLOAD="false"
@@ -407,7 +382,6 @@ jobs:
           | **Dry Run** | **${DRY_RUN}** |
           | Release Branch | ${IS_RELEASE_BRANCH} |
           | Nightly Build | ${IS_NIGHTLY} |
-          | Test Release | ${TEST_RELEASE} |
           | S3 Bucket | \`${S3_ROOT}\` |
 
           ### Publishing Options
@@ -496,18 +470,18 @@ jobs:
       build_hadoop: ${{ needs.init.outputs.build_hadoop == 'true' }}
       # Skip Nexus upload in dry_run mode
       upload_nexus: ${{ needs.init.outputs.upload_nexus == 'true' && needs.init.outputs.dry_run == 'false' }}
-      test_release: ${{ needs.init.outputs.test_release == 'true' }}
+      test_release: false
     secrets: inherit
 
   # ============================================================================
-  # CREATE GIT TAG (Non-test releases only, skip in dry_run)
+  # CREATE GIT TAG (skip in dry_run)
   # For nightly: creates basic tag gha-{branch}-{build_number}
   # For releases: also creates gha-rel-latest-stable and gha-{version} tags
   # ============================================================================
   create-tag:
     name: Create Git Tag
     needs: [init, build]
-    if: needs.init.outputs.test_release == 'false' && needs.init.outputs.dry_run == 'false'
+    if: needs.init.outputs.dry_run == 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout H2O-3
@@ -575,13 +549,13 @@ jobs:
 
   # ============================================================================
   # BUILD AND PUBLISH PYPI
-  # Only for test releases or release branches (matches Jenkins line 415)
+  # Only for release branches
   # Nightly builds skip PyPI/Conda/Helm entirely
   # ============================================================================
   publish-pypi:
     name: Publish PyPI
     needs: [init, build, publish-s3]
-    if: needs.init.outputs.build_pypi == 'true' && (needs.init.outputs.test_release == 'true' || needs.init.outputs.is_release_branch == 'true')
+    if: needs.init.outputs.build_pypi == 'true' && needs.init.outputs.is_release_branch == 'true'
     uses: ./.github/workflows/release-publish-pypi.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -589,18 +563,18 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       # Skip PyPI upload in dry_run mode
-      upload_pypi: ${{ needs.init.outputs.upload_pypi == 'true' && needs.init.outputs.test_release == 'false' && needs.init.outputs.dry_run == 'false' }}
+      upload_pypi: ${{ needs.init.outputs.upload_pypi == 'true' && needs.init.outputs.dry_run == 'false' }}
     secrets: inherit
 
   # ============================================================================
   # BUILD AND PUBLISH CONDA
-  # Only for test releases or release branches (matches Jenkins line 415)
+  # Only for release branches
   # Nightly builds skip PyPI/Conda/Helm entirely
   # ============================================================================
   publish-conda:
     name: Publish Conda
     needs: [init, build, publish-s3]
-    if: needs.init.outputs.build_conda == 'true' && (needs.init.outputs.test_release == 'true' || needs.init.outputs.is_release_branch == 'true')
+    if: needs.init.outputs.build_conda == 'true' && needs.init.outputs.is_release_branch == 'true'
     uses: ./.github/workflows/release-publish-conda.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -608,23 +582,23 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       # Skip Conda upload in dry_run mode
-      upload_conda: ${{ needs.init.outputs.upload_conda == 'true' && needs.init.outputs.test_release == 'false' && needs.init.outputs.dry_run == 'false' }}
+      upload_conda: ${{ needs.init.outputs.upload_conda == 'true' && needs.init.outputs.dry_run == 'false' }}
     secrets: inherit
 
   # ============================================================================
   # PUBLISH HELM CHART
-  # Only for test releases or release branches (matches Jenkins line 415)
+  # Only for release branches
   # Nightly builds skip PyPI/Conda/Helm entirely
   # ============================================================================
   publish-helm:
     name: Publish Helm
     needs: [init, build, publish-s3]
-    if: needs.init.outputs.dry_run == 'false' && (needs.init.outputs.test_release == 'true' || needs.init.outputs.is_release_branch == 'true')
+    if: needs.init.outputs.dry_run == 'false' && needs.init.outputs.is_release_branch == 'true'
     uses: ./.github/workflows/release-publish-helm.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       project_version: ${{ needs.build.outputs.project_version }}
-      test_release: ${{ needs.init.outputs.test_release == 'true' }}
+      test_release: false
       is_nightly: ${{ needs.init.outputs.is_nightly == 'true' }}
     secrets: inherit
 
@@ -640,7 +614,7 @@ jobs:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
-      test_release: ${{ needs.init.outputs.test_release == 'true' }}
+      test_release: false
       is_nightly: ${{ needs.init.outputs.is_nightly == 'true' }}
       update_latest: ${{ needs.init.outputs.update_latest == 'true' }}
     secrets: inherit
@@ -790,7 +764,6 @@ jobs:
           echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Dry Run:** ${{ needs.init.outputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Release:** ${{ needs.init.outputs.test_release }}" >> $GITHUB_STEP_SUMMARY
           echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
           if [ "${{ needs.init.outputs.dry_run }}" = "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
