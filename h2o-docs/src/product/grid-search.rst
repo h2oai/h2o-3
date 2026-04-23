@@ -772,8 +772,9 @@ Deep Learning Hyperparameters
 - ``balance_classes``
 - ``class_sampling_factors``
 - ``classification_stop`` 
-- ``col_major`` 
-- ``elastic_averaging`` 
+- ``col_major``
+- ``distribution``
+- ``elastic_averaging``
 - ``elastic_averaging_moving_rate`` 
 - ``elastic_averaging_regularization`` 
 - ``epochs`` 
@@ -824,6 +825,7 @@ DRF Hyperparameters
 
 - ``balance_classes``
 - ``class_sampling_factors``
+- ``distribution``
 - ``max_after_balance_size``
 - ``seed``
 
@@ -879,6 +881,7 @@ GBM Hyperparameters
 
 - ``balance_classes``
 - ``class_sampling_factors``
+- ``distribution``
 - ``max_after_balance_size``
 - ``seed``
 
@@ -927,6 +930,7 @@ XGBoost Hyperparameters
 - ``colsample_bylevel``
 - ``colsample_bynode``
 - ``colsample_bytree``
+- ``distribution``
 - ``dmatrix_type``
 - ``eta``
 - ``gamma``
@@ -1084,10 +1088,9 @@ are typically fixed once per grid rather than varied across a grid search:
 - ``stopping_rounds``
 - ``stopping_tolerance``
 
-Set these on the grid's ``search_criteria`` (for ``max_runtime_secs``,
-``stopping_metric``, ``stopping_rounds``, and ``stopping_tolerance``) or on
-the per-model parameters passed to the grid to cap wall-clock time or to
-stop individual models early.
+Set these on the grid's ``search_criteria`` or on the per-model parameters
+passed to the grid to cap wall-clock time or to stop individual models
+early.
 
 Grid Testing
 ------------
