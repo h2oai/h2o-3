@@ -493,37 +493,48 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '3.7', javaVersion: 11,
-      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      // GH-16810: h2o-jetty-12 module compiles against Java 17; the full :test task graph
+      // therefore must run on Java 17 even though h2o-core/h2o-algos bytecode stays Java 8.
+      stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.7-jdk-11"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
+    // GH-16810: Python stages below launch the standalone main assembly jar, which now bundles
+    // Jetty 12 and requires Java 17 at runtime. Pin javaVersion + jdk-17 Docker image.
     [
       stageName: 'Py3.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.7',
+      javaVersion: 17, imageSpecifier: "python-3.7-jdk-17",
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.7',
+      javaVersion: 17, imageSpecifier: "python-3.7-jdk-17",
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
+      javaVersion: 17, imageSpecifier: "python-3.7-jdk-17",
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
+      javaVersion: 17, imageSpecifier: "python-3.7-jdk-17",
       timeoutValue: 310, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 Explain', target: 'test-pyunit-explain', pythonVersion: '3.7',
+      javaVersion: 17, imageSpecifier: "python-3.7-jdk-17",
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.11 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.11',
+      javaVersion: 17, imageSpecifier: "python-3.11-jdk-17",
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.11 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.11',
+      javaVersion: 17, imageSpecifier: "python-3.11-jdk-17",
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
 //    [
@@ -536,6 +547,7 @@ def call(final pipelineContext) {
 //    ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.7', timeoutValue: 40,
+      javaVersion: 17, imageSpecifier: "python-3.7-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]
     ],
     [
@@ -543,16 +555,20 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
+    // GH-16810: R stages below launch the standalone main assembly jar (Jetty 12 / Java 17).
     [
       stageName: 'R4.0 Explain', target: 'test-r-explain', rVersion: '4.0.2',
+      javaVersion: 17, imageSpecifier: "r-4.0.2-jdk-17",
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R4.4 Explain', target: 'test-r-explain', rVersion: '4.4.0',
+      javaVersion: 17, imageSpecifier: "r-4.4.0-jdk-17",
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R4.5 Explain', target: 'test-r-explain', rVersion: '4.5.2',
+      javaVersion: 17, imageSpecifier: "r-4.5.2-jdk-17",
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
