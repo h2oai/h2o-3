@@ -70,9 +70,6 @@
 #   • branch          H2O-3 branch to build (default: master)
 #   • build_number    Build number (auto: run_number+offset for nightly)
 #
-#   Release Mode:
-#   • dry_run         Skip external publishing (default: true for safety)
-#   • test_credentials Test credentials before build (default: false)
 #
 #   Build Options:
 #   • build_hadoop    Include Hadoop support (default: true)
@@ -95,7 +92,7 @@
 #
 # ==============================================================================
 
-run-name: "Public H2O-3 Nightly Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
+run-name: "Public H2O-3 Nightly Release [${{ inputs.branch || 'master' }}]${{ inputs.build_number && format(' #{0}', inputs.build_number) || '' }}"
 name: Public H2O-3 Nightly Release
 
 # ==============================================================================
@@ -117,18 +114,6 @@ on:
         description: "Build number [auto: run_number for test releases, run_number+offset for nightly]"
         required: false
         type: string
-
-      dry_run:
-        description: 'Dry run mode [skip all external publishing: Nexus, PyPI, Conda, Docker, Git tags]'
-        required: false
-        type: boolean
-        default: true
-
-      test_credentials:
-        description: 'Test credentials before building [PyPI, Anaconda, Docker, S3]'
-        required: false
-        type: boolean
-        default: false
 
       update_latest:
         description: 'Update top-level latest links [/latest_stable, Docker latest tag]'
@@ -222,7 +207,6 @@ jobs:
     outputs:
       branch: ${{ steps.config.outputs.branch }}
       build_number: ${{ steps.config.outputs.build_number }}
-      dry_run: ${{ steps.config.outputs.dry_run }}
       is_release_branch: ${{ steps.config.outputs.is_release_branch }}
       is_nightly: ${{ steps.config.outputs.is_nightly }}
       s3_root: ${{ steps.config.outputs.s3_root }}
@@ -235,7 +219,6 @@ jobs:
       build_docker: ${{ steps.config.outputs.build_docker }}
       update_latest: ${{ steps.config.outputs.update_latest }}
       update_latest_branch: ${{ steps.config.outputs.update_latest_branch }}
-      test_credentials: ${{ steps.config.outputs.test_credentials }}
       h2o3_commit_sha: ${{ steps.h2o3_commit.outputs.sha }}
 
     steps:
@@ -287,22 +270,12 @@ jobs:
           echo "is_release_branch=${IS_RELEASE_BRANCH}" >> $GITHUB_OUTPUT
 
           # ================================================================
-          # STEP 2: Determine release mode (dry_run, S3 bucket)
+          # STEP 2: Determine S3 bucket
           # ================================================================
-
-          # dry_run: false for scheduled/push builds, respects input for manual runs
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
-            DRY_RUN="false"
-          elif [ "${{ inputs.dry_run }}" = "false" ]; then
-            DRY_RUN="false"
-          else
-            DRY_RUN="true"
-          fi
 
           # Always use production S3 bucket
           S3_ROOT="${{ env.RELEASE_BUCKET }}"
 
-          echo "dry_run=${DRY_RUN}" >> $GITHUB_OUTPUT
           echo "s3_root=${S3_ROOT}" >> $GITHUB_OUTPUT
 
           # ================================================================
@@ -352,23 +325,7 @@ jobs:
           echo "update_latest_branch=${{ inputs.update_latest_branch || 'true' }}" >> $GITHUB_OUTPUT
 
           # ================================================================
-          # STEP 4: Determine credential testing
-          # Default: true for scheduled/push builds and master branch
-          # ================================================================
-
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
-            TEST_CREDENTIALS="true"
-          elif [ -n "${{ inputs.test_credentials }}" ]; then
-            TEST_CREDENTIALS="${{ inputs.test_credentials }}"
-          elif [ "${BRANCH}" = "master" ]; then
-            TEST_CREDENTIALS="true"
-          else
-            TEST_CREDENTIALS="false"
-          fi
-          echo "test_credentials=${TEST_CREDENTIALS}" >> $GITHUB_OUTPUT
-
-          # ================================================================
-          # STEP 5: Generate configuration summary
+          # STEP 4: Generate configuration summary
           # ================================================================
 
           cat >> $GITHUB_STEP_SUMMARY << EOF
@@ -379,7 +336,6 @@ jobs:
           | Branch | \`${BRANCH}\` |
           | H2O-3 Commit | [\`${{ steps.h2o3_commit.outputs.sha_short }}\`](https://github.com/h2oai/h2o-3/commit/${{ steps.h2o3_commit.outputs.sha }}) |
           | Build Number | \`${BUILD_NUMBER}\` |
-          | **Dry Run** | **${DRY_RUN}** |
           | Release Branch | ${IS_RELEASE_BRANCH} |
           | Nightly Build | ${IS_NIGHTLY} |
           | S3 Bucket | \`${S3_ROOT}\` |
@@ -396,92 +352,28 @@ jobs:
           EOF
 
   # ============================================================================
-  # TEST CREDENTIALS (Optional)
-  # ============================================================================
-  test-credentials:
-    name: Test Credentials
-    needs: init
-    if: needs.init.outputs.test_credentials == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS for ECR
-        uses: aws-actions/configure-aws-credentials@v4.0.2
-        with:
-          role-to-assume: ${{ env.ECR_ROLE }}
-          role-session-name: release-test-creds-${{ github.run_id }}
-          aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
-
-      - name: Test AWS Credentials
-        run: |
-          echo "=== Testing AWS Credentials ==="
-          aws sts get-caller-identity
-          echo "AWS credentials: OK"
-
-      - name: Test PyPI Credentials
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          echo "=== Testing PyPI Credentials ==="
-          if [ -n "$TWINE_USERNAME" ] && [ -n "$TWINE_PASSWORD" ]; then
-            echo "PyPI credentials: Configured"
-          else
-            echo "::warning::PyPI credentials not configured"
-          fi
-
-      - name: Test Docker Hub Credentials
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-        run: |
-          echo "=== Testing Docker Hub Credentials ==="
-          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_PASSWORD" ]; then
-            echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-            echo "Docker Hub credentials: OK"
-            docker logout
-          else
-            echo "::warning::Docker Hub credentials not configured"
-          fi
-
-      - name: Test Anaconda Credentials
-        env:
-          ANACONDA_USERNAME: ${{ secrets.ANACONDA_USERNAME }}
-          ANACONDA_PASSWORD: ${{ secrets.ANACONDA_PASSWORD }}
-        run: |
-          echo "=== Testing Anaconda Credentials ==="
-          if [ -n "$ANACONDA_USERNAME" ] && [ -n "$ANACONDA_PASSWORD" ]; then
-            echo "Anaconda credentials: Configured"
-          else
-            echo "::warning::Anaconda credentials not configured"
-          fi
-
-  # ============================================================================
   # BUILD: Compile H2O-3 with signing
   # ============================================================================
   build:
     name: Build
-    needs: [init, test-credentials]
-    if: always() && (needs.test-credentials.result == 'success' || needs.test-credentials.result == 'skipped')
+    needs: init
     uses: ./.github/workflows/release-build.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       build_number: ${{ needs.init.outputs.build_number }}
       build_hadoop: ${{ needs.init.outputs.build_hadoop == 'true' }}
-      # Skip Nexus upload in dry_run mode
-      upload_nexus: ${{ needs.init.outputs.upload_nexus == 'true' && needs.init.outputs.dry_run == 'false' }}
+      upload_nexus: ${{ needs.init.outputs.upload_nexus == 'true' }}
       test_release: false
     secrets: inherit
 
   # ============================================================================
-  # CREATE GIT TAG (skip in dry_run)
+  # CREATE GIT TAG
   # For nightly: creates basic tag gha-{branch}-{build_number}
   # For releases: also creates gha-rel-latest-stable and gha-{version} tags
   # ============================================================================
   create-tag:
     name: Create Git Tag
     needs: [init, build]
-    if: needs.init.outputs.dry_run == 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout H2O-3
@@ -562,8 +454,7 @@ jobs:
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
-      # Skip PyPI upload in dry_run mode
-      upload_pypi: ${{ needs.init.outputs.upload_pypi == 'true' && needs.init.outputs.dry_run == 'false' }}
+      upload_pypi: ${{ needs.init.outputs.upload_pypi == 'true' }}
     secrets: inherit
 
   # ============================================================================
@@ -581,8 +472,7 @@ jobs:
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
-      # Skip Conda upload in dry_run mode
-      upload_conda: ${{ needs.init.outputs.upload_conda == 'true' && needs.init.outputs.dry_run == 'false' }}
+      upload_conda: ${{ needs.init.outputs.upload_conda == 'true' }}
     secrets: inherit
 
   # ============================================================================
@@ -593,7 +483,7 @@ jobs:
   publish-helm:
     name: Publish Helm
     needs: [init, build, publish-s3]
-    if: needs.init.outputs.dry_run == 'false' && needs.init.outputs.is_release_branch == 'true'
+    if: needs.init.outputs.is_release_branch == 'true'
     uses: ./.github/workflows/release-publish-helm.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -603,12 +493,12 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # BUILD AND PUBLISH DOCKER (skip in dry_run mode)
+  # BUILD AND PUBLISH DOCKER
   # ============================================================================
   publish-docker:
     name: Publish Docker
     needs: [init, build, publish-s3]
-    if: needs.init.outputs.build_docker == 'true' && needs.init.outputs.dry_run == 'false'
+    if: needs.init.outputs.build_docker == 'true'
     uses: ./.github/workflows/release-publish-docker.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
@@ -763,12 +653,7 @@ jobs:
           echo "- **H2O-3 Commit:** [\`${{ needs.build.outputs.git_sha }}\`](https://github.com/h2oai/h2o-3/commit/${{ needs.build.outputs.git_sha }})" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dry Run:** ${{ needs.init.outputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
           echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ needs.init.outputs.dry_run }}" = "true" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> **Note:** Dry run mode - external publishing (PyPI, Conda, Docker, Helm, Nexus, Git tags) was skipped." >> $GITHUB_STEP_SUMMARY
-          fi
 
       - name: Check Overall Status
         id: status
