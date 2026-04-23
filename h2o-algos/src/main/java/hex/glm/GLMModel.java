@@ -2205,6 +2205,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * Re-do the TwoDim table generation with updated model.
    */
   public TwoDimTable generateSummary(Key train, int iter){
+      if (_output._submodels == null || _output._submodels.length == 0)
+        return null;
       String[] names = new String[]{"Family", "Link", "Regularization", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
       String[] types = new String[]{"string", "string", "string", "int", "int", "int", "string"};
       String[] formats = new String[]{"%s", "%s", "%s", "%d", "%d", "%d", "%s"};
