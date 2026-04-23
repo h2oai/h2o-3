@@ -67,7 +67,6 @@ env:
   # Test release uses test S3 bucket
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
   TEST_S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
-  BUILD_NUMBER_OFFSET: 7400
 
 # ==============================================================================
 # JOBS
@@ -95,7 +94,7 @@ jobs:
           if [ -n "${{ inputs.build_number }}" ]; then
             BUILD_NUMBER="${{ inputs.build_number }}"
           else
-            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.BUILD_NUMBER_OFFSET }} ))
+            BUILD_NUMBER="${{ github.run_number }}"
           fi
 
           # Always use test bucket for test releases

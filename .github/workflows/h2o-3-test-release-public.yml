@@ -100,7 +100,6 @@ env:
   # Test release uses different S3 role (test.0xdata.com bucket)
   S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
-  BUILD_NUMBER_OFFSET: 7400
 
 # ==============================================================================
 # JOBS
@@ -128,7 +127,7 @@ jobs:
           if [ -n "${{ inputs.build_number }}" ]; then
             BUILD_NUMBER="${{ inputs.build_number }}"
           else
-            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.BUILD_NUMBER_OFFSET }} ))
+            BUILD_NUMBER="${{ github.run_number }}"
           fi
 
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT

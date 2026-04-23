@@ -215,7 +215,7 @@ env:
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
   # Build number offset for nightly builds to continue from Jenkins' last build number
   # Test releases use github.run_number directly (no offset)
-  NIGHTLY_BUILD_NUMBER_OFFSET: 7400
+  NIGHTLY_BUILD_NUMBER_OFFSET: 7550
   SLACK_CHANNEL: "#h2o-3-alerts"
 
 # ==============================================================================
