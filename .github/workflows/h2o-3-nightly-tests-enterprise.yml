@@ -53,8 +53,8 @@
 #
 # ==============================================================================
 
-run-name: "Enterprise H2O-3 Nightly - Tests [${{ inputs.branch_custom || inputs.branch || 'master' }}]"
-name: Enterprise H2O-3 Nightly - Tests
+run-name: "2.a Enterprise H2O-3 Nightly - Tests [${{ inputs.branch_custom || inputs.branch || 'master' }}]"
+name: 2.a Enterprise H2O-3 Nightly - Tests
 
 # ==============================================================================
 # TRIGGERS
