@@ -29,8 +29,14 @@ Algorithm-specific parameters
     - ``2`` specifies monotone splines (or I-splines).
     - ``3`` specifies NBSplineTypeI M-splines (which can support any polynomial order).
 
--  **gam_columns**: *Required* Include an array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
-  
+-  **gam_columns**: *Required* Column names representing the smoothing terms used for prediction. GAM builds one smoother per entry in the outer list. ``gam_columns`` accepts either a flat list or a nested list:
+
+    - Flat list — one single-column smoother per column, for example ``["C1", "C2", "C3"]``. This form is equivalent to the nested form ``[["C1"], ["C2"], ["C3"]]``.
+    - Nested list — each inner list defines one smoother and may contain multiple columns for multi-column (interaction) smoothers, for example ``[["C11", "C12"], ["C13", "C14"]]``.
+
+    The ``bs``, ``scale``, and ``num_knots`` arrays must match the length of the outer list in ``gam_columns``, with one entry per smoother.
+
+
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 
 -  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
@@ -79,6 +85,8 @@ Common parameters
     - ``"WEIGHTED_OVR"``
     - ``"MACRO_OVO"``
     - ``"WEIGHTED_OVO"``
+
+-  `balance_classes <algo-params/balance_classes.html>`__: (Applicable for classification only) Specify whether to oversample the minority classes to balance the class distribution. This option defaults to ``False`` (disabled).
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``True`` (enabled).
 

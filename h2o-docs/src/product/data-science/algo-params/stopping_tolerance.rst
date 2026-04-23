@@ -6,6 +6,8 @@
 - Available in: GBM, DRF, Deep Learning, GLM, GAM, AutoML, XGBoost, Isolation Forest
 - Hyperparameter: yes
 
+.. note:: This parameter controls early stopping rather than model architecture, so it is typically fixed across a grid search rather than varied. See :ref:`stopping-runtime-controls` on the Grid Search page.
+
 Description
 ~~~~~~~~~~~
 
