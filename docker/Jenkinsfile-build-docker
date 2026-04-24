@@ -127,8 +127,8 @@ ansiColor('xterm') {
             }
         }
 
-		PYTHON_VERSIONS = pipelineContext.getBuildConfig().PYTHON_VERSIONS
-		R_VERSIONS = pipelineContext.getBuildConfig().R_VERSIONS
+	PYTHON_VERSIONS = pipelineContext.getBuildConfig().PYTHON_VERSIONS
+	R_VERSIONS = pipelineContext.getBuildConfig().R_VERSIONS
 		
         buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
@@ -188,7 +188,7 @@ private Closure makeStage(final pipelineContext, String target) {
                 dir (target) {
                     deleteDir()
                     dockerLoginH2OECR()
-					unstashDockerImages(target)
+		    unstashDockerImages(target)
                     if(!imageExistsH2OECR("h2o-3/${target}", "${pipelineContext.getBuildConfig().getDefaultImageVersion()}") || params.forceBuild){
                         unstash 'docker-sources'
                         sh """
