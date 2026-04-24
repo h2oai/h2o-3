@@ -185,7 +185,7 @@ def is_copy_free(instr):
     return "COPY_FREE_VARS" == instr
 
 def should_be_skipped(instr):
-    return instr in "COPY_FREE_VARS", "RESUME", "PUSH_NULL"  # from Py 3.11 
+    return instr in {"COPY_FREE_VARS", "RESUME", "PUSH_NULL"}  # from Py 3.11
 
 try:
     # Python 3
