@@ -28,64 +28,64 @@
 #   │  2.f  Nightly Scheduler    Cron trigger for nightly pipelines           │
 #   └─────────────────────────────────────────────────────────────────────────┘
 #
-#   CURRENT FILE: 1.f  -  Public Nightly Scheduler
+#   CURRENT FILE: 2.f  -  Enterprise H2O-3 Nightly Scheduler
 #
 # ==============================================================================
-#                         NIGHTLY SCHEDULER
+#                         ENTERPRISE H2O-3 NIGHTLY SCHEDULER
 # ==============================================================================
 #
-# PURPOSE:
-#   Triggers the nightly pipeline for multiple H2O-3 branches in parallel.
+#   PURPOSE:
+#     Triggers the nightly test pipeline for H2O-3 Enterprise.
 #
-# BRANCHES:
-#   - master
-#   - rel-3.46.0
+#   BRANCHES:
+#     - master (only)
 #
-# SCHEDULE:
-#   Daily at 2:00 AM UTC
+#   SCHEDULE:
+#     Daily at 2:00 AM UTC
 #
 # ==============================================================================
 
-name: 1.f  -  Public Nightly Scheduler
+name: 2.f  -  Enterprise H2O-3 Nightly Scheduler
 
 on:
   schedule:
     - cron: '0 2 * * *'  # Daily at 2 AM UTC
 
   workflow_dispatch:
-    inputs:
-      branches:
-        description: 'Branches to run (comma-separated, or "all" for default branches)'
-        required: false
-        default: 'all'
-        type: string
 
+# ==============================================================================
+# PERMISSIONS & CONCURRENCY
+# ==============================================================================
 permissions:
   actions: write
   contents: read
 
+concurrency:
+  group: enterprise-nightly-scheduler
+  cancel-in-progress: false
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
 jobs:
   trigger:
-    name: Trigger ${{ matrix.branch }}
+    name: Trigger master
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        branch: [master, rel-3.46.0]
-      fail-fast: false
+    timeout-minutes: 10
     steps:
-      - name: Trigger Nightly Workflow
+      - name: Trigger Enterprise Nightly Workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Triggering nightly workflow for branch: ${{ matrix.branch }}"
+          echo "Triggering enterprise nightly workflow for branch: master"
 
-          gh workflow run h2o-3-nightly-tests-public.yml \
+          gh workflow run h2o-3-nightly-tests-enterprise.yml \
             --repo ${{ github.repository }} \
-            -f branch="${{ matrix.branch }}" \
+            -f branch="master" \
             -f run_smoke=true \
             -f run_python=true \
             -f run_r=true \
             -f run_java=true \
             -f run_flow=true
 
-          echo "Workflow triggered for ${{ matrix.branch }}"
+          echo "Enterprise pipeline triggered for master"
