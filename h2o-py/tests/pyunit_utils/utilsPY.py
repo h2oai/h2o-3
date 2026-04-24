@@ -7,7 +7,7 @@ import copy
 import datetime
 from decimal import *
 from functools import reduce
-import imp
+import importlib.util
 import io
 import json
 import math
@@ -333,9 +333,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     :return: None
     """
     # Check for numpy
-    try:
-        imp.find_module('numpy')
-    except ImportError:
+    if importlib.util.find_spec('numpy') is None:
         assert False, "failed comparison check because unable to import numpy"
 
     import numpy as np
