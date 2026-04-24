@@ -36,29 +36,37 @@ def call(final pipelineContext) {
 
   // Job will execute PR_STAGES only if these are green.
   // for Python, smoke only oldest and latest supported versions
+  // GH-16810: Py/R/Flow smoke stages launch the standalone main assembly jar, which
+  // bundles Jetty 12 and requires Java 17 at runtime. Pin javaVersion + jdk-17 images.
   def SMOKE_STAGES = [
     [
-      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7',timeoutValue: 8,
+      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7', timeoutValue: 8,
+      javaVersion: 17, imageSpecifier: "python-3.7-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.11 Smoke', target: 'test-py-smoke', pythonVersion: '3.11', timeoutValue: 8,
+      javaVersion: 17, imageSpecifier: "python-3.11-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
+      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3', timeoutValue: 8,
+      javaVersion: 17, imageSpecifier: "r-3.5.3-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
 	  [
-      stageName: 'R4.4 Smoke', target: 'test-r-smoke', rVersion: '4.4.0',timeoutValue: 8,
+      stageName: 'R4.4 Smoke', target: 'test-r-smoke', rVersion: '4.4.0', timeoutValue: 8,
+      javaVersion: 17, imageSpecifier: "r-4.4.0-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
 	  [
-      stageName: 'R4.5 Smoke', target: 'test-r-smoke', rVersion: '4.5.2',timeoutValue: 8,
+      stageName: 'R4.5 Smoke', target: 'test-r-smoke', rVersion: '4.5.2', timeoutValue: 8,
+      javaVersion: 17, imageSpecifier: "r-4.5.2-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 36,
+      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke', timeoutValue: 36,
+      javaVersion: 17, pythonVersion: '3.7', imageSpecifier: "python-3.7-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
