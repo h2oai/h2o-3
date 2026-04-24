@@ -18,7 +18,7 @@ def call(final pipelineContext) {
             def timeoutMinutes = pipelineContext.getBuildConfig().getBuildHadoop() ? 50 : 15
             stage(stageName) {
 //                pipelineContext.getUtils().stashXGBoostWheels(this, pipelineContext)
-                def buildImage = pipelineContext.getBuildConfig().getBuildHadoop() ? pipelineContext.getBuildConfig().getHadoopBuildImage() : pipelineContext.getBuildConfig().getDevImageReference("python-${PYTHON_VERSION}-jdk-${JAVA_VERSION}")
+                def buildImage = pipelineContext.getBuildConfig().getBuildHadoop() ? pipelineContext.getBuildConfig().getHadoopBuildImage() : pipelineContext.getBuildConfig().getDevImageReference("r-${R_VERSION}-jdk-${JAVA_VERSION}")
                 insideDocker(buildEnv, buildImage, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), timeoutMinutes, 'MINUTES') {
                     try {
                         makeTarget(pipelineContext) {
