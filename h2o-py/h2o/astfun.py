@@ -9,8 +9,6 @@ from h2o.utils.compatibility import *
 
 import dis
 import inspect
-import sys
-
 from . import h2o
 from .expr import ExprNode, ASTId
 
@@ -187,59 +185,36 @@ def is_copy_free(instr):
 def should_be_skipped(instr):
     return instr in {"COPY_FREE_VARS", "RESUME", "PUSH_NULL"}  # from Py 3.11
 
-try:
-    # Python 3
-    from dis import _unpack_opargs
-except ImportError:
-    # Reimplement from Python3 in Python2 syntax
-    def _unpack_opargs(code):
-        extended_arg = 0
-        i = 0
-        n = len(code)
-        while i < n:
-            op = code[i]
-            pos = i
-            i += 1
-            if op >= dis.HAVE_ARGUMENT:
-                arg = code[i] + code[i+1]*256 + extended_arg
-                extended_arg = 0
-                i += 2
-                if op == dis.EXTENDED_ARG:
-                    extended_arg = arg*65536
-            else:
-                arg = None
-            yield (pos, op, arg)
-
-
 def _disassemble_lambda(co):
-    code = co.co_code
     ops = []
-    for offset, op, arg in _unpack_opargs(code):
-        opname = dis.opname[op]
+    for i in dis.get_instructions(co):
         args = []
-        if arg is not None:
-            if op in dis.hasconst:
-                args.append(co.co_consts[arg])  # LOAD_CONST
-            elif op in dis.hasname:
-                args.append(co.co_names[arg])  # LOAD_CONST
-            elif op in dis.hasjrel:
-                raise ValueError("unimpl: op in hasjrel")
-            elif op in dis.haslocal:
-                args.append(co.co_varnames[arg])  # LOAD_FAST
-            elif opname == 'COPY_FREE_VARS':
-                args.append(arg)
-            elif op in dis.hasfree:  # LOAD_DEREF
-                if sys.version_info.major == 3 and sys.version_info.minor >= 11:
-                    args.append(co.co_freevars[arg-1])
-                else:
-                    args.append(co.co_freevars[arg])
-            elif op in dis.hascompare:
-                args.append(dis.cmp_op[arg])  # COMPARE_OP
-            elif is_callable(dis.opname[op]):
-                args.append(arg)  # oparg == nargs(fcn)
+        if i.arg is not None:
+            if i.opname == "BINARY_OP":
+                # i.argval is raw int (same as i.arg) — BINARY_OPS table handles lookup
+                args.append(i.arg)
+            elif i.opname == "KW_NAMES":
+                # i.argval is <unknown> on Python 3.11; resolve from co_consts directly
+                args.append(co.co_consts[i.arg])
+            elif i.opname == "RETURN_CONST":
+                # Python 3.12+: constant return — normalize to LOAD_CONST + RETURN_VALUE
+                # so downstream _lambda_bytecode_to_ast sees the same pattern as before
+                ops.append(["LOAD_CONST", [i.argval]])
+                ops.append(["RETURN_VALUE", []])
+                continue
+            elif i.opname == "LOAD_FAST_LOAD_FAST":
+                # Python 3.13+: two consecutive LOAD_FAST packed into one instruction
+                # arg = (first_var_idx << 4) | second_var_idx (both indices must be 0-15)
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg >> 4]]])
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg & 15]]])
+                continue
             else:
-                args.append(arg)
-        ops.append([dis.opname[op], args])
+                # dis.get_instructions() pre-resolves argval for all other opcodes:
+                # LOAD_CONST (constant value), LOAD_FAST (var name), LOAD_GLOBAL (name,
+                # handles 3.11 push_null encoding), LOAD_DEREF (free var name, handles
+                # 3.11 +1 offset), LOAD_ATTR, LOAD_METHOD, COMPARE_OP, CALL, etc.
+                args.append(i.argval)
+        ops.append([i.opname, args])
     return ops
 
 
@@ -475,7 +450,10 @@ def _call_method_bc(nargs, idx, ops, keys):
 
 
 def _call_bc(nargs, idx, ops, keys):
-    idx -= 1  # Skipping PRE_CALL instruction
+    # PRECALL was a 3.11-only opcode; it does not exist in 3.12+.
+    # Only skip the preceding instruction if it is actually PRECALL.
+    if idx >= 0 and keys[idx] == "PRECALL":
+        idx -= 1
     # Read keyword arguments
     instr, keywords = _get_instr(ops, idx)
     kwargs = {}
