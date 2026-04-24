@@ -1,4 +1,36 @@
 # ==============================================================================
+#
+#                         H2O-3 GITHUB ACTIONS WORKFLOW INDEX
+#                         ===================================
+#
+#   This index provides a quick reference to all H2O-3 CI/CD workflows.
+#   Workflows are numbered for easy navigation in the GitHub Actions UI.
+#
+#   ┌─────────────────────────────────────────────────────────────────────────┐
+#   │  PUBLIC WORKFLOWS (1.x) - Open Source H2O-3                             │
+#   ├─────────────────────────────────────────────────────────────────────────┤
+#   │  1.a  Nightly - Tests      Run full test suite (Smoke, Python, R, etc). │
+#   │  1.b  Nightly Release      Build & publish nightly artifacts to S3      │
+#   │  1.c  Official Release     Production release (PyPI, Conda, Docker)     │
+#   │  1.d  Test Release         Test release to staging environment          │
+#   │  1.e  Nightly Merge        Auto-merge release branch into master        │
+#   │  1.f  Nightly Scheduler    Cron trigger for nightly pipelines           │
+#   └─────────────────────────────────────────────────────────────────────────┘
+#
+#   ┌─────────────────────────────────────────────────────────────────────────┐
+#   │  ENTERPRISE WORKFLOWS (2.x) - H2O-3 Enterprise                          │
+#   ├─────────────────────────────────────────────────────────────────────────┤
+#   │  2.a  Nightly - Tests      Run full test suite for enterprise           │
+#   │  2.b  Nightly Release      Build & publish enterprise artifacts to S3   │
+#   │  2.c  Official Release     Production release for enterprise            │
+#   │  2.d  Test Release         Test release to staging environment          │
+#   │  2.e  Nightly Merge        Auto-merge release branch into master        │
+#   │  2.f  Nightly Scheduler    Cron trigger for nightly pipelines           │
+#   └─────────────────────────────────────────────────────────────────────────┘
+#
+#   CURRENT FILE: 2.f  -  Enterprise Nightly Scheduler
+#
+# ==============================================================================
 #                         ENTERPRISE NIGHTLY SCHEDULER
 # ==============================================================================
 #
