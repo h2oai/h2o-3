@@ -28,39 +28,37 @@
 #   │  2.f  Nightly Scheduler    Cron trigger for nightly pipelines           │
 #   └─────────────────────────────────────────────────────────────────────────┘
 #
-#   CURRENT FILE: 2.e  -  Enterprise Nightly Merge
+#   CURRENT FILE: 1.e  -  Public H2O-3 Nightly Merge
 #
 # ==============================================================================
-#                        ENTERPRISE NIGHTLY MERGE
+#                        PUBLIC H2O-3 NIGHTLY MERGE
 # ==============================================================================
 #
-# PURPOSE:
-#   Automatically merges the latest release branch into master as part of
-#   nightly maintenance. This ensures master stays up-to-date with hotfixes
-#   and patches from the release branch.
+#   PURPOSE:
+#     Automatically merges the latest release branch into master as part of
+#     nightly maintenance. This ensures master stays up-to-date with hotfixes
+#     and patches from the release branch.
 #
-# MIGRATED FROM:
-#   Jenkins: Jenkinsfile-NightlyMerge
+#   MIGRATED FROM:
+#     Jenkins: Jenkinsfile-NightlyMerge
 #
-# SCHEDULE:
-#   Disabled - manual trigger only (uncomment cron to enable)
+#   SCHEDULE:
+#     Daily at midnight UTC (same as Jenkins: 'H 0 * * *')
 #
-# PROCESS:
-#   1. Find the latest release branch (rel-X.Y.Z pattern)
-#   2. Check if there are changes to merge
-#   3. If changes exist, merge release branch into master with --no-ff
-#   4. Push the merged result to origin
+#   PROCESS:
+#     1. Find the latest release branch (rel-X.Y.Z pattern)
+#     2. Check if there are changes to merge
+#     3. If changes exist, merge release branch into master with --no-ff
+#     4. Push the merged result to origin
 #
 # ==============================================================================
 
-name: 2.e  -  Enterprise Nightly Merge
-run-name: 2.e  -  Enterprise Nightly Merge [rel -> master]
+name: 1.e  -  Public H2O-3 Nightly Merge
+run-name: 1.e  -  Public H2O-3 Nightly Merge [rel -> master]
 
 on:
-  # Schedule disabled - uncomment to enable nightly runs
-  # schedule:
-  #   # Daily at midnight UTC (equivalent to Jenkins 'H 0 * * *')
-  #   - cron: '0 0 * * *'
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
 
   workflow_dispatch:
     inputs:
@@ -71,10 +69,14 @@ on:
         type: boolean
 
 # ==============================================================================
-# PERMISSIONS
+# PERMISSIONS & CONCURRENCY
 # ==============================================================================
 permissions:
   contents: write
+
+concurrency:
+  group: public-nightly-merge
+  cancel-in-progress: false
 
 # ==============================================================================
 # JOBS
@@ -86,10 +88,10 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout H2O-3 Enterprise
+      - name: Checkout H2O-3
         uses: actions/checkout@v4
         with:
-          repository: h2oai/h2o-3-enterprise
+          repository: h2oai/h2o-3
           token: ${{ secrets.H2O3_UPSTREAM_SYNC_PAT }}
           fetch-depth: 0
 
@@ -159,7 +161,7 @@ jobs:
           HAS_CHANGES="${{ steps.check-changes.outputs.has_changes }}"
           DRY_RUN="${{ inputs.dry_run }}"
 
-          echo "## Enterprise Nightly Merge Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Nightly Merge Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -186,7 +188,7 @@ jobs:
           channel-id: "dev-h2o-3"
           payload: |
             {
-              "text": ":x: *H2O-3 Enterprise Nightly Merge Failed*\n\n• *Source Branch:* `${{ steps.find-release.outputs.release_branch }}`\n• *Target Branch:* `master`\n• *Likely Cause:* Merge conflict detected. Manual intervention required.\n• <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>"
+              "text": ":x: *H2O-3 Nightly Merge Failed*\n\n• *Source Branch:* `${{ steps.find-release.outputs.release_branch }}`\n• *Target Branch:* `master`\n• *Likely Cause:* Merge conflict detected. Manual intervention required.\n• <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.H2O_OPS_SLACK_BOT_TOKEN }}
