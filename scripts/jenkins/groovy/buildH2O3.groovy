@@ -2,7 +2,7 @@ def call(final pipelineContext) {
 
     final String PYTHON_VERSION = pipelineContext.getBuildConfig().DEFAULT_PYTHON_VERSION
     final String R_VERSION = pipelineContext.getBuildConfig().R_VERSIONS[-1]
-    final String JAVA_VERSION = '8'
+    final String JAVA_VERSION = '17'
 
     // Load required scripts
     def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
@@ -18,7 +18,8 @@ def call(final pipelineContext) {
             def timeoutMinutes = pipelineContext.getBuildConfig().getBuildHadoop() ? 50 : 15
             stage(stageName) {
 //                pipelineContext.getUtils().stashXGBoostWheels(this, pipelineContext)
-                insideDocker(buildEnv, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), timeoutMinutes, 'MINUTES') {
+                def buildImage = pipelineContext.getBuildConfig().getBuildHadoop() ? pipelineContext.getBuildConfig().getHadoopBuildImage() : pipelineContext.getBuildConfig().getDevImageReference("python-${PYTHON_VERSION}-jdk-${JAVA_VERSION}")
+                insideDocker(buildEnv, buildImage, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), timeoutMinutes, 'MINUTES') {
                     try {
                         makeTarget(pipelineContext) {
                             target = 'build-h2o-3'
