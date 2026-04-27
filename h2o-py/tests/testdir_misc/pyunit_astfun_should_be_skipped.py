@@ -14,11 +14,12 @@ These tests run without requiring an H2O server connection.
 import ast
 import sys
 import os
+import h2o
 
 # Verify the fix is in place via AST inspection
 def test_should_be_skipped_uses_set_literal():
     """The function body must use a set literal, not a tuple expression."""
-    src = open(os.path.join(os.path.dirname(__file__), '../../h2o/astfun.py')).read()
+    src = open(os.path.join(os.path.dirname(h2o.__file__), 'astfun.py')).read()
     tree = ast.parse(src)
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == 'should_be_skipped':
