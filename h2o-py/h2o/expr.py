@@ -196,6 +196,11 @@ class ExprNode(object):
         # Number representation without Py2 L suffix enforced
         if isinstance(arg, numbers.Integral):
             return repr2(arg).strip('L')
+        # numpy 2.x changed repr(np.str_('x')) to "np.str_('x')" (was "'x'"); since
+        # np.str_ is a str subclass, fall into this branch and force plain-str repr
+        # so the Rapids AST gets a properly-quoted single token.
+        if isinstance(arg, str):
+            return repr2(str(arg))
         return repr2(arg)
 
     def __del__(self):
