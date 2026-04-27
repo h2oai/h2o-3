@@ -214,8 +214,6 @@ env:
   RELEASE_BUCKET: s3://h2o-3-enterprise-release/h2o
   DOCKER_VERSION: "47"
   H2O3_ENTERPRISE_REPO: h2oai/h2o-3-enterprise
-  # Build number offset for nightly builds
-  NIGHTLY_BUILD_NUMBER_OFFSET: 1000
   SLACK_CHANNEL: "#h2o-3-alerts"
 
 # ==============================================================================
@@ -279,11 +277,9 @@ jobs:
           # Check if release branch (rel-*)
           [[ "${BRANCH}" == rel-* ]] && IS_RELEASE_BRANCH="true" || IS_RELEASE_BRANCH="false"
 
-          # Build number: user input or auto-generated
+          # Build number: user input or auto-generated (use run_number directly)
           if [ -n "${{ inputs.build_number }}" ]; then
             BUILD_NUMBER="${{ inputs.build_number }}"
-          elif [ "${IS_NIGHTLY}" = "true" ]; then
-            BUILD_NUMBER=$(( ${{ github.run_number }} + ${{ env.NIGHTLY_BUILD_NUMBER_OFFSET }} ))
           else
             BUILD_NUMBER="${{ github.run_number }}"
           fi
