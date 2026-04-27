@@ -208,6 +208,17 @@ def _disassemble_lambda(co):
                 ops.append(["LOAD_FAST", [co.co_varnames[i.arg >> 4]]])
                 ops.append(["LOAD_FAST", [co.co_varnames[i.arg & 15]]])
                 continue
+            elif i.opname == "LOAD_FAST_BORROW":
+                # Python 3.14+: LOAD_FAST without refcount increment. Identical to
+                # LOAD_FAST for AST extraction (we only need the variable name).
+                ops.append(["LOAD_FAST", [i.argval]])
+                continue
+            elif i.opname == "LOAD_FAST_BORROW_LOAD_FAST_BORROW":
+                # Python 3.14+: paired LOAD_FAST_BORROW; same nibble packing as
+                # LOAD_FAST_LOAD_FAST.
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg >> 4]]])
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg & 15]]])
+                continue
             else:
                 # dis.get_instructions() pre-resolves argval for all other opcodes:
                 # LOAD_CONST (constant value), LOAD_FAST (var name), LOAD_GLOBAL (name,
