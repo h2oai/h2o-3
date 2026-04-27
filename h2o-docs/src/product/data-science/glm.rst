@@ -254,6 +254,8 @@ Common parameters
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``True`` (enabled).
 
+-  **startval**: |GAM| Specify a double array to initialize the GLM coefficients. If ``standardize`` is ``True``, provide standardized coefficient values. Otherwise, provide regular coefficient values.
+
 - `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
 
   - ``AUTO`` (default): (This defaults to ``logloss`` for classification and ``deviance`` for regression)
