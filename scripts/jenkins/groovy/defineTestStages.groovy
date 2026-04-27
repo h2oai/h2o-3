@@ -134,43 +134,8 @@ def getPrStages(final pipelineContext){
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.12 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.12', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.12-jdk-8"
-    ],
-    [
-      stageName: 'Py3.12 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.12', timeoutValue: 16,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.12-jdk-8"
-    ],
-    [
-      stageName: 'Py3.12 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.12', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.12-jdk-8"
-    ],
-    [
-      stageName: 'Java 12 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.12', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.12-jdk-8"
-    ],
-    [
       stageName: 'Py3.12 Booklets', target: 'test-py-booklets', pythonVersion: '3.12',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 Init Java 8', target: 'test-py-init', pythonVersion: '3.12', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.12-jdk-8"
     ],
     [
       stageName: 'Py3.12 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.12',
@@ -197,43 +162,8 @@ def getPrStages(final pipelineContext){
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.13 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.13', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.13-jdk-8"
-    ],
-    [
-      stageName: 'Py3.13 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.13', timeoutValue: 16,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.13-jdk-8"
-    ],
-    [
-      stageName: 'Py3.13 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.13', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.13-jdk-8"
-    ],
-    [
-      stageName: 'Java 13 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.13', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.13-jdk-8"
-    ],
-    [
       stageName: 'Py3.13 Booklets', target: 'test-py-booklets', pythonVersion: '3.13',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 Init Java 8', target: 'test-py-init', pythonVersion: '3.13', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.13-jdk-8"
     ],
     [
       stageName: 'Py3.13 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.13',
@@ -260,43 +190,8 @@ def getPrStages(final pipelineContext){
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.14 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.14', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.14-jdk-8"
-    ],
-    [
-      stageName: 'Py3.14 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.14', timeoutValue: 16,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.14-jdk-8"
-    ],
-    [
-      stageName: 'Py3.14 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.14', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.14-jdk-8"
-    ],
-    [
-      stageName: 'Java 14 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.14', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.14-jdk-8"
-    ],
-    [
       stageName: 'Py3.14 Booklets', target: 'test-py-booklets', pythonVersion: '3.14',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 Init Java 8', target: 'test-py-init', pythonVersion: '3.14', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.14-jdk-8"
     ],
     [
       stageName: 'Py3.14 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.14',
