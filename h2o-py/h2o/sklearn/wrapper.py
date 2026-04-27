@@ -499,6 +499,11 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         """
         return self._estimator
 
+    def __sklearn_is_fitted__(self):
+        # sklearn's check_is_fitted (v1.x) calls this method when present, otherwise looks for trailing-underscore
+        # attributes. The wrapper sets `self._estimator` only after `fit()`, so its presence is the fitted signal.
+        return self._estimator is not None
+
     def set_params(self, **params):
         """Set the parameters of this estimator.
 
