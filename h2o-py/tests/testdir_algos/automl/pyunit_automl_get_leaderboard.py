@@ -1,7 +1,7 @@
 import os
 import sys
 
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 sys.path.insert(1, os.path.join("..","..",".."))
 from h2o.automl import H2OAutoML, get_automl, get_leaderboard

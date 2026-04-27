@@ -1,6 +1,6 @@
 import sys
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 sys.path.insert(1,"../../")
 from h2o.frame import H2OFrame
 from tests import pyunit_utils
