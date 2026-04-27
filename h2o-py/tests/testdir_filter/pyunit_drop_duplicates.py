@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 def pubdev_drop_duplicates():
     # Test using column name
