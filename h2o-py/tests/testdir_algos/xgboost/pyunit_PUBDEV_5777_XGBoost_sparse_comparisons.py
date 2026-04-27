@@ -109,7 +109,7 @@ def comparison_test():
 
         nativeModel = xgb.train(params=nativeXGBoostParam[0],
                                 dtrain=nativeXGBoostInput, num_boost_round=nativeXGBoostParam[1])
-        nativePred = nativeModel.predict(data=nativeXGBoostInput, ntree_limit=nativeXGBoostParam[1])
+        nativePred = nativeModel.predict(data=nativeXGBoostInput, iteration_range=(0, nativeXGBoostParam[1]))
         pyunit_utils.summarizeResult_multinomial(h2oPredictD, nativePred, -1, -1, -1,
                                               -1, tolerance=1e-6)
     else:

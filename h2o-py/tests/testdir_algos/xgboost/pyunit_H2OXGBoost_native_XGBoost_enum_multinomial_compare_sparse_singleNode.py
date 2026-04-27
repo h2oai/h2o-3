@@ -73,7 +73,7 @@ def comparison_test():
         print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo), nrounds))
         nativeTrainTime = time.time()-time1
         time1=time.time()
-        nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
+        nativePred = nativeModel.predict(data=nativeTrain, iteration_range=(0, ntrees))
         nativeScoreTime = time.time()-time1
 
         print("Comparing H2OXGBoost results with native XGBoost result when DMatrix is set to sparse.....")
