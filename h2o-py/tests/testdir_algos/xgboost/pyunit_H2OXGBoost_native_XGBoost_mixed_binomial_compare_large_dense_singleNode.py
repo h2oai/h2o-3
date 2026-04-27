@@ -88,7 +88,7 @@ def comparison_test_dense():
 
         nativeTrainTime = time.time() - time1
         time1 = time.time()
-        nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
+        nativePred = nativeModel.predict(data=nativeTrain, iteration_range=(0, ntrees))
         nativeScoreTime = time.time() - time1
 
         pyunit_utils.summarizeResult_binomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,

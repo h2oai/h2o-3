@@ -90,7 +90,7 @@ def comparison_test():
                                         evals=watch_list, verbose_eval=True, evals_result=evals_result)
         nativeTrainTime = time.time()-time1
         time1=time.time()
-        nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
+        nativePred = nativeModel.predict(data=nativeTrain, iteration_range=(0, ntrees))
         nativeScoreTime = time.time()-time1
 
         print("Comparing H2OXGBoost variable importances with native XGBoost when DMatrix is set to sparse.....")

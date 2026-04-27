@@ -78,7 +78,7 @@ def comparison_test_dense():
         # cached predictions are slightly different from the actual predictions
         nativeTest = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
         time1=time.time()
-        nativePred = nativeModel.predict(data=nativeTest, ntree_limit=ntrees)
+        nativePred = nativeModel.predict(data=nativeTest, iteration_range=(0, ntrees))
         nativeScoreTime = time.time()-time1
 
         pyunit_utils.summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
