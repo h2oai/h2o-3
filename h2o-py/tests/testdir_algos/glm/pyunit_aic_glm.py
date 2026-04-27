@@ -248,6 +248,10 @@ def test_glm_aic_tweedie_no_regularization():
         family=sm.families.Tweedie(link=sm.families.links.log(), var_power=1.5),
     ).fit()
 
+    # Pin H2O's dispersion to statsmodels' Pearson chi^2 scale so both evaluate the
+    # Tweedie log-likelihood at the same phi. Without this, H2O uses ML-estimated phi
+    # while statsmodels uses Pearson chi^2 / df_resid, producing different llf at the
+    # same fitted mu.
     glm_no_reg = H2OGeneralizedLinearEstimator(
         lambda_=0,
         family="tweedie",
@@ -255,6 +259,8 @@ def test_glm_aic_tweedie_no_regularization():
         link="tweedie",
         tweedie_variance_power=1.5,
         tweedie_link_power=0,
+        fix_dispersion_parameter=True,
+        init_dispersion_parameter=sm_glm_no_reg.scale,
     )
     glm_no_reg.train(y=y, training_frame=train_h2o)
     assert_equal(glm_no_reg, sm_glm_no_reg, coef_tolerance=1e-3, aic_tolerance=1e-4)
