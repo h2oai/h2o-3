@@ -16,7 +16,9 @@ def h2o_to_float(h2o, pd):
     to compare with Pandas results.
     :return:
     """
-    return (h2o.astype(float), pd)
+    # Newer pandas keeps int dtype through np.ceil/np.floor; H2O ceil/floor returns
+    # float, so coerce both sides to float to compare values without dtype skew.
+    return (h2o.astype(float), pd.astype(float))
 
 
 def pd_to_int(h2o, pd):
