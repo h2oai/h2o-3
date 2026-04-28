@@ -29,7 +29,7 @@ def call(final pipelineContext) {
 
   def METADATA_VALIDATION_STAGES = [
     [
-      stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 8, timeoutValue: 10,
+      stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 17, timeoutValue: 10,
       component: pipelineContext.getBuildConfig().COMPONENT_ANY
     ]
   ]
@@ -70,7 +70,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
+      // GH-16810: Java 17 is now the minimum supported runtime (Jetty 12 requirement);
+      // there is no separate Java 8 / Java 11 smoke variant anymore.
+      stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 20,
+      imageSpecifier: "python-3.7-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
@@ -87,42 +90,37 @@ def call(final pipelineContext) {
   def PR_STAGES = [
     [
       stageName: 'Py3.7 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      javaVersion: 17, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
       ],
-      imageSpecifier: "python-3.7-jdk-8"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
     [
       stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 16,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      javaVersion: 17, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
       ],
-      imageSpecifier: "python-3.7-jdk-8"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
     [
       stageName: 'Py3.7 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      javaVersion: 17, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
       ],
-      imageSpecifier: "python-3.7-jdk-8"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
     [
-      stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      stageName: 'Java 17 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.7-jdk-8"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
     [
       stageName: 'Py3.7 Booklets', target: 'test-py-booklets', pythonVersion: '3.7',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 Init Java 8', target: 'test-py-init', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.7-jdk-8"
     ],
     [
       stageName: 'Py3.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.7',
@@ -151,11 +149,6 @@ def call(final pipelineContext) {
     [
       stageName: 'Py3.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.7',
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
-      timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
-      imageSpecifier: "r-3.5.3-jdk-8"
     ],
     [
       stageName: 'R3.5 Small', target: 'test-r-small', rVersion: '3.5.3',
@@ -235,46 +228,48 @@ def call(final pipelineContext) {
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      // GH-16810: full :test graph runs on Java 17 (h2o-jetty-12 module on classpath).
+      // Was previously two stages 'Java 8 JUnit' + 'Java 11 JUnit'; both collapsed here.
+      stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '3.7', javaVersion: 17,
       timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: 'python-3.7-jdk-8'
+      imageSpecifier: 'python-3.7-jdk-17'
     ],
     [
-      stageName: 'Java 8 Core JUnit', target: 'test-junit-core-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      stageName: 'Java 17 Core JUnit', target: 'test-junit-core-jenkins', pythonVersion: '3.7', javaVersion: 17,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: 'python-3.7-jdk-8'
+      imageSpecifier: 'python-3.7-jdk-17'
     ],
     [
-      stageName: 'REST Smoke Test', target: 'test-rest-smoke', pythonVersion: '3.7', javaVersion: 8,
+      stageName: 'REST Smoke Test', target: 'test-rest-smoke', pythonVersion: '3.7', javaVersion: 17,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: 'python-3.7-jdk-8'
+      imageSpecifier: 'python-3.7-jdk-17'
     ],
     [
-      stageName: 'Java 8 Mojo Pipeline JUnit', target: 'test-junit-mojo-pipeline-jenkins', pythonVersion: '3.7', javaVersion: 8,
+      stageName: 'Java 17 Mojo Pipeline JUnit', target: 'test-junit-mojo-pipeline-jenkins', pythonVersion: '3.7', javaVersion: 17,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: 'python-3.7-jdk-8'
+      imageSpecifier: 'python-3.7-jdk-17'
     ],
     [
-      stageName: 'Java 8 AutoML JUnit', target: 'test-junit-automl-jenkins', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      stageName: 'Java 17 AutoML JUnit', target: 'test-junit-automl-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.7-jdk-8"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
     [
-      stageName: 'Java 8 Clustering JUnit', target: 'test-junit-clustering-jenkins', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      stageName: 'Java 17 Clustering JUnit', target: 'test-junit-clustering-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.7-jdk-8"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
     [
-      stageName: 'Java 8 XGBoost Multinode JUnit', target: 'test-junit-xgb-multi-jenkins', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      stageName: 'Java 17 XGBoost Multinode JUnit', target: 'test-junit-xgb-multi-jenkins', pythonVersion: '3.7', javaVersion: 17,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.7-jdk-8"
+      imageSpecifier: "python-3.7-jdk-17"
     ],
     [
       stageName: 'R3.5 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
@@ -429,16 +424,6 @@ def call(final pipelineContext) {
   // Should contain any stages that are flaky (eg. the "init" stages).
   def NIGHTLY_REPEATED_STAGES = [
     [
-      stageName: 'Py3.7 Init Java 11', target: 'test-py-init', pythonVersion: '3.7', javaVersion: 11,
-      timeoutValue: 13, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.7-jdk-11"
-    ],
-    [
-      stageName: 'R3.5 Init Java 11', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 11,
-      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
-      imageSpecifier: "r-3.5.3-jdk-11"
-    ],
-    [
       stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '3.7', javaVersion: 17,
       timeoutValue: 700, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
@@ -489,15 +474,10 @@ def call(final pipelineContext) {
   // Should contain all Java versions and also the minimum supported Python version. 
   def NIGHTLY_STAGES = [
     [
-      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 40,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
-    [
-      stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 40,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
-    [
+      // GH-16810: Java 17 is the only supported runtime; previous Java 8 / Java 11 smoke
+      // variants ran the same target and have been dropped.
       stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 40,
+      imageSpecifier: "python-3.7-jdk-17",
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
@@ -580,7 +560,7 @@ def call(final pipelineContext) {
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 8, timeoutValue: 10,
+      stageName: 'LOGGER inicialization test', target: 'test-logger-initialize-properly', javaVersion: 17, imageSpecifier: "python-3.7-jdk-17", timeoutValue: 10,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
