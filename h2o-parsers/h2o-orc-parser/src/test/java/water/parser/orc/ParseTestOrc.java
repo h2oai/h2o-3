@@ -112,6 +112,7 @@ public class ParseTestOrc extends TestUtil {
 
     @Test
     public void testParseAllOrcs() {
+        Scope.enter();
         try {
             Set<String> failedFiles = new TreeSet<>();
             for (String fileName : allOrcFiles) {
