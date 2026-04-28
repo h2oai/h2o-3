@@ -504,6 +504,22 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # attributes. The wrapper sets `self._estimator` only after `fit()`, so its presence is the fitted signal.
         return self._estimator is not None
 
+    def __sklearn_tags__(self):
+        # sklearn 1.6+ resolves estimator type from __sklearn_tags__ rather than from
+        # _estimator_type alone. The H2O wrapper sets _estimator_type via custom_params
+        # ("default_estimator_type") and via the explicit estimator_type kwarg, but the
+        # ClassifierMixin/RegressorMixin appended to the bases sits late in MRO and its
+        # tag override never fires (BaseEstimator.__sklearn_tags__ resolves first).
+        # Propagate _estimator_type into the tags here so sklearn's is_classifier /
+        # is_regressor (and downstream cv / scorer dispatch) see the right type.
+        sup = super()
+        if not hasattr(sup, "__sklearn_tags__"):
+            return None  # sklearn < 1.6 has no tags system; legacy _estimator_type still works.
+        tags = sup.__sklearn_tags__()
+        if getattr(self, "_estimator_type", None):
+            tags.estimator_type = self._estimator_type
+        return tags
+
     def set_params(self, **params):
         """Set the parameters of this estimator.
 
