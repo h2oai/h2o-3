@@ -120,7 +120,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
                                                        .sort_index(axis=1)
     
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
-                       check_dtype=False, check_index_type=False, check_column_type=False, check_less_precise=True)
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-3)
     
     survival_h2o_as_pandas = cph_h2o.baseline_survival_frame.as_data_frame(use_pandas=True)
 
@@ -137,7 +137,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     survival_h2o_reordered_columns = survival_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
 
     assert_frame_equal(survival_py_reordered_columns, survival_h2o_reordered_columns,
-                       check_dtype=False, check_index_type=False, check_column_type=False, check_less_precise=True)
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-3)
 
 
 # There are different API versions for concordance in lifelines library
