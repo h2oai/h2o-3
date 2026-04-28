@@ -506,18 +506,24 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
 
     def __sklearn_tags__(self):
         # sklearn 1.6+ resolves estimator type from __sklearn_tags__ rather than from
-        # _estimator_type alone. The H2O wrapper sets _estimator_type via custom_params
-        # ("default_estimator_type") and via the explicit estimator_type kwarg, but the
-        # ClassifierMixin/RegressorMixin appended to the bases sits late in MRO and its
-        # tag override never fires (BaseEstimator.__sklearn_tags__ resolves first).
-        # Propagate _estimator_type into the tags here so sklearn's is_classifier /
-        # is_regressor (and downstream cv / scorer dispatch) see the right type.
+        # _estimator_type alone, and 1.8 removed `_estimator_type = "classifier"` from
+        # ClassifierMixin entirely. The H2O wrapper bases place ClassifierMixin /
+        # RegressorMixin late in MRO, so their tag override never fires via super().
+        # Set the tag here based on either an explicit _estimator_type (set by the
+        # generic wrapper or `default_estimator_type` custom param) or the mixin
+        # presence in the class hierarchy.
         sup = super()
         if not hasattr(sup, "__sklearn_tags__"):
             return None  # sklearn < 1.6 has no tags system; legacy _estimator_type still works.
         tags = sup.__sklearn_tags__()
-        if getattr(self, "_estimator_type", None):
-            tags.estimator_type = self._estimator_type
+        estimator_type = getattr(self, "_estimator_type", None)
+        if not estimator_type:
+            if isinstance(self, ClassifierMixin):
+                estimator_type = "classifier"
+            elif isinstance(self, RegressorMixin):
+                estimator_type = "regressor"
+        if estimator_type:
+            tags.estimator_type = estimator_type
         return tags
 
     def set_params(self, **params):
