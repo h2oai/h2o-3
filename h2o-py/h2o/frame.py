@@ -1983,7 +1983,12 @@ class H2OFrame(Keyed, H2ODisplay):
             warnings.warn("Converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install polars and pyarrow and use it as "
                           "pandas_df = h2o_df.as_data_frame(use_multi_thread=True)\n", H2ODependencyWarning)
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
+            # H2O writes NAs as empty CSV fields and emits non-NA strings literally, so only
+            # treat empty as NA. Default pandas na_values would turn legitimate categorical
+            # levels like "None"/"NA"/"NULL" into NaN, which loses data on the round-trip
+            # (polars path via convert_with_polars uses null_values="" for the same reason).
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False,
+                                   keep_default_na=False, na_values=[""])
                 
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
