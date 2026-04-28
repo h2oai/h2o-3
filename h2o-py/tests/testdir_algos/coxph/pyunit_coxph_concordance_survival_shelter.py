@@ -109,6 +109,12 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     for col_name in hazard_py.columns:
         if (isinstance(col_name, int)):
             new_name = "({0})".format(col_name)
+        elif isinstance(col_name, tuple):
+            # numpy 2.x changes scalar repr (e.g. `np.int8(0)` instead of `0`),
+            # which leaks into str(tuple). Unbox each element to its Python value
+            # so the column matches H2O's plain Python-typed tuple stringification.
+            parts = [v.item() if hasattr(v, "item") else v for v in col_name]
+            new_name = str(tuple(parts))
         else:
             new_name = str(col_name)
         hazard_py.rename(columns={col_name: new_name}, inplace=True)
