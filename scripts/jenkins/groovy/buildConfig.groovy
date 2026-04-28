@@ -246,6 +246,7 @@ class BuildConfig {
     }
     def imageComponentName
     def version
+    def jdkSuffix = ''
     switch (component) {
       case COMPONENT_JAVA:
       case COMPONENT_ANY:
@@ -255,14 +256,18 @@ class BuildConfig {
       case COMPONENT_PY:
         imageComponentName = 'python'
         version = stageConfig.pythonVersion
+        // GH-16810: Java 17 is the runtime baseline; default to the jdk-17 image variant.
+        jdkSuffix = "-jdk-${stageConfig.javaVersion ?: 17}"
         break
       case COMPONENT_R:
         imageComponentName = 'r'
         version = stageConfig.rVersion
+        jdkSuffix = "-jdk-${stageConfig.javaVersion ?: 17}"
         break
       case COMPONENT_JS:
         imageComponentName = 'python'
         version = stageConfig.pythonVersion
+        jdkSuffix = "-jdk-${stageConfig.javaVersion ?: 17}"
         break
       default:
         throw new IllegalArgumentException("Cannot find image for component ${component}")
@@ -270,7 +275,7 @@ class BuildConfig {
     def imageVersion = DEFAULT_IMAGE_VERSION_TAG
     if (stageConfig.imageVersion)
       imageVersion = stageConfig.imageVersion
-    return "${DOCKER_REGISTRY}/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
+    return "${DOCKER_REGISTRY}/h2o-3/dev-${imageComponentName}-${version}${jdkSuffix}:${imageVersion}"
   }
   
   String getDevImageReference(final specifier, final version) {
