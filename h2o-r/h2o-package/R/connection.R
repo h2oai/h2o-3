@@ -681,6 +681,13 @@ h2o.resume <- function(recovery_dir=NULL) {
   .h2o.jar.env$name <- name
 
   if(enable_assertions) args <- c(args, "-ea")
+  # GH-16810: Java 17 strict module access. Mirrors the Add-Opens manifest attribute on the
+  # standalone assemblies; needed unconditionally because the -cp launch path below (used when
+  # extra_classpath is set) ignores manifest opens. Harmless on the -jar path.
+  args <- c(args,
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+            "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED")
   if(!is.null(jvm_custom_args)) args <- c(args,jvm_custom_args)
 
   if (!is.null(extra_classpath)) {

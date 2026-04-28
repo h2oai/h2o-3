@@ -355,7 +355,15 @@ class H2OCloudNode(object):
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
-               "-ea"]
+               "-ea",
+               # GH-16810: Java 17 strict module access. Mirrors the Add-Opens manifest
+               # attribute on the standalone assemblies; needed here because run.py launches
+               # H2O via 'java -cp ... water.H2OApp', and -cp launches ignore manifest opens.
+               # javassist (used by water.Weaver to synthesize *$Icer classes) calls
+               # ClassLoader.defineClass via reflection.
+               "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+               "--add-opens", "java.base/java.util=ALL-UNNAMED",
+               "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"]
         if self.jvm_opts is not None:
             cmd += self.jvm_opts if isinstance(self.jvm_opts, list) else [self.jvm_opts]
         if not self.is_external_xgboost and self.external_xgboost_leader:
