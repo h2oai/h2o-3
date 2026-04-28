@@ -76,6 +76,11 @@ BYTECODE_INSTRS = {
     # Calls a callable object with the number of arguments, including the named arguments specified
     # by the preceding KW_NAMES, if any.
     "CALL": "",  # Py >= 3.11
+    # from https://docs.python.org/3/library/dis.html#opcode-CALL_KW:
+    # Calls a callable object with keyword arguments. argc is the total positional+keyword
+    # argument count. Top of stack is a LOAD_CONST tuple of keyword names; below it the
+    # keyword values (in the same order), then positional args, then the callable.
+    "CALL_KW": "",  # Py >= 3.13
 }
 
 # The list of parameters for BINARY_OP instruction. 
@@ -123,6 +128,9 @@ def is_func(instr):
 def is_call(instr):
     return "CALL" == instr
 
+def is_call_kw(instr):  # Py >= 3.13
+    return "CALL_KW" == instr
+
 def is_func_kw(instr):
     return "CALL_FUNCTION_KW" == instr
 
@@ -154,7 +162,7 @@ def is_build_map(instr):
     return "BUILD_MAP" == instr
 
 def is_callable(instr):
-    return is_func(instr) or is_func_kw(instr) or is_func_ex(instr) or is_method_call(instr) or is_call(instr)
+    return is_func(instr) or is_func_kw(instr) or is_func_ex(instr) or is_method_call(instr) or is_call(instr) or is_call_kw(instr)
 
 def is_builder(instr):
     return instr.startswith('BUILD_')
@@ -286,6 +294,8 @@ def _opcode_read_arg(start_index, ops, keys):
             return _unop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
         elif is_call(instr):
             return _call_bc(op, return_idx, ops, keys)
+        elif is_call_kw(instr):
+            return _call_kw_bc(op, return_idx, ops, keys)
         elif is_func(instr):
             return _call_func_bc(op, return_idx, ops, keys)
         elif is_func_kw(instr):
@@ -479,7 +489,23 @@ def _call_bc(nargs, idx, ops, keys):
             nargs -= 1
         exp_kwargs, idx, nargs = _read_explicit_keyword_args(nargs, idx, ops, keys)
         kwargs.update(exp_kwargs)
-        
+
+    args, idx, nargs = _read_explicit_positional_args(nargs, idx, ops, keys)
+    return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
+
+
+def _call_kw_bc(nargs, idx, ops, keys):
+    # Py 3.13+: CALL_KW replaces the KW_NAMES + CALL pattern. The keyword-name tuple
+    # is loaded by a normal LOAD_CONST immediately preceding CALL_KW; below it on the
+    # stack are the keyword values (in tuple order), then positional args, then callable.
+    _, keywords = _get_instr(ops, idx)
+    kwargs = {}
+    if isinstance(keywords, tuple):
+        idx -= 1
+        for key in keywords:
+            val, idx = _opcode_read_arg(idx, ops, keys)
+            kwargs[key] = val
+            nargs -= 1
     args, idx, nargs = _read_explicit_positional_args(nargs, idx, ops, keys)
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
