@@ -280,6 +280,12 @@ class H2OLocalServer(object):
 
         # ...add JVM options
         cmd += ["-ea"] if ea else []
+        # GH-16810: Java 17 strict module access. Mirrors the Add-Opens manifest attribute on
+        # the standalone assemblies; needed unconditionally because the -cp launch path below
+        # (used when extra_classpath is set) ignores manifest opens. Harmless on the -jar path.
+        cmd += ["--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                "--add-opens", "java.base/java.util=ALL-UNNAMED",
+                "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"]
         for (mq, num) in [("-Xms", mmin), ("-Xmx", mmax)]:
             if num is None: continue
             numstr = "%dG" % (num >> 30) if num == (num >> 30) << 30 else \
