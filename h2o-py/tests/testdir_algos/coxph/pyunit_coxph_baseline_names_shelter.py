@@ -4,7 +4,7 @@ import h2o
 
 from lifelines import CoxPHFitter
 from pandas.testing import assert_frame_equal
-from pandas import read_csv
+from pandas import read_csv, to_datetime
 
 import numpy as np
 
@@ -21,7 +21,9 @@ def coxph_concordance_and_baseline():
                     , "intake_condition", "outcome_condition", "chip_status"]:
         shelter[colname] = shelter[colname].astype("category")
     for colname in ["end_ts", "intake_date", "intake_time", "start_ts"]:
-        shelter[colname] = shelter[colname].astype("datetime64[ns]")
+        # pandas 2.x rejects astype("datetime64[ns]") on tz-aware ISO strings (e.g. "...Z");
+        # parse via to_datetime with utc=True and drop the tz to get naive datetime64[ns].
+        shelter[colname] = to_datetime(shelter[colname], utc=True).dt.tz_localize(None)
 
     without_strata(shelter)
     with_strata(shelter)
