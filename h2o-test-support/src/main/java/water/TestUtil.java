@@ -13,6 +13,7 @@ import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
+import org.junit.rules.Timeout;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.api.StreamingSchema;
@@ -423,6 +424,15 @@ public class TestUtil extends Iced {
 
   // current running test - assumes no test parallelism just like the rest of this class
   public static Description CURRENT_TEST_DESCRIPTION;
+
+  /**
+   * Per-test timeout. Any single test exceeding this limit fails with TestTimedOutException instead
+   * of hanging the whole JVM (which was previously killing entire Jenkins stages with SIGTERM).
+   * Configurable via -Dtest.timeout.seconds=N; default is 600 (10 minutes).
+   */
+  @Rule
+  transient public Timeout globalTimeout = Timeout.seconds(
+      Long.parseLong(System.getProperty("test.timeout.seconds", "600")));
 
   /**
    * Execute this rule before each test to print test name and test class
