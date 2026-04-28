@@ -5201,7 +5201,11 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):
             pass
     zeroFrame = pd.DataFrame(tempnp)
     zeroFrame.columns=cmissingNames
-    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
+    # pandas 2.x returns bool dtype from get_dummies by default. The result is concat'd
+    # with int columns and later passed to scipy.sparse.csr_matrix, which on Py3.12+
+    # rejects object dtype that mixed bool/int produce. Force int8 to keep the dtype
+    # numeric and consistent across pandas versions.
+    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False, dtype=np.int8)
     tempNames = list(temp)  # get column names
     colLength = len(tempNames)
     newNames = ['a']*colLength

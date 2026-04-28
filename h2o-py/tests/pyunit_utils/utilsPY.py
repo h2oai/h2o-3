@@ -4025,7 +4025,9 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
             pass
     zeroFrame = pd.DataFrame(tempnp)
     zeroFrame.columns=cmissingNames
-    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
+    # pandas 2.x defaults get_dummies dtype to bool; downstream code concats with
+    # int columns and then converts to scipy.sparse, which rejects object dtype.
+    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False, dtype=np.int8)
     tempNames = list(temp)  # get column names
     colLength = len(tempNames)
     newNames = ['a']*colLength
