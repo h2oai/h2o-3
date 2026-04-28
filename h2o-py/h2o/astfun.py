@@ -99,6 +99,7 @@ BINARY_OPS = {
     21: "**",  # NB_INPLACE_POWER
     23: "-",   # NB_INPLACE_SUBTRACT
     24: "/",   # NB_INPLACE_TRUE_DIVIDE
+    26: "cols",  # NB_SUBSCR — Py 3.14+ folds BINARY_SUBSCR into BINARY_OP
 }
 
 def is_bytecode_instruction(instr):
@@ -275,7 +276,7 @@ def _opcode_read_arg(start_index, ops, keys):
         # print(ops)
         if is_binary_op(instr):
             if op not in BINARY_OPS.keys():
-                raise ValueError("Unimplemented binary op with id: " + op)
+                raise ValueError("Unimplemented binary op with id: " + str(op))
             return _binop_bc(BINARY_OPS[op], return_idx, ops, keys)
         elif is_binary(instr):
             return _binop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
