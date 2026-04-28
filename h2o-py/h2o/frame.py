@@ -2146,6 +2146,12 @@ class H2OFrame(Keyed, H2ODisplay):
             fr = H2OFrame._expr(expr=ExprNode("rows", self, item))
         elif isinstance(item, tuple):
             rows, cols = item
+            # numpy-compatible: arr[key, ...] passes Ellipsis as the col selector
+            # (sklearn's _safe_indexing does this since 1.6+); treat as "all".
+            if rows is Ellipsis:
+                rows = slice(None)
+            if cols is Ellipsis:
+                cols = slice(None)
             allrows = allcols = False
             if isinstance(cols, slice):
                 cols = normalize_slice(cols, self.ncols)
