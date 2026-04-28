@@ -49,6 +49,6 @@ class FeatureInteraction:
             writer = pd.ExcelWriter(path, engine='xlsxwriter')
             for fi in json['feature_interaction']:
                 fi.as_data_frame().to_excel(writer, sheet_name=fi._table_header)
-            writer.save()
+            writer.close()
 
         return json['feature_interaction']

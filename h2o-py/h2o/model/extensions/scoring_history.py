@@ -60,8 +60,8 @@ class ScoringHistory:
             plt.ylabel(metric)
             plt.title("Scoring History")
             plt.ylim(ylim)
-            plt.plot(scoring_history[timestep], scoring_history[training_metric], label="Training")
-            plt.plot(scoring_history[timestep], scoring_history[validation_metric], color="orange",
+            plt.plot(list(scoring_history[timestep]), list(scoring_history[training_metric]), label="Training")
+            plt.plot(list(scoring_history[timestep]), list(scoring_history[validation_metric]), color="orange",
                      label="Validation")
             plt.legend()
         else:  # Training scoring history only
@@ -69,7 +69,7 @@ class ScoringHistory:
             plt.ylabel(training_metric)
             plt.title("Training Scoring History")
             plt.ylim(ylim)
-            plt.plot(scoring_history[timestep], scoring_history[training_metric])
+            plt.plot(list(scoring_history[timestep]), list(scoring_history[training_metric]))
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)    
         if not server:
@@ -140,7 +140,7 @@ class ScoringHistoryGLM(ScoringHistory):
         plt.ylabel(metric)
         plt.title("Validation Scoring History")
         style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
-        plt.plot(scoring_history[timestep], scoring_history[metric], style)
+        plt.plot(list(scoring_history[timestep]), list(scoring_history[metric]), style)
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
         if not server:
