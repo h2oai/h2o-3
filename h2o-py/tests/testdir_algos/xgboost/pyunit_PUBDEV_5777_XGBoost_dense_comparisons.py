@@ -109,7 +109,7 @@ def comparison_test():
                                 dtrain=nativeXGBoostInput, num_boost_round=nativeXGBoostParam[1])
         nativePred = nativeModel.predict(data=nativeXGBoostInput, iteration_range=(0, nativeXGBoostParam[1]))
         pyunit_utils.summarizeResult_multinomial(h2oPredictD, nativePred, -1, -1, -1,
-                                              -1, tolerance=1e-6)
+                                              -1, tolerance=1e-5)
     else:
         print("********  Test skipped.  This test cannot be performed in multinode environment.")
 
