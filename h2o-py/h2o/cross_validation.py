@@ -9,8 +9,18 @@ class H2OPartitionIterator(object):
         self.masks = None
 
     def __iter__(self):
+        # sklearn >= 1.6 strict-converts cv splits to numpy arrays via xp.asarray, so
+        # emit numpy integer index arrays instead of H2OFrame boolean masks. The cv
+        # consumer (sklearn) then uses these to index X; the H2OFrame __getitem__
+        # accepts an H2OFrame mask but not numpy arrays, so the int-index form is
+        # what works through sklearn's _safe_indexing.
+        import numpy as np
         for test_mask in self._test_masks():
-            yield 1 - test_mask, test_mask
+            test_arr = np.asarray(
+                test_mask.as_data_frame()[test_mask.columns[0]].values, dtype=bool
+            )
+            all_idx = np.arange(self.n)
+            yield all_idx[~test_arr], all_idx[test_arr]
 
     def _test_masks(self):
         raise NotImplementedError()

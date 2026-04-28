@@ -2116,6 +2116,22 @@ class H2OFrame(Keyed, H2ODisplay):
         new_types = None
         fr = None
         flatten = False
+        # sklearn cv splitters and other downstream consumers pass numpy arrays of
+        # integer or boolean indices for row selection; route them to the (rows, :)
+        # shape since a 1-D Python list already means column selection in H2OFrame.
+        try:
+            import numpy as np
+            _ndarray = np.ndarray
+        except ImportError:
+            _ndarray = None
+        if _ndarray is not None and isinstance(item, _ndarray):
+            if item.ndim != 1:
+                raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+            if item.dtype == bool:
+                item = np.flatnonzero(item).tolist()
+            else:
+                item = item.astype(int).tolist()
+            return self[(item, slice(None, None, None))]
         if isinstance(item, slice):
             item = normalize_slice(item, self.ncols)
         if is_type(item, str, int, list, slice):
