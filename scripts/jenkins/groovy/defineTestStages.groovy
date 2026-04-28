@@ -931,7 +931,9 @@ private void invokeStageUsingDefinition(final stageDef, final pipelineContext) {
 
 private void invokeStage(final pipelineContext, final body) {
 
-  final String DEFAULT_JAVA = '8'
+  // GH-16810: Java 17 is the minimum supported runtime since the standalone main assembly
+  // bundles Jetty 12. Default any stage that does not override javaVersion to 17.
+  final String DEFAULT_JAVA = '17'
   final String DEFAULT_PYTHON = '3.7'
   final String DEFAULT_R = '3.5.3'
   final int DEFAULT_TIMEOUT = 60
