@@ -533,6 +533,12 @@ def _read_explicit_positional_args(nargs, idx, ops, keys):
 def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
     # LOAD_ATTR <method_name> or LOAD_METHOD <method_name>: Map call arguments to a call of method on H2OFrame class
     instr, op = _get_instr(ops, idx)
+    # Py3.13+: explicit PUSH_NULL appears between the callable load and
+    # CALL_FUNCTION_EX (e.g. for `x.method(*args)`). Skip it so we land on
+    # the LOAD_ATTR/LOAD_METHOD that names the call.
+    if instr == "PUSH_NULL":
+        idx -= 1
+        instr, op = _get_instr(ops, idx)
     rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs) if is_method(instr) else []
     # Map function name to proper rapids name
     rapids_op = _get_func_name(op, rapids_args)
