@@ -135,6 +135,11 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     for col_name in survival_py.columns:
         if (isinstance(col_name, int)):
             new_name = "({0})".format(col_name)
+        elif isinstance(col_name, tuple):
+            # See hazard rename block above: numpy 2.x scalars stringify with
+            # the typename, so unbox each element before tuple stringification.
+            parts = [v.item() if hasattr(v, "item") else v for v in col_name]
+            new_name = str(tuple(parts))
         else:
             new_name = str(col_name)
         survival_py.rename(columns={col_name: new_name}, inplace=True)
