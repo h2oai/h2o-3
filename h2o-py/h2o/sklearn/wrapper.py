@@ -504,6 +504,26 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # attributes. The wrapper sets `self._estimator` only after `fit()`, so its presence is the fitted signal.
         return self._estimator is not None
 
+    @property
+    def classes_(self):
+        # sklearn 1.6+ scoring path (e.g. RandomizedSearchCV.score → metrics._scorer →
+        # _get_response_values) reads `estimator.classes_` on the fitted classifier and
+        # raises AttributeError otherwise. Surface the H2O response column's domain so
+        # sklearn's accuracy/probability scorers work on H2O classifier wrappers.
+        if self._estimator is None or not self.is_classifier():
+            raise AttributeError(
+                "{} has no attribute 'classes_' (not a fitted classifier).".format(self.__class__.__name__)
+            )
+        output = self._estimator._model_json.get("output") or {}
+        domains = output.get("domains")
+        if not domains or domains[-1] is None:
+            raise AttributeError(
+                "{}: response column has no categorical domain — model is not a classifier.".format(self.__class__.__name__)
+            )
+        if can_use_numpy():
+            return np.asarray(domains[-1])
+        return list(domains[-1])
+
     def __sklearn_tags__(self):
         # sklearn 1.6+ resolves estimator type from __sklearn_tags__ rather than from
         # _estimator_type alone, and 1.8 removed `_estimator_type = "classifier"` from
