@@ -2152,6 +2152,19 @@ class H2OFrame(Keyed, H2ODisplay):
                 rows = slice(None)
             if cols is Ellipsis:
                 cols = slice(None)
+            # sklearn _array_indexing passes a numpy array of indices inside the
+            # tuple form `arr[key, ...]`; convert to a plain Python list so the
+            # downstream rapids serializer doesn't leak `array(...)` repr into
+            # the AST.
+            if _ndarray is not None:
+                if isinstance(rows, _ndarray):
+                    if rows.ndim != 1:
+                        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+                    rows = np.flatnonzero(rows).tolist() if rows.dtype == bool else rows.astype(int).tolist()
+                if isinstance(cols, _ndarray):
+                    if cols.ndim != 1:
+                        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+                    cols = np.flatnonzero(cols).tolist() if cols.dtype == bool else cols.astype(int).tolist()
             allrows = allcols = False
             if isinstance(cols, slice):
                 cols = normalize_slice(cols, self.ncols)
