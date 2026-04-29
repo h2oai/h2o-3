@@ -211,6 +211,11 @@ def _disassemble_lambda(co):
                 ops.append(["LOAD_CONST", [i.argval]])
                 ops.append(["RETURN_VALUE", []])
                 continue
+            elif i.opname == "CALL_INTRINSIC_1" and i.argrepr == "INTRINSIC_LIST_TO_TUPLE":
+                # Python 3.12+ replaced the LIST_TO_TUPLE opcode with this intrinsic call.
+                # Normalize so the rest of the disassembler keeps working unchanged.
+                ops.append(["LIST_TO_TUPLE", []])
+                continue
             elif i.opname == "LOAD_FAST_LOAD_FAST":
                 # Python 3.13+: two consecutive LOAD_FAST packed into one instruction
                 # arg = (first_var_idx << 4) | second_var_idx (both indices must be 0-15)
@@ -415,6 +420,12 @@ def _call_func_var_kw_bc(nargs, idx, ops, keys):
 
 def _call_func_ex_bc(flags, idx, ops, keys):
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_EX
+    # Py3.14+ removed the explicit flags arg; infer from the stack pattern:
+    # PUSH_NULL immediately before CALL_FUNCTION_EX means no kwargs (flags=0),
+    # otherwise the preceding op is the kwargs construction (flags=1).
+    if flags is None:
+        prev_instr, _ = _get_instr(ops, idx)
+        flags = 0 if prev_instr == "PUSH_NULL" else 1
     if flags & 1:
         instr, nargs = _get_instr(ops, idx)
         if is_builder(instr):  # first instr can be a map builder if we have to unpack kwargs, followed by normal keywords args
@@ -444,6 +455,12 @@ def _call_func_ex_bc(flags, idx, ops, keys):
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
     else:
         kwargs = {}
+
+    # Py3.14+: when flags=0, a PUSH_NULL fills the kwargs stack slot just before
+    # CALL_FUNCTION_EX. Skip it so we land on the args (LIST_TO_TUPLE / iterable).
+    instr, _ = _get_instr(ops, idx)
+    if instr == "PUSH_NULL":
+        idx -= 1
 
     instr, nargs = _get_instr(ops, idx)
     while is_list_to_tuple(instr):
