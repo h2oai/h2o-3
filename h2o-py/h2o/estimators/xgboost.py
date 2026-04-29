@@ -2598,4 +2598,13 @@ class H2OXGBoostEstimator(H2OEstimator):
             nativeXGBoostParams[keyname]=keyvalue
         paramsSet = self.full_parameters
 
+        # H2O bundles xgboost4j 1.6, whose default base_score is 0.5; the Java side
+        # never records this in native_parameters because it relies on the default.
+        # Native xgboost 2.0+ changed the default to auto-compute from the training
+        # data, so without an explicit value the external xgb.train picks a different
+        # starting score and the predictions diverge from H2O. Pin the 1.6 default
+        # so the comparison stays apples-to-apples regardless of the native xgboost
+        # version installed alongside h2o-py.
+        nativeXGBoostParams.setdefault("base_score", 0.5)
+
         return nativeXGBoostParams, paramsSet['ntrees']['actual_value']
