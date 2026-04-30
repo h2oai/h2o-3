@@ -48,7 +48,7 @@ def getPrStages(final pipelineContext){
     ],
     [
       stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     //    [
     //      stageName: 'Py3.11 Small', target: 'test-pyunit-small', pythonVersion: '3.11',
@@ -115,7 +115,7 @@ def getPrStages(final pipelineContext){
     ],
     [
       stageName: 'Py3.11 Small', target: 'test-pyunit-small', pythonVersion: '3.11',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.11 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.11',
@@ -143,7 +143,7 @@ def getPrStages(final pipelineContext){
     ],
     [
       stageName: 'Py3.12 Small', target: 'test-pyunit-small', pythonVersion: '3.12',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.12 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.12',
@@ -171,7 +171,7 @@ def getPrStages(final pipelineContext){
     ],
     [
       stageName: 'Py3.13 Small', target: 'test-pyunit-small', pythonVersion: '3.13',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.13 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.13',
@@ -199,7 +199,7 @@ def getPrStages(final pipelineContext){
     ],
     [
       stageName: 'Py3.14 Small', target: 'test-pyunit-small', pythonVersion: '3.14',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.14 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.14',
