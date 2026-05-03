@@ -852,9 +852,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if (_lambda_search) {
               glm.error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
           }
-          if (_fold_column != null || _nfolds > 0) {
-              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with cross-validation.");
-          }
         }
     }
     
