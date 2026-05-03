@@ -1850,8 +1850,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         }
     }
 
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testRemoveOffsetWithCrossValiadation() {
+    @Test
+    public void testRemoveOffsetWithCrossValidation() {
         Frame train = null;
         GLMModel glm = null;
         try {
@@ -1873,9 +1873,99 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             params._offset_column = "offset";
             params._nfolds = 3;
             glm = new GLM(params).trainModel().get();
+            assertNotNull("Model should train successfully with remove_offset_effects=true and nfolds=3", glm);
+            assertNotNull("CV metrics should be populated", glm._output._cross_validation_metrics);
+            assertNotNull("Training metrics should be populated", glm._output._training_metrics);
+            System.out.println("CV metrics");
+            System.out.println(glm._output._cross_validation_metrics);
+            System.out.println("Scoring history");
+            System.out.println(glm.scoring_history().toString());
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    // Confirms no regression: training metrics are identical between a CV run and a no-CV run
+    // on the same data with the same fixed lambda, because the override's if-guard is never entered.
+    @Test
+    public void testCrossValidationWithoutRemoveOffsetNoRegression() {
+        Frame train = null;
+        GLMModel glmCV = null;
+        GLMModel glmNoCV = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("train_regression");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._remove_offset_effects = false;
+
+            params._nfolds = 0;
+            glmNoCV = new GLM(params).trainModel().get();
+
+            params._nfolds = 3;
+            params._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+            glmCV = new GLM(params).trainModel().get();
+            
+            assertNotNull("CV model should train with remove_offset_effects=false", glmCV);
+            assertNotNull("CV metrics should be populated", glmCV._output._cross_validation_metrics);
+            // Training metrics on the full dataset must be unaffected by the cv_scoreCVModels override.
+            assertEquals("Training MSE must be identical with and without CV when remove_offset_effects=false",
+                    glmNoCV._output._training_metrics._MSE,
+                    glmCV._output._training_metrics._MSE, 1e-10);
+        } finally {
+            if (train != null) train.remove();
+            if (glmCV != null) glmCV.remove();
+            if (glmNoCV != null) glmNoCV.remove();
+            Scope.exit();
+        }
+    }
+
+    // Remove_offset_effects must not alter beta coefficients — offset zeroing is scoring-only.
+    // The IRLSM solver path is unchanged by the flag; only GLMResDevTask and cv_scoreCVModels read it.
+    @Test
+    public void testRemoveOffsetDoesNotChangeBetaCoefficients() {
+        Frame train = null;
+        GLMModel glmWithROE = null;
+        GLMModel glmWithoutROE = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("train_beta");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 0;
+
+            params._remove_offset_effects = true;
+            glmWithROE = new GLM(params).trainModel().get();
+
+            params._remove_offset_effects = false;
+            glmWithoutROE = new GLM(params).trainModel().get();
+
+            assertNotNull(glmWithROE);
+            assertNotNull(glmWithoutROE);
+            assertEquals("Number of coefficients must match", glmWithROE.coefficients().size(), glmWithoutROE.coefficients().size());
+            for (String name : glmWithROE.coefficients().keySet()) {
+                assertEquals("Beta for '" + name + "' must be identical regardless of remove_offset_effects",
+                        glmWithoutROE.coefficients().get(name),
+                        glmWithROE.coefficients().get(name), 1e-10);
+            }
+        } finally {
+            if (train != null) train.remove();
+            if (glmWithROE != null) glmWithROE.remove();
+            if (glmWithoutROE != null) glmWithoutROE.remove();
             Scope.exit();
         }
     }
@@ -2608,6 +2698,101 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             params._link = GLMModel.GLMParameters.Link.logit;
 
             glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * When remove_offset_effects=True and nfolds>0 and generate_scoring_history=True:
+     * - The restricted scoring history (_scoring_history) must have deviance_xval computed WITHOUT the offset.
+     * - The unrestricted scoring history (_scoring_history_unrestricted_model) must have deviance_xval computed WITH the offset.
+     * The two deviance_xval values must differ (proving independent computation, not the same array).
+     */
+    @Test
+    public void testRemoveOffsetCvScoringHistoryHasXvalDeviance() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("train_xval_sh");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._nfolds = 3;
+            params._generate_scoring_history = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._score_each_iteration = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // --- Restricted scoring history (offset removed) ---
+            TwoDimTable sh = glm._output._scoring_history;
+            assertNotNull("Restricted scoring history must be present", sh);
+            String[] restrictedCols = sh.getColHeaders();
+            assertTrue("deviance_xval column must be in restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("deviance_xval"));
+            assertTrue("deviance_se column must be in restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("deviance_se"));
+            int restrictedXvalCol = Arrays.asList(restrictedCols).indexOf("deviance_xval");
+            int restrictedSeCol   = Arrays.asList(restrictedCols).indexOf("deviance_se");
+            int lastRow = sh.getRowDim() - 1;
+            double restrictedXvalDev = (double) sh.get(lastRow, restrictedXvalCol);
+            double restrictedXvalSe  = (double) sh.get(lastRow, restrictedSeCol);
+            assertTrue("deviance_xval in restricted history must be finite and positive",
+                    restrictedXvalDev > 0 && !Double.isNaN(restrictedXvalDev));
+            assertTrue("deviance_se in restricted history must be finite and non-negative",
+                    restrictedXvalSe >= 0 && !Double.isNaN(restrictedXvalSe));
+
+            // --- Unrestricted scoring history (with offset) ---
+            TwoDimTable shUnrestricted = glm._output._scoring_history_unrestricted_model;
+            assertNotNull("Unrestricted scoring history must be present", shUnrestricted);
+            String[] unrestrictedCols = shUnrestricted.getColHeaders();
+            assertTrue("deviance_xval must be in unrestricted scoring history",
+                    Arrays.asList(unrestrictedCols).contains("deviance_xval"));
+            assertTrue("deviance_se must be in unrestricted scoring history",
+                    Arrays.asList(unrestrictedCols).contains("deviance_se"));
+            int unrestrictedXvalCol = Arrays.asList(unrestrictedCols).indexOf("deviance_xval");
+            int unrestrictedSeCol   = Arrays.asList(unrestrictedCols).indexOf("deviance_se");
+            int lastRowUnrestricted = shUnrestricted.getRowDim() - 1;
+            double unrestrictedXvalDev = (double) shUnrestricted.get(lastRowUnrestricted, unrestrictedXvalCol);
+            double unrestrictedXvalSe  = (double) shUnrestricted.get(lastRowUnrestricted, unrestrictedSeCol);
+            assertTrue("deviance_xval in unrestricted history must be finite and positive",
+                    unrestrictedXvalDev > 0 && !Double.isNaN(unrestrictedXvalDev));
+            assertTrue("deviance_se in unrestricted history must be finite and non-negative",
+                    unrestrictedXvalSe >= 0 && !Double.isNaN(unrestrictedXvalSe));
+
+            // Restricted (offset removed) and unrestricted (offset included) xval deviances must differ
+            // because the test frame has non-zero offset values
+            assertNotEquals("Restricted and unrestricted deviance_xval must differ because the offset is non-zero",
+                    restrictedXvalDev, unrestrictedXvalDev, 1e-10);
+
+            // The combined restricted scoring history must also carry "Unrestricted deviance_xval" and
+            // "Unrestricted deviance_se" columns (added by combineScoringHistoryRestricted from the
+            // unrestricted scoring history with the "Unrestricted " prefix)
+            assertTrue("Unrestricted deviance_xval column must appear in combined restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("Unrestricted deviance_xval"));
+            assertTrue("Unrestricted deviance_se column must appear in combined restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("Unrestricted deviance_se"));
+            int unrestrictedXvalColInRestricted = Arrays.asList(restrictedCols).indexOf("Unrestricted deviance_xval");
+            double unrestrictedXvalDevInRestricted = (double) sh.get(lastRow, unrestrictedXvalColInRestricted);
+            assertTrue("Unrestricted deviance_xval in combined restricted history must be finite and positive",
+                    unrestrictedXvalDevInRestricted > 0 && !Double.isNaN(unrestrictedXvalDevInRestricted));
+            // The "Unrestricted deviance_xval" in the combined table equals the standalone unrestricted xval deviance
+            assertEquals("Unrestricted deviance_xval in combined table must equal the standalone unrestricted history value",
+                    unrestrictedXvalDev, unrestrictedXvalDevInRestricted, 1e-10);
+            System.out.println(sh);
+            System.out.println(shUnrestricted);
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
