@@ -1,6 +1,5 @@
 from builtins import zip
 from builtins import range
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -47,8 +46,8 @@ def convergeKmeans():
   all_fit2 = H2OKMeansEstimator(k=ncent, user_points=h2o.H2OFrame(all_fit.centers()),
                         max_iterations=1)
   all_fit2.train(x=list(range(ozone_h2o.ncol)), training_frame= ozone_h2o)
-  avg_change = old_div(sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
-                                                                                       all_fit2.centers())]), ncent)
+  avg_change = (sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
+                                                                                       all_fit2.centers())])) / (ncent)
   assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] == miters
 
 

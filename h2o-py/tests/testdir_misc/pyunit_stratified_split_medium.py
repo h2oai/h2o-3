@@ -1,4 +1,3 @@
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -13,9 +12,9 @@ def stratified_split():
   stratified = fr[54].stratified_split()
   train = fr[stratified=="train"]
   test  = fr[stratified=="test"]
-  print((old_div(fr[54].table()["Count"], fr[54].table()["Count"].sum())).show())
-  print((old_div(train[54].table()["Count"], train[54].table()["Count"].sum())).show())
-  print((old_div(test[54].table()["Count"], test[54].table()["Count"].sum())).show())
+  print(((fr[54].table()["Count"]) / (fr[54].table()["Count"].sum())).show())
+  print(((train[54].table()["Count"]) / (train[54].table()["Count"].sum())).show())
+  print(((test[54].table()["Count"]) / (test[54].table()["Count"].sum())).show())
 
 
 
