@@ -416,20 +416,20 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch --tags
 
-          # Create build tag: gha-enterprise-{branch}-{build_number}
-          git tag -a "gha-enterprise-${BRANCH_SAFE}-${BUILD_NUMBER}" \
+          # Create build tag: gha-h2o-3-enterprise-{branch}-{build_number}
+          git tag -a "gha-h2o-3-enterprise-${BRANCH_SAFE}-${BUILD_NUMBER}" \
             -m "GHA Enterprise build branch_name ${BRANCH_SAFE} build_number ${VERSION}"
 
           # For non-nightly builds, also create version and latest-stable tags
           if [ "${IS_NIGHTLY}" != "true" ]; then
             echo "Processing release tags"
-            git tag -d gha-enterprise-rel-latest-stable 2>/dev/null || true
-            git push origin :refs/tags/gha-enterprise-rel-latest-stable 2>/dev/null || true
+            git tag -d gha-h2o-3-enterprise-rel-latest-stable 2>/dev/null || true
+            git push origin :refs/tags/gha-h2o-3-enterprise-rel-latest-stable 2>/dev/null || true
 
-            git tag -a gha-enterprise-rel-latest-stable -f \
+            git tag -a gha-h2o-3-enterprise-rel-latest-stable -f \
               -m "GHA Enterprise build branch_name ${BRANCH_SAFE} build_number ${VERSION}"
 
-            git tag -a "gha-enterprise-${VERSION}" \
+            git tag -a "gha-h2o-3-enterprise-${VERSION}" \
               -m "GHA Enterprise build branch_name ${BRANCH_SAFE} build_number ${VERSION}"
           fi
 
@@ -734,7 +734,7 @@ jobs:
           fi
 
           BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
-          GIT_TAG_URL="https://github.com/h2oai/h2o-3-enterprise/releases/tag/gha-enterprise-${BRANCH}-${BUILD_NUMBER}"
+          GIT_TAG_URL="https://github.com/h2oai/h2o-3-enterprise/releases/tag/gha-h2o-3-enterprise-${BRANCH}-${BUILD_NUMBER}"
 
           # Build links column based on success/failure
           if [ "${FAILED}" = "true" ]; then
