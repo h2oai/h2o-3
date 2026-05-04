@@ -838,6 +838,7 @@ GLM Hyperparameters
 - ``lambda`` (``lambda_``)
 - ``rand_family``
 - ``rand_link``
+- ``startval``
 - ``theta``
 - ``tweedie_variance_power``
 - ``tweedie_link_power``
@@ -873,6 +874,7 @@ GAM Hyperparameters
 - ``seed``
 - ``splines_non_negative``
 - ``spline_order``
+- ``startval``
 - ``theta``
 - ``tweedie_variance_power``
 
