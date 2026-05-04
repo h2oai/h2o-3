@@ -493,7 +493,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         double testDevAvg = testDev / cvModelBuilders.length;
-        double testDevSE = testDevSq - testDevAvg * testDevAvg;
+        double testDevSE = testDevSq - testDevAvg * testDev;
         _xval_sd_generate_SH[countIndex] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         _xval_deviances_generate_SH[countIndex++] = testDevAvg;
       }
