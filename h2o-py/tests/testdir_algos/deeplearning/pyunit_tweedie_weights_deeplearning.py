@@ -1,4 +1,3 @@
-from past.utils import old_div
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -14,7 +13,7 @@ def tweedie_weights():
   data["C1M2"] = ((data["Class"] == 1) & (data["Merit"] == 2)).asfactor()
   data["Merit"] = data["Merit"].asfactor()
   data["Class"] = data["Class"].asfactor()
-  loss = old_div(data["Cost"], data["Insured"])
+  loss = (data["Cost"]) / (data["Insured"])
   loss.set_name(0,"Loss")
   cancar = loss.cbind(data)
 

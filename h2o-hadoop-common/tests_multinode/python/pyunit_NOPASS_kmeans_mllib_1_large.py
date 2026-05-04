@@ -1,4 +1,3 @@
-from past.utils import old_div
 import sys
 import os
 sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
@@ -44,7 +43,7 @@ def kmeans_mllib():
         print(clust_h2o)
 
         wcsse_mllib = err_mllib[err_mllib[0:4,0].tolist().index(k)][1]
-        wcsse_h2o = old_div(cross_km.tot_withinss(), n)
+        wcsse_h2o = (cross_km.tot_withinss()) / (n)
         print("\nMLlib Average Within-Cluster SSE: \n".format(wcsse_mllib))
         print("H2O Average Within-Cluster SSE: \n".format(wcsse_h2o))
         assert wcsse_h2o == wcsse_mllib, "Expected mllib and h2o to get the same wcsse. Mllib got {0}, and H2O " \

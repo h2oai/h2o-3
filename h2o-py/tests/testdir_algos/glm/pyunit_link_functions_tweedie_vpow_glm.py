@@ -1,4 +1,3 @@
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -31,7 +30,7 @@ def link_functions_tweedie_vpow():
     print("Testing Tweedie variance power: {0}".format(vpow))
 
     print("Compare model deviances for link function tweedie")
-    deviance_h2o_tweedie = old_div(h2ofit.residual_deviance(), h2ofit.null_deviance())
+    deviance_h2o_tweedie = (h2ofit.residual_deviance()) / (h2ofit.null_deviance())
 
     assert r_dev[ridx] - deviance_h2o_tweedie <= 0.01, "h2o's residual/null deviance is more than 0.01 lower than " \
                                                        "R's. h2o: {0}, r: {1}".format(deviance_h2o_tweedie, r_dev[ridx])

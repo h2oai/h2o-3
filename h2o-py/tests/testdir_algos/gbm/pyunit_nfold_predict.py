@@ -1,5 +1,4 @@
 from builtins import range
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -14,7 +13,7 @@ def nfold_predict():
   xval_models = m.get_xval_models()
   fr["weights"]=1
   preds = [model.predict(fr) for model in xval_models]
-  (old_div(sum(preds),10)).show()
+  ((sum(preds)) / (10)).show()
 
 
 
