@@ -1,222 +1,73 @@
 // needet to be a seoarate method to prevent method too large error on jenkins
 def getPrStages(final pipelineContext){
-  // Stages executed after each push to PR branch.
-  // for Python, mainly test with latest supported version
-  return [
-    [
-      stageName: 'Py3.7 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-        pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
-      ],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 16,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-        pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
-      ],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-        pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
-      ],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Booklets', target: 'test-py-booklets', pythonVersion: '3.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 Init Java 8', target: 'test-py-init', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
-      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    //    [
-    //      stageName: 'Py3.11 Small', target: 'test-pyunit-small', pythonVersion: '3.11',
-    //      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    //    ],
-    [
-      stageName: 'Py3.7 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 AutoML Smoke (NO XGB)', target: 'test-pyunit-automl-smoke-noxgb', pythonVersion: '3.7',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.7',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.11', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.11-jdk-8"
-    ],
-    [
-      stageName: 'Py3.11 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.11', timeoutValue: 16,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.11-jdk-8"
-    ],
-    [
-      stageName: 'Py3.11 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.11', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-			  pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
-			],
-      imageSpecifier: "python-3.11-jdk-8"
-    ],
-    [
-      stageName: 'Java 11 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.11', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.11-jdk-8"
-    ],
-    [
-      stageName: 'Py3.11 Booklets', target: 'test-py-booklets', pythonVersion: '3.11',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 Init Java 8', target: 'test-py-init', pythonVersion: '3.11', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.11-jdk-8"
-    ],
-    [
-      stageName: 'Py3.11 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.11',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 Small', target: 'test-pyunit-small', pythonVersion: '3.11',
-      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.11',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.11',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 AutoML Smoke (NO XGB)', target: 'test-pyunit-automl-smoke-noxgb', pythonVersion: '3.11',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.11',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 Booklets', target: 'test-py-booklets', pythonVersion: '3.12',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.12',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 Small', target: 'test-pyunit-small', pythonVersion: '3.12',
-      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.12',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.12',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 AutoML Smoke (NO XGB)', target: 'test-pyunit-automl-smoke-noxgb', pythonVersion: '3.12',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.12 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.12',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 Booklets', target: 'test-py-booklets', pythonVersion: '3.13',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.13',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 Small', target: 'test-pyunit-small', pythonVersion: '3.13',
-      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.13',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.13',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 AutoML Smoke (NO XGB)', target: 'test-pyunit-automl-smoke-noxgb', pythonVersion: '3.13',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.13 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.13',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 Booklets', target: 'test-py-booklets', pythonVersion: '3.14',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.14',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 Small', target: 'test-pyunit-small', pythonVersion: '3.14',
-      timeoutValue: 200, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.14',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.14',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 AutoML Smoke (NO XGB)', target: 'test-pyunit-automl-smoke-noxgb', pythonVersion: '3.14',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.14 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.14',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
+  // Stages executed after each push to PR branch. The per-Python block is
+  // generated for every version in BuildConfig.PYTHON_VERSIONS.
+  def buildConfig = pipelineContext.getBuildConfig()
+
+  def stages = []
+  for (pyver in buildConfig.PYTHON_VERSIONS) {
+    def image = "python-${pyver}-jdk-8"
+
+    stages.add([
+      stageName: "Py${pyver} Smoke (Main Assembly)", target: 'test-py-smoke-main',
+      pythonVersion: pyver, timeoutValue: 8, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_MAIN, buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Smoke (Minimal Assembly)", target: 'test-py-smoke-minimal',
+      pythonVersion: pyver, timeoutValue: 16, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_MINIMAL, buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Smoke (Steam Assembly)", target: 'test-py-smoke-steam',
+      pythonVersion: pyver, timeoutValue: 8, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_STEAM, buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} RuleFit (Java 8)", target: 'test-junit-rulefit-jenkins',
+      pythonVersion: pyver, javaVersion: 8, timeoutValue: 180, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Booklets", target: 'test-py-booklets',
+      pythonVersion: pyver, timeoutValue: 40, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Init Java 8", target: 'test-py-init',
+      pythonVersion: pyver, javaVersion: 8, timeoutValue: 10, hasJUnit: false,
+      component: buildConfig.COMPONENT_PY, imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Single Node", target: 'test-pyunit-single-node',
+      pythonVersion: pyver, timeoutValue: 40, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Small", target: 'test-pyunit-small',
+      pythonVersion: pyver, timeoutValue: 200, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Assembly to MOJO2", target: 'test-pyunit-mojo2',
+      pythonVersion: pyver, timeoutValue: 40, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} AutoML", target: 'test-pyunit-automl',
+      pythonVersion: pyver, timeoutValue: 110, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} AutoML Smoke (NO XGB)", target: 'test-pyunit-automl-smoke-noxgb',
+      pythonVersion: pyver, timeoutValue: 20, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Fault Tolerance", target: 'test-pyunit-fault-tolerance',
+      pythonVersion: pyver, timeoutValue: 30, component: buildConfig.COMPONENT_PY
+    ])
+  }
+
+  stages.addAll([
     [
       stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
       timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
@@ -362,7 +213,9 @@ def getPrStages(final pipelineContext){
       stageName: 'External XGBoost', target: 'test-external-xgboost', pythonVersion: '3.7', timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ]
-  ]
+  ])
+
+  return stages
 }
 
 
