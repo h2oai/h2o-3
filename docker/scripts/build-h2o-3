@@ -3,12 +3,12 @@
 set -ex
 
 if [[ ! ${H2O_BRANCH} ]]; then
- echo "H2O_BRANCH must be set"
- exit 1
+	echo "H2O_BRANCH must be set"
+	exit 1
 fi
 if [[ ! -n ${PYTHON_VERSION} ]]; then
-  echo "Using default Python version"
-  PYTHON_VERSION='3.7'
+	echo "Using default Python version"
+	PYTHON_VERSION='3.7'
 fi
 
 # cd home

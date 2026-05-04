@@ -1,26 +1,68 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 import argparse
+import collections
 import os
 import re
 import sys
 
 
+_InstalledDist = collections.namedtuple("_InstalledDist", ["key", "version"])
+
+
+def _canonical_name(name):
+    # PEP 503 normalization: lowercase, runs of -/_/. collapsed to single '-'.
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
 def _installed_packages():
+    # Prefer importlib.metadata: stdlib in Python 3.8+, the canonical API now
+    # that pkg_resources is deprecated (setuptools 67.5+) and removed in
+    # setuptools 81+, and pip._internal.get_installed_distributions was
+    # removed in pip 21+.
+    md = None
+    try:
+        from importlib import metadata as md
+    except ImportError:
+        try:
+            import importlib_metadata as md  # backport for Python 3.6/3.7
+        except ImportError:
+            md = None
+
+    if md is not None:
+        dists = []
+        for dist in md.distributions():
+            # On 3.10+ Distribution.name is the preferred accessor; fall back
+            # to metadata.get("Name") for 3.8/3.9. Using .get() avoids the
+            # 3.12 DeprecationWarning about implicit None from message["Name"].
+            name = getattr(dist, "name", None) or dist.metadata.get("Name")
+            if not name:
+                continue
+            dists.append(_InstalledDist(_canonical_name(name), dist.version))
+        return dists
+
     try:
         import pkg_resources
-        return pkg_resources.working_set
+
+        return [
+            _InstalledDist(_canonical_name(d.key), d.version)
+            for d in pkg_resources.working_set
+        ]
     except ImportError:
         print("Module pkg_resources from setuptools is not installed", file=sys.stderr)
-        
+
     try:
         import pip
-        pip_maj_version = int(pip.__version__.split('.', 1)[0])
+
+        pip_maj_version = int(pip.__version__.split(".", 1)[0])
         if pip_maj_version >= 10:
             from pip._internal.utils.misc import get_installed_distributions
         else:
             from pip import get_installed_distributions
-        return get_installed_distributions(skip=(), local_only=False)
+        return [
+            _InstalledDist(_canonical_name(d.key), d.version)
+            for d in get_installed_distributions(skip=(), local_only=False)
+        ]
     except ImportError:
         print("Module pip is not installed", file=sys.stderr)
         sys.exit(2)
@@ -56,7 +98,9 @@ def parse_yaml(yaml_text):
             while indent_len < indents[-1]:
                 indents.pop()
                 yield "DEDENT"
-            assert indent_len == indents[-1], "Unexpected indentation in YAML file, line %d" % lineno
+            assert indent_len == indents[-1], (
+                "Unexpected indentation in YAML file, line %d" % lineno
+            )
             yield bline
         yield "DEDENT"
 
@@ -73,13 +117,13 @@ def parse_yaml(yaml_text):
             if tok == "DEDENT":
                 break
             if yaml is None:
-                if re.match("^(\w+):.*", tok):
+                if re.match(r"^(\w+):.*", tok):
                     yaml = {}
                 if tok.startswith("-"):
                     yaml = []
                 assert yaml is not None, "Unexpected token: %s" % tok
             if isinstance(yaml, dict):
-                mm = re.match("^(\w+):(.*)", tok)
+                mm = re.match(r"^(\w+):(.*)", tok)
                 assert mm, "Unexpected token: %s" % tok
                 if mm.group(2):
                     yaml[mm.group(1)] = mm.group(2).strip()
@@ -114,9 +158,13 @@ def test_requirements(kind, metayaml_file):
 
 def test_module(mod, min_version, installed_modules):
     minv = tuple(int(x) for x in min_version.split("."))
-    matching_modules = [d for d in installed_modules if d.key == mod]
+    canonical_mod = _canonical_name(mod)
+    matching_modules = [d for d in installed_modules if d.key == canonical_mod]
     if not matching_modules:
-        return "Python module `%s` is missing: install it with `pip install '%s>=%s'`" % (mod, mod, min_version)
+        return (
+            "Python module `%s` is missing: install it with `pip install '%s>=%s'`"
+            % (mod, mod, min_version)
+        )
 
     v = max(m.version for m in matching_modules)
     for i, vp in enumerate(v.split(".")):
@@ -132,8 +180,10 @@ def test_module(mod, min_version, installed_modules):
         if intv > minv[i]:
             break
         elif intv < minv[i]:
-            return ("Python module `%s` has version %s whereas version %s is required: upgrade it with "
-                    "`pip install %s --upgrade`" % (mod, v, min_version, mod))
+            return (
+                "Python module `%s` has version %s whereas version %s is required: upgrade it with "
+                "`pip install %s --upgrade`" % (mod, v, min_version, mod)
+            )
 
 
 def main(kind, metayaml_file):
@@ -150,8 +200,14 @@ if __name__ == "__main__":
     thisdir = os.path.dirname(os.path.abspath(__file__))
     metayaml = os.path.join(thisdir, "..", "conda", "h2o", "meta.yaml")
 
-    parser = argparse.ArgumentParser(description="Check that python dependencies are installed")
-    parser.add_argument("--metayaml", help="Path to meta.yaml file describing the dependencies", default=metayaml)
+    parser = argparse.ArgumentParser(
+        description="Check that python dependencies are installed"
+    )
+    parser.add_argument(
+        "--metayaml",
+        help="Path to meta.yaml file describing the dependencies",
+        default=metayaml,
+    )
     parser.add_argument("--kind", help="build|test", default="build")
     args = parser.parse_args()
     main(args.kind, args.metayaml)
