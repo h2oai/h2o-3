@@ -1,17 +1,18 @@
-Cloud Integration
------------------
+Cloud integration
+=================
 
-H2O is supported on a number of cloud environments, including
+H2O-3 is supported on a number of cloud environments, including:
 
-- EC2 Instances and S3 Storage (RedHat AMI, Amazon Linux AMI, and Ubuntu AMI)
+- EC2 instances and S3 storage (Red Hat AMI, Amazon Linux AMI, and Ubuntu AMI)
 - Amazon AWS
 - Microsoft Azure
-- Databricks
 - IBM DSX
 - Nimbix Cloud
+- Google Cloud Storage
+- Google Cloud Platform
 - Kubernetes
 
-Refer to the following topics:
+See the following topics:
 
 .. toctree::
    :maxdepth: 1
@@ -24,4 +25,3 @@ Refer to the following topics:
    cloud-integration/gcs
    cloud-integration/kubernetes
    cloud-integration/google-compute
-
