@@ -17,6 +17,7 @@ import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee8.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.EmptyLoginService;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.security.IdentityService;
@@ -106,6 +107,9 @@ class Jetty12Helper {
         httpConfiguration.setOutputBufferSize(cfg.getOutputBufferSize(httpConfiguration.getOutputBufferSize()));
         httpConfiguration.setRelativeRedirectAllowed(cfg.isRelativeRedirectAllowed());
         httpConfiguration.setIdleTimeout(cfg.getIdleTimeout());
+        // Jetty 12 rejects empty path segments (e.g. /3/Frames/) by default; Jetty 9 was lenient.
+        // Match the legacy behavior so existing clients that send empty-id URLs still work.
+        httpConfiguration.setUriCompliance(UriCompliance.LEGACY);
         return httpConfiguration;
     }
 
