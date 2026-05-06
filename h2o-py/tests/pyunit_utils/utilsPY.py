@@ -375,7 +375,7 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
 
     java_cmd = ["java", "-ea", "-cp", os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar"),
-                "-Xmx12g", "-XX:MaxPermSize=2g", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                "-Xmx12g", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
                 "--input", os.path.join(tmpdir, 'in.csv'), "--output",
                 outFileName, "--mojo", mojoZip, "--decimal"]
     if get_leaf_node_assignment:
@@ -462,7 +462,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     print("java code saved in {0}".format(java_file))
 
     print("Compiling Java Pojo")
-    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx16g", "-J-XX:MaxPermSize=256m", java_file]
+    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx16g", java_file]
     subprocess.check_call(javac_cmd)
 
     if not compile_only:
@@ -494,7 +494,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         print("Running PredictCsv Java Program")
         out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
-        java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
+        java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--decimal",
                     "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
         if setInvNumNA:
@@ -537,7 +537,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
     print("java code saved in {0}".format(java_file))
 
     print("Compiling Java Pojo")
-    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
+    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", java_file]
     subprocess.check_call(javac_cmd)
 
     if not compile_only:
@@ -559,7 +559,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
         print("Running PredictCsv Java Program")
         out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
-        java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
+        java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.MungeCsv", "--header", "--munger", pojoname,
                     "--input", in_csv, "--output", out_pojo_csv]
         print("JAVA COMMAND: " + " ".join(java_cmd))
