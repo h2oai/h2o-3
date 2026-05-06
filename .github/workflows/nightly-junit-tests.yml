@@ -1,0 +1,202 @@
+# ==============================================================================
+#                            JUNIT TEST SUITE
+# ==============================================================================
+#
+# Full JUnit tests on dedicated EC2 runners (EFS data access required)
+#
+# TESTS:
+#   - Java 8  : Full JUnit suite
+#   - Java 11 : Full JUnit suite
+#   - Java 17 : Full JUnit suite
+#
+# ARCHITECTURE:
+#   1. Start 3 EC2 runners in parallel (m5.8xlarge for heavy tests)
+#   2. Run tests on each dedicated runner
+#   3. Stop all runners (always, for cleanup)
+#
+# NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+#       10-minute timeout per test to eliminate hangs
+#
+# ==============================================================================
+
+name: JUnit Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test (from h2oai/h2o-3 public repo)'
+        required: true
+        default: 'valenad-GH-16566-fix-junit'
+        type: string
+
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+
+jobs:
+  # ============================================================================
+  # BUILD: Compile H2O-3 and create test packages
+  # ============================================================================
+  build:
+    name: Build
+    uses: ./.github/workflows/nightly-build.yml
+    with:
+      h2o3_branch: ${{ inputs.h2o3_branch }}
+      repository: h2oai/h2o-3
+    secrets: inherit
+
+  # ============================================================================
+  # START EC2 RUNNERS (3 in parallel - using m5.8xlarge for heavy JUnit tests)
+  # ============================================================================
+  start-java8-junit:
+    needs: build
+    name: Start - Java 8 JUnit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-junit
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  start-java11-junit:
+    needs: build
+    name: Start - Java 11 JUnit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-junit
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  start-java17-junit:
+    needs: build
+    name: Start - Java 17 JUnit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-junit
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  # ============================================================================
+  # JUNIT TESTS (Run on dedicated EC2 runners)
+  # ============================================================================
+  java8-junit:
+    name: Java 8 JUnit
+    needs: start-java8-junit
+    runs-on: ${{ needs.start-java8-junit.outputs.label }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 JUnit
+          make_target: test-junit-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 JUnit
+          job_status: ${{ job.status }}
+
+  java11-junit:
+    name: Java 11 JUnit
+    needs: start-java11-junit
+    runs-on: ${{ needs.start-java11-junit.outputs.label }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 JUnit
+          make_target: test-junit-11-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 JUnit
+          job_status: ${{ job.status }}
+
+  java17-junit:
+    name: Java 17 JUnit
+    needs: start-java17-junit
+    runs-on: ${{ needs.start-java17-junit.outputs.label }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 JUnit
+          make_target: test-junit-17-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 JUnit
+          job_status: ${{ job.status }}
+
+  # ============================================================================
+  # STOP EC2 RUNNERS (Always run for cleanup)
+  # ============================================================================
+  stop-java8-junit:
+    name: Stop - Java 8 JUnit
+    needs: [start-java8-junit, java8-junit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-junit.outputs.label }}
+      ec2_id: ${{ needs.start-java8-junit.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java11-junit:
+    name: Stop - Java 11 JUnit
+    needs: [start-java11-junit, java11-junit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-junit.outputs.label }}
+      ec2_id: ${{ needs.start-java11-junit.outputs.ec2_id }}
+    secrets: inherit
+
+  stop-java17-junit:
+    name: Stop - Java 17 JUnit
+    needs: [start-java17-junit, java17-junit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-junit.outputs.label }}
+      ec2_id: ${{ needs.start-java17-junit.outputs.ec2_id }}
+    secrets: inherit
