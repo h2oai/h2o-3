@@ -55,12 +55,12 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
   cmd <- sprintf("curl http://%s:%s/3/h2o-genmodel.jar > %s/h2o-genmodel.jar", myIP, myPort, tmpdir_name)
   if (.Platform$OS.type == "windows") shell(cmd)
   else safeSystem(cmd)
-  cmd <- sprintf("javac -cp %s/h2o-genmodel.jar -J-Xmx4g -J-XX:MaxPermSize=256m %s/%s.java", tmpdir_name, tmpdir_name, model_key)
+  cmd <- sprintf("javac -cp %s/h2o-genmodel.jar -J-Xmx4g %s/%s.java", tmpdir_name, tmpdir_name, model_key)
   safeSystem(cmd)
 
   print("Predicting with Java POJO")
-  if (.Platform$OS.type == "windows") cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar;%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv --separator %s", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name, separator)
-  else cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --pojo %s --input %s/in.csv --output %s/out_pojo.csv --separator %s", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name, separator)
+  if (.Platform$OS.type == "windows") cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar;%s -Xmx4g -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv --separator %s", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name, separator)
+  else cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --pojo %s --input %s/in.csv --output %s/out_pojo.csv --separator %s", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name, separator)
   if (setInvNumNA)
     cmd <- paste(cmd, " --setConvertInvalidNum")
 

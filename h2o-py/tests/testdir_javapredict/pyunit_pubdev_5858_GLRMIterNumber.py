@@ -65,7 +65,7 @@ def runMojoPredictOnly(tmpdir, mojoname, glrmIterNumber=100):
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
 
     java_cmd = ["java", "-ea", "-cp", os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar"),
-                "-Xmx12g", "-XX:MaxPermSize=2g", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                "-Xmx12g", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
                 "--input", os.path.join(tmpdir, 'in.csv'), "--output",
                 outFileName, "--mojo", mojoZip, "--decimal"]
     java_cmd.append("--glrmIterNumber")
