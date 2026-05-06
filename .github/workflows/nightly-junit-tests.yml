@@ -115,7 +115,7 @@ jobs:
           make_target: test-junit-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch }}
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -139,7 +139,7 @@ jobs:
           make_target: test-junit-11-jenkins
           test_package: java
           java: "11"
-          h2o3_branch: ${{ inputs.h2o3_branch }}
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -163,7 +163,7 @@ jobs:
           make_target: test-junit-17-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch }}
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
