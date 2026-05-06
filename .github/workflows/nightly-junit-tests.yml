@@ -22,6 +22,12 @@
 name: JUnit Tests
 
 on:
+  push:
+    branches:
+      - 'rohan/create-junit-workflow'
+    paths:
+      - '.github/workflows/nightly-junit-tests.yml'
+
   workflow_dispatch:
     inputs:
       h2o3_branch:
@@ -59,7 +65,7 @@ jobs:
     name: Build
     uses: ./.github/workflows/nightly-build.yml
     with:
-      h2o3_branch: ${{ inputs.h2o3_branch }}
+      h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
       repository: h2oai/h2o-3
     secrets: inherit
 
