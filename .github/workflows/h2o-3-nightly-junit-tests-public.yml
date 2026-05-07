@@ -274,23 +274,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Generate JUnit Test Summary
-        run: |
-          echo "## JUnit Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Suite | Result |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 8 JUnit (26 jobs) | ${{ needs.java8.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 11 JUnit (18 jobs) | ${{ needs.java11.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 17 JUnit (18 jobs) | ${{ needs.java17.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Build SHA:** \`${{ needs.build.outputs.build_sha }}\`" >> $GITHUB_STEP_SUMMARY
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Test Dashboard
+        uses: ./.github/actions/generate-junit-dashboard
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ needs.init.outputs.branch }}
+          build_sha: ${{ needs.build.outputs.build_sha }}
+          build_result: ${{ needs.build.result }}
+          java8_result: ${{ needs.java8.result }}
+          java11_result: ${{ needs.java11.result }}
+          java17_result: ${{ needs.java17.result }}
 
       - name: Set Final Status
         run: |
-          # Determine overall status
           BUILD="${{ needs.build.result }}"
           JAVA8="${{ needs.java8.result }}"
           JAVA11="${{ needs.java11.result }}"

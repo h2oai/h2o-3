@@ -1,0 +1,363 @@
+# ==============================================================================
+#                         JUNIT TEST DASHBOARD GENERATOR
+# ==============================================================================
+#
+# PURPOSE:
+#   Generates a comprehensive JUnit test dashboard in GitHub Job Summary
+#   with detailed individual job results, timing, and failure analysis.
+#
+# FEATURES:
+#   - Individual job results per Java version (8, 11, 17)
+#   - Duration tracking per job
+#   - Direct links to failed job logs
+#   - Summary statistics
+#
+# USAGE:
+#   - uses: ./.github/actions/generate-junit-dashboard
+#     with:
+#       github_token: ${{ secrets.GITHUB_TOKEN }}
+#       branch: master
+#       build_result: success
+#       java8_result: success
+#       java11_result: failure
+#       java17_result: success
+#
+# ==============================================================================
+
+name: 'Generate JUnit Test Dashboard'
+description: 'Generate comprehensive JUnit test dashboard with individual job results'
+
+inputs:
+  github_token:
+    description: 'GitHub token for API calls to fetch job details'
+    required: true
+
+  branch:
+    description: 'H2O-3 branch tested'
+    required: true
+
+  build_sha:
+    description: 'H2O-3 commit SHA'
+    required: false
+    default: ''
+
+  build_result:
+    description: 'Build job result'
+    required: true
+
+  java8_result:
+    description: 'Java 8 JUnit tests result'
+    required: false
+    default: 'skipped'
+
+  java11_result:
+    description: 'Java 11 JUnit tests result'
+    required: false
+    default: 'skipped'
+
+  java17_result:
+    description: 'Java 17 JUnit tests result'
+    required: false
+    default: 'skipped'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Fetch Job Details
+      id: fetch-jobs
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        # Fetch all jobs for current workflow run
+        echo "Fetching jobs for run ${{ github.run_id }}..."
+
+        gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+          --paginate \
+          --jq '.jobs[] | {name: .name, status: .status, conclusion: .conclusion, started_at: .started_at, completed_at: .completed_at, html_url: .html_url}' \
+          > /tmp/jobs.json 2>/dev/null || echo "[]" > /tmp/jobs.json
+
+        echo "Jobs fetched:"
+        cat /tmp/jobs.json | head -50
+
+    - name: Generate Dashboard
+      shell: bash
+      run: |
+        # ==================================================
+        # HELPER FUNCTIONS
+        # ==================================================
+
+        get_status_icon() {
+          case "$1" in
+            success) echo "[PASS]" ;;
+            failure) echo "[FAIL]" ;;
+            skipped) echo "[SKIP]" ;;
+            cancelled) echo "[CANCEL]" ;;
+            in_progress) echo "[RUNNING]" ;;
+            *) echo "[?]" ;;
+          esac
+        }
+
+        get_text() {
+          case "$1" in
+            success) echo "Passed" ;;
+            failure) echo "Failed" ;;
+            skipped) echo "Skipped" ;;
+            cancelled) echo "Cancelled" ;;
+            in_progress) echo "Running" ;;
+            *) echo "$1" ;;
+          esac
+        }
+
+        # Calculate duration between two ISO timestamps
+        calc_duration() {
+          local start="$1"
+          local end="$2"
+
+          if [[ -z "$start" || -z "$end" || "$start" == "null" || "$end" == "null" ]]; then
+            echo "-"
+            return
+          fi
+
+          # Convert to seconds since epoch
+          local start_sec=$(date -d "$start" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$start" +%s 2>/dev/null || echo "0")
+          local end_sec=$(date -d "$end" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$end" +%s 2>/dev/null || echo "0")
+
+          if [[ "$start_sec" == "0" || "$end_sec" == "0" ]]; then
+            echo "-"
+            return
+          fi
+
+          local diff=$((end_sec - start_sec))
+
+          if [[ $diff -lt 60 ]]; then
+            echo "${diff}s"
+          elif [[ $diff -lt 3600 ]]; then
+            local mins=$((diff / 60))
+            local secs=$((diff % 60))
+            echo "${mins}m ${secs}s"
+          else
+            local hours=$((diff / 3600))
+            local mins=$(((diff % 3600) / 60))
+            echo "${hours}h ${mins}m"
+          fi
+        }
+
+        # Categorize JUnit job by name
+        categorize_job() {
+          local name="$1"
+
+          # Skip infrastructure jobs
+          if [[ "$name" =~ ^(Start|Stop|Initialize|Summary|Build) ]] || \
+             [[ "$name" == "Initialize" ]] || \
+             [[ "$name" == "Summary" ]]; then
+            echo "skip"
+            return
+          fi
+
+          # Categorize by Java version
+          if [[ "$name" == "Java 8 JUnit /"* ]] || [[ "$name" =~ "Java 8" ]]; then
+            echo "java8"
+          elif [[ "$name" == "Java 11 JUnit /"* ]] || [[ "$name" =~ "Java 11" ]]; then
+            echo "java11"
+          elif [[ "$name" == "Java 17 JUnit /"* ]] || [[ "$name" =~ "Java 17" ]]; then
+            echo "java17"
+          else
+            echo "other"
+          fi
+        }
+
+        # ==================================================
+        # PARSE JOB DATA
+        # ==================================================
+
+        declare -A java8_jobs java11_jobs java17_jobs
+        declare -a failed_jobs
+
+        java8_passed=0
+        java8_failed=0
+        java8_total=0
+        java11_passed=0
+        java11_failed=0
+        java11_total=0
+        java17_passed=0
+        java17_failed=0
+        java17_total=0
+
+        # Process each job
+        while IFS= read -r line; do
+          [[ -z "$line" ]] && continue
+
+          name=$(echo "$line" | jq -r '.name // empty')
+          [[ -z "$name" ]] && continue
+
+          conclusion=$(echo "$line" | jq -r '.conclusion // "pending"')
+          status=$(echo "$line" | jq -r '.status // "queued"')
+          started=$(echo "$line" | jq -r '.started_at // ""')
+          completed=$(echo "$line" | jq -r '.completed_at // ""')
+          url=$(echo "$line" | jq -r '.html_url // ""')
+
+          # Use conclusion if available, otherwise status
+          result="$conclusion"
+          [[ "$result" == "null" || -z "$result" ]] && result="$status"
+
+          category=$(categorize_job "$name")
+          [[ "$category" == "skip" || "$category" == "other" ]] && continue
+
+          duration=$(calc_duration "$started" "$completed")
+          status_icon=$(get_status_icon "$result")
+
+          # Map category to display name
+          case "$category" in
+            java8) category_name="Java 8" ;;
+            java11) category_name="Java 11" ;;
+            java17) category_name="Java 17" ;;
+            *) category_name="Other" ;;
+          esac
+
+          job_entry="${status_icon}|${name}|${duration}|${url}|${result}|${category_name}"
+
+          case "$category" in
+            java8)
+              java8_jobs["$name"]="$job_entry"
+              java8_total=$((java8_total + 1))
+              [[ "$result" == "success" ]] && java8_passed=$((java8_passed + 1))
+              [[ "$result" == "failure" ]] && java8_failed=$((java8_failed + 1))
+              ;;
+            java11)
+              java11_jobs["$name"]="$job_entry"
+              java11_total=$((java11_total + 1))
+              [[ "$result" == "success" ]] && java11_passed=$((java11_passed + 1))
+              [[ "$result" == "failure" ]] && java11_failed=$((java11_failed + 1))
+              ;;
+            java17)
+              java17_jobs["$name"]="$job_entry"
+              java17_total=$((java17_total + 1))
+              [[ "$result" == "success" ]] && java17_passed=$((java17_passed + 1))
+              [[ "$result" == "failure" ]] && java17_failed=$((java17_failed + 1))
+              ;;
+          esac
+
+          # Track failed jobs
+          if [[ "$result" == "failure" ]]; then
+            failed_jobs+=("$job_entry")
+          fi
+
+        done < /tmp/jobs.json
+
+        # ==================================================
+        # CALCULATE OVERALL STATUS
+        # ==================================================
+
+        BUILD_RESULT="${{ inputs.build_result }}"
+        JAVA8_RESULT="${{ inputs.java8_result }}"
+        JAVA11_RESULT="${{ inputs.java11_result }}"
+        JAVA17_RESULT="${{ inputs.java17_result }}"
+
+        OVERALL="success"
+        [[ "$BUILD_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$JAVA8_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$JAVA11_RESULT" == "failure" ]] && OVERALL="failure"
+        [[ "$JAVA17_RESULT" == "failure" ]] && OVERALL="failure"
+
+        total_failed=${#failed_jobs[@]}
+
+        # ==================================================
+        # GENERATE SUMMARY
+        # ==================================================
+
+        {
+          # Header
+          echo "# H2O-3 JUnit Test Dashboard"
+          echo ""
+
+          if [[ "$OVERALL" == "success" ]]; then
+            echo "> **All tests passed successfully!**"
+          else
+            echo "> **${total_failed} test(s) failed. See details below.**"
+          fi
+          echo ""
+
+          # Build Information
+          echo "## Build Information"
+          echo ""
+          echo "| Property | Value |"
+          echo "|----------|-------|"
+          echo "| **Branch** | \`${{ inputs.branch }}\` |"
+          if [[ -n "${{ inputs.build_sha }}" ]]; then
+            echo "| **Commit** | [\`${{ inputs.build_sha }}\`](https://github.com/h2oai/h2o-3/commit/${{ inputs.build_sha }}) |"
+          fi
+          echo "| **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
+          echo "| **Triggered** | ${{ github.event_name }} |"
+          echo "| **Build** | $(get_status_icon "$BUILD_RESULT") $(get_text "$BUILD_RESULT") |"
+          echo ""
+
+          # Test Results Section
+          echo "## Test Results"
+          echo ""
+          echo "| Test Type | Test | Status | Duration |"
+          echo "|-----------|------|:------:|----------|"
+
+          # Helper function to render jobs for a category
+          render_jobs() {
+            local category="$1"
+            local result="$2"
+            shift 2
+            local -n jobs_ref=$1
+
+            if [[ "$result" == "skipped" ]]; then
+              echo "| ${category} | _Skipped_ | [SKIP] | - |"
+              return
+            fi
+
+            if [[ ${#jobs_ref[@]} -eq 0 ]]; then
+              echo "| ${category} | _No jobs found_ | [?] | - |"
+              return
+            fi
+
+            for name in "${!jobs_ref[@]}"; do
+              IFS='|' read -r j_status_icon j_name j_duration j_url j_result <<< "${jobs_ref[$name]}"
+              if [[ -n "$j_url" && "$j_url" != "null" ]]; then
+                echo "| ${category} | [${j_name}](${j_url}) | ${j_status_icon} | ${j_duration} |"
+              else
+                echo "| ${category} | ${j_name} | ${j_status_icon} | ${j_duration} |"
+              fi
+            done
+          }
+
+          # Render all categories in single table
+          render_jobs "Java 8" "$JAVA8_RESULT" java8_jobs
+          render_jobs "Java 11" "$JAVA11_RESULT" java11_jobs
+          render_jobs "Java 17" "$JAVA17_RESULT" java17_jobs
+
+          echo ""
+
+          # Failed Jobs Section (if any failures)
+          if [[ ${#failed_jobs[@]} -gt 0 ]]; then
+            echo "## Failed Jobs (${#failed_jobs[@]})"
+            echo ""
+            echo "| Test Type | Test | Status | Duration |"
+            echo "|-----------|------|:------:|----------|"
+            for entry in "${failed_jobs[@]}"; do
+              IFS='|' read -r status_icon name duration url result category <<< "$entry"
+              if [[ -n "$url" && "$url" != "null" ]]; then
+                echo "| ${category:-Unknown} | [${name}](${url}) | ${status_icon} | ${duration} |"
+              else
+                echo "| ${category:-Unknown} | ${name} | ${status_icon} | ${duration} |"
+              fi
+            done
+            echo ""
+          fi
+
+          # Summary Statistics
+          echo "## Summary Statistics"
+          echo ""
+          echo "| Category | Status | Passed | Failed |"
+          echo "|----------|:------:|:------:|:------:|"
+          echo "| Java 8 Tests (26 jobs) | $(get_status_icon "$JAVA8_RESULT") | ${java8_passed} | ${java8_failed} |"
+          echo "| Java 11 Tests (18 jobs) | $(get_status_icon "$JAVA11_RESULT") | ${java11_passed} | ${java11_failed} |"
+          echo "| Java 17 Tests (18 jobs) | $(get_status_icon "$JAVA17_RESULT") | ${java17_passed} | ${java17_failed} |"
+          echo ""
+          echo "_Job summary generated at $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
+
+        } >> $GITHUB_STEP_SUMMARY
