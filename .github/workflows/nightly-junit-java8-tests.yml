@@ -1,0 +1,1261 @@
+# ==============================================================================
+#                         JUNIT TEST SUITE - JAVA 8
+# ==============================================================================
+#
+# Comprehensive JUnit tests for Java 8 matching Jenkins nightly pipeline
+# Split by algorithm/module for parallel execution
+#
+# TESTS:
+#   - Smoke, Algos (16 packages), Core, AutoML, Clustering, XGBoost, Other, Persist
+#
+# NOTE: Test separation done on GitHub branch in h2oai/h2o-3
+#
+# ==============================================================================
+
+name: JUnit Tests - Java 8
+
+on:
+  workflow_dispatch:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test (from h2oai/h2o-3 public repo)'
+        required: true
+        default: 'valenad-GH-16566-fix-junit'
+        type: string
+
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+      skip_build:
+        description: 'Skip build (use when called from orchestrator that already built)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+  DEFAULT_BRANCH: 'valenad-GH-16566-fix-junit'
+
+jobs:
+  # ============================================================================
+  # BUILD: Compile H2O-3 and create test packages
+  # (Skipped when called from orchestrator that already built)
+  # ============================================================================
+  build:
+    name: Build
+    if: ${{ !inputs.skip_build }}
+    uses: ./.github/workflows/nightly-build.yml
+    with:
+      h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+      repository: h2oai/h2o-3
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 SMOKE
+  # ============================================================================
+  start-java8-smoke:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Smoke
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-smoke-full
+    secrets: inherit
+
+  java8-smoke:
+    name: Java 8 Smoke
+    needs: start-java8-smoke
+    runs-on: ${{ needs.start-java8-smoke.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Smoke
+          make_target: test-junit-smoke-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Smoke
+          job_status: ${{ job.status }}
+
+  stop-java8-smoke:
+    name: Stop - Java 8 Smoke
+    needs: [start-java8-smoke, java8-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-java8-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - GLM
+  # ============================================================================
+  start-java8-algos-glm:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos GLM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-glm
+    secrets: inherit
+
+  java8-algos-glm:
+    name: Java 8 Algos GLM
+    needs: start-java8-algos-glm
+    runs-on: ${{ needs.start-java8-algos-glm.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos GLM
+          make_target: test-junit-algos-glm-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos GLM
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-glm:
+    name: Stop - Java 8 Algos GLM
+    needs: [start-java8-algos-glm, java8-algos-glm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-glm.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-glm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - GBM
+  # ============================================================================
+  start-java8-algos-gbm:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos GBM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-gbm
+    secrets: inherit
+
+  java8-algos-gbm:
+    name: Java 8 Algos GBM
+    needs: start-java8-algos-gbm
+    runs-on: ${{ needs.start-java8-algos-gbm.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos GBM
+          make_target: test-junit-algos-gbm-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos GBM
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-gbm:
+    name: Stop - Java 8 Algos GBM
+    needs: [start-java8-algos-gbm, java8-algos-gbm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-gbm.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-gbm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - DRF
+  # ============================================================================
+  start-java8-algos-drf:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos DRF
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-drf
+    secrets: inherit
+
+  java8-algos-drf:
+    name: Java 8 Algos DRF
+    needs: start-java8-algos-drf
+    runs-on: ${{ needs.start-java8-algos-drf.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos DRF
+          make_target: test-junit-algos-drf-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos DRF
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-drf:
+    name: Stop - Java 8 Algos DRF
+    needs: [start-java8-algos-drf, java8-algos-drf]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-drf.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-drf.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - DeepLearning
+  # ============================================================================
+  start-java8-algos-dl:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos DL
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-dl
+    secrets: inherit
+
+  java8-algos-dl:
+    name: Java 8 Algos DeepLearning
+    needs: start-java8-algos-dl
+    runs-on: ${{ needs.start-java8-algos-dl.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos DeepLearning
+          make_target: test-junit-algos-deeplearning-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos DeepLearning
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-dl:
+    name: Stop - Java 8 Algos DL
+    needs: [start-java8-algos-dl, java8-algos-dl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-dl.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-dl.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - GAM
+  # ============================================================================
+  start-java8-algos-gam:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos GAM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-gam
+    secrets: inherit
+
+  java8-algos-gam:
+    name: Java 8 Algos GAM
+    needs: start-java8-algos-gam
+    runs-on: ${{ needs.start-java8-algos-gam.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos GAM
+          make_target: test-junit-algos-gam-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos GAM
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-gam:
+    name: Stop - Java 8 Algos GAM
+    needs: [start-java8-algos-gam, java8-algos-gam]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-gam.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-gam.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - Tree+IsoFor+DT+Uplift
+  # ============================================================================
+  start-java8-algos-tree:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos Tree
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-tree
+    secrets: inherit
+
+  java8-algos-tree:
+    name: Java 8 Algos Tree+IsoFor+DT+Uplift
+    needs: start-java8-algos-tree
+    runs-on: ${{ needs.start-java8-algos-tree.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos Tree+IsoFor+DT+Uplift
+          make_target: test-junit-algos-tree-generic-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos Tree+IsoFor+DT+Uplift
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-tree:
+    name: Stop - Java 8 Algos Tree
+    needs: [start-java8-algos-tree, java8-algos-tree]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-tree.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-tree.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - Ensemble
+  # ============================================================================
+  start-java8-algos-ensemble:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos Ensemble
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-ensemble
+    secrets: inherit
+
+  java8-algos-ensemble:
+    name: Java 8 Algos Ensemble
+    needs: start-java8-algos-ensemble
+    runs-on: ${{ needs.start-java8-algos-ensemble.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos Ensemble
+          make_target: test-junit-algos-ensemble-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos Ensemble
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-ensemble:
+    name: Stop - Java 8 Algos Ensemble
+    needs: [start-java8-algos-ensemble, java8-algos-ensemble]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-ensemble.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-ensemble.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - KMeans
+  # ============================================================================
+  start-java8-algos-kmeans:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos KMeans
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-kmeans
+    secrets: inherit
+
+  java8-algos-kmeans:
+    name: Java 8 Algos KMeans
+    needs: start-java8-algos-kmeans
+    runs-on: ${{ needs.start-java8-algos-kmeans.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos KMeans
+          make_target: test-junit-algos-kmeans-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos KMeans
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-kmeans:
+    name: Stop - Java 8 Algos KMeans
+    needs: [start-java8-algos-kmeans, java8-algos-kmeans]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-kmeans.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-kmeans.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - RuleFit
+  # ============================================================================
+  start-java8-algos-rulefit:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos RuleFit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-rulefit
+    secrets: inherit
+
+  java8-algos-rulefit:
+    name: Java 8 Algos RuleFit
+    needs: start-java8-algos-rulefit
+    runs-on: ${{ needs.start-java8-algos-rulefit.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos RuleFit
+          make_target: test-junit-algos-rulefit-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos RuleFit
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-rulefit:
+    name: Stop - Java 8 Algos RuleFit
+    needs: [start-java8-algos-rulefit, java8-algos-rulefit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-rulefit.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-rulefit.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - PCA
+  # ============================================================================
+  start-java8-algos-pca:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos PCA
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-pca
+    secrets: inherit
+
+  java8-algos-pca:
+    name: Java 8 Algos PCA
+    needs: start-java8-algos-pca
+    runs-on: ${{ needs.start-java8-algos-pca.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos PCA
+          make_target: test-junit-algos-pca-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos PCA
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-pca:
+    name: Stop - Java 8 Algos PCA
+    needs: [start-java8-algos-pca, java8-algos-pca]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-pca.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-pca.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - GLRM
+  # ============================================================================
+  start-java8-algos-glrm:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos GLRM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-glrm
+    secrets: inherit
+
+  java8-algos-glrm:
+    name: Java 8 Algos GLRM
+    needs: start-java8-algos-glrm
+    runs-on: ${{ needs.start-java8-algos-glrm.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos GLRM
+          make_target: test-junit-algos-glrm-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos GLRM
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-glrm:
+    name: Stop - Java 8 Algos GLRM
+    needs: [start-java8-algos-glrm, java8-algos-glrm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-glrm.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-glrm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - AdaBoost
+  # ============================================================================
+  start-java8-algos-adaboost:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos AdaBoost
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-adaboost
+    secrets: inherit
+
+  java8-algos-adaboost:
+    name: Java 8 Algos AdaBoost
+    needs: start-java8-algos-adaboost
+    runs-on: ${{ needs.start-java8-algos-adaboost.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos AdaBoost
+          make_target: test-junit-algos-adaboost-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos AdaBoost
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-adaboost:
+    name: Stop - Java 8 Algos AdaBoost
+    needs: [start-java8-algos-adaboost, java8-algos-adaboost]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-adaboost.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-adaboost.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - ModelSelection
+  # ============================================================================
+  start-java8-algos-modelsel:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos ModelSel
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-modelsel
+    secrets: inherit
+
+  java8-algos-modelsel:
+    name: Java 8 Algos ModelSelection
+    needs: start-java8-algos-modelsel
+    runs-on: ${{ needs.start-java8-algos-modelsel.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos ModelSelection
+          make_target: test-junit-algos-modelselection-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos ModelSelection
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-modelsel:
+    name: Stop - Java 8 Algos ModelSel
+    needs: [start-java8-algos-modelsel, java8-algos-modelsel]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-modelsel.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-modelsel.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - Generic
+  # ============================================================================
+  start-java8-algos-generic:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos Generic
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-generic
+    secrets: inherit
+
+  java8-algos-generic:
+    name: Java 8 Algos Generic
+    needs: start-java8-algos-generic
+    runs-on: ${{ needs.start-java8-algos-generic.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos Generic
+          make_target: test-junit-algos-generic-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos Generic
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-generic:
+    name: Stop - Java 8 Algos Generic
+    needs: [start-java8-algos-generic, java8-algos-generic]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-generic.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-generic.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - Grid
+  # ============================================================================
+  start-java8-algos-grid:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos Grid
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-grid
+    secrets: inherit
+
+  java8-algos-grid:
+    name: Java 8 Algos Grid
+    needs: start-java8-algos-grid
+    runs-on: ${{ needs.start-java8-algos-grid.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos Grid
+          make_target: test-junit-algos-grid-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos Grid
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-grid:
+    name: Stop - Java 8 Algos Grid
+    needs: [start-java8-algos-grid, java8-algos-grid]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-grid.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-grid.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 ALGOS - Misc
+  # ============================================================================
+  start-java8-algos-misc:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Algos Misc
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-algos-misc
+    secrets: inherit
+
+  java8-algos-misc:
+    name: Java 8 Algos Misc
+    needs: start-java8-algos-misc
+    runs-on: ${{ needs.start-java8-algos-misc.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Algos Misc
+          make_target: test-junit-algos-misc-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Algos Misc
+          job_status: ${{ job.status }}
+
+  stop-java8-algos-misc:
+    name: Stop - Java 8 Algos Misc
+    needs: [start-java8-algos-misc, java8-algos-misc]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-algos-misc.outputs.label }}
+      ec2_id: ${{ needs.start-java8-algos-misc.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - Core JUnit
+  # ============================================================================
+  start-java8-core:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Core
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-core-full
+    secrets: inherit
+
+  java8-core:
+    name: Java 8 Core JUnit
+    needs: start-java8-core
+    runs-on: ${{ needs.start-java8-core.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Core JUnit
+          make_target: test-junit-core-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Core JUnit
+          job_status: ${{ job.status }}
+
+  stop-java8-core:
+    name: Stop - Java 8 Core
+    needs: [start-java8-core, java8-core]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-core.outputs.label }}
+      ec2_id: ${{ needs.start-java8-core.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - Mojo Pipeline JUnit
+  # ============================================================================
+  start-java8-mojo:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Mojo
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-mojo-full
+    secrets: inherit
+
+  java8-mojo:
+    name: Java 8 Mojo Pipeline JUnit
+    needs: start-java8-mojo
+    runs-on: ${{ needs.start-java8-mojo.outputs.label }}
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Mojo Pipeline JUnit
+          make_target: test-junit-mojo-pipeline-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Mojo Pipeline JUnit
+          job_status: ${{ job.status }}
+
+  stop-java8-mojo:
+    name: Stop - Java 8 Mojo
+    needs: [start-java8-mojo, java8-mojo]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-mojo.outputs.label }}
+      ec2_id: ${{ needs.start-java8-mojo.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - AutoML JUnit
+  # ============================================================================
+  start-java8-automl:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 AutoML
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-automl-full
+    secrets: inherit
+
+  java8-automl:
+    name: Java 8 AutoML JUnit
+    needs: start-java8-automl
+    runs-on: ${{ needs.start-java8-automl.outputs.label }}
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 AutoML JUnit
+          make_target: test-junit-automl-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 AutoML JUnit
+          job_status: ${{ job.status }}
+
+  stop-java8-automl:
+    name: Stop - Java 8 AutoML
+    needs: [start-java8-automl, java8-automl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-automl.outputs.label }}
+      ec2_id: ${{ needs.start-java8-automl.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - Clustering JUnit
+  # ============================================================================
+  start-java8-clustering:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Clustering
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-clustering-full
+    secrets: inherit
+
+  java8-clustering:
+    name: Java 8 Clustering JUnit
+    needs: start-java8-clustering
+    runs-on: ${{ needs.start-java8-clustering.outputs.label }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Clustering JUnit
+          make_target: test-junit-clustering-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Clustering JUnit
+          job_status: ${{ job.status }}
+
+  stop-java8-clustering:
+    name: Stop - Java 8 Clustering
+    needs: [start-java8-clustering, java8-clustering]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-clustering.outputs.label }}
+      ec2_id: ${{ needs.start-java8-clustering.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - XGBoost Multinode JUnit
+  # ============================================================================
+  start-java8-xgb:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 XGBoost
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-xgb-full
+    secrets: inherit
+
+  java8-xgb:
+    name: Java 8 XGBoost Multinode JUnit
+    needs: start-java8-xgb
+    runs-on: ${{ needs.start-java8-xgb.outputs.label }}
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 XGBoost Multinode JUnit
+          make_target: test-junit-xgb-multi-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 XGBoost Multinode JUnit
+          job_status: ${{ job.status }}
+
+  stop-java8-xgb:
+    name: Stop - Java 8 XGBoost
+    needs: [start-java8-xgb, java8-xgb]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-xgb.outputs.label }}
+      ec2_id: ${{ needs.start-java8-xgb.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - JUnit Other
+  # ============================================================================
+  start-java8-other:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Other
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-other-full
+    secrets: inherit
+
+  java8-other:
+    name: Java 8 JUnit Other
+    needs: start-java8-other
+    runs-on: ${{ needs.start-java8-other.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 JUnit Other
+          make_target: test-junit-other-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 JUnit Other
+          job_status: ${{ job.status }}
+
+  stop-java8-other:
+    name: Stop - Java 8 Other
+    needs: [start-java8-other, java8-other]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-other.outputs.label }}
+      ec2_id: ${{ needs.start-java8-other.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - Persist S3
+  # ============================================================================
+  start-java8-persist-s3:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Persist S3
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-persist-s3
+    secrets: inherit
+
+  java8-persist-s3:
+    name: Java 8 Persist S3
+    needs: start-java8-persist-s3
+    runs-on: ${{ needs.start-java8-persist-s3.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Persist S3
+          make_target: test-junit-persist-s3-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Persist S3
+          job_status: ${{ job.status }}
+
+  stop-java8-persist-s3:
+    name: Stop - Java 8 Persist S3
+    needs: [start-java8-persist-s3, java8-persist-s3]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-persist-s3.outputs.label }}
+      ec2_id: ${{ needs.start-java8-persist-s3.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - Persist GCS
+  # ============================================================================
+  start-java8-persist-gcs:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Persist GCS
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-persist-gcs
+    secrets: inherit
+
+  java8-persist-gcs:
+    name: Java 8 Persist GCS
+    needs: start-java8-persist-gcs
+    runs-on: ${{ needs.start-java8-persist-gcs.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Persist GCS
+          make_target: test-junit-persist-gcs-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Persist GCS
+          job_status: ${{ job.status }}
+
+  stop-java8-persist-gcs:
+    name: Stop - Java 8 Persist GCS
+    needs: [start-java8-persist-gcs, java8-persist-gcs]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-persist-gcs.outputs.label }}
+      ec2_id: ${{ needs.start-java8-persist-gcs.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 8 - Persist HTTP
+  # ============================================================================
+  start-java8-persist-http:
+    needs: build
+    if: ${{ !cancelled() && !failure() }}
+    name: Start - Java 8 Persist HTTP
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java8-persist-http
+    secrets: inherit
+
+  java8-persist-http:
+    name: Java 8 Persist HTTP
+    needs: start-java8-persist-http
+    runs-on: ${{ needs.start-java8-persist-http.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 8 Persist HTTP
+          make_target: test-junit-persist-http-jenkins
+          test_package: java
+          java: "8"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 8 Persist HTTP
+          job_status: ${{ job.status }}
+
+  stop-java8-persist-http:
+    name: Stop - Java 8 Persist HTTP
+    needs: [start-java8-persist-http, java8-persist-http]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java8-persist-http.outputs.label }}
+      ec2_id: ${{ needs.start-java8-persist-http.outputs.ec2_id }}
+    secrets: inherit
