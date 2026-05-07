@@ -120,12 +120,10 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'H2O-3 branch to test'
+        description: 'H2O-3 branch to test (any branch in h2oai/h2o-3)'
         required: true
         default: 'valenad-GH-16566-fix-junit'
-        type: choice
-        options:
-          - valenad-GH-16566-fix-junit
+        type: string
 
       run_java8:
         description: 'Run Java 8 JUnit Tests (26 parallel jobs)'
