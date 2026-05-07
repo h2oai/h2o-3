@@ -278,10 +278,15 @@ jobs:
           JAVA17_RESULT: ${{ needs.java17.result }}
         run: |
           # Fetch all jobs to temp file (NDJSON format - one JSON object per line)
-          gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+          echo "Fetching jobs for run ${{ github.run_id }}..."
+          if ! gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
             --paginate \
             --jq '.jobs[] | {name: .name, conclusion: .conclusion, status: .status, started_at: .started_at, completed_at: .completed_at}' \
-            > /tmp/jobs.json 2>/dev/null || echo "" > /tmp/jobs.json
+            > /tmp/jobs.json; then
+            echo "Warning: Failed to fetch jobs, creating empty file"
+            echo "" > /tmp/jobs.json
+          fi
+          echo "Jobs fetched: $(wc -l < /tmp/jobs.json) lines"
 
           # Count failures
           FAILED_COUNT=0
