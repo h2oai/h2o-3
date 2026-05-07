@@ -87,6 +87,12 @@ name: 1.g  -  Public H2O-3 JUnit Tests
 # TRIGGERS
 # ==============================================================================
 on:
+  push:
+    branches:
+      - 'rohan/create-junit-workflow'
+    paths:
+      - '.github/workflows/h2o-3-nightly-junit-tests-public.yml'
+
   workflow_dispatch:
     inputs:
       branch:
