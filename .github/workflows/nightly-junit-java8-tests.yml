@@ -69,7 +69,7 @@ jobs:
   # ============================================================================
   start-java8-smoke:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Smoke
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -115,7 +115,7 @@ jobs:
   # ============================================================================
   start-java8-algos-glm:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos GLM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -161,7 +161,7 @@ jobs:
   # ============================================================================
   start-java8-algos-gbm:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos GBM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -207,7 +207,7 @@ jobs:
   # ============================================================================
   start-java8-algos-drf:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos DRF
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -253,7 +253,7 @@ jobs:
   # ============================================================================
   start-java8-algos-dl:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos DL
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -299,7 +299,7 @@ jobs:
   # ============================================================================
   start-java8-algos-gam:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos GAM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -345,7 +345,7 @@ jobs:
   # ============================================================================
   start-java8-algos-tree:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos Tree
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -391,7 +391,7 @@ jobs:
   # ============================================================================
   start-java8-algos-ensemble:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos Ensemble
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -437,7 +437,7 @@ jobs:
   # ============================================================================
   start-java8-algos-kmeans:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos KMeans
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -483,7 +483,7 @@ jobs:
   # ============================================================================
   start-java8-algos-rulefit:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos RuleFit
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -529,7 +529,7 @@ jobs:
   # ============================================================================
   start-java8-algos-pca:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos PCA
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -575,7 +575,7 @@ jobs:
   # ============================================================================
   start-java8-algos-glrm:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos GLRM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -621,7 +621,7 @@ jobs:
   # ============================================================================
   start-java8-algos-adaboost:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos AdaBoost
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -667,7 +667,7 @@ jobs:
   # ============================================================================
   start-java8-algos-modelsel:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos ModelSel
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -713,7 +713,7 @@ jobs:
   # ============================================================================
   start-java8-algos-generic:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos Generic
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -759,7 +759,7 @@ jobs:
   # ============================================================================
   start-java8-algos-grid:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos Grid
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -805,7 +805,7 @@ jobs:
   # ============================================================================
   start-java8-algos-misc:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Algos Misc
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -851,7 +851,7 @@ jobs:
   # ============================================================================
   start-java8-core:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Core
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -897,7 +897,7 @@ jobs:
   # ============================================================================
   start-java8-mojo:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Mojo
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -943,7 +943,7 @@ jobs:
   # ============================================================================
   start-java8-automl:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 AutoML
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -989,7 +989,7 @@ jobs:
   # ============================================================================
   start-java8-clustering:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Clustering
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1035,7 +1035,7 @@ jobs:
   # ============================================================================
   start-java8-xgb:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 XGBoost
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1082,7 +1082,7 @@ jobs:
   # ============================================================================
   start-java8-other:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Other
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1128,7 +1128,7 @@ jobs:
   # ============================================================================
   start-java8-persist-s3:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Persist S3
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1174,7 +1174,7 @@ jobs:
   # ============================================================================
   start-java8-persist-gcs:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Persist GCS
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1220,7 +1220,7 @@ jobs:
   # ============================================================================
   start-java8-persist-http:
     needs: build
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !failure() }}
     name: Start - Java 8 Persist HTTP
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
