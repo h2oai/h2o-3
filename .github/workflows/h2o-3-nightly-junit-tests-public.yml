@@ -111,12 +111,6 @@ on:
   schedule:
     - cron: '0 2 * * *'
 
-  push:
-    branches:
-      - 'rohan/create-junit-workflow'
-    paths:
-      - '.github/workflows/h2o-3-nightly-junit-tests-public.yml'
-
   workflow_dispatch:
     inputs:
       branch:

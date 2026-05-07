@@ -15,12 +15,6 @@
 name: JUnit Tests - Java 8
 
 on:
-  push:
-    branches:
-      - 'rohan/create-junit-workflow'
-    paths:
-      - '.github/workflows/nightly-junit-java8-tests.yml'
-
   workflow_dispatch:
     inputs:
       h2o3_branch:
