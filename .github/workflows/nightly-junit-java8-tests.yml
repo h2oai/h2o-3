@@ -8,7 +8,7 @@
 # TESTS:
 #   - Smoke, Algos (16 packages), Core, AutoML, Clustering, XGBoost, Other, Persist
 #
-# NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+# NOTE: Test separation done on GitHub branch in h2oai/h2o-3
 #
 # ==============================================================================
 

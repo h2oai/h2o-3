@@ -95,7 +95,7 @@
 #                 ensemble,kmeans,rulefit,pca,glrm,adaboost,modelselection,
 #                 generic,grid,misc}-jenkins
 #
-#   NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+#   NOTE: Test separation done on GitHub branch in h2oai/h2o-3
 #         10-minute timeout per test to eliminate hangs
 #
 # ==============================================================================

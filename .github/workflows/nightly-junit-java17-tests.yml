@@ -8,7 +8,7 @@
 # TESTS:
 #   - Smoke, Other, Algos (16 packages)
 #
-# NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+# NOTE: Test separation done on GitHub branch in h2oai/h2o-3
 # NOTE: No push trigger - run manually via workflow_dispatch or workflow_call
 #
 # ==============================================================================

@@ -12,7 +12,7 @@
 #              generic,grid,misc}-jenkins (with java=11)
 #   - Other:   test-junit-11-other-jenkins
 #
-# NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+# NOTE: Test separation done on GitHub branch in h2oai/h2o-3
 # NOTE: No push trigger - run manually via workflow_dispatch or workflow_call
 #
 # ==============================================================================
