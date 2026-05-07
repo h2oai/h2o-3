@@ -3,9 +3,14 @@
 # ==============================================================================
 #
 # Comprehensive JUnit tests for Java 11 matching Jenkins nightly pipeline
+# Split by algorithm/module for parallel execution
 #
-# TESTS:
-#   - Smoke, Other (includes core + algos for Java 11)
+# TESTS (18 jobs):
+#   - Smoke:   test-junit-smoke-jenkins (with java=11)
+#   - Algos:   test-junit-algos-{glm,gbm,drf,deeplearning,gam,tree-generic,
+#              ensemble,kmeans,rulefit,pca,glrm,adaboost,modelselection,
+#              generic,grid,misc}-jenkins (with java=11)
+#   - Other:   test-junit-11-other-jenkins
 #
 # NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
 # NOTE: No push trigger - run manually via workflow_dispatch or workflow_call
@@ -103,7 +108,727 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 11 - JUnit Other (includes core + algos for Java 11)
+  # JAVA 11 ALGOS - GLM
+  # ============================================================================
+  start-java11-algos-glm:
+    needs: build
+    name: Start - Java 11 Algos GLM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-glm
+    secrets: inherit
+
+  java11-algos-glm:
+    name: Java 11 Algos GLM
+    needs: start-java11-algos-glm
+    runs-on: ${{ needs.start-java11-algos-glm.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos GLM
+          make_target: test-junit-algos-glm-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos GLM
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-glm:
+    name: Stop - Java 11 Algos GLM
+    needs: [start-java11-algos-glm, java11-algos-glm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-glm.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-glm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - GBM
+  # ============================================================================
+  start-java11-algos-gbm:
+    needs: build
+    name: Start - Java 11 Algos GBM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-gbm
+    secrets: inherit
+
+  java11-algos-gbm:
+    name: Java 11 Algos GBM
+    needs: start-java11-algos-gbm
+    runs-on: ${{ needs.start-java11-algos-gbm.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos GBM
+          make_target: test-junit-algos-gbm-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos GBM
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-gbm:
+    name: Stop - Java 11 Algos GBM
+    needs: [start-java11-algos-gbm, java11-algos-gbm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-gbm.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-gbm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - DRF
+  # ============================================================================
+  start-java11-algos-drf:
+    needs: build
+    name: Start - Java 11 Algos DRF
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-drf
+    secrets: inherit
+
+  java11-algos-drf:
+    name: Java 11 Algos DRF
+    needs: start-java11-algos-drf
+    runs-on: ${{ needs.start-java11-algos-drf.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos DRF
+          make_target: test-junit-algos-drf-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos DRF
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-drf:
+    name: Stop - Java 11 Algos DRF
+    needs: [start-java11-algos-drf, java11-algos-drf]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-drf.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-drf.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - DeepLearning
+  # ============================================================================
+  start-java11-algos-dl:
+    needs: build
+    name: Start - Java 11 Algos DL
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-dl
+    secrets: inherit
+
+  java11-algos-dl:
+    name: Java 11 Algos DeepLearning
+    needs: start-java11-algos-dl
+    runs-on: ${{ needs.start-java11-algos-dl.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos DeepLearning
+          make_target: test-junit-algos-deeplearning-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos DeepLearning
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-dl:
+    name: Stop - Java 11 Algos DL
+    needs: [start-java11-algos-dl, java11-algos-dl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-dl.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-dl.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - GAM
+  # ============================================================================
+  start-java11-algos-gam:
+    needs: build
+    name: Start - Java 11 Algos GAM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-gam
+    secrets: inherit
+
+  java11-algos-gam:
+    name: Java 11 Algos GAM
+    needs: start-java11-algos-gam
+    runs-on: ${{ needs.start-java11-algos-gam.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos GAM
+          make_target: test-junit-algos-gam-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos GAM
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-gam:
+    name: Stop - Java 11 Algos GAM
+    needs: [start-java11-algos-gam, java11-algos-gam]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-gam.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-gam.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - Tree+IsoFor+DT+Uplift
+  # ============================================================================
+  start-java11-algos-tree:
+    needs: build
+    name: Start - Java 11 Algos Tree
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-tree
+    secrets: inherit
+
+  java11-algos-tree:
+    name: Java 11 Algos Tree+IsoFor+DT+Uplift
+    needs: start-java11-algos-tree
+    runs-on: ${{ needs.start-java11-algos-tree.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos Tree+IsoFor+DT+Uplift
+          make_target: test-junit-algos-tree-generic-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos Tree+IsoFor+DT+Uplift
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-tree:
+    name: Stop - Java 11 Algos Tree
+    needs: [start-java11-algos-tree, java11-algos-tree]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-tree.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-tree.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - Ensemble
+  # ============================================================================
+  start-java11-algos-ensemble:
+    needs: build
+    name: Start - Java 11 Algos Ensemble
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-ensemble
+    secrets: inherit
+
+  java11-algos-ensemble:
+    name: Java 11 Algos Ensemble
+    needs: start-java11-algos-ensemble
+    runs-on: ${{ needs.start-java11-algos-ensemble.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos Ensemble
+          make_target: test-junit-algos-ensemble-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos Ensemble
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-ensemble:
+    name: Stop - Java 11 Algos Ensemble
+    needs: [start-java11-algos-ensemble, java11-algos-ensemble]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-ensemble.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-ensemble.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - KMeans
+  # ============================================================================
+  start-java11-algos-kmeans:
+    needs: build
+    name: Start - Java 11 Algos KMeans
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-kmeans
+    secrets: inherit
+
+  java11-algos-kmeans:
+    name: Java 11 Algos KMeans
+    needs: start-java11-algos-kmeans
+    runs-on: ${{ needs.start-java11-algos-kmeans.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos KMeans
+          make_target: test-junit-algos-kmeans-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos KMeans
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-kmeans:
+    name: Stop - Java 11 Algos KMeans
+    needs: [start-java11-algos-kmeans, java11-algos-kmeans]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-kmeans.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-kmeans.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - RuleFit
+  # ============================================================================
+  start-java11-algos-rulefit:
+    needs: build
+    name: Start - Java 11 Algos RuleFit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-rulefit
+    secrets: inherit
+
+  java11-algos-rulefit:
+    name: Java 11 Algos RuleFit
+    needs: start-java11-algos-rulefit
+    runs-on: ${{ needs.start-java11-algos-rulefit.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos RuleFit
+          make_target: test-junit-algos-rulefit-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos RuleFit
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-rulefit:
+    name: Stop - Java 11 Algos RuleFit
+    needs: [start-java11-algos-rulefit, java11-algos-rulefit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-rulefit.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-rulefit.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - PCA
+  # ============================================================================
+  start-java11-algos-pca:
+    needs: build
+    name: Start - Java 11 Algos PCA
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-pca
+    secrets: inherit
+
+  java11-algos-pca:
+    name: Java 11 Algos PCA
+    needs: start-java11-algos-pca
+    runs-on: ${{ needs.start-java11-algos-pca.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos PCA
+          make_target: test-junit-algos-pca-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos PCA
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-pca:
+    name: Stop - Java 11 Algos PCA
+    needs: [start-java11-algos-pca, java11-algos-pca]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-pca.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-pca.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - GLRM
+  # ============================================================================
+  start-java11-algos-glrm:
+    needs: build
+    name: Start - Java 11 Algos GLRM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-glrm
+    secrets: inherit
+
+  java11-algos-glrm:
+    name: Java 11 Algos GLRM
+    needs: start-java11-algos-glrm
+    runs-on: ${{ needs.start-java11-algos-glrm.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos GLRM
+          make_target: test-junit-algos-glrm-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos GLRM
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-glrm:
+    name: Stop - Java 11 Algos GLRM
+    needs: [start-java11-algos-glrm, java11-algos-glrm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-glrm.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-glrm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - AdaBoost
+  # ============================================================================
+  start-java11-algos-adaboost:
+    needs: build
+    name: Start - Java 11 Algos AdaBoost
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-adaboost
+    secrets: inherit
+
+  java11-algos-adaboost:
+    name: Java 11 Algos AdaBoost
+    needs: start-java11-algos-adaboost
+    runs-on: ${{ needs.start-java11-algos-adaboost.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos AdaBoost
+          make_target: test-junit-algos-adaboost-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos AdaBoost
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-adaboost:
+    name: Stop - Java 11 Algos AdaBoost
+    needs: [start-java11-algos-adaboost, java11-algos-adaboost]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-adaboost.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-adaboost.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - ModelSelection
+  # ============================================================================
+  start-java11-algos-modelsel:
+    needs: build
+    name: Start - Java 11 Algos ModelSel
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-modelsel
+    secrets: inherit
+
+  java11-algos-modelsel:
+    name: Java 11 Algos ModelSelection
+    needs: start-java11-algos-modelsel
+    runs-on: ${{ needs.start-java11-algos-modelsel.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos ModelSelection
+          make_target: test-junit-algos-modelselection-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos ModelSelection
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-modelsel:
+    name: Stop - Java 11 Algos ModelSel
+    needs: [start-java11-algos-modelsel, java11-algos-modelsel]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-modelsel.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-modelsel.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - Generic
+  # ============================================================================
+  start-java11-algos-generic:
+    needs: build
+    name: Start - Java 11 Algos Generic
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-generic
+    secrets: inherit
+
+  java11-algos-generic:
+    name: Java 11 Algos Generic
+    needs: start-java11-algos-generic
+    runs-on: ${{ needs.start-java11-algos-generic.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos Generic
+          make_target: test-junit-algos-generic-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos Generic
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-generic:
+    name: Stop - Java 11 Algos Generic
+    needs: [start-java11-algos-generic, java11-algos-generic]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-generic.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-generic.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - Grid
+  # ============================================================================
+  start-java11-algos-grid:
+    needs: build
+    name: Start - Java 11 Algos Grid
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-grid
+    secrets: inherit
+
+  java11-algos-grid:
+    name: Java 11 Algos Grid
+    needs: start-java11-algos-grid
+    runs-on: ${{ needs.start-java11-algos-grid.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos Grid
+          make_target: test-junit-algos-grid-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos Grid
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-grid:
+    name: Stop - Java 11 Algos Grid
+    needs: [start-java11-algos-grid, java11-algos-grid]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-grid.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-grid.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 ALGOS - Misc
+  # ============================================================================
+  start-java11-algos-misc:
+    needs: build
+    name: Start - Java 11 Algos Misc
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-algos-misc
+    secrets: inherit
+
+  java11-algos-misc:
+    name: Java 11 Algos Misc
+    needs: start-java11-algos-misc
+    runs-on: ${{ needs.start-java11-algos-misc.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Algos Misc
+          make_target: test-junit-algos-misc-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Algos Misc
+          job_status: ${{ job.status }}
+
+  stop-java11-algos-misc:
+    name: Stop - Java 11 Algos Misc
+    needs: [start-java11-algos-misc, java11-algos-misc]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-algos-misc.outputs.label }}
+      ec2_id: ${{ needs.start-java11-algos-misc.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 - JUnit Other
   # ============================================================================
   start-java11-other:
     needs: build

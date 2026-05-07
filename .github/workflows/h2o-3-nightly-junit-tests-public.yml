@@ -51,11 +51,11 @@
 #              ▼                                        ▼                    ▼
 #       ┌─────────────┐                         ┌─────────────┐     ┌─────────────┐
 #       │   JAVA 8    │                         │   JAVA 11   │     │   JAVA 17   │
-#       │ (26 tests)  │                         │  (2 tests)  │     │ (18 tests)  │
+#       │ (26 tests)  │                         │ (18 tests)  │     │ (18 tests)  │
 #       │  - Smoke    │                         │  - Smoke    │     │  - Smoke    │
-#       │  - Algos    │                         │  - Other    │     │  - Other    │
-#       │  - Core     │                         └─────────────┘     │  - Algos    │
-#       │  - AutoML   │                                             └─────────────┘
+#       │  - Algos    │                         │  - Algos    │     │  - Algos    │
+#       │  - Core     │                         │  - Other    │     │  - Other    │
+#       │  - AutoML   │                         └─────────────┘     └─────────────┘
 #       │  - Persist  │
 #       └─────────────┘
 #                                      │
@@ -65,15 +65,35 @@
 #                             │  (results)  │
 #                             └─────────────┘
 #
-#   TEST BREAKDOWN
-#   --------------
-#   Java 8:  Smoke, 16 Algos (GLM, GBM, DRF, DL, GAM, Tree, Ensemble, KMeans,
-#            RuleFit, PCA, GLRM, AdaBoost, ModelSel, Generic, Grid, Misc),
-#            Core, Mojo, AutoML, Clustering, XGBoost, Other, Persist (S3/GCS/HTTP)
+#   TEST BREAKDOWN & MAKE TARGETS
+#   ------------------------------
 #
-#   Java 11: Smoke, Other (includes core + algos)
+#   Java 8 (26 jobs):
+#     - Smoke:    test-junit-smoke-jenkins
+#     - Algos:    test-junit-algos-{glm,gbm,drf,deeplearning,gam,tree-generic,
+#                 ensemble,kmeans,rulefit,pca,glrm,adaboost,modelselection,
+#                 generic,grid,misc}-jenkins
+#     - Core:     test-junit-core-jenkins
+#     - Mojo:     test-junit-mojo-pipeline-jenkins
+#     - AutoML:   test-junit-automl-jenkins
+#     - Cluster:  test-junit-clustering-jenkins
+#     - XGBoost:  test-junit-xgb-multi-jenkins
+#     - Other:    test-junit-other-jenkins
+#     - Persist:  test-junit-persist-{s3,gcs,http}-jenkins
 #
-#   Java 17: Smoke, Other, 16 Algos
+#   Java 11 (18 jobs):
+#     - Smoke:    test-junit-smoke-jenkins (with java=11)
+#     - Algos:    test-junit-algos-{glm,gbm,drf,deeplearning,gam,tree-generic,
+#                 ensemble,kmeans,rulefit,pca,glrm,adaboost,modelselection,
+#                 generic,grid,misc}-jenkins (with java=11)
+#     - Other:    test-junit-11-other-jenkins
+#
+#   Java 17 (18 jobs):
+#     - Smoke:    test-junit-17-smoke-jenkins
+#     - Other:    test-junit-17-other-jenkins
+#     - Algos:    test-junit-17-algos-{glm,gbm,drf,deeplearning,gam,tree-generic,
+#                 ensemble,kmeans,rulefit,pca,glrm,adaboost,modelselection,
+#                 generic,grid,misc}-jenkins
 #
 #   NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
 #         10-minute timeout per test to eliminate hangs
