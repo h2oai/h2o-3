@@ -277,15 +277,15 @@ jobs:
           JAVA11_RESULT: ${{ needs.java11.result }}
           JAVA17_RESULT: ${{ needs.java17.result }}
         run: |
-          # Fetch all jobs from this workflow run
-          JOBS_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate)
+          # Fetch all jobs from this workflow run (handle pagination by slurping into single array)
+          JOBS_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate --jq '.jobs[]' | jq -s '.')
 
           # Count failures
           FAILED_COUNT=0
-          [[ "$BUILD_RESULT" == "failure" ]] && ((FAILED_COUNT++))
-          [[ "$JAVA8_RESULT" == "failure" ]] && ((FAILED_COUNT++))
-          [[ "$JAVA11_RESULT" == "failure" ]] && ((FAILED_COUNT++))
-          [[ "$JAVA17_RESULT" == "failure" ]] && ((FAILED_COUNT++))
+          [[ "$BUILD_RESULT" == "failure" ]] && FAILED_COUNT=$((FAILED_COUNT + 1))
+          [[ "$JAVA8_RESULT" == "failure" ]] && FAILED_COUNT=$((FAILED_COUNT + 1))
+          [[ "$JAVA11_RESULT" == "failure" ]] && FAILED_COUNT=$((FAILED_COUNT + 1))
+          [[ "$JAVA17_RESULT" == "failure" ]] && FAILED_COUNT=$((FAILED_COUNT + 1))
 
           # Status badge helper
           status_badge() {
@@ -359,12 +359,12 @@ jobs:
               duration="-"
             fi
             echo "| ${name} | $(status_badge ${conclusion}) | ${duration} |" >> $GITHUB_STEP_SUMMARY
-          done < <(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.name != "Summary" and .name != "Initialize" and .name != "Build" and (.name | startswith("Start") | not) and (.name | contains(" / Start") | not) and (.name | startswith("Stop") | not) and (.name | contains(" / Stop") | not)) | "\(.name)|\(.conclusion // .status)|\(.started_at)|\(.completed_at)"')
+          done < <(echo "$JOBS_JSON" | jq -r '.[] | select(.name != "Summary" and .name != "Initialize" and .name != "Build" and (.name | startswith("Start") | not) and (.name | contains(" / Start") | not) and (.name | startswith("Stop") | not) and (.name | contains(" / Stop") | not)) | "\(.name)|\(.conclusion // .status)|\(.started_at)|\(.completed_at)"')
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Failed Jobs Section (exclude infrastructure jobs)
-          FAILED_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.conclusion == "failure" and .name != "Summary" and .name != "Initialize" and .name != "Build" and (.name | startswith("Start") | not) and (.name | contains(" / Start") | not) and (.name | startswith("Stop") | not) and (.name | contains(" / Stop") | not)) | .name')
+          FAILED_JOBS=$(echo "$JOBS_JSON" | jq -r '.[] | select(.conclusion == "failure" and .name != "Summary" and .name != "Initialize" and .name != "Build" and (.name | startswith("Start") | not) and (.name | contains(" / Start") | not) and (.name | startswith("Stop") | not) and (.name | contains(" / Stop") | not)) | .name')
           if [[ -n "$FAILED_JOBS" ]]; then
             echo "## ❌ Failed Jobs" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
