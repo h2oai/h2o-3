@@ -100,8 +100,8 @@
 #
 # ==============================================================================
 
-run-name: "1.g  -  Public H2O-3 JUnit Nightly - Tests [${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}]"
-name: 1.g  -  Public H2O-3 JUnit Nightly - Tests
+run-name: "1.g  -  Public H2O-3 Nightly - JUnit Tests [${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}]"
+name: 1.g  -  Public H2O-3 Nightly - JUnit Tests
 
 # ==============================================================================
 # TRIGGERS
