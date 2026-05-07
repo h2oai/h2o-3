@@ -1,0 +1,261 @@
+# ==============================================================================
+#
+#                         H2O-3 GITHUB ACTIONS WORKFLOW INDEX
+#                         ===================================
+#
+#   This index provides a quick reference to all H2O-3 CI/CD workflows.
+#   Workflows are numbered for easy navigation in the GitHub Actions UI.
+#
+#   ┌─────────────────────────────────────────────────────────────────────────┐
+#   │  PUBLIC WORKFLOWS (1.x) - Open Source H2O-3                             │
+#   ├─────────────────────────────────────────────────────────────────────────┤
+#   │  1.a  Nightly - Tests      Run full test suite (Smoke, Python, R, etc)  │
+#   │  1.b  Nightly Release      Build & publish nightly artifacts to S3      │
+#   │  1.c  Official Release     Production release (PyPI, Conda, Docker)     │
+#   │  1.d  Test Release         Test release to staging environment          │
+#   │  1.e  Nightly Merge        Auto-merge release branch into master        │
+#   │  1.f  Nightly Scheduler    Cron trigger for nightly pipelines           │
+#   │  1.g  JUnit Tests          Comprehensive JUnit test suite               │
+#   └─────────────────────────────────────────────────────────────────────────┘
+#
+#   CURRENT FILE: 1.g  -  Public H2O-3 JUnit Tests
+#
+# ==============================================================================
+#
+#                 PUBLIC H2O-3 JUNIT TEST PIPELINE
+#                 ================================
+#
+#   Comprehensive JUnit testing across Java 8, 11, and 17.
+#   Tests are split by algorithm/module for parallel execution.
+#
+# ==============================================================================
+#
+#   ARCHITECTURE
+#   ------------
+#
+#   ┌─────────────────────────────────────────────────────────────────────────┐
+#   │                            JUNIT-MAIN                                   │
+#   │                         (This Workflow)                                 │
+#   └─────────────────────────────────────────────────────────────────────────┘
+#                                      │
+#                    ┌─────────────────┴─────────────────┐
+#                    │                                   │
+#                    ▼                                   ▼
+#             ┌─────────────┐                    ┌─────────────┐
+#             │    INIT     │                    │    BUILD    │
+#             │  (config)   │                    │   (H2O-3)   │
+#             └─────────────┘                    └─────────────┘
+#                                                       │
+#              ┌────────────────────────────────────────┼────────────────────┐
+#              │                                        │                    │
+#              ▼                                        ▼                    ▼
+#       ┌─────────────┐                         ┌─────────────┐     ┌─────────────┐
+#       │   JAVA 8    │                         │   JAVA 11   │     │   JAVA 17   │
+#       │ (26 tests)  │                         │  (2 tests)  │     │ (18 tests)  │
+#       │  - Smoke    │                         │  - Smoke    │     │  - Smoke    │
+#       │  - Algos    │                         │  - Other    │     │  - Other    │
+#       │  - Core     │                         └─────────────┘     │  - Algos    │
+#       │  - AutoML   │                                             └─────────────┘
+#       │  - Persist  │
+#       └─────────────┘
+#                                      │
+#                                      ▼
+#                             ┌─────────────┐
+#                             │   SUMMARY   │
+#                             │  (results)  │
+#                             └─────────────┘
+#
+#   TEST BREAKDOWN
+#   --------------
+#   Java 8:  Smoke, 16 Algos (GLM, GBM, DRF, DL, GAM, Tree, Ensemble, KMeans,
+#            RuleFit, PCA, GLRM, AdaBoost, ModelSel, Generic, Grid, Misc),
+#            Core, Mojo, AutoML, Clustering, XGBoost, Other, Persist (S3/GCS/HTTP)
+#
+#   Java 11: Smoke, Other (includes core + algos)
+#
+#   Java 17: Smoke, Other, 16 Algos
+#
+#   NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+#         10-minute timeout per test to eliminate hangs
+#
+# ==============================================================================
+
+run-name: "1.g  -  Public H2O-3 JUnit Tests [${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}]"
+name: 1.g  -  Public H2O-3 JUnit Tests
+
+# ==============================================================================
+# TRIGGERS
+# ==============================================================================
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'H2O-3 branch to test'
+        required: true
+        default: 'valenad-GH-16566-fix-junit'
+        type: choice
+        options:
+          - valenad-GH-16566-fix-junit
+
+      run_java8:
+        description: 'Run Java 8 JUnit Tests (26 parallel jobs)'
+        required: false
+        type: boolean
+        default: true
+
+      # NOTE: Java 11 and 17 disabled for testing phase
+      # run_java11:
+      #   description: 'Run Java 11 JUnit Tests (2 parallel jobs)'
+      #   required: false
+      #   type: boolean
+      #   default: false
+
+      # run_java17:
+      #   description: 'Run Java 17 JUnit Tests (18 parallel jobs)'
+      #   required: false
+      #   type: boolean
+      #   default: false
+
+# ==============================================================================
+# CONCURRENCY
+# ==============================================================================
+concurrency:
+  group: junit-${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}
+  cancel-in-progress: false
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+  contents: write
+  id-token: write
+  checks: write
+  actions: read
+
+# ==============================================================================
+# JOBS
+# ==============================================================================
+jobs:
+
+  # ============================================================================
+  # INIT: Determine what to run
+  # ============================================================================
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.config.outputs.branch }}
+      run_java8: ${{ steps.config.outputs.run_java8 }}
+
+    steps:
+      - name: Fetch H2O-3 Branches
+        id: fetch-branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCHES=$(gh api repos/h2oai/h2o-3/branches --paginate --jq '.[].name' | tr '\n' ' ')
+          echo "branches=${BRANCHES}" >> $GITHUB_OUTPUT
+
+      - name: Determine Configuration
+        id: config
+        run: |
+          BRANCH="${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}"
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+
+          # Validate branch exists
+          if ! echo "${{ steps.fetch-branches.outputs.branches }}" | grep -qw "${BRANCH}"; then
+            echo "::warning::Branch '${BRANCH}' not found in h2o-3 repo. Build may fail."
+          fi
+
+          # Test categories (from checkbox inputs)
+          echo "run_java8=${{ inputs.run_java8 }}" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "## JUnit Test Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 8 | ${{ inputs.run_java8 }} (26 jobs) |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # BUILD: Compile H2O-3 and create test packages
+  # ============================================================================
+  build:
+    name: Build
+    needs: init
+    uses: ./.github/workflows/nightly-build.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+      repository: h2oai/h2o-3
+    secrets: inherit
+
+  # ============================================================================
+  # JUNIT TEST SUITES (Run in parallel after build)
+  # ============================================================================
+  java8:
+    name: Java 8 JUnit
+    needs: [init, build]
+    if: needs.init.outputs.run_java8 == 'true'
+    uses: ./.github/workflows/nightly-junit-java8-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+    secrets: inherit
+
+  # NOTE: Java 11 and 17 disabled for testing phase
+  # java11:
+  #   name: Java 11 JUnit
+  #   needs: [init, build]
+  #   if: needs.init.outputs.run_java11 == 'true'
+  #   uses: ./.github/workflows/nightly-junit-java11-tests.yml
+  #   with:
+  #     h2o3_branch: ${{ needs.init.outputs.branch }}
+  #   secrets: inherit
+
+  # java17:
+  #   name: Java 17 JUnit
+  #   needs: [init, build]
+  #   if: needs.init.outputs.run_java17 == 'true'
+  #   uses: ./.github/workflows/nightly-junit-java17-tests.yml
+  #   with:
+  #     h2o3_branch: ${{ needs.init.outputs.branch }}
+  #   secrets: inherit
+
+  # ============================================================================
+  # SUMMARY: Generate test results dashboard
+  # ============================================================================
+  summary:
+    name: Summary
+    needs: [init, build, java8]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate JUnit Test Summary
+        run: |
+          echo "## JUnit Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 8 JUnit | ${{ needs.java8.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Build SHA:** \`${{ needs.build.outputs.build_sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Set Final Status
+        run: |
+          # Determine overall status
+          BUILD="${{ needs.build.result }}"
+          JAVA8="${{ needs.java8.result }}"
+
+          if [[ "$BUILD" == "failure" ]]; then
+            echo "::error::Build failed"
+            exit 1
+          fi
+
+          if [[ "$JAVA8" == "failure" ]]; then
+            echo "::error::Java 8 JUnit tests failed"
+            exit 1
+          fi
+
+          echo "All requested tests passed!"
