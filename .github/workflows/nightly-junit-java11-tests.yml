@@ -1,0 +1,149 @@
+# ==============================================================================
+#                         JUNIT TEST SUITE - JAVA 11
+# ==============================================================================
+#
+# Comprehensive JUnit tests for Java 11 matching Jenkins nightly pipeline
+#
+# TESTS:
+#   - Smoke, Other (includes core + algos for Java 11)
+#
+# NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+# NOTE: No push trigger - run manually via workflow_dispatch or workflow_call
+#
+# ==============================================================================
+
+name: JUnit Tests - Java 11
+
+on:
+  workflow_dispatch:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test (from h2oai/h2o-3 public repo)'
+        required: true
+        default: 'valenad-GH-16566-fix-junit'
+        type: string
+
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+  DEFAULT_BRANCH: 'valenad-GH-16566-fix-junit'
+
+jobs:
+  # ============================================================================
+  # BUILD: Compile H2O-3 and create test packages
+  # ============================================================================
+  build:
+    name: Build
+    uses: ./.github/workflows/nightly-build.yml
+    with:
+      h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+      repository: h2oai/h2o-3
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 SMOKE
+  # ============================================================================
+  start-java11-smoke:
+    needs: build
+    name: Start - Java 11 Smoke
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-smoke-full
+    secrets: inherit
+
+  java11-smoke:
+    name: Java 11 Smoke
+    needs: start-java11-smoke
+    runs-on: ${{ needs.start-java11-smoke.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 Smoke
+          make_target: test-junit-smoke-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 Smoke
+          job_status: ${{ job.status }}
+
+  stop-java11-smoke:
+    name: Stop - Java 11 Smoke
+    needs: [start-java11-smoke, java11-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-java11-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 11 - JUnit Other (includes core + algos for Java 11)
+  # ============================================================================
+  start-java11-other:
+    needs: build
+    name: Start - Java 11 Other
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java11-other-full
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  java11-other:
+    name: Java 11 JUnit Other
+    needs: start-java11-other
+    runs-on: ${{ needs.start-java11-other.outputs.label }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 11 JUnit Other
+          make_target: test-junit-11-other-jenkins
+          test_package: java
+          java: "11"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 11 JUnit Other
+          job_status: ${{ job.status }}
+
+  stop-java11-other:
+    name: Stop - Java 11 Other
+    needs: [start-java11-other, java11-other]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java11-other.outputs.label }}
+      ec2_id: ${{ needs.start-java11-other.outputs.ec2_id }}
+    secrets: inherit

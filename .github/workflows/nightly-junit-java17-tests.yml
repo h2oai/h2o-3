@@ -1,0 +1,870 @@
+# ==============================================================================
+#                         JUNIT TEST SUITE - JAVA 17
+# ==============================================================================
+#
+# Comprehensive JUnit tests for Java 17 matching Jenkins nightly pipeline
+# Split by algorithm/module for parallel execution
+#
+# TESTS:
+#   - Smoke, Other, Algos (16 packages)
+#
+# NOTE: Test separation done on Jenkins branch valenad-GH-16566-fix-junit
+# NOTE: No push trigger - run manually via workflow_dispatch or workflow_call
+#
+# ==============================================================================
+
+name: JUnit Tests - Java 17
+
+on:
+  workflow_dispatch:
+    inputs:
+      h2o3_branch:
+        description: 'H2O-3 branch to test (from h2oai/h2o-3 public repo)'
+        required: true
+        default: 'valenad-GH-16566-fix-junit'
+        type: string
+
+  workflow_call:
+    inputs:
+      h2o3_branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
+  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  DOCKER_VERSION: "46"
+  H2O3_REPO: h2oai/h2o-3
+  RETENTION: 14
+  EFS_SMALLDATA: /home/ubuntu/smalldata
+  EFS_BIGDATA: /home/ubuntu/bigdata
+  DEFAULT_BRANCH: 'valenad-GH-16566-fix-junit'
+
+jobs:
+  # ============================================================================
+  # BUILD: Compile H2O-3 and create test packages
+  # ============================================================================
+  build:
+    name: Build
+    uses: ./.github/workflows/nightly-build.yml
+    with:
+      h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+      repository: h2oai/h2o-3
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 SMOKE
+  # ============================================================================
+  start-java17-smoke:
+    needs: build
+    name: Start - Java 17 Smoke
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-smoke-full
+    secrets: inherit
+
+  java17-smoke:
+    name: Java 17 Smoke
+    needs: start-java17-smoke
+    runs-on: ${{ needs.start-java17-smoke.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Smoke
+          make_target: test-junit-17-smoke-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Smoke
+          job_status: ${{ job.status }}
+
+  stop-java17-smoke:
+    name: Stop - Java 17 Smoke
+    needs: [start-java17-smoke, java17-smoke]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-smoke.outputs.label }}
+      ec2_id: ${{ needs.start-java17-smoke.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 - JUnit Other (includes core + misc for Java 17)
+  # ============================================================================
+  start-java17-other:
+    needs: build
+    name: Start - Java 17 Other
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-other-full
+      instance_type: m5.8xlarge
+    secrets: inherit
+
+  java17-other:
+    name: Java 17 JUnit Other
+    needs: start-java17-other
+    runs-on: ${{ needs.start-java17-other.outputs.label }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 JUnit Other
+          make_target: test-junit-17-other-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 JUnit Other
+          job_status: ${{ job.status }}
+
+  stop-java17-other:
+    name: Stop - Java 17 Other
+    needs: [start-java17-other, java17-other]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-other.outputs.label }}
+      ec2_id: ${{ needs.start-java17-other.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - GLM
+  # ============================================================================
+  start-java17-algos-glm:
+    needs: build
+    name: Start - Java 17 Algos GLM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-glm
+    secrets: inherit
+
+  java17-algos-glm:
+    name: Java 17 Algos GLM
+    needs: start-java17-algos-glm
+    runs-on: ${{ needs.start-java17-algos-glm.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos GLM
+          make_target: test-junit-17-algos-glm-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos GLM
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-glm:
+    name: Stop - Java 17 Algos GLM
+    needs: [start-java17-algos-glm, java17-algos-glm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-glm.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-glm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - GBM
+  # ============================================================================
+  start-java17-algos-gbm:
+    needs: build
+    name: Start - Java 17 Algos GBM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-gbm
+    secrets: inherit
+
+  java17-algos-gbm:
+    name: Java 17 Algos GBM
+    needs: start-java17-algos-gbm
+    runs-on: ${{ needs.start-java17-algos-gbm.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos GBM
+          make_target: test-junit-17-algos-gbm-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos GBM
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-gbm:
+    name: Stop - Java 17 Algos GBM
+    needs: [start-java17-algos-gbm, java17-algos-gbm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-gbm.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-gbm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - DRF
+  # ============================================================================
+  start-java17-algos-drf:
+    needs: build
+    name: Start - Java 17 Algos DRF
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-drf
+    secrets: inherit
+
+  java17-algos-drf:
+    name: Java 17 Algos DRF
+    needs: start-java17-algos-drf
+    runs-on: ${{ needs.start-java17-algos-drf.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos DRF
+          make_target: test-junit-17-algos-drf-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos DRF
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-drf:
+    name: Stop - Java 17 Algos DRF
+    needs: [start-java17-algos-drf, java17-algos-drf]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-drf.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-drf.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - DeepLearning
+  # ============================================================================
+  start-java17-algos-dl:
+    needs: build
+    name: Start - Java 17 Algos DL
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-dl
+    secrets: inherit
+
+  java17-algos-dl:
+    name: Java 17 Algos DeepLearning
+    needs: start-java17-algos-dl
+    runs-on: ${{ needs.start-java17-algos-dl.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos DeepLearning
+          make_target: test-junit-17-algos-deeplearning-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos DeepLearning
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-dl:
+    name: Stop - Java 17 Algos DL
+    needs: [start-java17-algos-dl, java17-algos-dl]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-dl.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-dl.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - GAM
+  # ============================================================================
+  start-java17-algos-gam:
+    needs: build
+    name: Start - Java 17 Algos GAM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-gam
+    secrets: inherit
+
+  java17-algos-gam:
+    name: Java 17 Algos GAM
+    needs: start-java17-algos-gam
+    runs-on: ${{ needs.start-java17-algos-gam.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos GAM
+          make_target: test-junit-17-algos-gam-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos GAM
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-gam:
+    name: Stop - Java 17 Algos GAM
+    needs: [start-java17-algos-gam, java17-algos-gam]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-gam.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-gam.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - Tree+IsoFor+DT+Uplift
+  # ============================================================================
+  start-java17-algos-tree:
+    needs: build
+    name: Start - Java 17 Algos Tree
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-tree
+    secrets: inherit
+
+  java17-algos-tree:
+    name: Java 17 Algos Tree+IsoFor+DT+Uplift
+    needs: start-java17-algos-tree
+    runs-on: ${{ needs.start-java17-algos-tree.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos Tree+IsoFor+DT+Uplift
+          make_target: test-junit-17-algos-tree-generic-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos Tree+IsoFor+DT+Uplift
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-tree:
+    name: Stop - Java 17 Algos Tree
+    needs: [start-java17-algos-tree, java17-algos-tree]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-tree.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-tree.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - Ensemble
+  # ============================================================================
+  start-java17-algos-ensemble:
+    needs: build
+    name: Start - Java 17 Algos Ensemble
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-ensemble
+    secrets: inherit
+
+  java17-algos-ensemble:
+    name: Java 17 Algos Ensemble
+    needs: start-java17-algos-ensemble
+    runs-on: ${{ needs.start-java17-algos-ensemble.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos Ensemble
+          make_target: test-junit-17-algos-ensemble-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos Ensemble
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-ensemble:
+    name: Stop - Java 17 Algos Ensemble
+    needs: [start-java17-algos-ensemble, java17-algos-ensemble]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-ensemble.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-ensemble.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - KMeans
+  # ============================================================================
+  start-java17-algos-kmeans:
+    needs: build
+    name: Start - Java 17 Algos KMeans
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-kmeans
+    secrets: inherit
+
+  java17-algos-kmeans:
+    name: Java 17 Algos KMeans
+    needs: start-java17-algos-kmeans
+    runs-on: ${{ needs.start-java17-algos-kmeans.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos KMeans
+          make_target: test-junit-17-algos-kmeans-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos KMeans
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-kmeans:
+    name: Stop - Java 17 Algos KMeans
+    needs: [start-java17-algos-kmeans, java17-algos-kmeans]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-kmeans.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-kmeans.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - RuleFit
+  # ============================================================================
+  start-java17-algos-rulefit:
+    needs: build
+    name: Start - Java 17 Algos RuleFit
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-rulefit
+    secrets: inherit
+
+  java17-algos-rulefit:
+    name: Java 17 Algos RuleFit
+    needs: start-java17-algos-rulefit
+    runs-on: ${{ needs.start-java17-algos-rulefit.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos RuleFit
+          make_target: test-junit-17-algos-rulefit-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos RuleFit
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-rulefit:
+    name: Stop - Java 17 Algos RuleFit
+    needs: [start-java17-algos-rulefit, java17-algos-rulefit]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-rulefit.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-rulefit.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - PCA
+  # ============================================================================
+  start-java17-algos-pca:
+    needs: build
+    name: Start - Java 17 Algos PCA
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-pca
+    secrets: inherit
+
+  java17-algos-pca:
+    name: Java 17 Algos PCA
+    needs: start-java17-algos-pca
+    runs-on: ${{ needs.start-java17-algos-pca.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos PCA
+          make_target: test-junit-17-algos-pca-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos PCA
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-pca:
+    name: Stop - Java 17 Algos PCA
+    needs: [start-java17-algos-pca, java17-algos-pca]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-pca.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-pca.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - GLRM
+  # ============================================================================
+  start-java17-algos-glrm:
+    needs: build
+    name: Start - Java 17 Algos GLRM
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-glrm
+    secrets: inherit
+
+  java17-algos-glrm:
+    name: Java 17 Algos GLRM
+    needs: start-java17-algos-glrm
+    runs-on: ${{ needs.start-java17-algos-glrm.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos GLRM
+          make_target: test-junit-17-algos-glrm-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos GLRM
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-glrm:
+    name: Stop - Java 17 Algos GLRM
+    needs: [start-java17-algos-glrm, java17-algos-glrm]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-glrm.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-glrm.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - AdaBoost
+  # ============================================================================
+  start-java17-algos-adaboost:
+    needs: build
+    name: Start - Java 17 Algos AdaBoost
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-adaboost
+    secrets: inherit
+
+  java17-algos-adaboost:
+    name: Java 17 Algos AdaBoost
+    needs: start-java17-algos-adaboost
+    runs-on: ${{ needs.start-java17-algos-adaboost.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos AdaBoost
+          make_target: test-junit-17-algos-adaboost-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos AdaBoost
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-adaboost:
+    name: Stop - Java 17 Algos AdaBoost
+    needs: [start-java17-algos-adaboost, java17-algos-adaboost]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-adaboost.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-adaboost.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - ModelSelection
+  # ============================================================================
+  start-java17-algos-modelsel:
+    needs: build
+    name: Start - Java 17 Algos ModelSel
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-modelsel
+    secrets: inherit
+
+  java17-algos-modelsel:
+    name: Java 17 Algos ModelSelection
+    needs: start-java17-algos-modelsel
+    runs-on: ${{ needs.start-java17-algos-modelsel.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos ModelSelection
+          make_target: test-junit-17-algos-modelselection-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos ModelSelection
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-modelsel:
+    name: Stop - Java 17 Algos ModelSel
+    needs: [start-java17-algos-modelsel, java17-algos-modelsel]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-modelsel.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-modelsel.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - Generic
+  # ============================================================================
+  start-java17-algos-generic:
+    needs: build
+    name: Start - Java 17 Algos Generic
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-generic
+    secrets: inherit
+
+  java17-algos-generic:
+    name: Java 17 Algos Generic
+    needs: start-java17-algos-generic
+    runs-on: ${{ needs.start-java17-algos-generic.outputs.label }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos Generic
+          make_target: test-junit-17-algos-generic-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos Generic
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-generic:
+    name: Stop - Java 17 Algos Generic
+    needs: [start-java17-algos-generic, java17-algos-generic]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-generic.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-generic.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - Grid
+  # ============================================================================
+  start-java17-algos-grid:
+    needs: build
+    name: Start - Java 17 Algos Grid
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-grid
+    secrets: inherit
+
+  java17-algos-grid:
+    name: Java 17 Algos Grid
+    needs: start-java17-algos-grid
+    runs-on: ${{ needs.start-java17-algos-grid.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos Grid
+          make_target: test-junit-17-algos-grid-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos Grid
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-grid:
+    name: Stop - Java 17 Algos Grid
+    needs: [start-java17-algos-grid, java17-algos-grid]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-grid.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-grid.outputs.ec2_id }}
+    secrets: inherit
+
+  # ============================================================================
+  # JAVA 17 ALGOS - Misc
+  # ============================================================================
+  start-java17-algos-misc:
+    needs: build
+    name: Start - Java 17 Algos Misc
+    uses: ./.github/workflows/ec2-runner-start.yml
+    with:
+      name: java17-algos-misc
+    secrets: inherit
+
+  java17-algos-misc:
+    name: Java 17 Algos Misc
+    needs: start-java17-algos-misc
+    runs-on: ${{ needs.start-java17-algos-misc.outputs.label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-test
+        with:
+          name: Java 17 Algos Misc
+          make_target: test-junit-17-algos-misc-jenkins
+          test_package: java
+          java: "17"
+          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          mount_efs: "true"
+          smalldata_path: ${{ env.EFS_SMALLDATA }}
+          bigdata_path: ${{ env.EFS_BIGDATA }}
+      - name: Publish Results
+        if: always()
+        uses: ./.github/actions/publish-results
+        with:
+          name: Java 17 Algos Misc
+          job_status: ${{ job.status }}
+
+  stop-java17-algos-misc:
+    name: Stop - Java 17 Algos Misc
+    needs: [start-java17-algos-misc, java17-algos-misc]
+    if: always()
+    uses: ./.github/workflows/ec2-runner-stop.yml
+    with:
+      label: ${{ needs.start-java17-algos-misc.outputs.label }}
+      ec2_id: ${{ needs.start-java17-algos-misc.outputs.ec2_id }}
+    secrets: inherit
