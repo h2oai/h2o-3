@@ -193,15 +193,19 @@ jobs:
             echo "::warning::Branch '${BRANCH}' not found in h2o-3 repo. Build may fail."
           fi
 
-          # Test categories (from checkbox inputs)
-          echo "run_java8=${{ inputs.run_java8 }}" >> $GITHUB_OUTPUT
+          # Test categories (from checkbox inputs, default to true for push triggers)
+          RUN_JAVA8="${{ inputs.run_java8 }}"
+          if [[ -z "$RUN_JAVA8" ]]; then
+            RUN_JAVA8="true"
+          fi
+          echo "run_java8=${RUN_JAVA8}" >> $GITHUB_OUTPUT
 
           # Summary
           echo "## JUnit Test Configuration" >> $GITHUB_STEP_SUMMARY
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 8 | ${{ inputs.run_java8 }} (26 jobs) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 8 | ${RUN_JAVA8} (26 jobs) |" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # BUILD: Compile H2O-3 and create test packages
