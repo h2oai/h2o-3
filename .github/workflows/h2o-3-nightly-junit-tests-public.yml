@@ -277,8 +277,11 @@ jobs:
           JAVA11_RESULT: ${{ needs.java11.result }}
           JAVA17_RESULT: ${{ needs.java17.result }}
         run: |
-          # Fetch all jobs from this workflow run (handle pagination by slurping into single array)
-          JOBS_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate --jq '.jobs[]' | jq -s '.')
+          # Fetch all jobs to temp file (NDJSON format - one JSON object per line)
+          gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+            --paginate \
+            --jq '.jobs[] | {name: .name, conclusion: .conclusion, status: .status, started_at: .started_at, completed_at: .completed_at}' \
+            > /tmp/jobs.json 2>/dev/null || echo "" > /tmp/jobs.json
 
           # Count failures
           FAILED_COUNT=0
@@ -296,6 +299,19 @@ jobs:
               skipped) echo "⏭️ SKIPPED" ;;
               *) echo "⚪ $1" ;;
             esac
+          }
+
+          # Check if job should be skipped (infrastructure jobs)
+          is_infra_job() {
+            local name="$1"
+            [[ "$name" == "Summary" ]] && return 0
+            [[ "$name" == "Initialize" ]] && return 0
+            [[ "$name" == "Build" ]] && return 0
+            [[ "$name" == Start* ]] && return 0
+            [[ "$name" == Stop* ]] && return 0
+            [[ "$name" == *" / Start"* ]] && return 0
+            [[ "$name" == *" / Stop"* ]] && return 0
+            return 1
           }
 
           # Header
@@ -336,10 +352,33 @@ jobs:
           echo "| Job | Status | Duration |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|----------|" >> $GITHUB_STEP_SUMMARY
 
-          # Filter out infrastructure jobs (Summary, Initialize, Start/Stop EC2, Build)
-          # Use process substitution to keep while loop in main shell (for status_badge function access)
-          while IFS='|' read -r name conclusion started completed; do
+          # Track failed jobs for later
+          FAILED_JOBS=""
+
+          # Process each job from temp file
+          while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+
+            name=$(echo "$line" | jq -r '.name // empty')
+            [[ -z "$name" ]] && continue
+
+            # Skip infrastructure jobs
+            is_infra_job "$name" && continue
+
+            conclusion=$(echo "$line" | jq -r '.conclusion // "pending"')
+            status=$(echo "$line" | jq -r '.status // "queued"')
+            started=$(echo "$line" | jq -r '.started_at // ""')
+            completed=$(echo "$line" | jq -r '.completed_at // ""')
+
+            # Use conclusion if available, otherwise status
+            result="$conclusion"
+            [[ "$result" == "null" || -z "$result" ]] && result="$status"
+
+            # Track failed jobs
+            [[ "$result" == "failure" ]] && FAILED_JOBS="${FAILED_JOBS}${name}\n"
+
             # Calculate duration
+            duration="-"
             if [[ -n "$started" && -n "$completed" && "$started" != "null" && "$completed" != "null" ]]; then
               start_sec=$(date -d "$started" +%s 2>/dev/null || echo "0")
               end_sec=$(date -d "$completed" +%s 2>/dev/null || echo "0")
@@ -352,26 +391,22 @@ jobs:
                 else
                   duration="${duration_sec}s"
                 fi
-              else
-                duration="-"
               fi
-            else
-              duration="-"
             fi
-            echo "| ${name} | $(status_badge ${conclusion}) | ${duration} |" >> $GITHUB_STEP_SUMMARY
-          done < <(echo "$JOBS_JSON" | jq -r '.[] | select(.name != "Summary" and .name != "Initialize" and .name != "Build" and (.name | startswith("Start") | not) and (.name | contains(" / Start") | not) and (.name | startswith("Stop") | not) and (.name | contains(" / Stop") | not)) | "\(.name)|\(.conclusion // .status)|\(.started_at)|\(.completed_at)"')
+
+            echo "| ${name} | $(status_badge ${result}) | ${duration} |" >> $GITHUB_STEP_SUMMARY
+          done < /tmp/jobs.json
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Failed Jobs Section (exclude infrastructure jobs)
-          FAILED_JOBS=$(echo "$JOBS_JSON" | jq -r '.[] | select(.conclusion == "failure" and .name != "Summary" and .name != "Initialize" and .name != "Build" and (.name | startswith("Start") | not) and (.name | contains(" / Start") | not) and (.name | startswith("Stop") | not) and (.name | contains(" / Stop") | not)) | .name')
+          # Failed Jobs Section
           if [[ -n "$FAILED_JOBS" ]]; then
             echo "## ❌ Failed Jobs" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
             echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-            echo "$FAILED_JOBS" | while read -r name; do
-              echo "| ${name} | ❌ FAIL |" >> $GITHUB_STEP_SUMMARY
+            echo -e "$FAILED_JOBS" | while read -r fname; do
+              [[ -n "$fname" ]] && echo "| ${fname} | ❌ FAIL |" >> $GITHUB_STEP_SUMMARY
             done
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
