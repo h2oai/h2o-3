@@ -336,7 +336,16 @@ jobs:
           echo "| Job | Status | Duration |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|----------|" >> $GITHUB_STEP_SUMMARY
 
-          echo "$JOBS_JSON" | jq -r '.jobs[] | select(.name != "Summary" and .name != "Initialize") | "\(.name)|\(.conclusion // .status)|\(.started_at)|\(.completed_at)"' | while IFS='|' read -r name conclusion started completed; do
+          # Filter out infrastructure jobs (Summary, Initialize, Start/Stop EC2, Build)
+          echo "$JOBS_JSON" | jq -r '.jobs[] | select(
+            .name != "Summary" and
+            .name != "Initialize" and
+            .name != "Build" and
+            (.name | startswith("Start") | not) and
+            (.name | contains(" / Start") | not) and
+            (.name | startswith("Stop") | not) and
+            (.name | contains(" / Stop") | not)
+          ) | "\(.name)|\(.conclusion // .status)|\(.started_at)|\(.completed_at)"' | while IFS='|' read -r name conclusion started completed; do
             # Calculate duration
             if [[ -n "$started" && -n "$completed" && "$started" != "null" && "$completed" != "null" ]]; then
               start_sec=$(date -d "$started" +%s 2>/dev/null || echo "0")
@@ -361,8 +370,17 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Failed Jobs Section
-          FAILED_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.conclusion == "failure") | .name')
+          # Failed Jobs Section (exclude infrastructure jobs)
+          FAILED_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(
+            .conclusion == "failure" and
+            .name != "Summary" and
+            .name != "Initialize" and
+            .name != "Build" and
+            (.name | startswith("Start") | not) and
+            (.name | contains(" / Start") | not) and
+            (.name | startswith("Stop") | not) and
+            (.name | contains(" / Stop") | not)
+          ) | .name')
           if [[ -n "$FAILED_JOBS" ]]; then
             echo "## ❌ Failed Jobs" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
