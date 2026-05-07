@@ -148,7 +148,7 @@ concurrency:
 # PERMISSIONS
 # ==============================================================================
 permissions:
-  contents: write
+  contents: read
   id-token: write
   checks: write
   actions: read
@@ -171,24 +171,20 @@ jobs:
       run_java17: ${{ steps.config.outputs.run_java17 }}
 
     steps:
-      - name: Fetch H2O-3 Branches
-        id: fetch-branches
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          BRANCHES=$(gh api repos/h2oai/h2o-3/branches --paginate --jq '.[].name' | tr '\n' ' ')
-          echo "branches=${BRANCHES}" >> $GITHUB_OUTPUT
-
       - name: Determine Configuration
         id: config
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           BRANCH="${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}"
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
 
-          # Validate branch exists
-          if ! echo "${{ steps.fetch-branches.outputs.branches }}" | grep -qw "${BRANCH}"; then
-            echo "::warning::Branch '${BRANCH}' not found in h2o-3 repo. Build may fail."
+          # Validate branch exists - fail fast to avoid wasting 62 EC2 instances
+          if ! gh api "repos/h2oai/h2o-3/branches/${BRANCH}" >/dev/null 2>&1; then
+            echo "::error::Branch '${BRANCH}' does not exist in h2oai/h2o-3"
+            exit 1
           fi
+          echo "Branch '${BRANCH}' verified in h2oai/h2o-3"
 
           # Test categories (from checkbox inputs, default to true for schedule/push triggers)
           RUN_JAVA8="${{ inputs.run_java8 }}"
@@ -274,19 +270,124 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Generate JUnit Test Dashboard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ needs.init.outputs.branch }}
+          BUILD_SHA: ${{ needs.build.outputs.build_sha }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          JAVA8_RESULT: ${{ needs.java8.result }}
+          JAVA11_RESULT: ${{ needs.java11.result }}
+          JAVA17_RESULT: ${{ needs.java17.result }}
+        run: |
+          # Fetch all jobs from this workflow run
+          JOBS_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate)
 
-      - name: Generate Test Dashboard
-        uses: ./.github/actions/generate-junit-dashboard
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ needs.init.outputs.branch }}
-          build_sha: ${{ needs.build.outputs.build_sha }}
-          build_result: ${{ needs.build.result }}
-          java8_result: ${{ needs.java8.result }}
-          java11_result: ${{ needs.java11.result }}
-          java17_result: ${{ needs.java17.result }}
+          # Count failures
+          FAILED_COUNT=0
+          [[ "$BUILD_RESULT" == "failure" ]] && ((FAILED_COUNT++))
+          [[ "$JAVA8_RESULT" == "failure" ]] && ((FAILED_COUNT++))
+          [[ "$JAVA11_RESULT" == "failure" ]] && ((FAILED_COUNT++))
+          [[ "$JAVA17_RESULT" == "failure" ]] && ((FAILED_COUNT++))
+
+          # Status badge helper
+          status_badge() {
+            case "$1" in
+              success) echo "✅ PASS" ;;
+              failure) echo "❌ FAIL" ;;
+              cancelled) echo "⚪ CANCELLED" ;;
+              skipped) echo "⏭️ SKIPPED" ;;
+              *) echo "⚪ $1" ;;
+            esac
+          }
+
+          # Header
+          echo "# H2O-3 JUnit Test Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ $FAILED_COUNT -gt 0 ]]; then
+            echo "**${FAILED_COUNT} test suite(s) failed.** See details below." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**All test suites passed!**" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Build Information
+          echo "## Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${BUILD_SHA:-N/A}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Run | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered | \`${{ github.event_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | $(status_badge ${BUILD_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Test Results Summary
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Jobs | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 8 JUnit | 26 | $(status_badge ${JAVA8_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 11 JUnit | 18 | $(status_badge ${JAVA11_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 17 JUnit | 18 | $(status_badge ${JAVA17_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Detailed job results from API
+          echo "## Detailed Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|----------|" >> $GITHUB_STEP_SUMMARY
+
+          echo "$JOBS_JSON" | jq -r '.jobs[] | select(.name != "Summary" and .name != "Initialize") | "\(.name)|\(.conclusion // .status)|\(.started_at)|\(.completed_at)"' | while IFS='|' read -r name conclusion started completed; do
+            # Calculate duration
+            if [[ -n "$started" && -n "$completed" && "$started" != "null" && "$completed" != "null" ]]; then
+              start_sec=$(date -d "$started" +%s 2>/dev/null || echo "0")
+              end_sec=$(date -d "$completed" +%s 2>/dev/null || echo "0")
+              if [[ $start_sec -gt 0 && $end_sec -gt 0 ]]; then
+                duration_sec=$((end_sec - start_sec))
+                if [[ $duration_sec -ge 3600 ]]; then
+                  duration="$((duration_sec / 3600))h $((duration_sec % 3600 / 60))m"
+                elif [[ $duration_sec -ge 60 ]]; then
+                  duration="$((duration_sec / 60))m $((duration_sec % 60))s"
+                else
+                  duration="${duration_sec}s"
+                fi
+              else
+                duration="-"
+              fi
+            else
+              duration="-"
+            fi
+            echo "| ${name} | $(status_badge ${conclusion}) | ${duration} |" >> $GITHUB_STEP_SUMMARY
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Failed Jobs Section
+          FAILED_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.conclusion == "failure") | .name')
+          if [[ -n "$FAILED_JOBS" ]]; then
+            echo "## ❌ Failed Jobs" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "$FAILED_JOBS" | while read -r name; do
+              echo "| ${name} | ❌ FAIL |" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Summary Statistics
+          echo "## Summary Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Status | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | $(status_badge ${BUILD_RESULT:-skipped}) | ${BUILD_RESULT:-skipped} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 8 Tests | $(status_badge ${JAVA8_RESULT:-skipped}) | ${JAVA8_RESULT:-skipped} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 11 Tests | $(status_badge ${JAVA11_RESULT:-skipped}) | ${JAVA11_RESULT:-skipped} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 17 Tests | $(status_badge ${JAVA17_RESULT:-skipped}) | ${JAVA17_RESULT:-skipped} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Dashboard generated at $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" >> $GITHUB_STEP_SUMMARY
 
       - name: Set Final Status
         run: |

@@ -1040,6 +1040,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-xgb-full
+      instance_type: m5.8xlarge
     secrets: inherit
 
   java8-xgb:
