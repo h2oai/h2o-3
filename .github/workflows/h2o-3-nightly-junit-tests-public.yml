@@ -229,6 +229,7 @@ jobs:
     uses: ./.github/workflows/nightly-junit-java8-tests.yml
     with:
       h2o3_branch: ${{ needs.init.outputs.branch }}
+      skip_build: true
     secrets: inherit
 
   # NOTE: Java 11 and 17 disabled for testing phase
@@ -239,6 +240,7 @@ jobs:
   #   uses: ./.github/workflows/nightly-junit-java11-tests.yml
   #   with:
   #     h2o3_branch: ${{ needs.init.outputs.branch }}
+  #     skip_build: true
   #   secrets: inherit
 
   # java17:
@@ -248,6 +250,7 @@ jobs:
   #   uses: ./.github/workflows/nightly-junit-java17-tests.yml
   #   with:
   #     h2o3_branch: ${{ needs.init.outputs.branch }}
+  #     skip_build: true
   #   secrets: inherit
 
   # ============================================================================

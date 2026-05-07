@@ -33,6 +33,11 @@ on:
       h2o3_branch:
         required: true
         type: string
+      skip_build:
+        description: 'Skip build (use when called from orchestrator that already built)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,9 +58,11 @@ env:
 jobs:
   # ============================================================================
   # BUILD: Compile H2O-3 and create test packages
+  # (Skipped when called from orchestrator that already built)
   # ============================================================================
   build:
     name: Build
+    if: ${{ !inputs.skip_build }}
     uses: ./.github/workflows/nightly-build.yml
     with:
       h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
@@ -67,6 +74,7 @@ jobs:
   # ============================================================================
   start-java11-smoke:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Smoke
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -112,6 +120,7 @@ jobs:
   # ============================================================================
   start-java11-algos-glm:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos GLM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -157,6 +166,7 @@ jobs:
   # ============================================================================
   start-java11-algos-gbm:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos GBM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -202,6 +212,7 @@ jobs:
   # ============================================================================
   start-java11-algos-drf:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos DRF
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -247,6 +258,7 @@ jobs:
   # ============================================================================
   start-java11-algos-dl:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos DL
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -292,6 +304,7 @@ jobs:
   # ============================================================================
   start-java11-algos-gam:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos GAM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -337,6 +350,7 @@ jobs:
   # ============================================================================
   start-java11-algos-tree:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos Tree
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -382,6 +396,7 @@ jobs:
   # ============================================================================
   start-java11-algos-ensemble:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos Ensemble
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -427,6 +442,7 @@ jobs:
   # ============================================================================
   start-java11-algos-kmeans:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos KMeans
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -472,6 +488,7 @@ jobs:
   # ============================================================================
   start-java11-algos-rulefit:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos RuleFit
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -517,6 +534,7 @@ jobs:
   # ============================================================================
   start-java11-algos-pca:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos PCA
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -562,6 +580,7 @@ jobs:
   # ============================================================================
   start-java11-algos-glrm:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos GLRM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -607,6 +626,7 @@ jobs:
   # ============================================================================
   start-java11-algos-adaboost:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos AdaBoost
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -652,6 +672,7 @@ jobs:
   # ============================================================================
   start-java11-algos-modelsel:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos ModelSel
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -697,6 +718,7 @@ jobs:
   # ============================================================================
   start-java11-algos-generic:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos Generic
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -742,6 +764,7 @@ jobs:
   # ============================================================================
   start-java11-algos-grid:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos Grid
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -787,6 +810,7 @@ jobs:
   # ============================================================================
   start-java11-algos-misc:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Algos Misc
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -832,6 +856,7 @@ jobs:
   # ============================================================================
   start-java11-other:
     needs: build
+    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 11 Other
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
