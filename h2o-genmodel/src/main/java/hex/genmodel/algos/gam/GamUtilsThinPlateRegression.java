@@ -29,7 +29,7 @@ public class GamUtilsThinPlateRegression {
                 (chk[predInd] - knots[predInd][knotInd]);  // standardized
         sumSq += temp*temp;
       }
-      double distance = Math.pow(Math.sqrt(sumSq), 2*m-d);
+      double distance = intPow(Math.sqrt(sumSq), 2 * m - d);
       rowValues[knotInd] = constantTerms*distance;
       if (dEven && (distance != 0))
         rowValues[knotInd] *= Math.log(distance);
@@ -43,11 +43,35 @@ public class GamUtilsThinPlateRegression {
       int[] oneBasis = polyBasisList[colIndex];
       double val = 1.0;
       for (int predIndex = 0; predIndex < d; predIndex++) {
-        val *= standardizeGAM?
-                Math.pow((oneDataRow[predIndex]-gamColMean[predIndex]*oneOGamStd[predIndex]), oneBasis[predIndex]):
-                Math.pow(oneDataRow[predIndex], oneBasis[predIndex]);
+        val *= intPow(standardizeGAM ? (oneDataRow[predIndex] - gamColMean[predIndex] * oneOGamStd[predIndex]) 
+                                     : oneDataRow[predIndex],
+                      oneBasis[predIndex]);
       }
       onePolyRow[colIndex] = val;
+    }
+  }
+
+  /**
+   * Deterministic integer power using explicit multiplication.
+   * Avoids Math.pow JIT intrinsification which can produce different results
+   * for Math.pow(x, 2) vs x*x (differing by 1 ULP for some values of x).
+   * For our use-case the following is faster than StrictMath.pow() since GAM typically
+   * uses low-order polynomials.
+   *
+   * For more details see:
+   *     - https://bugs.openjdk.org/browse/JDK-8063086
+   *     - https://bugs.openjdk.org/browse/JDK-8189172
+   */
+  public static double intPow(double base, int exp) {
+    assert exp >= 0;
+    switch (exp) {
+      case 0: return 1.0;
+      case 1: return base;
+      case 2: return base * base;
+      default:
+        double result = base;
+        for (int i = 1; i < exp; i++) result *= base;
+        return result;
     }
   }
 }

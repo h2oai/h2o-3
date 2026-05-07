@@ -1,5 +1,6 @@
 package hex.gam.GamSplines;
 
+import hex.genmodel.algos.gam.GamUtilsThinPlateRegression;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -211,7 +212,7 @@ public class ThinPlateRegressionUtils {
         Integer[] oneBasis = polyBasisDegree.get(polyBasisInd);
         double polyBasisVal = 1.0;
         for (int predInd = 0; predInd < d; predInd++) {
-          polyBasisVal *= Math.pow(knotsDemean[predInd][rowInd], oneBasis[predInd]);
+          polyBasisVal *= GamUtilsThinPlateRegression.intPow(knotsDemean[predInd][rowInd], oneBasis[predInd]);
         }
         starT[rowInd][polyBasisInd] = polyBasisVal;
       }
