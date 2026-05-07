@@ -147,8 +147,12 @@ runs:
         categorize_job() {
           local name="$1"
 
-          # Skip infrastructure jobs
+          # Skip infrastructure jobs - both top-level and prefixed by caller workflow
+          # Handles: "Start - Java 8 Smoke" AND "Java 8 JUnit / Start - Java 8 Smoke"
           if [[ "$name" =~ ^(Start|Stop|Initialize|Summary|Build) ]] || \
+             [[ "$name" =~ "/ Start - " ]] || \
+             [[ "$name" =~ "/ Stop - " ]] || \
+             [[ "$name" =~ "/ Build" ]] || \
              [[ "$name" == "Initialize" ]] || \
              [[ "$name" == "Summary" ]]; then
             echo "skip"

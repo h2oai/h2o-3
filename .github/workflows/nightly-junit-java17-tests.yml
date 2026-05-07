@@ -16,24 +16,11 @@
 name: JUnit Tests - Java 17
 
 on:
-  workflow_dispatch:
-    inputs:
-      h2o3_branch:
-        description: 'H2O-3 branch to test (from h2oai/h2o-3 public repo)'
-        required: true
-        default: 'valenad-GH-16566-fix-junit'
-        type: string
-
   workflow_call:
     inputs:
       h2o3_branch:
         required: true
         type: string
-      skip_build:
-        description: 'Skip build (use when called from orchestrator that already built)'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -49,28 +36,12 @@ env:
   RETENTION: 14
   EFS_SMALLDATA: /home/ubuntu/smalldata
   EFS_BIGDATA: /home/ubuntu/bigdata
-  DEFAULT_BRANCH: 'valenad-GH-16566-fix-junit'
 
 jobs:
-  # ============================================================================
-  # BUILD: Compile H2O-3 and create test packages
-  # (Skipped when called from orchestrator that already built)
-  # ============================================================================
-  build:
-    name: Build
-    if: ${{ !inputs.skip_build }}
-    uses: ./.github/workflows/nightly-build.yml
-    with:
-      h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
-      repository: h2oai/h2o-3
-    secrets: inherit
-
   # ============================================================================
   # JAVA 17 SMOKE
   # ============================================================================
   start-java17-smoke:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Smoke
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -90,7 +61,7 @@ jobs:
           make_target: test-junit-17-smoke-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -115,8 +86,6 @@ jobs:
   # JAVA 17 - JUnit Other (includes core + misc for Java 17)
   # ============================================================================
   start-java17-other:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Other
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -137,7 +106,7 @@ jobs:
           make_target: test-junit-17-other-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -162,8 +131,6 @@ jobs:
   # JAVA 17 ALGOS - GLM
   # ============================================================================
   start-java17-algos-glm:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos GLM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -183,7 +150,7 @@ jobs:
           make_target: test-junit-17-algos-glm-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -208,8 +175,6 @@ jobs:
   # JAVA 17 ALGOS - GBM
   # ============================================================================
   start-java17-algos-gbm:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos GBM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -229,7 +194,7 @@ jobs:
           make_target: test-junit-17-algos-gbm-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -254,8 +219,6 @@ jobs:
   # JAVA 17 ALGOS - DRF
   # ============================================================================
   start-java17-algos-drf:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos DRF
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -275,7 +238,7 @@ jobs:
           make_target: test-junit-17-algos-drf-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -300,8 +263,6 @@ jobs:
   # JAVA 17 ALGOS - DeepLearning
   # ============================================================================
   start-java17-algos-dl:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos DL
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -321,7 +282,7 @@ jobs:
           make_target: test-junit-17-algos-deeplearning-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -346,8 +307,6 @@ jobs:
   # JAVA 17 ALGOS - GAM
   # ============================================================================
   start-java17-algos-gam:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos GAM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -367,7 +326,7 @@ jobs:
           make_target: test-junit-17-algos-gam-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -392,8 +351,6 @@ jobs:
   # JAVA 17 ALGOS - Tree+IsoFor+DT+Uplift
   # ============================================================================
   start-java17-algos-tree:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos Tree
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -413,7 +370,7 @@ jobs:
           make_target: test-junit-17-algos-tree-generic-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -438,8 +395,6 @@ jobs:
   # JAVA 17 ALGOS - Ensemble
   # ============================================================================
   start-java17-algos-ensemble:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos Ensemble
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -459,7 +414,7 @@ jobs:
           make_target: test-junit-17-algos-ensemble-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -484,8 +439,6 @@ jobs:
   # JAVA 17 ALGOS - KMeans
   # ============================================================================
   start-java17-algos-kmeans:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos KMeans
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -505,7 +458,7 @@ jobs:
           make_target: test-junit-17-algos-kmeans-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -530,8 +483,6 @@ jobs:
   # JAVA 17 ALGOS - RuleFit
   # ============================================================================
   start-java17-algos-rulefit:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos RuleFit
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -551,7 +502,7 @@ jobs:
           make_target: test-junit-17-algos-rulefit-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -576,8 +527,6 @@ jobs:
   # JAVA 17 ALGOS - PCA
   # ============================================================================
   start-java17-algos-pca:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos PCA
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -597,7 +546,7 @@ jobs:
           make_target: test-junit-17-algos-pca-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -622,8 +571,6 @@ jobs:
   # JAVA 17 ALGOS - GLRM
   # ============================================================================
   start-java17-algos-glrm:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos GLRM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -643,7 +590,7 @@ jobs:
           make_target: test-junit-17-algos-glrm-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -668,8 +615,6 @@ jobs:
   # JAVA 17 ALGOS - AdaBoost
   # ============================================================================
   start-java17-algos-adaboost:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos AdaBoost
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -689,7 +634,7 @@ jobs:
           make_target: test-junit-17-algos-adaboost-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -714,8 +659,6 @@ jobs:
   # JAVA 17 ALGOS - ModelSelection
   # ============================================================================
   start-java17-algos-modelsel:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos ModelSel
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -735,7 +678,7 @@ jobs:
           make_target: test-junit-17-algos-modelselection-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -760,8 +703,6 @@ jobs:
   # JAVA 17 ALGOS - Generic
   # ============================================================================
   start-java17-algos-generic:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos Generic
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -781,7 +722,7 @@ jobs:
           make_target: test-junit-17-algos-generic-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -806,8 +747,6 @@ jobs:
   # JAVA 17 ALGOS - Grid
   # ============================================================================
   start-java17-algos-grid:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos Grid
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -827,7 +766,7 @@ jobs:
           make_target: test-junit-17-algos-grid-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -852,8 +791,6 @@ jobs:
   # JAVA 17 ALGOS - Misc
   # ============================================================================
   start-java17-algos-misc:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 17 Algos Misc
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -873,7 +810,7 @@ jobs:
           make_target: test-junit-17-algos-misc-jenkins
           test_package: java
           java: "17"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}

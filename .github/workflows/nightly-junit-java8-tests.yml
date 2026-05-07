@@ -15,24 +15,11 @@
 name: JUnit Tests - Java 8
 
 on:
-  workflow_dispatch:
-    inputs:
-      h2o3_branch:
-        description: 'H2O-3 branch to test (from h2oai/h2o-3 public repo)'
-        required: true
-        default: 'valenad-GH-16566-fix-junit'
-        type: string
-
   workflow_call:
     inputs:
       h2o3_branch:
         required: true
         type: string
-      skip_build:
-        description: 'Skip build (use when called from orchestrator that already built)'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -48,28 +35,12 @@ env:
   RETENTION: 14
   EFS_SMALLDATA: /home/ubuntu/smalldata
   EFS_BIGDATA: /home/ubuntu/bigdata
-  DEFAULT_BRANCH: 'valenad-GH-16566-fix-junit'
 
 jobs:
-  # ============================================================================
-  # BUILD: Compile H2O-3 and create test packages
-  # (Skipped when called from orchestrator that already built)
-  # ============================================================================
-  build:
-    name: Build
-    if: ${{ !inputs.skip_build }}
-    uses: ./.github/workflows/nightly-build.yml
-    with:
-      h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
-      repository: h2oai/h2o-3
-    secrets: inherit
-
   # ============================================================================
   # JAVA 8 SMOKE
   # ============================================================================
   start-java8-smoke:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Smoke
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -89,7 +60,7 @@ jobs:
           make_target: test-junit-smoke-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -114,8 +85,6 @@ jobs:
   # JAVA 8 ALGOS - GLM
   # ============================================================================
   start-java8-algos-glm:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos GLM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -135,7 +104,7 @@ jobs:
           make_target: test-junit-algos-glm-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -160,8 +129,6 @@ jobs:
   # JAVA 8 ALGOS - GBM
   # ============================================================================
   start-java8-algos-gbm:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos GBM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -181,7 +148,7 @@ jobs:
           make_target: test-junit-algos-gbm-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -206,8 +173,6 @@ jobs:
   # JAVA 8 ALGOS - DRF
   # ============================================================================
   start-java8-algos-drf:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos DRF
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -227,7 +192,7 @@ jobs:
           make_target: test-junit-algos-drf-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -252,8 +217,6 @@ jobs:
   # JAVA 8 ALGOS - DeepLearning
   # ============================================================================
   start-java8-algos-dl:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos DL
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -273,7 +236,7 @@ jobs:
           make_target: test-junit-algos-deeplearning-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -298,8 +261,6 @@ jobs:
   # JAVA 8 ALGOS - GAM
   # ============================================================================
   start-java8-algos-gam:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos GAM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -319,7 +280,7 @@ jobs:
           make_target: test-junit-algos-gam-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -344,8 +305,6 @@ jobs:
   # JAVA 8 ALGOS - Tree+IsoFor+DT+Uplift
   # ============================================================================
   start-java8-algos-tree:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos Tree
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -365,7 +324,7 @@ jobs:
           make_target: test-junit-algos-tree-generic-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -390,8 +349,6 @@ jobs:
   # JAVA 8 ALGOS - Ensemble
   # ============================================================================
   start-java8-algos-ensemble:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos Ensemble
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -411,7 +368,7 @@ jobs:
           make_target: test-junit-algos-ensemble-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -436,8 +393,6 @@ jobs:
   # JAVA 8 ALGOS - KMeans
   # ============================================================================
   start-java8-algos-kmeans:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos KMeans
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -457,7 +412,7 @@ jobs:
           make_target: test-junit-algos-kmeans-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -482,8 +437,6 @@ jobs:
   # JAVA 8 ALGOS - RuleFit
   # ============================================================================
   start-java8-algos-rulefit:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos RuleFit
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -503,7 +456,7 @@ jobs:
           make_target: test-junit-algos-rulefit-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -528,8 +481,6 @@ jobs:
   # JAVA 8 ALGOS - PCA
   # ============================================================================
   start-java8-algos-pca:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos PCA
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -549,7 +500,7 @@ jobs:
           make_target: test-junit-algos-pca-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -574,8 +525,6 @@ jobs:
   # JAVA 8 ALGOS - GLRM
   # ============================================================================
   start-java8-algos-glrm:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos GLRM
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -595,7 +544,7 @@ jobs:
           make_target: test-junit-algos-glrm-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -620,8 +569,6 @@ jobs:
   # JAVA 8 ALGOS - AdaBoost
   # ============================================================================
   start-java8-algos-adaboost:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos AdaBoost
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -641,7 +588,7 @@ jobs:
           make_target: test-junit-algos-adaboost-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -666,8 +613,6 @@ jobs:
   # JAVA 8 ALGOS - ModelSelection
   # ============================================================================
   start-java8-algos-modelsel:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos ModelSel
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -687,7 +632,7 @@ jobs:
           make_target: test-junit-algos-modelselection-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -712,8 +657,6 @@ jobs:
   # JAVA 8 ALGOS - Generic
   # ============================================================================
   start-java8-algos-generic:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos Generic
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -733,7 +676,7 @@ jobs:
           make_target: test-junit-algos-generic-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -758,8 +701,6 @@ jobs:
   # JAVA 8 ALGOS - Grid
   # ============================================================================
   start-java8-algos-grid:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos Grid
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -779,7 +720,7 @@ jobs:
           make_target: test-junit-algos-grid-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -804,8 +745,6 @@ jobs:
   # JAVA 8 ALGOS - Misc
   # ============================================================================
   start-java8-algos-misc:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Algos Misc
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -825,7 +764,7 @@ jobs:
           make_target: test-junit-algos-misc-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -850,8 +789,6 @@ jobs:
   # JAVA 8 - Core JUnit
   # ============================================================================
   start-java8-core:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Core
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -871,7 +808,7 @@ jobs:
           make_target: test-junit-core-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -896,8 +833,6 @@ jobs:
   # JAVA 8 - Mojo Pipeline JUnit
   # ============================================================================
   start-java8-mojo:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Mojo
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -917,7 +852,7 @@ jobs:
           make_target: test-junit-mojo-pipeline-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -942,8 +877,6 @@ jobs:
   # JAVA 8 - AutoML JUnit
   # ============================================================================
   start-java8-automl:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 AutoML
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -963,7 +896,7 @@ jobs:
           make_target: test-junit-automl-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -988,8 +921,6 @@ jobs:
   # JAVA 8 - Clustering JUnit
   # ============================================================================
   start-java8-clustering:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Clustering
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1009,7 +940,7 @@ jobs:
           make_target: test-junit-clustering-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -1034,12 +965,11 @@ jobs:
   # JAVA 8 - XGBoost Multinode JUnit
   # ============================================================================
   start-java8-xgb:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 XGBoost
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-xgb-full
+      instance_type: m5.8xlarge
     secrets: inherit
 
   java8-xgb:
@@ -1055,7 +985,7 @@ jobs:
           make_target: test-junit-xgb-multi-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -1080,8 +1010,6 @@ jobs:
   # JAVA 8 - JUnit Other
   # ============================================================================
   start-java8-other:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Other
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1101,7 +1029,7 @@ jobs:
           make_target: test-junit-other-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -1126,8 +1054,6 @@ jobs:
   # JAVA 8 - Persist S3
   # ============================================================================
   start-java8-persist-s3:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Persist S3
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1147,7 +1073,7 @@ jobs:
           make_target: test-junit-persist-s3-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -1172,8 +1098,6 @@ jobs:
   # JAVA 8 - Persist GCS
   # ============================================================================
   start-java8-persist-gcs:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Persist GCS
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1193,7 +1117,7 @@ jobs:
           make_target: test-junit-persist-gcs-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
@@ -1218,8 +1142,6 @@ jobs:
   # JAVA 8 - Persist HTTP
   # ============================================================================
   start-java8-persist-http:
-    needs: build
-    if: ${{ !cancelled() && !failure() }}
     name: Start - Java 8 Persist HTTP
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
@@ -1239,7 +1161,7 @@ jobs:
           make_target: test-junit-persist-http-jenkins
           test_package: java
           java: "8"
-          h2o3_branch: ${{ inputs.h2o3_branch || 'valenad-GH-16566-fix-junit' }}
+          h2o3_branch: ${{ inputs.h2o3_branch }}
           mount_efs: "true"
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
