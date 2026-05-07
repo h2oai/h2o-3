@@ -100,13 +100,17 @@
 #
 # ==============================================================================
 
-run-name: "1.g  -  Public H2O-3 JUnit Tests [${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}]"
-name: 1.g  -  Public H2O-3 JUnit Tests
+run-name: "1.g  -  Public H2O-3 JUnit Nightly - Tests [${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}]"
+name: 1.g  -  Public H2O-3 JUnit Nightly - Tests
 
 # ==============================================================================
 # TRIGGERS
 # ==============================================================================
 on:
+  # Nightly schedule - runs at 2 AM UTC daily
+  schedule:
+    - cron: '0 2 * * *'
+
   push:
     branches:
       - 'rohan/create-junit-workflow'
@@ -129,18 +133,17 @@ on:
         type: boolean
         default: true
 
-      # NOTE: Java 11 and 17 disabled for testing phase
-      # run_java11:
-      #   description: 'Run Java 11 JUnit Tests (2 parallel jobs)'
-      #   required: false
-      #   type: boolean
-      #   default: false
+      run_java11:
+        description: 'Run Java 11 JUnit Tests (18 parallel jobs)'
+        required: false
+        type: boolean
+        default: true
 
-      # run_java17:
-      #   description: 'Run Java 17 JUnit Tests (18 parallel jobs)'
-      #   required: false
-      #   type: boolean
-      #   default: false
+      run_java17:
+        description: 'Run Java 17 JUnit Tests (18 parallel jobs)'
+        required: false
+        type: boolean
+        default: true
 
 # ==============================================================================
 # CONCURRENCY
@@ -172,6 +175,8 @@ jobs:
     outputs:
       branch: ${{ steps.config.outputs.branch }}
       run_java8: ${{ steps.config.outputs.run_java8 }}
+      run_java11: ${{ steps.config.outputs.run_java11 }}
+      run_java17: ${{ steps.config.outputs.run_java17 }}
 
     steps:
       - name: Fetch H2O-3 Branches
@@ -193,12 +198,25 @@ jobs:
             echo "::warning::Branch '${BRANCH}' not found in h2o-3 repo. Build may fail."
           fi
 
-          # Test categories (from checkbox inputs, default to true for push triggers)
+          # Test categories (from checkbox inputs, default to true for schedule/push triggers)
           RUN_JAVA8="${{ inputs.run_java8 }}"
+          RUN_JAVA11="${{ inputs.run_java11 }}"
+          RUN_JAVA17="${{ inputs.run_java17 }}"
+
+          # Default to true for schedule and push triggers (when inputs are empty)
           if [[ -z "$RUN_JAVA8" ]]; then
             RUN_JAVA8="true"
           fi
+          if [[ -z "$RUN_JAVA11" ]]; then
+            RUN_JAVA11="true"
+          fi
+          if [[ -z "$RUN_JAVA17" ]]; then
+            RUN_JAVA17="true"
+          fi
+
           echo "run_java8=${RUN_JAVA8}" >> $GITHUB_OUTPUT
+          echo "run_java11=${RUN_JAVA11}" >> $GITHUB_OUTPUT
+          echo "run_java17=${RUN_JAVA17}" >> $GITHUB_OUTPUT
 
           # Summary
           echo "## JUnit Test Configuration" >> $GITHUB_STEP_SUMMARY
@@ -206,6 +224,8 @@ jobs:
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${BRANCH}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Java 8 | ${RUN_JAVA8} (26 jobs) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 11 | ${RUN_JAVA11} (18 jobs) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 17 | ${RUN_JAVA17} (18 jobs) |" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # BUILD: Compile H2O-3 and create test packages
@@ -232,33 +252,32 @@ jobs:
       skip_build: true
     secrets: inherit
 
-  # NOTE: Java 11 and 17 disabled for testing phase
-  # java11:
-  #   name: Java 11 JUnit
-  #   needs: [init, build]
-  #   if: needs.init.outputs.run_java11 == 'true'
-  #   uses: ./.github/workflows/nightly-junit-java11-tests.yml
-  #   with:
-  #     h2o3_branch: ${{ needs.init.outputs.branch }}
-  #     skip_build: true
-  #   secrets: inherit
+  java11:
+    name: Java 11 JUnit
+    needs: [init, build]
+    if: needs.init.outputs.run_java11 == 'true'
+    uses: ./.github/workflows/nightly-junit-java11-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+      skip_build: true
+    secrets: inherit
 
-  # java17:
-  #   name: Java 17 JUnit
-  #   needs: [init, build]
-  #   if: needs.init.outputs.run_java17 == 'true'
-  #   uses: ./.github/workflows/nightly-junit-java17-tests.yml
-  #   with:
-  #     h2o3_branch: ${{ needs.init.outputs.branch }}
-  #     skip_build: true
-  #   secrets: inherit
+  java17:
+    name: Java 17 JUnit
+    needs: [init, build]
+    if: needs.init.outputs.run_java17 == 'true'
+    uses: ./.github/workflows/nightly-junit-java17-tests.yml
+    with:
+      h2o3_branch: ${{ needs.init.outputs.branch }}
+      skip_build: true
+    secrets: inherit
 
   # ============================================================================
   # SUMMARY: Generate test results dashboard
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, java8]
+    needs: [init, build, java8, java11, java17]
     if: always()
     runs-on: ubuntu-latest
 
@@ -270,7 +289,9 @@ jobs:
           echo "| Test Suite | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 8 JUnit | ${{ needs.java8.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 8 JUnit (26 jobs) | ${{ needs.java8.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 11 JUnit (18 jobs) | ${{ needs.java11.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 17 JUnit (18 jobs) | ${{ needs.java17.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** \`${{ needs.init.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Build SHA:** \`${{ needs.build.outputs.build_sha }}\`" >> $GITHUB_STEP_SUMMARY
@@ -280,6 +301,8 @@ jobs:
           # Determine overall status
           BUILD="${{ needs.build.result }}"
           JAVA8="${{ needs.java8.result }}"
+          JAVA11="${{ needs.java11.result }}"
+          JAVA17="${{ needs.java17.result }}"
 
           if [[ "$BUILD" == "failure" ]]; then
             echo "::error::Build failed"
@@ -288,6 +311,16 @@ jobs:
 
           if [[ "$JAVA8" == "failure" ]]; then
             echo "::error::Java 8 JUnit tests failed"
+            exit 1
+          fi
+
+          if [[ "$JAVA11" == "failure" ]]; then
+            echo "::error::Java 11 JUnit tests failed"
+            exit 1
+          fi
+
+          if [[ "$JAVA17" == "failure" ]]; then
+            echo "::error::Java 17 JUnit tests failed"
             exit 1
           fi
 
