@@ -319,6 +319,68 @@ jobs:
             return 1
           }
 
+          # Get Java version category from job name
+          get_java_version() {
+            local name="$1"
+            if [[ "$name" == *"Java 8"* ]] || [[ "$name" == "Java 8 Tests /"* ]]; then
+              echo "java8"
+            elif [[ "$name" == *"Java 11"* ]] || [[ "$name" == "Java 11 Tests /"* ]]; then
+              echo "java11"
+            elif [[ "$name" == *"Java 17"* ]] || [[ "$name" == "Java 17 Tests /"* ]]; then
+              echo "java17"
+            else
+              echo "other"
+            fi
+          }
+
+          # Initialize counters for each Java version
+          java8_passed=0
+          java8_failed=0
+          java8_total=0
+          java11_passed=0
+          java11_failed=0
+          java11_total=0
+          java17_passed=0
+          java17_failed=0
+          java17_total=0
+
+          # First pass: count passed/failed for each Java version
+          while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+
+            name=$(echo "$line" | jq -r '.name // empty')
+            [[ -z "$name" ]] && continue
+
+            # Skip infrastructure jobs
+            is_infra_job "$name" && continue
+
+            conclusion=$(echo "$line" | jq -r '.conclusion // "pending"')
+            result="$conclusion"
+            [[ "$result" == "null" || -z "$result" ]] && result="pending"
+
+            java_ver=$(get_java_version "$name")
+
+            case "$java_ver" in
+              java8)
+                java8_total=$((java8_total + 1))
+                [[ "$result" == "success" ]] && java8_passed=$((java8_passed + 1))
+                [[ "$result" == "failure" ]] && java8_failed=$((java8_failed + 1))
+                ;;
+              java11)
+                java11_total=$((java11_total + 1))
+                [[ "$result" == "success" ]] && java11_passed=$((java11_passed + 1))
+                [[ "$result" == "failure" ]] && java11_failed=$((java11_failed + 1))
+                ;;
+              java17)
+                java17_total=$((java17_total + 1))
+                [[ "$result" == "success" ]] && java17_passed=$((java17_passed + 1))
+                [[ "$result" == "failure" ]] && java17_failed=$((java17_failed + 1))
+                ;;
+            esac
+          done < /tmp/jobs.json
+
+          echo "Counted jobs - Java8: ${java8_total} (${java8_passed}/${java8_failed}), Java11: ${java11_total} (${java11_passed}/${java11_failed}), Java17: ${java17_total} (${java17_passed}/${java17_failed})"
+
           # Header
           echo "# H2O-3 JUnit Test Dashboard" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -344,11 +406,11 @@ jobs:
           # Test Results Summary
           echo "## Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Suite | Jobs | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 8 JUnit | 26 | $(status_badge ${JAVA8_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 11 JUnit | 18 | $(status_badge ${JAVA11_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java 17 JUnit | 18 | $(status_badge ${JAVA17_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Jobs | Passed | Failed | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|:----:|:------:|:------:|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 8 JUnit | ${java8_total} | ${java8_passed} | ${java8_failed} | $(status_badge ${JAVA8_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 11 JUnit | ${java11_total} | ${java11_passed} | ${java11_failed} | $(status_badge ${JAVA11_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java 17 JUnit | ${java17_total} | ${java17_passed} | ${java17_failed} | $(status_badge ${JAVA17_RESULT:-skipped}) |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Detailed job results from API
