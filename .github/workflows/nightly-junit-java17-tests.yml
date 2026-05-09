@@ -9,12 +9,7 @@
 #   - Smoke, Other, Algos (16 packages)
 #
 # ARCHITECTURE:
-#   EC2 runners start in 5 waves to avoid GitHub API rate limiting:
-#   - Wave 1a: Smoke, Other, GLM (3 runners)
-#   - Wave 1b: GBM, DRF (2 runners) - after Wave 1a
-#   - Wave 2: DL, GAM, Tree, Ensemble, KMeans (5 runners) - after Wave 1b
-#   - Wave 3: RuleFit, PCA, GLRM, AdaBoost (4 runners) - after Wave 2
-#   - Wave 4: ModelSel, Generic, Grid, Misc (4 runners) - after Wave 3
+#   All EC2 runners start in parallel (stagger delay handles rate limiting)
 #
 # NOTE: Test separation done on GitHub branch in h2oai/h2o-3
 # NOTE: No push trigger - run manually via workflow_dispatch or workflow_call
