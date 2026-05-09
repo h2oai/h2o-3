@@ -1,0 +1,496 @@
+# =============================================================================
+# Send JUnit Slack Alert Composite Action
+# =============================================================================
+# Sends standardized Slack notifications for JUnit test results.
+# Aggregates test data across Java versions and sends a consolidated
+# alert using Slack Block Kit for rich, consistent formatting.
+#
+# Features:
+#   - Consolidated test summary across Java 8, 11, and 17
+#   - Status indicators with emoji (PASS, FAIL, SKIP)
+#   - Failed jobs breakdown with direct links
+#   - Scan mode detection (Schedule, On-Demand)
+#   - Workflow run link for easy navigation
+#
+# Usage:
+#   - uses: ./.github/actions/send-junit-slack-alert
+#     with:
+#       channel: "#h2o-3-alerts"
+#       branch: "master"
+#       build_result: "success"
+#       java8_result: "failure"
+#       java8_passed: "24"
+#       java8_failed: "2"
+#       java11_result: "success"
+#       java11_passed: "18"
+#       java11_failed: "0"
+#       java17_result: "success"
+#       java17_passed: "18"
+#       java17_failed: "0"
+#       failed_jobs_json: '[{"name": "Java 8 Smoke", "url": "..."}]'
+#       slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+# =============================================================================
+
+name: "Send JUnit Slack Alert"
+description: "Send standardized Slack notification for JUnit test results"
+
+inputs:
+  channel:
+    description: "Slack channel to send the alert to (e.g., #h2o-3-alerts)"
+    required: true
+
+  branch:
+    description: "H2O-3 branch tested"
+    required: true
+
+  build_sha:
+    description: "H2O-3 commit SHA"
+    required: false
+    default: ""
+
+  build_result:
+    description: "Build job result (success/failure/skipped)"
+    required: true
+
+  java8_result:
+    description: "Java 8 test suite result"
+    required: false
+    default: "skipped"
+
+  java8_passed:
+    description: "Number of passed Java 8 jobs"
+    required: false
+    default: "0"
+
+  java8_failed:
+    description: "Number of failed Java 8 jobs"
+    required: false
+    default: "0"
+
+  java8_total:
+    description: "Total number of Java 8 jobs"
+    required: false
+    default: "0"
+
+  java11_result:
+    description: "Java 11 test suite result"
+    required: false
+    default: "skipped"
+
+  java11_passed:
+    description: "Number of passed Java 11 jobs"
+    required: false
+    default: "0"
+
+  java11_failed:
+    description: "Number of failed Java 11 jobs"
+    required: false
+    default: "0"
+
+  java11_total:
+    description: "Total number of Java 11 jobs"
+    required: false
+    default: "0"
+
+  java17_result:
+    description: "Java 17 test suite result"
+    required: false
+    default: "skipped"
+
+  java17_passed:
+    description: "Number of passed Java 17 jobs"
+    required: false
+    default: "0"
+
+  java17_failed:
+    description: "Number of failed Java 17 jobs"
+    required: false
+    default: "0"
+
+  java17_total:
+    description: "Total number of Java 17 jobs"
+    required: false
+    default: "0"
+
+  failed_jobs_json:
+    description: "JSON array of failed jobs with name and url"
+    required: false
+    default: "[]"
+
+  workflow-url:
+    description: "URL to the workflow run"
+    required: true
+
+  slack-token:
+    description: "Slack Bot Token for authentication"
+    required: true
+
+  event-name:
+    description: "GitHub event name for mode detection (schedule, workflow_dispatch)"
+    required: false
+    default: "workflow_dispatch"
+
+  failure-mention:
+    description: "Slack user/subteam ID to mention on failures (e.g., U01CXHW99J7 or S07C7EXQKN2)"
+    required: false
+    default: ""
+
+  send-on-success:
+    description: "Whether to send notification when all tests pass"
+    required: false
+    default: "true"
+
+  dry-run:
+    description: "If true, build payload but don't send (for testing)"
+    required: false
+    default: "false"
+
+outputs:
+  sent:
+    description: "Whether the notification was sent (true/false)"
+    value: ${{ steps.finalize.outputs.sent }}
+
+  status:
+    description: "Overall status (PASS, FAIL)"
+    value: ${{ steps.build.outputs.status }}
+
+  payload-file:
+    description: "Path to the generated Slack payload JSON file"
+    value: ${{ steps.build.outputs.payload_file }}
+
+runs:
+  using: "composite"
+  steps:
+    # =========================================================================
+    # Step 1: Validate inputs
+    # =========================================================================
+    - name: Validate inputs
+      shell: bash
+      env:
+        CHANNEL: ${{ inputs.channel }}
+        WORKFLOW_URL: ${{ inputs.workflow-url }}
+      run: |
+        ERRORS=0
+
+        if [[ -z "${CHANNEL}" ]]; then
+          echo "::error::Input 'channel' is required"
+          ERRORS=$((ERRORS + 1))
+        elif [[ ! "${CHANNEL}" =~ ^# ]]; then
+          echo "::error::Input 'channel' must start with # (got: ${CHANNEL})"
+          ERRORS=$((ERRORS + 1))
+        fi
+
+        if [[ -z "${WORKFLOW_URL}" ]]; then
+          echo "::error::Input 'workflow-url' is required"
+          ERRORS=$((ERRORS + 1))
+        fi
+
+        if [[ ${ERRORS} -gt 0 ]]; then
+          echo "::error::Input validation failed with ${ERRORS} error(s)"
+          exit 1
+        fi
+
+        echo "All inputs validated successfully"
+
+    # =========================================================================
+    # Step 2: Build Slack payload
+    # =========================================================================
+    - name: Build Slack payload
+      id: build
+      shell: bash
+      env:
+        BRANCH: ${{ inputs.branch }}
+        BUILD_SHA: ${{ inputs.build_sha }}
+        BUILD_RESULT: ${{ inputs.build_result }}
+        JAVA8_RESULT: ${{ inputs.java8_result }}
+        JAVA8_PASSED: ${{ inputs.java8_passed }}
+        JAVA8_FAILED: ${{ inputs.java8_failed }}
+        JAVA8_TOTAL: ${{ inputs.java8_total }}
+        JAVA11_RESULT: ${{ inputs.java11_result }}
+        JAVA11_PASSED: ${{ inputs.java11_passed }}
+        JAVA11_FAILED: ${{ inputs.java11_failed }}
+        JAVA11_TOTAL: ${{ inputs.java11_total }}
+        JAVA17_RESULT: ${{ inputs.java17_result }}
+        JAVA17_PASSED: ${{ inputs.java17_passed }}
+        JAVA17_FAILED: ${{ inputs.java17_failed }}
+        JAVA17_TOTAL: ${{ inputs.java17_total }}
+        FAILED_JOBS_JSON: ${{ inputs.failed_jobs_json }}
+        WORKFLOW_URL: ${{ inputs.workflow-url }}
+        EVENT_NAME: ${{ inputs.event-name }}
+        FAILURE_MENTION: ${{ inputs.failure-mention }}
+        SEND_ON_SUCCESS: ${{ inputs.send-on-success }}
+      run: |
+        python3 << 'PYTHON_SCRIPT'
+        import json
+        import os
+        from datetime import datetime, timezone
+
+        # Status emoji mapping
+        STATUS_EMOJI = {
+            "success": "✅",
+            "failure": "❌",
+            "skipped": "⏭️",
+            "cancelled": "⚪",
+        }
+
+        def get_scan_mode(event_name):
+            """Convert GitHub event name to human-readable mode."""
+            modes = {
+                "schedule": "Nightly Schedule",
+                "workflow_dispatch": "Manual Trigger",
+                "push": "Push",
+                "pull_request": "Pull Request",
+            }
+            return modes.get(event_name, event_name.title() if event_name else "Unknown")
+
+        # Load inputs from environment
+        branch = os.environ.get("BRANCH", "unknown")
+        build_sha = os.environ.get("BUILD_SHA", "")
+        build_result = os.environ.get("BUILD_RESULT", "skipped")
+        workflow_url = os.environ.get("WORKFLOW_URL", "")
+        event_name = os.environ.get("EVENT_NAME", "workflow_dispatch")
+        failure_mention = os.environ.get("FAILURE_MENTION", "")
+        send_on_success = os.environ.get("SEND_ON_SUCCESS", "true").lower() == "true"
+
+        # Parse Java results
+        java_suites = []
+        for version in ["8", "11", "17"]:
+            result = os.environ.get(f"JAVA{version}_RESULT", "skipped")
+            passed = int(os.environ.get(f"JAVA{version}_PASSED", "0"))
+            failed = int(os.environ.get(f"JAVA{version}_FAILED", "0"))
+            total = int(os.environ.get(f"JAVA{version}_TOTAL", "0"))
+
+            # Calculate total if not provided
+            if total == 0 and (passed > 0 or failed > 0):
+                total = passed + failed
+
+            java_suites.append({
+                "version": version,
+                "result": result,
+                "passed": passed,
+                "failed": failed,
+                "total": total,
+            })
+
+        # Parse failed jobs
+        failed_jobs_json = os.environ.get("FAILED_JOBS_JSON", "[]")
+        try:
+            failed_jobs = json.loads(failed_jobs_json)
+        except json.JSONDecodeError:
+            failed_jobs = []
+
+        # Calculate totals
+        total_passed = sum(s["passed"] for s in java_suites)
+        total_failed = sum(s["failed"] for s in java_suites)
+        total_jobs = sum(s["total"] for s in java_suites)
+
+        # Determine overall status
+        has_failure = (
+            build_result == "failure" or
+            any(s["result"] == "failure" for s in java_suites)
+        )
+        overall_status = "FAIL" if has_failure else "PASS"
+
+        # Check if we should send
+        should_send = True
+        if not has_failure and not send_on_success:
+            should_send = False
+            print("Skipping notification: All tests passed and send-on-success is false")
+
+        # Write outputs
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"status={overall_status}\n")
+            f.write(f"should_send={str(should_send).lower()}\n")
+
+        if not should_send:
+            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                f.write("payload_file=\n")
+            exit(0)
+
+        scan_mode = get_scan_mode(event_name)
+        scan_date = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+        # Build header text based on status
+        if has_failure:
+            header_emoji = "🔴"
+            header_text = "H2O-3 JUnit Tests - FAILED"
+        else:
+            header_emoji = "✅"
+            header_text = "H2O-3 JUnit Tests - PASSED"
+
+        # Build blocks array
+        blocks = [
+            # Header
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{header_emoji} {header_text}"
+                }
+            }
+        ]
+
+        # Optional mention on failures
+        if has_failure and failure_mention:
+            # Auto-detect mention type from ID prefix
+            if failure_mention.startswith("S"):
+                mention_text = f"<!subteam^{failure_mention}>"
+            else:
+                mention_text = f"<@{failure_mention}>"
+
+            blocks.append({
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": f"CC: {mention_text}"}
+                ]
+            })
+
+        # Build info fields
+        blocks.append({
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f"*Branch:*\n`{branch}`"},
+                {"type": "mrkdwn", "text": f"*Mode:*\n{scan_mode}"},
+                {"type": "mrkdwn", "text": f"*Date:*\n{scan_date}"},
+                {"type": "mrkdwn", "text": f"*Build:*\n{STATUS_EMOJI.get(build_result, '❓')} {build_result.title()}"},
+            ]
+        })
+
+        if build_sha:
+            blocks.append({
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": f"Commit: <https://github.com/h2oai/h2o-3/commit/{build_sha}|`{build_sha[:8]}`>"}
+                ]
+            })
+
+        blocks.append({"type": "divider"})
+
+        # Test Results Summary Table
+        blocks.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*Test Results Summary*"
+            }
+        })
+
+        # Build table rows
+        table_rows = [
+            # Header row
+            [
+                {"type": "raw_text", "text": "Test Suite"},
+                {"type": "raw_text", "text": "Status"},
+                {"type": "raw_text", "text": "Passed"},
+                {"type": "raw_text", "text": "Failed"},
+                {"type": "raw_text", "text": "Total"},
+            ]
+        ]
+
+        for suite in java_suites:
+            status_emoji = STATUS_EMOJI.get(suite["result"], "❓")
+            table_rows.append([
+                {"type": "raw_text", "text": f"Java {suite['version']}"},
+                {"type": "raw_text", "text": status_emoji},
+                {"type": "raw_text", "text": str(suite["passed"])},
+                {"type": "raw_text", "text": str(suite["failed"])},
+                {"type": "raw_text", "text": str(suite["total"])},
+            ])
+
+        # Total row
+        overall_emoji = "❌" if has_failure else "✅"
+        table_rows.append([
+            {"type": "raw_text", "text": "Total"},
+            {"type": "raw_text", "text": overall_emoji},
+            {"type": "raw_text", "text": str(total_passed)},
+            {"type": "raw_text", "text": str(total_failed)},
+            {"type": "raw_text", "text": str(total_jobs)},
+        ])
+
+        blocks.append({
+            "type": "table",
+            "column_settings": [
+                {"align": "left"},
+                {"align": "center"},
+                {"align": "center"},
+                {"align": "center"},
+                {"align": "center"},
+            ],
+            "rows": table_rows
+        })
+
+        blocks.append({"type": "divider"})
+
+        # Workflow link
+        blocks.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"<{workflow_url}|View Workflow Run>"
+            }
+        })
+
+        # Footer
+        blocks.append({
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": "H2O-3 JUnit Nightly Pipeline | GitHub Actions"}
+            ]
+        })
+
+        # Build complete payload
+        payload = {
+            "text": f"{header_emoji} {header_text}",
+            "blocks": blocks
+        }
+
+        # Write payload to file
+        payload_file = "/tmp/junit_slack_payload.json"
+        with open(payload_file, "w") as f:
+            json.dump(payload, f, indent=2)
+
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"payload_file={payload_file}\n")
+
+        print(f"\nSlack payload built successfully:")
+        print(f"  Branch: {branch}")
+        print(f"  Mode: {scan_mode}")
+        print(f"  Status: {overall_status}")
+        print(f"  Total Passed: {total_passed}")
+        print(f"  Total Failed: {total_failed}")
+        print(f"  Failed Jobs: {len(failed_jobs)}")
+        print(f"  Payload file: {payload_file}")
+        PYTHON_SCRIPT
+
+    # =========================================================================
+    # Step 3: Send Slack notification
+    # =========================================================================
+    - name: Send Slack notification
+      id: send
+      if: steps.build.outputs.should_send == 'true' && inputs.dry-run != 'true'
+      uses: slackapi/slack-github-action@v1.27.0
+      with:
+        channel-id: ${{ inputs.channel }}
+        payload-file-path: ${{ steps.build.outputs.payload_file }}
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
+
+    # =========================================================================
+    # Step 4: Set final outputs
+    # =========================================================================
+    - name: Set final outputs
+      id: finalize
+      shell: bash
+      run: |
+        if [[ "${{ steps.build.outputs.should_send }}" == "true" && "${{ inputs.dry-run }}" != "true" ]]; then
+          echo "sent=true" >> $GITHUB_OUTPUT
+          echo "Slack notification sent successfully to ${{ inputs.channel }}"
+        else
+          echo "sent=false" >> $GITHUB_OUTPUT
+          if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+            echo "Dry run mode - notification not sent"
+            echo "Payload file: ${{ steps.build.outputs.payload_file }}"
+          else
+            echo "Notification skipped based on configuration"
+          fi
+        fi
