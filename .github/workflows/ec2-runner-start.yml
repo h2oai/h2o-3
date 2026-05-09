@@ -16,9 +16,11 @@
 #   - Attempt 5: After 240-480s delay (final attempt)
 #
 # CLEANUP:
-#   - Pre-cleanup: Terminates any orphaned instances with same name tag before starting
+#   - Instance names include run_id to prevent cross-branch interference
+#   - Pre-cleanup: Terminates orphaned instances from THIS workflow run before starting
 #   - Inter-attempt: Terminates tracked instances from failed attempts before retry
 #   - Final cleanup: If all attempts fail, terminates any untracked orphaned instances
+#   - NOTE: Old orphans from crashed runs require manual cleanup or scheduled Lambda
 #
 # RATE LIMITING:
 #   - Stagger delay of 60-180s helps spread out GitHub API requests
@@ -111,10 +113,12 @@ jobs:
 
       - name: Pre-cleanup Orphaned Instances
         run: |
-          # Terminate any orphaned instances with the same name tag from previous failed runs
-          echo "Checking for orphaned instances with name: gha-runner-${{ inputs.name }}"
+          # Terminate any orphaned instances from THIS workflow run (same run_id)
+          # This prevents cleaning up instances from other branches running simultaneously
+          INSTANCE_NAME="gha-runner-${{ inputs.name }}-${{ github.run_id }}"
+          echo "Checking for orphaned instances with name: $INSTANCE_NAME"
           INSTANCE_IDS=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=gha-runner-${{ inputs.name }}" \
+            --filters "Name=tag:Name,Values=$INSTANCE_NAME" \
                       "Name=instance-state-name,Values=pending,running" \
             --query "Reservations[].Instances[].InstanceId" \
             --output text)
@@ -142,7 +146,7 @@ jobs:
           security-group-id: ${{ env.SECURITY_GROUP }}
           aws-resource-tags: >
             [
-              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
               {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
@@ -174,7 +178,7 @@ jobs:
           security-group-id: ${{ env.SECURITY_GROUP }}
           aws-resource-tags: >
             [
-              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
               {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
@@ -206,7 +210,7 @@ jobs:
           security-group-id: ${{ env.SECURITY_GROUP }}
           aws-resource-tags: >
             [
-              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
               {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
@@ -238,7 +242,7 @@ jobs:
           security-group-id: ${{ env.SECURITY_GROUP }}
           aws-resource-tags: >
             [
-              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
               {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
@@ -269,7 +273,7 @@ jobs:
           security-group-id: ${{ env.SECURITY_GROUP }}
           aws-resource-tags: >
             [
-              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
               {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
@@ -308,10 +312,11 @@ jobs:
       - name: Final Cleanup on Total Failure
         if: steps.final.outputs.all_failed == 'true'
         run: |
-          # Clean up any orphaned instances that were created but not tracked
-          echo "All attempts failed. Cleaning up any orphaned instances with name: gha-runner-${{ inputs.name }}"
+          # Clean up any orphaned instances from THIS workflow run
+          INSTANCE_NAME="gha-runner-${{ inputs.name }}-${{ github.run_id }}"
+          echo "All attempts failed. Cleaning up any orphaned instances with name: $INSTANCE_NAME"
           INSTANCE_IDS=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=gha-runner-${{ inputs.name }}" \
+            --filters "Name=tag:Name,Values=$INSTANCE_NAME" \
                       "Name=instance-state-name,Values=pending,running" \
             --query "Reservations[].Instances[].InstanceId" \
             --output text)
