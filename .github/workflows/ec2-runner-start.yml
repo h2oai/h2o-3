@@ -284,23 +284,25 @@ jobs:
       - name: Set Outputs
         id: final
         run: |
-          if [ -n "${{ steps.start1.outputs.label }}" ]; then
+          # Check both outcome AND label to ensure we pick a successful attempt
+          # Failed attempts may still have label output if EC2 started but runner registration failed
+          if [ "${{ steps.start1.outcome }}" == "success" ] && [ -n "${{ steps.start1.outputs.label }}" ]; then
             echo "label=${{ steps.start1.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start1.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
             echo "EC2 started on attempt 1"
-          elif [ -n "${{ steps.start2.outputs.label }}" ]; then
+          elif [ "${{ steps.start2.outcome }}" == "success" ] && [ -n "${{ steps.start2.outputs.label }}" ]; then
             echo "label=${{ steps.start2.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start2.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
             echo "EC2 started on attempt 2"
-          elif [ -n "${{ steps.start3.outputs.label }}" ]; then
+          elif [ "${{ steps.start3.outcome }}" == "success" ] && [ -n "${{ steps.start3.outputs.label }}" ]; then
             echo "label=${{ steps.start3.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start3.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
             echo "EC2 started on attempt 3"
-          elif [ -n "${{ steps.start4.outputs.label }}" ]; then
+          elif [ "${{ steps.start4.outcome }}" == "success" ] && [ -n "${{ steps.start4.outputs.label }}" ]; then
             echo "label=${{ steps.start4.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start4.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
             echo "EC2 started on attempt 4"
-          elif [ -n "${{ steps.start5.outputs.label }}" ]; then
+          elif [ "${{ steps.start5.outcome }}" == "success" ] && [ -n "${{ steps.start5.outputs.label }}" ]; then
             echo "label=${{ steps.start5.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start5.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
             echo "EC2 started on attempt 5"
