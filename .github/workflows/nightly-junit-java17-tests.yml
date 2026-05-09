@@ -179,10 +179,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - GBM
+  # JAVA 17 ALGOS - GBM (Wave 1b - after Smoke, Other, GLM)
   # ============================================================================
   start-java17-algos-gbm:
     name: Start - Java 17 Algos GBM
+    needs: [start-java17-smoke, start-java17-other, start-java17-algos-glm]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-gbm
@@ -223,10 +224,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - DRF
+  # JAVA 17 ALGOS - DRF (Wave 1b - after Smoke, Other, GLM)
   # ============================================================================
   start-java17-algos-drf:
     name: Start - Java 17 Algos DRF
+    needs: [start-java17-smoke, start-java17-other, start-java17-algos-glm]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-drf
