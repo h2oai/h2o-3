@@ -537,10 +537,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - PCA
+  # JAVA 17 ALGOS - PCA (Wave 3)
   # ============================================================================
   start-java17-algos-pca:
     name: Start - Java 17 Algos PCA
+    needs: [start-java17-algos-dl, start-java17-algos-gam, start-java17-algos-tree, start-java17-algos-ensemble, start-java17-algos-kmeans]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-pca
@@ -581,10 +582,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - GLRM
+  # JAVA 17 ALGOS - GLRM (Wave 3)
   # ============================================================================
   start-java17-algos-glrm:
     name: Start - Java 17 Algos GLRM
+    needs: [start-java17-algos-dl, start-java17-algos-gam, start-java17-algos-tree, start-java17-algos-ensemble, start-java17-algos-kmeans]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-glrm
@@ -625,10 +627,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - AdaBoost
+  # JAVA 17 ALGOS - AdaBoost (Wave 3)
   # ============================================================================
   start-java17-algos-adaboost:
     name: Start - Java 17 Algos AdaBoost
+    needs: [start-java17-algos-dl, start-java17-algos-gam, start-java17-algos-tree, start-java17-algos-ensemble, start-java17-algos-kmeans]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-adaboost
@@ -669,10 +672,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - ModelSelection
+  # JAVA 17 ALGOS - ModelSelection (Wave 4)
   # ============================================================================
   start-java17-algos-modelsel:
     name: Start - Java 17 Algos ModelSel
+    needs: [start-java17-algos-rulefit, start-java17-algos-pca, start-java17-algos-glrm, start-java17-algos-adaboost]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-modelsel
@@ -713,10 +717,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - Generic
+  # JAVA 17 ALGOS - Generic (Wave 4)
   # ============================================================================
   start-java17-algos-generic:
     name: Start - Java 17 Algos Generic
+    needs: [start-java17-algos-rulefit, start-java17-algos-pca, start-java17-algos-glrm, start-java17-algos-adaboost]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-generic
@@ -757,10 +762,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - Grid
+  # JAVA 17 ALGOS - Grid (Wave 4)
   # ============================================================================
   start-java17-algos-grid:
     name: Start - Java 17 Algos Grid
+    needs: [start-java17-algos-rulefit, start-java17-algos-pca, start-java17-algos-glrm, start-java17-algos-adaboost]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-grid
@@ -801,10 +807,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - Misc
+  # JAVA 17 ALGOS - Misc (Wave 4)
   # ============================================================================
   start-java17-algos-misc:
     name: Start - Java 17 Algos Misc
+    needs: [start-java17-algos-rulefit, start-java17-algos-pca, start-java17-algos-glrm, start-java17-algos-adaboost]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-misc
