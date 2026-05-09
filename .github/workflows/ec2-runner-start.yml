@@ -21,7 +21,8 @@
 #   - Final cleanup: If all attempts fail, terminates any untracked orphaned instances
 #
 # RATE LIMITING:
-#   - Stagger delay of 60-180s helps avoid GitHub API rate limiting
+#   - Stagger delay of 60-180s helps spread out GitHub API requests
+#   - Pre-check of GitHub API rate limit with automatic wait if quota < 100
 #   - GitHub rate limit errors occur when too many runners request tokens simultaneously
 #
 # OUTPUTS:
@@ -86,6 +87,27 @@ jobs:
           DELAY=$((RANDOM % 120 + 60))
           echo "Waiting ${DELAY}s to stagger API calls..."
           sleep $DELAY
+
+      - name: Check GitHub API Rate Limit
+        env:
+          GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
+        run: |
+          # Check rate limit and wait if nearly exhausted
+          RATE_INFO=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit)
+          REMAINING=$(echo "$RATE_INFO" | jq -r '.resources.core.remaining')
+          RESET_TIME=$(echo "$RATE_INFO" | jq -r '.resources.core.reset')
+
+          echo "GitHub API rate limit remaining: $REMAINING"
+
+          # If remaining requests < 100, wait until reset
+          if [ "$REMAINING" -lt 100 ]; then
+            CURRENT_TIME=$(date +%s)
+            WAIT_TIME=$((RESET_TIME - CURRENT_TIME + 10))
+            if [ "$WAIT_TIME" -gt 0 ] && [ "$WAIT_TIME" -lt 3600 ]; then
+              echo "Rate limit nearly exhausted. Waiting ${WAIT_TIME}s for reset..."
+              sleep $WAIT_TIME
+            fi
+          fi
 
       - name: Pre-cleanup Orphaned Instances
         run: |
