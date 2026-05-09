@@ -9,9 +9,10 @@
 #   - Smoke, Other, Algos (16 packages)
 #
 # ARCHITECTURE:
-#   EC2 runners start in 4 waves to avoid GitHub API rate limiting:
-#   - Wave 1: Smoke, Other, GLM, GBM, DRF (5 runners)
-#   - Wave 2: DL, GAM, Tree, Ensemble, KMeans (5 runners) - after Wave 1
+#   EC2 runners start in 5 waves to avoid GitHub API rate limiting:
+#   - Wave 1a: Smoke, Other, GLM (3 runners)
+#   - Wave 1b: GBM, DRF (2 runners) - after Wave 1a
+#   - Wave 2: DL, GAM, Tree, Ensemble, KMeans (5 runners) - after Wave 1b
 #   - Wave 3: RuleFit, PCA, GLRM, AdaBoost (4 runners) - after Wave 2
 #   - Wave 4: ModelSel, Generic, Grid, Misc (4 runners) - after Wave 3
 #
@@ -46,7 +47,7 @@ env:
 
 jobs:
   # ============================================================================
-  # JAVA 17 SMOKE
+  # JAVA 17 SMOKE (Wave 1a)
   # ============================================================================
   start-java17-smoke:
     name: Start - Java 17 Smoke
@@ -90,7 +91,7 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 - JUnit Other (includes core + misc for Java 17)
+  # JAVA 17 - JUnit Other (Wave 1a) - includes core + misc for Java 17
   # ============================================================================
   start-java17-other:
     name: Start - Java 17 Other
@@ -135,7 +136,7 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # JAVA 17 ALGOS - GLM
+  # JAVA 17 ALGOS - GLM (Wave 1a)
   # ============================================================================
   start-java17-algos-glm:
     name: Start - Java 17 Algos GLM
