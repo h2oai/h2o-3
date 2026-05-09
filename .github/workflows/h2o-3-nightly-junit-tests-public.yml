@@ -100,23 +100,24 @@
 #
 # ==============================================================================
 
-run-name: "1.g  -  Public H2O-3 Nightly - JUnit Tests [${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}]"
+run-name: "1.g  -  Public H2O-3 Nightly - JUnit Tests [${{ inputs.branch || (github.event.schedule == '0 5 * * *' && 'rel-3.46.0') || 'master' }}]"
 name: 1.g  -  Public H2O-3 Nightly - JUnit Tests
 
 # ==============================================================================
 # TRIGGERS
 # ==============================================================================
 on:
-  # Nightly schedule - runs at 2 AM UTC daily
+  # Nightly schedules - 3 hour gap between branches to avoid resource contention
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC - master
+    - cron: '0 5 * * *'  # Daily at 5 AM UTC - rel branch (3 hours after master)
 
   workflow_dispatch:
     inputs:
       branch:
         description: 'H2O-3 branch to test (any branch in h2oai/h2o-3)'
         required: true
-        default: 'valenad-GH-16566-fix-junit'
+        default: 'master'
         type: string
 
       run_java8:
@@ -141,7 +142,7 @@ on:
 # CONCURRENCY
 # ==============================================================================
 concurrency:
-  group: junit-${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}
+  group: junit-${{ inputs.branch || (github.event.schedule == '0 5 * * *' && 'rel-3.46.0') || 'master' }}
   cancel-in-progress: false
 
 # ==============================================================================
@@ -176,7 +177,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          BRANCH="${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}"
+          # Determine branch based on trigger type
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            # For scheduled runs, select branch based on cron schedule
+            if [[ "${{ github.event.schedule }}" == "0 2 * * *" ]]; then
+              BRANCH="master"
+            elif [[ "${{ github.event.schedule }}" == "0 5 * * *" ]]; then
+              BRANCH="rel-3.46.0"
+            else
+              BRANCH="master"
+            fi
+          else
+            # For manual runs, use input or default to master
+            BRANCH="${{ inputs.branch || 'master' }}"
+          fi
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
 
           # Validate branch exists - fail fast to avoid wasting 62 EC2 instances
