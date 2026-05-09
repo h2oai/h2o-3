@@ -330,7 +330,7 @@ runs:
             }
         ]
 
-        # Failure alert with mention
+        # Optional mention on failures
         if has_failure and failure_mention:
             # Auto-detect mention type from ID prefix
             if failure_mention.startswith("S"):
@@ -339,19 +339,10 @@ runs:
                 mention_text = f"<@{failure_mention}>"
 
             blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"*{total_failed} job(s) failed.* CC: {mention_text}"
-                }
-            })
-        elif has_failure:
-            blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"*{total_failed} job(s) failed.* See details below."
-                }
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": f"CC: {mention_text}"}
+                ]
             })
 
         # Build info fields
@@ -427,38 +418,6 @@ runs:
             ],
             "rows": table_rows
         })
-
-        # Failed Jobs Section (if any)
-        if failed_jobs and len(failed_jobs) > 0:
-            blocks.append({"type": "divider"})
-            blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"*Failed Jobs ({len(failed_jobs)})*"
-                }
-            })
-
-            # List failed jobs (max 10 to avoid message size limits)
-            failed_list = []
-            for job in failed_jobs[:10]:
-                name = job.get("name", "Unknown")
-                url = job.get("url", "")
-                if url:
-                    failed_list.append(f"• <{url}|{name}>")
-                else:
-                    failed_list.append(f"• {name}")
-
-            if len(failed_jobs) > 10:
-                failed_list.append(f"_...and {len(failed_jobs) - 10} more_")
-
-            blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "\n".join(failed_list)
-                }
-            })
 
         blocks.append({"type": "divider"})
 
