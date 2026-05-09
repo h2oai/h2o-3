@@ -258,7 +258,7 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # SUMMARY: Generate test results dashboard
+  # SUMMARY: Generate test results dashboard and send Slack alert
   # ============================================================================
   summary:
     name: Summary
@@ -267,7 +267,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Generate JUnit Test Dashboard
+        id: dashboard
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ needs.init.outputs.branch }}
@@ -281,7 +285,7 @@ jobs:
           echo "Fetching jobs for run ${{ github.run_id }}..."
           if ! gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
             --paginate \
-            --jq '.jobs[] | {name: .name, conclusion: .conclusion, status: .status, started_at: .started_at, completed_at: .completed_at}' \
+            --jq '.jobs[] | {name: .name, conclusion: .conclusion, status: .status, started_at: .started_at, completed_at: .completed_at, html_url: .html_url}' \
             > /tmp/jobs.json; then
             echo "Warning: Failed to fetch jobs, creating empty file"
             echo "" > /tmp/jobs.json
@@ -381,6 +385,17 @@ jobs:
 
           echo "Counted jobs - Java8: ${java8_total} (${java8_passed}/${java8_failed}), Java11: ${java11_total} (${java11_passed}/${java11_failed}), Java17: ${java17_total} (${java17_passed}/${java17_failed})"
 
+          # Export counts for Slack alert
+          echo "java8_passed=${java8_passed}" >> $GITHUB_OUTPUT
+          echo "java8_failed=${java8_failed}" >> $GITHUB_OUTPUT
+          echo "java8_total=${java8_total}" >> $GITHUB_OUTPUT
+          echo "java11_passed=${java11_passed}" >> $GITHUB_OUTPUT
+          echo "java11_failed=${java11_failed}" >> $GITHUB_OUTPUT
+          echo "java11_total=${java11_total}" >> $GITHUB_OUTPUT
+          echo "java17_passed=${java17_passed}" >> $GITHUB_OUTPUT
+          echo "java17_failed=${java17_failed}" >> $GITHUB_OUTPUT
+          echo "java17_total=${java17_total}" >> $GITHUB_OUTPUT
+
           # Header
           echo "# H2O-3 JUnit Test Dashboard" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -419,8 +434,10 @@ jobs:
           echo "| Job | Status | Duration |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|----------|" >> $GITHUB_STEP_SUMMARY
 
-          # Track failed jobs for later
+          # Track failed jobs for later (both for summary and JSON output)
           FAILED_JOBS=""
+          FAILED_JOBS_JSON="["
+          FIRST_FAILED=true
 
           # Process each job from temp file
           while IFS= read -r line; do
@@ -436,13 +453,25 @@ jobs:
             status=$(echo "$line" | jq -r '.status // "queued"')
             started=$(echo "$line" | jq -r '.started_at // ""')
             completed=$(echo "$line" | jq -r '.completed_at // ""')
+            html_url=$(echo "$line" | jq -r '.html_url // ""')
 
             # Use conclusion if available, otherwise status
             result="$conclusion"
             [[ "$result" == "null" || -z "$result" ]] && result="$status"
 
-            # Track failed jobs
-            [[ "$result" == "failure" ]] && FAILED_JOBS="${FAILED_JOBS}${name}\n"
+            # Track failed jobs (for summary and JSON)
+            if [[ "$result" == "failure" ]]; then
+              FAILED_JOBS="${FAILED_JOBS}${name}\n"
+              # Build JSON array entry
+              if [[ "$FIRST_FAILED" == "true" ]]; then
+                FIRST_FAILED=false
+              else
+                FAILED_JOBS_JSON="${FAILED_JOBS_JSON},"
+              fi
+              # Escape name for JSON
+              escaped_name=$(echo "$name" | sed 's/"/\\"/g')
+              FAILED_JOBS_JSON="${FAILED_JOBS_JSON}{\"name\":\"${escaped_name}\",\"url\":\"${html_url}\"}"
+            fi
 
             # Calculate duration
             duration="-"
@@ -463,6 +492,10 @@ jobs:
 
             echo "| ${name} | $(status_badge ${result}) | ${duration} |" >> $GITHUB_STEP_SUMMARY
           done < /tmp/jobs.json
+
+          # Close JSON array and output for Slack
+          FAILED_JOBS_JSON="${FAILED_JOBS_JSON}]"
+          echo "failed_jobs_json=${FAILED_JOBS_JSON}" >> $GITHUB_OUTPUT
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -518,3 +551,29 @@ jobs:
           fi
 
           echo "All requested tests passed!"
+
+      - name: Send Slack Alert
+        if: always()
+        uses: ./.github/actions/send-junit-slack-alert
+        with:
+          channel: "#h2o-3-junit-alerts"
+          branch: ${{ needs.init.outputs.branch }}
+          build_sha: ${{ needs.build.outputs.build_sha }}
+          build_result: ${{ needs.build.result }}
+          java8_result: ${{ needs.java8.result }}
+          java8_passed: ${{ steps.dashboard.outputs.java8_passed }}
+          java8_failed: ${{ steps.dashboard.outputs.java8_failed }}
+          java8_total: ${{ steps.dashboard.outputs.java8_total }}
+          java11_result: ${{ needs.java11.result }}
+          java11_passed: ${{ steps.dashboard.outputs.java11_passed }}
+          java11_failed: ${{ steps.dashboard.outputs.java11_failed }}
+          java11_total: ${{ steps.dashboard.outputs.java11_total }}
+          java17_result: ${{ needs.java17.result }}
+          java17_passed: ${{ steps.dashboard.outputs.java17_passed }}
+          java17_failed: ${{ steps.dashboard.outputs.java17_failed }}
+          java17_total: ${{ steps.dashboard.outputs.java17_total }}
+          failed_jobs_json: ${{ steps.dashboard.outputs.failed_jobs_json }}
+          workflow-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          event-name: ${{ github.event_name }}
+          send-on-success: "true"
