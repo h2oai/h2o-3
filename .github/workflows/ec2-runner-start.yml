@@ -4,7 +4,16 @@
 #
 # PURPOSE:
 #   Reusable workflow to start an EC2 self-hosted runner.
-#   Includes retry logic with exponential backoff for API rate limiting.
+#   Includes retry logic with exponential backoff for API rate limiting
+#   and transient EC2 capacity issues.
+#
+# RETRY STRATEGY:
+#   - 5 total attempts with exponential backoff
+#   - Attempt 1: Initial try
+#   - Attempt 2: After 60-120s delay
+#   - Attempt 3: After 120-240s delay
+#   - Attempt 4: After 180-360s delay
+#   - Attempt 5: After 240-480s delay (final attempt)
 #
 # OUTPUTS:
 #   - label: Runner label for runs-on
@@ -123,6 +132,58 @@ jobs:
       - name: Start EC2 (Attempt 3)
         id: start3
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
+        continue-on-error: true
+        uses: machulav/ec2-github-runner@v2.3.9
+        with:
+          mode: start
+          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          ec2-image-id: ${{ env.AMI_ID }}
+          ec2-instance-type: ${{ inputs.instance_type }}
+          subnet-id: ${{ env.SUBNET_ID }}
+          security-group-id: ${{ env.SECURITY_GROUP }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
+              {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
+              {"Key": "h2o/environment", "Value": "prd"},
+              {"Key": "h2o/scheduling", "Value": "self-managed"},
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+            ]
+
+      - name: Retry Delay 3
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure'
+        run: sleep $((RANDOM % 180 + 180))
+
+      - name: Start EC2 (Attempt 4)
+        id: start4
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure'
+        continue-on-error: true
+        uses: machulav/ec2-github-runner@v2.3.9
+        with:
+          mode: start
+          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          ec2-image-id: ${{ env.AMI_ID }}
+          ec2-instance-type: ${{ inputs.instance_type }}
+          subnet-id: ${{ env.SUBNET_ID }}
+          security-group-id: ${{ env.SECURITY_GROUP }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}"},
+              {"Key": "h2o/gitHub-repository", "Value": "${{ github.repository }}"},
+              {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
+              {"Key": "h2o/environment", "Value": "prd"},
+              {"Key": "h2o/scheduling", "Value": "self-managed"},
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+            ]
+
+      - name: Retry Delay 4
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure' && steps.start4.outcome == 'failure'
+        run: sleep $((RANDOM % 240 + 240))
+
+      - name: Start EC2 (Attempt 5)
+        id: start5
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure' && steps.start4.outcome == 'failure'
         uses: machulav/ec2-github-runner@v2.3.9
         with:
           mode: start
@@ -147,13 +208,24 @@ jobs:
           if [ -n "${{ steps.start1.outputs.label }}" ]; then
             echo "label=${{ steps.start1.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start1.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+            echo "EC2 started on attempt 1"
           elif [ -n "${{ steps.start2.outputs.label }}" ]; then
             echo "label=${{ steps.start2.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start2.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+            echo "EC2 started on attempt 2"
           elif [ -n "${{ steps.start3.outputs.label }}" ]; then
             echo "label=${{ steps.start3.outputs.label }}" >> $GITHUB_OUTPUT
             echo "ec2_id=${{ steps.start3.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+            echo "EC2 started on attempt 3"
+          elif [ -n "${{ steps.start4.outputs.label }}" ]; then
+            echo "label=${{ steps.start4.outputs.label }}" >> $GITHUB_OUTPUT
+            echo "ec2_id=${{ steps.start4.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+            echo "EC2 started on attempt 4"
+          elif [ -n "${{ steps.start5.outputs.label }}" ]; then
+            echo "label=${{ steps.start5.outputs.label }}" >> $GITHUB_OUTPUT
+            echo "ec2_id=${{ steps.start5.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
+            echo "EC2 started on attempt 5"
           else
-            echo "::error::All EC2 start attempts failed"
+            echo "::error::All 5 EC2 start attempts failed"
             exit 1
           fi
