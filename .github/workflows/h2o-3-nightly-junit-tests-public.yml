@@ -556,7 +556,7 @@ jobs:
         if: always()
         uses: ./.github/actions/send-junit-slack-alert
         with:
-          channel: "#h2o-3-junit-alerts"
+          channel: "#h2o-3-alerts"
           branch: ${{ needs.init.outputs.branch }}
           build_sha: ${{ needs.build.outputs.build_sha }}
           build_result: ${{ needs.build.result }}
