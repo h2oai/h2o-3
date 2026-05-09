@@ -42,7 +42,8 @@
 #     - rel-3.46.0
 #
 #   SCHEDULE:
-#     Daily at 2:00 AM UTC
+#     - master:     Daily at 2:00 AM UTC
+#     - rel-3.46.0: Daily at 5:00 AM UTC (3 hours after master)
 #
 # ==============================================================================
 
@@ -50,9 +51,20 @@ name: 1.f  -  Public H2O-3 Nightly Scheduler
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC - master
+    - cron: '0 5 * * *'  # Daily at 5 AM UTC - rel branch (3 hours after master)
 
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to trigger (master or rel-3.46.0)'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - master
+          - rel-3.46.0
 
 # ==============================================================================
 # PERMISSIONS & CONCURRENCY
@@ -62,35 +74,59 @@ permissions:
   contents: read
 
 concurrency:
-  group: public-nightly-scheduler
+  group: public-nightly-scheduler-${{ github.event.schedule || 'manual' }}
   cancel-in-progress: false
 
 # ==============================================================================
 # JOBS
 # ==============================================================================
 jobs:
-  trigger:
-    name: Trigger ${{ matrix.branch }}
+  trigger-master:
+    name: Trigger master
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      matrix:
-        branch: [master, rel-3.46.0]
-      fail-fast: false
+    if: >
+      github.event_name == 'workflow_dispatch' && (inputs.branch == 'both' || inputs.branch == 'master') ||
+      github.event_name == 'schedule' && github.event.schedule == '0 2 * * *'
     steps:
       - name: Trigger Nightly Workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Triggering nightly workflow for branch: ${{ matrix.branch }}"
+          echo "Triggering nightly workflow for branch: master"
 
           gh workflow run h2o-3-nightly-tests-public.yml \
             --repo ${{ github.repository }} \
-            -f branch="${{ matrix.branch }}" \
+            -f branch="master" \
             -f run_smoke=true \
             -f run_python=true \
             -f run_r=true \
             -f run_java=true \
             -f run_flow=true
 
-          echo "Workflow triggered for ${{ matrix.branch }}"
+          echo "Workflow triggered for master"
+
+  trigger-rel:
+    name: Trigger rel-3.46.0
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >
+      github.event_name == 'workflow_dispatch' && (inputs.branch == 'both' || inputs.branch == 'rel-3.46.0') ||
+      github.event_name == 'schedule' && github.event.schedule == '0 5 * * *'
+    steps:
+      - name: Trigger Nightly Workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering nightly workflow for branch: rel-3.46.0"
+
+          gh workflow run h2o-3-nightly-tests-public.yml \
+            --repo ${{ github.repository }} \
+            -f branch="rel-3.46.0" \
+            -f run_smoke=true \
+            -f run_python=true \
+            -f run_r=true \
+            -f run_java=true \
+            -f run_flow=true
+
+          echo "Workflow triggered for rel-3.46.0"
