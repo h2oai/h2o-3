@@ -100,24 +100,23 @@
 #
 # ==============================================================================
 
-run-name: "1.g  -  Public H2O-3 Nightly - JUnit Tests [${{ inputs.branch || (github.event.schedule == '0 5 * * *' && 'rel-3.46.0') || 'master' }}]"
+run-name: "1.g  -  Public H2O-3 Nightly - JUnit Tests [${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}]"
 name: 1.g  -  Public H2O-3 Nightly - JUnit Tests
 
 # ==============================================================================
 # TRIGGERS
 # ==============================================================================
 on:
-  # Nightly schedules - 3 hour gap between branches to avoid resource contention
+  # Nightly schedule - runs on the test separation branch only
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC - master
-    - cron: '0 5 * * *'  # Daily at 5 AM UTC - rel branch (3 hours after master)
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
 
   workflow_dispatch:
     inputs:
       branch:
-        description: 'H2O-3 branch to test (any branch in h2oai/h2o-3)'
+        description: 'H2O-3 branch to test (test separation branch recommended)'
         required: true
-        default: 'master'
+        default: 'valenad-GH-16566-fix-junit'
         type: string
 
       run_java8:
@@ -142,7 +141,7 @@ on:
 # CONCURRENCY
 # ==============================================================================
 concurrency:
-  group: junit-${{ inputs.branch || (github.event.schedule == '0 5 * * *' && 'rel-3.46.0') || 'master' }}
+  group: junit-${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}
   cancel-in-progress: false
 
 # ==============================================================================
@@ -179,17 +178,11 @@ jobs:
         run: |
           # Determine branch based on trigger type
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            # For scheduled runs, select branch based on cron schedule
-            if [[ "${{ github.event.schedule }}" == "0 2 * * *" ]]; then
-              BRANCH="master"
-            elif [[ "${{ github.event.schedule }}" == "0 5 * * *" ]]; then
-              BRANCH="rel-3.46.0"
-            else
-              BRANCH="master"
-            fi
+            # For scheduled runs, use the test separation branch
+            BRANCH="valenad-GH-16566-fix-junit"
           else
-            # For manual runs, use input or default to master
-            BRANCH="${{ inputs.branch || 'master' }}"
+            # For manual runs, use input or default to test separation branch
+            BRANCH="${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}"
           fi
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
 
