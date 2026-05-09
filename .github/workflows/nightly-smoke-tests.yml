@@ -12,7 +12,10 @@
 #   - Java Smoke (3)    : Java 8, 11, 17        → EC2 runners
 #
 # ARCHITECTURE:
-#   1. Start 9 EC2 runners in parallel
+#   1. Start EC2 runners in 3 waves (3 per wave) to avoid GitHub API rate limiting
+#      - Wave 1: Py3.7, Py3.11, R3.5
+#      - Wave 2: R4.0, Flow, INFO (after Wave 1)
+#      - Wave 3: Java 8, 11, 17 (after Wave 2)
 #   2. Run tests on each dedicated runner
 #   3. Stop all runners (always, for cleanup)
 #
@@ -44,7 +47,7 @@ env:
 
 jobs:
   # ============================================================================
-  # START EC2 RUNNERS (10 in parallel)
+  # START EC2 RUNNERS - WAVE 1 (Py3.7, Py3.11, R3.5)
   # ============================================================================
 
   # Python Smoke Tests
@@ -70,8 +73,13 @@ jobs:
       name: r35-smoke
     secrets: inherit
 
+  # ============================================================================
+  # START EC2 RUNNERS - WAVE 2 (R4.0, Flow, INFO) - After Wave 1
+  # ============================================================================
+
   start-r40-smoke:
     name: Start EC2 - R4.0
+    needs: [start-py37-smoke, start-py311-smoke, start-r35-smoke]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r40-smoke
@@ -80,6 +88,7 @@ jobs:
   # Flow Smoke Test
   start-flow-smoke:
     name: Start EC2 - Flow
+    needs: [start-py37-smoke, start-py311-smoke, start-r35-smoke]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: flow-smoke
@@ -88,14 +97,20 @@ jobs:
   # INFO Check
   start-info-check:
     name: Start EC2 - INFO
+    needs: [start-py37-smoke, start-py311-smoke, start-r35-smoke]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: info-check
     secrets: inherit
 
+  # ============================================================================
+  # START EC2 RUNNERS - WAVE 3 (Java 8, 11, 17) - After Wave 2
+  # ============================================================================
+
   # Java Smoke Tests
   start-java8-smoke:
     name: Start EC2 - Java 8
+    needs: [start-r40-smoke, start-flow-smoke, start-info-check]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-smoke
@@ -103,6 +118,7 @@ jobs:
 
   start-java11-smoke:
     name: Start EC2 - Java 11
+    needs: [start-r40-smoke, start-flow-smoke, start-info-check]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java11-smoke
@@ -110,6 +126,7 @@ jobs:
 
   start-java17-smoke:
     name: Start EC2 - Java 17
+    needs: [start-r40-smoke, start-flow-smoke, start-info-check]
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-smoke

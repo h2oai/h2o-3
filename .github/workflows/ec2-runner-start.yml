@@ -15,6 +15,15 @@
 #   - Attempt 4: After 180-360s delay
 #   - Attempt 5: After 240-480s delay (final attempt)
 #
+# CLEANUP:
+#   - Pre-cleanup: Terminates any orphaned instances with same name tag before starting
+#   - Inter-attempt: Terminates tracked instances from failed attempts before retry
+#   - Final cleanup: If all attempts fail, terminates any untracked orphaned instances
+#
+# RATE LIMITING:
+#   - Stagger delay of 60-180s helps avoid GitHub API rate limiting
+#   - GitHub rate limit errors occur when too many runners request tokens simultaneously
+#
 # OUTPUTS:
 #   - label: Runner label for runs-on
 #   - ec2_id: EC2 instance ID for cleanup
@@ -73,10 +82,30 @@ jobs:
 
       - name: Stagger Start
         run: |
-          # Increased stagger delay to avoid EC2 API throttling when starting many runners
-          DELAY=$((RANDOM % 60 + 30))
-          echo "Waiting ${DELAY}s to stagger EC2 API calls..."
+          # Increased stagger delay to avoid GitHub API rate limiting when starting many runners
+          DELAY=$((RANDOM % 120 + 60))
+          echo "Waiting ${DELAY}s to stagger API calls..."
           sleep $DELAY
+
+      - name: Pre-cleanup Orphaned Instances
+        run: |
+          # Terminate any orphaned instances with the same name tag from previous failed runs
+          echo "Checking for orphaned instances with name: gha-runner-${{ inputs.name }}"
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=gha-runner-${{ inputs.name }}" \
+                      "Name=instance-state-name,Values=pending,running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
+
+          if [ -n "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
+            echo "Found orphaned instances: $INSTANCE_IDS"
+            echo "Terminating orphaned instances..."
+            aws ec2 terminate-instances --instance-ids $INSTANCE_IDS || true
+            # Wait for termination to propagate
+            sleep 10
+          else
+            echo "No orphaned instances found"
+          fi
 
       - name: Start EC2 (Attempt 1)
         id: start1
@@ -98,6 +127,12 @@ jobs:
               {"Key": "h2o/scheduling", "Value": "self-managed"},
               {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
             ]
+
+      - name: Cleanup Failed Attempt 1
+        if: steps.start1.outcome == 'failure' && steps.start1.outputs.ec2-instance-id != ''
+        run: |
+          echo "Terminating orphaned EC2 instance from attempt 1: ${{ steps.start1.outputs.ec2-instance-id }}"
+          aws ec2 terminate-instances --instance-ids ${{ steps.start1.outputs.ec2-instance-id }} || true
 
       - name: Retry Delay 1
         if: steps.start1.outcome == 'failure'
@@ -125,6 +160,12 @@ jobs:
               {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
             ]
 
+      - name: Cleanup Failed Attempt 2
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start2.outputs.ec2-instance-id != ''
+        run: |
+          echo "Terminating orphaned EC2 instance from attempt 2: ${{ steps.start2.outputs.ec2-instance-id }}"
+          aws ec2 terminate-instances --instance-ids ${{ steps.start2.outputs.ec2-instance-id }} || true
+
       - name: Retry Delay 2
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
         run: sleep $((RANDOM % 120 + 120))
@@ -151,6 +192,12 @@ jobs:
               {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
             ]
 
+      - name: Cleanup Failed Attempt 3
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure' && steps.start3.outputs.ec2-instance-id != ''
+        run: |
+          echo "Terminating orphaned EC2 instance from attempt 3: ${{ steps.start3.outputs.ec2-instance-id }}"
+          aws ec2 terminate-instances --instance-ids ${{ steps.start3.outputs.ec2-instance-id }} || true
+
       - name: Retry Delay 3
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure'
         run: sleep $((RANDOM % 180 + 180))
@@ -176,6 +223,12 @@ jobs:
               {"Key": "h2o/scheduling", "Value": "self-managed"},
               {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
             ]
+
+      - name: Cleanup Failed Attempt 4
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure' && steps.start4.outcome == 'failure' && steps.start4.outputs.ec2-instance-id != ''
+        run: |
+          echo "Terminating orphaned EC2 instance from attempt 4: ${{ steps.start4.outputs.ec2-instance-id }}"
+          aws ec2 terminate-instances --instance-ids ${{ steps.start4.outputs.ec2-instance-id }} || true
 
       - name: Retry Delay 4
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure' && steps.start4.outcome == 'failure'
@@ -226,6 +279,28 @@ jobs:
             echo "ec2_id=${{ steps.start5.outputs.ec2-instance-id }}" >> $GITHUB_OUTPUT
             echo "EC2 started on attempt 5"
           else
+            echo "all_failed=true" >> $GITHUB_OUTPUT
             echo "::error::All 5 EC2 start attempts failed"
-            exit 1
           fi
+
+      - name: Final Cleanup on Total Failure
+        if: steps.final.outputs.all_failed == 'true'
+        run: |
+          # Clean up any orphaned instances that were created but not tracked
+          echo "All attempts failed. Cleaning up any orphaned instances with name: gha-runner-${{ inputs.name }}"
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=gha-runner-${{ inputs.name }}" \
+                      "Name=instance-state-name,Values=pending,running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
+
+          if [ -n "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
+            echo "Found orphaned instances: $INSTANCE_IDS"
+            echo "Terminating orphaned instances..."
+            aws ec2 terminate-instances --instance-ids $INSTANCE_IDS || true
+          else
+            echo "No orphaned instances found"
+          fi
+
+          # Exit with failure after cleanup
+          exit 1
