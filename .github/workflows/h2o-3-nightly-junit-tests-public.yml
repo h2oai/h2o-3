@@ -142,7 +142,7 @@ on:
 # CONCURRENCY
 # ==============================================================================
 concurrency:
-  group: junit-${{ inputs.branch || 'valenad-GH-16566-fix-junit' }}
+  group: junit-${{ inputs.branch || (github.event.schedule == '0 5 * * *' && 'rel-3.46.0') || 'master' }}
   cancel-in-progress: false
 
 # ==============================================================================
