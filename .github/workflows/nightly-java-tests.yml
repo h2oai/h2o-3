@@ -504,3 +504,21 @@ jobs:
       label: ${{ needs.start-java8-logger.outputs.label }}
       ec2_id: ${{ needs.start-java8-logger.outputs.ec2_id }}
     secrets: inherit
+
+  # ============================================================================
+  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
+  # ============================================================================
+  final-cleanup:
+    name: Final EC2 Cleanup
+    needs:
+      - stop-java8-rulefit
+      - stop-java8-core
+      - stop-java8-automl
+      - stop-java8-rest-smoke
+      - stop-java8-mojo-pipeline
+      - stop-java8-clustering
+      - stop-java8-xgb-multi
+      - stop-java8-logger
+    if: always()
+    uses: ./.github/workflows/ec2-final-cleanup.yml
+    secrets: inherit

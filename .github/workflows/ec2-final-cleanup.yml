@@ -1,0 +1,64 @@
+# ==============================================================================
+#                         EC2 FINAL CLEANUP (Reusable)
+# ==============================================================================
+#
+#   PURPOSE:
+#     Reusable workflow to clean up any orphaned EC2 instances from a workflow run.
+#     Called at the end of test workflows with `if: always()`.
+#
+# ==============================================================================
+
+name: EC2 Final Cleanup
+
+on:
+  workflow_call:
+
+env:
+  AWS_REGION: us-east-1
+  EC2_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+
+jobs:
+  cleanup:
+    name: Cleanup Orphans
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-final-cleanup
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Cleanup Orphaned Instances
+        run: |
+          RUN_ID="${{ github.run_id }}"
+          echo "Cleaning up any remaining EC2 instances for run_id: $RUN_ID"
+
+          # Find all instances with this run_id
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=gha-runner-*-${RUN_ID}" \
+                      "Name=instance-state-name,Values=pending,running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
+
+          if [ -n "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
+            COUNT=$(echo "$INSTANCE_IDS" | wc -w)
+            echo "Found $COUNT orphaned instance(s): $INSTANCE_IDS"
+            echo "Terminating..."
+            aws ec2 terminate-instances --instance-ids $INSTANCE_IDS
+            echo "Termination initiated"
+
+            # Summary
+            echo "## EC2 Final Cleanup" >> $GITHUB_STEP_SUMMARY
+            echo "Terminated $COUNT orphaned instance(s):" >> $GITHUB_STEP_SUMMARY
+            for ID in $INSTANCE_IDS; do
+              echo "- $ID" >> $GITHUB_STEP_SUMMARY
+            done
+          else
+            echo "No orphaned instances found - all cleaned up properly"
+            echo "## EC2 Final Cleanup" >> $GITHUB_STEP_SUMMARY
+            echo "No orphaned instances found." >> $GITHUB_STEP_SUMMARY
+          fi

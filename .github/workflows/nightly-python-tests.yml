@@ -873,3 +873,31 @@ jobs:
   #     label: ${{ needs.start-persist-drive.outputs.label }}
   #     ec2_id: ${{ needs.start-persist-drive.outputs.ec2_id }}
   #   secrets: inherit
+
+  # ============================================================================
+  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
+  # ============================================================================
+  final-cleanup:
+    name: Final EC2 Cleanup
+    needs:
+      - stop-py37-smoke-main
+      - stop-py37-smoke-minimal
+      - stop-py37-smoke-steam
+      - stop-py37-single-node
+      - stop-py37-small
+      - stop-py37-mojo2
+      - stop-py37-automl
+      - stop-py37-automl-smoke
+      - stop-py37-fault-tolerance
+      - stop-py37-medium-large
+      - stop-py37-xlarge
+      - stop-py37-demos
+      - stop-py37-demos-scikit
+      - stop-external-xgboost
+      - stop-py37-explain
+      - stop-py311-single-node
+      - stop-py311-fault-tolerance
+      - stop-xgboost-stress
+    if: always()
+    uses: ./.github/workflows/ec2-final-cleanup.yml
+    secrets: inherit

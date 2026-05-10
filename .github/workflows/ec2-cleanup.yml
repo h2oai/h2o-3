@@ -1,0 +1,164 @@
+# ==============================================================================
+#                         EC2 RUNNER CLEANUP
+# ==============================================================================
+#
+#   PURPOSE:
+#     Clean up orphaned EC2 instances from failed or cancelled workflow runs.
+#
+#   USAGE:
+#     - Run manually with a specific run_id to clean up instances from that run
+#     - Run with cleanup_stale=true to terminate instances older than max_age_hours
+#
+#   SAFETY:
+#     - Manual trigger only (no automatic schedule to avoid killing active tests)
+#     - Default max_age is 4 hours (longer than any test suite)
+#     - Always shows instances before terminating
+#
+# ==============================================================================
+
+name: EC2 Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Workflow run ID to clean up (e.g., 25618369681)'
+        required: false
+        type: string
+
+      cleanup_stale:
+        description: 'Clean up instances older than max_age_hours'
+        required: false
+        type: boolean
+        default: false
+
+      max_age_hours:
+        description: 'Max instance age in hours (default 4 = longer than any test)'
+        required: false
+        type: number
+        default: 4
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  EC2_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+
+jobs:
+  cleanup:
+    name: Cleanup EC2 Instances
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-cleanup
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Cleanup by Run ID
+        if: inputs.run_id != '' && inputs.cleanup_stale != true
+        run: |
+          RUN_ID="${{ inputs.run_id }}"
+          echo "Cleaning up EC2 instances for run_id: $RUN_ID"
+
+          # Find all instances with the run_id in the name
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=gha-runner-*-${RUN_ID}" \
+                      "Name=instance-state-name,Values=pending,running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
+
+          if [ -n "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
+            echo "Found instances to terminate: $INSTANCE_IDS"
+
+            # Count instances
+            COUNT=$(echo "$INSTANCE_IDS" | wc -w)
+            echo "Terminating $COUNT instance(s)..."
+
+            aws ec2 terminate-instances --instance-ids $INSTANCE_IDS
+            echo "Termination initiated for run_id: $RUN_ID"
+          else
+            echo "No running instances found for run_id: $RUN_ID"
+          fi
+
+      - name: Cleanup All Stale Instances
+        if: inputs.cleanup_stale == true
+        run: |
+          MAX_AGE_HOURS="${{ inputs.max_age_hours || '3' }}"
+          echo "Cleaning up gha-runner instances older than $MAX_AGE_HOURS hours"
+
+          # Calculate cutoff time (current time - max_age_hours)
+          CUTOFF_TIME=$(date -u -d "$MAX_AGE_HOURS hours ago" +%Y-%m-%dT%H:%M:%S)
+          echo "Cutoff time: $CUTOFF_TIME"
+
+          # Find all gha-runner instances
+          INSTANCES=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=gha-runner-*" \
+                      "Name=instance-state-name,Values=pending,running" \
+            --query "Reservations[].Instances[].{Id:InstanceId,Name:Tags[?Key=='Name'].Value|[0],LaunchTime:LaunchTime}" \
+            --output json)
+
+          echo "Found instances:"
+          echo "$INSTANCES" | jq -r '.[] | "\(.Id) - \(.Name) - \(.LaunchTime)"'
+
+          # Filter instances older than cutoff and terminate
+          STALE_IDS=$(echo "$INSTANCES" | jq -r --arg cutoff "$CUTOFF_TIME" \
+            '.[] | select(.LaunchTime < $cutoff) | .Id')
+
+          if [ -n "$STALE_IDS" ]; then
+            echo ""
+            echo "Stale instances to terminate:"
+            echo "$STALE_IDS"
+
+            # Count and terminate
+            COUNT=$(echo "$STALE_IDS" | wc -l)
+            echo ""
+            echo "Terminating $COUNT stale instance(s)..."
+
+            # Convert newlines to spaces for AWS CLI
+            IDS_SPACE=$(echo "$STALE_IDS" | tr '\n' ' ')
+            aws ec2 terminate-instances --instance-ids $IDS_SPACE
+
+            echo "Termination initiated for stale instances"
+          else
+            echo ""
+            echo "No stale instances found (all instances are younger than $MAX_AGE_HOURS hours)"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## EC2 Cleanup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.run_id }}" != "" ] && [ "${{ inputs.cleanup_stale }}" != "true" ]; then
+            echo "**Mode:** Cleanup by Run ID" >> $GITHUB_STEP_SUMMARY
+            echo "**Run ID:** ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Mode:** Cleanup All Stale Instances" >> $GITHUB_STEP_SUMMARY
+            echo "**Max Age:** ${{ inputs.max_age_hours || '3' }} hours" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Current Running Instances" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Show remaining instances
+          REMAINING=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=gha-runner-*" \
+                      "Name=instance-state-name,Values=pending,running" \
+            --query "Reservations[].Instances[].{Id:InstanceId,Name:Tags[?Key=='Name'].Value|[0],LaunchTime:LaunchTime}" \
+            --output json)
+
+          if [ "$(echo "$REMAINING" | jq length)" -gt 0 ]; then
+            echo "| Instance ID | Name | Launch Time |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------------|------|-------------|" >> $GITHUB_STEP_SUMMARY
+            echo "$REMAINING" | jq -r '.[] | "| \(.Id) | \(.Name) | \(.LaunchTime) |"' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No gha-runner instances currently running." >> $GITHUB_STEP_SUMMARY
+          fi
