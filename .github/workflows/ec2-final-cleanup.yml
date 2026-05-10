@@ -28,7 +28,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-final-cleanup
+          role-session-name: ec2-stop-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
