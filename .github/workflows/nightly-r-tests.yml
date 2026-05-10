@@ -793,3 +793,31 @@ jobs:
       label: ${{ needs.start-r44-explain.outputs.label }}
       ec2_id: ${{ needs.start-r44-explain.outputs.ec2_id }}
     secrets: inherit
+
+  # ============================================================================
+  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
+  # ============================================================================
+  final-cleanup:
+    name: Final EC2 Cleanup
+    needs:
+      - stop-r35-init-java8
+      - stop-r35-small
+      - stop-r35-automl
+      - stop-r35-cmd-check
+      - stop-r40-small
+      - stop-r40-cmd-check
+      - stop-r35-booklets
+      - stop-r35-demos-small
+      - stop-r35-medium-large
+      - stop-r35-demos-medium-large
+      - stop-r35-generate-docs
+      - stop-r35-datatable
+      - stop-r35-init-java11
+      - stop-r34-medium-large
+      - stop-r34-small
+      - stop-r34-automl
+      - stop-r40-explain
+      - stop-r44-explain
+    if: always()
+    uses: ./.github/workflows/ec2-final-cleanup.yml
+    secrets: inherit

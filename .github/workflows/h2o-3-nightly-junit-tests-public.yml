@@ -584,3 +584,13 @@ jobs:
           slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
           event-name: ${{ github.event_name }}
           send-on-success: "true"
+
+  # ============================================================================
+  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
+  # ============================================================================
+  final-cleanup:
+    name: Final EC2 Cleanup
+    needs: [init, build, java8, java11, java17, summary]
+    if: always()
+    uses: ./.github/workflows/ec2-final-cleanup.yml
+    secrets: inherit

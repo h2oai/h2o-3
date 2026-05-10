@@ -833,3 +833,31 @@ jobs:
       label: ${{ needs.start-java17-algos-misc.outputs.label }}
       ec2_id: ${{ needs.start-java17-algos-misc.outputs.ec2_id }}
     secrets: inherit
+
+  # ============================================================================
+  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
+  # ============================================================================
+  final-cleanup:
+    name: Final EC2 Cleanup
+    needs:
+      - stop-java17-smoke
+      - stop-java17-other
+      - stop-java17-algos-glm
+      - stop-java17-algos-gbm
+      - stop-java17-algos-drf
+      - stop-java17-algos-dl
+      - stop-java17-algos-gam
+      - stop-java17-algos-tree
+      - stop-java17-algos-ensemble
+      - stop-java17-algos-kmeans
+      - stop-java17-algos-rulefit
+      - stop-java17-algos-pca
+      - stop-java17-algos-glrm
+      - stop-java17-algos-adaboost
+      - stop-java17-algos-modelsel
+      - stop-java17-algos-generic
+      - stop-java17-algos-grid
+      - stop-java17-algos-misc
+    if: always()
+    uses: ./.github/workflows/ec2-final-cleanup.yml
+    secrets: inherit
