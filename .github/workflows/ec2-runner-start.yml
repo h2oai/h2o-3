@@ -151,7 +151,7 @@ jobs:
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
-          runner-mode: jit
+          use-jit: true
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
@@ -186,7 +186,7 @@ jobs:
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
-          runner-mode: jit
+          use-jit: true
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
@@ -220,7 +220,7 @@ jobs:
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
-          runner-mode: jit
+          use-jit: true
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
