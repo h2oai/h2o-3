@@ -20,12 +20,17 @@
 #   - Final cleanup: If all attempts fail, terminates any untracked orphaned instances
 #   - NOTE: Old orphans from crashed runs require manual cleanup or scheduled Lambda
 #
+# JIT RUNNER MODE:
+#   - Uses Just-In-Time (JIT) runner configuration instead of traditional registration token
+#   - JIT mode eliminates the polling loop that checks for runner registration
+#   - Each runner makes only ~2 API calls instead of ~30+ (generate-jitconfig + minimal overhead)
+#   - Runners auto-deregister after completing one job - no cleanup needed
+#   - Reduces API usage from ~5,500 calls to ~150 calls for 62 runners (97% reduction)
+#
 # RATE LIMITING:
-#   - Stagger delay of 0-1200s (20 min window) spreads GitHub API requests across parallel jobs
-#   - Pre-check of GitHub API rate limit with automatic wait if quota < 500
-#   - GitHub rate limit errors occur when too many runners request tokens simultaneously
-#   - With 70 parallel jobs, a 20-minute stagger window prevents exceeding 5000 req/hour limit
-#   - Each runner consumes ~25-35 API calls; 70 runners = ~2100 calls spread over 20 minutes
+#   - Stagger delay of 0-300s (5 min window) spreads GitHub API requests
+#   - Pre-check of GitHub API rate limit with automatic wait if quota < 100
+#   - With JIT mode, rate limiting is much less likely to occur
 #
 # OUTPUTS:
 #   - label: Runner label for runs-on
@@ -85,10 +90,10 @@ jobs:
 
       - name: Stagger Start
         run: |
-          # Wide stagger window (0-1200s = 20 minutes) to spread API calls across 70 parallel jobs
-          # Each runner makes ~25-35 API calls; spreading over 20 min keeps us well under 5000/hour
-          DELAY=$((RANDOM % 1200))
-          echo "Waiting ${DELAY}s to stagger API calls (20-minute window)..."
+          # With JIT mode, we only need ~2 API calls per runner instead of ~30+
+          # Reduced stagger window (0-300s = 5 minutes) is sufficient
+          DELAY=$((RANDOM % 300))
+          echo "Waiting ${DELAY}s to stagger API calls (5-minute window)..."
           sleep $DELAY
 
       - name: Check GitHub API Rate Limit
@@ -96,15 +101,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
         run: |
           # Check rate limit and wait if nearly exhausted
-          # Threshold of 500 provides buffer for 70 parallel jobs (~25-35 calls each)
+          # With JIT mode, each runner only needs ~2 API calls, so threshold of 100 is sufficient
           RATE_INFO=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit)
           REMAINING=$(echo "$RATE_INFO" | jq -r '.resources.core.remaining')
           RESET_TIME=$(echo "$RATE_INFO" | jq -r '.resources.core.reset')
 
           echo "GitHub API rate limit remaining: $REMAINING"
 
-          # If remaining requests < 500, wait until reset (buffer for parallel job bursts)
-          if [ "$REMAINING" -lt 500 ]; then
+          # If remaining requests < 100, wait until reset
+          if [ "$REMAINING" -lt 100 ]; then
             CURRENT_TIME=$(date +%s)
             WAIT_TIME=$((RESET_TIME - CURRENT_TIME + 30))
             if [ "$WAIT_TIME" -gt 0 ] && [ "$WAIT_TIME" -lt 3600 ]; then
@@ -146,6 +151,7 @@ jobs:
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
+          runner-mode: jit
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
@@ -180,6 +186,7 @@ jobs:
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
+          runner-mode: jit
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
@@ -213,6 +220,7 @@ jobs:
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
+          runner-mode: jit
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
