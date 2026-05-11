@@ -278,11 +278,21 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
+  # ============================================================================
+  final-cleanup:
+    name: Final EC2 Cleanup
+    needs: [init, build, smoke, python, r, java, flow]
+    if: always()
+    uses: ./.github/workflows/ec2-final-cleanup.yml
+    secrets: inherit
+
+  # ============================================================================
   # SUMMARY: Generate comprehensive test dashboard
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, smoke, python, r, java, flow]
+    needs: [init, build, smoke, python, r, java, flow, final-cleanup]
     if: always()
     runs-on: ubuntu-latest
 

@@ -265,11 +265,21 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
+  # ============================================================================
+  final-cleanup:
+    name: Final EC2 Cleanup
+    needs: [init, build, java8, java11, java17]
+    if: always()
+    uses: ./.github/workflows/ec2-final-cleanup.yml
+    secrets: inherit
+
+  # ============================================================================
   # SUMMARY: Generate test results dashboard and send Slack alert
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, java8, java11, java17]
+    needs: [init, build, java8, java11, java17, final-cleanup]
     if: always()
     runs-on: ubuntu-latest
 
@@ -584,13 +594,3 @@ jobs:
           slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
           event-name: ${{ github.event_name }}
           send-on-success: "true"
-
-  # ============================================================================
-  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
-  # ============================================================================
-  final-cleanup:
-    name: Final EC2 Cleanup
-    needs: [init, build, java8, java11, java17, summary]
-    if: always()
-    uses: ./.github/workflows/ec2-final-cleanup.yml
-    secrets: inherit
