@@ -192,7 +192,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   private byte [] _ex;
   public Throwable ex() {
     if(_ex == null) return null;
-    return (Throwable)AutoBuffer.javaSerializeReadPojo(_ex);
+    return (Throwable)AutoBuffer.javaSerializeReadBytes(_ex);
   }
 
   /** Total expected work. */
@@ -438,7 +438,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
     if (_ex!=null)
-      throw new RuntimeException((Throwable)AutoBuffer.javaSerializeReadPojo(_ex));
+      throw new RuntimeException((Throwable)AutoBuffer.javaSerializeReadBytes(_ex));
     // Maybe null return, if the started fjtask does not actually produce a result at this Key
     return _result==null ? null : _result.get(); 
   }
