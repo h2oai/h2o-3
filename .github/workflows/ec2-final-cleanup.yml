@@ -15,7 +15,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  EC2_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  EC2_ROLE: arn:aws:iam::041740254655:role/GitHub-OIDC-Role
 
 jobs:
   cleanup:
