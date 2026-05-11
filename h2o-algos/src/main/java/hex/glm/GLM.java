@@ -563,7 +563,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               testDevSq += d * d;
             }
             double avg = testDev / cvModelBuilders.length;
-            double se = testDevSq - avg * avg;
+            // Sample-variance numerator: sum(d^2) - n*mean^2 == sum(d^2) - mean*sum(d).
+            // Matches the canonical form used in the restricted scoring history above and in
+            // cv_computeAndSetOptimalParameters.
+            double se = testDevSq - avg * testDev;
             unrestrictedSDs[unrestrictedCount] = Math.sqrt(se / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
             unrestrictedDeviances[unrestrictedCount++] = avg;
           }
