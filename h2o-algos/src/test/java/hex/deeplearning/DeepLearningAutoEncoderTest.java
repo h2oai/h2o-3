@@ -74,12 +74,12 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         // train default
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = dl.trainModel().get();
-        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, p._stopping_metric); // AE early-stops on MSE
+        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, dl._parms._stopping_metric); // AE early-stops on MSE
 
         // train non-standardized
         DeepLearning dlNoStand = new DeepLearning(pNoStand);
         DeepLearningModel mymodelNoStand = dlNoStand.trainModel().get();
-        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, pNoStand._stopping_metric);
+        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, dlNoStand._parms._stopping_metric);
 
         Frame l2_frame_train=null, l2_frame_test=null;
 
