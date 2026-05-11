@@ -23,9 +23,10 @@
 #   - NOTE: Old orphans from crashed runs require manual cleanup or scheduled Lambda
 #
 # RATE LIMITING:
-#   - Stagger delay of 60-180s helps spread out GitHub API requests
+#   - Stagger delay of 120-300s helps spread out GitHub API requests across parallel jobs
 #   - Pre-check of GitHub API rate limit with automatic wait if quota < 100
 #   - GitHub rate limit errors occur when too many runners request tokens simultaneously
+#   - With 20+ parallel jobs, a wider stagger window prevents exceeding 5000 req/hour limit
 #
 # OUTPUTS:
 #   - label: Runner label for runs-on
@@ -86,7 +87,8 @@ jobs:
       - name: Stagger Start
         run: |
           # Increased stagger delay to avoid GitHub API rate limiting when starting many runners
-          DELAY=$((RANDOM % 120 + 60))
+          # With 20+ parallel jobs, we need a wider window (120-300s) to stay under 5000 req/hour
+          DELAY=$((RANDOM % 180 + 120))
           echo "Waiting ${DELAY}s to stagger API calls..."
           sleep $DELAY
 
@@ -95,14 +97,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
         run: |
           # Check rate limit and wait if nearly exhausted
+          # Increased threshold to 200 to handle parallel job bursts
           RATE_INFO=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit)
           REMAINING=$(echo "$RATE_INFO" | jq -r '.resources.core.remaining')
           RESET_TIME=$(echo "$RATE_INFO" | jq -r '.resources.core.reset')
 
           echo "GitHub API rate limit remaining: $REMAINING"
 
-          # If remaining requests < 100, wait until reset
-          if [ "$REMAINING" -lt 100 ]; then
+          # If remaining requests < 200, wait until reset (increased from 100 for parallel jobs)
+          if [ "$REMAINING" -lt 200 ]; then
             CURRENT_TIME=$(date +%s)
             WAIT_TIME=$((RESET_TIME - CURRENT_TIME + 10))
             if [ "$WAIT_TIME" -gt 0 ] && [ "$WAIT_TIME" -lt 3600 ]; then
