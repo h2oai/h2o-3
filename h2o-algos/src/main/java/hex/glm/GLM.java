@@ -126,7 +126,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double [] _xval_sd;         // store the standard deviation of cross-validation
   private double [][] _xval_zValues;  // store cross validation average p-values
   private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True (restricted: offset removed)
-  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_historty=True (restricted)
+  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_history=True (restricted)
   private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
   private double [] _xval_deviances_generate_SH_unrestricted; // unrestricted (with-offset) xval deviance for generate_scoring_history=True
   private double [] _xval_sd_generate_SH_unrestricted; // standard deviation of unrestricted xval deviance
