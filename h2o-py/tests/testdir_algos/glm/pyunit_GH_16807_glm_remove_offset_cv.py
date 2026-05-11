@@ -32,9 +32,10 @@ def _make_binomial_offset_frame():
 def test_remove_offset_cv_trains_successfully():
     """GLM with remove_offset_effects=True + nfolds=3 must complete and populate CV metrics."""
     train = _make_binomial_offset_frame()
+    seed = 42
     glm = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=True, nfolds=3,
+        remove_offset_effects=True, nfolds=3, seed=seed
     )
     glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
     assert glm is not None, "Model must train without error"
@@ -45,16 +46,17 @@ def test_remove_offset_cv_trains_successfully():
 def test_remove_offset_cv_deviance_differs_from_baseline():
     """CV residual deviance with remove_offset_effects=True must differ from the offset-included baseline."""
     train = _make_binomial_offset_frame()
+    seed = 42
 
     glm_roe = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=True, nfolds=3,
+        remove_offset_effects=True, nfolds=3, seed=seed
     )
     glm_roe.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 
     glm_baseline = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=False, nfolds=3,
+        remove_offset_effects=False, nfolds=3, seed=seed
     )
     glm_baseline.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 
@@ -70,10 +72,12 @@ def test_remove_offset_cv_deviance_differs_from_baseline():
 def test_remove_offset_cv_scoring_history_has_xval_columns():
     """With generate_scoring_history=True and nfolds=3, deviance_xval and deviance_se must appear."""
     train = _make_binomial_offset_frame()
+    seed = 42
+    
     glm = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
         remove_offset_effects=True, nfolds=3,
-        generate_scoring_history=True, score_each_iteration=True,
+        generate_scoring_history=True, score_each_iteration=True, seed=seed
     )
     glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 

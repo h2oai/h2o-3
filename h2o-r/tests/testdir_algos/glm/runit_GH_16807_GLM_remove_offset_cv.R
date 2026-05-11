@@ -10,7 +10,9 @@ glm_remove_offset_cv <- function() {
         offset = c(.1,.2,.2,.2,.1,0,0,.2,.3,.5,.3,.4,.8,.4,.4,.5,0,0,.5,.1,0,0,.1,0,.1,0),
         y      = factor(c(1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1))
     ))
-
+    
+    cv_seed <- 42
+    
     # Training must succeed with remove_offset_effects=TRUE + nfolds=3
     glm_roe <- h2o.glm(
         x = c("x1", "x2"),
@@ -21,7 +23,8 @@ glm_remove_offset_cv <- function() {
         alpha = 0,
         lambda = 0,
         remove_offset_effects = TRUE,
-        nfolds = 3
+        nfolds = 3,
+        seed = cv_seed
     )
     expect_false(is.null(glm_roe), info = "Model must train without error")
     expect_false(is.null(glm_roe@model$cross_validation_metrics),
@@ -37,7 +40,8 @@ glm_remove_offset_cv <- function() {
         alpha = 0,
         lambda = 0,
         remove_offset_effects = FALSE,
-        nfolds = 3
+        nfolds = 3,
+        seed = cv_seed
     )
     dev_roe      <- h2o.residual_deviance(glm_roe,      xval = TRUE)
     dev_baseline <- h2o.residual_deviance(glm_baseline, xval = TRUE)
