@@ -9,6 +9,7 @@ from h2o.utils.compatibility import *
 
 import dis
 import inspect
+import sys
 from . import h2o
 from .expr import ExprNode, ASTId
 
@@ -420,10 +421,17 @@ def _call_func_var_kw_bc(nargs, idx, ops, keys):
 
 def _call_func_ex_bc(flags, idx, ops, keys):
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_EX
-    # Py3.14+ removed the explicit flags arg; infer from the stack pattern:
-    # PUSH_NULL immediately before CALL_FUNCTION_EX means no kwargs (flags=0),
-    # otherwise the preceding op is the kwargs construction (flags=1).
+    # Py3.14 removed the explicit flags arg (i.argval is None on 3.14+);
+    # infer from the stack pattern: PUSH_NULL immediately before CALL_FUNCTION_EX
+    # means no kwargs (flags=0), otherwise the preceding op is the kwargs
+    # construction (flags=1). Anchored to an explicit version check so a future
+    # Python that yields None for a different reason fails loudly instead of
+    # silently taking this branch.
     if flags is None:
+        assert sys.version_info >= (3, 14), (
+            "CALL_FUNCTION_EX without flags arg is only expected on Py3.14+; "
+            "got Python %s" % (sys.version,)
+        )
         prev_instr, _ = _get_instr(ops, idx)
         flags = 0 if prev_instr == "PUSH_NULL" else 1
     if flags & 1:
