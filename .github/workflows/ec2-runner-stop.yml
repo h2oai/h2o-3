@@ -44,7 +44,7 @@ jobs:
 
       - name: Stop EC2 Runner
         if: inputs.label != '' && inputs.ec2_id != ''
-        uses: machulav/ec2-github-runner@v2.3.9
+        uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: stop
           github-token: ${{ secrets.GH_RUNNER_PAT }}

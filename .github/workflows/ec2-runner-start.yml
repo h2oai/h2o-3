@@ -139,7 +139,7 @@ jobs:
       - name: Start EC2 (Attempt 1)
         id: start1
         continue-on-error: true
-        uses: machulav/ec2-github-runner@v2.3.9
+        uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
           github-token: ${{ secrets.GH_RUNNER_PAT }}
@@ -171,7 +171,7 @@ jobs:
         id: start2
         if: steps.start1.outcome == 'failure'
         continue-on-error: true
-        uses: machulav/ec2-github-runner@v2.3.9
+        uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
           github-token: ${{ secrets.GH_RUNNER_PAT }}
@@ -203,7 +203,7 @@ jobs:
         id: start3
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
         continue-on-error: true
-        uses: machulav/ec2-github-runner@v2.3.9
+        uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
           github-token: ${{ secrets.GH_RUNNER_PAT }}
@@ -235,7 +235,7 @@ jobs:
         id: start4
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure'
         continue-on-error: true
-        uses: machulav/ec2-github-runner@v2.3.9
+        uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
           github-token: ${{ secrets.GH_RUNNER_PAT }}
@@ -266,7 +266,7 @@ jobs:
       - name: Start EC2 (Attempt 5)
         id: start5
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure' && steps.start3.outcome == 'failure' && steps.start4.outcome == 'failure'
-        uses: machulav/ec2-github-runner@v2.3.9
+        uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
           github-token: ${{ secrets.GH_RUNNER_PAT }}
