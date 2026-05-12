@@ -61,9 +61,6 @@ on:
       GH_APP_PRIVATE_KEY:
         description: 'GitHub App Private Key'
         required: true
-      GH_APP_INSTALLATION_ID:
-        description: 'GitHub App Installation ID'
-        required: true
 
     outputs:
       label:
@@ -109,6 +106,7 @@ jobs:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
 
       - name: Check GitHub API Rate Limit
         env:
@@ -230,6 +228,7 @@ jobs:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
 
       - name: Check Rate Limit (Attempt 2)
         if: steps.start1.outcome == 'failure'
@@ -301,6 +300,7 @@ jobs:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
 
       - name: Check Rate Limit (Attempt 3)
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
