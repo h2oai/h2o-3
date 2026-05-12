@@ -80,13 +80,8 @@ jobs:
       ec2_id: ${{ steps.final.outputs.ec2_id }}
 
     steps:
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v4.0.2
-        with:
-          role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-start-${{ inputs.name }}
-          aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
+      # NOTE: AWS credentials are configured AFTER stagger and rate limit checks
+      # to prevent token expiry during long waits. AWS session tokens expire after 1 hour.
 
       - name: Stagger Start
         run: |
@@ -117,6 +112,14 @@ jobs:
               sleep $WAIT_TIME
             fi
           fi
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-start-${{ inputs.name }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Pre-cleanup Orphaned Instances
         run: |
@@ -174,6 +177,15 @@ jobs:
           # Longer backoff (180-300s) to allow rate limit recovery
           sleep $((RANDOM % 120 + 180))
 
+      - name: Refresh AWS Credentials (Attempt 2)
+        if: steps.start1.outcome == 'failure'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-start-${{ inputs.name }}-retry1
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
       - name: Start EC2 (Attempt 2)
         id: start2
         if: steps.start1.outcome == 'failure'
@@ -208,6 +220,15 @@ jobs:
         run: |
           # Extended backoff (300-480s) before final attempt
           sleep $((RANDOM % 180 + 300))
+
+      - name: Refresh AWS Credentials (Attempt 3)
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-start-${{ inputs.name }}-retry2
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Start EC2 (Attempt 3 - Final)
         id: start3
@@ -252,6 +273,15 @@ jobs:
             echo "all_failed=true" >> $GITHUB_OUTPUT
             echo "::error::All 3 EC2 start attempts failed"
           fi
+
+      - name: Refresh AWS Credentials (Final Cleanup)
+        if: steps.final.outputs.all_failed == 'true'
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-start-${{ inputs.name }}-cleanup
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Final Cleanup on Total Failure
         if: steps.final.outputs.all_failed == 'true'
