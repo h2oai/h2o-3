@@ -80,13 +80,8 @@ jobs:
       ec2_id: ${{ steps.final.outputs.ec2_id }}
 
     steps:
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v4.0.2
-        with:
-          role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-start-${{ inputs.name }}
-          aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
+      # NOTE: AWS credentials are configured AFTER stagger and rate limit checks
+      # to prevent token expiry during long waits. AWS session tokens expire after 1 hour.
 
       - name: Stagger Start
         run: |
@@ -117,6 +112,14 @@ jobs:
               sleep $WAIT_TIME
             fi
           fi
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.EC2_ROLE }}
+          role-session-name: ec2-start-${{ inputs.name }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Pre-cleanup Orphaned Instances
         run: |
