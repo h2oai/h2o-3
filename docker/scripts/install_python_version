@@ -69,7 +69,15 @@ for python_version in "${array[@]}"; do
 	echo "###### Installing dependencies for Python ${python_version} ######"
 	su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip uninstall setuptools -y && pip install setuptools" # resinstalling setuptools fixes install issues for sphinx-osexample
 
-	su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip install -r test-requirements.txt -r docs-requirements.txt"
+	# causalml's legacy setup.py runs cythonize() at metadata time and cimports
+	# sklearn.tree._criterion, which is invisible inside pip's isolated build env.
+	# Install everything else first (populating cython + scikit-learn into the venv),
+	# then install causalml with --no-build-isolation so it sees them.
+	su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && \
+		grep -v '^causalml' test-requirements.txt > test-requirements-no-causalml.txt && \
+		grep '^causalml' test-requirements.txt > causalml-requirements.txt && \
+		pip install -r test-requirements-no-causalml.txt -r docs-requirements.txt && \
+		pip install --no-build-isolation -r causalml-requirements.txt"
 
 	su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"
 	echo "###### Show all packages installed for Python ${python_version} ######"
