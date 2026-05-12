@@ -42,8 +42,8 @@
 #     - rel-3.46.0
 #
 #   SCHEDULE:
-#     - master:     Daily at 2:00 AM UTC
-#     - rel-3.46.0: Daily at 5:00 AM UTC (3 hours after master)
+#     - master:     Daily at 1:00 AM UTC
+#     - rel-3.46.0: Daily at 5:00 AM UTC (4 hours after master)
 #
 # ==============================================================================
 
@@ -51,7 +51,7 @@ name: 1.f  -  Public H2O-3 Nightly Scheduler
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC - master
+    - cron: '0 1 * * *'  # Daily at 1 AM UTC - master
     - cron: '0 5 * * *'  # Daily at 5 AM UTC - rel branch (3 hours after master)
 
   workflow_dispatch:
@@ -87,7 +87,7 @@ jobs:
     timeout-minutes: 10
     if: >
       github.event_name == 'workflow_dispatch' && (inputs.branch == 'both' || inputs.branch == 'master') ||
-      github.event_name == 'schedule' && github.event.schedule == '0 2 * * *'
+      github.event_name == 'schedule' && github.event.schedule == '0 1 * * *'
     steps:
       - name: Trigger Nightly Workflow
         env:
