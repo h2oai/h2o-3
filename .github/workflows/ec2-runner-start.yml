@@ -143,6 +143,23 @@ jobs:
             echo "No orphaned instances found"
           fi
 
+      - name: Check Rate Limit (Attempt 1)
+        env:
+          GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
+        run: |
+          RATE_INFO=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit)
+          REMAINING=$(echo "$RATE_INFO" | jq -r '.resources.core.remaining')
+          RESET_TIME=$(echo "$RATE_INFO" | jq -r '.resources.core.reset')
+          echo "GitHub API rate limit remaining: $REMAINING"
+          if [ "$REMAINING" -lt 100 ]; then
+            CURRENT_TIME=$(date +%s)
+            WAIT_TIME=$((RESET_TIME - CURRENT_TIME + 30))
+            if [ "$WAIT_TIME" -gt 0 ] && [ "$WAIT_TIME" -lt 3600 ]; then
+              echo "Rate limit low ($REMAINING remaining). Waiting ${WAIT_TIME}s for reset..."
+              sleep $WAIT_TIME
+            fi
+          fi
+
       - name: Start EC2 (Attempt 1)
         id: start1
         continue-on-error: true
