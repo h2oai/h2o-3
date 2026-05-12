@@ -23,6 +23,17 @@ on:
         required: true
         type: string
 
+    secrets:
+      GH_APP_ID:
+        description: 'GitHub App ID'
+        required: true
+      GH_APP_PRIVATE_KEY:
+        description: 'GitHub App Private Key'
+        required: true
+      GH_APP_INSTALLATION_ID:
+        description: 'GitHub App Installation ID'
+        required: true
+
 env:
   AWS_REGION: us-east-1
   EC2_ROLE: arn:aws:iam::041740254655:role/GitHub-OIDC-Role
@@ -33,6 +44,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        if: inputs.label != '' && inputs.ec2_id != ''
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Configure AWS
         if: inputs.label != '' && inputs.ec2_id != ''
         uses: aws-actions/configure-aws-credentials@v4.0.2
@@ -47,7 +67,7 @@ jobs:
         uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: stop
-          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          github-token: ${{ steps.app-token.outputs.token }}
           label: ${{ inputs.label }}
           ec2-instance-id: ${{ inputs.ec2_id }}
 
