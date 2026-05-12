@@ -172,16 +172,3 @@ jobs:
       label: ${{ needs.start-flow-headless-medium.outputs.label }}
       ec2_id: ${{ needs.start-flow-headless-medium.outputs.ec2_id }}
     secrets: inherit
-
-  # ============================================================================
-  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
-  # ============================================================================
-  final-cleanup:
-    name: Final EC2 Cleanup
-    needs:
-      - stop-flow-headless
-      - stop-flow-headless-small
-      - stop-flow-headless-medium
-    if: always()
-    uses: ./.github/workflows/ec2-final-cleanup.yml
-    secrets: inherit

@@ -438,22 +438,3 @@ jobs:
       label: ${{ needs.start-java17-smoke.outputs.label }}
       ec2_id: ${{ needs.start-java17-smoke.outputs.ec2_id }}
     secrets: inherit
-
-  # ============================================================================
-  # FINAL CLEANUP: Terminate any orphaned EC2 instances from this run
-  # ============================================================================
-  final-cleanup:
-    name: Final EC2 Cleanup
-    needs:
-      - stop-py37-smoke
-      - stop-py311-smoke
-      - stop-r35-smoke
-      - stop-r40-smoke
-      - stop-flow-smoke
-      - stop-info-check
-      - stop-java8-smoke
-      - stop-java11-smoke
-      - stop-java17-smoke
-    if: always()
-    uses: ./.github/workflows/ec2-final-cleanup.yml
-    secrets: inherit
