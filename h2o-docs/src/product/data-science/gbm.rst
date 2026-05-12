@@ -374,7 +374,7 @@ You can see how it used in the `Examples section <#examples>`__.
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Gradient Boosting Machine model.
+This code demonstrates how to build a Gradient Boosting Machine (GBM) model using H2O-3. The model is trained on the prostate dataset to predict the likelihood of prostate cancer. It uses cross-validation, extracts feature interactions, and calculates Friedman and Popescu's H statistics for feature analysis.
 
 .. tabs::
    .. code-tab:: r R
@@ -442,7 +442,7 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     feature_interactions = pros_gbm.feature_interaction()
 
     # Get Friedman and Popescu's H statistics
-    h = pros_gbm.h(prostate_train, ['DPROS','DCAPS'])
+    h = pros_gbm.h(prostate, ['DPROS','DCAPS'])
     print(h)
 
 

@@ -323,7 +323,7 @@ and testing sets:
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Deep Learning model.
+This code example demonstrates how to build a Deep Learning model using H2O-3 in R, Python, and Scala. It uses the insurance dataset, sets categorical features, and trains a model with Tweedie distribution. Predictions and performance evaluations are also shown for each language.
 
 .. tabs::
    .. code-tab:: r R

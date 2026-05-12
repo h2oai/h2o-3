@@ -19,7 +19,6 @@ test <-
     test_file <- locate("smalldata/logreg/prostate_train_null_column_name.csv")
     test_frame <- h2o.importFile(test_file)
     params = prepTest()
-    browser()
     doJavapredictTest("gbm",test_file,test_frame,params)  # make sure original code run
 
     # check a separator that is not a special character

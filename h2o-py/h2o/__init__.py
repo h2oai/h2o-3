@@ -14,9 +14,9 @@ import warnings
 if sys.version_info.major < 3:
     raise Exception("H2O-3 runs only on Python 3. Your Python version is %s." % sys.version)
     
-if sys.version_info.minor < 6:
+if sys.version_info.minor < 7:
     warnings.showwarning(
-        "Your Python version %s is not supported. Officially supported versions are 3.6.x - 3.9.x" % sys.version,
+        "Your Python version %s is not supported. Officially supported versions are 3.7.x - 3.11.x" % sys.version,
         Warning,
         "h2o",
         1)

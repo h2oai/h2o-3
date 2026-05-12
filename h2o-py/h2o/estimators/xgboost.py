@@ -100,7 +100,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  reg_alpha=0.0,  # type: float
                  dmatrix_type="auto",  # type: Literal["auto", "dense", "sparse"]
                  backend="auto",  # type: Literal["auto", "gpu", "cpu"]
-                 gpu_id=None,  # type: Optional[List[int]]
+                 gpu_id=None,  # type: Optional[Union[int, List[int]]]
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  scale_pos_weight=1.0,  # type: float
@@ -335,7 +335,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         :type backend: Literal["auto", "gpu", "cpu"]
         :param gpu_id: Which GPU(s) to use.
                Defaults to ``None``.
-        :type gpu_id: List[int], optional
+        :type gpu_id: Union[int, List[int]], optional
         :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
                binning.
                Defaults to ``-1``.
@@ -2426,7 +2426,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Which GPU(s) to use.
 
-        Type: ``List[int]``.
+        Type: ``Union[int, List[int]]``.
 
         :examples:
 
@@ -2568,7 +2568,7 @@ class H2OXGBoostEstimator(H2OEstimator):
 
          1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
 
-          - h2oModelD = H2OXGBoostEstimator(\*\*h2oParamsD) # parameters specified as a dict()
+          - h2oModelD = H2OXGBoostEstimator(\\*\\*h2oParamsD) # parameters specified as a dict()
           - h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
           - h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
 

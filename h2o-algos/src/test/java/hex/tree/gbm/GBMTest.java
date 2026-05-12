@@ -3888,8 +3888,8 @@ public class GBMTest extends TestUtil {
 
       // compare training predictions of both models (just compare probs)
       if (preds!=null && preds2!=null) {
-        preds.remove(0);
-        preds2.remove(0);
+        Scope.track(preds.remove(0));
+        Scope.track(preds2.remove(0));
         System.out.println("Compare training predictions of both models (just compare probs)");
         assertIdenticalUpToRelTolerance(preds, preds2, 1e-2);
       }
@@ -3905,23 +3905,18 @@ public class GBMTest extends TestUtil {
       if (fr4!=null) fr4.delete();
       if (fr5!=null) fr5.delete();
       if(model != null){
-        model.deleteCrossValidationModels();
         model.delete();
       }
       if(model2 != null){
-        model2.deleteCrossValidationModels();
         model2.delete();
       }
       if(model3 != null){
-        model3.deleteCrossValidationModels();
         model3.delete();
       }
       if(model4 != null){
-        model4.deleteCrossValidationModels();
         model4.delete();
       }
       if(model5 != null){
-        model5.deleteCrossValidationModels();
         model5.delete();
       }
       Scope.exit();
@@ -4010,6 +4005,58 @@ public class GBMTest extends TestUtil {
       
     } finally {
       Scope.exit();
+    }
+  }
+
+  @Test public void testMonotoneConstraintsBernoulliCheck() {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      String colName = "SegSumT";
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.bernoulli;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue(colName, 1)};
+      parms._ntrees = 3;
+
+      System.setProperty("sys.ai.h2o.tree.constraintConsistencyCheck", "true");
+      GBMModel model = Scope.track_generic(new GBM(parms).trainModel().get());
+      Scope.track_generic(model);
+
+      String[] uniqueValues = Scope.track(train.vec(colName).toCategoricalVec()).domain();
+      Vec unchangedPreds = Scope.track(model.score(train)).anyVec();
+      Vec lastPreds = null;
+      for (String valueStr : uniqueValues) {
+        final double value = Double.parseDouble(valueStr);
+
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i = 0; i < c._len; i++)
+              c.set(i, value);
+          }
+        }.doAll(train.vec(colName));
+        assertEquals(value, train.vec(colName).min(), 0);
+        assertEquals(value, train.vec(colName).max(), 0);
+
+        Vec currentPreds = Scope.track(model.score(train)).anyVec();
+        if (lastPreds != null)
+          for (int i = 0; i < lastPreds.length(); i++) {
+            assertTrue("value=" + value + ", id=" + i, lastPreds.at(i) <= currentPreds.at(i));
+            System.out.println("value=" + value + ", id="+ i +" "+lastPreds.at(i) +" <= "+currentPreds.at(i)+" - "+unchangedPreds.at(i));
+          }
+        lastPreds = currentPreds;
+      }
+    } finally {
+      Scope.exit();
+      System.clearProperty("sys.ai.h2o.tree.constraintConsistencyCheck");
     }
   }
 
@@ -4496,7 +4543,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
       Scope.track_generic(gbm);
       Frame train_score = gbm.score(frame);
-      Scope.track_generic(train_score);
+      Scope.track(train_score);
       
       assertTrue(gbm.testJavaScoring(frame, train_score, 1e-15));
 

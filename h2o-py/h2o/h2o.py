@@ -414,7 +414,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None, pattern=None, skipped_columns=None, force_col_types=False, custom_non_data_line_markers=None,
-                partition_by=None, quotechar=None, escapechar=None):
+                partition_by=None, quotechar=None, escapechar=None, tz_adjust_to_local=False):
     """
     Import files into an H2O cluster. The default behavior is to pass-through to the parse phase automatically.
 
@@ -490,6 +490,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(partition_by, None, [str], str)
     assert_is_type(quotechar, None, U("'", '"'))
     assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
+    assert_is_type(tz_adjust_to_local, bool)
     assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
@@ -500,7 +501,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar)
+                                        skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar, tz_adjust_to_local)
 
 
 def load_grid(grid_file_path, load_params_references=False):
@@ -743,7 +744,8 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None, skipped_columns=None, force_col_types=False, 
-                custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
+                custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None,
+                tz_adjust_to_local=False):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -795,6 +797,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param partition_by: A list of columns the dataset has been partitioned by. None by default.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
     :param escapechar: (Optional) One ASCII character used to escape other characters.
+    :param tz_adjust_to_local: (Optional) Adjust the imported data timezone from GMT to cluster timezone.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
 
@@ -829,6 +832,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     assert_is_type(partition_by, None, [str], str)
     assert_is_type(quotechar, None, U("'", '"'))
     assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
+    assert_is_type(tz_adjust_to_local, bool)
     check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
@@ -837,7 +841,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     # temporary dictionary just to pass the following information to the parser: header, separator
     kwargs = {"check_header": header, 
               "source_frames": [quoted(frame_id) for frame_id in raw_frames],
-              "single_quotes": quotechar == "'"}
+              "single_quotes": quotechar == "'",
+              "tz_adjust_to_local": tz_adjust_to_local}
     if separator:
         kwargs["separator"] = ord(separator)
       
@@ -868,14 +873,22 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             if ind in skipped_columns:
                 use_type[ind]=False
 
-    if column_names is not None:
+    if column_names is not None: 
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
         if (skipped_columns is not None) and len(skipped_columns)>0:
-            if (len(column_names)) != parse_column_len:
+          # when we are converting a python object to H2OFrame, column_names will include all columns despite
+          # skipped columns are specified.  In this case, we need to make sure that 
+          # len(column_names)-len(skipped_columns)==parse_column_len
+          # When we are importing a file with skipped columns mentioned, column_names will only contain columns that
+          # are not skipped.  Hence, in this case, we need to check len(column_names) == parse_column_len.
+          # To combine the two, correct parsing will have conditions len(column_names)-len(skipped_columns)==parse_column_len
+          # or len(column_names)==parse_column_len.  Hence, we will raise an error when 
+          # not(len(column_names)-len(skipped_columns)==parse_column_len or len(column_names)==parse_column_len happened.
+         if not((len(column_names) == parse_column_len) or ((len(column_names)-len(skipped_columns))==parse_column_len)):
                 raise ValueError(
-                    "length of col_names should be equal to the number of columns parsed: %d vs %d"
-                    % (len(column_names), parse_column_len))
-        else:
+                    "length of col_names minus length of skipped_columns should equal the number of columns parsed: "
+                    "%d vs %d" % (len(column_names), parse_column_len))
+        else: # no skipped columns here
             if len(column_names) != len(j["column_types"]): raise ValueError(
                 "length of col_names should be equal to the number of columns: %d vs %d"
                 % (len(column_names), len(j["column_types"])))
@@ -1596,7 +1609,7 @@ def load_model(path):
 
 
 def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, 
-                parallel=False, format="csv", write_checksum=True):
+                parallel=False, format="csv", write_checksum=True, tz_adjust_from_local=False):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
@@ -1651,7 +1664,7 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
                data={"path": path, "num_parts": parts, "force": force, 
                      "compression": compression, "separator": ord(sep),
                      "header": header, "quote_header": quote_header, "parallel": parallel, 
-                     "format": format, "write_checksum": write_checksum}
+                     "format": format, "write_checksum": write_checksum, "tz_adjust_from_local": tz_adjust_from_local}
                ),  "Export File").poll()
 
 

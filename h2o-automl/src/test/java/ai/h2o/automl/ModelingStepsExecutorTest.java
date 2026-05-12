@@ -8,13 +8,13 @@ import hex.Model;
 import hex.ModelMetricsRegression;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import jsr166y.CountedCompleter;
 import org.junit.*;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OAutoMLException;
 import water.fvec.Frame;
+import water.junit.rules.ScopeTracker;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
@@ -87,6 +87,9 @@ public class ModelingStepsExecutorTest {
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(5);
+    
+    @Rule
+    public ScopeTracker scope = new ScopeTracker();
 
 
     @Test
@@ -122,154 +125,151 @@ public class ModelingStepsExecutorTest {
     public void test_submit_training_step_with_no_job() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "no_job_work"), parentJob);
-        executor.stop();
-        assertEquals(ResultStatus.skipped, state.status());
-        assertNull(state.error());
-        assertEquals(0, state.subStates().size());
-        assertEquals(0.42, parentJob.progress(), 1e-6);  // parent job work should be filled with skipped work
-        assertEquals(0, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "no_job_work"), parentJob.get());
+          executor.stop();
+          assertEquals(ResultStatus.skipped, state.status());
+          assertNull(state.error());
+          assertEquals(0, state.subStates().size());
+          assertEquals(0.42, parentJob.get().progress(), 1e-6);  // parent job work should be filled with skipped work
+          assertEquals(0, aml.leaderboard().getModelCount());
+        }
     }
 
     @Test
     public void test_submit_valid_training_step() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_work"), parentJob);
-        executor.stop();
-        assertEquals(ResultStatus.success, state.status());
-        assertNull(state.error());
-        assertEquals(0, state.subStates().size());
-        assertEquals(0.42, parentJob.progress(), 1e-6); // parent job work should be filled with executed work
-        assertEquals(1, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_work"), parentJob.get());
+          executor.stop();
+          assertEquals(ResultStatus.success, state.status());
+          assertNull(state.error());
+          assertEquals(0, state.subStates().size());
+          assertEquals(0.42, parentJob.get().progress(), 1e-6); // parent job work should be filled with executed work
+          assertEquals(1, aml.leaderboard().getModelCount());
+        }
     }
     
     @Test
     public void test_submit_cancelled_step() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "cancelled_job"), parentJob);
-        executor.stop();
-        assertEquals(ResultStatus.cancelled, state.status());
-        assertNull(state.error());
-        assertEquals(0, state.subStates().size());
-        assertEquals(0.42, parentJob.progress(), 1e-6); // parent job work should be filled with executed work
-        assertEquals(0, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "cancelled_job"), parentJob.get());
+          executor.stop();
+          assertEquals(ResultStatus.cancelled, state.status());
+          assertNull(state.error());
+          assertEquals(0, state.subStates().size());
+          assertEquals(0.42, parentJob.get().progress(), 1e-6); // parent job work should be filled with executed work
+          assertEquals(0, aml.leaderboard().getModelCount());
+        }
     }
     
     @Test
     public void test_submit_failed_step() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "failed_job"), parentJob);
-        executor.stop();
-        assertEquals(ResultStatus.failed, state.status());
-        assertTrue(state.error() instanceof H2OAutoMLException);
-        assertEquals(0, state.subStates().size());
-        assertEquals(0.42, parentJob.progress(), 1e-6); // parent job work should be filled with executed work
-        assertEquals(0, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "failed_job"), parentJob.get());
+          executor.stop();
+          assertEquals(ResultStatus.failed, state.status());
+          assertTrue(state.error() instanceof H2OAutoMLException);
+          assertEquals(0, state.subStates().size());
+          assertEquals(0.42, parentJob.get().progress(), 1e-6); // parent job work should be filled with executed work
+          assertEquals(0, aml.leaderboard().getModelCount());
+        }
     }
 
     @Test
     public void test_submit_training_step_with_substeps_but_no_main_job() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "no_job_with_substeps"), parentJob);
-        assertEquals(ResultStatus.success, state.status());
-        assertEquals(3, state.subStates().size());
-        executor.stop();
-        assertEquals(2, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "no_job_with_substeps"), parentJob.get());
+          assertEquals(ResultStatus.success, state.status());
+          assertEquals(3, state.subStates().size());
+          executor.stop();
+          assertEquals(2, aml.leaderboard().getModelCount());
+        }
     }
 
     @Test
     public void test_submit_training_step_with_substeps_and_main_job() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_substeps"), parentJob);
-        assertEquals(ResultStatus.success, state.status());
-        assertEquals(3, state.subStates().size());
-        executor.stop();
-        assertEquals(3, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_substeps"), parentJob.get());
+          assertEquals(ResultStatus.success, state.status());
+          assertEquals(3, state.subStates().size());
+          executor.stop();
+          assertEquals(3, aml.leaderboard().getModelCount());
+        }
     }
 
     @Test
     public void test_submit_training_step_with_a_cancelled_substep() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_1_cancelled_substep"), parentJob);
-        assertEquals(ResultStatus.success, state.status());
-        assertEquals(3, state.subStates().size());
-        assertEquals(ResultStatus.success, state.subState(NAME+":sub_step_1").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_2").status());
-        executor.stop();
-        assertEquals(1, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_1_cancelled_substep"), parentJob.get());
+          assertEquals(ResultStatus.success, state.status());
+          assertEquals(3, state.subStates().size());
+          assertEquals(ResultStatus.success, state.subState(NAME+":sub_step_1").status());
+          assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_2").status());
+          executor.stop();
+          assertEquals(1, aml.leaderboard().getModelCount());
+        }
     }
 
     @Test
     public void test_submit_training_step_with_a_failed_substep() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_1_failed_substep"), parentJob);
-        assertEquals(ResultStatus.success, state.status());
-        assertEquals(4, state.subStates().size());
-        assertEquals(ResultStatus.success, state.subState(NAME+":sub_step_1").status());
-        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_2").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
-        executor.stop();
-        assertEquals(1, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_1_failed_substep"), parentJob.get());
+          assertEquals(ResultStatus.success, state.status());
+          assertEquals(4, state.subStates().size());
+          assertEquals(ResultStatus.success, state.subState(NAME+":sub_step_1").status());
+          assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_2").status());
+          assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
+          executor.stop();
+          assertEquals(1, aml.leaderboard().getModelCount());
+        }
     }
 
     @Test
     public void test_submit_training_step_with_no_success_substeps_optimistic() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, DEFAULT_STATE_RESOLUTION_STRATEGY);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_all_failed_substeps"), parentJob);
-        assertEquals(ResultStatus.cancelled, state.status());
-        assertEquals(5, state.subStates().size());
-        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_1").status());
-        assertEquals(ResultStatus.skipped, state.subState(NAME+":sub_step_2").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
-        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_4").status());
-        executor.stop();
-        assertEquals(0, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_all_failed_substeps"), parentJob.get());
+          assertEquals(ResultStatus.cancelled, state.status());
+          assertEquals(5, state.subStates().size());
+          assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_1").status());
+          assertEquals(ResultStatus.skipped, state.subState(NAME+":sub_step_2").status());
+          assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
+          assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_4").status());
+          executor.stop();
+          assertEquals(0, aml.leaderboard().getModelCount());
+        }
     }
     
     @Test
     public void test_submit_training_step_with_no_success_substeps_pessimistic() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start(10, StepResultState.Resolution.pessimistic);
-        Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j.msec() > 1000);
-        StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_all_failed_substeps"), parentJob);
-        assertEquals(ResultStatus.failed, state.status());
-        assertEquals(5, state.subStates().size());
-        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_1").status());
-        assertEquals(ResultStatus.skipped, state.subState(NAME+":sub_step_2").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
-        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_4").status());
-        executor.stop();
-        assertEquals(0, aml.leaderboard().getModelCount());
+        try (ParentJob parentJob = new ParentJob("parent", 1000)) {
+          StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_all_failed_substeps"), parentJob.get());
+          assertEquals(ResultStatus.failed, state.status());
+          assertEquals(5, state.subStates().size());
+          assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_1").status());
+          assertEquals(ResultStatus.skipped, state.subState(NAME+":sub_step_2").status());
+          assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
+          assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_4").status());
+          executor.stop();
+          assertEquals(0, aml.leaderboard().getModelCount());
+        }
     }
 
 
@@ -280,13 +280,34 @@ public class ModelingStepsExecutorTest {
             public void compute2() {
                 while (true) {
                     try {
-                        if (stoppingCondition.test(parent)) break;
+                        if (stoppingCondition.test(parent)) parent.stop(); 
+                        if (parent.stop_requested()) break;
                         Thread.sleep(100);
                     } catch (InterruptedException ignored) {}
                 }
                 tryComplete();
             }
         }, 100);
+    }
+    
+    private static class ParentJob implements AutoCloseable {
+      
+      private final Job job;
+
+      public ParentJob(String name, long timeoutInMillis) {
+        job = makeJob(name);
+        startParentJob(job, j -> j.msec() > timeoutInMillis);
+      }
+
+      @Override
+      public void close() {
+        job.stop(); 
+        job.get();
+      }
+      
+      public Job get() {
+        return job;
+      }
     }
     
     private static abstract class TestingModelingStep extends ModelingStep {

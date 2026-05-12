@@ -6,7 +6,6 @@ test.pca.arrests <- function() {
   Log.info("Importing USArrests.csv data...\n")
   arrests.hex <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"))
   arrests.pca.h2o <- h2o.prcomp(training_frame = arrests.hex, k = 1, seed=12345)
-  browser()
   pca_noK <- h2o.prcomp(training_frame = arrests.hex, seed=12345)
   
   pred1 <- h2o.predict(arrests.pca.h2o, arrests.hex)

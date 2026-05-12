@@ -54,7 +54,7 @@ gbm.grid.test <- function() {
                          keep_cross_validation_predictions = TRUE,
                          seed = 5678)
     print(air.grid)
-    expect_that(length(air.grid@model_ids) < size_of_hyper_space, is_true())
+    expect_true(length(air.grid@model_ids) < size_of_hyper_space)
 
     # stacker.grid <- h2o.grid("stackedensemble", y = "IsDepDelayed", x = myX,
     #                         training_frame = air.hex,

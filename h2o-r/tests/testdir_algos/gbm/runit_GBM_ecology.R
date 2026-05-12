@@ -40,7 +40,7 @@ test.GBM.ecology <- function() {
   print(ecology.sum)
   
   #import csv data for R to use
-  ecology.data <- read.csv(locate("smalldata/gbm_test/ecology_model.csv"), header = TRUE)
+  ecology.data <- read.csv(locate("smalldata/gbm_test/ecology_model.csv"), header = TRUE, stringsAsFactors=TRUE)
   ecology.data <- na.omit(ecology.data) #this omits NAs... does GBM do this? Perhaps better to model w/o doing this?
   
   Log.info("H2O GBM with parameters:\nntrees = 100, max_depth = 5, min_rows = 10, learn_rate = 0.1\n")

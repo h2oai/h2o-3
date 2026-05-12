@@ -91,7 +91,7 @@ An approximation of the :math:`\mathbf{Q}` matrix is used in the IPM algorithm i
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Support Vector Machine model.
+This example demonstrates how to build a Support Vector Machine (SVM) model using H2O-3 for classification tasks. The model is trained on the splice dataset, with parameters set for gamma and rank ratio to optimize performance. After training, the model's performance is evaluated, and predictions can be generated on the dataset if needed.
 
 .. tabs::
    .. code-tab:: r R

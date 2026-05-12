@@ -46,14 +46,11 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
     if (null == backgroundFrame)
       throw H2O.unimpl("DeepLearning supports contribution calculation only with a background frame.");
     Log.info("Starting contributions calculation for "+this._key+"...");
-    List<Frame> tmpFrames = new LinkedList<>();
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
-    try {
-      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      DKV.put(adaptedBgFrame);
-      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
-      DKV.put(adaptedFrame);
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame adaptedFrame = adaptFrameForScore(frame, false);
+      DKV.put(Scope.track_generic(adaptedFrame)); //use track_generic as a Scope lookup optimization as we know it contains only protected vecs
+      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+      DKV.put(Scope.track_generic(adaptedBgFrame)); //same as above
       DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(this,
               adaptedFrame._key,
               adaptedBgFrame._key,
@@ -70,10 +67,8 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
 
       System.arraycopy(cols, 0, colNames, 0, colNames.length - 1);
       colNames[colNames.length - 1] = "BiasTerm";
-      return contributions.runAndGetOutput(j, destination_key, colNames);
+      return Scope.untrack(contributions.runAndGetOutput(j, destination_key, colNames));
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for "+this._key+"...");
     }
   }
@@ -867,7 +862,7 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
     final int n=1;
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
-        if (isCancelled() || job !=null && job.stop_requested()) throw new Job.JobCancelledException();
+        if (isCancelled() || job !=null && job.stop_requested()) throw new Job.JobCancelledException(job);
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {

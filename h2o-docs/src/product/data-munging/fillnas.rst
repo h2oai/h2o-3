@@ -1,45 +1,13 @@
-Fill NAs
---------
+Fill NA values
+==============
 
-Use this function to fill in NA values in a sequential manner up to a specified limit. When using this function, you will specify whether the method to fill the NAs should go forward (default) or backward, whether the NAs should be filled along rows (default) or columns, and the maximum number of consecutive NAs to fill (defaults to 1). 
+Use this function to fill in NA values in a sequential manner up to a specified limit. When using this function, you will specify the following: 
+
+- Whether the method to fill the NA values should go forward (default) or backward. 
+- Whether the NA values should be filled along rows (default) or columns. 
+- The maximum number of consecutive NA values to fill (defaults to 1). 
 
 .. tabs::
-   .. code-tab:: r R
-
-       library(h2o)
-       h2o.init()
-
-       # Create a random data frame with 6 rows and 2 columns. 
-       # Specify that no more than 70% of the values are NAs.
-       fr_with_nas = h2o.createFrame(categorical_fraction = 0.0,
-                                     missing_fraction = 0.7,
-                                     rows = 6,
-                                     cols = 2,
-                                     seed = 123)
-       fr_with_nas
-                C1        C2
-       1       NaN       NaN
-       2 -77.10471 -93.64087
-       3 -13.65926  57.44389
-       4       NaN       NaN
-       5  39.10130       NaN
-       6       NaN  55.43136
-
-       [6 rows x 2 columns]
-
-       # Forward fill a row. In R, the values for axis are 1 (row-wise) and 2 (column-wise)
-       fr <- h2o.fillna(fr_with_nas, "forward", axis = 1, maxlen = 1L)
-       fr
-                C1        C2
-       1       NaN       NaN
-       2 -77.10471 -93.64087
-       3 -13.65926  57.44389
-       4       NaN       NaN
-       5  39.10130  39.10130
-       6       NaN  55.43136
-
-       [6 rows x 2 columns] 
-
    .. code-tab:: python
 
        import h2o
@@ -89,3 +57,38 @@ Use this function to fill in NA values in a sequential manner up to a specified 
 
        [10 rows x 3 columns]
 
+   .. code-tab:: r R
+
+       library(h2o)
+       h2o.init()
+
+       # Create a random data frame with 6 rows and 2 columns. 
+       # Specify that no more than 70% of the values are NAs.
+       fr_with_nas = h2o.createFrame(categorical_fraction = 0.0,
+                                     missing_fraction = 0.7,
+                                     rows = 6,
+                                     cols = 2,
+                                     seed = 123)
+       fr_with_nas
+                C1        C2
+       1       NaN       NaN
+       2 -77.10471 -93.64087
+       3 -13.65926  57.44389
+       4       NaN       NaN
+       5  39.10130       NaN
+       6       NaN  55.43136
+
+       [6 rows x 2 columns]
+
+       # Forward fill a row. In R, the values for axis are 1 (row-wise) and 2 (column-wise)
+       fr <- h2o.fillna(fr_with_nas, "forward", axis = 1, maxlen = 1L)
+       fr
+                C1        C2
+       1       NaN       NaN
+       2 -77.10471 -93.64087
+       3 -13.65926  57.44389
+       4       NaN       NaN
+       5  39.10130  39.10130
+       6       NaN  55.43136
+
+       [6 rows x 2 columns] 

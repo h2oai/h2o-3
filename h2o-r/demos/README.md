@@ -23,7 +23,7 @@ To set up your R environment to run these examples the user will need to downloa
 
   *  **Airlines Data** for [`Predict Airlines Delays`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.large.R) and [`Predict Airlines Delays with Weather`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.weather.large.R) - Any of the following datasets will work for the demo; choose an appropriate dataset size based on speed and scale.
   
-  	* [2 Thousand Rows - 4.3MB](https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv)
+  	* [2 Thousand Rows - 4.3MB](https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip)
   	* [5.8 Million Rows - 580MB](https://s3.amazonaws.com/h2o-airlines-unpacked/airlines_all.05p.csv)
   	* [152 Million Rows - 14.5GB](https://s3.amazonaws.com/h2o-airlines-unpacked/allyears.1987.2013.csv)
   	

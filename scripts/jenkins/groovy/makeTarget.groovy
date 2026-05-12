@@ -108,15 +108,15 @@ def call(final pipelineContext, final Closure body) {
 
 private void execMake(final String buildAction, final String h2o3dir) {
   sh """
-    export JAVA_HOME=`find /usr/lib/jvm -name '*java*${env.JAVA_VERSION}*' -type l`
+    export JAVA_HOME=`find /usr/lib/jvm -name '*java*${env.JAVA_VERSION}*' -type l | head -n1`
     export PATH=\${JAVA_HOME}/bin:\${PATH}
 
     cd ${h2o3dir}
     echo "Linking small and bigdata"
     rm -fv smalldata
-    ln -s -f -v /home/0xdiag/smalldata
+    ln -s -f -v /mnt/h2o-shared-data/smalldata
     rm -fv bigdata
-    ln -s -f -v /home/0xdiag/bigdata
+    ln -s -f -v /mnt/h2o-shared-data/bigdata
 
     # The Gradle fails if there is a special character, in these variables
     unset CHANGE_AUTHOR_DISPLAY_NAME

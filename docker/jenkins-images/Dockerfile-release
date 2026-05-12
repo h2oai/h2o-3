@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop:${FROM_VERSION}
+FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-build-hadoop:${FROM_VERSION}
 
 # Install s3cmd
 ENV S3_CMD_VERSION '2.1.0'
@@ -10,18 +10,20 @@ RUN \
 
 # Install conda
 RUN \
-    curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
+    # Downgrade conda because conda packages cannot be converted on the latest version. If you upgrade, run test release to check if conda can be build and converted.
+    curl -sSL https://repo.continuum.io/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -o /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -bfp /usr/local && \
     rm /tmp/miniconda.sh && \
     conda install -y anaconda-client conda-build && \
     conda update conda && \
     conda clean --all --yes
 
-RUN curl https://baltocdn.com/helm/signing.asc | apt-key add - \
-    && apt-get install apt-transport-https --yes \
-    && echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list \
-    && apt-get update \
-    && apt-get install helm -y
+RUN apt-get update && apt-get install curl gpg apt-transport-https --yes \
+	&& curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey | gpg --dearmor | tee /usr/share/keyrings/helm.gpg > /dev/null \
+	&& echo "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main" | tee /etc/apt/sources.list.d/helm-stable-debian.list \
+	&& apt-get update \
+	&& apt-get install -y helm
+
 
 ENV PATH /opt/conda/bin:$PATH
 ENV GRADLE_USER_HOME=/home/jenkins/.gradle

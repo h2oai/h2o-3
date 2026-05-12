@@ -29,8 +29,8 @@ abstract public class Log {
   public static final byte INFO = 3;
   public static final byte DEBUG= 4;
   public static final byte TRACE= 5;
-
   public static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
+  private static final String PROP_MAX_PID_LENGTH = H2O.OptArgs.SYSTEM_PROP_PREFIX + "log.max.pid.length";
 
   private static int _level = INFO;
   private static boolean _quiet = false;
@@ -262,7 +262,15 @@ abstract public class Log {
 
   private static String getHostPortPid() {
     String host = H2O.SELF_ADDRESS.getHostAddress();
-    return fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
+    return fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", maximumPidLength() + 2);
+  }
+
+  // set sys.ai.h2o.log.max.pid.length to avoid h2o-3 trimming PID in the logs
+  private static int maximumPidLength() {
+    String maxPidPropertyValue = System.getProperty(PROP_MAX_PID_LENGTH);
+    return maxPidPropertyValue != null
+            ? Integer.parseInt(maxPidPropertyValue)
+            : 4;
   }
 
   private static synchronized Logger createLog4j() {

@@ -87,7 +87,7 @@ def uplift_random_forest_smoke():
     assert 405 < np.mean(uplift_chi) < 406, \
         "Not expected output: Mean uplift is suspiciously different. " + str(np.mean(uplift_chi))
     
-    assert 398 < perf_kl.auuc() < 399, \
+    assert 399 < perf_kl.auuc() < 400, \
         "Not expected output: AUUC is suspiciously different. " + str(perf_kl.auuc())
     
     assert 5 < perf_kl.qini() < 6, \

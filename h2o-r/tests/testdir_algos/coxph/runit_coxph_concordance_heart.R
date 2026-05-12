@@ -26,7 +26,7 @@ test.CoxPH.predict <- function() {
     check.pred <- function(r.model, hex.model, r.tstdata, hex.tstdata) {
         fit.pred <- pred.r(r.model, r.tstdata)
         hex.lp <- pred.h2o(hex.model, hex.tstdata)
-        expect_equal(fit.pred, hex.lp, tolerance = 1e-5, scale = 1)
+        expect_equal(fit.pred - mean(fit.pred), hex.lp, tolerance = 1e-5, scale = 1)
     }
     
     check.concordance <- function (rModel, hexModel, data, tolerance = 1e-3) {

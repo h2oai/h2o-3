@@ -5,6 +5,7 @@ h2o -- module for using H2O services.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+# when changing this module, please make sure it doesn't break explanations in jupyter, vscode and ipython
 from contextlib import contextmanager
 import os
 import sys

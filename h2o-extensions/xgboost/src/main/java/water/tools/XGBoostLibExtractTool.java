@@ -10,19 +10,25 @@ import java.io.IOException;
 public class XGBoostLibExtractTool {
 
     public static void main(String[] args) throws IOException {
+        try {
+            mainInternal(args);
+        } catch (IllegalArgumentException e) {
+            System.err.println((e.getMessage()));
+            System.exit(1);
+        }
+    }
+
+    public static void mainInternal(String[] args) throws IOException {
         if (args.length != 1) {
-            System.err.println("XGBoostLibExtractTool: Specify target directory where to extract XGBoost native libraries.");
-            System.exit(-1);
+            throw new IllegalArgumentException("XGBoostLibExtractTool: Specify target directory where to extract XGBoost native libraries.");
         }
         File dir = new File(args[0]);
         if (!dir.exists()) {
-            System.err.println("XGBoostLibExtractTool: Directory '" + dir.getAbsolutePath() + "' doesn't exist.");
-            System.exit(-1);
+            throw new IllegalArgumentException("XGBoostLibExtractTool: Directory '" + dir.getAbsolutePath() + "' doesn't exist.");
         }
         NativeLibraryLoaderChain loader = XGBoostExtension.getLoader();
         if (loader == null) {
-            System.err.println("XGBoostLibExtractTool: Failed to locate native libraries.");
-            System.exit(-1);
+            throw new IllegalArgumentException("XGBoostLibExtractTool: Failed to locate native libraries.");
         }
         for (NativeLibrary lib : loader.getNativeLibs()) {
             if (!lib.isBundled())

@@ -197,7 +197,7 @@ test <- function() {
   expect_error(h2o.partialPlot(object = iris_gbm, newdata = iris_hex, cols="Sepal.Length", targets=c("Iris")), "\n\nERROR MESSAGE:\n\nIncorrect target class: Iris.\n\n")
 
   ## 5) Target is set for non multinomial problem
-  expect_error(h2o.partialPlot(object = prostate_drf, newdata = prostate_hex, targets=c("Iris")), "\n\nERROR MESSAGE:\n\nTargets parameter is available only for multinomial classification.\n\n")
+  expect_error(h2o.partialPlot(object = prostate_drf, newdata = prostate_hex, targets=c("Iris")), "\n\nERROR MESSAGE:\n\nTargets parameter is available only for multinomial classification or ordinal regression.\n\n")
 }
 
 doTest("Test Partial Dependence Plots in H2O: ", test)

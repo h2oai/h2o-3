@@ -121,9 +121,6 @@ class ScoringHistoryGLM(ScoringHistory):
             allowed_metrics = ["deviance_train", "deviance_test", "deviance_xval"]
             # When provided with multiple alpha values, scoring history contains history of all...
             scoring_history = scoring_history[scoring_history["alpha"] == self._model_json["output"]["alpha_best"]]
-        elif self.actual_params.get("HGLM"):
-            allowed_timesteps = ["iterations", "duration"]
-            allowed_metrics = ["convergence", "sumetaieta02"]
         else:
             allowed_timesteps = ["iterations", "duration"]
             allowed_metrics = ["objective", "negative_log_likelihood"]

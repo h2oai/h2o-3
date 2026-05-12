@@ -15,8 +15,8 @@ class ChunkRecordMaterializer extends RecordMaterializer<Long> {
 
   private ChunkConverter _converter;
 
-  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepColumns) {
-    _converter = new ChunkConverter(parquetSchema, chunkSchema, writer, keepColumns);
+  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepColumns, boolean adjustTimezone) {
+    _converter = new ChunkConverter(parquetSchema, chunkSchema, writer, keepColumns, adjustTimezone);
   }
 
   @Override

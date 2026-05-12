@@ -31,7 +31,7 @@ public class ParquetParserProvider extends BinaryParserProvider {
 
   @Override
   public ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup userSetup) {
-    return ParquetParser.guessFormatSetup(v, bits);
+    return ParquetParser.guessFormatSetup(v, bits, userSetup.gettzAdjustToLocal());
   }
 
   @Override

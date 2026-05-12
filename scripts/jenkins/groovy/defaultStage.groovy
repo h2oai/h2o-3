@@ -24,17 +24,23 @@ def call(final pipelineContext, final stageConfig) {
             int pythonMinor = pythonVersionFull[1] as Integer
             if (pythonMajor == 3 && (pythonMinor == 7 || pythonMinor == 8)) { // For some reason python 3.9 is not supported, probably is not the wheele is not build for 3.9
                 dir(stageConfig.stageDir) {
-                    pipelineContext.getUtils().pullXGBWheels(this)
+//                    pipelineContext.getUtils().pullXGBWheels(this)
                 }
-                installXGBWheel(h2oFolder)
+//                installXGBWheel(h2oFolder)
             }
         }
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY) {
-            writeFile(
-                    file: "${h2oFolder}/tests/pyunitChangedTestList", 
-                    text: pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
-            )
+
+            def output = pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
+
+            sh "echo \"${output}\" > ${h2oFolder}/tests/pyunitChangedTestList"
+            sh "chown -R jenkins:jenkins ${h2oFolder}"
+            sh "ls -al ${h2oFolder}/tests"
+            // writeFile(
+            //         file: "${h2oFolder}/tests/pyunitChangedTestList", 
+            //         text: pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
+            // )
         }
 
         if (stageConfig.installRPackage && (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R))) {

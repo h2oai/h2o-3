@@ -14,6 +14,8 @@
 
 package water.parser.parquet;
 
+import org.joda.time.DateTimeZone;
+
 /**
  * Several helper methods inspired by Guava library - https://github.com/google/guava/. We want to avoid bringing guava dependency when possible.
  *
@@ -43,5 +45,10 @@ public class TypeUtils {
      */
     public static int intFromBytes(byte b1, byte b2, byte b3, byte b4) {
         return b1 << 24 | (b2 & 0xFF) << 16 | (b3 & 0xFF) << 8 | (b4 & 0xFF);
+    }
+    
+    public static int getTimestampAdjustmentFromUtcToLocalInMillis() {
+        DateTimeZone clusterLocalTimezone = DateTimeZone.getDefault();
+        return clusterLocalTimezone.getOffset(null);
     }
 }

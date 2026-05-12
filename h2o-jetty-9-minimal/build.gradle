@@ -2,6 +2,8 @@ dependencies {
     api project(":h2o-webserver-iface")
     api "org.eclipse.jetty:jetty-server:${jetty9MinimalVersion}"
     api "org.eclipse.jetty:jetty-servlet:${jetty9MinimalVersion}"
+    api "org.eclipse.jetty.websocket:websocket-api:${jetty9MinimalVersion}"
+    api "org.eclipse.jetty.websocket:websocket-server:${jetty9MinimalVersion}"
     testImplementation group: "junit", name: "junit", version: "4.12"
     testImplementation "org.mockito:mockito-core:2.23.0"
 }

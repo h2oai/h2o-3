@@ -29,8 +29,13 @@ Algorithm-specific parameters
     - ``2`` specifies monotone splines (or I-splines).
     - ``3`` specifies NBSplineTypeI M-splines (which can support any polynomial order).
 
--  **gam_columns**: *Required* Include an array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
-  
+-  **gam_columns**: *Required* Column names representing the smoothing terms used for prediction. ``gam_columns`` accepts either a flat list or a nested list. GAM builds one GAM predictor per entry:
+
+    - Flat list — one single-column GAM predictor per column, for example ``["C1", "C2", "C3"]``. This form is equivalent to the nested form ``[["C1"], ["C2"], ["C3"]]``.
+    - Nested list — each inner list defines one GAM predictor and may contain multiple columns for multi-column (interaction) predictors, for example ``[["C11", "C12"], ["C13", "C14"]]``.
+
+    The ``bs``, ``scale``, and ``num_knots`` arrays must have one entry per GAM predictor.
+
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 
 -  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
@@ -80,6 +85,8 @@ Common parameters
     - ``"MACRO_OVO"``
     - ``"WEIGHTED_OVO"``
 
+-  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. Applicable for classification only. This option defaults to ``False`` (disabled).
+
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``True`` (enabled).
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
@@ -124,6 +131,8 @@ Common parameters
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``False`` (disabled).
+
+-  **startval**: Specify a double array to initialize the GLM coefficients. If ``standardize`` is ``True``, provide standardized coefficient values. Otherwise, provide regular coefficient values.
 
 - `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
 

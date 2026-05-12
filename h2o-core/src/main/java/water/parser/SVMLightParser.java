@@ -30,7 +30,7 @@ class SVMLightParser extends Parser {
     if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
     SVMLightParser p = new SVMLightParser(new ParseSetup(SVMLight_INFO,
             ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,
-            null,null,null,null,null), null);
+            null,null,null,null,null, false), null);
     SVMLightInspectParseWriter dout = new SVMLightInspectParseWriter();
     p.parseChunk(0,new ByteAryData(bits,0), dout);
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)

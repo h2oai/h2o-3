@@ -132,6 +132,13 @@ reserved_words = {
 }
 
 
+def _optional_type(dtype, is_default_none):
+    """Wrap dtype with Optional[...] for # type: comments."""
+    if is_default_none and not dtype.startswith("Optional["):
+        return "Optional[%s]" % dtype
+    return dtype
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #   Generate per-model classes
 # ----------------------------------------------------------------------------------------------------------------------
@@ -188,9 +195,18 @@ def gen_module(schema, algo):
         param_names.append(pname)
         param['pname'] = pname
         param['default_value'] = pdefault
-        param['ptype'] = translate_type_for_check(ptype, enum_values)
-        param['dtype'] = translate_type_for_doc(ptype, enum_values)
-        
+        # ptype/dtype may be pre-set by update_param in gen_*.py to override auto-translation.
+        # When overriding, always set both ptype and dtype together to keep them in sync.
+        has_ptype = 'ptype' in param
+        has_dtype = 'dtype' in param
+        assert has_ptype == has_dtype, \
+            "update_param for '{}' must set both ptype and dtype, or neither (got ptype={}, dtype={})".format(
+                pname, has_ptype, has_dtype)
+        if not has_ptype:
+            param['ptype'] = translate_type_for_check(ptype, enum_values)
+        if not has_dtype:
+            param['dtype'] = translate_type_for_doc(ptype, enum_values)
+
     if deprecated_params:
         extended_params = [p for p in extended_params if p['pname'] not in deprecated_params.keys()]
 
@@ -233,7 +249,7 @@ def gen_module(schema, algo):
     if deprecated_params:
         yield reformat_block("@deprecated_params(%s)" % deprecated_params, indent=4)
     init_sig = "def __init__(self,\n%s\n):" % "\n".join("%s=%s,  # type: %s" 
-                                                        % (name, default, "Optional[%s]" % type if default is None else type)                     
+                                                        % (name, default, _optional_type(type, default is None))
                                                         for name, default, type 
                                                         in [(p.get('pname'),
                                                             stringify(p.get('default_value'), infinity=None),
@@ -352,6 +368,7 @@ def algo_to_classname(algo):
     if algo == "modelselection": return "H2OModelSelectionEstimator"
     if algo == "isotonicregression": return "H2OIsotonicRegressionEstimator"
     if algo == "adaboost": return "H2OAdaBoostEstimator"
+    if algo == "hglm": return "H2OHGLMEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 

@@ -385,7 +385,7 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     attemptGridSave(grid);
     if (_job.stop_requested()) {
-      throw new Job.JobCancelledException();
+      throw new Job.JobCancelledException(_job);
     }
   }
 
@@ -405,7 +405,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     int counter = grid.getModelCount();
     while (it.hasNext()) {
       Model model = null;
-      if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
+      if (_job.stop_requested()) throw new Job.JobCancelledException(_job);  // Handle end-user cancel request
 
       try {
         // Get parameters for next model
@@ -482,7 +482,7 @@ public final class GridSearch<MP extends Model.Parameters> {
       Log.info("Grid time is limited to: " + grid_max_runtime_secs + " for grid: " + gridKey + ". Remaining time is: " + time_remaining_secs);
       if (time_remaining_secs < 0) {
         Log.info("Grid max_runtime_secs of " + grid_max_runtime_secs + " secs has expired; stopping early.");
-        throw new Job.JobCancelledException();
+        throw new Job.JobCancelledException(_job);
       }
     }
 

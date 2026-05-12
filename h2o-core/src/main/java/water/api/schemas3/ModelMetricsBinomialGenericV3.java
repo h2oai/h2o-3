@@ -10,6 +10,8 @@ public class ModelMetricsBinomialGenericV3<I extends ModelMetricsBinomialGeneric
     super.fillFromImpl(modelMetrics);
     r2 = modelMetrics.r2();
     logloss = modelMetrics._logloss;
+    loglikelihood = modelMetrics._loglikelihood;
+    AIC = modelMetrics._aic;
 
     if (modelMetrics != null && modelMetrics._confusion_matrix != null) {
       final ConfusionMatrixV3 convertedConfusionMatrix = new ConfusionMatrixV3();

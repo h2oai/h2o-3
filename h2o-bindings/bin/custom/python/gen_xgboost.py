@@ -49,7 +49,7 @@ def class_extensions():
 
          1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
 
-          - h2oModelD = H2OXGBoostEstimator(\*\*h2oParamsD) # parameters specified as a dict()
+          - h2oModelD = H2OXGBoostEstimator(\\*\\*h2oParamsD) # parameters specified as a dict()
           - h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
           - h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
 
@@ -87,6 +87,14 @@ extensions = dict(
     __imports__="""import h2o""",
     __class__=class_extensions,
 )
+
+def update_param(name, param):
+    if name == 'gpu_id':
+        param['ptype'] = 'int, [int]'
+        param['dtype'] = 'Union[int, List[int]]'
+        return param
+    return None  # param untouched
+
 
 overrides = dict(
     gpu_id=dict(

@@ -2,7 +2,7 @@ package hex.genmodel.algos.glm;
 
 import hex.genmodel.MojoModel;
 
-abstract class GlmMojoModelBase extends MojoModel {
+public abstract class GlmMojoModelBase extends MojoModel {
 
   boolean _useAllFactorLevels;
 
@@ -18,9 +18,19 @@ abstract class GlmMojoModelBase extends MojoModel {
 
   String _family;
   boolean _versionSupportOffset;
+  
+  double _dispersion_estimated;
 
   GlmMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
+  }
+
+  public double[] getBeta() {
+    return _beta;
+  }
+  
+  public double getDispersionEstimated() {
+    return _dispersion_estimated;
   }
 
   void init() {

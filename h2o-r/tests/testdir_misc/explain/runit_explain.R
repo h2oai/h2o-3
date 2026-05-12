@@ -398,6 +398,46 @@ explanation_test_single_model_multinomial_classification <- function() {
   expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
+explanation_test_single_model_ordinal_classification <- function() {
+  train <- h2o.uploadFile(locate("smalldata/iris/iris2.csv"))
+  y <- "response"
+  train[, y] <- as.factor(train[, y])
+
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) != y]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  glm <- h2o.glm(family = "ordinal",
+                  y = y,
+                  training_frame = train,
+                  generate_scoring_history = TRUE,
+                  score_each_iteration = TRUE,
+                  seed = 42)
+
+  # test partial dependences
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.pd_plot(glm, train, col, target = "setosa"))
+  }
+
+  # test ice plot
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.ice_plot(glm, train, col, target = "setosa"))
+  }
+
+  # test learning curve plot
+  expect_ggplot(h2o.learning_curve_plot(glm))
+
+  # test explanation and verify SHAP is skipped for ordinal
+  explanation <- h2o.explain(glm, train)
+  expect_true("H2OExplanation" %in% class(explanation))
+  expect_false("shap_summary" %in% names(explanation), info = "SHAP should be skipped for ordinal models")
+
+  # test explanation row and verify SHAP is skipped for ordinal
+  explanation_row <- h2o.explain_row(glm, train, 1)
+  expect_true("H2OExplanation" %in% class(explanation_row))
+  expect_false("shap_explain_row" %in% names(explanation_row), info = "SHAP should be skipped for ordinal models")
+}
+
 explanation_test_automl_multinomial_classification <- function() {
   train <- h2o.uploadFile(locate("smalldata/iris/iris2.csv"))
   y <- "response"
@@ -519,23 +559,6 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
                        lambda = 0,
                        compute_p_values = TRUE)
   expect_ggplot(h2o.learning_curve_plot(glm_model))
-
-  # HGLM
-  h2odata <- h2o.uploadFile(locate("smalldata/glm_test/semiconductor.csv"))
-  yresp <- "y"
-  xlist <- c("x1", "x3", "x5", "x6")
-  z <- c(1)
-  h2odata$Device <- h2o.asfactor(h2odata$Device)
-  hglm_model <- h2o.glm(x = xlist,
-                        y = yresp,
-                        family = "gaussian",
-                        rand_family = c("gaussian"),
-                        rand_link = c("identity"),
-                        training_frame = h2odata,
-                        HGLM = TRUE,
-                        random_columns = z,
-                        calc_like = TRUE)
-  expect_ggplot(h2o.learning_curve_plot(hglm_model))
 
   # GAM
   knots1 <- c(-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290)
@@ -821,6 +844,7 @@ doSuite("Explanation Tests", makeSuite(
    , explanation_test_single_model_binomial_classification
    , explanation_test_automl_binomial_classification
    , explanation_test_list_of_models_binomial_classification
+   , explanation_test_single_model_ordinal_classification
    , explanation_test_single_model_multinomial_classification
    , explanation_test_automl_multinomial_classification
    , explanation_test_list_of_models_multinomial_classification

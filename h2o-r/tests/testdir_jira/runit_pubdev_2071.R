@@ -14,7 +14,7 @@ foo <- data.frame(c = as.integer64(as.character(lim.integer64()/10)))
 foo.hex <- as.h2o(foo)
 bar <- foo.hex[1,1]
 bari64 <- as.integer64(bar)
-res <- identical.integer64(foo[1,1],bari64)
+res <- identical(foo[1,1],bari64)
 expect_equal(res, TRUE)
 
 detach()

@@ -50,6 +50,8 @@ def assertMeanSDCalculation(meanCol, stdCol, cvVals, tol=1e-6):
             xsum += temp
             xsumSquare += temp*temp
         xmean = xsum/nfolds
+        if math.isnan(xmean) and math.isnan(float(meanCol[itemIndex])):
+            continue
         assert abs(xmean-float(meanCol[itemIndex])) < tol, "Expected mean: {0}, Actual mean: {1}".format(xmean, float(meanCol[itemIndex]))
         xstd = math.sqrt((xsumSquare-nfolds*xmean*xmean)*oneOverNm1)
         assert abs(xstd-float(stdCol[itemIndex])) < tol, "Expected SD: {0}, Actual SD: {1}".format(xstd, float(stdCol[itemIndex]))       

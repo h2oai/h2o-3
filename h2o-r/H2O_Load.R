@@ -18,7 +18,7 @@ function() {
                "deeplearning.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R", "predict.R", "rulefit.R",
                 "isolationforest.R", "psvm.R", "tf-idf.R", "permutation_varimp.R", "extendedisolationforest.R", 
                 "anovaglm.R", "modelselection.R", "upliftrandomforest.R", "infogram.R", "admissibleml.R", "decisiontree.R",
-                "adaBoost.R")
+                "adaBoost.R", "hglm.R")
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }

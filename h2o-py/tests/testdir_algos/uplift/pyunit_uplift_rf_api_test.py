@@ -50,12 +50,6 @@ def uplift_random_forest_api_smoke():
     assert_equals(perf.att(), uplift_model.att())
     assert_equals(perf.atc(), uplift_model.atc())
 
-    try:
-        uplift_model.partial_plot(train_h2o, cols=['feature_8'])
-        assert False, "Call of partial_plot should raise an exception"
-    except H2OResponseError as e:
-        assert "Partial dependence plots are not implemented for uplift models" in str(e)
-
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(uplift_random_forest_api_smoke)

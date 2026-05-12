@@ -26,9 +26,6 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Table of Coefficients")
     TwoDimTableV3 coefficients_table;
 
-    @API(help="Table of Random Coefficients for HGLM")
-    TwoDimTableV3 random_coefficients_table;
-
     @API(help="Table of Coefficients with coefficients denoted with class names for GLM multinonimals only.")
     TwoDimTableV3 coefficients_table_multinomials_with_class_names;  // same as coefficients_table but with real class names.
 
@@ -63,13 +60,28 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     
     @API(help = "Predictor names where variable inflation factors are calculated.")
     String[] vif_predictor_names;
+
+    @API(help = "GLM model coefficients names.")
+    String[] coefficient_names;
     
     @API(help = "predictor variable inflation factors.")
     double[] variable_inflation_factors;
+    
+    @API(help = "Beta (if exists) and linear constraints states")
+    String[] linear_constraint_states;
+    
+    @API(help = "Table of beta (if exists) and linear constraints values and status")
+    TwoDimTableV3 linear_constraints_table;
 
     @API(help="Contains the original dataset and the dfbetas calculated for each predictor.")
     KeyV3.FrameKeyV3 regression_influence_diagnostics;
-
+    
+    @API(help="True if all constraints conditions are satisfied.  Otherwise, false.")
+    boolean all_constraints_satisfied;
+    
+    @API(help="Scoring history of the unrestricted model (used when control variables are provided)", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public TwoDimTableV3 scoring_history_unrestricted_model;
+    
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet
@@ -178,20 +190,6 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
           coeffs_table.columns[tableIndex+nclass].name = colNames[tableIndex-1+nclass];
       }
     }
-    
-    public TwoDimTable buildRandomCoefficients2DTable(double[] ubeta, String[] randomColNames) {
-      String [] colTypes = new String[]{"double"};
-      String [] colFormats = new String[]{"%5f"};
-      String [] colnames = new String[]{"Random Coefficients"};
-      TwoDimTable tdt = new TwoDimTable("HGLM Random Coefficients",
-              "HGLM random coefficients", randomColNames, colnames, colTypes, colFormats,
-              "names");
-      // fill in coefficients
-      for (int i = 0; i < ubeta.length; ++i) {
-        tdt.set(i, 0, ubeta[i]);
-      }
-      return tdt;
-    }
 
     @Override
     public GLMModelOutputV3 fillFromImpl(GLMModel.GLMOutput impl) {
@@ -201,6 +199,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       alpha_best = impl.alpha_best();
       best_submodel_index = impl.bestSubmodelIndex();
       dispersion = impl.dispersion();
+      coefficient_names = impl.coefficientNames().clone();
+      if (impl._linear_constraint_states != null) // pass constraint conditions
+        linear_constraint_states = impl._linear_constraint_states.clone();
       variable_inflation_factors = impl.getVariableInflationFactors();
       vif_predictor_names = impl.hasVIF() ? impl.getVIFPredictorNames() : null;
       List<String> validVIFNames = impl.hasVIF() ? Stream.of(vif_predictor_names).collect(Collectors.toList()) : null;
@@ -210,16 +211,14 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
       coefficients_table = new TwoDimTableV3();
-      if ((impl.ubeta() != null) && (impl.randomcoefficientNames()!= null)) {
-        random_coefficients_table = new TwoDimTableV3();
-        random_coefficients_table.fillFromImpl(buildRandomCoefficients2DTable(impl.ubeta(), impl.randomcoefficientNames()));
-      }
       double [] beta = impl.beta();
-      final double [] magnitudes = new double[beta.length];
-      int len = magnitudes.length - 1;
-      int[] indices = new int[len];
-      for (int i = 0; i < indices.length; ++i)
-        indices[i] = i;
+      final double [] magnitudes = beta==null?null:new double[beta.length];
+      int len = beta==null?0:magnitudes.length - 1;
+      int[] indices = beta==null?null:new int[len];
+      if (beta != null) {
+        for (int i = 0; i < indices.length; ++i)
+          indices[i] = i;
+      }
 
       if(beta == null) beta = MemoryManager.malloc8d(names.length);
       String [] colTypes = new String[]{"double"};
@@ -292,7 +291,7 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       coefficients_table.fillFromImpl(tdt);
       if(impl.beta() != null) { // get varImp
         calculateVarimpBase(magnitudes, indices, impl.getNormBeta());
-
+        
         String[] names2 = new String[len];
         for (int i = 0; i < len; ++i)
           names2[i] = names[indices[i]];

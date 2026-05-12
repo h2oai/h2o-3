@@ -51,8 +51,8 @@ class H2OANOVAGLMEstimator(H2OEstimator):
                  max_iterations=0,  # type: int
                  link="family_default",  # type: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
                  prior=0.0,  # type: float
-                 alpha=None,  # type: Optional[List[float]]
-                 lambda_=[0.0],  # type: List[float]
+                 alpha=None,  # type: Optional[Union[float, List[float]]]
+                 lambda_=[0.0],  # type: Union[float, List[float]]
                  lambda_search=False,  # type: bool
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
@@ -154,10 +154,10 @@ class H2OANOVAGLMEstimator(H2OEstimator):
                specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5
                otherwise.
                Defaults to ``None``.
-        :type alpha: List[float], optional
+        :type alpha: Union[float, List[float]], optional
         :param lambda_: Regularization strength
                Defaults to ``[0.0]``.
-        :type lambda_: List[float]
+        :type lambda_: Union[float, List[float]]
         :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
                Defaults to ``False``.
         :type lambda_search: bool
@@ -575,7 +575,7 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
         amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
 
-        Type: ``List[float]``.
+        Type: ``Union[float, List[float]]``.
         """
         return self._parms.get("alpha")
 
@@ -590,7 +590,7 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         """
         Regularization strength
 
-        Type: ``List[float]``, defaults to ``[0.0]``.
+        Type: ``Union[float, List[float]]``, defaults to ``[0.0]``.
         """
         return self._parms.get("lambda")
 

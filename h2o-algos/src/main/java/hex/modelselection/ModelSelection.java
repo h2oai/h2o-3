@@ -251,7 +251,6 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             } finally {
                 model.update(_job);
                 model.unlock(_job);
-                Scope.exit();
             }
         }
         

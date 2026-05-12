@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
-import static hex.gam.GAMModel.*;
+import static hex.gam.GAMModel.adaptValidFrame;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.*;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
@@ -46,8 +46,7 @@ import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
 import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.util.LinearAlgebraUtils.generateOrthogonalComplement;
 import static hex.util.LinearAlgebraUtils.generateQR;
-import static water.util.ArrayUtils.expandArray;
-import static water.util.ArrayUtils.subtract;
+import static water.util.ArrayUtils.*;
 
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
@@ -68,7 +67,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   
   @Override
   public ModelCategory[] can_build() {
-    return new ModelCategory[]{ModelCategory.Regression};
+    return new ModelCategory[]{ModelCategory.Regression, ModelCategory.Binomial, ModelCategory.Multinomial, 
+            ModelCategory.Ordinal};
   }
 
   @Override
@@ -228,6 +228,14 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _parms._nfolds = 0;
     }
     super.init(expensive);
+    if (_parms._bs != null) {
+      boolean allMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() == _parms._bs.length;
+      boolean containsMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() > 0;
+      if (allMonotoneSplines && containsMonotoneSplines && !_parms._non_negative) {
+        warn("non_negative", " is not set to true when I-spline/monotone-spline (bs=2) is chosen." +
+                "  You will not get monotonic output in this case even though you choose I-spline.");
+      }
+    }
     if (expensive && (_knots == null))  // add GAM specific check here, only do it once especially during CV
       validateGAMParameters();
   }
@@ -919,7 +927,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (error_count() > 0)   // if something goes wrong, let's throw a fit
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
       // add gamified columns to training frame
-      Frame newTFrame = new Frame(rebalance(adaptTrain(), false, _result+".temporary.train"));
+      Frame newTFrame = new Frame(rebalance(adaptTrain(), false, Key.make()+".temporary.train"));
       verifyGamTransformedFrame(newTFrame);
       
       if (error_count() > 0)   // if something goes wrong during gam transformation, let's throw a fit again!
@@ -929,7 +937,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         int[] singleGamColsCount = new int[]{_cubicSplineNum, _iSplineNum, _mSplineNum};
         _valid = rebalance(adaptValidFrame(_parms.valid(), _valid, _parms, _gamColNamesCenter, _binvD,
                         _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd, singleGamColsCount),
-                false, _result + ".temporary.valid");
+                false, Key.make() + ".temporary.valid");
       }
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
       Frame newValidFrame = _valid == null ? null : new Frame(_valid);

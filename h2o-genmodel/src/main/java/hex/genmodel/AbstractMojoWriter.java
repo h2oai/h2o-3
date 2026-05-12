@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream;
 
 public abstract class AbstractMojoWriter {
   /**
-   * Reference to the model being written. Use this in the subclasses to retreive information from your model.
+   * Reference to the model being written. Use this in the subclasses to retrieve information from your model.
    */
   private ModelDescriptor model;
 
@@ -199,6 +199,9 @@ public abstract class AbstractMojoWriter {
     writekv("n_domains", n_categoricals);
     if (model.offsetColumn() != null) {
       writekv("offset_column", model.offsetColumn());
+    }
+    if (model.foldColumn() != null) {
+      writekv("fold_column", model.foldColumn());
     }
     writekv("balance_classes", model.balanceClasses());
     writekv("default_threshold", model.defaultThreshold());

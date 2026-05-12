@@ -276,7 +276,7 @@ public class SharedTreeTest extends TestUtil  {
       Scope.track_generic(modelCal);
 
       Frame scoredCal = ((Model<?, ?, ?>) model).score(train);
-      Scope.track_generic(scoredCal);
+      Scope.track(scoredCal);
 
       assertFrameEquals(scoredCal, scoredWithCalib, 0);
     } finally {

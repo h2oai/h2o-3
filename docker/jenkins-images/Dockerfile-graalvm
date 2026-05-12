@@ -1,8 +1,8 @@
 # This is not part of the automated system.
-# The corresponding image harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3-graalvm-17:42 was build manually from this file
+# The corresponding image 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.5.3-graalvm-17:42 was build manually from this file
 
 
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3:42
+FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.5.3:42
 
 RUN \
     wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.2.0/graalvm-ce-java17-linux-amd64-22.2.0.tar.gz && \

@@ -36,7 +36,7 @@ test.continuous.or.categorical <- function() {
 
   e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5","C6"),
                                col.types=list(by.col.name=c("C4"),types=c("Enum"))), error = function(x) x)
-  expect_true(e[[1]] == "length of col.names must equal to the number of columns in dataset")
+  expect_true(e[[1]] == "length of col.names (minus length of skipped_columns if present) must equal to the number of columns in dataset")
 
   # col.types as character vector
   df.hex2 <- h2o.importFile(locate("smalldata/iris/iris.csv"), col.types=c("Numeric","Numeric","Enum","Numeric","Enum"))
@@ -66,7 +66,7 @@ test.continuous.or.categorical <- function() {
 
   e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5","C6"),
                                col.types=list(by.col.name=c("C4"),types=c("Enum"))), error = function(x) x)
-  expect_true(e[[1]] == "length of col.names must equal to the number of columns in dataset")
+  expect_true(e[[1]] == "length of col.names (minus length of skipped_columns if present) must equal to the number of columns in dataset")
 
   # col.types as character vector
   df.hex4 <- h2o.importFile(locate("smalldata/iris/multiple_iris_files"),
@@ -98,7 +98,7 @@ test.continuous.or.categorical <- function() {
 
   e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5","C6"),
                                col.types=list(by.col.name=c("C4"),types=c("Enum"))), error = function(x) x)
-  expect_true(e[[1]] == "length of col.names must equal to the number of columns in dataset")
+  expect_true(e[[1]] == "length of col.names (minus length of skipped_columns if present) must equal to the number of columns in dataset")
 
   # col.types as character vector
   df.hex6 <- h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.names=c("C1","C2","C3","C4","C5"),

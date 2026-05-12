@@ -1,3 +1,11 @@
+def update_param(name, param):
+    if name in ('alpha', 'lambda'):
+        param['ptype'] = 'numeric, [numeric]'
+        param['dtype'] = 'Union[float, List[float]]'
+        return param
+    return None  # param untouched
+
+
 def class_extensions():
     def get_regression_influence_diagnostics(self, predictor_size=None):
         """

@@ -10,7 +10,6 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.persist.Persist;
 import water.persist.PersistManager;
 
 import java.io.*;
@@ -575,7 +574,7 @@ public class FrameUtils {
         os.write(bytes, 0, count);
         int workDone = is._curChkIdx - curChkIdx;
         if (workDone > 0) {
-          if (_j.stop_requested()) throw new Job.JobCancelledException();
+          if (_j.stop_requested()) throw new Job.JobCancelledException(_j);
           _j.update(workDone);
           curChkIdx = is._curChkIdx;
         }
@@ -1253,6 +1252,8 @@ public class FrameUtils {
       for (int rowIndex=0; rowIndex<chkLen; rowIndex++) {
         String cName = chunks[0].atStr(tempStr, rowIndex).toString();
         int trainColNumber = trainColNames.indexOf(cName);
+        if (trainColNumber < 0 && "intercept".equals(cName))
+          throw new IllegalArgumentException("beta constraints cannot be applied to the intercept");
         String csTypes = colTypes[trainColNumber];
         if ("Enum".equals(csTypes)) {
           String[] domains = _trainFrame.vec(trainColNumber).domain();

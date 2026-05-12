@@ -78,13 +78,27 @@ public class CoxPHMojoModel extends MojoModel  {
   @Override
   public double[] score0(double[] row, double offset, double[] predictions) {
     int[] enumOffset = null;
-    if (_interaction_targets != null) {
-      enumOffset = evaluateInteractions(row);
+    
+    if (_nums == -1) {
+      predictions[0] = forCategories(row) + forOtherColumns(row) - forStrata(row) + offset;
+    } else {
+      if (_interaction_targets != null) {
+        enumOffset = evaluateInteractions(row);
+      }
+      predictions[0] = forCategories(row) + forOtherColumns(row, enumOffset) - forStrata(row) + offset; 
     }
-    predictions[0] = forCategories(row) + forOtherColumns(row, enumOffset) - forStrata(row) + offset;
     return predictions;
   }
 
+  private double forOtherColumns(double[] row) {
+    double result = 0.0;
+    int catOffsetDiff = _cat_offsets[_cats] - _cats;
+    for(int i = _cats ; i + catOffsetDiff < _coef.length; i++) {
+      result += _coef[catOffsetDiff + i] * featureValue(row, i);
+    }
+    return result;
+  }
+  
   private double forOtherColumns(double[] row, int[] enumOffset) {
     double result = 0.0;
     int coefLen = _coef.length;

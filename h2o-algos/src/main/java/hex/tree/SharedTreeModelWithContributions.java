@@ -119,22 +119,21 @@ public abstract class SharedTreeModelWithContributions<
               "Calculating contributions is currently not supported for multinomial models.");
     }
     Log.info("Starting contributions calculation for " + this._key + "...");
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
-    try {
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame scoreContribution;
       if (options._outputFormat == ContributionsOutputFormat.Compact || _output._domains == null) {
-        adaptedFrame = removeSpecialColumns(frame);
-        adaptedBgFrame = removeSpecialColumns(backgroundFrame);
+        Frame adaptedFrame = Scope.track(removeSpecialColumns(frame));
+        Frame adaptedBgFrame = Scope.track(removeSpecialColumns(backgroundFrame));
 
         DKV.put(adaptedFrame);
         DKV.put(adaptedBgFrame);
         
         final String[] outputNames = ArrayUtils.append(adaptedFrame.names(), "BiasTerm");
-        return getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, false, null, options)
+        scoreContribution = getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, false, null, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       } else {
-        adaptedFrame = removeSpecialColumns(frame);
-        adaptedBgFrame = removeSpecialColumns(backgroundFrame);
+        Frame adaptedFrame = Scope.track(removeSpecialColumns(frame));
+        Frame adaptedBgFrame = Scope.track(removeSpecialColumns(backgroundFrame));
         DKV.put(adaptedFrame);
         DKV.put(adaptedBgFrame);
         assert Parameters.CategoricalEncodingScheme.Enum.equals(_parms._categorical_encoding) : "Unsupported categorical encoding. Only enum is supported.";
@@ -178,12 +177,11 @@ public abstract class SharedTreeModelWithContributions<
           }
         }
 
-        return getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, true, catOffsets, options)
+        scoreContribution = getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, true, catOffsets, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       }
+      return Scope.untrack(scoreContribution);
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
   }

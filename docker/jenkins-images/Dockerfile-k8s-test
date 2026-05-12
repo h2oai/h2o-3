@@ -22,8 +22,8 @@ RUN curl https://baltocdn.com/helm/signing.asc | apt-key add - \
 RUN rm /var/lib/apt/lists -rf
 
 RUN \
-    groupadd -g 2117 jenkins && \
-    adduser --uid 2117 -gid 2117 --disabled-password --gecos "" jenkins
+    groupadd -g $(id -g jenkins) jenkins && \
+    adduser --uid $(id -u jenkins) -gid $(id -g jenkins) --disabled-password --gecos "" jenkins
     
 CMD \
   ["/bin/bash"]

@@ -2,7 +2,7 @@
 -------------------------
 
 - Available in: Deep Learning, PCA, CoxPH
-- Hyperparameter: no
+- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~

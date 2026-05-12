@@ -5,6 +5,11 @@ def update_param(name, param):
         return param
     elif name == 'stopping_metric':
         param['values'].remove('anomaly_score')
+        param['values'].remove('AUUC')
+        param['values'].remove('ATE')
+        param['values'].remove('ATT')
+        param['values'].remove('ATC')
+        param['values'].remove('qini')
         return param
     elif name in ['ignored_columns', 'response_column', 'max_confusion_matrix_size']:
         return {}  # will skip this schema param

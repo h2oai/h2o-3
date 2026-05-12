@@ -3,7 +3,6 @@ source("../../scripts/h2o-r-test-setup.R")
 
 # Test derived from Nidhi Mehta.  Thanks.
 test.pubdev.5518 <- function() {
-  browser()
     N=1000
     set.seed(5)
     color = sample(c("D","E","I","F","M"),size=N,replace=TRUE)

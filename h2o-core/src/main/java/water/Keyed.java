@@ -51,12 +51,16 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     return fs;
   }
 
-  /** Removes the Keyed object associated to the key, and all subparts; blocking. */
-  public static void remove( Key k ) {
-    if (k==null) return;
+  /** 
+   * Removes the Keyed object associated to the key, and all subparts; blocking.
+   * @return true if there was anything to be removed.
+   **/
+  public static boolean remove( Key k ) {
+    if (k==null) return false;
     Value val = DKV.get(k);
-    if (val==null) return;
+    if (val==null) return false;
     ((Keyed)val.get()).remove();
+    return true;
   }
   public static void removeQuietly(Key k) {
     try {

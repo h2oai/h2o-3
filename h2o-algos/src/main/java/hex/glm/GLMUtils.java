@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.ScoreKeeper;
 import water.DKV;
 import water.Key;
 import water.MemoryManager;
@@ -142,6 +143,100 @@ public class GLMUtils {
             overlapSize);
     return res;
   }
+
+  public static List<Integer> getStoppingMetricIndices(ScoreKeeper.StoppingMetric stoppingMetric, String[] earlyStopTableHeader){
+    List<Integer> scIndices= new ArrayList<>();
+    String stoppingMetricName = stoppingMetric.name();
+    for(int i = 0; i < earlyStopTableHeader.length; i++){
+      String headerName = earlyStopTableHeader[i].toLowerCase();
+      if(headerName.contains(stoppingMetricName)){
+        scIndices.add(i);
+      }
+    }
+    return scIndices;
+  }
+
+  /**
+   * Combine scoring history tables into one main scoring history when Control variables or remove offset effects are enabled
+   * Scoring History:
+   *             timestamp    duration  iterations  Unrestricted negative_log_likelihood  Unrestricted objective = training metrics calculated during optimization with control variables or offset included (in glmSc)
+   *             Training RMSE  Training LogLoss  Training r2  Training AUC Training pr_auc  Training Lift  Training Classification Error = early stopping training metrics with control variables or offset excluded (in earlyStopSc)
+   *             Validation RMSE  Validation LogLoss  Validation r2  Validation AUC  Validation pr_auc  Validation Lift  Validation Classification Error = early stopping validation metrics with control variables or offset excluded (in earlyStopSc)
+   *             Unrestricted Training AUC Unrestricted Validation AUC = stopping metrics with control variables or offset included (in earlyStopScRestricted)
+   * @param glmSc
+   * @param earlyStopSc
+   * @param stoppingMetric
+   * @param earlyStopScRestricted
+   * @return Combined scoring history table
+   */
+  public static TwoDimTable combineScoringHistoryRestricted(TwoDimTable glmSc, TwoDimTable glmScRestricted,
+                                                            TwoDimTable earlyStopSc,
+                                                            TwoDimTable earlyStopScRestricted,
+                                                            ScoreKeeper.StoppingMetric stoppingMetric,
+                                                            boolean hasValidationMetrics) {
+    String[] esColTypes = earlyStopSc.getColTypes();
+    String[] esColFormats = earlyStopSc.getColFormats();
+    List<String> finalColHeaders = new ArrayList<>(Arrays.asList(glmSc.getColHeaders()));
+    final List<String> earlyStopScHeaders = new ArrayList<>(Arrays.asList(earlyStopSc.getColHeaders()));
+    final int overlapSize = 3; // for "Timestamp", "Duration", "Iterations
+    int earlyStopSCIterIndex = earlyStopScHeaders.indexOf("Iterations");
+    int indexOfIter = finalColHeaders.indexOf("iteration");
+    if (indexOfIter < 0)
+      indexOfIter = finalColHeaders.indexOf("iterations");
+    List<String> finalColTypes = new ArrayList<>(Arrays.asList(glmSc.getColTypes()));
+    List<String> finalColFormats = new ArrayList<>(Arrays.asList(glmSc.getColFormats()));
+    List<Integer> earlyStopColIndices = new ArrayList<>();
+    List<Integer> earlyStopColIndicesRestricted = getStoppingMetricIndices(stoppingMetric, earlyStopScRestricted.getColHeaders());
+
+    int colCounter = 0;
+    String[] glmSCRestrictedColTypes = glmScRestricted.getColTypes();
+    String[] glmSRestrictedColFormats = glmScRestricted.getColFormats();
+    List<Integer> glmScRestrictedColIndices = new ArrayList<>();
+    String[] glmScRestrictedHeaders = glmScRestricted.getColHeaders();
+    for(int i=0; i < glmScRestrictedHeaders.length; i++){
+      String colName = glmScRestrictedHeaders[i];
+      String colNameLower = colName.toLowerCase();
+      if(colNameLower.equals("negative_log_likelihood") || colNameLower.equals("objective")){
+        colName = "Unrestricted "+colName;
+      }
+      if (!finalColHeaders.contains(colName)) {
+        finalColHeaders.add(colName);
+        finalColTypes.add(glmSCRestrictedColTypes[i]);
+        finalColFormats.add(glmSRestrictedColFormats[i]);
+        glmScRestrictedColIndices.add(i);
+        colCounter++;
+      }
+    }
+    
+    colCounter = 0;
+    for (String colName : earlyStopScHeaders) { // collect final table colHeaders, RowHeaders, ColFormats, ColTypes
+      if (!finalColHeaders.contains(colName.toLowerCase())) {
+        finalColHeaders.add(colName);
+        finalColTypes.add(esColTypes[colCounter]);
+        finalColFormats.add(esColFormats[colCounter]);
+        earlyStopColIndices.add(colCounter);
+      }
+      colCounter++;
+    }
+
+    finalColHeaders.add("Unrestricted training "+stoppingMetric.name());
+    finalColTypes.add("double");
+    finalColFormats.add("%.5f");
+    if (hasValidationMetrics) {
+      finalColHeaders.add("Unrestricted validation "+stoppingMetric.name());
+      finalColTypes.add("double");
+      finalColFormats.add("%.5f");
+    }
+    
+    final int tableSize = finalColHeaders.size();
+    String[] rowHeaders = generateRowHeaders(glmSc, earlyStopSc, indexOfIter, earlyStopSCIterIndex);
+    TwoDimTable res = new TwoDimTable("Scoring History", "",
+            rowHeaders, finalColHeaders.toArray(new String[tableSize]), finalColTypes.toArray(new String[tableSize]),
+            finalColFormats.toArray(new String[tableSize]), "");
+    res = combineTableContentsRestricted(glmSc, glmScRestricted, earlyStopSc, earlyStopScRestricted, res, glmScRestrictedColIndices, earlyStopColIndices, earlyStopColIndicesRestricted, indexOfIter, earlyStopSCIterIndex,
+            overlapSize);
+    return res;
+  }
   
   public static String[] generateRowHeaders(TwoDimTable glmSc1, TwoDimTable earlyStopSc2, int glmIterIndex, 
                                             int earlyStopIterIndex) {
@@ -239,6 +334,119 @@ public class GLMUtils {
         combined.set(rowIndex, earlyStopIndex + glmColSize, earlyStopSc2.get(earlyStopRowIndex,
                 earlyStopColIndices.get(earlyStopIndex)));
       }
+  }
+
+  // glmSc is updated for every iteration while earlyStopSc and earlyStopScContVals are updated per scoring interval.  
+  // Hence, glmSc is very likely to be longer than earlyStopSc and earlyStopScContVals.  
+  // We only add earlyStopSc and earlyStopScContVals to the table when the iteration indices align with each other.
+  public static TwoDimTable combineTableContentsRestricted(final TwoDimTable glmSc,
+                                                           final TwoDimTable glmScRestricted,
+                                                           final TwoDimTable earlyStopSc,
+                                                           final TwoDimTable earlyStopScRestricted,
+                                                           TwoDimTable combined,
+                                                           final List<Integer> glmScRestrictedColIndices,
+                                                           final List<Integer> earlyStopColIndices,
+                                                           final List<Integer> earlyStopColIndicesRestricted,
+                                                           final int indexOfIter, final int indexOfIterEarlyStop,
+                                                           final int overlapSize) {
+    final int rowSize = glmScRestricted.getRowDim();         // array size from GLM Scoring, contains more iterations
+    final int rowSize2 = earlyStopScRestricted.getRowDim();  // array size from scoringHistory
+    final int glmColSize = glmSc.getColDim();
+    final int earlyStopColSize = earlyStopColIndices.size();
+    int sc2RowIndex = 0;
+    int glmRowIndex = 0;
+    int rowIndex = 0;
+    List<Integer> iterRecorded = new ArrayList<>();
+    while ((sc2RowIndex < rowSize2) && (glmRowIndex < rowSize)) {
+      int glmScIter = (int) glmScRestricted.get(glmRowIndex, indexOfIter);
+      int earlyStopScIter = (int) earlyStopScRestricted.get(sc2RowIndex, indexOfIterEarlyStop);
+      if (glmScIter == earlyStopScIter) {
+        if (!iterRecorded.contains(glmScIter)) {
+          addOneRow2ScoringHistoryRestricted(glmSc, glmScRestricted, earlyStopSc, earlyStopScRestricted, glmColSize, earlyStopColSize, glmRowIndex, sc2RowIndex,
+                  rowIndex, true, true, glmScRestrictedColIndices, earlyStopColIndices, earlyStopColIndicesRestricted, combined, overlapSize);
+          iterRecorded.add(glmScIter);
+        }
+        sc2RowIndex++;
+        glmRowIndex++;
+      } else if (glmScIter < earlyStopScIter) { // add GLM scoring history
+        if (!iterRecorded.contains(glmScIter)) {
+          //addOneRow2ScoringHistory(glmSc, earlyStopSc, glmColSize, earlyStopColSize, glmRowIndex, sc2RowIndex, rowIndex,
+          //        true, false, earlyStopColIndices, combined, overlapSize);
+          addOneRow2ScoringHistoryRestricted(glmSc, glmScRestricted, earlyStopSc, earlyStopScRestricted, glmColSize, earlyStopColSize, glmRowIndex, sc2RowIndex,
+                  rowIndex, true, false, glmScRestrictedColIndices, earlyStopColIndices, earlyStopColIndicesRestricted, combined, overlapSize);
+          iterRecorded.add(glmScIter);
+        }
+        glmRowIndex++;
+      } else { // add GLM scoring history
+        if (!iterRecorded.contains(earlyStopScIter)) {
+          addOneRow2ScoringHistoryRestricted(glmSc, glmScRestricted, earlyStopSc, earlyStopScRestricted, glmColSize, earlyStopColSize, glmRowIndex, sc2RowIndex,
+                  rowIndex, true, true, glmScRestrictedColIndices, earlyStopColIndices, earlyStopColIndicesRestricted, combined, overlapSize);
+          iterRecorded.add(earlyStopScIter);
+        }
+        sc2RowIndex++;
+      }
+      rowIndex++;
+    }
+    for (int index = glmRowIndex; index < rowSize; index++) { // add left over glm scoring history
+      int iter = (int) glmSc.get(index, indexOfIter);
+      if (!iterRecorded.contains(iter) && iterRecorded.get(iterRecorded.size()-1) < iter) {
+        addOneRow2ScoringHistory(glmSc, earlyStopSc, glmColSize, earlyStopColSize, index, -1,
+                rowIndex++, true, false, earlyStopColIndices, combined, overlapSize);
+        iterRecorded.add(iter);
+      }
+    }
+    for (int index = sc2RowIndex; index < rowSize2; index++) { // add left over scoring history restricted
+      int iter = (int) earlyStopSc.get(index, indexOfIterEarlyStop);
+      if (iterRecorded.size() > 0 && !iterRecorded.contains(iter) && iterRecorded.get(iterRecorded.size()-1) < iter) {
+        addOneRow2ScoringHistoryRestricted(glmSc, glmScRestricted, earlyStopSc, earlyStopScRestricted, glmColSize, earlyStopColSize, -1, index,
+                rowIndex++, false, true, glmScRestrictedColIndices, earlyStopColIndices, earlyStopColIndicesRestricted, combined, overlapSize);
+        iterRecorded.add(iter);
+      }
+    }
+    return combined;
+  }
+
+  public static void addOneRow2ScoringHistoryRestricted(final TwoDimTable glmSc, final TwoDimTable glmScRestricted,
+                                                        final TwoDimTable earlyStopSc,
+                                                        TwoDimTable earlyStopScRestricted, int glmColSize, int earlyStopColSize,
+                                                        int glmRowIndex, int earlyStopRowIndex, int rowIndex, boolean addGlmSC,
+                                                        boolean addEarlyStopSC,
+                                                        final List<Integer> glmScRestrictedIndices,
+                                                        final List<Integer> earlyStopColIndices, final List<Integer> earlyStopColIndicesRestricted,
+                                                        TwoDimTable combined, final int overlapSize) {
+    int glmScRestrictedSize = glmScRestrictedIndices.size();
+    if (addGlmSC) {
+      if(glmSc.getRowDim() > 0) {
+        for (int glmIndex = 0; glmIndex < glmColSize; glmIndex++)
+          combined.set(rowIndex, glmIndex, glmSc.get(glmRowIndex, glmIndex));
+      }
+      if(glmScRestricted.getRowDim() > 0) {
+        int start = glmColSize;
+        for (Integer glmScRestrictedColIndex : glmScRestrictedIndices) {
+          combined.set(rowIndex, start, glmScRestricted.get(glmRowIndex, glmScRestrictedColIndex));
+          start++;
+        }
+      }
+    }
+    if (addEarlyStopSC) {
+      if(earlyStopSc.getRowDim() > 0) {
+        for (int earlyStopIndex = 0; earlyStopIndex < earlyStopColSize; earlyStopIndex++) {
+          if (!addGlmSC && earlyStopIndex < overlapSize)
+            combined.set(rowIndex, earlyStopIndex, earlyStopSc.get(earlyStopRowIndex, earlyStopIndex));
+
+          combined.set(rowIndex, earlyStopIndex + glmColSize + glmScRestrictedSize, earlyStopSc.get(earlyStopRowIndex,
+                  earlyStopColIndices.get(earlyStopIndex)));
+        }
+      } 
+      if(earlyStopScRestricted.getRowDim() > 0) {
+        int start = earlyStopColSize + glmColSize + glmScRestrictedSize;
+        for (Integer earlyStopColIndexRestricted : earlyStopColIndicesRestricted) {
+          combined.set(rowIndex, start, earlyStopScRestricted.get(earlyStopRowIndex,
+                  earlyStopColIndexRestricted));
+          start++;
+        }
+      }
+    }
   }
   
   public static void updateGradGam(double[] gradient, double[][][] penalty_mat, int[][] gamBetaIndices, double[] beta,
@@ -364,5 +572,13 @@ public class GLMUtils {
     if (responseVec != null)
       train.add(parms._response_column, responseVec);
     return train;
+  }
+  
+  public static boolean notZeroLambdas(double[] lambdas) {
+    if (lambdas == null) {
+      return false;
+    } else {
+      return ((int) Arrays.stream(lambdas).filter(x -> x != 0.0).boxed().count()) > 0;
+    }
   }
 }

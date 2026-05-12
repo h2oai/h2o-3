@@ -1,6 +1,14 @@
 deprecated_params = dict(k='inflection_point', f='smoothing', noise_level='noise')
 
 
+def update_param(name, param):
+    if name == 'columns_to_encode':
+        param['ptype'] = '[U(str, [str])]'
+        param['dtype'] = 'List[Union[str, List[str]]]'
+        return param
+    return None  # param untouched
+
+
 def class_extensions():
 
     def transform(self, frame, blending=None, inflection_point=None, smoothing=None, noise=None, as_training=False, **kwargs):

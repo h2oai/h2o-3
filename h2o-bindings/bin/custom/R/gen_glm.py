@@ -40,11 +40,6 @@ if(!missing(beta_constraints))
     set_required_params="""
 parms$training_frame <- training_frame
 args <- .verify_dataxy(training_frame, x, y)
-if (HGLM && is.null(random_columns)) stop("HGLM: must specify random effect column!")
-if (HGLM && (!is.null(random_columns))) {
-  temp <- .verify_dataxy(training_frame, random_columns, y)
-  random_columns <- temp$x_i-1  # change column index to numeric column indices starting from 0
-}
 if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
 if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
 if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
@@ -72,6 +67,54 @@ h2o.makeGLMModel <- function(model,beta) {
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
+}
+
+#' Make unrestricted GLM model when control variables or remove offset effects features are defined.
+#'
+#' Needs source model trained with control variables or remove offset effects feature enabled.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variable or with remove offset effects
+#' @param destination_key a string or a NULL
+#' @export
+h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = 
+    !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+  
+  query <- list(method = "POST", .h2o.__GLMMakeUnrestrictedModel, model = model@model_id)
+  if (!missing(destination_key) && !is.null(destination_key)) {
+    query <- c(query, list(dest = destination_key))
+  }
+  res <- do.call(.h2o.__remoteSend, query)
+  h2o.getModel(model_id = res$model_id$name)
+}
+
+#' Make derived GLM model when control variables or remove offset effects features are defined.
+#'
+#' Needs source model trained with control variables or remove offset effects.
+#' @param model a GLM \linkS4class{H2OModel} trained with control variables or with remove offset effects features
+#' @param destination_key a string or a NULL
+#' @param remove_control_variables_effects logical; set control variables flag to get model affected only by
+#'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
+#' @param remove_offset_effects logical; set remove offset effects flag to get model affected only by
+#'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
+#' @export
+h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_control_variables_effects = FALSE, remove_offset_effects = FALSE) {
+  stopifnot("GLM wasn't trained with control variables or with remove offset effects." = 
+    !is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+  if ((is.null(model@params$actual[["control_variables"]]) || identical(model@params$actual[["remove_offset_effects"]], FALSE))
+      && (isTRUE(remove_control_variables_effects) || isTRUE(remove_offset_effects))) { 
+       stop("GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used.")  
+  }
+  if ((!is.null(model@params$actual[["control_variables"]]) || isTRUE(model@params$actual[["remove_offset_effects"]]))
+      && (isTRUE(remove_control_variables_effects) && isTRUE(remove_offset_effects))){
+      stop("The remove_control_variables_effects and remove_offset_effects feature cannot be used together. It produces the same model as the main model.")
+  }
+  query <- list(method = "POST", .h2o.__GLMMakeDerivedModel, model = model@model_id, 
+    remove_control_variables_effects=remove_control_variables_effects, remove_offset_effects=remove_offset_effects)
+  if (!missing(destination_key) && !is.null(destination_key)) {
+    query <- c(query, list(dest = destination_key))
+  }
+  res <- do.call(.h2o.__remoteSend, query)
+  h2o.getModel(model_id = res$model_id$name)
 }
 
 #' Extract best lambda value found from glm model.

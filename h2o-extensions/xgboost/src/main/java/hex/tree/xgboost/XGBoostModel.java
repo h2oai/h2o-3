@@ -67,6 +67,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public enum Backend {
       auto, gpu, cpu
     }
+    public enum FeatureSelector {
+      cyclic, shuffle, random, greedy, thrifty
+    }
+    public enum Updater {
+      gpu_hist, shotgun, coord_descent, gpu_coord_descent,
+    }
 
     // H2O GBM options
     public boolean _quiet_mode = true;
@@ -140,6 +146,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _skip_drop = 0;
     public int[] _gpu_id; // which GPU to use
     public Backend _backend = Backend.auto;
+
+    // GBLiner specific (booster == gblinear)
+    // lambda, alpha support also for gbtree
+    public FeatureSelector _feature_selector = FeatureSelector.cyclic;
+    public int _top_k;
+    public Updater _updater;
 
     public String _eval_metric;
     public boolean _score_eval_metric_only;
@@ -378,6 +390,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
+    if (p._booster == XGBoostParameters.Booster.gblinear) {
+      params.put("feature_selector", p._feature_selector.toString());
+      params.put("top_k", p._top_k);
+    }
     XGBoostParameters.Backend actualBackend = getActualBackend(p, true);
     XGBoostParameters.TreeMethod actualTreeMethod = getActualTreeMethod(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
@@ -387,17 +403,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         params.put("gpu_id", 0);
       }
       // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
-      if (p._booster == XGBoostParameters.Booster.gblinear) {
+      if (p._booster == XGBoostParameters.Booster.gblinear && p._updater == null) {
         LOG.info("Using gpu_coord_descent updater."); 
-        params.put("updater", "gpu_coord_descent");
+        params.put("updater", XGBoostParameters.Updater.gpu_coord_descent.toString());
       } else {
         LOG.info("Using gpu_hist tree method.");
         params.put("max_bin", p._max_bins);
-        params.put("tree_method", "gpu_hist");
+        params.put("tree_method", XGBoostParameters.Updater.gpu_hist.toString());
       }
-    } else if (p._booster == XGBoostParameters.Booster.gblinear) {
+    } else if (p._booster == XGBoostParameters.Booster.gblinear && p._updater == null) {
       LOG.info("Using coord_descent updater.");
-      params.put("updater", "coord_descent");
+      params.put("updater", XGBoostParameters.Updater.coord_descent.toString());
     } else if (H2O.CLOUD.size() > 1 && p._tree_method == XGBoostParameters.TreeMethod.auto &&
         p._monotone_constraints != null) {
       LOG.info("Using hist tree method for distributed computation with monotone_constraints.");
@@ -409,6 +425,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       if (p._tree_method == XGBoostParameters.TreeMethod.hist) {
         params.put("max_bin", p._max_bins);
       }
+    }
+    if (p._updater != null) {
+      LOG.info("Using user-provided updater.");
+      params.put("updater", p._updater.toString());
     }
     if (p._min_child_weight != 1) {
       LOG.info("Using user-provided parameter min_child_weight instead of min_rows.");
@@ -725,31 +745,29 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     Log.info("Starting contributions calculation for " + this._key + "...");
-    Frame adaptedFrame = null;
-    Frame adaptedBgFrame = null;
-    try {
-      if (null == backgroundFrame)
-        return scoreContributions(frame, destination_key, j, options);
-      adaptedFrame = new Frame(frame);
-      adaptTestForTrain(adaptedFrame, true, false);
-      DKV.put(adaptedFrame);
-      adaptedBgFrame = new Frame(backgroundFrame);
-      adaptTestForTrain(adaptedBgFrame, true, false);
-      DKV.put(adaptedBgFrame);
-      
-      DataInfo di = model_info().dataInfo();
-      assert di != null;
-      final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
-              _output.features() : di.coefNames();
-      final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
+    try (Scope.Safe s = Scope.safe(frame, backgroundFrame)) {
+      Frame contributions;
+      if (null == backgroundFrame) {
+        contributions = scoreContributions(frame, destination_key, j, options);
+      } else {
+        Frame adaptedFrame = adaptFrameForScore(frame, false);
+        DKV.put(adaptedFrame);
+        Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false);
+        DKV.put(adaptedBgFrame);
+
+        DataInfo di = model_info().dataInfo();
+        assert di != null;
+        final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
+                _output.features() : di.coefNames();
+        final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
 
-      return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, 
-              adaptedFrame, adaptedBgFrame, options._outputPerReference, options._outputSpace)
-              .runAndGetOutput(j, destination_key, outputNames);
+        contributions = new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options,
+                adaptedFrame, adaptedBgFrame, options._outputPerReference, options._outputSpace)
+                .runAndGetOutput(j, destination_key, outputNames);
+      }
+      return Scope.untrack(contributions);
     } finally {
-      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
-      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
   }

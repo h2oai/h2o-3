@@ -26,7 +26,7 @@ test.GAM.binomial <- function() {
   h2o.downloadCSV(test, filename)
   twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, col.types=c("enum", "numeric", "numeric")) # perform H2O and mojo prediction and return frames
   h2o.downloadCSV(twoFrames$h2oPredict, sprintf("%s/h2oPred.csv", modelAndDir$dirName))
-  h2o.downloadCSV(twoFrames$mojoPredict, sprintf("%s/mojoOut.csv", modelAndDir$dirname))
+  h2o.downloadCSV(twoFrames$mojoPredict, sprintf("%s/mojoOut.csv", modelAndDir$dirName))
   twoFrames$h2oPredict[,1] <- h2o.asfactor(twoFrames$h2oPredict[,1])
   compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1, tolerance = 1e-6)
 }

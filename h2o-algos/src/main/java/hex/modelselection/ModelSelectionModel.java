@@ -48,7 +48,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
 
     @Override
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-        throw new UnsupportedOperationException("AnovaGLM does not support scoring on data.  It only provide " +
+        throw new UnsupportedOperationException("ModelSelection does not support scoring on data.  It only provide " +
                 "information on predictor relevance");
     }
 

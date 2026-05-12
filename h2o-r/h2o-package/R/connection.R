@@ -237,17 +237,6 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 
         stop("H2O failed to start, stopping execution.")
       }
-
-      securityWarnings <- ""
-      if (file.info(stdout)$size > 0) {
-        securityWarnings <- grep("SECURITY_WARNING", readLines(stdout), value=TRUE)
-      }
-      if (length(securityWarnings) > 0) {
-        msg = paste(
-        "Server process startup raise a security warning:",
-        paste(securityWarnings, collapse = "\n"), sep = "\n")
-        warning(msg)
-      }
     } else
       stop("Can only start H2O launcher if IP address is localhost.")
   }
@@ -795,6 +784,7 @@ h2o.resume <- function(recovery_dir=NULL) {
 #
 # It will download a jar file if it needs to.
 #' @importFrom utils flush.console
+#' @noRd
 .h2o.downloadJar <- function(overwrite = FALSE) {
   old_options <- options(timeout = max(1000, getOption("timeout")))
   on.exit(options(old_options))

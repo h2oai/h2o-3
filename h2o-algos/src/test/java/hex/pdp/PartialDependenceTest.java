@@ -1,6 +1,8 @@
 package hex.pdp;
 
 import hex.PartialDependence;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
@@ -10,6 +12,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.TwoDimTable;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class PartialDependenceTest extends TestUtil {
@@ -422,6 +426,69 @@ public class PartialDependenceTest extends TestUtil {
       if (fr!=null) fr.remove();
       if (model!=null) model.remove();
       if (partialDependence !=null) partialDependence.remove();
+    }
+  }
+
+  // GH-16716: Ordinal models were blocked from partial dependence plots.
+  // This test verifies that PDP works for ordinal regression with targets specified.
+  @Test public void irisOrdinal() {
+    Scope.enter();
+    try {
+      Frame fr = parseTestFile("smalldata/iris/iris2.csv");
+      fr.replace(fr.find("response"), fr.vec("response").toCategoricalVec()).remove();
+      DKV.put(fr);
+      Scope.track(fr);
+
+      GLMModel.GLMParameters parms = new GLMModel.GLMParameters(
+              GLMModel.GLMParameters.Family.ordinal,
+              GLMModel.GLMParameters.Family.ordinal.defaultLink,
+              new double[]{0}, new double[]{0}, 0, 0);
+      parms._train = fr._key;
+      parms._response_column = "response";
+      parms._lambda = new double[]{0};
+      parms._alpha = new double[]{0.001};
+      GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      assertTrue("Ordinal model should have >2 classes", model._output.nclasses() > 2);
+
+      // 1D PDP + 2D PDP with multiple targets and multiple col pairs should work for ordinal.
+      // Uses 2 col pairs to exercise the column2D counter incrementing across pairs.
+      PartialDependence partialDependence = new PartialDependence(Key.<PartialDependence>make());
+      partialDependence._nbins = 10;
+      partialDependence._model_id = (Key) model._key;
+      partialDependence._frame_id = fr._key;
+      partialDependence._cols = new String[]{"Sepal.Length", "Sepal.Width"};
+      partialDependence._col_pairs_2dpdp = new String[][]{
+              {"Sepal.Length", "Sepal.Width"},
+              {"Petal.Length", "Petal.Width"}
+      };
+      partialDependence._targets = new String[]{"setosa", "versicolor"};
+      partialDependence.execImpl().get();
+      Scope.track_generic(partialDependence);
+
+      for (TwoDimTable t : partialDependence._partial_dependence_data)
+        Log.info(t);
+
+      // 2 cols * 2 targets + 2 col_pairs * 2 targets = 8
+      assertEquals("Expected 8 PDP tables", 8, partialDependence._partial_dependence_data.length);
+
+      // Verify PDP tables have correct structure and plausible values
+      for (int i = 0; i < partialDependence._partial_dependence_data.length; i++) {
+        TwoDimTable t = partialDependence._partial_dependence_data[i];
+        assertNotNull("PDP table " + i + " should not be null", t);
+        assertTrue("PDP table " + i + " should have rows", t.getRowDim() > 0);
+        // mean_response column: check values are valid probabilities for ordinal classification
+        int num1D = partialDependence._cols.length * partialDependence._targets.length;
+        int meanRespCol = (i < num1D) ? 1 : 2; // 1D tables have mean_response at col 1, 2D at col 2
+        for (int r = 0; r < t.getRowDim(); r++) {
+          double val = (double) t.get(r, meanRespCol);
+          assertTrue("mean_response should be finite in table " + i + " row " + r, Double.isFinite(val));
+          assertTrue("mean_response should be in [0,1] for ordinal, got " + val, val >= 0.0 && val <= 1.0);
+        }
+      }
+    } finally {
+      Scope.exit();
     }
   }
 

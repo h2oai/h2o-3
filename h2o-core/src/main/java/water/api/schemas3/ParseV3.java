@@ -79,4 +79,7 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
 
   @API(help="One ASCII character used to escape other characters.", direction=API.Direction.INOUT)
   public byte escapechar = ParseSetup.DEFAULT_ESCAPE_CHAR;
+
+  @API(help="Adjust the imported time from GMT timezone to cluster timezone.", direction=API.Direction.INPUT)
+  public boolean tz_adjust_to_local;
 }

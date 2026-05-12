@@ -9,6 +9,7 @@
 # the read config file should be printed to the console.
 # Returns the .h2oconfig file as a data frame with a respective key-value store where the `key` is a column name.
 #' @importFrom utils read.table
+#' @noRd
 .parse.h2oconfig <- function(h2oconfig_filename, print_path = FALSE){
 
     #Only show this output when connecting to H2O
@@ -88,7 +89,7 @@
       ini_to_df = ini_to_df[,names]
       ini_to_df = data.frame(ini_to_df)
       colnames(ini_to_df) <- names
-      ini_to_df <- data.frame(lapply(ini_to_df, trimws))
+      ini_to_df <- data.frame(lapply(ini_to_df, trimws), stringsAsFactors = TRUE)
       return(ini_to_df)
     }
 
@@ -110,7 +111,7 @@
     }
     ini_to_df = subset(ini_to_df,select = names)
     colnames(ini_to_df) <- names
-    ini_to_df <- data.frame(lapply(ini_to_df, trimws))
+    ini_to_df <- data.frame(lapply(ini_to_df, trimws), stringsAsFactors = TRUE)
     return(ini_to_df)
 }
 

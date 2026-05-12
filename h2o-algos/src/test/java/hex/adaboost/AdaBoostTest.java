@@ -519,6 +519,10 @@ public class AdaBoostTest extends TestUtil {
         }
     }
 
+    // GH-16566: hangs intermittently on Java 8/11 due to model-lock race in
+    // DeepLearning.DeepLearningDriver.onExceptionalCompletion (stack at ModelBuilder.java:308).
+    // Main thread deadlocks waiting for a model whose FJ worker already threw.
+    @Ignore("GH-16566 - model-lock race when DeepLearning is used as AdaBoost weak learner")
     @Test
     public void testBasicTrainAndScoreDeepLearning() {
         try {
