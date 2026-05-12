@@ -179,6 +179,15 @@ public class Metalearners {
         GLM createBuilder() {
             return ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
         }
+
+        @Override
+        protected void setCustomParams(GLMParameters parms) {
+            super.setCustomParams(parms);
+            if (parms._lambda_search) {
+                parms._stopping_rounds = 0; // enforce this to avoid the validation error if set in combination with `lambda_search`.
+                parms._objective_epsilon = parms._stopping_tolerance;
+            }
+        }
     }
 
     static class NaiveBayesMetalearner extends SimpleMetalearner {
@@ -191,9 +200,6 @@ public class Metalearners {
 
         @Override
         protected void setCustomParams(GLMParameters parms) {
-            //add GLM custom params
-            super.setCustomParams(parms);
-
             parms._generate_scoring_history = true;
             parms._score_iteration_interval = (parms._valid == null) ? 5 : -1;
 
@@ -216,6 +222,8 @@ public class Metalearners {
                 parms._lambda_search = true;
                 parms._early_stopping = false;
             }
+            //add GLM custom params
+            super.setCustomParams(parms);
         }
     }
 
