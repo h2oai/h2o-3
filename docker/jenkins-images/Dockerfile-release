@@ -15,7 +15,6 @@ RUN \
     bash /tmp/miniconda.sh -bfp /usr/local && \
     rm /tmp/miniconda.sh && \
     conda install -y anaconda-client conda-build && \
-    conda update conda && \
     conda clean --all --yes
 
 RUN apt-get update && apt-get install curl gpg apt-transport-https --yes \
