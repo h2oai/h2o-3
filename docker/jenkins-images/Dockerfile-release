@@ -14,7 +14,7 @@ RUN \
     curl -sSL https://repo.continuum.io/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -o /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -bfp /usr/local && \
     rm /tmp/miniconda.sh && \
-    conda install -y anaconda-client conda-build && \
+    conda install -y anaconda-client=1.10.0 conda-build=3.21.9 && \
     conda clean --all --yes
 
 RUN apt-get update && apt-get install curl gpg apt-transport-https --yes \
