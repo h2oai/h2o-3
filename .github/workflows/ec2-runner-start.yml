@@ -54,6 +54,14 @@ on:
         type: string
         default: 'm5.4xlarge'
 
+    secrets:
+      GH_APP_ID:
+        description: 'GitHub App ID'
+        required: true
+      GH_APP_PRIVATE_KEY:
+        description: 'GitHub App Private Key'
+        required: true
+
     outputs:
       label:
         description: 'Runner label for runs-on'
@@ -91,9 +99,18 @@ jobs:
           echo "Waiting ${DELAY}s to stagger API calls (5-minute window)..."
           sleep $DELAY
 
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - name: Check GitHub API Rate Limit
         env:
-          GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           # Check rate limit and wait if nearly exhausted
           # With JIT mode, each runner only needs ~2 API calls, so threshold of 100 is sufficient
@@ -145,7 +162,7 @@ jobs:
 
       - name: Check Rate Limit (Attempt 1)
         env:
-          GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           RATE_INFO=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit)
           REMAINING=$(echo "$RATE_INFO" | jq -r '.resources.core.remaining')
@@ -166,7 +183,7 @@ jobs:
         uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
-          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          github-token: ${{ steps.app-token.outputs.token }}
           ec2-image-id: ${{ env.AMI_ID }}
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
@@ -203,10 +220,20 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
+      - name: Refresh GitHub App Token (Attempt 2)
+        id: app-token-2
+        if: steps.start1.outcome == 'failure'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - name: Check Rate Limit (Attempt 2)
         if: steps.start1.outcome == 'failure'
         env:
-          GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
+          GH_TOKEN: ${{ steps.app-token-2.outputs.token }}
         run: |
           RATE_INFO=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit)
           REMAINING=$(echo "$RATE_INFO" | jq -r '.resources.core.remaining')
@@ -228,7 +255,7 @@ jobs:
         uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
-          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          github-token: ${{ steps.app-token-2.outputs.token }}
           ec2-image-id: ${{ env.AMI_ID }}
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
@@ -265,10 +292,20 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
+      - name: Refresh GitHub App Token (Attempt 3)
+        id: app-token-3
+        if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - name: Check Rate Limit (Attempt 3)
         if: steps.start1.outcome == 'failure' && steps.start2.outcome == 'failure'
         env:
-          GH_TOKEN: ${{ secrets.GH_RUNNER_PAT }}
+          GH_TOKEN: ${{ steps.app-token-3.outputs.token }}
         run: |
           RATE_INFO=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit)
           REMAINING=$(echo "$RATE_INFO" | jq -r '.resources.core.remaining')
@@ -289,7 +326,7 @@ jobs:
         uses: machulav/ec2-github-runner@v2.6.1
         with:
           mode: start
-          github-token: ${{ secrets.GH_RUNNER_PAT }}
+          github-token: ${{ steps.app-token-3.outputs.token }}
           ec2-image-id: ${{ env.AMI_ID }}
           ec2-instance-type: ${{ inputs.instance_type }}
           subnet-id: ${{ env.SUBNET_ID }}
