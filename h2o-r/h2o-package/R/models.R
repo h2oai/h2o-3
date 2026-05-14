@@ -123,8 +123,30 @@ NULL
   }
   if (algo=="pca" && is.null(params$k)) # make sure to set k=1 for default for pca
     params$k=1
-  job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
-  .h2o.getFutureModel(job, verbose = verbose)
+
+  t_start <- proc.time()[[3]]
+  tf <- params$training_frame
+  n_rows <- tryCatch(if (!is.null(tf)) as.integer(nrow(tf)) else 0L, error = function(e) 0L)
+  n_cols <- tryCatch(if (!is.null(tf)) as.integer(ncol(tf)) else 0L, error = function(e) 0L)
+  if (is.na(n_rows)) n_rows <- 0L
+  if (is.na(n_cols)) n_cols <- 0L
+  outcome <- "ok"
+  result <- tryCatch({
+    job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
+    .h2o.getFutureModel(job, verbose = verbose)
+  }, error = function(e) { outcome <<- "error"; stop(e) })
+  tryCatch({
+    duration_ms <- as.integer((proc.time()[[3]] - t_start) * 1000)
+    .h2o.send_algo_train(.h2o.r_version_safe(),
+                         algo = algo,
+                         family = NULL,
+                         outcome = outcome,
+                         duration_ms = duration_ms,
+                         n_rows = n_rows,
+                         n_cols = n_cols,
+                         n_models = NULL)
+  }, error = function(e) invisible(NULL))
+  result
 }
 
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
@@ -692,13 +714,29 @@ h2o.predict.H2OModel <- function(object, newdata, ...) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
 
-  # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-  res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
-  job_key <- res$key$name
-  dest_key <- res$dest$name
-  .h2o.__waitOnJob(job_key)
-  h2o.getFrame(dest_key)
+  t_start <- proc.time()[[3]]
+  n_rows <- tryCatch(as.integer(nrow(newdata)), error = function(e) 0L)
+  if (is.na(n_rows)) n_rows <- 0L
+  outcome <- "ok"
+  result <- tryCatch({
+    # Send keys to create predictions
+    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+    res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
+    job_key <- res$key$name
+    dest_key <- res$dest$name
+    .h2o.__waitOnJob(job_key)
+    h2o.getFrame(dest_key)
+  }, error = function(e) { outcome <<- "error"; stop(e) })
+  tryCatch({
+    duration_ms <- as.integer((proc.time()[[3]] - t_start) * 1000)
+    .h2o.send_algo_score(.h2o.r_version_safe(),
+                         algo = tryCatch(object@algorithm, error = function(e) ""),
+                         family = NULL,
+                         outcome = outcome,
+                         duration_ms = duration_ms,
+                         n_rows = n_rows)
+  }, error = function(e) invisible(NULL))
+  result
 }
 
 #' Predict the Leaf Node Assignment on an H2O Model

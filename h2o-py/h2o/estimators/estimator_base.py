@@ -7,9 +7,11 @@ from h2o.utils.compatibility import *  # NOQA
 
 from datetime import datetime
 import inspect
+import time
 import warnings
 
 import h2o
+from h2o import telemetry as _telemetry
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
@@ -20,6 +22,14 @@ from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from h2o.model import ModelBase, H2OSegmentModels
 from h2o.model.models import *
 from h2o.model.metrics import *
+
+
+def _h2o_version_safe():
+    try:
+        from h2o import __version__ as _v
+        return _v
+    except Exception:
+        return ""
 
 
 class EstimatorAttributeError(AttributeError):
@@ -100,12 +110,42 @@ class H2OEstimator(ModelBase):
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
         :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
-        parms = self._make_parms(x=x, y=y, training_frame=training_frame, offset_column=offset_column, 
-                                 fold_column=fold_column, weights_column=weights_column, 
-                                 validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
+        parms = self._make_parms(x=x, y=y, training_frame=training_frame, offset_column=offset_column,
+                                 fold_column=fold_column, weights_column=weights_column,
+                                 validation_frame=validation_frame, max_runtime_secs=max_runtime_secs,
                                  ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
-        self._train(parms, verbose=verbose)
-        return self
+        # Time and outcome-track training so telemetry can emit a coarse
+        # algo_train event. Frame dims are read up-front in case training
+        # mutates them; everything is wrapped to never raise.
+        _t_start = time.time()
+        _t_rows = _t_cols = 0
+        try:
+            if isinstance(training_frame, H2OFrame):
+                _t_rows = training_frame.nrow or 0
+                _t_cols = training_frame.ncol or 0
+        except Exception:
+            pass
+        outcome = "ok"
+        try:
+            self._train(parms, verbose=verbose)
+            return self
+        except BaseException:
+            outcome = "error"
+            raise
+        finally:
+            try:
+                if not self._future:
+                    duration_ms = int((time.time() - _t_start) * 1000)
+                    _telemetry.send_algo_train(_h2o_version_safe(),
+                                               algo=getattr(self, "algo", "") or "",
+                                               family=None,
+                                               outcome=outcome,
+                                               duration_ms=duration_ms,
+                                               n_rows=_t_rows,
+                                               n_cols=_t_cols,
+                                               n_models=None)
+            except Exception:
+                pass
 
     def train_segments(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
                        weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
