@@ -290,6 +290,14 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     cat("\n")
   }
   .attach.new.session(conn)
+
+  # Fire-and-forget telemetry; never blocks h2o.init(), never raises.
+  # Honors H2O_DISABLE_TELEMETRY / DO_NOT_TRACK env vars internally.
+  tryCatch(
+    .h2o.send_init_telemetry(as.character(packageVersion("h2o"))),
+    error = function(e) invisible(NULL)
+  )
+
   invisible(conn)
 }
 

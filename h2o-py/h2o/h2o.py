@@ -35,6 +35,8 @@ from .utils.config import H2OConfigReader
 from .utils.metaclass import deprecated_fn
 from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
+from . import telemetry as _telemetry
+from .telemetry import send_init_telemetry as _send_init_telemetry
 
 # enable h2o deprecation warnings by default to ensure that users get notified in interactive mode, without being too annoying
 warnings.filterwarnings("once", category=H2ODeprecationWarning)
@@ -43,6 +45,19 @@ warnings.filterwarnings("once", category=H2ODependencyWarning)
 # warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
 
 h2oconn = None  # type: H2OConnection
+
+
+def _h2o_version_safe():
+    """Return the h2o package version as a string, or "" if unavailable.
+
+    Pulled lazily so telemetry call sites don't import-cycle through the
+    top-level package during module init.
+    """
+    try:
+        from . import __version__ as _v
+        return _v
+    except Exception:
+        return ""
 
 
 def connect(server=None, url=None, ip=None, port=None,
@@ -295,6 +310,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     h2oconn.cluster.timezone = "UTC"
     if verbose:
         h2oconn.cluster.show_status()
+    # Fire-and-forget telemetry; never blocks, never raises. Honors
+    # H2O_DISABLE_TELEMETRY / DO_NOT_TRACK env vars internally.
+    _send_init_telemetry(_h2o_version_safe())
 
 def resume(recovery_dir=None):
     """
@@ -408,8 +426,20 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
-    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
-                                    force_col_types, quotechar, escapechar)
+    outcome = "ok"
+    try:
+        return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
+                                        force_col_types, quotechar, escapechar)
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        # Fire-and-forget telemetry; never raises. size is best-effort.
+        try:
+            size = os.path.getsize(path) if os.path.exists(path) else 0
+            _telemetry.send_upload(_h2o_version_safe(), _telemetry.derive_file_format(path), size, outcome)
+        except Exception:
+            pass
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
@@ -497,11 +527,26 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     if any(os.path.split(p)[0] == "~" for p in patharr):
         raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
                             "Please use absolute paths if possible.")
-    if not parse:
-        return lazy_import(path, pattern)
-    else:
-        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar, tz_adjust_to_local)
+    outcome = "ok"
+    try:
+        if not parse:
+            return lazy_import(path, pattern)
+        else:
+            return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
+                                            skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar, tz_adjust_to_local)
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        try:
+            # Use the first path when a list is supplied; only the URL scheme leaks out.
+            first = path[0] if isinstance(path, list) and path else path
+            _telemetry.send_import(_h2o_version_safe(),
+                                   _telemetry.derive_source_scheme(first),
+                                   _telemetry.derive_file_format(first),
+                                   outcome)
+        except Exception:
+            pass
 
 
 def load_grid(grid_file_path, load_params_references=False):

@@ -1,8 +1,10 @@
 # -*- encoding: utf-8 -*-
 import os
+import time
 import warnings
 
 import h2o
+from h2o import telemetry as _telemetry
 from h2o.base import Keyed
 from h2o.display import H2ODisplay, display, format_to_html, format_to_multiline, format_user_tips, print2 as print
 from h2o.exceptions import H2OValueError, H2OTypeError
@@ -13,6 +15,21 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
+
+
+def _h2o_version_safe():
+    try:
+        from h2o import __version__ as _v
+        return _v
+    except Exception:
+        return ""
+
+
+def _algo_of(model_json):
+    try:
+        return (model_json or {}).get("algo") or ""
+    except Exception:
+        return ""
 
 
 @backwards_compatibility(
@@ -329,10 +346,32 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                              "The argument 'eval_func_ref' cannot be specified when eval_func is specified, ")
             eval_func_ref = h2o.upload_custom_metric(custom_metric)
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id), data = {'custom_metric_func': custom_metric_func}),
-                   self._model_json["algo"] + " prediction")
-        j.poll()
-        return h2o.get_frame(j.dest_key)
+        _t_start = time.time()
+        _t_rows = 0
+        try:
+            _t_rows = test_data.nrow or 0
+        except Exception:
+            pass
+        outcome = "ok"
+        try:
+            j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id), data = {'custom_metric_func': custom_metric_func}),
+                       self._model_json["algo"] + " prediction")
+            j.poll()
+            return h2o.get_frame(j.dest_key)
+        except BaseException:
+            outcome = "error"
+            raise
+        finally:
+            try:
+                duration_ms = int((time.time() - _t_start) * 1000)
+                _telemetry.send_algo_score(_h2o_version_safe(),
+                                           algo=_algo_of(self._model_json),
+                                           family=None,
+                                           outcome=outcome,
+                                           duration_ms=duration_ms,
+                                           n_rows=_t_rows)
+            except Exception:
+                pass
 
     def calibrate(self, calibration_model):
         """
@@ -1209,7 +1248,26 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
             else:
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, genmodel_name))
-        return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
+        outcome = "ok"
+        mojo_path = None
+        try:
+            mojo_path = h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
+            return mojo_path
+        except BaseException:
+            outcome = "error"
+            raise
+        finally:
+            try:
+                size = 0
+                if mojo_path and os.path.exists(mojo_path):
+                    size = os.path.getsize(mojo_path)
+                _telemetry.send_mojo_download(_h2o_version_safe(),
+                                              algo=_algo_of(self._model_json),
+                                              family=None,
+                                              outcome=outcome,
+                                              compressed_size_bytes=size)
+            except Exception:
+                pass
 
     def save_mojo(self, path="", force=False, filename=None):
         """

@@ -561,7 +561,11 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
   #Build MOJO file path and download MOJO file & perform a safe (i.e. error-checked)
   #HTTP GET request to an H2O cluster with MOJO URL
   mojo.path <- file.path(path, filename)
-  writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), mojo.path, useBytes = TRUE)
+  outcome <- "ok"
+  tryCatch(
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), mojo.path, useBytes = TRUE),
+    error = function(e) { outcome <<- "error"; stop(e) }
+  )
 
   if (get_genmodel_jar) {
     urlSuffix = "h2o-genmodel.jar"
@@ -575,6 +579,14 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     #and write to jar.path.
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), jar.path, useBytes = TRUE)
   }
+  tryCatch({
+    size <- if (file.exists(mojo.path)) as.integer(file.info(mojo.path)$size) else 0L
+    .h2o.send_mojo_download(.h2o.r_version_safe(),
+                            algo = tryCatch(model@algorithm, error = function(e) ""),
+                            family = NULL,
+                            outcome = outcome,
+                            compressed_size_bytes = size)
+  }, error = function(e) invisible(NULL))
   return(filename)
 }
 

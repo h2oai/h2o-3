@@ -86,9 +86,22 @@
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
                            col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL, force_col_types=FALSE,
                            custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="") {
-  h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns, force_col_types,
-                   custom_non_data_line_markers=custom_non_data_line_markers, partition_by, quotechar, escapechar)
+  outcome <- "ok"
+  first_path <- if (length(path) > 1L) path[[1]] else path
+  res <- tryCatch(
+    h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
+                     na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns, force_col_types,
+                     custom_non_data_line_markers=custom_non_data_line_markers, partition_by, quotechar, escapechar),
+    error = function(e) { outcome <<- "error"; stop(e) }
+  )
+  tryCatch(
+    .h2o.send_import(.h2o.r_version_safe(),
+                     .h2o.derive_source_scheme(first_path),
+                     .h2o.derive_file_format(first_path),
+                     outcome),
+    error = function(e) invisible(NULL)
+  )
+  res
 }
 
 
@@ -179,28 +192,36 @@ h2o.uploadFile <- function(path, destination_frame = "",
 
   .h2o.gc()  # Clear out H2O to make space for new file
   path <- normalizePath(path, winslash = "/")
-  srcKey <- .key.make( path )
-  urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
-  verbose <- getOption("h2o.verbose", FALSE)
-  if (verbose) pt <- proc.time()[[3]]
-  fileUploadInfo <- fileUpload(path)
-  .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
-  if (verbose) cat(sprintf("uploading file using 'fileUpload' and '.h2o.doSafePOST' took %.2fs\n", proc.time()[[3]]-pt))
-  if (verbose) pt <- proc.time()[[3]]
-  rawData <- .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
-  if (verbose) cat(sprintf("loading data using '.newH2OFrame' took %.2fs\n", proc.time()[[3]]-pt))
-  destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
-  if (parse) {
+  outcome <- "ok"
+  result <- tryCatch({
+    srcKey <- .key.make( path )
+    urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
+    verbose <- getOption("h2o.verbose", FALSE)
     if (verbose) pt <- proc.time()[[3]]
-    ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
-                        col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
-                        decrypt_tool = decrypt_tool, skipped_columns = skipped_columns, force_col_types=force_col_types, 
-                        quotechar=quotechar, escapechar=escapechar)
-    if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
-    ans
-  } else {
-    rawData
-  }
+    fileUploadInfo <- fileUpload(path)
+    .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
+    if (verbose) cat(sprintf("uploading file using 'fileUpload' and '.h2o.doSafePOST' took %.2fs\n", proc.time()[[3]]-pt))
+    if (verbose) pt <- proc.time()[[3]]
+    rawData <- .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
+    if (verbose) cat(sprintf("loading data using '.newH2OFrame' took %.2fs\n", proc.time()[[3]]-pt))
+    destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
+    if (parse) {
+      if (verbose) pt <- proc.time()[[3]]
+      ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
+                          col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
+                          decrypt_tool = decrypt_tool, skipped_columns = skipped_columns, force_col_types=force_col_types,
+                          quotechar=quotechar, escapechar=escapechar)
+      if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
+      ans
+    } else {
+      rawData
+    }
+  }, error = function(e) { outcome <<- "error"; stop(e) })
+  tryCatch({
+    size <- if (file.exists(path)) as.integer(file.info(path)$size) else 0L
+    .h2o.send_upload(.h2o.r_version_safe(), .h2o.derive_file_format(path), size, outcome)
+  }, error = function(e) invisible(NULL))
+  result
 }
 
 #'
