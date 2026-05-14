@@ -18,6 +18,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -211,9 +212,12 @@ public class XMLTestReporter extends RunListener {
             document.createCDATASection(err.toString())
     );
 
-    // write to file
+    // Append the JVM PID to the file name so that parallel test JVMs (notably the
+    // boot test hex.AAA_PreCloudLock, which every node in a multi-node cluster runs)
+    // do not race on the same report file and produce a malformed XML that Jenkins
+    // refuses to parse with "Content is not allowed in trailing section".
     FileWriter fw = new FileWriter(
-            reportsDir + File.separator + "TEST-" + currentTestSuiteName + ".xml"
+            reportsDir + File.separator + "TEST-" + currentTestSuiteName + "-" + jvmPid() + ".xml"
     );
     StreamResult sr = new StreamResult(fw);
     DOMSource source = new DOMSource(document);
@@ -241,6 +245,20 @@ public class XMLTestReporter extends RunListener {
 
   private void recordTestCaseSuccess() {
     successCount++;
+  }
+
+  // Java 8 compatible PID lookup. RuntimeMXBean.getName() conventionally returns
+  // "<pid>@<hostname>" on the HotSpot JVM. Fall back to the bean name (or a fixed
+  // string) if the format is ever different, so we never break test reporting.
+  private static String jvmPid() {
+    try {
+      String name = ManagementFactory.getRuntimeMXBean().getName();
+      int at = name.indexOf('@');
+      if (at > 0) return name.substring(0, at);
+      return name;
+    } catch (Throwable t) {
+      return "unknown";
+    }
   }
   
   private void recordTestCaseFailure(Failure failure) {
