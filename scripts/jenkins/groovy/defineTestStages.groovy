@@ -37,6 +37,10 @@ def getPrStages(final pipelineContext){
       pythonVersion: pyver, timeoutValue: 40, component: buildConfig.COMPONENT_PY
     ])
     stages.add([
+      stageName: "Py${pyver} Demo Notebooks", target: 'test-py-demos',
+      pythonVersion: pyver, timeoutValue: 60, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
       stageName: "Py${pyver} Init Java 8", target: 'test-py-init',
       pythonVersion: pyver, javaVersion: 8, timeoutValue: 10, hasJUnit: false,
       component: buildConfig.COMPONENT_PY, imageSpecifier: image
@@ -137,10 +141,6 @@ def getPrStages(final pipelineContext){
       stageName: 'INFO Check', target: 'test-info',
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
-    ],
-    [
-      stageName: 'Py3.7 Demo Notebooks', target: 'test-py-demos', pythonVersion: '3.7',
-      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 Demo Notebooks (Scikit 1.0.2)', target: 'test-py-demos-new-scikit', pythonVersion: '3.7',
