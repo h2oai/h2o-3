@@ -62,6 +62,12 @@ sphinx_rtd_theme==0.2.4
 sphinxcontrib-osexample>=0.1.1
 shap==0.29.1; python_version < '3.12'
 shap==0.51.0; python_version >= '3.12'
+# jupyter provides a working notebook execution environment for the demo stages.
+# Demos like shap_values_*, predict_contributionsShap and kmeans_aic_bic_diagnostics
+# call shap.initjs() / import seaborn which rely on IPython display machinery and
+# notebook plumbing being present.
+jupyter==1.0.0; python_version >= '3.7' and python_version < '3.12'
+jupyter==1.1.1; python_version >= '3.12'
 boto3==1.18.65; python_version < '3.12'
 boto3==1.42.94; python_version >= '3.12'
 lifelines<0.27; python_version < '3.9'
