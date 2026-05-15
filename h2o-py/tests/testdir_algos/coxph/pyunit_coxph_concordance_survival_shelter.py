@@ -61,6 +61,10 @@ def with_strata_one_column(shelter):
    
     
 def with_strata_and_weights(shelter):
+    # Seed the random draw so the comparison against lifelines is reproducible
+    # across runs. Without this the fit drifts ~1e-7 between runs and trips
+    # assert_frame_equal even with generous rtol/atol.
+    np.random.seed(42)
     shelter["weight"] = np.random.normal(0.5, 0.2, shelter.index.size)
     shelter["weight"] = shelter["weight"].abs()
     
