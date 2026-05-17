@@ -1,4 +1,5 @@
 import importlib, inspect, os, sys
+from sklearn.base import clone, is_classifier, is_regressor
 
 sys.path.insert(1, os.path.join("..",".."))
 from tests import pyunit_utils
@@ -84,8 +85,52 @@ def test_transformers_exposed_in_h2o_sklean_transforms_module():
             _check_exposed_in_h2o_sklearn_module(cls)
 
 
+def test_classifier_and_regressor_identification():
+    mod = importlib.import_module('h2o.sklearn')
+    clf = mod.H2OGradientBoostingClassifier()
+    reg = mod.H2OGradientBoostingRegressor()
+    generic_as_clf = mod.H2OGradientBoostingEstimator(estimator_type='classifier')
+    generic_as_reg = mod.H2OGradientBoostingEstimator(estimator_type='regressor')
+
+    assert is_classifier(clf), "{} should be recognized as classifier".format(clf.__class__.__name__)
+    assert not is_regressor(clf), "{} should not be recognized as regressor".format(clf.__class__.__name__)
+    assert is_regressor(reg), "{} should be recognized as regressor".format(reg.__class__.__name__)
+    assert not is_classifier(reg), "{} should not be recognized as classifier".format(reg.__class__.__name__)
+    assert is_classifier(generic_as_clf), "{} should be classifier when estimator_type is set".format(generic_as_clf.__class__.__name__)
+    assert is_regressor(generic_as_reg), "{} should be regressor when estimator_type is set".format(generic_as_reg.__class__.__name__)
+
+
+def test_clone_preserves_estimator_type_semantics():
+    mod = importlib.import_module('h2o.sklearn')
+    original = mod.H2OGradientBoostingEstimator(estimator_type='classifier')
+    cloned = clone(original)
+    assert is_classifier(cloned), "{} clone should preserve classifier semantics".format(cloned.__class__.__name__)
+    assert not is_regressor(cloned), "{} clone should not become a regressor".format(cloned.__class__.__name__)
+
+
+def test_sklearn_tags_estimator_type_when_available():
+    mod = importlib.import_module('h2o.sklearn')
+    generic_as_clf = mod.H2OGradientBoostingEstimator(estimator_type='classifier')
+    generic_as_reg = mod.H2OGradientBoostingEstimator(estimator_type='regressor')
+
+    for est, expected in [(generic_as_clf, 'classifier'), (generic_as_reg, 'regressor')]:
+        if not hasattr(est, '__sklearn_tags__'):
+            continue
+        tags = est.__sklearn_tags__()
+        if isinstance(tags, dict):
+            continue  # older sklearn API
+        if hasattr(tags, 'estimator_type'):
+            assert tags.estimator_type == expected, \
+                "Unexpected estimator_type tag for {}: {}".format(est.__class__.__name__, tags.estimator_type)
+        if hasattr(tags, 'target_tags') and hasattr(tags.target_tags, 'required'):
+            assert tags.target_tags.required is True
+
+
 pyunit_utils.run_tests([
     test_automl_estimators_exposed_in_h2o_sklearn_automl_module,
     test_algos_estimators_exposed_in_h2o_sklearn_estimators_module,
     test_transformers_exposed_in_h2o_sklean_transforms_module,
+    test_classifier_and_regressor_identification,
+    test_clone_preserves_estimator_type_semantics,
+    test_sklearn_tags_estimator_type_when_available,
 ])
