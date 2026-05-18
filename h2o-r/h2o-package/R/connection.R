@@ -293,10 +293,18 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 
   # Fire-and-forget telemetry; never blocks h2o.init(), never raises.
   # Honors H2O_DISABLE_TELEMETRY / DO_NOT_TRACK env vars internally.
-  tryCatch(
-    .h2o.send_init_telemetry(as.character(packageVersion("h2o"))),
-    error = function(e) invisible(NULL)
-  )
+  # Pick init vs cluster_connect based on whether we actually spawned a JVM.
+  tryCatch({
+    cluster_shape <- tryCatch(.h2o.telemetry.derive_cluster_shape(),
+                              error = function(e) NULL)
+    if (isTRUE(.h2o.startedH2O())) {
+      .h2o.send_init_telemetry(as.character(packageVersion("h2o")),
+                               cluster_shape = cluster_shape)
+    } else {
+      .h2o.send_cluster_connect_telemetry(as.character(packageVersion("h2o")),
+                                          cluster_shape = cluster_shape)
+    }
+  }, error = function(e) invisible(NULL))
 
   invisible(conn)
 }

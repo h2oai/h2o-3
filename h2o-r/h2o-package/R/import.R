@@ -94,13 +94,20 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
                      custom_non_data_line_markers=custom_non_data_line_markers, partition_by, quotechar, escapechar),
     error = function(e) { outcome <<- "error"; stop(e) }
   )
-  tryCatch(
+  tryCatch({
+    # Best-effort size for local paths; remote paths leave it null.
+    csize <- NULL
+    if (is.character(first_path) && length(first_path) == 1L && file.exists(first_path)) {
+      csize <- as.integer(file.info(first_path)$size)
+    }
+    shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(res) else list()
     .h2o.send_import(.h2o.r_version_safe(),
                      .h2o.derive_source_scheme(first_path),
                      .h2o.derive_file_format(first_path),
-                     outcome),
-    error = function(e) invisible(NULL)
-  )
+                     outcome,
+                     compressed_size_bytes = csize,
+                     frame_shape = shape)
+  }, error = function(e) invisible(NULL))
   res
 }
 
@@ -219,7 +226,9 @@ h2o.uploadFile <- function(path, destination_frame = "",
   }, error = function(e) { outcome <<- "error"; stop(e) })
   tryCatch({
     size <- if (file.exists(path)) as.integer(file.info(path)$size) else 0L
-    .h2o.send_upload(.h2o.r_version_safe(), .h2o.derive_file_format(path), size, outcome)
+    shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(result) else list()
+    .h2o.send_upload(.h2o.r_version_safe(), .h2o.derive_file_format(path), size, outcome,
+                     frame_shape = shape)
   }, error = function(e) invisible(NULL))
   result
 }
@@ -411,9 +420,19 @@ h2o.loadModel <- function(path) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
 
-  res <- .h2o.__remoteSend(.h2o.__LOAD_MODEL, h2oRestApiVersion = 99, dir = path, method = "POST")$models[[1L]]
-  res
-  h2o.getModel(res$model_id$name)
+  outcome <- "ok"
+  loaded_model <- tryCatch({
+    res <- .h2o.__remoteSend(.h2o.__LOAD_MODEL, h2oRestApiVersion = 99, dir = path, method = "POST")$models[[1L]]
+    h2o.getModel(res$model_id$name)
+  }, error = function(e) { outcome <<- "error"; stop(e) })
+  tryCatch({
+    size <- if (file.exists(path)) as.integer(file.info(path)$size) else NULL
+    algo <- tryCatch(loaded_model@algorithm, error = function(e) "")
+    .h2o.send_model_load(.h2o.r_version_safe(),
+                         algo = algo, family = NULL, outcome = outcome, fmt = "binary",
+                         compressed_size_bytes = size)
+  }, error = function(e) invisible(NULL))
+  loaded_model
 }
 
 
