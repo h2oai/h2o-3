@@ -173,7 +173,25 @@ class ExprNode(object):
         return exec_str
 
     @staticmethod
+    def _to_python_scalar(x):
+        # numpy 2.x changed scalar repr to include a type wrapper:
+        #   repr(np.float64(0.1)) == "np.float64(0.1)"  (was "0.1")
+        #   repr(np.str_('foo'))  == "np.str_('foo')"   (was "'foo'")
+        # Both forms break H2O's Rapids parser, which expects bare literals.
+        # Convert numpy scalars to plain Python types before any repr() call.
+        # Duck-typed to avoid a hard import dependency on numpy at this layer.
+        if isinstance(x, str):
+            return str(x)  # unwraps np.str_ (str subclass) to plain str
+        if hasattr(x, 'item') and hasattr(x, 'dtype'):
+            try:
+                return x.item()
+            except (AttributeError, ValueError):
+                pass
+        return x
+
+    @staticmethod
     def _arg_to_expr(arg):
+        arg = ExprNode._to_python_scalar(arg)
         if arg is None:
             return "[]"  # empty list
         if isinstance(arg, ExprNode):
@@ -181,7 +199,7 @@ class ExprNode(object):
         if isinstance(arg, ASTId):
             return str(arg)
         if isinstance(arg, (list, tuple, range)):
-            return "[%s]" % " ".join(repr2(x) for x in arg)
+            return "[%s]" % " ".join(repr2(ExprNode._to_python_scalar(x)) for x in arg)
         if isinstance(arg, slice):
             start = 0 if arg.start is None else arg.start
             stop = float("nan") if arg.stop is None else arg.stop

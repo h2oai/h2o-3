@@ -1,6 +1,5 @@
 from builtins import zip
 from builtins import range
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -24,7 +23,7 @@ def emptyclusKmeans():
   ozone_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
 
   ncent = 10
-  nempty = random.randint(1,old_div(ncent,2))
+  nempty = random.randint(1, ncent // 2)
   initial_centers = [[41,190,67,7.4],
                      [36,118,72,8],
                      [12,149,74,12.6],

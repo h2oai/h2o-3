@@ -1,149 +1,77 @@
-def call(final pipelineContext) {
+// needet to be a seoarate method to prevent method too large error on jenkins
+def getPrStages(final pipelineContext){
+  // Stages executed after each push to PR branch. The per-Python block is
+  // generated for every version in BuildConfig.PYTHON_VERSIONS.
+  def buildConfig = pipelineContext.getBuildConfig()
 
-  def MODE_PR_CODE = 0
-  def MODE_BENCHMARK_CODE = 1
-  def MODE_HADOOP_CODE = 2
-  def MODE_XGB_CODE = 3
-  def MODE_COVERAGE_CODE = 4
-  def MODE_SINGLE_TEST_CODE = 5
-  def MODE_KERBEROS_CODE = 6
-  def MODE_HADOOP_MULTINODE_CODE = 7
-  def MODE_MASTER_CODE = 10
-  def MODE_NIGHTLY_REPEATED_CODE = 15
-  def MODE_NIGHTLY_CODE = 20
-  def MODES = [
-    [name: 'MODE_PR', code: MODE_PR_CODE],
-    [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
-    [name: 'MODE_KERBEROS', code: MODE_KERBEROS_CODE],
-    [name: 'MODE_HADOOP_MULTINODE', code: MODE_HADOOP_MULTINODE_CODE],
-    [name: 'MODE_XGB', code: MODE_XGB_CODE],
-    [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
-    [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
-    [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
-    [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
-    [name: 'MODE_NIGHTLY_REPEATED', code: MODE_NIGHTLY_REPEATED_CODE],
-    [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
-  ]
+  def stages = []
+  for (pyver in buildConfig.PYTHON_VERSIONS) {
+    def image = "python-${pyver}-jdk-8"
 
-  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
+    stages.add([
+      stageName: "Py${pyver} Smoke (Main Assembly)", target: 'test-py-smoke-main',
+      pythonVersion: pyver, timeoutValue: 8, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_MAIN, buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Smoke (Minimal Assembly)", target: 'test-py-smoke-minimal',
+      pythonVersion: pyver, timeoutValue: 16, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_MINIMAL, buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Smoke (Steam Assembly)", target: 'test-py-smoke-steam',
+      pythonVersion: pyver, timeoutValue: 8, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_STEAM, buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} RuleFit (Java 8)", target: 'test-junit-rulefit-jenkins',
+      pythonVersion: pyver, javaVersion: 8, timeoutValue: 180, component: buildConfig.COMPONENT_JAVA,
+      additionalTestPackages: [buildConfig.COMPONENT_PY],
+      imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Booklets", target: 'test-py-booklets',
+      pythonVersion: pyver, timeoutValue: 40, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Demo Notebooks", target: 'test-py-demos',
+      pythonVersion: pyver, timeoutValue: 60, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Init Java 8", target: 'test-py-init',
+      pythonVersion: pyver, javaVersion: 8, timeoutValue: 10, hasJUnit: false,
+      component: buildConfig.COMPONENT_PY, imageSpecifier: image
+    ])
+    stages.add([
+      stageName: "Py${pyver} Single Node", target: 'test-pyunit-single-node',
+      pythonVersion: pyver, timeoutValue: 40, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Small", target: 'test-pyunit-small',
+      pythonVersion: pyver, timeoutValue: 200, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Assembly to MOJO2", target: 'test-pyunit-mojo2',
+      pythonVersion: pyver, timeoutValue: 40, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} AutoML", target: 'test-pyunit-automl',
+      pythonVersion: pyver, timeoutValue: 110, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} AutoML Smoke (NO XGB)", target: 'test-pyunit-automl-smoke-noxgb',
+      pythonVersion: pyver, timeoutValue: 20, component: buildConfig.COMPONENT_PY
+    ])
+    stages.add([
+      stageName: "Py${pyver} Fault Tolerance", target: 'test-pyunit-fault-tolerance',
+      pythonVersion: pyver, timeoutValue: 30, component: buildConfig.COMPONENT_PY
+    ])
+  }
 
-  def METADATA_VALIDATION_STAGES = [
-    [
-      stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 8, timeoutValue: 10,
-      component: pipelineContext.getBuildConfig().COMPONENT_ANY
-    ]
-  ]
-
-  // Job will execute PR_STAGES only if these are green.
-  // for Python, smoke only oldest and latest supported versions
-  def SMOKE_STAGES = [
-    [
-      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.11 Smoke', target: 'test-py-smoke', pythonVersion: '3.11', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-	  [
-      stageName: 'R4.4 Smoke', target: 'test-r-smoke', rVersion: '4.4.0',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-	  [
-      stageName: 'R4.5 Smoke', target: 'test-r-smoke', rVersion: '4.5.2',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 36,
-      component: pipelineContext.getBuildConfig().COMPONENT_JS
-    ],
-    [
-      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ]
-  ]
-
-  def SMOKE_PR_STAGES = [
-    [
-      stageName: 'Py3.7 Changed Only', target: 'test-py-changed', pythonVersion: '3.7',timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ]
-  ]
-
-  // Stages executed after each push to PR branch.
-  // for Python, mainly test with latest supported version
-  def PR_STAGES = [
-    [
-      stageName: 'Py3.7 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-              pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
-      ],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 16,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-              pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
-      ],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [
-              pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
-      ],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Booklets', target: 'test-py-booklets', pythonVersion: '3.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 Init Java 8', target: 'test-py-init', pythonVersion: '3.7', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-3.7-jdk-8"
-    ],
-    [
-      stageName: 'Py3.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
-      timeoutValue: 130, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-//    [
-//      stageName: 'Py3.11 Small', target: 'test-pyunit-small', pythonVersion: '3.11',
-//      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_PY
-//    ],
-    [
-      stageName: 'Py3.7 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 AutoML Smoke (NO XGB)', target: 'test-pyunit-automl-smoke-noxgb', pythonVersion: '3.7',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.7',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
+  stages.addAll([
     [
       stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
       timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
@@ -213,10 +141,6 @@ def call(final pipelineContext) {
       stageName: 'INFO Check', target: 'test-info',
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
-    ],
-    [
-      stageName: 'Py3.7 Demo Notebooks', target: 'test-py-demos', pythonVersion: '3.7',
-      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 Demo Notebooks (Scikit 1.0.2)', target: 'test-py-demos-new-scikit', pythonVersion: '3.7',
@@ -289,7 +213,101 @@ def call(final pipelineContext) {
       stageName: 'External XGBoost', target: 'test-external-xgboost', pythonVersion: '3.7', timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ]
+  ])
+
+  return stages
+}
+
+
+def call(final pipelineContext) {
+
+  def MODE_PR_CODE = 0
+  def MODE_BENCHMARK_CODE = 1
+  def MODE_HADOOP_CODE = 2
+  def MODE_XGB_CODE = 3
+  def MODE_COVERAGE_CODE = 4
+  def MODE_SINGLE_TEST_CODE = 5
+  def MODE_KERBEROS_CODE = 6
+  def MODE_HADOOP_MULTINODE_CODE = 7
+  def MODE_MASTER_CODE = 10
+  def MODE_NIGHTLY_REPEATED_CODE = 15
+  def MODE_NIGHTLY_CODE = 20
+  def MODES = [
+    [name: 'MODE_PR', code: MODE_PR_CODE],
+    [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
+    [name: 'MODE_KERBEROS', code: MODE_KERBEROS_CODE],
+    [name: 'MODE_HADOOP_MULTINODE', code: MODE_HADOOP_MULTINODE_CODE],
+    [name: 'MODE_XGB', code: MODE_XGB_CODE],
+    [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
+    [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
+    [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
+    [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
+    [name: 'MODE_NIGHTLY_REPEATED', code: MODE_NIGHTLY_REPEATED_CODE],
+    [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
   ]
+
+  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
+
+  def METADATA_VALIDATION_STAGES = [
+    [
+      stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 8, timeoutValue: 10,
+      component: pipelineContext.getBuildConfig().COMPONENT_ANY
+    ]
+  ]
+
+  // Job will execute PR_STAGES only if these are green.
+  // for Python, smoke only oldest and latest supported versions
+  def SMOKE_STAGES = [
+    [
+      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.11 Smoke', target: 'test-py-smoke', pythonVersion: '3.11', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+	  ],
+	  [
+      stageName: 'Py3.12 Smoke', target: 'test-py-smoke', pythonVersion: '3.12', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.13 Smoke', target: 'test-py-smoke', pythonVersion: '3.13', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.14 Smoke', target: 'test-py-smoke', pythonVersion: '3.14', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+	  [
+      stageName: 'R4.4 Smoke', target: 'test-r-smoke', rVersion: '4.4.0',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+	  [
+      stageName: 'R4.5 Smoke', target: 'test-r-smoke', rVersion: '4.5.2',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 36,
+      component: pipelineContext.getBuildConfig().COMPONENT_JS
+    ],
+    [
+      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ]
+  ]
+
+  def SMOKE_PR_STAGES = [
+    [
+      stageName: 'Py3.7 Changed Only', target: 'test-py-changed', pythonVersion: '3.7',timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ]
+  ]
+
+  def PR_STAGES = getPrStages(pipelineContext)
 
   def BENCHMARK_STAGES = [
     [
@@ -327,7 +345,7 @@ def call(final pipelineContext) {
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],
-    [ 
+    [
       stageName: 'GAM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
@@ -372,7 +390,7 @@ def call(final pipelineContext) {
       rVersion: '4.0.2',
       healthCheckSuppressed: true
     ],
-    [ 
+    [
       stageName: 'MERGE Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
@@ -468,17 +486,10 @@ def call(final pipelineContext) {
       stageName: 'R3.4 AutoML', target: 'test-r-automl', rVersion: '3.4.1',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
-//    [
-//      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20, activatePythonEnv: false,
-//      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-//      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
-//      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], 
-//      addToDockerGroup: true, nodeLabel: "micro"
-//    ]
   ]
 
   // Stages executed in addition to NIGHTLY_REPEATED_STAGES, executed once a night.
-  // Should contain all Java versions and also the minimum supported Python version. 
+  // Should contain all Java versions and also the minimum supported Python version.
   def NIGHTLY_STAGES = [
     [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 40,

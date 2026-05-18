@@ -1983,7 +1983,12 @@ class H2OFrame(Keyed, H2ODisplay):
             warnings.warn("Converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install polars and pyarrow and use it as "
                           "pandas_df = h2o_df.as_data_frame(use_multi_thread=True)\n", H2ODependencyWarning)
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
+            # H2O writes NAs as empty CSV fields and emits non-NA strings literally, so only
+            # treat empty as NA. Default pandas na_values would turn legitimate categorical
+            # levels like "None"/"NA"/"NULL" into NaN, which loses data on the round-trip
+            # (polars path via convert_with_polars uses null_values="" for the same reason).
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False,
+                                   keep_default_na=False, na_values=[""])
                 
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
@@ -2111,6 +2116,22 @@ class H2OFrame(Keyed, H2ODisplay):
         new_types = None
         fr = None
         flatten = False
+        # sklearn cv splitters and other downstream consumers pass numpy arrays of
+        # integer or boolean indices for row selection; route them to the (rows, :)
+        # shape since a 1-D Python list already means column selection in H2OFrame.
+        try:
+            import numpy as np
+            _ndarray = np.ndarray
+        except ImportError:
+            _ndarray = None
+        if _ndarray is not None and isinstance(item, _ndarray):
+            if item.ndim != 1:
+                raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+            if item.dtype == bool:
+                item = np.flatnonzero(item).tolist()
+            else:
+                item = item.astype(int).tolist()
+            return self[(item, slice(None, None, None))]
         if isinstance(item, slice):
             item = normalize_slice(item, self.ncols)
         if is_type(item, str, int, list, slice):
@@ -2125,6 +2146,25 @@ class H2OFrame(Keyed, H2ODisplay):
             fr = H2OFrame._expr(expr=ExprNode("rows", self, item))
         elif isinstance(item, tuple):
             rows, cols = item
+            # numpy-compatible: arr[key, ...] passes Ellipsis as the col selector
+            # (sklearn's _safe_indexing does this since 1.6+); treat as "all".
+            if rows is Ellipsis:
+                rows = slice(None)
+            if cols is Ellipsis:
+                cols = slice(None)
+            # sklearn _array_indexing passes a numpy array of indices inside the
+            # tuple form `arr[key, ...]`; convert to a plain Python list so the
+            # downstream rapids serializer doesn't leak `array(...)` repr into
+            # the AST.
+            if _ndarray is not None:
+                if isinstance(rows, _ndarray):
+                    if rows.ndim != 1:
+                        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+                    rows = np.flatnonzero(rows).tolist() if rows.dtype == bool else rows.astype(int).tolist()
+                if isinstance(cols, _ndarray):
+                    if cols.ndim != 1:
+                        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+                    cols = np.flatnonzero(cols).tolist() if cols.dtype == bool else cols.astype(int).tolist()
             allrows = allcols = False
             if isinstance(cols, slice):
                 cols = normalize_slice(cols, self.ncols)
@@ -5196,7 +5236,11 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):
             pass
     zeroFrame = pd.DataFrame(tempnp)
     zeroFrame.columns=cmissingNames
-    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
+    # pandas 2.x returns bool dtype from get_dummies by default. The result is concat'd
+    # with int columns and later passed to scipy.sparse.csr_matrix, which on Py3.12+
+    # rejects object dtype that mixed bool/int produce. Force int8 to keep the dtype
+    # numeric and consistent across pandas versions.
+    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False, dtype=np.int8)
     tempNames = list(temp)  # get column names
     colLength = len(tempNames)
     newNames = ['a']*colLength

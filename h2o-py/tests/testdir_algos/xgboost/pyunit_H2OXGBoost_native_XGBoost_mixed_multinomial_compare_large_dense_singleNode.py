@@ -75,7 +75,7 @@ def comparison_test_dense():
         print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo), nrounds))
         nativeTrainTime = time.time()-time1
         time1=time.time()
-        nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
+        nativePred = nativeModel.predict(data=nativeTrain, iteration_range=(0, ntrees))
         nativeScoreTime = time.time()-time1
 
         pyunit_utils.summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,

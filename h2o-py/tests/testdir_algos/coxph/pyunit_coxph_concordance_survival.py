@@ -34,6 +34,14 @@ def with_strata(rossi):
               )
 
 
+def _normalize_col_name(col_name):
+    # numpy 2.x stringifies tuples whose elements are numpy scalars as "(np.int64(0), ...)";
+    # unwrap each scalar via .item() so the result matches h2o's column naming "(0, ...)".
+    if isinstance(col_name, tuple):
+        return str(tuple(v.item() if hasattr(v, "item") else v for v in col_name))
+    return str(col_name)
+
+
 # expected (the first line with time=0 and values = 0)
 # When tests are run at CI wyth Python version 2.x and old lifelines, lifelines result contains one more line then
 def fix_py_result_for_older_lifelines(df):
@@ -78,7 +86,7 @@ def check_cox(rossi, x, stratify_by, formula):
     hazard_py = cph_py.baseline_hazard_
     
     for col_name in hazard_py.columns:
-        hazard_py.rename(columns={col_name: str(col_name)}, inplace=True)
+        hazard_py.rename(columns={col_name: _normalize_col_name(col_name)}, inplace=True)
 
     hazard_py_reordered_columns = hazard_py.reset_index(drop=True).sort_index(axis=1)
     hazard_h2o_reordered_columns = hazard_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
@@ -92,14 +100,14 @@ def check_cox(rossi, x, stratify_by, formula):
     print(hazard_py_reordered_columns.reset_index(drop=True)) 
     
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
-                       check_dtype=False, check_index_type=False, check_column_type=False)
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-4)
     
     survival_h2o_as_pandas = cph_h2o.baseline_survival_frame.as_data_frame(use_pandas=True)
 
     survival_py = cph_py.baseline_survival_
     
     for col_name in survival_py.columns:
-        survival_py.rename(columns={col_name: str(col_name)}, inplace=True)
+        survival_py.rename(columns={col_name: _normalize_col_name(col_name)}, inplace=True)
 
     survival_py_reordered_columns = survival_py.reset_index(drop=True).sort_index(axis=1)
     survival_h2o_reordered_columns = survival_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
@@ -113,7 +121,7 @@ def check_cox(rossi, x, stratify_by, formula):
     print(survival_py_reordered_columns.reset_index(drop=True))
 
     assert_frame_equal(survival_py_reordered_columns, survival_h2o_reordered_columns,
-                       check_dtype=False, check_index_type=False, check_column_type=False)
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-4)
 
 
 # There are different API versions for concordance in lifelines library

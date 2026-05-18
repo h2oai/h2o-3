@@ -2146,9 +2146,19 @@ def _inspect_methods_separately(obj):
 
 def _default_source_provider(obj):
     import inspect
+    import re
     # First try to get source code via inspect
     try:
-        return '    '.join(inspect.getsourcelines(obj)[0])
+        src = '    '.join(inspect.getsourcelines(obj)[0])
+        # Py3.13+ inspect.getsourcelines no longer raises for classes defined in
+        # exec'd scopes (e.g. pyunit_exec runs tests via exec with __main__ context).
+        # Instead it silently follows sys.modules['__main__'].__file__ (the test
+        # runner script) and returns whatever happens to be at the class's
+        # co_firstlineno in THAT file — i.e. unrelated garbage. Validate the
+        # returned source actually defines our class; otherwise fall back.
+        if not re.match(r'\s*class\s+' + re.escape(obj.__name__) + r'\b', src):
+            return _inspect_methods_separately(obj)
+        return src
     except (OSError, TypeError, IOError):
         # It seems like we are in interactive shell and
         # we do not have access to class source code directly

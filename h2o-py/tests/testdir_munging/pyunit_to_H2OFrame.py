@@ -141,7 +141,7 @@ def to_H2OFrame():
     #   d. jagged
     # newer versions of numpy doesn't allow to create jagged multidimensional arrays.
     if sys.version_info.major != 3 or sys.version_info.minor != 9:
-        python_obj = np.array([[6,7,8,9,10], [1,2,3,4], [3,2,2]])
+        python_obj = np.array([[6,7,8,9,10], [1,2,3,4], [3,2,2]], dtype=object)
         the_frame = h2o.H2OFrame(python_obj)
         pyunit_utils.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 

@@ -4,7 +4,7 @@ import h2o
 
 from lifelines import CoxPHFitter
 from pandas.testing import assert_frame_equal
-from pandas import read_csv
+from pandas import read_csv, to_datetime
 
 import numpy as np
 
@@ -22,7 +22,9 @@ def coxph_concordance_and_baseline():
         shelter[colname] = shelter[colname].astype("category")
         shelter[colname] = shelter[colname].cat.codes
     for colname in ["end_ts", "intake_date", "intake_time", "start_ts"]:
-        shelter[colname] = shelter[colname].astype("datetime64")
+        # pandas 2.x rejects astype("datetime64[ns]") on tz-aware ISO strings (e.g. "...Z");
+        # parse via to_datetime with utc=True and drop the tz to get naive datetime64[ns].
+        shelter[colname] = to_datetime(shelter[colname], utc=True).dt.tz_localize(None)
 
     without_strata(shelter)
     with_strata(shelter)
@@ -107,6 +109,12 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     for col_name in hazard_py.columns:
         if (isinstance(col_name, int)):
             new_name = "({0})".format(col_name)
+        elif isinstance(col_name, tuple):
+            # numpy 2.x changes scalar repr (e.g. `np.int8(0)` instead of `0`),
+            # which leaks into str(tuple). Unbox each element to its Python value
+            # so the column matches H2O's plain Python-typed tuple stringification.
+            parts = [v.item() if hasattr(v, "item") else v for v in col_name]
+            new_name = str(tuple(parts))
         else:
             new_name = str(col_name)
         hazard_py.rename(columns={col_name: new_name}, inplace=True)
@@ -118,7 +126,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
                                                        .sort_index(axis=1)
     
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
-                       check_dtype=False, check_index_type=False, check_column_type=False, check_less_precise=True)
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-4)
     
     survival_h2o_as_pandas = cph_h2o.baseline_survival_frame.as_data_frame(use_pandas=True)
 
@@ -127,6 +135,11 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     for col_name in survival_py.columns:
         if (isinstance(col_name, int)):
             new_name = "({0})".format(col_name)
+        elif isinstance(col_name, tuple):
+            # See hazard rename block above: numpy 2.x scalars stringify with
+            # the typename, so unbox each element before tuple stringification.
+            parts = [v.item() if hasattr(v, "item") else v for v in col_name]
+            new_name = str(tuple(parts))
         else:
             new_name = str(col_name)
         survival_py.rename(columns={col_name: new_name}, inplace=True)
@@ -135,7 +148,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     survival_h2o_reordered_columns = survival_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
 
     assert_frame_equal(survival_py_reordered_columns, survival_h2o_reordered_columns,
-                       check_dtype=False, check_index_type=False, check_column_type=False, check_less_precise=True)
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-4)
 
 
 # There are different API versions for concordance in lifelines library
