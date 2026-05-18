@@ -65,6 +65,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-standalone
+      use_spot: true
     secrets: inherit
 
   start-cdh510-standalone-keytab:
@@ -72,6 +73,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-standalone-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh510-driver-keytab:
@@ -79,6 +81,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-driver-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh510-hadoop:
@@ -86,6 +89,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-hadoop
+      use_spot: true
     secrets: inherit
 
   start-cdh510-hadoop-spnego:
@@ -93,6 +97,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-hadoop-spnego
+      use_spot: true
     secrets: inherit
 
   start-cdh510-hadoop-hdfs-refresh:
@@ -100,6 +105,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-hdfs-refresh
+      use_spot: true
     secrets: inherit
 
   start-cdh510-steam-driver:
@@ -107,6 +113,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-steam-driver
+      use_spot: true
     secrets: inherit
 
   start-cdh510-steam-mapper:
@@ -114,6 +121,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-steam-mapper
+      use_spot: true
     secrets: inherit
 
   start-cdh510-sparkling:
@@ -121,6 +129,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-sparkling
+      use_spot: true
     secrets: inherit
 
   start-cdh510-steam-sparkling:
@@ -128,6 +137,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-steam-sparkling
+      use_spot: true
     secrets: inherit
 
   # CDH 6.1 (Hadoop 3) - 10 modes
@@ -136,6 +146,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-standalone
+      use_spot: true
     secrets: inherit
 
   start-cdh61-standalone-keytab:
@@ -143,6 +154,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-standalone-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh61-driver-keytab:
@@ -150,6 +162,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-driver-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh61-hadoop:
@@ -157,6 +170,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-hadoop
+      use_spot: true
     secrets: inherit
 
   start-cdh61-hadoop-spnego:
@@ -164,6 +178,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-hadoop-spnego
+      use_spot: true
     secrets: inherit
 
   start-cdh61-hadoop-hdfs-refresh:
@@ -171,6 +186,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-hdfs-refresh
+      use_spot: true
     secrets: inherit
 
   start-cdh61-steam-driver:
@@ -178,6 +194,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-steam-driver
+      use_spot: true
     secrets: inherit
 
   start-cdh61-steam-mapper:
@@ -185,6 +202,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-steam-mapper
+      use_spot: true
     secrets: inherit
 
   start-cdh61-sparkling:
@@ -192,6 +210,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-sparkling
+      use_spot: true
     secrets: inherit
 
   start-cdh61-steam-sparkling:
@@ -199,6 +218,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-steam-sparkling
+      use_spot: true
     secrets: inherit
 
   # ============================================================================

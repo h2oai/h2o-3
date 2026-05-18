@@ -45,6 +45,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-smoke-full
+      use_spot: true
     secrets: inherit
 
   java8-smoke:
@@ -89,6 +90,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-glm
+      use_spot: true
     secrets: inherit
 
   java8-algos-glm:
@@ -133,6 +135,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-gbm
+      use_spot: true
     secrets: inherit
 
   java8-algos-gbm:
@@ -177,6 +180,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-drf
+      use_spot: true
     secrets: inherit
 
   java8-algos-drf:
@@ -221,6 +225,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-dl
+      use_spot: true
     secrets: inherit
 
   java8-algos-dl:
@@ -265,6 +270,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-gam
+      use_spot: true
     secrets: inherit
 
   java8-algos-gam:
@@ -309,6 +315,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-tree
+      use_spot: true
     secrets: inherit
 
   java8-algos-tree:
@@ -353,6 +360,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-ensemble
+      use_spot: true
     secrets: inherit
 
   java8-algos-ensemble:
@@ -397,6 +405,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-kmeans
+      use_spot: true
     secrets: inherit
 
   java8-algos-kmeans:
@@ -441,6 +450,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-rulefit
+      use_spot: true
     secrets: inherit
 
   java8-algos-rulefit:
@@ -485,6 +495,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-pca
+      use_spot: true
     secrets: inherit
 
   java8-algos-pca:
@@ -529,6 +540,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-glrm
+      use_spot: true
     secrets: inherit
 
   java8-algos-glrm:
@@ -573,6 +585,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-adaboost
+      use_spot: true
     secrets: inherit
 
   java8-algos-adaboost:
@@ -617,6 +630,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-modelsel
+      use_spot: true
     secrets: inherit
 
   java8-algos-modelsel:
@@ -661,6 +675,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-generic
+      use_spot: true
     secrets: inherit
 
   java8-algos-generic:
@@ -705,6 +720,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-grid
+      use_spot: true
     secrets: inherit
 
   java8-algos-grid:
@@ -749,6 +765,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-misc
+      use_spot: true
     secrets: inherit
 
   java8-algos-misc:
@@ -793,6 +810,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-core-full
+      use_spot: true
     secrets: inherit
 
   java8-core:
@@ -837,6 +855,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-mojo-full
+      use_spot: true
     secrets: inherit
 
   java8-mojo:
@@ -881,6 +900,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-automl-full
+      use_spot: true
     secrets: inherit
 
   java8-automl:
@@ -925,6 +945,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-clustering-full
+      use_spot: true
     secrets: inherit
 
   java8-clustering:
@@ -969,6 +990,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-xgb-full
+      use_spot: true
       instance_type: m5.8xlarge
     secrets: inherit
 
@@ -1014,6 +1036,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-other-full
+      use_spot: true
     secrets: inherit
 
   java8-other:
@@ -1058,6 +1081,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-persist-s3
+      use_spot: true
     secrets: inherit
 
   java8-persist-s3:
@@ -1102,6 +1126,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-persist-gcs
+      use_spot: true
     secrets: inherit
 
   java8-persist-gcs:
@@ -1146,6 +1171,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-persist-http
+      use_spot: true
     secrets: inherit
 
   java8-persist-http:

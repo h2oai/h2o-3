@@ -49,6 +49,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: flow-headless
+      use_spot: true
     secrets: inherit
 
   start-flow-headless-small:
@@ -56,6 +57,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: flow-headless-small
+      use_spot: true
     secrets: inherit
 
   start-flow-headless-medium:
@@ -63,6 +65,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: flow-headless-medium
+      use_spot: true
     secrets: inherit
 
   # ============================================================================

@@ -50,6 +50,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-rulefit
+      use_spot: true
     secrets: inherit
 
   # start-java8-junit:
@@ -65,6 +66,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-core
+      use_spot: true
     secrets: inherit
 
   start-java8-automl:
@@ -72,6 +74,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-automl
+      use_spot: true
     secrets: inherit
 
   # start-java11-junit:
@@ -95,6 +98,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-rest-smoke
+      use_spot: true
     secrets: inherit
 
   start-java8-mojo-pipeline:
@@ -102,6 +106,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-mojo-pipeline
+      use_spot: true
     secrets: inherit
 
   start-java8-clustering:
@@ -109,6 +114,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-clustering
+      use_spot: true
     secrets: inherit
 
   start-java8-xgb-multi:
@@ -116,6 +122,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-xgb-multi
+      use_spot: true
     secrets: inherit
 
   start-java8-logger:
@@ -123,6 +130,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-logger
+      use_spot: true
     secrets: inherit
 
   # ============================================================================

@@ -49,6 +49,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-smoke-full
+      use_spot: true
     secrets: inherit
 
   java17-smoke:
@@ -93,6 +94,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-other-full
+      use_spot: true
       instance_type: m5.8xlarge
     secrets: inherit
 
@@ -138,6 +140,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-glm
+      use_spot: true
     secrets: inherit
 
   java17-algos-glm:
@@ -182,6 +185,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-gbm
+      use_spot: true
     secrets: inherit
 
   java17-algos-gbm:
@@ -226,6 +230,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-drf
+      use_spot: true
     secrets: inherit
 
   java17-algos-drf:
@@ -270,6 +275,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-dl
+      use_spot: true
     secrets: inherit
 
   java17-algos-dl:
@@ -314,6 +320,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-gam
+      use_spot: true
     secrets: inherit
 
   java17-algos-gam:
@@ -358,6 +365,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-tree
+      use_spot: true
     secrets: inherit
 
   java17-algos-tree:
@@ -402,6 +410,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-ensemble
+      use_spot: true
     secrets: inherit
 
   java17-algos-ensemble:
@@ -446,6 +455,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-kmeans
+      use_spot: true
     secrets: inherit
 
   java17-algos-kmeans:
@@ -490,6 +500,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-rulefit
+      use_spot: true
     secrets: inherit
 
   java17-algos-rulefit:
@@ -534,6 +545,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-pca
+      use_spot: true
     secrets: inherit
 
   java17-algos-pca:
@@ -578,6 +590,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-glrm
+      use_spot: true
     secrets: inherit
 
   java17-algos-glrm:
@@ -622,6 +635,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-adaboost
+      use_spot: true
     secrets: inherit
 
   java17-algos-adaboost:
@@ -666,6 +680,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-modelsel
+      use_spot: true
     secrets: inherit
 
   java17-algos-modelsel:
@@ -710,6 +725,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-generic
+      use_spot: true
     secrets: inherit
 
   java17-algos-generic:
@@ -754,6 +770,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-grid
+      use_spot: true
     secrets: inherit
 
   java17-algos-grid:
@@ -798,6 +815,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-algos-misc
+      use_spot: true
     secrets: inherit
 
   java17-algos-misc:

@@ -53,6 +53,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: py37-smoke
+      use_spot: true
     secrets: inherit
 
   start-py311-smoke:
@@ -60,6 +61,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: py311-smoke
+      use_spot: true
     secrets: inherit
 
   # R Smoke Tests
@@ -68,6 +70,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-smoke
+      use_spot: true
     secrets: inherit
 
   start-r40-smoke:
@@ -75,6 +78,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r40-smoke
+      use_spot: true
     secrets: inherit
 
   # Flow Smoke Test
@@ -83,6 +87,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: flow-smoke
+      use_spot: true
     secrets: inherit
 
   # INFO Check
@@ -91,6 +96,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: info-check
+      use_spot: true
     secrets: inherit
 
   # Java Smoke Tests
@@ -99,6 +105,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-smoke
+      use_spot: true
     secrets: inherit
 
   start-java11-smoke:
@@ -106,6 +113,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java11-smoke
+      use_spot: true
     secrets: inherit
 
   start-java17-smoke:
@@ -113,6 +121,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java17-smoke
+      use_spot: true
     secrets: inherit
 
   # ============================================================================

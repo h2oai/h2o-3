@@ -46,6 +46,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-init-java8
+      use_spot: true
     secrets: inherit
 
   start-r35-small:
@@ -53,6 +54,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-small
+      use_spot: true
     secrets: inherit
 
   start-r35-automl:
@@ -60,6 +62,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-automl
+      use_spot: true
     secrets: inherit
 
   start-r35-cmd-check:
@@ -67,6 +70,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-cmd-check
+      use_spot: true
     secrets: inherit
 
   start-r40-small:
@@ -74,6 +78,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r40-small
+      use_spot: true
     secrets: inherit
 
   start-r40-cmd-check:
@@ -81,6 +86,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r40-cmd-check
+      use_spot: true
     secrets: inherit
 
   start-r35-booklets:
@@ -88,6 +94,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-booklets
+      use_spot: true
     secrets: inherit
 
   start-r35-demos-small:
@@ -95,6 +102,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-demos-small
+      use_spot: true
     secrets: inherit
 
   start-r35-medium-large:
@@ -102,6 +110,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-medium-large
+      use_spot: true
     secrets: inherit
 
   start-r35-demos-medium-large:
@@ -109,6 +118,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-demos-ml
+      use_spot: true
     secrets: inherit
 
   start-r35-generate-docs:
@@ -116,6 +126,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-docs
+      use_spot: true
     secrets: inherit
 
   start-r35-datatable:
@@ -123,6 +134,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-datatable
+      use_spot: true
     secrets: inherit
 
   start-r35-init-java11:
@@ -130,6 +142,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r35-init-java11
+      use_spot: true
     secrets: inherit
 
   start-r34-medium-large:
@@ -137,6 +150,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r34-medium-large
+      use_spot: true
     secrets: inherit
 
   start-r34-small:
@@ -144,6 +158,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r34-small
+      use_spot: true
     secrets: inherit
 
   start-r34-automl:
@@ -151,6 +166,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r34-automl
+      use_spot: true
     secrets: inherit
 
   start-r40-explain:
@@ -158,6 +174,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r40-explain
+      use_spot: true
     secrets: inherit
 
   start-r44-explain:
@@ -165,6 +182,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: r44-explain
+      use_spot: true
     secrets: inherit
 
   # ============================================================================

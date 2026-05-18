@@ -52,6 +52,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-centos73-minimal
+      use_spot: true
     secrets: inherit
 
   start-xgb-centos73-omp:
@@ -59,6 +60,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-centos73-omp
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu16-minimal:
@@ -66,6 +68,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu16-minimal
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu16-omp:
@@ -73,6 +76,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu16-omp
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu18-minimal:
@@ -80,6 +84,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu18-minimal
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu18-omp:
@@ -87,6 +92,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu18-omp
+      use_spot: true
     secrets: inherit
 
   # ============================================================================

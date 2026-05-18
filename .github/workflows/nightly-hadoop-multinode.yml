@@ -52,6 +52,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: hadoop-multinode
+      use_spot: true
     secrets: inherit
 
   start-ext-xgb-hadoop:
@@ -59,6 +60,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: ext-xgb-hadoop
+      use_spot: true
     secrets: inherit
 
   start-fault-tolerance-hadoop:
@@ -66,6 +68,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: fault-tolerance-hadoop
+      use_spot: true
     secrets: inherit
 
   # ============================================================================
