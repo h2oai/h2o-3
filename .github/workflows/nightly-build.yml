@@ -71,7 +71,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ env.ECR_ROLE }}
-          role-session-name: build-${{ github.run_id }}
+          role-session-name: h2oai-h2o-3-build-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 

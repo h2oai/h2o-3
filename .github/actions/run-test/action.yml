@@ -155,7 +155,7 @@ runs:
       uses: aws-actions/configure-aws-credentials@v4.0.2
       with:
         role-to-assume: ${{ inputs.ecr_role }}
-        role-session-name: test-${{ github.run_id }}
+        role-session-name: h2oai-h2o-3-test-${{ github.run_id }}
         aws-region: ${{ inputs.aws_region }}
         audience: sts.amazonaws.com
 
