@@ -52,6 +52,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-centos73-minimal
+      use_spot: true
     secrets: inherit
 
   start-xgb-centos73-omp:
@@ -59,6 +60,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-centos73-omp
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu16-minimal:
@@ -66,6 +68,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu16-minimal
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu16-omp:
@@ -73,6 +76,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu16-omp
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu18-minimal:
@@ -80,6 +84,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu18-minimal
+      use_spot: true
     secrets: inherit
 
   start-xgb-ubuntu18-omp:
@@ -87,6 +92,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-ubuntu18-omp
+      use_spot: true
     secrets: inherit
 
   # ============================================================================
@@ -109,7 +115,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: XGB on CentOS 7.3 Minimal
@@ -132,7 +138,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: XGB on CentOS 7.3 OMP
@@ -155,7 +161,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: XGB on Ubuntu 16.04 Minimal
@@ -178,7 +184,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: XGB on Ubuntu 16.04 OMP
@@ -201,7 +207,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: XGB on Ubuntu 18.04 Minimal
@@ -224,7 +230,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: XGB on Ubuntu 18.04 OMP

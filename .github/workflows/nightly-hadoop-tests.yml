@@ -51,6 +51,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-standalone
+      use_spot: true
     secrets: inherit
 
   start-cdh510-hadoop:
@@ -58,6 +59,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-hadoop
+      use_spot: true
     secrets: inherit
 
   start-cdh61-standalone:
@@ -65,6 +67,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-standalone
+      use_spot: true
     secrets: inherit
 
   start-cdh61-hadoop:
@@ -72,6 +75,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-hadoop
+      use_spot: true
     secrets: inherit
 
   start-cdh63-standalone:
@@ -79,6 +83,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh63-standalone
+      use_spot: true
     secrets: inherit
 
   start-cdh63-hadoop:
@@ -86,6 +91,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh63-hadoop
+      use_spot: true
     secrets: inherit
 
   start-cdh63-hadoop-java11:
@@ -93,6 +99,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh63-hadoop-java11
+      use_spot: true
     secrets: inherit
 
   # ============================================================================
@@ -115,7 +122,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STANDALONE
@@ -138,7 +145,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - HADOOP
@@ -161,7 +168,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STANDALONE
@@ -184,7 +191,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - HADOOP
@@ -207,7 +214,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.3 - STANDALONE
@@ -230,7 +237,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.3 - HADOOP
@@ -254,7 +261,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.3 - HADOOP - Java 11 (Hash Login)

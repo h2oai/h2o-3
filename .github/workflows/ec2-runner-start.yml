@@ -13,6 +13,13 @@
 #   - Attempt 2: After 180-300s delay
 #   - Attempt 3: After 300-480s delay (final attempt)
 #
+# SPOT INSTANCE SUPPORT:
+#   - Opt-in via `use_spot: true` input (default: false = on-demand)
+#   - When enabled, attempts 1 and 2 request spot capacity for cost savings
+#   - Attempt 3 always falls back to on-demand to maximize reliability
+#   - Spot reclaim DURING a job will show as a failed job — re-run manually
+#     (no automatic mid-job retry; real test failures must not be masked)
+#
 # CLEANUP:
 #   - Instance names include run_id to prevent cross-branch interference
 #   - Pre-cleanup: Terminates orphaned instances from THIS workflow run before starting
@@ -53,6 +60,12 @@ on:
         required: false
         type: string
         default: 'm5.4xlarge'
+
+      use_spot:
+        description: 'Use spot instances for attempts 1-2 (attempt 3 always falls back to on-demand)'
+        required: false
+        type: boolean
+        default: false
 
     secrets:
       GH_APP_ID:
@@ -134,7 +147,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-start-${{ inputs.name }}
+          role-session-name: h2oai-h2o-3-ec2-start-${{ inputs.name }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
@@ -189,6 +202,8 @@ jobs:
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
           use-jit: true
+          # Spot on attempts 1-2 when opted in; on-demand otherwise
+          market-type: ${{ inputs.use_spot && 'spot' || '' }}
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
@@ -196,7 +211,8 @@ jobs:
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
               {"Key": "h2o/scheduling", "Value": "self-managed"},
-              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"},
+              {"Key": "h2o/market-type", "Value": "${{ inputs.use_spot && 'spot' || 'on-demand' }}"}
             ]
 
       - name: Cleanup Failed Attempt 1
@@ -216,7 +232,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-start-${{ inputs.name }}-retry1
+          role-session-name: h2oai-h2o-3-ec2-start-${{ inputs.name }}-retry1
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
@@ -261,6 +277,8 @@ jobs:
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
           use-jit: true
+          # Spot on attempts 1-2 when opted in; on-demand otherwise
+          market-type: ${{ inputs.use_spot && 'spot' || '' }}
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
@@ -268,7 +286,8 @@ jobs:
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
               {"Key": "h2o/scheduling", "Value": "self-managed"},
-              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"},
+              {"Key": "h2o/market-type", "Value": "${{ inputs.use_spot && 'spot' || 'on-demand' }}"}
             ]
 
       - name: Cleanup Failed Attempt 2
@@ -288,7 +307,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-start-${{ inputs.name }}-retry2
+          role-session-name: h2oai-h2o-3-ec2-start-${{ inputs.name }}-retry2
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
@@ -332,6 +351,8 @@ jobs:
           subnet-id: ${{ env.SUBNET_ID }}
           security-group-id: ${{ env.SECURITY_GROUP }}
           use-jit: true
+          # Final attempt always uses on-demand for maximum reliability,
+          # even when spot was requested for attempts 1-2
           aws-resource-tags: >
             [
               {"Key": "Name", "Value": "gha-runner-${{ inputs.name }}-${{ github.run_id }}"},
@@ -339,7 +360,8 @@ jobs:
               {"Key": "h2o/owner", "Value": "rohan.silva@h2o.ai"},
               {"Key": "h2o/environment", "Value": "prd"},
               {"Key": "h2o/scheduling", "Value": "self-managed"},
-              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"}
+              {"Key": "h2o/github-workflow", "Value": "${{ github.workflow }}"},
+              {"Key": "h2o/market-type", "Value": "on-demand"}
             ]
 
       - name: Set Outputs
@@ -369,7 +391,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-start-${{ inputs.name }}-cleanup
+          role-session-name: h2oai-h2o-3-ec2-start-${{ inputs.name }}-cleanup
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 

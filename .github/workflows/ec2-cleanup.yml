@@ -57,7 +57,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.EC2_ROLE }}
-          role-session-name: ec2-cleanup
+          role-session-name: h2oai-h2o-3-ec2-cleanup
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 

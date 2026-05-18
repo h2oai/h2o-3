@@ -58,6 +58,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: gbm-benchmark
+      use_spot: true
     secrets: inherit
 
   start-gbm-noscoring-graalvm:
@@ -65,6 +66,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: gbm-noscoring-graalvm
+      use_spot: true
     secrets: inherit
 
   start-gbm-noscoring-java8:
@@ -72,6 +74,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: gbm-noscoring-java8
+      use_spot: true
     secrets: inherit
 
   start-glm-benchmark:
@@ -79,6 +82,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: glm-benchmark
+      use_spot: true
     secrets: inherit
 
   start-gam-benchmark:
@@ -86,6 +90,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: gam-benchmark
+      use_spot: true
     secrets: inherit
 
   start-xgb-benchmark:
@@ -93,6 +98,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-benchmark
+      use_spot: true
     secrets: inherit
 
   start-xgb-vanilla:
@@ -100,6 +106,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-vanilla
+      use_spot: true
     secrets: inherit
 
   start-xgb-dmlc:
@@ -107,6 +114,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: xgb-dmlc
+      use_spot: true
     secrets: inherit
 
   start-merge-benchmark:
@@ -114,6 +122,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: merge-benchmark
+      use_spot: true
     secrets: inherit
 
   start-sort-benchmark:
@@ -121,6 +130,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: sort-benchmark
+      use_spot: true
     secrets: inherit
 
   start-rulefit-benchmark:
@@ -128,6 +138,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: rulefit-benchmark
+      use_spot: true
     secrets: inherit
 
   # ============================================================================
@@ -151,7 +162,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: GBM Benchmark
@@ -177,7 +188,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: GBM Benchmark noscoring-graalvm
@@ -201,7 +212,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: GBM Benchmark noscoring-java8
@@ -225,7 +236,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: GLM Benchmark
@@ -249,7 +260,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: GAM Benchmark
@@ -274,7 +285,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: H2O XGB Benchmark
@@ -299,7 +310,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Vanilla XGB Benchmark
@@ -324,7 +335,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: DMLC XGB Benchmark
@@ -348,7 +359,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: MERGE Benchmark
@@ -372,7 +383,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: SORT Benchmark
@@ -396,7 +407,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Rulefit Benchmark

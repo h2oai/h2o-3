@@ -45,6 +45,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-smoke-full
+      use_spot: true
     secrets: inherit
 
   java8-smoke:
@@ -65,7 +66,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Smoke
@@ -89,6 +90,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-glm
+      use_spot: true
     secrets: inherit
 
   java8-algos-glm:
@@ -109,7 +111,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos GLM
@@ -133,6 +135,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-gbm
+      use_spot: true
     secrets: inherit
 
   java8-algos-gbm:
@@ -153,7 +156,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos GBM
@@ -177,6 +180,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-drf
+      use_spot: true
     secrets: inherit
 
   java8-algos-drf:
@@ -197,7 +201,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos DRF
@@ -221,6 +225,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-dl
+      use_spot: true
     secrets: inherit
 
   java8-algos-dl:
@@ -241,7 +246,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos DeepLearning
@@ -265,6 +270,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-gam
+      use_spot: true
     secrets: inherit
 
   java8-algos-gam:
@@ -285,7 +291,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos GAM
@@ -309,6 +315,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-tree
+      use_spot: true
     secrets: inherit
 
   java8-algos-tree:
@@ -329,7 +336,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos Tree+IsoFor+DT+Uplift
@@ -353,6 +360,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-ensemble
+      use_spot: true
     secrets: inherit
 
   java8-algos-ensemble:
@@ -373,7 +381,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos Ensemble
@@ -397,6 +405,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-kmeans
+      use_spot: true
     secrets: inherit
 
   java8-algos-kmeans:
@@ -417,7 +426,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos KMeans
@@ -441,6 +450,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-rulefit
+      use_spot: true
     secrets: inherit
 
   java8-algos-rulefit:
@@ -461,7 +471,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos RuleFit
@@ -485,6 +495,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-pca
+      use_spot: true
     secrets: inherit
 
   java8-algos-pca:
@@ -505,7 +516,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos PCA
@@ -529,6 +540,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-glrm
+      use_spot: true
     secrets: inherit
 
   java8-algos-glrm:
@@ -549,7 +561,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos GLRM
@@ -573,6 +585,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-adaboost
+      use_spot: true
     secrets: inherit
 
   java8-algos-adaboost:
@@ -593,7 +606,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos AdaBoost
@@ -617,6 +630,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-modelsel
+      use_spot: true
     secrets: inherit
 
   java8-algos-modelsel:
@@ -637,7 +651,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos ModelSelection
@@ -661,6 +675,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-generic
+      use_spot: true
     secrets: inherit
 
   java8-algos-generic:
@@ -681,7 +696,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos Generic
@@ -705,6 +720,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-grid
+      use_spot: true
     secrets: inherit
 
   java8-algos-grid:
@@ -725,7 +741,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos Grid
@@ -749,6 +765,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-algos-misc
+      use_spot: true
     secrets: inherit
 
   java8-algos-misc:
@@ -769,7 +786,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Algos Misc
@@ -793,6 +810,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-core-full
+      use_spot: true
     secrets: inherit
 
   java8-core:
@@ -813,7 +831,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Core JUnit
@@ -837,6 +855,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-mojo-full
+      use_spot: true
     secrets: inherit
 
   java8-mojo:
@@ -857,7 +876,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Mojo Pipeline JUnit
@@ -881,6 +900,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-automl-full
+      use_spot: true
     secrets: inherit
 
   java8-automl:
@@ -901,7 +921,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 AutoML JUnit
@@ -925,6 +945,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-clustering-full
+      use_spot: true
     secrets: inherit
 
   java8-clustering:
@@ -945,7 +966,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Clustering JUnit
@@ -969,6 +990,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-xgb-full
+      use_spot: true
       instance_type: m5.8xlarge
     secrets: inherit
 
@@ -990,7 +1012,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 XGBoost Multinode JUnit
@@ -1014,6 +1036,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-other-full
+      use_spot: true
     secrets: inherit
 
   java8-other:
@@ -1034,7 +1057,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 JUnit Other
@@ -1058,6 +1081,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-persist-s3
+      use_spot: true
     secrets: inherit
 
   java8-persist-s3:
@@ -1078,7 +1102,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Persist S3
@@ -1102,6 +1126,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-persist-gcs
+      use_spot: true
     secrets: inherit
 
   java8-persist-gcs:
@@ -1122,7 +1147,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Persist GCS
@@ -1146,6 +1171,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: java8-persist-http
+      use_spot: true
     secrets: inherit
 
   java8-persist-http:
@@ -1166,7 +1192,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Java 8 Persist HTTP

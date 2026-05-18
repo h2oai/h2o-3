@@ -65,6 +65,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-standalone
+      use_spot: true
     secrets: inherit
 
   start-cdh510-standalone-keytab:
@@ -72,6 +73,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-standalone-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh510-driver-keytab:
@@ -79,6 +81,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-driver-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh510-hadoop:
@@ -86,6 +89,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-hadoop
+      use_spot: true
     secrets: inherit
 
   start-cdh510-hadoop-spnego:
@@ -93,6 +97,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-hadoop-spnego
+      use_spot: true
     secrets: inherit
 
   start-cdh510-hadoop-hdfs-refresh:
@@ -100,6 +105,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-hdfs-refresh
+      use_spot: true
     secrets: inherit
 
   start-cdh510-steam-driver:
@@ -107,6 +113,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-steam-driver
+      use_spot: true
     secrets: inherit
 
   start-cdh510-steam-mapper:
@@ -114,6 +121,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-steam-mapper
+      use_spot: true
     secrets: inherit
 
   start-cdh510-sparkling:
@@ -121,6 +129,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-sparkling
+      use_spot: true
     secrets: inherit
 
   start-cdh510-steam-sparkling:
@@ -128,6 +137,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh510-krb-steam-sparkling
+      use_spot: true
     secrets: inherit
 
   # CDH 6.1 (Hadoop 3) - 10 modes
@@ -136,6 +146,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-standalone
+      use_spot: true
     secrets: inherit
 
   start-cdh61-standalone-keytab:
@@ -143,6 +154,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-standalone-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh61-driver-keytab:
@@ -150,6 +162,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-driver-keytab
+      use_spot: true
     secrets: inherit
 
   start-cdh61-hadoop:
@@ -157,6 +170,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-hadoop
+      use_spot: true
     secrets: inherit
 
   start-cdh61-hadoop-spnego:
@@ -164,6 +178,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-hadoop-spnego
+      use_spot: true
     secrets: inherit
 
   start-cdh61-hadoop-hdfs-refresh:
@@ -171,6 +186,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-hdfs-refresh
+      use_spot: true
     secrets: inherit
 
   start-cdh61-steam-driver:
@@ -178,6 +194,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-steam-driver
+      use_spot: true
     secrets: inherit
 
   start-cdh61-steam-mapper:
@@ -185,6 +202,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-steam-mapper
+      use_spot: true
     secrets: inherit
 
   start-cdh61-sparkling:
@@ -192,6 +210,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-sparkling
+      use_spot: true
     secrets: inherit
 
   start-cdh61-steam-sparkling:
@@ -199,6 +218,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: cdh61-krb-steam-sparkling
+      use_spot: true
     secrets: inherit
 
   # ============================================================================
@@ -223,7 +243,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STANDALONE (Kerberos)
@@ -248,7 +268,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STANDALONE KEYTAB (Kerberos)
@@ -273,7 +293,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_DRIVER_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - DRIVER KEYTAB (Kerberos)
@@ -298,7 +318,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - HADOOP (Kerberos)
@@ -323,7 +343,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_SPNEGO
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - HADOOP WITH SPNEGO (Kerberos)
@@ -348,7 +368,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_HDFS_TOKEN_REFRESH
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - HDFS TOKEN REFRESH (Kerberos)
@@ -373,7 +393,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_DRIVER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STEAM DRIVER (Kerberos)
@@ -398,7 +418,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_MAPPER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STEAM MAPPER (Kerberos)
@@ -423,7 +443,7 @@ jobs:
         env:
           KERBEROS_MODE: SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - SPARKLING (Kerberos)
@@ -448,7 +468,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STEAM SPARKLING (Kerberos)
@@ -476,7 +496,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STANDALONE (Kerberos)
@@ -501,7 +521,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STANDALONE KEYTAB (Kerberos)
@@ -526,7 +546,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_DRIVER_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - DRIVER KEYTAB (Kerberos)
@@ -551,7 +571,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - HADOOP (Kerberos)
@@ -576,7 +596,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_SPNEGO
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - HADOOP WITH SPNEGO (Kerberos)
@@ -601,7 +621,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_HDFS_TOKEN_REFRESH
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - HDFS TOKEN REFRESH (Kerberos)
@@ -626,7 +646,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_DRIVER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STEAM DRIVER (Kerberos)
@@ -651,7 +671,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_MAPPER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STEAM MAPPER (Kerberos)
@@ -676,7 +696,7 @@ jobs:
         env:
           KERBEROS_MODE: SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - SPARKLING (Kerberos)
@@ -701,7 +721,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STEAM SPARKLING (Kerberos)

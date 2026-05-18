@@ -94,7 +94,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ inputs.s3_role || env.DEFAULT_S3_ROLE }}
-          role-session-name: release-s3-${{ github.run_id }}
+          role-session-name: h2oai-h2o-3-release-s3-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 

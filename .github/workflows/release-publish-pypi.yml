@@ -76,7 +76,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ env.ECR_ROLE }}
-          role-session-name: release-pypi-${{ github.run_id }}
+          role-session-name: h2oai-h2o-3-release-pypi-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
@@ -128,7 +128,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
           role-to-assume: ${{ inputs.s3_role || env.S3_ROLE }}
-          role-session-name: release-pypi-s3-${{ github.run_id }}
+          role-session-name: h2oai-h2o-3-release-pypi-s3-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 

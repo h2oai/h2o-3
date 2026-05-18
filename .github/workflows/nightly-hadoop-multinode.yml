@@ -52,6 +52,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: hadoop-multinode
+      use_spot: true
     secrets: inherit
 
   start-ext-xgb-hadoop:
@@ -59,6 +60,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: ext-xgb-hadoop
+      use_spot: true
     secrets: inherit
 
   start-fault-tolerance-hadoop:
@@ -66,6 +68,7 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: fault-tolerance-hadoop
+      use_spot: true
     secrets: inherit
 
   # ============================================================================
@@ -88,7 +91,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Hadoop Multinode
@@ -111,7 +114,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: External XGBoost on Hadoop
@@ -134,7 +137,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Fault Tolerance on Hadoop
