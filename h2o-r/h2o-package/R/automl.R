@@ -395,20 +395,49 @@ h2o.automl <- function(x, y, training_frame,
       params <- list(input_spec = input_spec, build_control = build_control, build_models = build_models)
   }
 
-  # POST call to AutoMLBuilder (executes the AutoML job)
-  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", parms_as_payload = TRUE, .params = params)
+  outcome <- "ok"
+  aml <- tryCatch({
+    # POST call to AutoMLBuilder (executes the AutoML job)
+    res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", parms_as_payload = TRUE, .params = params)
 
-  poll_state <- list()
-  poll_updates <- function(job) {
-    poll_state <<- do.call(.automl.poll_updates, list(job, verbosity=verbosity, state=poll_state))
-  }
-  .h2o.__waitOnJob(res$job$key$name, pollUpdates=poll_updates)
-  .automl.poll_updates(h2o.get_job(res$job$key$name), verbosity, poll_state) # ensure the last update is retrieved
+    poll_state <- list()
+    poll_updates <- function(job) {
+      poll_state <<- do.call(.automl.poll_updates, list(job, verbosity=verbosity, state=poll_state))
+    }
+    .h2o.__waitOnJob(res$job$key$name, pollUpdates=poll_updates)
+    .automl.poll_updates(h2o.get_job(res$job$key$name), verbosity, poll_state) # ensure the last update is retrieved
 
-  # GET AutoML object
-  aml <- h2o.get_automl(project_name = res$job$dest$name)
-  attr(aml, "id") <- res$job$dest$name
-  attr(aml, '_build_resp') <- res # hidden attribute for debugging/testing
+    # GET AutoML object
+    out <- h2o.get_automl(project_name = res$job$dest$name)
+    attr(out, "id") <- res$job$dest$name
+    attr(out, '_build_resp') <- res # hidden attribute for debugging/testing
+    out
+  }, error = function(e) { outcome <<- "error"; stop(e) })
+
+  # Fire-and-forget telemetry; never blocks, never raises.
+  tryCatch({
+    leader_algo <- ""
+    lb_size <- NULL
+    try({
+      if (!is.null(aml@leader) && length(aml@leader@algorithm) > 0L) {
+        leader_algo <- aml@leader@algorithm
+      }
+    }, silent = TRUE)
+    try({
+      lb <- aml@leaderboard
+      if (!is.null(lb)) lb_size <- as.integer(nrow(lb))
+    }, silent = TRUE)
+    sm <- if (length(sort_metric) > 1L) sort_metric[[1L]] else sort_metric
+    .h2o.send_automl_run(.h2o.r_version_safe(),
+                         algo = leader_algo,
+                         family = NULL,
+                         outcome = outcome,
+                         max_models = max_models,
+                         max_runtime_secs = max_runtime_secs,
+                         sort_metric = tolower(as.character(sm)),
+                         leaderboard_size = lb_size)
+  }, error = function(e) invisible(NULL))
+
   return(aml)
 }
 
