@@ -243,7 +243,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STANDALONE (Kerberos)
@@ -268,7 +268,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STANDALONE KEYTAB (Kerberos)
@@ -293,7 +293,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_DRIVER_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - DRIVER KEYTAB (Kerberos)
@@ -318,7 +318,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - HADOOP (Kerberos)
@@ -343,7 +343,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_SPNEGO
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - HADOOP WITH SPNEGO (Kerberos)
@@ -368,7 +368,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_HDFS_TOKEN_REFRESH
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - HDFS TOKEN REFRESH (Kerberos)
@@ -393,7 +393,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_DRIVER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STEAM DRIVER (Kerberos)
@@ -418,7 +418,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_MAPPER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STEAM MAPPER (Kerberos)
@@ -443,7 +443,7 @@ jobs:
         env:
           KERBEROS_MODE: SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - SPARKLING (Kerberos)
@@ -468,7 +468,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 5.10 - STEAM SPARKLING (Kerberos)
@@ -496,7 +496,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STANDALONE (Kerberos)
@@ -521,7 +521,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STANDALONE KEYTAB (Kerberos)
@@ -546,7 +546,7 @@ jobs:
         env:
           KERBEROS_MODE: STANDALONE_DRIVER_KEYTAB
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - DRIVER KEYTAB (Kerberos)
@@ -571,7 +571,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - HADOOP (Kerberos)
@@ -596,7 +596,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_SPNEGO
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - HADOOP WITH SPNEGO (Kerberos)
@@ -621,7 +621,7 @@ jobs:
         env:
           KERBEROS_MODE: ON_HADOOP_WITH_HDFS_TOKEN_REFRESH
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - HDFS TOKEN REFRESH (Kerberos)
@@ -646,7 +646,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_DRIVER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STEAM DRIVER (Kerberos)
@@ -671,7 +671,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_MAPPER
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STEAM MAPPER (Kerberos)
@@ -696,7 +696,7 @@ jobs:
         env:
           KERBEROS_MODE: SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - SPARKLING (Kerberos)
@@ -721,7 +721,7 @@ jobs:
         env:
           KERBEROS_MODE: STEAM_SPARKLING
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: CDH 6.1 - STEAM SPARKLING (Kerberos)

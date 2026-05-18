@@ -112,7 +112,7 @@ jobs:
           echo "| Lines | \$LINE_COVERED | \$LINE_MISSED |" >> \$GITHUB_STEP_SUMMARY
 
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Coverage (h2o-algos)

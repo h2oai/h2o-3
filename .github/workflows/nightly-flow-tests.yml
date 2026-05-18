@@ -89,7 +89,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Flow Headless
@@ -113,7 +113,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Flow Headless Small
@@ -137,7 +137,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: always()
+        if: failure()
         uses: ./.github/actions/publish-results
         with:
           name: Flow Headless Medium
