@@ -281,6 +281,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
+    _spawned_local_server = False
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
@@ -307,12 +308,22 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
                                      cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=verbose,
                                      strict_version_check=svc)
+        _spawned_local_server = True
     h2oconn.cluster.timezone = "UTC"
     if verbose:
         h2oconn.cluster.show_status()
     # Fire-and-forget telemetry; never blocks, never raises. Honors
     # H2O_DISABLE_TELEMETRY / DO_NOT_TRACK env vars internally.
-    _send_init_telemetry(_h2o_version_safe())
+    # Pick the event type based on whether we actually spawned a local JVM:
+    # init for fresh-cluster path, cluster_connect for attach-to-existing path.
+    try:
+        _cluster_shape = _telemetry.derive_cluster_shape(h2oconn)
+    except Exception:
+        _cluster_shape = None
+    if _spawned_local_server:
+        _send_init_telemetry(_h2o_version_safe(), cluster_shape=_cluster_shape)
+    else:
+        _telemetry.send_cluster_connect_telemetry(_h2o_version_safe(), cluster_shape=_cluster_shape)
 
 def resume(recovery_dir=None):
     """
@@ -427,9 +438,11 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     if path.startswith("~"):
         path = os.path.expanduser(path)
     outcome = "ok"
+    _result_frame = None
     try:
-        return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
-                                        force_col_types, quotechar, escapechar)
+        _result_frame = H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
+                                                 force_col_types, quotechar, escapechar)
+        return _result_frame
     except BaseException:
         outcome = "error"
         raise
@@ -437,7 +450,9 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
         # Fire-and-forget telemetry; never raises. size is best-effort.
         try:
             size = os.path.getsize(path) if os.path.exists(path) else 0
-            _telemetry.send_upload(_h2o_version_safe(), _telemetry.derive_file_format(path), size, outcome)
+            shape = _telemetry.derive_frame_shape(_result_frame) if outcome == "ok" else None
+            _telemetry.send_upload(_h2o_version_safe(), _telemetry.derive_file_format(path), size, outcome,
+                                   frame_shape=shape)
         except Exception:
             pass
 
@@ -528,12 +543,15 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
                             "Please use absolute paths if possible.")
     outcome = "ok"
+    _result_frame = None
     try:
         if not parse:
-            return lazy_import(path, pattern)
+            _result_frame = lazy_import(path, pattern)
+            return _result_frame
         else:
-            return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                            skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar, tz_adjust_to_local)
+            _result_frame = H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
+                                                    skipped_columns, force_col_types, custom_non_data_line_markers, partition_by, quotechar, escapechar, tz_adjust_to_local)
+            return _result_frame
     except BaseException:
         outcome = "error"
         raise
@@ -541,10 +559,21 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         try:
             # Use the first path when a list is supplied; only the URL scheme leaks out.
             first = path[0] if isinstance(path, list) and path else path
+            # For local paths, we can derive the on-disk size. For remote paths
+            # (s3/hdfs/gcs/http), we don't probe — leave compressed_size_bucket null.
+            size = None
+            if first and os.path.exists(first):
+                try:
+                    size = os.path.getsize(first)
+                except Exception:
+                    size = None
+            shape = _telemetry.derive_frame_shape(_result_frame) if (outcome == "ok" and parse) else None
             _telemetry.send_import(_h2o_version_safe(),
                                    _telemetry.derive_source_scheme(first),
                                    _telemetry.derive_file_format(first),
-                                   outcome)
+                                   outcome,
+                                   compressed_size_bytes=size,
+                                   frame_shape=shape)
         except Exception:
             pass
 
@@ -1571,7 +1600,28 @@ def save_model(model, path="", force=False, export_cross_validation_predictions=
         assert_is_type(filename, str)
     path = os.path.join(os.getcwd() if path == "" else path, filename)
     data = {"dir": path, "force": force, "export_cross_validation_predictions": export_cross_validation_predictions}
-    return api("GET /99/Models.bin/%s" % model.model_id, data=data)["dir"]
+    outcome = "ok"
+    saved_path = None
+    try:
+        saved_path = api("GET /99/Models.bin/%s" % model.model_id, data=data)["dir"]
+        return saved_path
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        try:
+            algo = (model._model_json or {}).get("algo", "") if hasattr(model, "_model_json") else ""
+            size = None
+            if saved_path and os.path.exists(saved_path):
+                try:
+                    size = os.path.getsize(saved_path)
+                except Exception:
+                    size = None
+            _telemetry.send_model_save(_h2o_version_safe(), algo=algo, family=None,
+                                       outcome=outcome, fmt="binary",
+                                       compressed_size_bytes=size)
+        except Exception:
+            pass
 
 
 def download_model(model, path="", export_cross_validation_predictions=False, filename=None):
@@ -1649,8 +1699,31 @@ def load_model(path):
     >>> h2o.load_model(model)
     """
     assert_is_type(path, str)
-    res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
-    return get_model(res["models"][0]["model_id"]["name"])
+    outcome = "ok"
+    loaded_model = None
+    try:
+        res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
+        loaded_model = get_model(res["models"][0]["model_id"]["name"])
+        return loaded_model
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        try:
+            algo = ""
+            if loaded_model is not None and hasattr(loaded_model, "_model_json"):
+                algo = (loaded_model._model_json or {}).get("algo", "")
+            size = None
+            if path and os.path.exists(path):
+                try:
+                    size = os.path.getsize(path)
+                except Exception:
+                    size = None
+            _telemetry.send_model_load(_h2o_version_safe(), algo=algo, family=None,
+                                       outcome=outcome, fmt="binary",
+                                       compressed_size_bytes=size)
+        except Exception:
+            pass
 
 
 def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, 

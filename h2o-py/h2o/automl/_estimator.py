@@ -4,6 +4,7 @@ from inspect import getdoc
 import re
 
 import h2o
+from h2o import telemetry as _telemetry
 from h2o.base import Keyed
 from h2o.estimators import H2OEstimator
 from h2o.exceptions import H2OResponseError, H2OValueError
@@ -13,6 +14,14 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from ._base import H2OAutoMLBaseMixin, _fetch_state
+
+
+def _h2o_version_safe():
+    try:
+        from h2o import __version__ as _v
+        return _v
+    except Exception:
+        return ""
 
 
 _params_doc_ = dict()  # holds the doc per param extracted from H2OAutoML constructor
@@ -678,13 +687,46 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
 
         self._job = H2OJob(resp['job'], "AutoML")
         poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})
+        outcome = "ok"
         try:
-            self._job.poll(poll_updates=poll_updates)
+            try:
+                self._job.poll(poll_updates=poll_updates)
+            finally:
+                poll_updates(self._job, 1)
+            self._fetch()
+            return self.leader
+        except BaseException:
+            outcome = "error"
+            raise
         finally:
-            poll_updates(self._job, 1)
-
-        self._fetch()
-        return self.leader
+            # Fire-and-forget telemetry; never raises. One event per train() call,
+            # including grid/sub-models. Per the contract, `algo` is the leader
+            # model's algorithm (never the literal "automl").
+            try:
+                leader_algo = ""
+                try:
+                    if self.leader is not None and hasattr(self.leader, "_model_json"):
+                        leader_algo = (self.leader._model_json or {}).get("algo", "") or ""
+                except Exception:
+                    pass
+                lb_size = None
+                try:
+                    if self._leaderboard is not None:
+                        lb_size = int(self._leaderboard.nrow or 0)
+                except Exception:
+                    pass
+                _telemetry.send_automl_run(
+                    _h2o_version_safe(),
+                    algo=leader_algo,
+                    family=None,
+                    outcome=outcome,
+                    max_models=getattr(self, "max_models", None),
+                    max_runtime_secs=getattr(self, "max_runtime_secs", None),
+                    sort_metric=(getattr(self, "sort_metric", None) or "").lower() or None,
+                    leaderboard_size=lb_size,
+                )
+            except Exception:
+                pass
 
     #---------------------------------------------------------------------------
     # Predict with AutoML
