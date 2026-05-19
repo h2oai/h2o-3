@@ -151,8 +151,9 @@ def connection():
 
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
-         max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, 
-         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, verbose = True, **kwargs):
+         max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None,
+         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, verbose = True,
+         telemetry=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -196,6 +197,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
     :param verbose: Set to False to disable printing connection status and info messages.
+    :param telemetry: Set to False to disable all anonymous usage telemetry for this process. Equivalent to setting the
+        ``H2O_DISABLE_TELEMETRY=1`` or ``DO_NOT_TRACK=1`` environment variable. Default ``True``. See the
+        "Privacy & Telemetry" section of the project README for what is collected and how to opt out persistently.
 
 
     :examples:
@@ -205,6 +209,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
 
     """
     global h2oconn
+    # Programmatic telemetry opt-out — set early so even an exception during
+    # init() doesn't leak a single ping before this line runs.
+    _telemetry.set_disabled(not telemetry)
     assert_is_type(url, str, None)
     assert_is_type(ip, str, None)
     assert_is_type(port, int, str, None)

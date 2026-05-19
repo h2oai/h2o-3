@@ -28,9 +28,21 @@
 # Per-process shared session_id + caches in a private env so they persist
 # across function calls without leaking package globals.
 .h2o.telemetry.state <- new.env(parent = emptyenv())
-.h2o.telemetry.state$session_id   <- NULL
-.h2o.telemetry.state$curl_path    <- NULL   # cached lookup of system curl
-.h2o.telemetry.state$java_info    <- NULL   # cached `java -version` parse
+.h2o.telemetry.state$session_id        <- NULL
+.h2o.telemetry.state$curl_path         <- NULL  # cached lookup of system curl
+.h2o.telemetry.state$java_info         <- NULL  # cached `java -version` parse
+.h2o.telemetry.state$disabled_by_kwarg <- FALSE # programmatic opt-out via h2o.init(telemetry = FALSE)
+
+#' Programmatic opt-out, set by `h2o.init(telemetry = FALSE)`.
+#'
+#' Once disabled, every subsequent `.h2o.send_*` call is a no-op until the
+#' next R session. Independent of and additive to the env-var opt-outs
+#' (`H2O_DISABLE_TELEMETRY` / `DO_NOT_TRACK`).
+#' @keywords internal
+.h2o.telemetry.set_disabled <- function(disabled) {
+  .h2o.telemetry.state$disabled_by_kwarg <- isTRUE(disabled)
+  invisible(NULL)
+}
 
 .h2o.telemetry.resolve_url <- function() {
   envv <- Sys.getenv("H2O_TELEMETRY_URL")
@@ -39,6 +51,7 @@
 }
 
 .h2o.telemetry.disabled <- function() {
+  if (isTRUE(.h2o.telemetry.state$disabled_by_kwarg)) return(TRUE)
   nzchar(Sys.getenv("H2O_DISABLE_TELEMETRY")) ||
     nzchar(Sys.getenv("DO_NOT_TRACK"))
 }
