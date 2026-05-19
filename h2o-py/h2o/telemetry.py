@@ -52,6 +52,11 @@ _MAX_VERSION_FIELD_LEN = 64  # v1.5 Phase 24 — cap every *_version / *_vendor 
 _session_lock = threading.Lock()
 _session_id = None  # type: str | None
 
+# Programmatic opt-out set by h2o.init(telemetry=False). Independent of and
+# additive to the env-var opt-outs. Persists for the lifetime of the process
+# (or until set_disabled(False) is called).
+_disabled_by_kwarg = False
+
 # Cached Java runtime info (avoid re-parsing `java -version` on every send).
 _java_info_cache = None  # type: dict | None
 _java_info_lock = threading.Lock()
@@ -68,7 +73,20 @@ def _normalize_os(name):
     return name
 
 
+def set_disabled(disabled):
+    """Programmatic opt-out, set by ``h2o.init(telemetry=False)``.
+
+    Once disabled, every subsequent ``send_*`` call is a no-op until the
+    next process restart. Independent of and additive to the env-var
+    opt-outs (``H2O_DISABLE_TELEMETRY`` / ``DO_NOT_TRACK``).
+    """
+    global _disabled_by_kwarg
+    _disabled_by_kwarg = bool(disabled)
+
+
 def _telemetry_disabled():
+    if _disabled_by_kwarg:
+        return True
     return bool(os.environ.get("H2O_DISABLE_TELEMETRY")) or bool(os.environ.get("DO_NOT_TRACK"))
 
 

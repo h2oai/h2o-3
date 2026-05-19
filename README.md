@@ -671,11 +671,12 @@ H2O-3 sends anonymous usage telemetry to help us prioritize features and platfor
 - **One small ping per `h2o.init()`** plus one per major user action (training, scoring, MOJO download, upload, import, save/load, AutoML). Each ping is ~200 bytes of JSON over HTTPS.
 - **What's sent:** version strings, OS, an ephemeral session UUID regenerated on every `h2o.init()`, a Unix timestamp, the algorithm name, and coarse bucket labels for counts (rows, columns, durations, sizes). Numeric values are always ranges, never raw integers.
 - **What's never sent:** code, file paths, dataset names, model names, column names, hyperparameter values, hostnames, usernames, email addresses, or any user-generated content.
-- **Opt out anytime:**
+- **Opt out anytime.** Either set an environment variable:
   ```bash
   export H2O_DISABLE_TELEMETRY=1   # or
   export DO_NOT_TRACK=1
   ```
+  Or pass `telemetry=False` (Python) / `telemetry = FALSE` (R) to `h2o.init()`.
 - **Fire-and-forget.** Every call runs on a background task with a 2-second timeout. If the receiver is unreachable, your code returns exactly as if telemetry never happened — never blocks, never raises, never retries.
 
 The full wire contract and the receiver software are open source in the [`h2o-3-telemetry`](https://github.com/h2oai/h2o-3-telemetry) repository. To run a private receiver, set `H2O_TELEMETRY_URL` to your `/v1/event` endpoint.
