@@ -13,9 +13,6 @@ def comparison_test():
     if sys.version_info.major == 2:
         print("native XGBoost tests only supported on python3")
         return
-    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
-        print("native XGBoost tests only doesn't run on Python 3.{0} for now.".format(sys.version_info.minor))
-        return
     import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True
     ret = h2o.cluster()
@@ -29,6 +26,9 @@ def comparison_test():
                       "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "exact", "backend":"cpu"}
         nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
                        'tree_method': 'exact',
+                       # Pin base_score=0.5 (xgboost4j 1.6 default) to neutralize
+                       # xgboost 2.0+'s auto-estimated base_score in cross-version comparisons.
+                       'base_score': 0.5,
                        'seed': h2oParamsS["seed"],
                        'booster': 'gbtree',
                        'objective': 'multi:softprob',
