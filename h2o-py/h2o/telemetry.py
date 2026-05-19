@@ -326,7 +326,12 @@ def _post_async(payload):
             req = urllib.request.Request(
                 url,
                 data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
+                # DNT: 0 explicitly signals "user has not opted out via the
+                # W3C DNT mechanism" — defends against transparent proxies
+                # that inject DNT: 1 on outbound traffic and would otherwise
+                # silently kill our telemetry. Users opt out via env vars,
+                # never by us sending DNT: 1.
+                headers={"Content-Type": "application/json", "DNT": "0"},
                 method="POST",
             )
             urllib.request.urlopen(req, timeout=_TIMEOUT_SECONDS).read()
