@@ -110,6 +110,15 @@ def connect(server=None, url=None, ip=None, port=None,
                                      verbose=verbose, strict_version_check=svc)
         if verbose:
             h2oconn.cluster.show_status()
+    # Fire-and-forget telemetry; never blocks, never raises. h2o.connect()
+    # by definition attaches to an existing cluster (no local JVM spawn),
+    # so we always emit `cluster_connect`. Honors H2O_DISABLE_TELEMETRY /
+    # DO_NOT_TRACK env vars internally.
+    try:
+        _cluster_shape = _telemetry.derive_cluster_shape(h2oconn)
+    except Exception:
+        _cluster_shape = None
+    _telemetry.send_cluster_connect_telemetry(_h2o_version_safe(), cluster_shape=_cluster_shape)
     return h2oconn
 
 
