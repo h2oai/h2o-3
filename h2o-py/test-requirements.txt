@@ -52,8 +52,10 @@ seaborn==0.8.1; python_version < '3.11'
 # Py3.11+ needs a newer seaborn: 0.8.1 (2017) calls deprecated `np.float` inside
 # pairplot, which was removed in numpy 1.20+ (Py3.11 pins numpy 1.26.4).
 seaborn==0.13.2; python_version >= '3.11'
-matplotlib==3.1.1; python_version < '3.12'
-matplotlib==3.10.8; python_version >= '3.12'
+matplotlib==3.1.1; python_version < '3.11'
+# Py3.11+ needs matplotlib >= 3.4 to satisfy seaborn 0.13.2's pin, and 3.1.1 has
+# no Py3.11 wheel anyway. Match the Py3.12+ version.
+matplotlib==3.10.8; python_version >= '3.11'
 numpydoc==0.7.0; python_version < '3.12'
 numpydoc==1.4.0; python_version >= '3.12'
 mysqlclient==1.4.6; python_version < '3.12'
@@ -63,10 +65,12 @@ recommonmark==0.7.1; python_version >= '3.12'
 sphinx_rtd_theme==0.2.4
 sphinxcontrib-osexample>=0.1.1
 shap==0.29.1; python_version < '3.11'
-# Py3.11+ needs a newer shap: 0.29.1's force-plot module does
-# `from IPython.core.display import display, HTML`, which moved to `IPython.display`
-# in IPython 8+. IPython 8 is the only line that ships Py3.11+ wheels.
-shap==0.51.0; python_version >= '3.11'
+# Py3.11: 0.29.1's force-plot module does `from IPython.core.display import display, HTML`,
+# which moved to `IPython.display` in IPython 8+. IPython 8 is the only line that ships
+# Py3.11+ wheels. 0.42+ uses the new path. 0.51.0 requires numpy>=2 which would cascade,
+# so pin to 0.46.0 — modern enough for the IPython fix, compatible with the numpy 1.26.4 pin.
+shap==0.46.0; python_version == '3.11'
+shap==0.51.0; python_version >= '3.12'
 boto3==1.18.65; python_version < '3.12'
 boto3==1.42.94; python_version >= '3.12'
 lifelines<0.27; python_version < '3.9'
