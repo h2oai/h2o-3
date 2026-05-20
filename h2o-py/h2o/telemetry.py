@@ -39,9 +39,9 @@ import time
 import urllib.request
 import uuid
 
-# v1.1 default points at local-dev receiver; production cloud cutover
-# will set H2O_TELEMETRY_URL via the install scripts.
-TELEMETRY_URL = "http://127.0.0.1:8000/v1/event"
+# v2.0 production endpoint. Override per-deployment via H2O_TELEMETRY_URL
+# (internal / private receivers, local dev pointing at 127.0.0.1:8000, etc.).
+TELEMETRY_URL = "https://telemetry.h2o.ai/v1/event"
 
 _PAYLOAD_VERSION = 1
 _TIMEOUT_SECONDS = 2.0
