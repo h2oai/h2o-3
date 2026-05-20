@@ -18,9 +18,9 @@
 #' See `.planning/h2o-3-client-integration.md` and
 #' `.planning/h2o-3-update-v1.3-v1.4.md` for the wire contract.
 
-# v1.1 default points at local-dev receiver; production cloud cutover
-# will set H2O_TELEMETRY_URL via the install scripts.
-.h2o.telemetry.url <- "http://127.0.0.1:8000/v1/event"
+# v2.0 production endpoint. Override per-deployment via H2O_TELEMETRY_URL
+# (internal / private receivers, local dev pointing at 127.0.0.1:8000, etc.).
+.h2o.telemetry.url <- "https://telemetry.h2o.ai/v1/event"
 .h2o.telemetry.payload_version <- 1L
 .h2o.telemetry.timeout_secs <- 2L
 .h2o.telemetry.max_version_len <- 64L
