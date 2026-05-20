@@ -48,8 +48,10 @@ scikit-learn==1.2.2; python_version >= '3.11' and python_version < '3.12'
 scikit-learn==1.8.0; python_version >= '3.12'
 six==1.11.0; python_version < '3.12'
 six==1.17.0; python_version >= '3.12'
-seaborn==0.8.1; python_version < '3.12'
-seaborn==0.13.2; python_version >= '3.12'
+seaborn==0.8.1; python_version < '3.11'
+# Py3.11+ needs a newer seaborn: 0.8.1 (2017) calls deprecated `np.float` inside
+# pairplot, which was removed in numpy 1.20+ (Py3.11 pins numpy 1.26.4).
+seaborn==0.13.2; python_version >= '3.11'
 matplotlib==3.1.1; python_version < '3.12'
 matplotlib==3.10.8; python_version >= '3.12'
 numpydoc==0.7.0; python_version < '3.12'
@@ -60,8 +62,11 @@ recommonmark==0.4.0; python_version < '3.12'
 recommonmark==0.7.1; python_version >= '3.12'
 sphinx_rtd_theme==0.2.4
 sphinxcontrib-osexample>=0.1.1
-shap==0.29.1; python_version < '3.12'
-shap==0.51.0; python_version >= '3.12'
+shap==0.29.1; python_version < '3.11'
+# Py3.11+ needs a newer shap: 0.29.1's force-plot module does
+# `from IPython.core.display import display, HTML`, which moved to `IPython.display`
+# in IPython 8+. IPython 8 is the only line that ships Py3.11+ wheels.
+shap==0.51.0; python_version >= '3.11'
 boto3==1.18.65; python_version < '3.12'
 boto3==1.42.94; python_version >= '3.12'
 lifelines<0.27; python_version < '3.9'
