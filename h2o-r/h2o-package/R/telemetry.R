@@ -279,7 +279,13 @@ bucketize_leaderboard_size <- function(n) {
         out$cluster_memory_gb_bucket <- bucketize_cluster_memory_gb(total / (1024^3))
       }
     }
-    out$cluster_topology <- .h2o.telemetry.derive_topology(cloud_size)
+    # Server-side Hadoop signal trumps client-side env-var heuristics — a
+    # workstation client connecting to a Hadoop-launched cluster has no
+    # HADOOP_HOME locally, but the cluster reports its own provenance via
+    # the hadoop_version field on CloudV3 (populated from -ga_hadoop_ver).
+    hv <- info$hadoop_version %||% NULL
+    if (!is.null(hv) && (is.na(hv) || !nzchar(as.character(hv)))) hv <- NULL
+    out$cluster_topology <- .h2o.telemetry.derive_topology(cloud_size, hadoop_version = hv)
   }, error = function(e) invisible(NULL))
   out
 }

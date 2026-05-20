@@ -33,6 +33,11 @@ class CloudHandler extends Handler {
     cloud.node_idx = H2O.SELF.index();
     cloud.cloud_name = H2O.ARGS.name;
     cloud.is_client  = H2O.ARGS.client;
+    // Hadoop version is propagated by h2odriver via the -ga_hadoop_ver flag.
+    // The flag is misnamed for historical reasons (it survived the 2018 GA removal);
+    // we surface it on the wire under its semantic name so clients can derive
+    // cluster_topology=multi_node_hadoop on cluster_connect telemetry.
+    cloud.hadoop_version = H2O.ARGS.ga_hadoop_ver;
     cloud.cloud_size = H2O.CLOUD.size();
     cloud.cloud_uptime_millis = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
     cloud.cloud_internal_timezone = DateTimeZone.getDefault().toString();
