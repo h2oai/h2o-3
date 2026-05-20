@@ -23,6 +23,7 @@ dependencies {
         api("org.apache.mina:mina-core:2.2.7") {
             because 'Fixes CVE-2024-52046'
             because 'Fixes CVE-2026-41409'
+            because 'Fixes CVE-2026-41635'
             because 'Fixes CVE-2026-42778'
             because 'Fixes CVE-2026-42779'
         }
