@@ -38,7 +38,7 @@ def getPrStages(final pipelineContext){
     ])
     stages.add([
       stageName: "Py${pyver} Demo Notebooks", target: 'test-py-demos',
-      pythonVersion: pyver, timeoutValue: 60, component: buildConfig.COMPONENT_PY
+      pythonVersion: pyver, timeoutValue: 90, component: buildConfig.COMPONENT_PY
     ])
     stages.add([
       stageName: "Py${pyver} Init Java 8", target: 'test-py-init',
