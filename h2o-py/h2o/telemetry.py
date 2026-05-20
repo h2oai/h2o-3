@@ -285,6 +285,11 @@ def derive_cluster_shape(h2oconn):
 
     Returns a dict with keys ``cluster_nodes_bucket``, ``cluster_memory_gb_bucket``,
     ``cluster_topology`` — any value may be None if unavailable.
+
+    The ``hadoop_version`` field on CloudV3 (populated by h2odriver via the
+    ``-ga_hadoop_ver`` flag) is the authoritative signal for the
+    ``multi_node_hadoop`` topology, regardless of whether the client itself
+    runs on a Hadoop edge node.
     """
     out = {"cluster_nodes_bucket": None, "cluster_memory_gb_bucket": None, "cluster_topology": None}
     try:
@@ -305,7 +310,15 @@ def derive_cluster_shape(h2oconn):
                     pass
             if total_bytes > 0:
                 out["cluster_memory_gb_bucket"] = bucketize_cluster_memory_gb(total_bytes / (1024 ** 3))
-        out["cluster_topology"] = _derive_cluster_topology(cloud_size)
+        # Server-side Hadoop signal trumps client-side env-var heuristics —
+        # a workstation client connecting to a Hadoop-launched cluster has no
+        # HADOOP_HOME locally, but the cluster knows its own provenance.
+        hv = None
+        try:
+            hv = getattr(cluster, "hadoop_version", None) or None
+        except Exception:
+            pass
+        out["cluster_topology"] = _derive_cluster_topology(cloud_size, hadoop_version=hv)
     except Exception:
         pass
     return out
