@@ -75,6 +75,10 @@ xgboost==1.7.6; python_version >= '3.8' and python_version < '3.12'
 xgboost==3.2.0; python_version >= '3.12'
 causalml==0.12.3; python_version <= '3.7'
 causalml==0.14.1; python_version > '3.7' and python_version < '3.11'
+# Py3.11 was previously unpinned (the 0.14.1 marker stops at < '3.11', the 0.16.0 marker
+# starts at >= '3.12'), leaving the env without causalml at all and crashing the uplift
+# demo notebook at import time. Match the Py3.12+ pin.
+causalml==0.16.0; python_version == '3.11'
 causalml==0.16.0; python_version >= '3.12'
 colorama; python_version < '3.12'
 colorama==0.4.6; python_version >= '3.12'
