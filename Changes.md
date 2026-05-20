@@ -2,6 +2,31 @@
 
 ## H2O
 
+### 3.46.0.11 - 5/21/2026
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/11/index.html</a>
+
+#### Bug
+- [[#16842]](https://github.com/h2oai/h2o-3/issues/16842) – Fixed GLM standard error calculation bug.
+- [[#16662]](https://github.com/h2oai/h2o-3/issues/16662) – Fixed reproducible nondeterminism in Grid+GAM grid search.
+- [[#16566]](https://github.com/h2oai/h2o-3/issues/16566) – Fixed CI test flakes (timeout rule, AdaBoost ignore, orc scope).
+- [[#16757]](https://github.com/h2oai/h2o-3/issues/16757) – Fixed `top_n_features` in `shap_summary_plot` in R.
+- [[#16758]](https://github.com/h2oai/h2o-3/issues/16758) – Fixed `h2o.shap_summary_plot()` in R.
+- [[#16798]](https://github.com/h2oai/h2o-3/issues/16798) – Fixed inconsistencies in Python type-hints.
+
+#### New Feature
+- [[#16676]](https://github.com/h2oai/h2o-3/issues/16676) – Added support for removing offset effects in GLM.
+- [[#16786]](https://github.com/h2oai/h2o-3/issues/16786) – Added MOJO support for GLM remove offset effects.
+
+#### Docs
+- [[#16809]](https://github.com/h2oai/h2o-3/issues/16809) – Reconciled Grid Search docs with parameter and algorithm pages.
+- [[#16804]](https://github.com/h2oai/h2o-3/issues/16804) – Added `h2o.make_derived_glm_model` to R `_pkgdown.yml`.
+
+#### Security
+- [[#16844]](https://github.com/h2oai/h2o-3/issues/16844) – Bumped log4j to 2.25.4 to fix CVE-2026-34477, CVE-2026-34478, CVE-2026-34479, and CVE-2026-34480.
+- [[#16847]](https://github.com/h2oai/h2o-3/issues/16847) – Upgraded mina-core to 2.2.6 to fix CVE-2026-41409.
+- [[#16852]](https://github.com/h2oai/h2o-3/issues/16852) – Upgraded mina-core to 2.2.7 to fix CVE-2026-42778 and CVE-2026-42779.
+
 ### 3.46.0.10 - 3/12/2026
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/10/index.html</a>
