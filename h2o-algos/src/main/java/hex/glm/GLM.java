@@ -122,6 +122,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
   private int _bestCVSubmodel;  // best submodel index found during cv
   private boolean _doInit = true;  // flag setting whether or not to run init
+  // Per-fold stash for the unrestricted (with-offset) second-pass scoring; consumed and
+  // nulled by cv_mainModelScores. Transient: excluded from serialization/checkpointing.
+  private transient ModelMetrics.MetricBuilder[] _cv_mbs_unrestricted;
+  private transient Key<Frame>[] _cv_predKeys_unrestricted;
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
   private double [][] _xval_zValues;  // store cross validation average p-values
@@ -450,34 +454,189 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     _doInit = false;  // disable init for CV main model
   }
 
-  // Ensure remove_offset_effects semantics apply to the CV holdout scoring pass so that
-  // _cross_validation_metrics is computed with the offset zeroed, consistent with
-  // _training_metrics and _validation_metrics. The flag is reset in scoreAndUpdateModel's
-  // finally block before the model is written to DKV, so it must be re-enabled here.
+  /**
+   * Dual-pass override supporting remove_offset_effects + CV. Inlined rather than wrapping super
+   * because super's loop deletes fold frames at the end of each iteration — both passes must run
+   * inside the same iteration before cleanup.
+   *
+   * Gated on _parms._remove_offset_effects:
+   *   - false: single default pass; behavior matches super; unrestricted slots stay null.
+   *   - true:  pass 1 with flag=true populates restricted mbs[i]; pass 2 with flag=false populates
+   *            the stash arrays consumed by cv_mainModelScores.
+   *
+   * Each flag mutation is followed by DKV.put so remote scoring tasks see the change.
+   */
   @Override
-  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
-    if (_parms._remove_offset_effects) {
-      for (ModelBuilder<GLMModel, GLMParameters, GLMOutput> mb : cvModelBuilders) {
-        GLMModel foldModel = ((GLM) mb)._model;
-        if (foldModel != null) {
-          foldModel._useRemoveOffsetEffects = true;
-          DKV.put(foldModel);
-        }
-      }
+  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights,
+                                                        ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
+    if (_job.stop_requested()) {
+      Log.info("Skipping scoring of CV models");
+      throw new Job.JobCancelledException(_job);
     }
-    try {
-      return super.cv_scoreCVModels(N, weights, cvModelBuilders);
-    } finally {
-      if (_parms._remove_offset_effects) {
-        for (ModelBuilder<GLMModel, GLMParameters, GLMOutput> mb : cvModelBuilders) {
-          GLMModel foldModel = ((GLM) mb)._model;
-          if (foldModel != null) {
-            foldModel._useRemoveOffsetEffects = _parms._remove_offset_effects;
-            DKV.put(foldModel);
+    assert weights.length == 2*N;
+    assert cvModelBuilders.length == N;
+
+    Log.info("Scoring the " + N + " CV models" +
+        (_parms._remove_offset_effects ? " (dual-pass: restricted + unrestricted)" : ""));
+
+    ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
+    if (_parms._remove_offset_effects) {
+      _cv_mbs_unrestricted = new ModelMetrics.MetricBuilder[N];
+      _cv_predKeys_unrestricted = new Key[N];
+    }
+    Futures fs = new Futures();
+
+    for (int i = 0; i < N; ++i) {
+      if (_job.stop_requested()) {
+        Log.info("Skipping scoring for last " + (N - i) + " out of " + N + " CV models");
+        throw new Job.JobCancelledException(_job);
+      }
+      Frame cvValid = cvModelBuilders[i].valid();
+      Frame restrictedPreds = null;
+      Frame unrestrictedPreds = null;
+      try (Scope.Safe s = Scope.safe(cvValid)) {
+        Frame adaptFr = new Frame(cvValid);
+        if (makeCVMetrics(cvModelBuilders[i])) {
+          GLMModel cvModel = cvModelBuilders[i].dest().get();
+          cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+          boolean originalFlag = cvModel._useRemoveOffsetEffects;
+          boolean keepPreds = (nclasses() == 2
+              || _parms._keep_cross_validation_predictions
+              || cvModel.isDistributionHuber());
+
+          // PASS 1: offset removed when flag=true, else default scoring.
+          if (_parms._remove_offset_effects && !cvModel._useRemoveOffsetEffects) {
+            cvModel._useRemoveOffsetEffects = true;
+            DKV.put(cvModel);
+          }
+          // Cast required: protected getPredictionKey() is only reachable across packages
+          // through a GLM-typed reference (JLS §6.6.2).
+          String predName = ((GLM) cvModelBuilders[i]).getPredictionKey();
+          if (keepPreds) {
+            Model.PredictScoreResult r = cvModel.predictScoreImpl(
+                cvValid, adaptFr, predName, _job, true,
+                CFuncRef.from(_parms._custom_metric_func));
+            restrictedPreds = r.getPredictions();
+            Scope.untrack(restrictedPreds);
+            r.makeModelMetrics(cvValid, adaptFr);
+            mbs[i] = r.getMetricBuilder();
+            DKV.put(cvModel);
+          } else {
+            mbs[i] = cvModel.scoreMetrics(adaptFr);
+          }
+
+          // PASS 2: offset preserved; only runs when flag=true.
+          if (_parms._remove_offset_effects) {
+            cvModel._useRemoveOffsetEffects = false;
+            DKV.put(cvModel);
+            String unrestrictedPredName = predName + "_unrestricted";
+            if (keepPreds) {
+              Model.PredictScoreResult r = cvModel.predictScoreImpl(
+                  cvValid, adaptFr, unrestrictedPredName, _job, true,
+                  CFuncRef.from(_parms._custom_metric_func));
+              unrestrictedPreds = r.getPredictions();
+              Scope.untrack(unrestrictedPreds);
+              r.makeModelMetrics(cvValid, adaptFr);
+              _cv_mbs_unrestricted[i] = r.getMetricBuilder();
+              _cv_predKeys_unrestricted[i] = Key.make(unrestrictedPredName);
+              // Persist addModelMetrics side effect (mirrors PASS 1); prevents metric orphans on cleanup.
+              DKV.put(cvModel);
+            } else {
+              _cv_mbs_unrestricted[i] = cvModel.scoreMetrics(adaptFr);
+              _cv_predKeys_unrestricted[i] = null;
+            }
+            // Restore on-entry flag only if PASS 2's flip changed it (saves a DKV write
+            // in the typical case where the fold arrived with flag=false).
+            if (cvModel._useRemoveOffsetEffects != originalFlag) {
+              cvModel._useRemoveOffsetEffects = originalFlag;
+              DKV.put(cvModel);
+            }
           }
         }
+      } finally {
+        // Track both preds (no-op when null), mirroring super.
+        Scope.track(restrictedPreds);
+        Scope.track(unrestrictedPreds);
+      }
+      // Cleanup runs after BOTH passes complete.
+      DKV.remove(cvModelBuilders[i]._parms._train, fs);
+      DKV.remove(cvModelBuilders[i]._parms._valid, fs);
+      weights[2*i].remove(fs);
+      weights[2*i+1].remove(fs);
+    }
+
+    fs.blockForPending();
+    return mbs;
+  }
+
+  /**
+   * Adds a parallel unrestricted (with-offset) aggregation on top of super's restricted aggregation,
+   * gated on _parms._remove_offset_effects. Consumes the stashes filled by cv_scoreCVModels then
+   * nulls them (reduceForCV is not idempotent — calling twice would double-reduce).
+   */
+  @Override
+  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder[] mbs,
+                                  ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
+    // super fills the restricted CV slots and cleans up per-fold restricted preds.
+    super.cv_mainModelScores(N, mbs, cvModelBuilders);
+
+    if (!_parms._remove_offset_effects) return;  // stash arrays were never allocated
+
+    GLMModel mainModel = _result.get();
+
+    // Unrestricted summary table. The 2-arg helper logs the table internally.
+    Key[] cvModKeys = new Key[N];
+    for (int i = 0; i < N; i++) cvModKeys[i] = cvModelBuilders[i].dest();
+    mainModel._output._cross_validation_metrics_summary_unrestricted_model =
+        makeCrossValidationSummaryTable(cvModKeys,
+            m -> ((GLMModel) m)._output._validation_metrics_unrestricted_model);
+
+    // Combine per-fold unrestricted preds into one frame, then drop the per-fold sources
+    // (intermediates; not user-facing).
+    Frame unrestrictedHoldoutPreds = null;
+    if (_parms._keep_cross_validation_predictions
+        || nclasses() == 2
+        || mainModel.isDistributionHuber()) {
+      List<Key<Frame>> nonNull = new ArrayList<>();
+      for (Key<Frame> k : _cv_predKeys_unrestricted) {
+        if (k != null) nonNull.add(k);
+      }
+      if (!nonNull.isEmpty()) {
+        Key<Frame> cvhpUn = Key.make("cv_holdout_prediction_unrestricted_" + mainModel._key.toString());
+        if (_parms._keep_cross_validation_predictions) {
+          mainModel._output._cross_validation_holdout_predictions_frame_id_unrestricted_model = cvhpUn;
+        }
+        @SuppressWarnings("unchecked")
+        Key<Frame>[] nonNullArr = nonNull.toArray(new Key[0]);
+        unrestrictedHoldoutPreds = combineHoldoutPredictions(nonNullArr, cvhpUn);
+      }
+      int removed = Model.deleteAll(_cv_predKeys_unrestricted);
+      if (removed > 0) Log.info(removed + " per-fold unrestricted CV predictions were removed");
+    }
+
+    // Order matters: cv_makeAggregateModelMetrics reduces [1..N-1] into [0] in place and is
+    // NOT idempotent; it must run before makeModelMetrics consumes [0].
+    cv_makeAggregateModelMetrics(_cv_mbs_unrestricted);
+    mainModel._output._cross_validation_metrics_unrestricted_model =
+        _cv_mbs_unrestricted[0].makeModelMetrics(mainModel, _parms.train(), null, unrestrictedHoldoutPreds);
+    mainModel._output._cross_validation_metrics_unrestricted_model._description =
+        N + "-fold cross-validation on training data (with offset preserved; unrestricted view)";
+
+    if (unrestrictedHoldoutPreds != null) {
+      if (_parms._keep_cross_validation_predictions) {
+        Scope.untrack(unrestrictedHoldoutPreds);
+      } else {
+        unrestrictedHoldoutPreds.remove();
       }
     }
+
+    Log.info(mainModel._output._cross_validation_metrics_unrestricted_model.toString());
+
+    _cv_mbs_unrestricted = null;
+    _cv_predKeys_unrestricted = null;
+
+    // Re-publish mainModel: super already put it, but the three unrestricted fields were set after.
+    DKV.put(mainModel);
   }
 
   /***

@@ -7,6 +7,7 @@ import hex.ModelMetricsBinomial;
 import hex.ModelMetricsBinomialGLM;
 import hex.api.MakeGLMModelHandler;
 import hex.genmodel.utils.DistributionFamily;
+import hex.schemas.GLMModelV3;
 import hex.schemas.MakeDerivedGLMModelV3;
 import hex.schemas.MakeUnrestrictedGLMModelV3;
 import org.junit.Assert;
@@ -17,6 +18,7 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.api.schemas3.KeyV3;
+import water.api.schemas3.ModelMetricsBaseV3;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -2798,6 +2800,198 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             if (glm != null) glm.remove();
             Scope.exit();
         }
+    }
+
+    /**
+     * Unrestricted CV slots are populated when remove_offset_effects=true (impl + GLMModelV3
+     * schema), distinct from their restricted counterparts, and null when remove_offset_effects=false.
+     */
+    @Test
+    public void testRemoveOffsetCvUnrestrictedMetricsParity() {
+        Frame train = null;
+        Frame trainNoROE = null;
+        GLMModel glm = null;
+        GLMModel glmNoROE = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test04_unrestricted_cv_metrics");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._keep_cross_validation_predictions = true;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // Unrestricted impl slots populated.
+            assertNotNull(glm._output._cross_validation_metrics_unrestricted_model);
+            assertNotNull(glm._output._cross_validation_metrics_summary_unrestricted_model);
+            assertNotNull(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+
+            // Summary shape: structural check that tolerates future cv_* header renames.
+            TwoDimTable unrestrictedSummary = glm._output._cross_validation_metrics_summary_unrestricted_model;
+            assertEquals(5, unrestrictedSummary.getColDim());
+            String[] colHeaders = unrestrictedSummary.getColHeaders();
+            assertEquals("mean", colHeaders[0]);
+            assertEquals("sd", colHeaders[1]);
+            assertTrue(colHeaders[2].startsWith("cv_"));
+            assertTrue(colHeaders[3].startsWith("cv_"));
+            assertTrue(colHeaders[4].startsWith("cv_"));
+
+            // Restricted and unrestricted aggregate residual_deviance must differ (non-zero offset).
+            assertNotNull(glm._output._cross_validation_metrics);
+            double restrictedResDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics).residual_deviance();
+            double unrestrictedResDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics_unrestricted_model).residual_deviance();
+            assertNotEquals(restrictedResDev, unrestrictedResDev, 1e-10);
+
+            // residual_deviance mean differs between restricted and unrestricted summaries.
+            TwoDimTable restrictedSummary = glm._output._cross_validation_metrics_summary;
+            assertNotNull(restrictedSummary);
+            int restrictedRow = findRowIndex(restrictedSummary, "residual_deviance");
+            int unrestrictedRow = findRowIndex(unrestrictedSummary, "residual_deviance");
+            assertTrue(restrictedRow >= 0);
+            assertTrue(unrestrictedRow >= 0);
+            double restrictedMean = ((Number) restrictedSummary.get(restrictedRow, 0)).doubleValue();
+            double unrestrictedMean = ((Number) unrestrictedSummary.get(unrestrictedRow, 0)).doubleValue();
+            assertNotEquals(restrictedMean, unrestrictedMean, 1e-10);
+
+            // Combined unrestricted holdout-pred frame is retrievable.
+            Key<Frame> unrestrictedHpKey = glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model;
+            Frame unrestrictedHp = DKV.getGet(unrestrictedHpKey);
+            assertNotNull(unrestrictedHp);
+            Scope.track(unrestrictedHp);
+
+            // Schema round-trip: Weaver auto-mapping bridges impl `_field` to schema `field`.
+            GLMModelV3 schema = new GLMModelV3();
+            schema.fillFromImpl(glm);
+            assertNotNull(schema.output);
+            assertNotNull(schema.output.cross_validation_metrics_unrestricted_model);
+            assertNotNull(schema.output.cross_validation_metrics_summary_unrestricted_model);
+            assertNotNull(schema.output.cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            assertTrue(schema.output.cross_validation_metrics_unrestricted_model instanceof ModelMetricsBaseV3);
+
+            System.out.println("Restricted CV summary:");
+            System.out.println(restrictedSummary);
+            System.out.println("Unrestricted CV summary:");
+            System.out.println(unrestrictedSummary);
+
+            // Regression guard: remove_offset_effects=false → all three new fields null.
+            trainNoROE = makeBinomialOffsetFrame("test04_unrestricted_cv_metrics_no_roe");
+            GLMModel.GLMParameters paramsNoROE = new GLMModel.GLMParameters();
+            paramsNoROE._train = trainNoROE._key;
+            paramsNoROE._response_column = "y";
+            paramsNoROE._offset_column = "offset";
+            paramsNoROE._alpha = new double[]{0};
+            paramsNoROE._lambda = new double[]{0};
+            paramsNoROE._intercept = false;
+            paramsNoROE._nfolds = 3;
+            paramsNoROE._distribution = DistributionFamily.bernoulli;
+            paramsNoROE._link = GLMModel.GLMParameters.Link.logit;
+            paramsNoROE._keep_cross_validation_predictions = true;
+            paramsNoROE._remove_offset_effects = false;
+
+            glmNoROE = new GLM(paramsNoROE).trainModel().get();
+            Scope.track_generic(glmNoROE);
+
+            assertNull(glmNoROE._output._cross_validation_metrics_unrestricted_model);
+            assertNull(glmNoROE._output._cross_validation_metrics_summary_unrestricted_model);
+            assertNull(glmNoROE._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+        } finally {
+            if (train != null) train.remove();
+            if (trainNoROE != null) trainNoROE.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * make_unrestricted_model propagates the source's unrestricted CV parity slots into the
+     * derived model's main CV slots (the derived IS the unrestricted view).
+     */
+    @Test
+    public void testMakeUnrestrictedModelPropagatesCvMetrics() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_propagate_cv_unrestricted");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._keep_cross_validation_predictions = true;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // Source has populated CV parity slots for propagation to copy.
+            assertNotNull(glm._output._cross_validation_metrics);
+            assertNotNull(glm._output._cross_validation_metrics_unrestricted_model);
+            assertNotNull(glm._output._cross_validation_metrics_summary_unrestricted_model);
+            assertNotNull(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+
+            MakeGLMModelHandler handler = new MakeGLMModelHandler();
+            MakeUnrestrictedGLMModelV3 args = new MakeUnrestrictedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "test_propagate_cv_unrestricted_derived";
+            handler.make_unrestricted_model(3, args);
+            derived = DKV.getGet(Key.make("test_propagate_cv_unrestricted_derived"));
+            assertNotNull(derived);
+            Scope.track_generic(derived);
+
+            // Derived CV ModelMetrics is a deep copy; _key is preserved by IcedUtils.deepCopy.
+            assertNotNull(derived._output._cross_validation_metrics);
+            assertEquals(glm._output._cross_validation_metrics_unrestricted_model._key,
+                    derived._output._cross_validation_metrics._key);
+
+            // Holdout-pred frame Key is shared with source (matches existing restricted pattern).
+            assertEquals(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model,
+                    derived._output._cross_validation_holdout_predictions_frame_id);
+
+            // Summary is a deep copy with the same shape.
+            assertNotNull(derived._output._cross_validation_metrics_summary);
+            assertEquals(glm._output._cross_validation_metrics_summary_unrestricted_model.getColDim(),
+                    derived._output._cross_validation_metrics_summary.getColDim());
+            assertEquals(glm._output._cross_validation_metrics_summary_unrestricted_model.getRowDim(),
+                    derived._output._cross_validation_metrics_summary.getRowDim());
+
+            // Derived (unrestricted) residual_deviance differs from source's restricted view,
+            // and equals source's unrestricted parity slot — confirms the right field flowed through.
+            double srcRestrictedDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics).residual_deviance();
+            double derivedDev = ((ModelMetricsBinomialGLM) derived._output._cross_validation_metrics).residual_deviance();
+            assertNotEquals(srcRestrictedDev, derivedDev, 1e-10);
+            double srcUnrestrictedDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics_unrestricted_model).residual_deviance();
+            assertEquals(srcUnrestrictedDev, derivedDev, 1e-10);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /** Row index whose header matches name, or -1. */
+    private static int findRowIndex(TwoDimTable t, String name) {
+        String[] rh = t.getRowHeaders();
+        for (int i = 0; i < rh.length; i++) {
+            if (name.equals(rh[i])) return i;
+        }
+        return -1;
     }
 
 }

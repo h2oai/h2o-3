@@ -1716,6 +1716,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public ModelMetrics _training_metrics_unrestricted_model;
     public ModelMetrics _validation_metrics_unrestricted_model;
 
+    // CV with-offset (unrestricted) view; populated when _remove_offset_effects=true and CV is enabled.
+    public ModelMetrics _cross_validation_metrics_unrestricted_model;
+    public TwoDimTable _cross_validation_metrics_summary_unrestricted_model;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id_unrestricted_model;
+
     // Other two restricted models is produced when control variables and remove offset features are used together
     // Output for restricted model where control variables feature is enabled
     public TwoDimTable _scoring_history_restricted_model_contr_vals;
