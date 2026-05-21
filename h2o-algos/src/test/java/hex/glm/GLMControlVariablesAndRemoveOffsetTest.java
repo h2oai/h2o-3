@@ -2913,6 +2913,62 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
     }
 
     /**
+     * Regression guard for the DKV-deletion ordering bug: when keep_cross_validation_models=false
+     * the base cv_mainModelScores deletes fold models from DKV before GLM's override runs.
+     * The unrestricted summary table must still be populated (non-empty, numeric values differ
+     * from the restricted summary) because GLM now builds it before calling super.
+     */
+    @Test
+    public void testRemoveOffsetCvUnrestrictedSummaryWithoutKeptModels() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test04_unrestricted_cv_no_keep_models");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._keep_cross_validation_models = false;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // Unrestricted aggregate metrics still populated despite CV models being deleted.
+            assertNotNull(glm._output._cross_validation_metrics_unrestricted_model);
+
+            // Summary table must be non-null and contain at least one metric row.
+            TwoDimTable unrestrictedSummary = glm._output._cross_validation_metrics_summary_unrestricted_model;
+            assertNotNull(unrestrictedSummary);
+            assertTrue("Unrestricted CV summary must have at least one metric row",
+                    unrestrictedSummary.getRowDim() > 0);
+
+            // residual_deviance row is present and differs between restricted and unrestricted.
+            TwoDimTable restrictedSummary = glm._output._cross_validation_metrics_summary;
+            assertNotNull(restrictedSummary);
+            int restrictedRow = findRowIndex(restrictedSummary, "residual_deviance");
+            int unrestrictedRow = findRowIndex(unrestrictedSummary, "residual_deviance");
+            assertTrue("residual_deviance row missing from restricted summary", restrictedRow >= 0);
+            assertTrue("residual_deviance row missing from unrestricted summary", unrestrictedRow >= 0);
+            double restrictedMean = ((Number) restrictedSummary.get(restrictedRow, 0)).doubleValue();
+            double unrestrictedMean = ((Number) unrestrictedSummary.get(unrestrictedRow, 0)).doubleValue();
+            assertNotEquals("Restricted and unrestricted summary means must differ when offset is non-zero",
+                    restrictedMean, unrestrictedMean, 1e-10);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
      * make_unrestricted_model propagates the source's unrestricted CV parity slots into the
      * derived model's main CV slots (the derived IS the unrestricted view).
      */
