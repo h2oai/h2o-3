@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Function;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -1014,7 +1015,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
-  private String getPredictionKey() {
+  protected String getPredictionKey() {
     return "prediction_"+_result.toString();
   }
 
@@ -1958,7 +1959,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   //stitch together holdout predictions into one large Frame
-  Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key) {
+  protected Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key) {
     int precision = _parms._keep_cross_validation_predictions_precision;
     if (precision < 0) {
       precision = isClassifier() ? 8 : 0;
@@ -2030,6 +2031,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   private TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels) {
+    return makeCrossValidationSummaryTable(cvmodels, m -> m._output._validation_metrics);
+  }
+
+  // Picker-parameterized variant: lets subclasses build a summary from an alternate per-fold
+  // ModelMetrics slot. The 1-arg overload above delegates with the default validation-metrics picker.
+  protected TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels, Function<Model, ModelMetrics> picker) {
     if (cvmodels == null || cvmodels.length == 0) return null;
     int N = cvmodels.length;
     int extra_length=2; //mean/sigma/cv1/cv2/.../cvN
@@ -2059,7 +2066,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     List<Method> methods = new ArrayList<>();
     {
       Model m = DKV.getGet(cvmodels[0]);
-      ModelMetrics mm = m._output._validation_metrics;
+      ModelMetrics mm = picker.apply(m);
 
       if (mm != null) {
 
@@ -2108,7 +2115,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for (Key<Model> km : cvmodels) {
       Model m = DKV.getGet(km);
       if (m==null) continue;
-      ModelMetrics mm = m._output._validation_metrics;
+      ModelMetrics mm = picker.apply(m);
       int j=0;
       for (Method meth : meths) {
         if (excluded.contains(meth.getName())) continue;

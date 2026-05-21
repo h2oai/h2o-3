@@ -2183,7 +2183,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return new PredictScoreResult(mb, rawPreds, outputPreds);
   }
 
-  protected class PredictScoreResult {
+  public class PredictScoreResult {
     private final ModelMetrics.MetricBuilder<?> _mb; // metric builder can be null if training was interrupted/cancelled even when metrics were requested
     private final Frame _rawPreds;
     private final Frame _outputPreds;
@@ -3155,7 +3155,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  static <T extends Lockable<T>> int deleteAll(Key<T>[] keys) {
+  public static <T extends Lockable<T>> int deleteAll(Key<T>[] keys) {
     int c = 0;
     for (Key k : keys) {
       if (Keyed.remove(k)) c++;
