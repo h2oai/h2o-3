@@ -82,10 +82,14 @@ shap==0.51.0; python_version >= '3.12'
 boto3==1.18.65; python_version < '3.12'
 boto3==1.42.94; python_version >= '3.12'
 lifelines<0.27; python_version < '3.9'
-# 0.29.0 switched from `scipy.integrate.trapz` to `trapezoid`; older versions
-# (including 0.27.8 and 0.28.0) still import `trapz` directly and fail on
-# scipy >= 1.14, which removed that name.
-lifelines>=0.29.0; python_version >= '3.9' and python_version < '3.12'
+# Py3.9/Py3.10 stay on lifelines <0.29 because 0.29 hard-requires pandas>=2.1,
+# which conflicts with the pandas==1.3.5 pin those tiers keep. They use
+# scipy==1.10.1, which still exposes `trapz`, so the older lifelines is fine.
+lifelines>=0.27.8,<0.29; python_version >= '3.9' and python_version < '3.11'
+# Py3.11 pins scipy==1.17.1, which dropped `trapz`; need lifelines 0.29+ which
+# uses `trapezoid`. The pandas>=2.1 bump it forces is already satisfied by the
+# pandas==2.3.3 pin above.
+lifelines>=0.29.0; python_version == '3.11'
 lifelines==0.30.3; python_version >= '3.12'
 xlsxwriter==1.3.7; python_version < '3.12'
 xlsxwriter==3.2.9; python_version >= '3.12'
