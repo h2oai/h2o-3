@@ -577,19 +577,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override
   public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder[] mbs,
                                   ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
+    // Build unrestricted summary before super runs, because super deletes CV models from DKV
+    // when keep_cross_validation_models=false, making DKV.getGet return null for all fold models.
+    if (_parms._remove_offset_effects) {
+      Key[] cvModKeys = new Key[N];
+      for (int i = 0; i < N; i++) cvModKeys[i] = cvModelBuilders[i].dest();
+      GLMModel mainModel = _result.get();
+      mainModel._output._cross_validation_metrics_summary_unrestricted_model =
+          makeCrossValidationSummaryTable(cvModKeys,
+              m -> ((GLMModel) m)._output._validation_metrics_unrestricted_model);
+    }
+
     // super fills the restricted CV slots and cleans up per-fold restricted preds.
     super.cv_mainModelScores(N, mbs, cvModelBuilders);
 
     if (!_parms._remove_offset_effects) return;  // stash arrays were never allocated
 
     GLMModel mainModel = _result.get();
-
-    // Unrestricted summary table. The 2-arg helper logs the table internally.
-    Key[] cvModKeys = new Key[N];
-    for (int i = 0; i < N; i++) cvModKeys[i] = cvModelBuilders[i].dest();
-    mainModel._output._cross_validation_metrics_summary_unrestricted_model =
-        makeCrossValidationSummaryTable(cvModKeys,
-            m -> ((GLMModel) m)._output._validation_metrics_unrestricted_model);
 
     // Combine per-fold unrestricted preds into one frame, then drop the per-fold sources
     // (intermediates; not user-facing).

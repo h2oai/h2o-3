@@ -2116,6 +2116,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Model m = DKV.getGet(km);
       if (m==null) continue;
       ModelMetrics mm = picker.apply(m);
+      if (mm == null) continue;
       int j=0;
       for (Method meth : meths) {
         if (excluded.contains(meth.getName())) continue;
