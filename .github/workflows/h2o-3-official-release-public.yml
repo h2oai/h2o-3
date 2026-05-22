@@ -420,9 +420,10 @@ jobs:
     needs: [init, build, create-tag]
     if: |
       always() &&
+      needs.build.result == 'success' &&
       needs.init.outputs.should_build == 'true' &&
       (needs.create-tag.result == 'success' || needs.create-tag.result == 'skipped')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16-cores
 
     steps:
       - name: Configure AWS
@@ -502,7 +503,7 @@ jobs:
           aws s3 cp staging-manifest.json "${S3_STAGING}/staging-manifest.json"
 
           echo "=== Staging upload complete ==="
-          echo "Staging URL: https://h2o-release-test.s3.amazonaws.com/h2o/staging/${BRANCH_SAFE}/${BUILD_NUMBER}/"
+          echo "Staging URL: https://h2o-release.s3.amazonaws.com/h2o/staging/${BRANCH_SAFE}/${BUILD_NUMBER}/"
 
           # Summary
           echo "## S3 Staging Upload" >> $GITHUB_STEP_SUMMARY
@@ -705,7 +706,7 @@ jobs:
 
           # Add public URL
           BRANCH_SAFE=$(echo "${{ needs.init.outputs.branch }}" | tr '/' '_')
-          echo "- **Public URL:** [https://h2o-release-test.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html](https://h2o-release-test.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Public URL:** [https://h2o-release.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html](https://h2o-release.s3.amazonaws.com/h2o/${BRANCH_SAFE}/${{ needs.init.outputs.build_number }}/index.html)" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
