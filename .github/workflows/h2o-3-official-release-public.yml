@@ -36,7 +36,7 @@
 #                         =============================
 #
 #   Official release workflow for H2O-3 (public/open-source).
-#   Uses test S3 bucket (s3://h2o-release-test/h2o) in OSS account.
+#   Uses production S3 bucket (s3://h2o-release/h2o) in shared-services-prod account.
 #
 #   Two-Stage Process (for repeatability):
 #   ======================================
@@ -59,9 +59,9 @@
 #   - All publish stages can be run independently
 #   - Repeatable without side effects
 #
-#   TEST BUCKET (OSS account):
-#   ===================================
-#   s3://h2o-release-test/h2o/{branch}/{build_number}/
+#   PRODUCTION BUCKET (shared-services-prod):
+#   ==========================================
+#   s3://h2o-release/h2o/{branch}/{build_number}/
 #
 # ==============================================================================
 
