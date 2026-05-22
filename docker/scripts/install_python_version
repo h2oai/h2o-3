@@ -73,11 +73,19 @@ for python_version in "${array[@]}"; do
 	# sklearn.tree._criterion, which is invisible inside pip's isolated build env.
 	# Install everything else first (populating cython + scikit-learn into the venv),
 	# then install causalml with --no-build-isolation so it sees them.
+	#
+	# Pass step-1 requirements files as constraints to the second pip call:
+	# without them, pip would silently upgrade already-pinned packages (e.g.
+	# scipy 1.10.1 -> 1.15.3 on Py3.10) to satisfy causalml's transitive deps
+	# (torch / pyro-ppl), and lifelines' `from scipy.integrate import trapz`
+	# would break because trapz was removed in scipy 1.14.
 	grep -v '^causalml' test-requirements.txt >test-requirements-no-causalml.txt
 	grep '^causalml' test-requirements.txt >causalml-requirements.txt || true
 	su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && \
 		pip install -r test-requirements-no-causalml.txt -r docs-requirements.txt && \
-		pip install --no-build-isolation -r causalml-requirements.txt"
+		pip install --no-build-isolation \
+			-c test-requirements-no-causalml.txt -c docs-requirements.txt \
+			-r causalml-requirements.txt"
 
 	su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"
 	echo "###### Show all packages installed for Python ${python_version} ######"
