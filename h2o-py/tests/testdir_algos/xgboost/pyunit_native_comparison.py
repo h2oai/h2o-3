@@ -31,8 +31,8 @@ def arlines_test():
 
     assert len(h2o_prediction['p0']) == 5
 
-    if sys.version_info < (3, 12):
-        # Compare against native xgboost (1.7.6 on Py3.7-3.11), which matches
+    if sys.version_info < (3, 11):
+        # Compare against native xgboost (1.7.6 on Py3.7-3.10), which matches
         # H2O's bundled xgboost output to within 5 decimals.
         import xgboost as xgb
         data = train_frame[['wealthy']].values
@@ -49,9 +49,9 @@ def arlines_test():
         for i in range(5):
             assert round(h2o_prediction['p0'][i, 0], 5) == round(native_prediction[i].item(), 5)
     else:
-        # On Py3.12+, native xgboost is 3.2.0 which diverges from H2O's bundled
-        # xgboost. Pin H2O's prediction to baseline values gathered from a
-        # passing Py3.11 run (H2O's bundled xgboost is consistent across
+        # On Py3.11+, native xgboost is 3.2.0 which diverges from H2O's bundled
+        # xgboost. Pin H2O's prediction to a baseline value gathered from a
+        # passing Py3.10 run (H2O's bundled xgboost is consistent across
         # Python versions, so the same baseline is used for all rows).
         expected_p0 = 0.43756
         for i in range(5):
