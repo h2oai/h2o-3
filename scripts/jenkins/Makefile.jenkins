@@ -156,7 +156,12 @@ test-py-demos:
 ###	source builds fail on modern Pythons (numpy.distutils removed in 3.12+). On newer Pythons
 ###	rely on whatever pandas/numpy test-requirements.txt has already installed.
 	test "$$CI" != "true" || test "$$PYTHON_VERSION" != "3.7" || pip install -U pandas==1.0.5 numpy==1.20.2
-	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g --excludelist new-scikit
+	# --jvm.xmx 5g (not 10g): 4 clouds × 10g committed Java heap plus the demo Python
+	# processes (shap_values_drf / shap_values_gbm hold large pandas frames) repeatedly
+	# pushed the Jenkins agent host OOM, causing the slave to flap offline ~27 min into
+	# the shap demos and Jenkins to terminate the stage. Other test-py-* targets here
+	# already use 5g; the demos don't need 10g.
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 5g --excludelist new-scikit
 	
 test-py-demos-new-scikit:
 	test "$$CI" != "true" || pip install scikit-learn==1.0.2
