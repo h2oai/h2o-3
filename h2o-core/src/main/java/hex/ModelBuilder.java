@@ -2109,7 +2109,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             null,
             rowNames.toArray(new String[0]), colNames, colTypes, colFormats, "");
 
-    MathUtils.BasicStats stats = new MathUtils.BasicStats(numMetrics);
     double[][] vals = new double[N][numMetrics];
     int i = 0;
     for (Key<Model> km : cvmodels) {

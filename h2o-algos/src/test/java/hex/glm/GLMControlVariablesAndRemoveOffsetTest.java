@@ -1116,6 +1116,39 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         }
     }
 
+    /**
+     * Guard added in init(): _family=multinomial (the GLM-specific enum, not _distribution) must
+     * also be blocked. The old validate() check used _distribution which stays AUTO for GLM, so
+     * a 3-class response with _family=multinomial + remove_offset_effects would silently pass
+     * validation and run a wasteful dual-pass CV before this fix.
+     */
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testRemoveOffsetEffectsMultinomialViaFamily() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            // 3-class categorical response so Family.multinomial is valid on its own.
+            Vec x = Vec.makeVec(new double[]{1,2,3,1,2,3,1,2,3,1}, Vec.newKey());
+            Vec offset = Vec.makeVec(new double[]{.1,.2,.1,.2,.1,.2,.1,.2,.1,.2}, Vec.newKey());
+            Vec y = Vec.makeVec(new long[]{0,1,2,0,1,2,0,1,2,0}, new String[]{"a","b","c"}, Vec.newKey());
+            train = new Frame(Key.<Frame>make("test_ro_multinomial_family"),
+                    new String[]{"x", "offset", "y"}, new Vec[]{x, offset, y});
+            DKV.put(train);
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._remove_offset_effects = true;
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
     @Test
     public void testBasicDataBinomialOffset(){
         /** Test against GLM in R 
@@ -2856,8 +2889,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             // residual_deviance mean differs between restricted and unrestricted summaries.
             TwoDimTable restrictedSummary = glm._output._cross_validation_metrics_summary;
             assertNotNull(restrictedSummary);
-            int restrictedRow = findRowIndex(restrictedSummary, "residual_deviance");
-            int unrestrictedRow = findRowIndex(unrestrictedSummary, "residual_deviance");
+            int restrictedRow = restrictedSummary.findRowIndex("residual_deviance");
+            int unrestrictedRow = unrestrictedSummary.findRowIndex("residual_deviance");
             assertTrue(restrictedRow >= 0);
             assertTrue(unrestrictedRow >= 0);
             double restrictedMean = ((Number) restrictedSummary.get(restrictedRow, 0)).doubleValue();
@@ -2954,8 +2987,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             // residual_deviance row is present and differs between restricted and unrestricted.
             TwoDimTable restrictedSummary = glm._output._cross_validation_metrics_summary;
             assertNotNull(restrictedSummary);
-            int restrictedRow = findRowIndex(restrictedSummary, "residual_deviance");
-            int unrestrictedRow = findRowIndex(unrestrictedSummary, "residual_deviance");
+            int restrictedRow = restrictedSummary.findRowIndex("residual_deviance");
+            int unrestrictedRow = unrestrictedSummary.findRowIndex("residual_deviance");
             assertTrue("residual_deviance row missing from restricted summary", restrictedRow >= 0);
             assertTrue("residual_deviance row missing from unrestricted summary", unrestrictedRow >= 0);
             double restrictedMean = ((Number) restrictedSummary.get(restrictedRow, 0)).doubleValue();
@@ -3041,13 +3074,6 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         }
     }
 
-    /** Row index whose header matches name, or -1. */
-    private static int findRowIndex(TwoDimTable t, String name) {
-        String[] rh = t.getRowHeaders();
-        for (int i = 0; i < rh.length; i++) {
-            if (name.equals(rh[i])) return i;
-        }
-        return -1;
-    }
+
 
 }

@@ -129,8 +129,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
   private double [][] _xval_zValues;  // store cross validation average p-values
-  private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True (restricted: offset removed)
-  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_history=True (restricted)
+  private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
+  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
   private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
   private double [] _xval_deviances_generate_SH_unrestricted; // unrestricted (with-offset) xval deviance for generate_scoring_history=True
   private double [] _xval_sd_generate_SH_unrestricted; // standard deviation of unrestricted xval deviance
@@ -509,17 +509,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             cvModel._useRemoveOffsetEffects = true;
             DKV.put(cvModel);
           }
-          // Cast required: protected getPredictionKey() is only reachable across packages
-          // through a GLM-typed reference (JLS §6.6.2).
           String predName = ((GLM) cvModelBuilders[i]).getPredictionKey();
           if (keepPreds) {
-            Model.PredictScoreResult r = cvModel.predictScoreImpl(
+            Model.PredictScoreResult preds = cvModel.predictScoreImpl(
                 cvValid, adaptFr, predName, _job, true,
                 CFuncRef.from(_parms._custom_metric_func));
-            restrictedPreds = r.getPredictions();
+            restrictedPreds = preds.getPredictions();
             Scope.untrack(restrictedPreds);
-            r.makeModelMetrics(cvValid, adaptFr);
-            mbs[i] = r.getMetricBuilder();
+            preds.makeModelMetrics(cvValid, adaptFr);
+            mbs[i] = preds.getMetricBuilder();
             DKV.put(cvModel);
           } else {
             mbs[i] = cvModel.scoreMetrics(adaptFr);
@@ -531,13 +529,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             DKV.put(cvModel);
             String unrestrictedPredName = predName + "_unrestricted";
             if (keepPreds) {
-              Model.PredictScoreResult r = cvModel.predictScoreImpl(
+              Model.PredictScoreResult preds = cvModel.predictScoreImpl(
                   cvValid, adaptFr, unrestrictedPredName, _job, true,
                   CFuncRef.from(_parms._custom_metric_func));
-              unrestrictedPreds = r.getPredictions();
+              unrestrictedPreds = preds.getPredictions();
               Scope.untrack(unrestrictedPreds);
-              r.makeModelMetrics(cvValid, adaptFr);
-              _cv_mbs_unrestricted[i] = r.getMetricBuilder();
+              preds.makeModelMetrics(cvValid, adaptFr);
+              _cv_mbs_unrestricted[i] = preds.getMetricBuilder();
               _cv_predKeys_unrestricted[i] = Key.make(unrestrictedPredName);
               // Persist addModelMetrics side effect (mirrors PASS 1); prevents metric orphans on cleanup.
               DKV.put(cvModel);
@@ -697,46 +695,53 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     _xval_deviances_generate_SH = Arrays.copyOf(_xval_deviances_generate_SH, countIndex);
     _xval_iters_generate_SH = Arrays.copyOf(_xval_iters_generate_SH, countIndex);
 
-    // When remove_offset_effects is active, also compute unrestricted (with-offset) xval deviances
-    // from each fold model's unrestricted scoring history, so that _scoring_history_unrestricted_model
-    // shows the correct (with-offset) deviance_xval rather than the restricted one.
-    if (_parms._remove_offset_effects && !_parms._lambda_search) {
-      int unrestrictedLength = Integer.MAX_VALUE;
-      List<Integer>[] unrestrictedIters = new List[cvModelBuilders.length];
-      for (int i = 0; i < cvModelBuilders.length; ++i) {
-        GLM g = (GLM) cvModelBuilders[i];
-        ArrayList<Double> unrestrictedDevTest = g._scoringHistoryUnrestrictedModel._lambdaDevTest;
-        if (unrestrictedDevTest != null && unrestrictedDevTest.size() < unrestrictedLength)
-          unrestrictedLength = unrestrictedDevTest.size();
-        unrestrictedIters[i] = new ArrayList<>(g._scoringHistoryUnrestrictedModel._scoringIters);
-      }
-      if (unrestrictedLength > 0 && unrestrictedLength < Integer.MAX_VALUE) {
-        double[] unrestrictedDeviances = new double[unrestrictedLength];
-        double[] unrestrictedSDs = new double[unrestrictedLength];
-        int unrestrictedCount = 0;
-        for (int index = 0; index < unrestrictedLength; index++) {
-          double testDev = 0;
-          double testDevSq = 0;
-          int[] foldIterIndex = findIterIndexAcrossFolds(unrestrictedIters, index);
-          if (foldIterIndex != null) {
-            for (int modelIndex = 0; modelIndex < cvModelBuilders.length; modelIndex++) {
-              GLM g = (GLM) cvModelBuilders[modelIndex];
-              double d = g._scoringHistoryUnrestrictedModel._lambdaDevTest.get(foldIterIndex[modelIndex]);
-              testDev += d;
-              testDevSq += d * d;
-            }
-            double avg = testDev / cvModelBuilders.length;
-            // Sample-variance numerator: sum(d^2) - n*mean^2 == sum(d^2) - mean*sum(d).
-            // Matches the canonical form used in the restricted scoring history above and in
-            // cv_computeAndSetOptimalParameters.
-            double se = testDevSq - avg * testDev;
-            unrestrictedSDs[unrestrictedCount] = Math.sqrt(se / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
-            unrestrictedDeviances[unrestrictedCount++] = avg;
+    if (_parms._remove_offset_effects && !_parms._lambda_search)
+      generateCVScoringHistoryUnrestricted(cvModelBuilders);
+  }
+
+  /**
+   * Aggregates unrestricted (with-offset) xval deviances from each fold's unrestricted scoring
+   * history into _xval_deviances_generate_SH_unrestricted and _xval_sd_generate_SH_unrestricted,
+   * so that _scoring_history_unrestricted_model shows the correct (with-offset) deviance_xval.
+   * Mirrors the restricted aggregation in generateCVScoringHistory; only called when
+   * remove_offset_effects=true and lambda_search=false.
+   */
+  private void generateCVScoringHistoryUnrestricted(ModelBuilder[] cvModelBuilders) {
+    int unrestrictedLength = Integer.MAX_VALUE;
+    List<Integer>[] unrestrictedIters = new List[cvModelBuilders.length];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      ArrayList<Double> unrestrictedDevTest = g._scoringHistoryUnrestrictedModel._lambdaDevTest;
+      if (unrestrictedDevTest != null && unrestrictedDevTest.size() < unrestrictedLength)
+        unrestrictedLength = unrestrictedDevTest.size();
+      unrestrictedIters[i] = new ArrayList<>(g._scoringHistoryUnrestrictedModel._scoringIters);
+    }
+    if (unrestrictedLength > 0 && unrestrictedLength < Integer.MAX_VALUE) {
+      double[] unrestrictedDeviances = new double[unrestrictedLength];
+      double[] unrestrictedSDs = new double[unrestrictedLength];
+      int unrestrictedCount = 0;
+      for (int index = 0; index < unrestrictedLength; index++) {
+        double testDev = 0;
+        double testDevSq = 0;
+        int[] foldIterIndex = findIterIndexAcrossFolds(unrestrictedIters, index);
+        if (foldIterIndex != null) {
+          for (int modelIndex = 0; modelIndex < cvModelBuilders.length; modelIndex++) {
+            GLM g = (GLM) cvModelBuilders[modelIndex];
+            double d = g._scoringHistoryUnrestrictedModel._lambdaDevTest.get(foldIterIndex[modelIndex]);
+            testDev += d;
+            testDevSq += d * d;
           }
+          double avg = testDev / cvModelBuilders.length;
+          // Sample-variance numerator: sum(d^2) - n*mean^2 == sum(d^2) - mean*sum(d).
+          // Matches the canonical form used in the restricted scoring history above and in
+          // cv_computeAndSetOptimalParameters.
+          double se = testDevSq - avg * testDev;
+          unrestrictedSDs[unrestrictedCount] = Math.sqrt(se / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
+          unrestrictedDeviances[unrestrictedCount++] = avg;
         }
-        _xval_deviances_generate_SH_unrestricted = Arrays.copyOf(unrestrictedDeviances, unrestrictedCount);
-        _xval_sd_generate_SH_unrestricted = Arrays.copyOf(unrestrictedSDs, unrestrictedCount);
       }
+      _xval_deviances_generate_SH_unrestricted = Arrays.copyOf(unrestrictedDeviances, unrestrictedCount);
+      _xval_sd_generate_SH_unrestricted = Arrays.copyOf(unrestrictedSDs, unrestrictedCount);
     }
   }
 

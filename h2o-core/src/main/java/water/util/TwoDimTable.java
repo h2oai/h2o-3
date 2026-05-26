@@ -199,6 +199,13 @@ public class TwoDimTable extends Iced {
 
   public String[] getRowHeaders() { return rowHeaders; }
 
+  /** Returns the index of the first row whose header equals {@code name}, or -1 if not found. */
+  public int findRowIndex(String name) {
+    for (int i = 0; i < rowHeaders.length; i++)
+      if (name.equals(rowHeaders[i])) return i;
+    return -1;
+  }
+
   public String[] getColHeaders() { return colHeaders; }
 
   public String getColHeaderForRowHeaders() { return colHeaderForRowHeaders; }
