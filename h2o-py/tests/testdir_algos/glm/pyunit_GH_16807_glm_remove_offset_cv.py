@@ -5,6 +5,8 @@ Verifies that the remove_offset_effects flag works correctly when nfolds > 0:
 1. Training succeeds and CV metrics are populated.
 2. CV deviance with offset removed differs from the offset-included baseline.
 3. With generate_scoring_history=True, deviance_xval and deviance_se appear in scoring history.
+4. With-offset CV metric slots are populated and differ from the offset-removed slots.
+5. make_unrestricted_glm_model exposes the with-offset CV metrics as its main CV slot.
 """
 import sys
 import math
@@ -100,8 +102,68 @@ def test_remove_offset_cv_scoring_history_has_xval_columns():
         f"All deviance_xval values must be positive; got: {xval_vals}"
 
 
+def test_remove_offset_cv_unrestricted_metrics_populated():
+    """With remove_offset_effects=True and CV, the with-offset CV metric slots must be present and differ from restricted."""
+    train = _make_binomial_offset_frame()
+    glm = H2OGeneralizedLinearEstimator(
+        family="binomial", alpha=[0], lambda_=[0],
+        remove_offset_effects=True, nfolds=3, seed=42,
+    )
+    glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
+
+    out = glm._model_json["output"]
+    assert out.get("cross_validation_metrics_unrestricted_model") is not None, \
+        "cross_validation_metrics_unrestricted_model must be populated when remove_offset_effects=True and nfolds>0"
+    assert out.get("cross_validation_metrics_summary_unrestricted_model") is not None, \
+        "cross_validation_metrics_summary_unrestricted_model must be populated"
+
+    dev_restricted = out["cross_validation_metrics"]._metric_json["residual_deviance"]
+    dev_unrestricted = out["cross_validation_metrics_unrestricted_model"]["residual_deviance"]
+    assert abs(dev_restricted - dev_unrestricted) > 1e-10, (
+        f"Restricted ({dev_restricted:.6f}) and unrestricted ({dev_unrestricted:.6f}) "
+        f"CV deviance must differ when the offset is non-zero"
+    )
+
+    # Regression guard: when remove_offset_effects=False the field must be absent/null.
+    glm_no_roe = H2OGeneralizedLinearEstimator(
+        family="binomial", alpha=[0], lambda_=[0],
+        remove_offset_effects=False, nfolds=3, seed=42,
+    )
+    glm_no_roe.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
+    assert glm_no_roe._model_json["output"].get("cross_validation_metrics_unrestricted_model") is None, \
+        "cross_validation_metrics_unrestricted_model must be None when remove_offset_effects=False"
+
+
+def test_remove_offset_cv_make_unrestricted_model_propagates_cv():
+    """make_unrestricted_glm_model must expose the with-offset CV metrics as the derived model's main CV slot."""
+    train = _make_binomial_offset_frame()
+    glm = H2OGeneralizedLinearEstimator(
+        family="binomial", alpha=[0], lambda_=[0],
+        remove_offset_effects=True, nfolds=3, seed=42,
+        keep_cross_validation_predictions=True,
+    )
+    glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
+
+    src_unrestricted_dev = glm._model_json["output"]["cross_validation_metrics_unrestricted_model"]["residual_deviance"]
+
+    derived = glm.make_unrestricted_glm_model()
+    derived_cv_dev = derived._model_json["output"]["cross_validation_metrics"] \
+        ._metric_json["residual_deviance"]
+
+    assert abs(src_unrestricted_dev - derived_cv_dev) < 1e-10, (
+        f"Derived model CV deviance ({derived_cv_dev:.6f}) must equal source unrestricted CV "
+        f"deviance ({src_unrestricted_dev:.6f})"
+    )
+
+    src_restricted_dev = glm._model_json["output"]["cross_validation_metrics"]._metric_json["residual_deviance"]
+    assert abs(src_restricted_dev - derived_cv_dev) > 1e-10, \
+        "Derived model CV deviance must differ from source restricted CV deviance"
+
+
 pyunit_utils.run_tests([
     test_remove_offset_cv_trains_successfully,
     test_remove_offset_cv_deviance_differs_from_baseline,
     test_remove_offset_cv_scoring_history_has_xval_columns,
+    test_remove_offset_cv_unrestricted_metrics_populated,
+    test_remove_offset_cv_make_unrestricted_model_propagates_cv,
 ])
