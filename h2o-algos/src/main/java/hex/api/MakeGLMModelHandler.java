@@ -8,7 +8,6 @@ import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
 import hex.schemas.*;
 import water.DKV;
-import water.IcedUtils;
 import water.Key;
 import water.MRTask;
 import water.api.Handler;
@@ -116,36 +115,32 @@ public class MakeGLMModelHandler extends Handler {
       m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
               model._output._ordinal, null);
-      // Deep-copy assignments from source's _output to derived's _output so derived owns
-      // independent Iced data and removing it cannot dangle the source's parity slots.
-      // IcedUtils.deepCopy is null-safe.
       if (args.remove_control_variables_effects) {
-          m._output._training_metrics = IcedUtils.deepCopy(model._output._training_metrics_restricted_model_contr_vals);
-          m._output._validation_metrics = IcedUtils.deepCopy(model._output._validation_metrics_restricted_model_contr_vals);
-          m._output._scoring_history = IcedUtils.deepCopy(model._output._scoring_history_restricted_model_contr_vals);
+          m._output._training_metrics = model._output._training_metrics_restricted_model_contr_vals;
+          m._output._validation_metrics = model._output._validation_metrics_restricted_model_contr_vals;
+          m._output._scoring_history = model._output._scoring_history_restricted_model_contr_vals;
           m.resetThreshold(model.defaultThreshold());
-          m._output._variable_importances = IcedUtils.deepCopy(model._output._variable_importances);
+          m._output._variable_importances = model._output._variable_importances;
           m._output.setAndMapControlVariablesNames(model._parms._control_variables);
       } else if (args.remove_offset_effects) {
-          m._output._training_metrics = IcedUtils.deepCopy(model._output._training_metrics_restricted_model_ro);
-          m._output._validation_metrics = IcedUtils.deepCopy(model._output._validation_metrics_restricted_model_ro);
-          m._output._scoring_history = IcedUtils.deepCopy(model._output._scoring_history_restricted_model_ro);
+          m._output._training_metrics = model._output._training_metrics_restricted_model_ro;
+          m._output._validation_metrics = model._output._validation_metrics_restricted_model_ro;
+          m._output._scoring_history = model._output._scoring_history_restricted_model_ro;
           m.resetThreshold(model.defaultThreshold());
-          m._output._variable_importances = IcedUtils.deepCopy(model._output._variable_importances_unrestricted_model);
+          m._output._variable_importances = model._output._variable_importances_unrestricted_model;
       } else {
-          m._output._training_metrics = IcedUtils.deepCopy(model._output._training_metrics_unrestricted_model);
-          m._output._validation_metrics = IcedUtils.deepCopy(model._output._validation_metrics_unrestricted_model);
-          m._output._scoring_history = IcedUtils.deepCopy(model._output._scoring_history_unrestricted_model);
+          m._output._training_metrics = model._output._training_metrics_unrestricted_model;
+          m._output._validation_metrics = model._output._validation_metrics_unrestricted_model;
+          m._output._scoring_history = model._output._scoring_history_unrestricted_model;
           m.resetThreshold(model.defaultThreshold());
-          m._output._variable_importances = IcedUtils.deepCopy(model._output._variable_importances_unrestricted_model);
-          // Unrestricted (with-offset) CV view from source's parity slots; null on source when
-          // _remove_offset_effects=false or nfolds=0. Frame Key is shared (same pattern as the
-          // restricted holdout-pred frame).
-          m._output._cross_validation_metrics = IcedUtils.deepCopy(model._output._cross_validation_metrics_unrestricted_model);
-          m._output._cross_validation_metrics_summary = IcedUtils.deepCopy(model._output._cross_validation_metrics_summary_unrestricted_model);
+          m._output._variable_importances = model._output._variable_importances_unrestricted_model;
+          // Unrestricted (with-offset) CV view from source's parity slots; null when
+          // _remove_offset_effects=false or nfolds=0.
+          m._output._cross_validation_metrics = model._output._cross_validation_metrics_unrestricted_model;
+          m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary_unrestricted_model;
           m._output._cross_validation_holdout_predictions_frame_id = model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model;
       }
-      m._output._model_summary = IcedUtils.deepCopy(model._output._model_summary);
+      m._output._model_summary = model._output._model_summary;
       m._key = key;
       // setting these flags is important for right scoring
       m._useControlVariables = args.remove_control_variables_effects;
