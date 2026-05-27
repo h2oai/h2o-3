@@ -468,7 +468,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   @Override
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights,
-                                                        ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
+                                                       ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
     if (_job.stop_requested()) {
       Log.info("Skipping scoring of CV models");
       throw new Job.JobCancelledException(_job);
