@@ -3045,7 +3045,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertNotNull(derived);
             Scope.track_generic(derived);
 
-            // Derived CV ModelMetrics is a deep copy; _key is preserved by IcedUtils.deepCopy.
+            // Derived CV ModelMetrics shares the same key as source's unrestricted parity slot.
             assertNotNull(derived._output._cross_validation_metrics);
             assertEquals(glm._output._cross_validation_metrics_unrestricted_model._key,
                     derived._output._cross_validation_metrics._key);
@@ -3054,7 +3054,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertEquals(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model,
                     derived._output._cross_validation_holdout_predictions_frame_id);
 
-            // Summary is a deep copy with the same shape.
+            // Summary has the same shape.
             assertNotNull(derived._output._cross_validation_metrics_summary);
             assertEquals(glm._output._cross_validation_metrics_summary_unrestricted_model.getColDim(),
                     derived._output._cross_validation_metrics_summary.getColDim());
@@ -3070,6 +3070,198 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertEquals(srcUnrestrictedDev, derivedDev, 1e-10);
         } finally {
             if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Derived model created with remove_offset_effects=true flag must survive parent deletion.
+     */
+    @Test
+    public void testDerivedRemoveOffsetEffectsSurvivesParentDeletion() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_ro_parent_deletion");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._control_variables = new String[]{"x1"};
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            glm = new GLM(params).trainModel().get();
+
+            MakeDerivedGLMModelV3 args = new MakeDerivedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "test_ro_parent_deletion_derived";
+            args.remove_offset_effects = true;
+            new MakeGLMModelHandler().make_derived_model(3, args);
+            derived = DKV.getGet(Key.make("test_ro_parent_deletion_derived"));
+            assertNotNull(derived);
+
+            double expectedTrainDev = ((ModelMetricsBinomialGLM) derived._output._training_metrics).residual_deviance();
+
+            Key<GLMModel> derivedKey = derived._key;
+            glm.remove();
+            glm = null;
+
+            GLMModel derivedAfter = DKV.getGet(derivedKey);
+            assertNotNull("Derived model must still exist after parent deletion", derivedAfter);
+            assertNotNull("Training metrics must survive parent deletion", derivedAfter._output._training_metrics);
+            assertEquals("Training deviance unchanged after parent deletion",
+                    expectedTrainDev,
+                    ((ModelMetricsBinomialGLM) derivedAfter._output._training_metrics).residual_deviance(),
+                    1e-10);
+
+            Scope.track_generic(derivedAfter);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (derived != null) derived.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Derived model created with remove_control_variables_effects=true flag must survive parent deletion.
+     */
+    @Test
+    public void testDerivedRemoveControlVariablesSurvivesParentDeletion() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_cv_parent_deletion");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._control_variables = new String[]{"x1"};
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            glm = new GLM(params).trainModel().get();
+
+            MakeDerivedGLMModelV3 args = new MakeDerivedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "test_cv_parent_deletion_derived";
+            args.remove_control_variables_effects = true;
+            new MakeGLMModelHandler().make_derived_model(3, args);
+            derived = DKV.getGet(Key.make("test_cv_parent_deletion_derived"));
+            assertNotNull(derived);
+
+            double expectedTrainDev = ((ModelMetricsBinomialGLM) derived._output._training_metrics).residual_deviance();
+
+            Key<GLMModel> derivedKey = derived._key;
+            glm.remove();
+            glm = null;
+
+            GLMModel derivedAfter = DKV.getGet(derivedKey);
+            assertNotNull("Derived model must still exist after parent deletion", derivedAfter);
+            assertNotNull("Training metrics must survive parent deletion", derivedAfter._output._training_metrics);
+            assertEquals("Training deviance unchanged after parent deletion",
+                    expectedTrainDev,
+                    ((ModelMetricsBinomialGLM) derivedAfter._output._training_metrics).residual_deviance(),
+                    1e-10);
+
+            Scope.track_generic(derivedAfter);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (derived != null) derived.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Derived model created via make_unrestricted_model must survive parent deletion with all
+     * metrics intact.  Verifies that metrics are serialized inline in the derived model's own
+     * DKV entry and are not destroyed when the parent model (and its tracked metric keys) is
+     * removed from DKV.
+     */
+    @Test
+    public void testDerivedModelSurvivesParentDeletion() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_parent_deletion");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._keep_cross_validation_predictions = true;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+
+            MakeUnrestrictedGLMModelV3 args = new MakeUnrestrictedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "test_parent_deletion_derived";
+            new MakeGLMModelHandler().make_unrestricted_model(3, args);
+            derived = DKV.getGet(Key.make("test_parent_deletion_derived"));
+            assertNotNull(derived);
+
+            // Record expected values from the derived model before parent deletion.
+            double expectedTrainDev = ((ModelMetricsBinomialGLM) derived._output._training_metrics).residual_deviance();
+            double expectedCvDev    = ((ModelMetricsBinomialGLM) derived._output._cross_validation_metrics).residual_deviance();
+            int expectedSummaryRows = derived._output._cross_validation_metrics_summary.getRowDim();
+
+            Key<GLMModel> derivedKey = derived._key;
+
+            // Delete the parent model — this removes the parent's DKV entry and all metric keys
+            // tracked in its _model_metrics list (including the unrestricted CV metrics).
+            glm.remove();
+            glm = null;
+
+            // Re-fetch derived model from DKV to get a fresh deserialization (not the in-memory ref).
+            GLMModel derivedAfter = DKV.getGet(derivedKey);
+            assertNotNull("Derived model must still exist in DKV after parent deletion", derivedAfter);
+
+            assertNotNull("Training metrics must survive parent deletion", derivedAfter._output._training_metrics);
+            assertEquals("Training deviance unchanged after parent deletion",
+                    expectedTrainDev,
+                    ((ModelMetricsBinomialGLM) derivedAfter._output._training_metrics).residual_deviance(),
+                    1e-10);
+
+            assertNotNull("CV metrics must survive parent deletion", derivedAfter._output._cross_validation_metrics);
+            assertEquals("CV deviance unchanged after parent deletion",
+                    expectedCvDev,
+                    ((ModelMetricsBinomialGLM) derivedAfter._output._cross_validation_metrics).residual_deviance(),
+                    1e-10);
+
+            assertNotNull("CV metrics summary must survive parent deletion", derivedAfter._output._cross_validation_metrics_summary);
+            assertEquals("CV summary row count unchanged after parent deletion",
+                    expectedSummaryRows, derivedAfter._output._cross_validation_metrics_summary.getRowDim());
+
+            Scope.track_generic(derivedAfter);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (derived != null) derived.remove();
             Scope.exit();
         }
     }
