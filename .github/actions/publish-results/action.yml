@@ -95,34 +95,45 @@ runs:
 
         MAX_LINES = 200
         enriched = 0
+        time_fixed = 0
         pattern = re.compile(r'See (/workspace/(.+?\.out\.txt))')
 
-        for xml_path in glob.glob('**/test-results/**/*.xml', recursive=True) + \
-                        glob.glob('**/results/**/*.xml', recursive=True):
+        xml_files = glob.glob('**/test-results/**/*.xml', recursive=True) + \
+                    glob.glob('**/results/**/*.xml', recursive=True)
+        print(f'Found {len(xml_files)} XML files to process')
+
+        for xml_path in xml_files:
             try:
                 tree = ET.parse(xml_path)
             except ET.ParseError:
+                print(f'  SKIP (parse error): {xml_path}')
                 continue
 
             modified = False
             root = tree.getroot()
 
             for elem in root.iter():
-                # Fix missing/empty time attributes (causes NaNms)
-                if 'time' in elem.attrib:
-                    try:
-                        float(elem.attrib['time'])
-                    except (ValueError, TypeError):
+                # Add time='0' to testsuite/testcase elements missing it (causes NaNms in dorny)
+                if elem.tag in ('testsuite', 'testcase', 'testsuites'):
+                    if 'time' not in elem.attrib:
                         elem.attrib['time'] = '0'
                         modified = True
+                        time_fixed += 1
+                    else:
+                        try:
+                            float(elem.attrib['time'])
+                        except (ValueError, TypeError):
+                            elem.attrib['time'] = '0'
+                            modified = True
+                            time_fixed += 1
 
                 # Enrich failure/error elements that reference .out.txt files
-                if elem.tag in ('failure', 'error') and elem.text:
-                    match = pattern.search(elem.text)
+                # Check both elem.text and the message attribute
+                if elem.tag in ('failure', 'error'):
+                    text_to_search = (elem.text or '') + ' ' + elem.attrib.get('message', '')
+                    match = pattern.search(text_to_search)
                     if match:
-                        container_path = match.group(1)
                         rel_path = match.group(2)
-
                         content = None
                         for base in [f'h2o-3/{rel_path}', rel_path]:
                             if os.path.isfile(base):
@@ -133,12 +144,15 @@ runs:
                                         lines = lines[:MAX_LINES]
                                         lines.append('... (truncated, see full output in artifacts)\n')
                                     content = ''.join(lines)
-                                except Exception:
-                                    pass
+                                except Exception as e:
+                                    print(f'  WARN: Could not read {base}: {e}')
                                 break
+                            else:
+                                print(f'  NOT FOUND: {base}')
 
                         if content:
                             elem.text = content
+                            elem.attrib.pop('message', None)
                             modified = True
                             enriched += 1
 
@@ -146,7 +160,7 @@ runs:
                 print(f'  Enriched: {xml_path}')
                 tree.write(xml_path, encoding='unicode', xml_declaration=True)
 
-        print(f'XML enrichment complete ({enriched} files enriched)')
+        print(f'XML enrichment complete ({enriched} files enriched, {time_fixed} time attributes fixed)')
         ENRICH_SCRIPT
 
     - name: Debug - List XML files
