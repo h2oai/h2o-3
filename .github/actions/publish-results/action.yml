@@ -80,15 +80,80 @@ runs:
 
         echo "XML sanitization complete"
 
+    - name: Enrich JUnit XML with actual error output
+      if: inputs.job_status == 'failure'
+      shell: bash
+      run: |
+        # The Python/R test harness (run.py) generates minimal JUnit XML where
+        # failure descriptions are just "See /workspace/.../file.out.txt" references.
+        # This step inlines the actual error output into the XML so dorny/test-reporter
+        # can display it properly (like Jenkins does).
+        echo "Enriching JUnit XML files with test output..."
+
+        find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | while read -r xml_file; do
+          [[ ! -f "$xml_file" ]] && continue
+
+          # Check if this XML contains "See /workspace/" failure references
+          if grep -q "See /workspace/" "$xml_file" 2>/dev/null; then
+            echo "  Enriching: $xml_file"
+
+            # Extract the referenced output file path and try to find it locally
+            # The XML contains paths like "See /workspace/h2o-py/tests/results/testdir_.../file.out.txt"
+            # In our workspace, this maps to h2o-3/h2o-py/tests/results/... or h2o-3/results/...
+            perl -i -pe '
+              if (/See (\/workspace\/(.+?\.out\.txt))/) {
+                my $container_path = $1;
+                my $rel_path = $2;
+
+                # Try multiple base paths to find the file
+                my $content = "";
+                for my $base ("h2o-3/$rel_path", "$rel_path") {
+                  if (-f $base) {
+                    if (open my $fh, "<", $base) {
+                      local $/;
+                      $content = <$fh>;
+                      close $fh;
+                      # Limit to 200 lines to avoid bloating the XML
+                      my @lines = split /\n/, $content;
+                      if (@lines > 200) {
+                        $content = join("\n", @lines[0..199]) . "\n... (truncated, see full output in artifacts)";
+                      }
+                      # Escape XML special characters
+                      $content =~ s/&/&amp;/g;
+                      $content =~ s/</&lt;/g;
+                      $content =~ s/>/&gt;/g;
+                      last;
+                    }
+                  }
+                }
+
+                if ($content) {
+                  s/See \Q$container_path\E/$content/;
+                }
+              }
+            ' "$xml_file" 2>/dev/null || true
+          fi
+
+          # Fix missing or invalid time attributes (causes NaNms in reports)
+          # Replace time="" or missing time with time="0"
+          perl -i -pe '
+            s/time=""/time="0"/g;
+            s/time="[^"]*[^0-9.][^"]*"/time="0"/g;
+          ' "$xml_file" 2>/dev/null || true
+
+        done
+
+        echo "XML enrichment complete"
+
     - name: Debug - List XML files
       if: inputs.job_status == 'failure'
       shell: bash
       run: |
         echo "=== Searching for JUnit XML files ==="
-        find . -type f -name "*.xml" -path "*test-results*" 2>/dev/null | head -20
+        find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | head -20
         echo ""
-        echo "=== Total XML files in test-results ==="
-        find . -type f -name "*.xml" -path "*test-results*" 2>/dev/null | wc -l
+        echo "=== Total XML files ==="
+        find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | wc -l
 
     - name: Publish JUnit Report
       if: inputs.job_status == 'failure'
@@ -101,6 +166,7 @@ runs:
         fail-on-empty: false
         list-suites: failed
         list-tests: failed
+        list-files: failed
         max-annotations: 50
         use-actions-summary: 'true'
         collapsed: 'auto'
