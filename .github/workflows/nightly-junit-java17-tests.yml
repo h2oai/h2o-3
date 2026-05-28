@@ -851,3 +851,61 @@ jobs:
       label: ${{ needs.start-java17-algos-misc.outputs.label }}
       ec2_id: ${{ needs.start-java17-algos-misc.outputs.ec2_id }}
     secrets: inherit
+
+  # ============================================================================
+  # SUMMARY: Consolidated test failure report
+  # ============================================================================
+  summary:
+    name: Java 17 JUnit Summary
+    needs:
+      - java17-smoke
+      - java17-other
+      - java17-algos-glm
+      - java17-algos-gbm
+      - java17-algos-drf
+      - java17-algos-dl
+      - java17-algos-gam
+      - java17-algos-tree
+      - java17-algos-ensemble
+      - java17-algos-kmeans
+      - java17-algos-rulefit
+      - java17-algos-pca
+      - java17-algos-glrm
+      - java17-algos-adaboost
+      - java17-algos-modelsel
+      - java17-algos-generic
+      - java17-algos-grid
+      - java17-algos-misc
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Java 17 Test Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: results-Java 17*
+          path: /tmp/test-results
+          merge-multiple: false
+
+      - name: All Failed Java 17 Tests
+        uses: dorny/test-reporter@v3
+        with:
+          name: All Failed Tests (Java 17)
+          path: '/tmp/test-results/**/test-results/**/*.xml,/tmp/test-results/**/results/**/*.xml'
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
+          list-suites: failed
+          list-tests: failed
+          max-annotations: 50
+          use-actions-summary: 'true'
+          collapsed: 'auto'
+
+      - name: Generate Test Failure Report
+        uses: ./.github/actions/generate-test-failure-report
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_download: 'true'
