@@ -180,61 +180,107 @@ env:
 jobs:
 
   # ============================================================================
-  # PRE-CHECK: Validate secrets are available before expensive build
+  # PRE-CHECK: Validate credentials by testing actual logins
   # Fails fast (seconds) instead of failing mid-build (hours)
   # ============================================================================
   pre-check:
-    name: Pre-Check Secrets
+    name: Pre-Check Credentials
     runs-on: ubuntu-latest
     steps:
-      - name: Check Publish Secrets
-        if: inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only'
+      - name: Verify Docker Hub Login
+        if: |
+          (inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only') &&
+          inputs.publish_docker == true &&
+          inputs.dry_run != true
         env:
-          HAS_PYPI_USER: ${{ secrets.PYPI_USERNAME != '' }}
-          HAS_PYPI_PASS: ${{ secrets.PYPI_PASSWORD != '' }}
-          HAS_CONDA_USER: ${{ secrets.ANACONDA_USERNAME != '' }}
-          HAS_CONDA_PASS: ${{ secrets.ANACONDA_PASSWORD != '' }}
-          HAS_DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME != '' }}
-          HAS_DOCKER_PASS: ${{ secrets.DOCKERHUB_PASSWORD != '' }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
-          FAILED=false
+          echo "=== Testing Docker Hub login ==="
 
-          if [ "${{ inputs.publish_pypi }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
-            echo "=== Validating PyPI secrets ==="
-            if [ "${HAS_PYPI_USER}" != "true" ] || [ "${HAS_PYPI_PASS}" != "true" ]; then
-              echo "::error::Secrets PYPI_USERNAME and/or PYPI_PASSWORD are missing (required for PyPI publish)"
-              FAILED=true
-            fi
-          fi
-
-          if [ "${{ inputs.publish_conda }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
-            echo "=== Validating Conda secrets ==="
-            if [ "${HAS_CONDA_USER}" != "true" ] || [ "${HAS_CONDA_PASS}" != "true" ]; then
-              echo "::error::Secrets ANACONDA_USERNAME and/or ANACONDA_PASSWORD are missing (required for Conda publish)"
-              FAILED=true
-            fi
-          fi
-
-          if [ "${{ inputs.publish_docker }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
-            echo "=== Validating Docker Hub secrets ==="
-            if [ "${HAS_DOCKER_USER}" != "true" ] || [ "${HAS_DOCKER_PASS}" != "true" ]; then
-              echo "::error::Secrets DOCKERHUB_USERNAME and/or DOCKERHUB_PASSWORD are missing (required for Docker publish)"
-              FAILED=true
-            fi
-          fi
-
-          if [ "${FAILED}" = "true" ]; then
-            echo "::error::Missing required publish secrets. Configure them in repository settings before running a release."
+          if [ -z "${DOCKERHUB_USERNAME}" ] || [ -z "${DOCKERHUB_PASSWORD}" ]; then
+            echo "::error::Secrets DOCKERHUB_USERNAME and/or DOCKERHUB_PASSWORD are missing"
             exit 1
           fi
 
-          echo "Publish secrets validated successfully"
+          echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin 2>&1 || {
+            echo "::error::Docker Hub login failed — check DOCKERHUB_USERNAME and DOCKERHUB_PASSWORD secrets"
+            exit 1
+          }
+
+          echo "Docker Hub login: OK"
+          docker logout 2>/dev/null || true
+
+      - name: Verify PyPI Credentials
+        if: |
+          (inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only') &&
+          inputs.publish_pypi == true &&
+          inputs.dry_run != true
+        env:
+          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          echo "=== Testing PyPI credentials ==="
+
+          if [ -z "${PYPI_USERNAME}" ] || [ -z "${PYPI_PASSWORD}" ]; then
+            echo "::error::Secrets PYPI_USERNAME and/or PYPI_PASSWORD are missing"
+            exit 1
+          fi
+
+          # POST to PyPI upload endpoint with auth — valid creds return 400 (no file),
+          # invalid creds return 401/403
+          HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            -u "${PYPI_USERNAME}:${PYPI_PASSWORD}" \
+            -X POST 'https://upload.pypi.org/legacy/' \
+            -F ':action=file_upload' \
+            --connect-timeout 10 --max-time 30)
+
+          if [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "403" ]; then
+            echo "::error::PyPI authentication failed (HTTP ${HTTP_CODE}) — check PYPI_USERNAME and PYPI_PASSWORD secrets"
+            exit 1
+          fi
+
+          echo "PyPI auth: OK (HTTP ${HTTP_CODE} — expected non-401/403 for valid credentials)"
+
+      - name: Verify Anaconda Credentials
+        if: |
+          (inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only') &&
+          inputs.publish_conda == true &&
+          inputs.dry_run != true
+        env:
+          ANACONDA_USERNAME: ${{ secrets.ANACONDA_USERNAME }}
+          ANACONDA_PASSWORD: ${{ secrets.ANACONDA_PASSWORD }}
+        run: |
+          echo "=== Testing Anaconda credentials ==="
+
+          if [ -z "${ANACONDA_USERNAME}" ] || [ -z "${ANACONDA_PASSWORD}" ]; then
+            echo "::error::Secrets ANACONDA_USERNAME and/or ANACONDA_PASSWORD are missing"
+            exit 1
+          fi
+
+          # Test login via Anaconda API
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST 'https://api.anaconda.org/authentications' \
+            -H 'Content-Type: application/json' \
+            -d "{\"login\": \"${ANACONDA_USERNAME}\", \"password\": \"${ANACONDA_PASSWORD}\"}" \
+            --connect-timeout 10 --max-time 30)
+
+          HTTP_CODE=$(echo "${RESPONSE}" | tail -1)
+
+          if [ "${HTTP_CODE}" -ge 200 ] && [ "${HTTP_CODE}" -lt 300 ]; then
+            echo "Anaconda login: OK (HTTP ${HTTP_CODE})"
+          elif [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "403" ]; then
+            echo "::error::Anaconda authentication failed (HTTP ${HTTP_CODE}) — check ANACONDA_USERNAME and ANACONDA_PASSWORD secrets"
+            exit 1
+          else
+            echo "::warning::Anaconda API returned unexpected status (HTTP ${HTTP_CODE}) — credentials may still be valid"
+          fi
 
       - name: Pre-Check Summary
         run: |
           echo "## Pre-Check Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All required secrets are configured." >> $GITHUB_STEP_SUMMARY
+          echo "All required credentials validated successfully." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
