@@ -204,8 +204,8 @@ jobs:
     steps:
       - name: Verify Maven Central Credentials
         if: |
-          (inputs.stage == 'build' || inputs.stage == 'full' || inputs.stage == 'pre_check_only') &&
-          inputs.upload_nexus == true
+          inputs.stage == 'pre_check_only' ||
+          ((inputs.stage == 'build' || inputs.stage == 'full') && inputs.upload_nexus == true)
         env:
           BEARER_TOKEN: ${{ secrets.CENTRAL_PORTAL_BEARER_TOKEN }}
           HAS_NEXUS_PROPS: ${{ secrets.RELEASE_GRADLE_PROPERTIES != '' }}
@@ -254,9 +254,8 @@ jobs:
 
       - name: Verify Docker Hub Login
         if: |
-          (inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only') &&
-          inputs.publish_docker == true &&
-          inputs.dry_run != true
+          inputs.stage == 'pre_check_only' ||
+          ((inputs.stage == 'publish' || inputs.stage == 'full') && inputs.publish_docker == true && inputs.dry_run != true)
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -278,9 +277,8 @@ jobs:
 
       - name: Verify PyPI Credentials
         if: |
-          (inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only') &&
-          inputs.publish_pypi == true &&
-          inputs.dry_run != true
+          inputs.stage == 'pre_check_only' ||
+          ((inputs.stage == 'publish' || inputs.stage == 'full') && inputs.publish_pypi == true && inputs.dry_run != true)
         env:
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
@@ -309,9 +307,8 @@ jobs:
 
       - name: Verify Anaconda Credentials
         if: |
-          (inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only') &&
-          inputs.publish_conda == true &&
-          inputs.dry_run != true
+          inputs.stage == 'pre_check_only' ||
+          ((inputs.stage == 'publish' || inputs.stage == 'full') && inputs.publish_conda == true && inputs.dry_run != true)
         env:
           ANACONDA_USERNAME: ${{ secrets.ANACONDA_USERNAME }}
           ANACONDA_PASSWORD: ${{ secrets.ANACONDA_PASSWORD }}
