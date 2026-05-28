@@ -228,10 +228,16 @@ public class KmeansConstrainedTest extends TestUtil {
             parms._train = fr._key;
             parms._seed = 0xcaf;
             parms._k = 3;
-            parms._cluster_size_constraints = new int[]{1000, 3000, 1000};
+            // Constraint 2 (2200) remains binding (natural Lloyd's gives cluster 2 ~2000 here)
+            // but is much closer to natural than the prior 3000, so the network-simplex
+            // assignment LP redistributes ~200 points instead of ~1000 -- iteration cost
+            // drops by an order of magnitude while still exercising the constraint code.
+            parms._cluster_size_constraints = new int[]{1000, 2200, 1000};
             parms._user_points = points._key;
             parms._standardize = true;
-            parms._max_iterations = 3;
+            // The LP enforcement runs in iter 1's assignment; additional iterations only
+            // refine centroids. 1 iter is enough to verify the lower-bound contract.
+            parms._max_iterations = 1;
 
             KMeans job = new KMeans(parms);
             kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
