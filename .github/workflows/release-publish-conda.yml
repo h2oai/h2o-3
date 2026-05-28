@@ -232,7 +232,7 @@ jobs:
                 anaconda upload linux-64/\${PKG_NAME} || echo 'linux-64 upload failed'
                 anaconda upload win-64/\${PKG_NAME} || echo 'win-64 upload failed'
 
-                anaconda logout
+                anaconda logout --force 2>/dev/null || rm -f ~/.config/binstar/.token 2>/dev/null || true
               else
                 echo 'No package found to upload'
               fi

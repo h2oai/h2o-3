@@ -263,7 +263,7 @@ jobs:
           }
 
           echo "Anaconda login: OK"
-          anaconda logout 2>/dev/null || true
+          anaconda logout --force 2>/dev/null || rm -f ~/.config/binstar/.token 2>/dev/null || true
 
       - name: Pre-Check Summary
         run: |
