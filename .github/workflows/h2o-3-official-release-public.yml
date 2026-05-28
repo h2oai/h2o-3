@@ -320,15 +320,13 @@ jobs:
             exit 1
           fi
 
-          # Test login via Anaconda API
+          # Test login via Anaconda API using Basic auth (same as anaconda-client CLI)
           RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST 'https://api.anaconda.org/authentications' \
-            -H 'Content-Type: application/json' \
-            -d "{\"login\": \"${ANACONDA_USERNAME}\", \"password\": \"${ANACONDA_PASSWORD}\"}" \
+            -u "${ANACONDA_USERNAME}:${ANACONDA_PASSWORD}" \
+            'https://api.anaconda.org/user' \
             --connect-timeout 10 --max-time 30)
 
           HTTP_CODE=$(echo "${RESPONSE}" | tail -1)
-          BODY=$(echo "${RESPONSE}" | sed '$d')
 
           if [ "${HTTP_CODE}" -ge 200 ] && [ "${HTTP_CODE}" -lt 300 ]; then
             echo "Anaconda login: OK (HTTP ${HTTP_CODE})"
