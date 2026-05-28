@@ -1253,7 +1253,7 @@ jobs:
           merge-multiple: false
 
       - name: All Failed Java 8 Tests
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2
         with:
           check_name: All Failed Tests (Java 8)
           files: |

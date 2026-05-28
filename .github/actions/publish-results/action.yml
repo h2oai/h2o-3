@@ -175,7 +175,7 @@ runs:
 
     - name: Publish JUnit Report
       if: inputs.job_status == 'failure'
-      uses: EnricoMi/publish-unit-test-result-action@v2
+      uses: EnricoMi/publish-unit-test-result-action/composite@v2
       with:
         check_name: Test Report (${{ inputs.name }})
         files: |
