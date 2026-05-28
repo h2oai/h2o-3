@@ -1207,3 +1207,67 @@ jobs:
       label: ${{ needs.start-java8-persist-http.outputs.label }}
       ec2_id: ${{ needs.start-java8-persist-http.outputs.ec2_id }}
     secrets: inherit
+
+  # ============================================================================
+  # SUMMARY: Consolidated failure report for all Java 8 JUnit tests
+  # ============================================================================
+  summary:
+    name: Java 8 JUnit Summary
+    needs:
+      - java8-smoke
+      - java8-core
+      - java8-automl
+      - java8-clustering
+      - java8-xgb
+      - java8-other
+      - java8-mojo
+      - java8-algos-glm
+      - java8-algos-gbm
+      - java8-algos-drf
+      - java8-algos-dl
+      - java8-algos-gam
+      - java8-algos-generic
+      - java8-algos-tree
+      - java8-algos-kmeans
+      - java8-algos-pca
+      - java8-algos-glrm
+      - java8-algos-grid
+      - java8-algos-misc
+      - java8-algos-ensemble
+      - java8-algos-rulefit
+      - java8-algos-modelsel
+      - java8-algos-adaboost
+      - java8-persist-s3
+      - java8-persist-gcs
+      - java8-persist-http
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download All Java 8 Test Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: results-Java 8*
+          path: /tmp/test-results
+          merge-multiple: false
+
+      - name: All Failed Java 8 Tests
+        uses: dorny/test-reporter@v3
+        with:
+          name: All Failed Tests (Java 8)
+          path: '/tmp/test-results/**/test-results/**/*.xml,/tmp/test-results/**/results/**/*.xml'
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
+          list-suites: failed
+          list-tests: failed
+          max-annotations: 50
+          use-actions-summary: 'true'
+          collapsed: 'auto'
+
+      - name: Generate Test Failure Report
+        uses: ./.github/actions/generate-test-failure-report
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_download: 'true'
