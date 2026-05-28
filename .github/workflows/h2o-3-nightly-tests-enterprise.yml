@@ -326,14 +326,14 @@ jobs:
           path: /tmp/test-results
           merge-multiple: false
 
-      - name: Consolidated Test Failure Check Run
+      - name: Consolidated Test Failure Report
         if: >-
           needs.smoke.result == 'failure' ||
           needs.python.result == 'failure' ||
           needs.r.result == 'failure' ||
           needs.java.result == 'failure' ||
           needs.flow.result == 'failure'
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         with:
           name: All Failed Tests
           path: '/tmp/test-results/**/test-results/**/*.xml,/tmp/test-results/**/results/**/*.xml'
@@ -343,8 +343,10 @@ jobs:
           list-suites: failed
           list-tests: failed
           max-annotations: 50
+          use-actions-summary: 'true'
+          collapsed: 'auto'
 
-      - name: Generate Test Failure Report
+      - name: Generate Test Failure Detail Report
         if: >-
           needs.smoke.result == 'failure' ||
           needs.python.result == 'failure' ||
