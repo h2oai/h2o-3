@@ -91,7 +91,7 @@ runs:
             artifact_dir = xml_path.replace(f'{base_dir}/', '').split('/')[0]
 
             for elem in root.iter():
-                # Add time='0' to testsuite/testcase elements missing it (causes NaNms in dorny)
+                # Add time='0' to testsuite/testcase elements missing it (invalid time breaks reporters)
                 if elem.tag in ('testsuite', 'testcase', 'testsuites'):
                     if 'time' not in elem.attrib:
                         elem.attrib['time'] = '0'
@@ -193,8 +193,10 @@ runs:
         # Temp files for collecting failures and per-suite stats
         FAILURES_FILE="/tmp/test-failures.md"
         SUITE_STATS="/tmp/suite-stats.tsv"
+        ALL_SUITES="/tmp/all-suites.tsv"
         > "$FAILURES_FILE"
         > "$SUITE_STATS"
+        > "$ALL_SUITES"
 
         # ==================================================
         # Sanitize XML - remove invalid characters
@@ -244,6 +246,24 @@ runs:
           if [[ -f /tmp/job-urls.tsv ]]; then
             grep -F "$job_name" /tmp/job-urls.tsv | head -1 | cut -f2
           fi
+        }
+
+        # ==================================================
+        # Format seconds into human-readable duration
+        # ==================================================
+        format_duration() {
+          local total_secs="${1%%.*}"
+          total_secs=${total_secs:-0}
+          local days=$((total_secs / 86400))
+          local hours=$(( (total_secs % 86400) / 3600))
+          local mins=$(( (total_secs % 3600) / 60))
+          local secs=$((total_secs % 60))
+          local result=""
+          [[ $days -gt 0 ]] && result="${days}d "
+          [[ $hours -gt 0 ]] && result="${result}${hours}h "
+          [[ $mins -gt 0 ]] && result="${result}${mins}m "
+          [[ $secs -gt 0 || -z "$result" ]] && result="${result}${secs}s"
+          echo "$result"
         }
 
         # ==================================================
@@ -321,6 +341,9 @@ runs:
             total_skipped=$((total_skipped + suite_skipped))
             suite_passed=$((suite_tests - suite_failures - suite_errors - suite_skipped))
             total_passed=$((total_passed + suite_passed))
+
+            # Record all suite stats for package-level breakdown
+            echo -e "${suite_name}\t${suite_tests}\t${suite_failures}\t${suite_errors}\t${suite_skipped}\t${suite_time}" >> "$ALL_SUITES"
 
             # Record suite stats if it has failures/errors
             if [[ $suite_failures -gt 0 || $suite_errors -gt 0 ]]; then
@@ -449,20 +472,27 @@ runs:
         done
 
         # ==================================================
+        # Compute total duration from all suites
+        # ==================================================
+        total_duration_secs=$(awk -F'\t' 'BEGIN{s=0} {s+=$6} END{printf "%.0f", s}' "$ALL_SUITES" 2>/dev/null || echo "0")
+        total_duration_fmt=$(format_duration "$total_duration_secs")
+
+        # ==================================================
         # Build the final report
         # ==================================================
         {
           echo "# Test Failure Report"
           echo ""
 
+          # Jenkins-style summary header
           if [[ $failure_count -eq 0 && $total_tests -gt 0 ]]; then
-            echo "> **All ${total_tests} tests passed.**"
+            echo "> **Tests ${total_tests}** &nbsp;&nbsp; :white_check_mark: ${total_passed} &nbsp;&nbsp; :clock1: ${total_duration_fmt}"
             echo ""
           elif [[ $total_tests -eq 0 ]]; then
             echo "> **No JUnit XML test results found in artifacts.**"
             echo ""
           else
-            echo "> **${failure_count} test failure(s) detected across ${total_tests} tests.**"
+            echo "> **Tests ${total_tests}** &nbsp;&nbsp; :x: ${total_failed} &nbsp;&nbsp; :white_check_mark: ${total_passed} &nbsp;&nbsp; :clock1: ${total_duration_fmt}"
             echo ""
           fi
 
@@ -476,17 +506,17 @@ runs:
           echo "| Failed | ${total_failed} |"
           echo "| Errors | ${total_errors} |"
           echo "| Skipped | ${total_skipped} |"
+          echo "| Duration | ${total_duration_fmt} |"
           echo ""
 
-          # Failed suites overview (quick reference)
+          # All Failed Tests table (matches Jenkins "All Failed Tests" section)
           if [[ -s "$SUITE_STATS" ]]; then
-            echo "## Failed Test Suites"
+            echo "## All Failed Tests"
             echo ""
             echo "| Suite | Tests | Failures | Errors | Duration | Job |"
             echo "|-------|------:|---------:|-------:|---------:|-----|"
             while IFS=$'\t' read -r s_name s_tests s_fail s_err s_time s_artifact; do
               job_name="${s_artifact#results-}"
-              # Format duration
               if [[ -n "$s_time" ]]; then
                 s_dur="${s_time}s"
               else
@@ -497,9 +527,75 @@ runs:
             echo ""
           fi
 
-          # Individual failure details
+          # All Tests by Package (matches Jenkins "All Tests" package breakdown)
+          if [[ -s "$ALL_SUITES" ]]; then
+            echo "## All Tests"
+            echo ""
+          fi
+        } >> "$REPORT_FILE"
+
+        # Generate package-level breakdown table using Python
+        if [[ -s "$ALL_SUITES" ]]; then
+          python3 >> "$REPORT_FILE" << 'PACKAGE_SCRIPT'
+        import sys
+        from collections import defaultdict
+
+        packages = defaultdict(lambda: {'tests': 0, 'failed': 0, 'skipped': 0, 'passed': 0, 'duration': 0.0})
+
+        with open('/tmp/all-suites.tsv') as f:
+            for line in f:
+                parts = line.strip().split('\t')
+                if len(parts) < 6:
+                    continue
+                name, tests, failures, errors, skipped, time_s = parts[:6]
+
+                if '.' in name:
+                    pkg = name.rsplit('.', 1)[0]
+                else:
+                    pkg = '(root)'
+
+                tests = int(tests or 0)
+                failures = int(failures or 0)
+                errors = int(errors or 0)
+                skipped = int(skipped or 0)
+                time_f = float(time_s or 0)
+                passed = max(0, tests - failures - errors - skipped)
+
+                packages[pkg]['tests'] += tests
+                packages[pkg]['failed'] += failures + errors
+                packages[pkg]['skipped'] += skipped
+                packages[pkg]['passed'] += passed
+                packages[pkg]['duration'] += time_f
+
+        sorted_pkgs = sorted(packages.items(), key=lambda x: (-x[1]['failed'], x[0]))
+
+        def fmt_dur(secs):
+            if secs < 1:
+                return f"{secs*1000:.0f} ms"
+            elif secs < 60:
+                return f"{secs:.1f} sec"
+            elif secs < 3600:
+                m = int(secs // 60)
+                s = int(secs % 60)
+                return f"{m} min {s} sec"
+            else:
+                h = int(secs // 3600)
+                m = int((secs % 3600) // 60)
+                return f"{h}h {m}m"
+
+        print("| Package | Failed | Skipped | Passed | Total | Duration |")
+        print("|---------|-------:|--------:|-------:|------:|---------:|")
+        for pkg, s in sorted_pkgs:
+            print(f"| `{pkg}` | {s['failed']} | {s['skipped']} | {s['passed']} | {s['tests']} | {fmt_dur(s['duration'])} |")
+        print()
+        PACKAGE_SCRIPT
+        fi
+
+        # Append individual failure details
+        {
+          # Individual failure details with stack traces
           if [[ $failure_count -gt 0 ]]; then
-            echo "## Failed Tests (${failure_count})"
+            echo "## Failed Test Details (${failure_count})"
             echo ""
             echo "_Click on Stack Trace / Standard Output to expand details._"
             cat "$FAILURES_FILE"
@@ -514,4 +610,4 @@ runs:
         echo "Report generated: ${failure_count} failures out of ${total_tests} tests"
 
         # Cleanup
-        rm -f "$FAILURES_FILE" "$SUITE_STATS" "$REPORT_FILE"
+        rm -f "$FAILURES_FILE" "$SUITE_STATS" "$ALL_SUITES" "$REPORT_FILE"

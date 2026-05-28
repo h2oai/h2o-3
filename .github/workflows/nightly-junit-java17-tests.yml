@@ -891,18 +891,21 @@ jobs:
           merge-multiple: false
 
       - name: All Failed Java 17 Tests
-        uses: dorny/test-reporter@v3
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2
         with:
-          name: All Failed Tests (Java 17)
-          path: '/tmp/test-results/**/test-results/**/*.xml,/tmp/test-results/**/results/**/*.xml'
-          reporter: java-junit
-          fail-on-error: false
-          fail-on-empty: false
-          list-suites: failed
-          list-tests: failed
-          max-annotations: 50
-          use-actions-summary: 'true'
-          collapsed: 'auto'
+          check_name: All Failed Tests (Java 17)
+          files: |
+            /tmp/test-results/**/test-results/**/*.xml
+            /tmp/test-results/**/results/**/*.xml
+          job_summary: true
+          comment_mode: 'off'
+          check_run: true
+          report_individual_runs: true
+          report_suite_logs: error
+          large_files: true
+          fail_on: nothing
+          action_fail: false
+          action_fail_on_inconclusive: false
 
       - name: Generate Test Failure Report
         uses: ./.github/actions/generate-test-failure-report
