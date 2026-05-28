@@ -37,6 +37,11 @@ inputs:
     required: false
     default: '80'
 
+  skip_download:
+    description: 'Skip artifact download (if artifacts already downloaded to /tmp/test-results)'
+    required: false
+    default: 'false'
+
 runs:
   using: 'composite'
   steps:
@@ -44,6 +49,7 @@ runs:
     # STEP 1: Download all test result artifacts
     # -------------------------------------------------------------------------
     - name: Download Test Result Artifacts
+      if: inputs.skip_download != 'true'
       uses: actions/download-artifact@v4
       with:
         pattern: ${{ inputs.artifact_pattern }}

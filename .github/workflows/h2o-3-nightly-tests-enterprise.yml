@@ -313,6 +313,37 @@ jobs:
           java_result: ${{ needs.java.result }}
           flow_result: ${{ needs.flow.result }}
 
+      - name: Download All Test Results
+        if: >-
+          needs.smoke.result == 'failure' ||
+          needs.python.result == 'failure' ||
+          needs.r.result == 'failure' ||
+          needs.java.result == 'failure' ||
+          needs.flow.result == 'failure'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: results-*
+          path: /tmp/test-results
+          merge-multiple: false
+
+      - name: Consolidated Test Failure Check Run
+        if: >-
+          needs.smoke.result == 'failure' ||
+          needs.python.result == 'failure' ||
+          needs.r.result == 'failure' ||
+          needs.java.result == 'failure' ||
+          needs.flow.result == 'failure'
+        uses: dorny/test-reporter@v2
+        with:
+          name: All Failed Tests
+          path: '/tmp/test-results/**/test-results/**/*.xml,/tmp/test-results/**/results/**/*.xml'
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
+          list-suites: failed
+          list-tests: failed
+          max-annotations: 50
+
       - name: Generate Test Failure Report
         if: >-
           needs.smoke.result == 'failure' ||
@@ -323,3 +354,4 @@ jobs:
         uses: ./.github/actions/generate-test-failure-report
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_download: 'true'

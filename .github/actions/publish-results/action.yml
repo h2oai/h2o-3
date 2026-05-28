@@ -95,7 +95,7 @@ runs:
       uses: dorny/test-reporter@v2
       with:
         name: Test Report (${{ inputs.name }})
-        path: '**/test-results/**/*.xml'
+        path: '**/test-results/**/*.xml,**/results/**/*.xml'
         reporter: java-junit
         fail-on-error: false
         fail-on-empty: false
