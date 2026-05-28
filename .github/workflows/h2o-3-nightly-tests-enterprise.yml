@@ -342,7 +342,6 @@ jobs:
           fail-on-empty: false
           list-suites: failed
           list-tests: failed
-          list-files: failed
           max-annotations: 50
           use-actions-summary: 'true'
           collapsed: 'auto'

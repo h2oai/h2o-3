@@ -86,64 +86,68 @@ runs:
       run: |
         # The Python/R test harness (run.py) generates minimal JUnit XML where
         # failure descriptions are just "See /workspace/.../file.out.txt" references.
-        # This step inlines the actual error output into the XML so dorny/test-reporter
-        # can display it properly (like Jenkins does).
+        # This step uses Python's XML parser to safely inline actual error output.
         echo "Enriching JUnit XML files with test output..."
 
-        find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | while read -r xml_file; do
-          [[ ! -f "$xml_file" ]] && continue
+        python3 << 'ENRICH_SCRIPT'
+        import os, re, glob
+        import xml.etree.ElementTree as ET
 
-          # Check if this XML contains "See /workspace/" failure references
-          if grep -q "See /workspace/" "$xml_file" 2>/dev/null; then
-            echo "  Enriching: $xml_file"
+        MAX_LINES = 200
+        enriched = 0
+        pattern = re.compile(r'See (/workspace/(.+?\.out\.txt))')
 
-            # Extract the referenced output file path and try to find it locally
-            # The XML contains paths like "See /workspace/h2o-py/tests/results/testdir_.../file.out.txt"
-            # In our workspace, this maps to h2o-3/h2o-py/tests/results/... or h2o-3/results/...
-            perl -i -pe '
-              if (/See (\/workspace\/(.+?\.out\.txt))/) {
-                my $container_path = $1;
-                my $rel_path = $2;
+        for xml_path in glob.glob('**/test-results/**/*.xml', recursive=True) + \
+                        glob.glob('**/results/**/*.xml', recursive=True):
+            try:
+                tree = ET.parse(xml_path)
+            except ET.ParseError:
+                continue
 
-                # Try multiple base paths to find the file
-                my $content = "";
-                for my $base ("h2o-3/$rel_path", "$rel_path") {
-                  if (-f $base) {
-                    if (open my $fh, "<", $base) {
-                      local $/;
-                      $content = <$fh>;
-                      close $fh;
-                      # Limit to 200 lines to avoid bloating the XML
-                      my @lines = split /\n/, $content;
-                      if (@lines > 200) {
-                        $content = join("\n", @lines[0..199]) . "\n... (truncated, see full output in artifacts)";
-                      }
-                      # Escape XML special characters
-                      $content =~ s/&/&amp;/g;
-                      $content =~ s/</&lt;/g;
-                      $content =~ s/>/&gt;/g;
-                      last;
-                    }
-                  }
-                }
+            modified = False
+            root = tree.getroot()
 
-                if ($content) {
-                  s/See \Q$container_path\E/$content/;
-                }
-              }
-            ' "$xml_file" 2>/dev/null || true
-          fi
+            for elem in root.iter():
+                # Fix missing/empty time attributes (causes NaNms)
+                if 'time' in elem.attrib:
+                    try:
+                        float(elem.attrib['time'])
+                    except (ValueError, TypeError):
+                        elem.attrib['time'] = '0'
+                        modified = True
 
-          # Fix missing or invalid time attributes (causes NaNms in reports)
-          # Replace time="" or missing time with time="0"
-          perl -i -pe '
-            s/time=""/time="0"/g;
-            s/time="[^"]*[^0-9.][^"]*"/time="0"/g;
-          ' "$xml_file" 2>/dev/null || true
+                # Enrich failure/error elements that reference .out.txt files
+                if elem.tag in ('failure', 'error') and elem.text:
+                    match = pattern.search(elem.text)
+                    if match:
+                        container_path = match.group(1)
+                        rel_path = match.group(2)
 
-        done
+                        content = None
+                        for base in [f'h2o-3/{rel_path}', rel_path]:
+                            if os.path.isfile(base):
+                                try:
+                                    with open(base, 'r', errors='replace') as f:
+                                        lines = f.readlines()
+                                    if len(lines) > MAX_LINES:
+                                        lines = lines[:MAX_LINES]
+                                        lines.append('... (truncated, see full output in artifacts)\n')
+                                    content = ''.join(lines)
+                                except Exception:
+                                    pass
+                                break
 
-        echo "XML enrichment complete"
+                        if content:
+                            elem.text = content
+                            modified = True
+                            enriched += 1
+
+            if modified:
+                print(f'  Enriched: {xml_path}')
+                tree.write(xml_path, encoding='unicode', xml_declaration=True)
+
+        print(f'XML enrichment complete ({enriched} files enriched)')
+        ENRICH_SCRIPT
 
     - name: Debug - List XML files
       if: inputs.job_status == 'failure'
@@ -166,7 +170,6 @@ runs:
         fail-on-empty: false
         list-suites: failed
         list-tests: failed
-        list-files: failed
         max-annotations: 50
         use-actions-summary: 'true'
         collapsed: 'auto'
