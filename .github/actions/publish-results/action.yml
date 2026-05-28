@@ -92,17 +92,16 @@ runs:
 
     - name: Publish JUnit Report
       if: always()
-      uses: mikepenz/action-junit-report@v5
+      uses: dorny/test-reporter@v2
       with:
-        report_paths: |
-          **/test-results/**/*.xml
-        check_name: Test Report (${{ inputs.name }})
-        fail_on_failure: false
-        include_passed: false
-        detailed_summary: true
-        require_tests: false
-        check_annotations: true
-        job_summary: true
+        name: Test Report (${{ inputs.name }})
+        path: '**/test-results/**/*.xml'
+        reporter: java-junit
+        fail-on-error: false
+        fail-on-empty: false
+        list-suites: failed
+        list-tests: failed
+        max-annotations: 50
 
     # Archive failure artifacts (similar to Jenkins archiveArtifacts on failure)
     # Jenkins archives: leak-check.out, **/*.log, **/out.*, **/results/*.txt, **/results/failed/*.txt
