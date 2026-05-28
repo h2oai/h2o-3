@@ -66,7 +66,7 @@
 
 name: 2.c  -  Enterprise H2O-3 Official Release
 
-run-name: "2.c  -  Enterprise H2O-3 Official Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
+run-name: "2.c  -  Enterprise H2O-3 Official Release [${{ inputs.branch }}] #${{ inputs.build_number }}${{ inputs.stage == 'publish' && ' [PUBLISH]' || '' }}${{ inputs.stage == 'pre_check_only' && ' [PRE-CHECK ONLY]' || '' }}${{ inputs.dry_run && ' [DRY RUN]' || '' }}"
 
 on:
   workflow_dispatch:
@@ -83,13 +83,14 @@ on:
         type: string
 
       stage:
-        description: "Release stage"
+        description: "Release stage (pre_check_only validates secrets without building)"
         required: true
         type: choice
         options:
           - build
           - publish
           - full
+          - pre_check_only
         default: 'build'
 
       dry_run:
@@ -179,10 +180,79 @@ env:
 jobs:
 
   # ============================================================================
+  # PRE-CHECK: Validate secrets are available before expensive build
+  # Fails fast (seconds) instead of failing mid-build (hours)
+  # ============================================================================
+  pre-check:
+    name: Pre-Check Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Publish Secrets
+        if: inputs.stage == 'publish' || inputs.stage == 'full' || inputs.stage == 'pre_check_only'
+        env:
+          HAS_PYPI_USER: ${{ secrets.PYPI_USERNAME != '' }}
+          HAS_PYPI_PASS: ${{ secrets.PYPI_PASSWORD != '' }}
+          HAS_CONDA_USER: ${{ secrets.ANACONDA_USERNAME != '' }}
+          HAS_CONDA_PASS: ${{ secrets.ANACONDA_PASSWORD != '' }}
+          HAS_DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+          HAS_DOCKER_PASS: ${{ secrets.DOCKERHUB_PASSWORD != '' }}
+        run: |
+          FAILED=false
+
+          if [ "${{ inputs.publish_pypi }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "=== Validating PyPI secrets ==="
+            if [ "${HAS_PYPI_USER}" != "true" ] || [ "${HAS_PYPI_PASS}" != "true" ]; then
+              echo "::error::Secrets PYPI_USERNAME and/or PYPI_PASSWORD are missing (required for PyPI publish)"
+              FAILED=true
+            fi
+          fi
+
+          if [ "${{ inputs.publish_conda }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "=== Validating Conda secrets ==="
+            if [ "${HAS_CONDA_USER}" != "true" ] || [ "${HAS_CONDA_PASS}" != "true" ]; then
+              echo "::error::Secrets ANACONDA_USERNAME and/or ANACONDA_PASSWORD are missing (required for Conda publish)"
+              FAILED=true
+            fi
+          fi
+
+          if [ "${{ inputs.publish_docker }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "=== Validating Docker Hub secrets ==="
+            if [ "${HAS_DOCKER_USER}" != "true" ] || [ "${HAS_DOCKER_PASS}" != "true" ]; then
+              echo "::error::Secrets DOCKERHUB_USERNAME and/or DOCKERHUB_PASSWORD are missing (required for Docker publish)"
+              FAILED=true
+            fi
+          fi
+
+          if [ "${FAILED}" = "true" ]; then
+            echo "::error::Missing required publish secrets. Configure them in repository settings before running a release."
+            exit 1
+          fi
+
+          echo "Publish secrets validated successfully"
+
+      - name: Pre-Check Summary
+        run: |
+          echo "## Pre-Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All required secrets are configured." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | \`${{ inputs.stage }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ inputs.branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Number | \`${{ inputs.build_number }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.stage }}" = "pre_check_only" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Pre-check only mode** — no build or publish will run." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ============================================================================
   # INIT: Validate inputs and check existing state
   # ============================================================================
   init:
     name: Initialize
+    needs: pre-check
+    if: inputs.stage != 'pre_check_only'
     runs-on: ubuntu-latest
     outputs:
       branch: ${{ steps.config.outputs.branch }}
@@ -589,8 +659,8 @@ jobs:
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, publish-s3, fetch-version, publish-pypi, publish-conda, publish-helm, publish-docker]
-    if: always()
+    needs: [pre-check, init, build, publish-s3, fetch-version, publish-pypi, publish-conda, publish-helm, publish-docker]
+    if: always() && inputs.stage != 'pre_check_only'
     runs-on: ubuntu-latest
 
     steps:
