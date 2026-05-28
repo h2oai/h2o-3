@@ -50,7 +50,7 @@ runs:
   using: 'composite'
   steps:
     - name: Sanitize JUnit XML files
-      if: always()
+      if: inputs.job_status == 'failure'
       shell: bash
       run: |
         # Fix invalid XML character entities and control characters in JUnit XML files
@@ -81,7 +81,7 @@ runs:
         echo "XML sanitization complete"
 
     - name: Debug - List XML files
-      if: always()
+      if: inputs.job_status == 'failure'
       shell: bash
       run: |
         echo "=== Searching for JUnit XML files ==="
@@ -91,7 +91,7 @@ runs:
         find . -type f -name "*.xml" -path "*test-results*" 2>/dev/null | wc -l
 
     - name: Publish JUnit Report
-      if: always()
+      if: inputs.job_status == 'failure'
       uses: dorny/test-reporter@v3
       with:
         name: Test Report (${{ inputs.name }})
