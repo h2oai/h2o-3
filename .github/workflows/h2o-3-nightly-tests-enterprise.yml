@@ -312,3 +312,14 @@ jobs:
           r_result: ${{ needs.r.result }}
           java_result: ${{ needs.java.result }}
           flow_result: ${{ needs.flow.result }}
+
+      - name: Generate Test Failure Report
+        if: >-
+          needs.smoke.result == 'failure' ||
+          needs.python.result == 'failure' ||
+          needs.r.result == 'failure' ||
+          needs.java.result == 'failure' ||
+          needs.flow.result == 'failure'
+        uses: ./.github/actions/generate-test-failure-report
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

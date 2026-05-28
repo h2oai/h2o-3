@@ -1,0 +1,423 @@
+# ==============================================================================
+#                    GENERATE TEST FAILURE REPORT
+# ==============================================================================
+#
+# PURPOSE:
+#   Downloads JUnit XML artifacts from all test jobs, parses them, and generates
+#   a detailed Jenkins-style failure report in the GitHub Job Summary showing:
+#     - Individual test failures with class, method, error message
+#     - Stack traces (collapsible)
+#     - Standard output/error (collapsible)
+#     - Test counts (total, passed, failed, skipped, errored)
+#     - Duration per test
+#     - Links to the job where each failure occurred
+#
+# USAGE:
+#   - uses: ./.github/actions/generate-test-failure-report
+#     with:
+#       github_token: ${{ secrets.GITHUB_TOKEN }}
+#
+# ==============================================================================
+
+name: 'Generate Test Failure Report'
+description: 'Parse JUnit XML artifacts and generate Jenkins-style failure report in Job Summary'
+
+inputs:
+  github_token:
+    description: 'GitHub token for downloading artifacts and fetching job info'
+    required: true
+
+  artifact_pattern:
+    description: 'Glob pattern for result artifact names to download'
+    required: false
+    default: 'results-*'
+
+  max_stdout_lines:
+    description: 'Maximum lines of stdout/stderr to show per failed test'
+    required: false
+    default: '80'
+
+runs:
+  using: 'composite'
+  steps:
+    # -------------------------------------------------------------------------
+    # STEP 1: Download all test result artifacts
+    # -------------------------------------------------------------------------
+    - name: Download Test Result Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ inputs.artifact_pattern }}
+        path: /tmp/test-results
+        merge-multiple: false
+
+    # -------------------------------------------------------------------------
+    # STEP 2: Install xmllint for XML parsing
+    # -------------------------------------------------------------------------
+    - name: Install XML Tools
+      shell: bash
+      run: |
+        if ! command -v xmllint &>/dev/null; then
+          sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils 2>/dev/null || true
+        fi
+
+    # -------------------------------------------------------------------------
+    # STEP 3: Fetch job URL mapping
+    # -------------------------------------------------------------------------
+    - name: Fetch Job URLs
+      id: jobs
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+          --paginate \
+          --jq '.jobs[] | "\(.name)\t\(.html_url)\t\(.conclusion // "pending")"' \
+          > /tmp/job-urls.tsv 2>/dev/null || true
+
+    # -------------------------------------------------------------------------
+    # STEP 4: Parse JUnit XML and generate report
+    # -------------------------------------------------------------------------
+    - name: Generate Failure Report
+      shell: bash
+      run: |
+        set +e
+
+        MAX_STDOUT=${{ inputs.max_stdout_lines }}
+        REPORT_FILE="/tmp/failure-report.md"
+
+        # ==================================================
+        # Counters
+        # ==================================================
+        total_tests=0
+        total_passed=0
+        total_failed=0
+        total_errors=0
+        total_skipped=0
+        total_duration="0"
+        failure_count=0
+
+        # Temp files for collecting failures and per-suite stats
+        FAILURES_FILE="/tmp/test-failures.md"
+        SUITE_STATS="/tmp/suite-stats.tsv"
+        > "$FAILURES_FILE"
+        > "$SUITE_STATS"
+
+        # ==================================================
+        # Sanitize XML - remove invalid characters
+        # ==================================================
+        sanitize_xml() {
+          local file="$1"
+          # Remove invalid XML character references
+          perl -i -pe '
+            s/&#x[0-8];//g;
+            s/&#x[Bb];|&#x[Cc];|&#x[Ee];|&#x[Ff];//g;
+            s/&#x1[0-9A-Fa-f];//g;
+            s/&#[0-8];//g;
+            s/&#1[0-24-9];//g;
+            s/&#2[0-9];//g;
+            s/&#3[0-1];//g;
+          ' "$file" 2>/dev/null || true
+          # Remove actual control characters (keep tab, newline, CR)
+          tr -d '\000-\010\013\014\016-\037' < "$file" > "${file}.clean" 2>/dev/null && mv "${file}.clean" "$file" || rm -f "${file}.clean"
+        }
+
+        # ==================================================
+        # Extract text content from XML element (handles CDATA)
+        # ==================================================
+        extract_element_text() {
+          local file="$1"
+          local xpath="$2"
+          local max_lines="${3:-$MAX_STDOUT}"
+
+          local text=""
+          text=$(xmllint --xpath "string($xpath)" "$file" 2>/dev/null) || true
+
+          if [[ -n "$text" && "$text" != "" ]]; then
+            # Trim and limit lines
+            echo "$text" | head -n "$max_lines"
+          fi
+        }
+
+        # ==================================================
+        # Lookup job URL by artifact directory name
+        # ==================================================
+        get_job_url() {
+          local artifact_name="$1"
+          # artifact_name is like "results-Java 8 Algos GLM"
+          # Strip "results-" prefix to get job name
+          local job_name="${artifact_name#results-}"
+
+          if [[ -f /tmp/job-urls.tsv ]]; then
+            grep -F "$job_name" /tmp/job-urls.tsv | head -1 | cut -f2
+          fi
+        }
+
+        # ==================================================
+        # Process each artifact directory
+        # ==================================================
+        echo "Scanning for JUnit XML files..."
+
+        if [[ ! -d /tmp/test-results ]]; then
+          echo "No test result artifacts found."
+          echo "## Test Failure Report" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          echo "> No test result artifacts were found. Tests may not have produced JUnit XML output." >> "$REPORT_FILE"
+          cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+          exit 0
+        fi
+
+        # Find all JUnit XML files
+        XML_FILES=$(find /tmp/test-results -type f -name "*.xml" 2>/dev/null | sort)
+        XML_COUNT=$(echo "$XML_FILES" | grep -c "." 2>/dev/null || echo "0")
+        echo "Found $XML_COUNT JUnit XML files"
+
+        for xml_file in $XML_FILES; do
+          [[ -z "$xml_file" ]] && continue
+          [[ ! -f "$xml_file" ]] && continue
+
+          # Determine which artifact this belongs to
+          artifact_dir=$(echo "$xml_file" | sed 's|^/tmp/test-results/||' | cut -d'/' -f1)
+          job_url=$(get_job_url "$artifact_dir")
+
+          # Sanitize XML
+          sanitize_xml "$xml_file"
+
+          # Verify it's valid JUnit XML
+          if ! xmllint --noout "$xml_file" 2>/dev/null; then
+            continue
+          fi
+
+          # Check if this is a testsuite or testsuites root
+          root_element=$(xmllint --xpath "name(/*)" "$xml_file" 2>/dev/null) || continue
+
+          if [[ "$root_element" == "testsuites" ]]; then
+            suite_count=$(xmllint --xpath "count(/testsuites/testsuite)" "$xml_file" 2>/dev/null) || suite_count=0
+          elif [[ "$root_element" == "testsuite" ]]; then
+            suite_count=1
+          else
+            continue
+          fi
+
+          # Process each testsuite
+          for ((s=1; s<=suite_count; s++)); do
+            if [[ "$root_element" == "testsuites" ]]; then
+              suite_prefix="/testsuites/testsuite[$s]"
+            else
+              suite_prefix="/testsuite"
+            fi
+
+            # Extract suite attributes
+            suite_name=$(xmllint --xpath "string(${suite_prefix}/@name)" "$xml_file" 2>/dev/null) || suite_name="Unknown"
+            suite_tests=$(xmllint --xpath "string(${suite_prefix}/@tests)" "$xml_file" 2>/dev/null) || suite_tests="0"
+            suite_failures=$(xmllint --xpath "string(${suite_prefix}/@failures)" "$xml_file" 2>/dev/null) || suite_failures="0"
+            suite_errors=$(xmllint --xpath "string(${suite_prefix}/@errors)" "$xml_file" 2>/dev/null) || suite_errors="0"
+            suite_skipped=$(xmllint --xpath "string(${suite_prefix}/@skipped)" "$xml_file" 2>/dev/null) || suite_skipped="0"
+            suite_time=$(xmllint --xpath "string(${suite_prefix}/@time)" "$xml_file" 2>/dev/null) || suite_time="0"
+
+            # Convert to integers (handle empty strings)
+            suite_tests=${suite_tests:-0}
+            suite_failures=${suite_failures:-0}
+            suite_errors=${suite_errors:-0}
+            suite_skipped=${suite_skipped:-0}
+
+            # Update totals
+            total_tests=$((total_tests + suite_tests))
+            total_failed=$((total_failed + suite_failures))
+            total_errors=$((total_errors + suite_errors))
+            total_skipped=$((total_skipped + suite_skipped))
+            suite_passed=$((suite_tests - suite_failures - suite_errors - suite_skipped))
+            total_passed=$((total_passed + suite_passed))
+
+            # Record suite stats if it has failures/errors
+            if [[ $suite_failures -gt 0 || $suite_errors -gt 0 ]]; then
+              echo -e "${suite_name}\t${suite_tests}\t${suite_failures}\t${suite_errors}\t${suite_time}\t${artifact_dir}" >> "$SUITE_STATS"
+            fi
+
+            # Process individual test cases for failures
+            tc_count=$(xmllint --xpath "count(${suite_prefix}/testcase)" "$xml_file" 2>/dev/null) || tc_count=0
+
+            for ((t=1; t<=tc_count; t++)); do
+              tc_prefix="${suite_prefix}/testcase[$t]"
+
+              # Check for failure or error elements
+              has_failure=$(xmllint --xpath "count(${tc_prefix}/failure)" "$xml_file" 2>/dev/null) || has_failure=0
+              has_error=$(xmllint --xpath "count(${tc_prefix}/error)" "$xml_file" 2>/dev/null) || has_error=0
+
+              if [[ $has_failure -eq 0 && $has_error -eq 0 ]]; then
+                continue
+              fi
+
+              failure_count=$((failure_count + 1))
+
+              # Extract test case attributes
+              tc_name=$(xmllint --xpath "string(${tc_prefix}/@name)" "$xml_file" 2>/dev/null) || tc_name="unknown"
+              tc_classname=$(xmllint --xpath "string(${tc_prefix}/@classname)" "$xml_file" 2>/dev/null) || tc_classname=""
+              tc_time=$(xmllint --xpath "string(${tc_prefix}/@time)" "$xml_file" 2>/dev/null) || tc_time=""
+
+              # Format duration
+              if [[ -n "$tc_time" && "$tc_time" != "0" ]]; then
+                tc_duration="${tc_time}s"
+              else
+                tc_duration="-"
+              fi
+
+              # Extract failure/error details
+              if [[ $has_failure -gt 0 ]]; then
+                fail_type="Failure"
+                fail_message=$(xmllint --xpath "string(${tc_prefix}/failure/@message)" "$xml_file" 2>/dev/null) || fail_message=""
+                fail_type_attr=$(xmllint --xpath "string(${tc_prefix}/failure/@type)" "$xml_file" 2>/dev/null) || fail_type_attr=""
+                fail_body=$(extract_element_text "$xml_file" "${tc_prefix}/failure" 200)
+              else
+                fail_type="Error"
+                fail_message=$(xmllint --xpath "string(${tc_prefix}/error/@message)" "$xml_file" 2>/dev/null) || fail_message=""
+                fail_type_attr=$(xmllint --xpath "string(${tc_prefix}/error/@type)" "$xml_file" 2>/dev/null) || fail_type_attr=""
+                fail_body=$(extract_element_text "$xml_file" "${tc_prefix}/error" 200)
+              fi
+
+              # Extract system-out and system-err
+              sys_out=$(extract_element_text "$xml_file" "${tc_prefix}/system-out")
+              sys_err=$(extract_element_text "$xml_file" "${tc_prefix}/system-err")
+
+              # If no per-testcase system-out, try suite-level
+              if [[ -z "$sys_out" ]]; then
+                sys_out=$(extract_element_text "$xml_file" "${suite_prefix}/system-out")
+              fi
+
+              # ---- Write failure entry ----
+              {
+                echo "---"
+                echo ""
+                echo "### ${failure_count}. \`${tc_classname}.${tc_name}\`"
+                echo ""
+
+                # Metadata line
+                echo "| | |"
+                echo "|---|---|"
+                if [[ -n "$tc_classname" ]]; then
+                  echo "| **Class** | \`${tc_classname}\` |"
+                fi
+                echo "| **Test** | \`${tc_name}\` |"
+                echo "| **Type** | ${fail_type} |"
+                echo "| **Duration** | ${tc_duration} |"
+                echo "| **Job** | ${artifact_dir#results-} |"
+                if [[ -n "$job_url" ]]; then
+                  echo "| **Job Log** | [View Logs](${job_url}) |"
+                fi
+                echo ""
+
+                # Error message
+                if [[ -n "$fail_message" ]]; then
+                  echo "**Error:**"
+                  echo "\`\`\`"
+                  echo "$fail_message" | head -5
+                  echo "\`\`\`"
+                  echo ""
+                fi
+
+                # Stack trace (collapsible)
+                if [[ -n "$fail_body" ]]; then
+                  echo "<details>"
+                  echo "<summary>Stack Trace</summary>"
+                  echo ""
+                  echo "\`\`\`java"
+                  echo "$fail_body"
+                  echo "\`\`\`"
+                  echo "</details>"
+                  echo ""
+                fi
+
+                # Standard output (collapsible)
+                if [[ -n "$sys_out" ]]; then
+                  echo "<details>"
+                  echo "<summary>Standard Output</summary>"
+                  echo ""
+                  echo "\`\`\`"
+                  echo "$sys_out"
+                  echo "\`\`\`"
+                  echo "</details>"
+                  echo ""
+                fi
+
+                # Standard error (collapsible)
+                if [[ -n "$sys_err" ]]; then
+                  echo "<details>"
+                  echo "<summary>Standard Error</summary>"
+                  echo ""
+                  echo "\`\`\`"
+                  echo "$sys_err"
+                  echo "\`\`\`"
+                  echo "</details>"
+                  echo ""
+                fi
+              } >> "$FAILURES_FILE"
+            done
+          done
+        done
+
+        # ==================================================
+        # Build the final report
+        # ==================================================
+        {
+          echo "# Test Failure Report"
+          echo ""
+
+          if [[ $failure_count -eq 0 && $total_tests -gt 0 ]]; then
+            echo "> **All ${total_tests} tests passed.**"
+            echo ""
+          elif [[ $total_tests -eq 0 ]]; then
+            echo "> **No JUnit XML test results found in artifacts.**"
+            echo ""
+          else
+            echo "> **${failure_count} test failure(s) detected across ${total_tests} tests.**"
+            echo ""
+          fi
+
+          # Summary table
+          echo "## Summary"
+          echo ""
+          echo "| Metric | Count |"
+          echo "|--------|------:|"
+          echo "| Total Tests | ${total_tests} |"
+          echo "| Passed | ${total_passed} |"
+          echo "| Failed | ${total_failed} |"
+          echo "| Errors | ${total_errors} |"
+          echo "| Skipped | ${total_skipped} |"
+          echo ""
+
+          # Failed suites overview (quick reference)
+          if [[ -s "$SUITE_STATS" ]]; then
+            echo "## Failed Test Suites"
+            echo ""
+            echo "| Suite | Tests | Failures | Errors | Duration | Job |"
+            echo "|-------|------:|---------:|-------:|---------:|-----|"
+            while IFS=$'\t' read -r s_name s_tests s_fail s_err s_time s_artifact; do
+              job_name="${s_artifact#results-}"
+              # Format duration
+              if [[ -n "$s_time" ]]; then
+                s_dur="${s_time}s"
+              else
+                s_dur="-"
+              fi
+              echo "| \`${s_name}\` | ${s_tests} | ${s_fail} | ${s_err} | ${s_dur} | ${job_name} |"
+            done < "$SUITE_STATS"
+            echo ""
+          fi
+
+          # Individual failure details
+          if [[ $failure_count -gt 0 ]]; then
+            echo "## Failed Tests (${failure_count})"
+            echo ""
+            echo "_Click on Stack Trace / Standard Output to expand details._"
+            cat "$FAILURES_FILE"
+            echo ""
+          fi
+
+        } >> "$REPORT_FILE"
+
+        # Write to GitHub Step Summary
+        cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+
+        echo "Report generated: ${failure_count} failures out of ${total_tests} tests"
+
+        # Cleanup
+        rm -f "$FAILURES_FILE" "$SUITE_STATS" "$REPORT_FILE"

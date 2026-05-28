@@ -210,7 +210,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Init Java 8
@@ -234,7 +234,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Small
@@ -258,7 +258,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 AutoML
@@ -282,7 +282,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 CMD Check as CRAN
@@ -306,7 +306,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R4.0 Small
@@ -330,7 +330,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R4.0 CMD Check as CRAN
@@ -354,7 +354,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Booklets
@@ -378,7 +378,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Demos Small
@@ -402,7 +402,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Medium-large
@@ -426,7 +426,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Demos Medium-large
@@ -450,7 +450,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Generate Docs
@@ -475,7 +475,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Datatable
@@ -502,7 +502,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.5 Init Java 11
@@ -526,7 +526,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.4 Medium-large
@@ -550,7 +550,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.4 Small
@@ -574,7 +574,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R3.4 AutoML
@@ -599,7 +599,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R4.0 Explain
@@ -623,7 +623,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: R4.4 Explain

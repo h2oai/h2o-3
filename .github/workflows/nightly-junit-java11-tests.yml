@@ -71,7 +71,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Smoke
@@ -116,7 +116,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos GLM
@@ -161,7 +161,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos GBM
@@ -206,7 +206,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos DRF
@@ -251,7 +251,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos DeepLearning
@@ -296,7 +296,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos GAM
@@ -341,7 +341,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos Tree+IsoFor+DT+Uplift
@@ -386,7 +386,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos Ensemble
@@ -431,7 +431,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos KMeans
@@ -476,7 +476,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos RuleFit
@@ -521,7 +521,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos PCA
@@ -566,7 +566,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos GLRM
@@ -611,7 +611,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos AdaBoost
@@ -656,7 +656,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos ModelSelection
@@ -701,7 +701,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos Generic
@@ -746,7 +746,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos Grid
@@ -791,7 +791,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 Algos Misc
@@ -837,7 +837,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Java 11 JUnit Other

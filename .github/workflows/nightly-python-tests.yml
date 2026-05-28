@@ -232,7 +232,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Smoke (Main)
@@ -257,7 +257,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Smoke (Minimal)
@@ -282,7 +282,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Smoke (Steam)
@@ -309,7 +309,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Single Node
@@ -334,7 +334,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Small
@@ -358,7 +358,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 MOJO2
@@ -382,7 +382,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 AutoML
@@ -406,7 +406,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 AutoML Smoke (NO XGB)
@@ -430,7 +430,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Fault Tolerance
@@ -454,7 +454,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Medium-large
@@ -478,7 +478,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 X-large
@@ -502,7 +502,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Demo Notebooks
@@ -526,7 +526,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Demo Notebooks (Scikit)
@@ -551,7 +551,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: External XGBoost
@@ -581,7 +581,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Explain
@@ -605,7 +605,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.11 Single Node
@@ -629,7 +629,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: Py3.11 Fault Tolerance
@@ -654,7 +654,7 @@ jobs:
           smalldata_path: ${{ env.EFS_SMALLDATA }}
           bigdata_path: ${{ env.EFS_BIGDATA }}
       - name: Publish Results
-        if: failure()
+        if: always()
         uses: ./.github/actions/publish-results
         with:
           name: XGBoost Stress
