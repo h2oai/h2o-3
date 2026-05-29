@@ -100,10 +100,6 @@ runs:
         # HELPER FUNCTIONS
         # ==================================================
 
-        # Row colors matching Jenkins: green for success, red for failure
-        ROW_GREEN="background-color: #dff0d8;"
-        ROW_RED="background-color: #f2dede;"
-
         get_status_text() {
           case "$1" in
             success) echo "Success" ;;
@@ -111,6 +107,18 @@ runs:
             skipped) echo "Skipped" ;;
             cancelled) echo "Cancelled" ;;
             in_progress) echo "Running" ;;
+            *) echo "$1" ;;
+          esac
+        }
+
+        # GitHub Step Summary strips inline style attributes, so we use shields.io badges for color
+        get_status_badge() {
+          case "$1" in
+            success) echo '<img src="https://img.shields.io/badge/Success-brightgreen" alt="Success">' ;;
+            failure) echo '<img src="https://img.shields.io/badge/Failure-red" alt="Failure">' ;;
+            skipped) echo '<img src="https://img.shields.io/badge/Skipped-lightgrey" alt="Skipped">' ;;
+            cancelled) echo '<img src="https://img.shields.io/badge/Cancelled-yellow" alt="Cancelled">' ;;
+            in_progress) echo '<img src="https://img.shields.io/badge/Running-blue" alt="Running">' ;;
             *) echo "$1" ;;
           esac
         }
@@ -355,7 +363,7 @@ runs:
             local -n jobs_ref=$1
 
             if [[ "$result" == "skipped" ]]; then
-              echo "<tr><td>${category}</td><td><em>Skipped</em></td><td align=\"center\">Skipped</td><td>-</td></tr>"
+              echo "<tr><td>${category}</td><td><em>Skipped</em></td><td align=\"center\">$(get_status_badge skipped)</td><td>-</td></tr>"
               return
             fi
 
@@ -366,13 +374,7 @@ runs:
 
             for name in "${!jobs_ref[@]}"; do
               IFS='|' read -r j_status_icon j_name j_duration j_url j_result j_category <<< "${jobs_ref[$name]}"
-              if [[ "$j_result" == "success" ]]; then
-                echo "<tr style=\"${ROW_GREEN}\"><td>${category}</td><td>${j_name}</td><td align=\"center\">Success</td><td>${j_duration}</td></tr>"
-              elif [[ "$j_result" == "failure" ]]; then
-                echo "<tr style=\"${ROW_RED}\"><td>${category}</td><td>${j_name}</td><td align=\"center\">Failure</td><td>${j_duration}</td></tr>"
-              else
-                echo "<tr><td>${category}</td><td>${j_name}</td><td align=\"center\">${j_status_icon}</td><td>${j_duration}</td></tr>"
-              fi
+              echo "<tr><td>${category}</td><td>${j_name}</td><td align=\"center\">$(get_status_badge "$j_result")</td><td>${j_duration}</td></tr>"
             done
           }
 
@@ -394,7 +396,7 @@ runs:
             echo "<tr><th>Test Type</th><th>Test</th><th align=\"center\">Status</th><th>Duration</th></tr>"
             for entry in "${failed_jobs[@]}"; do
               IFS='|' read -r status_icon name duration url result category <<< "$entry"
-              echo "<tr style=\"${ROW_RED}\"><td>${category:-Unknown}</td><td>${name}</td><td align=\"center\">Failure</td><td>${duration}</td></tr>"
+              echo "<tr><td>${category:-Unknown}</td><td>${name}</td><td align=\"center\">$(get_status_badge failure)</td><td>${duration}</td></tr>"
             done
             echo "</table>"
             echo ""
@@ -411,16 +413,8 @@ runs:
             local cat_result="$2"
             local cat_passed="$3"
             local cat_failed="$4"
-            local status_text
-            status_text=$(get_status_text "$cat_result")
 
-            if [[ "$cat_result" == "success" ]]; then
-              echo "<tr style=\"${ROW_GREEN}\"><td>${cat_name}</td><td align=\"center\">${status_text}</td><td align=\"center\">${cat_passed}</td><td align=\"center\">${cat_failed}</td></tr>"
-            elif [[ "$cat_result" == "failure" ]]; then
-              echo "<tr style=\"${ROW_RED}\"><td>${cat_name}</td><td align=\"center\">${status_text}</td><td align=\"center\">${cat_passed}</td><td align=\"center\">${cat_failed}</td></tr>"
-            else
-              echo "<tr><td>${cat_name}</td><td align=\"center\">${status_text}</td><td align=\"center\">${cat_passed}</td><td align=\"center\">${cat_failed}</td></tr>"
-            fi
+            echo "<tr><td>${cat_name}</td><td align=\"center\">$(get_status_badge "$cat_result")</td><td align=\"center\">${cat_passed}</td><td align=\"center\">${cat_failed}</td></tr>"
           }
 
           render_summary_row "Smoke Tests" "$SMOKE_RESULT" "${smoke_passed}" "${smoke_failed}"
