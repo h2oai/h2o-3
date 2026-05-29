@@ -50,7 +50,7 @@ runs:
   using: 'composite'
   steps:
     - name: Sanitize JUnit XML files
-      if: inputs.job_status == 'failure'
+      if: always() && inputs.job_status == 'failure'
       shell: bash
       run: |
         # Fix invalid XML character entities and control characters in JUnit XML files
@@ -81,7 +81,7 @@ runs:
         echo "XML sanitization complete"
 
     - name: Enrich JUnit XML with actual error output
-      if: inputs.job_status == 'failure'
+      if: always() && inputs.job_status == 'failure'
       shell: bash
       run: |
         # The Python/R test harness (run.py) generates minimal JUnit XML where
@@ -164,7 +164,7 @@ runs:
         ENRICH_SCRIPT
 
     - name: Debug - List XML files
-      if: inputs.job_status == 'failure'
+      if: always() && inputs.job_status == 'failure'
       shell: bash
       run: |
         echo "=== Searching for JUnit XML files ==="
@@ -174,7 +174,7 @@ runs:
         find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | wc -l
 
     - name: Generate Test Failure Summary
-      if: inputs.job_status == 'failure'
+      if: always() && inputs.job_status == 'failure'
       shell: bash
       run: |
         python3 << 'SUMMARY_SCRIPT'
@@ -235,7 +235,7 @@ runs:
     # Archive failure artifacts (similar to Jenkins archiveArtifacts on failure)
     # Jenkins archives: leak-check.out, **/*.log, **/out.*, **/results/*.txt, **/results/failed/*.txt
     - name: Archive Failure Artifacts
-      if: inputs.archive_logs_on_failure == 'true' && inputs.job_status == 'failure'
+      if: always() && inputs.archive_logs_on_failure == 'true' && inputs.job_status == 'failure'
       uses: actions/upload-artifact@v4
       with:
         name: failure-artifacts-${{ inputs.name }}
