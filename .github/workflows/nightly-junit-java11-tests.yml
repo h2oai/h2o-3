@@ -892,7 +892,7 @@ jobs:
           merge-multiple: false
 
       - name: All Failed Java 11 Tests
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           check_name: All Failed Tests (Java 11)
           files: |

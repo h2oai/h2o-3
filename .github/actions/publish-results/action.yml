@@ -173,23 +173,64 @@ runs:
         echo "=== Total XML files ==="
         find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | wc -l
 
-    - name: Publish JUnit Report
+    - name: Generate Test Failure Summary
       if: inputs.job_status == 'failure'
-      uses: EnricoMi/publish-unit-test-result-action/composite@v2
-      with:
-        check_name: Test Report (${{ inputs.name }})
-        files: |
-          **/test-results/**/*.xml
-          **/results/**/*.xml
-        job_summary: true
-        comment_mode: 'off'
-        check_run: true
-        report_individual_runs: true
-        report_suite_logs: error
-        large_files: true
-        fail_on: nothing
-        action_fail: false
-        action_fail_on_inconclusive: false
+      shell: bash
+      run: |
+        python3 << 'SUMMARY_SCRIPT'
+        import os, glob
+        import xml.etree.ElementTree as ET
+
+        xml_files = glob.glob('**/test-results/**/*.xml', recursive=True) + \
+                    glob.glob('**/results/**/*.xml', recursive=True)
+
+        total_tests = 0
+        total_failures = 0
+        total_errors = 0
+        total_skipped = 0
+        failures = []
+
+        for f in xml_files:
+            try:
+                tree = ET.parse(f)
+                root = tree.getroot()
+                for suite in root.iter('testsuite'):
+                    total_tests += int(suite.get('tests', 0))
+                    total_failures += int(suite.get('failures', 0))
+                    total_errors += int(suite.get('errors', 0))
+                    total_skipped += int(suite.get('skipped', 0))
+                for case in root.iter('testcase'):
+                    for fail_elem in list(case.findall('failure')) + list(case.findall('error')):
+                        classname = case.get('classname', '')
+                        name = case.get('name', '')
+                        message = (fail_elem.text or fail_elem.get('message', ''))[:2000]
+                        failures.append({'class': classname, 'name': name, 'message': message})
+            except Exception as e:
+                print(f'WARN: Could not parse {f}: {e}')
+
+        summary_path = os.environ.get('GITHUB_STEP_SUMMARY', '')
+        if not summary_path:
+            print('GITHUB_STEP_SUMMARY not set')
+            exit(0)
+
+        with open(summary_path, 'a') as out:
+            total_passed = total_tests - total_failures - total_errors - total_skipped
+            out.write(f'## Test Report (${{ inputs.name }})\n\n')
+            out.write(f'| Tests | Passed | Failed | Errors | Skipped |\n')
+            out.write(f'|-------|--------|--------|--------|---------|\n')
+            out.write(f'| {total_tests} | {total_passed} | {total_failures} | {total_errors} | {total_skipped} |\n\n')
+
+            if failures:
+                out.write(f'### Failed Tests ({len(failures)})\n\n')
+                for fail in failures:
+                    label = f'{fail["class"]}.{fail["name"]}' if fail["class"] else fail["name"]
+                    msg = fail["message"].replace('`', "'")
+                    out.write(f'<details><summary>{label}</summary>\n\n```\n{msg}\n```\n\n</details>\n\n')
+            else:
+                out.write('No failed test details found in JUnit XML.\n\n')
+
+        print(f'Summary: {total_tests} tests, {total_failures} failures, {total_errors} errors')
+        SUMMARY_SCRIPT
 
     # Archive failure artifacts (similar to Jenkins archiveArtifacts on failure)
     # Jenkins archives: leak-check.out, **/*.log, **/out.*, **/results/*.txt, **/results/failed/*.txt
