@@ -291,7 +291,7 @@ jobs:
   # SUMMARY: Generate comprehensive test dashboard
   # ============================================================================
   summary:
-    name: Summary
+    name: Test Dashboard
     needs: [init, build, smoke, python, r, java, flow, final-cleanup]
     if: always()
     runs-on: ubuntu-latest

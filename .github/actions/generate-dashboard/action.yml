@@ -100,21 +100,14 @@ runs:
         # HELPER FUNCTIONS
         # ==================================================
 
-        get_status_icon() {
-          case "$1" in
-            success) echo "[PASS]" ;;
-            failure) echo "[FAIL]" ;;
-            skipped) echo "[SKIP]" ;;
-            cancelled) echo "[CANCEL]" ;;
-            in_progress) echo "[RUNNING]" ;;
-            *) echo "[?]" ;;
-          esac
-        }
+        # Row colors matching Jenkins: green for success, red for failure
+        ROW_GREEN="background-color: #dff0d8;"
+        ROW_RED="background-color: #f2dede;"
 
-        get_text() {
+        get_status_text() {
           case "$1" in
-            success) echo "Passed" ;;
-            failure) echo "Failed" ;;
+            success) echo "Success" ;;
+            failure) echo "Failure" ;;
             skipped) echo "Skipped" ;;
             cancelled) echo "Cancelled" ;;
             in_progress) echo "Running" ;;
@@ -160,10 +153,10 @@ runs:
         categorize_job() {
           local name="$1"
 
-          # Skip infrastructure jobs (Start/Stop EC2 runners, Initialize, Summary, etc.)
+          # Skip infrastructure jobs (Start/Stop EC2 runners, Initialize, Test Dashboard, etc.)
           if [[ "$name" =~ ^(Start|Stop|Initialize|Summary|Allure|Build) ]] || \
              [[ "$name" == "Initialize" ]] || \
-             [[ "$name" == "Summary" ]] || \
+             [[ "$name" == "Test Dashboard" ]] || \
              [[ "$name" =~ "Allure Report" ]] || \
              [[ "$name" =~ "Start EC2" ]] || \
              [[ "$name" =~ "Stop EC2" ]]; then
@@ -243,7 +236,7 @@ runs:
           [[ "$category" == "skip" ]] && continue
 
           duration=$(calc_duration "$started" "$completed")
-          status_icon=$(get_status_icon "$result")
+          status_icon=$(get_status_text "$result")
 
           # Map category to display name
           case "$category" in
@@ -345,14 +338,14 @@ runs:
           fi
           echo "| **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
           echo "| **Triggered** | ${{ github.event_name }} |"
-          echo "| **Build** | $(get_status_icon "$BUILD_RESULT") $(get_text "$BUILD_RESULT") |"
+          echo "| **Build** | $(get_status_text "$BUILD_RESULT") |"
           echo ""
 
-          # Test Results Section - Single table with Test Type column
+          # Test Results Section - HTML table with Jenkins-style colored rows
           echo "## Test Results"
           echo ""
-          echo "| Test Type | Test | Status | Duration |"
-          echo "|-----------|------|:------:|----------|"
+          echo "<table>"
+          echo "<tr><th>Test Type</th><th>Test</th><th align=\"center\">Status</th><th>Duration</th></tr>"
 
           # Helper function to render jobs for a category
           render_jobs() {
@@ -362,21 +355,23 @@ runs:
             local -n jobs_ref=$1
 
             if [[ "$result" == "skipped" ]]; then
-              echo "| ${category} | _Skipped_ | [SKIP] | - |"
+              echo "<tr><td>${category}</td><td><em>Skipped</em></td><td align=\"center\">Skipped</td><td>-</td></tr>"
               return
             fi
 
             if [[ ${#jobs_ref[@]} -eq 0 ]]; then
-              echo "| ${category} | _No jobs found_ | [?] | - |"
+              echo "<tr><td>${category}</td><td><em>No jobs found</em></td><td align=\"center\">-</td><td>-</td></tr>"
               return
             fi
 
             for name in "${!jobs_ref[@]}"; do
-              IFS='|' read -r j_status_icon j_name j_duration j_url j_result <<< "${jobs_ref[$name]}"
-              if [[ -n "$j_url" && "$j_url" != "null" ]]; then
-                echo "| ${category} | [${j_name}](${j_url}) | ${j_status_icon} | ${j_duration} |"
+              IFS='|' read -r j_status_icon j_name j_duration j_url j_result j_category <<< "${jobs_ref[$name]}"
+              if [[ "$j_result" == "success" ]]; then
+                echo "<tr style=\"${ROW_GREEN}\"><td>${category}</td><td>${j_name}</td><td align=\"center\">Success</td><td>${j_duration}</td></tr>"
+              elif [[ "$j_result" == "failure" ]]; then
+                echo "<tr style=\"${ROW_RED}\"><td>${category}</td><td>${j_name}</td><td align=\"center\">Failure</td><td>${j_duration}</td></tr>"
               else
-                echo "| ${category} | ${j_name} | ${j_status_icon} | ${j_duration} |"
+                echo "<tr><td>${category}</td><td>${j_name}</td><td align=\"center\">${j_status_icon}</td><td>${j_duration}</td></tr>"
               fi
             done
           }
@@ -388,35 +383,53 @@ runs:
           render_jobs "Java" "$JAVA_RESULT" java_jobs
           render_jobs "Flow" "$FLOW_RESULT" flow_jobs
 
+          echo "</table>"
           echo ""
 
           # Failed Jobs Section (if any failures)
           if [[ ${#failed_jobs[@]} -gt 0 ]]; then
             echo "## Failed Jobs (${#failed_jobs[@]})"
             echo ""
-            echo "| Test Type | Test | Status | Duration |"
-            echo "|-----------|------|:------:|----------|"
+            echo "<table>"
+            echo "<tr><th>Test Type</th><th>Test</th><th align=\"center\">Status</th><th>Duration</th></tr>"
             for entry in "${failed_jobs[@]}"; do
               IFS='|' read -r status_icon name duration url result category <<< "$entry"
-              if [[ -n "$url" && "$url" != "null" ]]; then
-                echo "| ${category:-Unknown} | [${name}](${url}) | ${status_icon} | ${duration} |"
-              else
-                echo "| ${category:-Unknown} | ${name} | ${status_icon} | ${duration} |"
-              fi
+              echo "<tr style=\"${ROW_RED}\"><td>${category:-Unknown}</td><td>${name}</td><td align=\"center\">Failure</td><td>${duration}</td></tr>"
             done
+            echo "</table>"
             echo ""
           fi
 
-          # Summary Statistics
+          # Summary Statistics - HTML table with colored rows per category
           echo "## Summary Statistics"
           echo ""
-          echo "| Category | Status | Passed | Failed |"
-          echo "|----------|:------:|:------:|:------:|"
-          echo "| Smoke Tests | $(get_status_icon "$SMOKE_RESULT") | ${smoke_passed} | ${smoke_failed} |"
-          echo "| Python Tests | $(get_status_icon "$PYTHON_RESULT") | ${python_passed} | ${python_failed} |"
-          echo "| R Tests | $(get_status_icon "$R_RESULT") | ${r_passed} | ${r_failed} |"
-          echo "| Java Tests | $(get_status_icon "$JAVA_RESULT") | ${java_passed} | ${java_failed} |"
-          echo "| Flow Tests | $(get_status_icon "$FLOW_RESULT") | ${flow_passed} | ${flow_failed} |"
+          echo "<table>"
+          echo "<tr><th>Category</th><th align=\"center\">Status</th><th align=\"center\">Passed</th><th align=\"center\">Failed</th></tr>"
+
+          render_summary_row() {
+            local cat_name="$1"
+            local cat_result="$2"
+            local cat_passed="$3"
+            local cat_failed="$4"
+            local status_text
+            status_text=$(get_status_text "$cat_result")
+
+            if [[ "$cat_result" == "success" ]]; then
+              echo "<tr style=\"${ROW_GREEN}\"><td>${cat_name}</td><td align=\"center\">${status_text}</td><td align=\"center\">${cat_passed}</td><td align=\"center\">${cat_failed}</td></tr>"
+            elif [[ "$cat_result" == "failure" ]]; then
+              echo "<tr style=\"${ROW_RED}\"><td>${cat_name}</td><td align=\"center\">${status_text}</td><td align=\"center\">${cat_passed}</td><td align=\"center\">${cat_failed}</td></tr>"
+            else
+              echo "<tr><td>${cat_name}</td><td align=\"center\">${status_text}</td><td align=\"center\">${cat_passed}</td><td align=\"center\">${cat_failed}</td></tr>"
+            fi
+          }
+
+          render_summary_row "Smoke Tests" "$SMOKE_RESULT" "${smoke_passed}" "${smoke_failed}"
+          render_summary_row "Python Tests" "$PYTHON_RESULT" "${python_passed}" "${python_failed}"
+          render_summary_row "R Tests" "$R_RESULT" "${r_passed}" "${r_failed}"
+          render_summary_row "Java Tests" "$JAVA_RESULT" "${java_passed}" "${java_failed}"
+          render_summary_row "Flow Tests" "$FLOW_RESULT" "${flow_passed}" "${flow_failed}"
+
+          echo "</table>"
           echo ""
 
         } >> $GITHUB_STEP_SUMMARY
