@@ -42,6 +42,17 @@ def _normalize_col_name(col_name):
     return str(col_name)
 
 
+# Py3.10 and earlier run against lifelines<0.29 + pandas 1.3.5 + scipy 1.10.1, which
+# previously matched H2O CoxPH baselines at default pandas tolerance (~rtol=1e-5).
+# Py3.11+ uses lifelines>=0.29 + scipy 1.17 and exhibits a small drift (~6e-6)
+# attributed to FP summation order in the newer lifelines path -- not yet bisected.
+# Keep the tight tolerance where coverage is known-good and loosen only on the new
+# tier so a real regression on the legacy path is not silently absorbed.
+# TODO(GH-16147): bisect the drift on Py3.11+ (suspect: lifelines 0.29 trapezoid
+# path or BLAS thread scheduling under scipy 1.17) and tighten back to default.
+_BASELINE_RTOL = 1e-4 if sys.version_info >= (3, 11) else 1e-5
+
+
 # expected (the first line with time=0 and values = 0)
 # When tests are run at CI wyth Python version 2.x and old lifelines, lifelines result contains one more line then
 def fix_py_result_for_older_lifelines(df):
@@ -99,8 +110,8 @@ def check_cox(rossi, x, stratify_by, formula):
     print("lifelines:")
     print(hazard_py_reordered_columns.reset_index(drop=True)) 
     
-    assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
-                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-4)
+    assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns,
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=_BASELINE_RTOL)
     
     survival_h2o_as_pandas = cph_h2o.baseline_survival_frame.as_data_frame(use_pandas=True)
 
@@ -121,7 +132,7 @@ def check_cox(rossi, x, stratify_by, formula):
     print(survival_py_reordered_columns.reset_index(drop=True))
 
     assert_frame_equal(survival_py_reordered_columns, survival_h2o_reordered_columns,
-                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=1e-4)
+                       check_dtype=False, check_index_type=False, check_column_type=False, rtol=_BASELINE_RTOL)
 
 
 # There are different API versions for concordance in lifelines library

@@ -265,6 +265,28 @@ def test_glm_aic_tweedie_no_regularization():
     glm_no_reg.train(y=y, training_frame=train_h2o)
     assert_equal(glm_no_reg, sm_glm_no_reg, coef_tolerance=1e-3, aic_tolerance=1e-4)
 
+    # Sanity-bound on H2O's own ML phi estimator: train a second model WITHOUT the
+    # phi pin and assert the estimated dispersion is within 10% of statsmodels'
+    # Pearson chi^2 scale. The fixed-phi assertion above verifies H2O's AIC formula
+    # at the same phi; this second assertion guards against a regression in H2O's
+    # ML-phi golden-section search itself flowing silently into AIC.
+    glm_ml_phi = H2OGeneralizedLinearEstimator(
+        lambda_=0,
+        family="tweedie",
+        calc_like=True,
+        link="tweedie",
+        tweedie_variance_power=1.5,
+        tweedie_link_power=0,
+    )
+    glm_ml_phi.train(y=y, training_frame=train_h2o)
+    h2o_phi = glm_ml_phi.dispersion()
+    sm_phi = sm_glm_no_reg.scale
+    assert abs(h2o_phi - sm_phi) / sm_phi < 0.10, (
+        "H2O ML-estimated Tweedie phi %g differs from statsmodels Pearson scale %g "
+        "by more than 10%% -- the ML dispersion estimator may have regressed."
+        % (h2o_phi, sm_phi)
+    )
+
     # Without calculating likelihood, H2O can't guess AIC
 
 

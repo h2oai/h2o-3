@@ -2605,6 +2605,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         # starting score and the predictions diverge from H2O. Pin the 1.6 default
         # so the comparison stays apples-to-apples regardless of the native xgboost
         # version installed alongside h2o-py.
+        #
+        # WARNING: this constant is coupled to the bundled xgboost4j version. When
+        # h2o-ext-xgboost bumps the jar past xgboost 2.0 -- where the Java-side
+        # default also moves away from 0.5 -- this line will silently produce
+        # divergent predictions. Update the value at the same time, or remove the
+        # pin and have XGBoostModelInfo.getBoosterParams() record the actual
+        # default into native_parameters on the Java side.
         nativeXGBoostParams.setdefault("base_score", 0.5)
 
         return nativeXGBoostParams, paramsSet['ntrees']['actual_value']

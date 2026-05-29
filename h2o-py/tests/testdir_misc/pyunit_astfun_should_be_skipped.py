@@ -12,9 +12,10 @@ Tests confirm the tuple-precedence bug fix (BYTE-01 / D-03):
 These tests run without requiring an H2O server connection.
 """
 import ast
-import sys
 import os
 import h2o
+from h2o.astfun import should_be_skipped
+
 
 # Verify the fix is in place via AST inspection
 def test_should_be_skipped_uses_set_literal():
@@ -28,34 +29,25 @@ def test_should_be_skipped_uses_set_literal():
             cmp = ret.value
             assert isinstance(cmp, ast.Compare), "Expected Compare node, got %s" % type(cmp)
             assert any(isinstance(c, ast.Set) for c in cmp.comparators), \
-                "Expected Set comparator — function uses a tuple, not a set"
+                "Expected Set comparator -- function uses a tuple, not a set"
             return
     raise AssertionError("should_be_skipped function not found in astfun.py")
 
 
-# Behavioural tests via exec (no h2o server needed)
-def _get_should_be_skipped():
-    ns = {}
-    exec('''
-def should_be_skipped(instr):
-    return instr in {"COPY_FREE_VARS", "RESUME", "PUSH_NULL"}
-''', ns)
-    return ns['should_be_skipped']
-
-
+# Behavioural tests exercise the actual h2o.astfun.should_be_skipped symbol so a
+# future regression to the tuple form would be caught by THESE tests, not only by
+# the AST-shape test above.
 def test_should_be_skipped_true_for_skip_opcodes():
-    fn = _get_should_be_skipped()
-    assert fn("COPY_FREE_VARS") is True
-    assert fn("RESUME") is True
-    assert fn("PUSH_NULL") is True
+    assert should_be_skipped("COPY_FREE_VARS") is True
+    assert should_be_skipped("RESUME") is True
+    assert should_be_skipped("PUSH_NULL") is True
 
 
 def test_should_be_skipped_false_for_non_skip_opcodes():
-    fn = _get_should_be_skipped()
-    assert fn("LOAD_CONST") is False
-    assert fn("CALL") is False
-    assert fn("RETURN_VALUE") is False
-    assert fn("") is False
+    assert should_be_skipped("LOAD_CONST") is False
+    assert should_be_skipped("CALL") is False
+    assert should_be_skipped("RETURN_VALUE") is False
+    assert should_be_skipped("") is False
 
 
 if __name__ == "__main__":

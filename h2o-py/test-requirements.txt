@@ -13,7 +13,7 @@ cython==0.29.34; python_version < '3.11'
 # Py3.11+ needs Cython>=3 to build causalml 0.16.0 from source (no Py3.11 wheel for
 # causalml). 0.29.34 fails the `.pyx` compile step under the CI install script's
 # `pip install --no-build-isolation -r causalml-requirements.txt`. Match Py3.12+.
-Cython==3.2.4; python_version >= '3.11'
+cython==3.2.4; python_version >= '3.11'
 twine==1.10.0; python_version < '3.12'
 twine==6.2.0; python_version >= '3.12'
 urllib3==1.26.5; python_version < '3.12'
@@ -102,19 +102,21 @@ causalml==0.14.1; python_version > '3.7' and python_version < '3.11'
 # Py3.11 was previously unpinned (the 0.14.1 marker stops at < '3.11', the 0.16.0 marker
 # starts at >= '3.12'), leaving the env without causalml at all and crashing the uplift
 # demo notebook at import time. Match the Py3.12+ pin.
-causalml==0.16.0; python_version == '3.11'
-causalml==0.16.0; python_version >= '3.12'
+causalml==0.16.0; python_version >= '3.11'
 colorama; python_version < '3.12'
 colorama==0.4.6; python_version >= '3.12'
 datatable==1.0.0; python_version <= '3.9'
 datatable==1.1.0; python_version >= '3.10' and python_version <= '3.12'
+# Py3.13+ has no wheel on PyPI for datatable; tests that import it must use
+# `pytest.importorskip("datatable")` so they degrade gracefully instead of erroring.
 polars==0.19.17; python_version > '3.9' and python_version < '3.12'
 polars==1.40.1; python_version >= '3.12'
 # not directly required, pinned by Snyk to avoid a vulnerability
 pygments==2.15.1; python_version >= '3.7' and python_version < '3.12'
-Pygments==2.20.0; python_version >= '3.12'
-#sphinx==3.5.4; python_version >= '3.6' and python_version <= '3.8'
-#sphinx==6.1.3; python_version > '3.8' and python_version < '3.12'
+pygments==2.20.0; python_version >= '3.12'
+# sphinx is intentionally not pinned here. The doc build uses docs-requirements.txt
+# (pinned at sphinx==3.0.4 for legacy compatibility); the test env pulls whatever
+# sphinx pip resolves at install time -- adjust here if docs builds start to flake.
 typing_extensions==4.1.1; python_version < '3.7'
 typing_extensions==4.7.1; python_version >= '3.7' and python_version < '3.8'
 typing_extensions==4.9.0; python_version >= '3.8' and python_version < '3.12'

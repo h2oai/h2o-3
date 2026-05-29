@@ -23,18 +23,28 @@ def arlines_test():
     frame['ownsTesla'] = frame['ownsTesla'].asfactor()
     frame['wealthy'] = frame['wealthy'].asfactor()
     # The ntrees parameters in H2O translates to max_depth param
+    # nthread=1 keeps the determinism check below reproducible across CI hosts
+    # (multi-threaded XGBoost is not strictly seed-deterministic).
     h2o_model = H2OXGBoostEstimator(training_frame=frame, learn_rate = 0.7,
-                                booster='gbtree', seed=1, ntrees=2)
+                                booster='gbtree', seed=1, ntrees=2, nthread=1)
     h2o_model.train(x=['ownsTesla'], y='wealthy', training_frame=frame)
     h2o_prediction = h2o_model.predict(frame['ownsTesla'])
     print(h2o_prediction)
 
     assert len(h2o_prediction['p0']) == 5
 
-    if sys.version_info < (3, 11):
-        # Compare against native xgboost (1.7.6 on Py3.7-3.10), which matches
-        # H2O's bundled xgboost output to within 5 decimals.
-        import xgboost as xgb
+    # Cross-check against native xgboost when its initialization defaults still
+    # match H2O's bundled xgboost4j 1.6. On Py3.7-3.10 we pin xgboost==1.7.6
+    # (compatible defaults). On Py3.11+ the pinned version is 3.2.0, whose
+    # auto-mean base_score and other tweaks diverge from 1.6.
+    #
+    # TODO(GH-16147): install xgboost 1.7.6 alongside 3.2.0 in the Py3.11+
+    # test images so this cross-check survives the upgrade -- right now Py3.11+
+    # is reduced to an H2O-only determinism sanity check, which is what the
+    # original PR landed.
+    import xgboost as xgb
+    xgb_major = int(xgb.__version__.split(".", 1)[0])
+    if xgb_major < 2:
         data = train_frame[['wealthy']].values
         label = train_frame[['ownsTesla']].values
         dtrain = xgb.DMatrix(data=data, label=label)
@@ -49,15 +59,18 @@ def arlines_test():
         for i in range(5):
             assert round(h2o_prediction['p0'][i, 0], 5) == round(native_prediction[i].item(), 5)
     else:
-        # On Py3.11+, native xgboost is 3.2.0 which diverges from H2O's bundled
-        # xgboost. Pin H2O's prediction to a baseline value gathered from a
-        # passing Py3.10 run (H2O's bundled xgboost is consistent across
-        # Python versions, so the same baseline is used for all rows).
-        expected_p0 = 0.43756
+        # H2O-only determinism check: bundled xgboost4j 1.6 must produce a
+        # consistent prediction across runs. A second train+predict on the same
+        # frame with the same seed must reproduce the first run exactly. This
+        # is weaker than the native cross-check above but it is what we can
+        # assert without an old-xgboost wheel in the env.
+        h2o_model2 = H2OXGBoostEstimator(training_frame=frame, learn_rate=0.7,
+                                         booster='gbtree', seed=1, ntrees=2, nthread=1)
+        h2o_model2.train(x=['ownsTesla'], y='wealthy', training_frame=frame)
+        h2o_prediction2 = h2o_model2.predict(frame['ownsTesla'])
         for i in range(5):
-            assert round(h2o_prediction['p0'][i, 0], 5) == expected_p0
-
-    # Result comparison
+            assert round(h2o_prediction['p0'][i, 0], 5) == round(h2o_prediction2['p0'][i, 0], 5), \
+                "H2O XGBoost determinism check failed at row %d" % i
 
 
 if __name__ == "__main__":

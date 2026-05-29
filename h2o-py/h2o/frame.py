@@ -1944,16 +1944,20 @@ class H2OFrame(Keyed, H2ODisplay):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True, header=True, use_multi_thread=False):
+    def as_data_frame(self, use_pandas=True, header=True, use_multi_thread=False, na_values=None):
         """
         Obtain the dataset as a python-local object.
 
         :param bool use_pandas: If True (default) then return the H2OFrame as a pandas DataFrame (requires that the
             ``pandas`` library was installed). If False, then return the contents of the H2OFrame as plain nested
-            list, in a row-wise order.  
+            list, in a row-wise order.
         :param bool header: If True (default), then column names will be appended as the first row in list
         :param bool use_multi_thread: If True (False by default), will use polars/pyarrow to perform conversion in
             multi-thread which is faster.
+        :param na_values: Strings to recognize as NA when ``use_pandas=True``. Defaults to ``[""]``, matching
+            H2O's CSV writer (NAs are written as empty fields). Pass e.g. ``["", "NA", "NULL"]`` to also coerce
+            those literal strings to NaN -- this restores the pre-3.46 behavior, but is lossy for categorical
+            columns whose levels literally are ``"NA"`` / ``"NULL"`` / ``"None"`` / ``"NaN"``.
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
 
@@ -1988,7 +1992,8 @@ class H2OFrame(Keyed, H2ODisplay):
             # levels like "None"/"NA"/"NULL" into NaN, which loses data on the round-trip
             # (polars path via convert_with_polars uses null_values="" for the same reason).
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False,
-                                   keep_default_na=False, na_values=[""])
+                                   keep_default_na=False,
+                                   na_values=[""] if na_values is None else na_values)
                 
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
@@ -2119,19 +2124,8 @@ class H2OFrame(Keyed, H2ODisplay):
         # sklearn cv splitters and other downstream consumers pass numpy arrays of
         # integer or boolean indices for row selection; route them to the (rows, :)
         # shape since a 1-D Python list already means column selection in H2OFrame.
-        try:
-            import numpy as np
-            _ndarray = np.ndarray
-        except ImportError:
-            _ndarray = None
-        if _ndarray is not None and isinstance(item, _ndarray):
-            if item.ndim != 1:
-                raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
-            if item.dtype == bool:
-                item = np.flatnonzero(item).tolist()
-            else:
-                item = item.astype(int).tolist()
-            return self[(item, slice(None, None, None))]
+        if can_use_numpy() and isinstance(item, _np_ndarray()):
+            return self[(_np_index_to_list(item), slice(None, None, None))]
         if isinstance(item, slice):
             item = normalize_slice(item, self.ncols)
         if is_type(item, str, int, list, slice):
@@ -2156,15 +2150,12 @@ class H2OFrame(Keyed, H2ODisplay):
             # tuple form `arr[key, ...]`; convert to a plain Python list so the
             # downstream rapids serializer doesn't leak `array(...)` repr into
             # the AST.
-            if _ndarray is not None:
-                if isinstance(rows, _ndarray):
-                    if rows.ndim != 1:
-                        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
-                    rows = np.flatnonzero(rows).tolist() if rows.dtype == bool else rows.astype(int).tolist()
-                if isinstance(cols, _ndarray):
-                    if cols.ndim != 1:
-                        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
-                    cols = np.flatnonzero(cols).tolist() if cols.dtype == bool else cols.astype(int).tolist()
+            if can_use_numpy():
+                _nd = _np_ndarray()
+                if isinstance(rows, _nd):
+                    rows = _np_index_to_list(rows)
+                if isinstance(cols, _nd):
+                    cols = _np_index_to_list(cols)
             allrows = allcols = False
             if isinstance(cols, slice):
                 cols = normalize_slice(cols, self.ncols)
@@ -5169,6 +5160,31 @@ class H2OFrame(Keyed, H2ODisplay):
 # ----------------------------------------------------------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------------------------------------------------------
+
+def _np_ndarray():
+    """Return ``numpy.ndarray`` or a never-matching sentinel if numpy is missing.
+
+    Hoisted to module scope so ``H2OFrame.__getitem__`` doesn't re-import numpy on every call.
+    """
+    import numpy as _np
+    return _np.ndarray
+
+
+def _np_index_to_list(arr):
+    """Normalize a 1-D numpy index array (bool or integer dtype) to a Python list."""
+    import numpy as _np
+    if arr.ndim != 1:
+        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+    if arr.dtype == bool:
+        return _np.flatnonzero(arr).tolist()
+    if not _np.issubdtype(arr.dtype, _np.integer):
+        raise TypeError(
+            "H2OFrame indexing requires a 1-D numpy array of integer or boolean dtype; "
+            "got dtype %r. Convert via arr.astype(int) explicitly if truncation is intended."
+            % arr.dtype
+        )
+    return arr.tolist()
+
 
 def _getValidCols(by_idx, fr):  # so user can input names of the columns as well is idx num
     tmp = []
