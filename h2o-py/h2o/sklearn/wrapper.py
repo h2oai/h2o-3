@@ -528,22 +528,37 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # sklearn 1.6+ resolves estimator type from __sklearn_tags__ rather than from
         # _estimator_type alone, and 1.8 removed `_estimator_type = "classifier"` from
         # ClassifierMixin entirely. The H2O wrapper bases place ClassifierMixin /
-        # RegressorMixin late in MRO, so their tag override never fires via super().
-        # Set the tag here based on either an explicit _estimator_type (set by the
-        # generic wrapper or `default_estimator_type` custom param) or the mixin
-        # presence in the class hierarchy.
+        # RegressorMixin last in MRO (so their score() does not shadow H2O's), which
+        # means a naked super() chain reaches BaseEstimator but never the typed mixin
+        # -- so `classifier_tags` / `regressor_tags` / `target_tags.required` are
+        # missed. Populate those fields directly using sklearn's tag dataclasses.
         sup = super()
         if not hasattr(sup, "__sklearn_tags__"):
-            return None  # sklearn < 1.6 has no tags system; legacy _estimator_type still works.
+            raise AttributeError("__sklearn_tags__")
         tags = sup.__sklearn_tags__()
-        estimator_type = getattr(self, "_estimator_type", None)
-        if not estimator_type:
-            if isinstance(self, ClassifierMixin):
-                estimator_type = "classifier"
-            elif isinstance(self, RegressorMixin):
-                estimator_type = "regressor"
-        if estimator_type:
-            tags.estimator_type = estimator_type
+        if isinstance(self, ClassifierMixin):
+            tags.estimator_type = "classifier"
+            try:
+                from sklearn.utils._tags import ClassifierTags
+                tags.classifier_tags = ClassifierTags()
+            except ImportError:
+                pass
+            target_tags = getattr(tags, "target_tags", None)
+            if target_tags is not None and hasattr(target_tags, "required"):
+                target_tags.required = True
+        elif isinstance(self, RegressorMixin):
+            tags.estimator_type = "regressor"
+            try:
+                from sklearn.utils._tags import RegressorTags
+                tags.regressor_tags = RegressorTags()
+            except ImportError:
+                pass
+            target_tags = getattr(tags, "target_tags", None)
+            if target_tags is not None and hasattr(target_tags, "required"):
+                target_tags.required = True
+        explicit_type = getattr(self, "_estimator_type", None)
+        if explicit_type:
+            tags.estimator_type = explicit_type
         return tags
 
     def set_params(self, **params):
