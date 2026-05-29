@@ -144,18 +144,7 @@ or:
 
      user$ conda install -c h2oai h2o    
 
-.. note::
-	
-	For Python 3.6 users, H2O-3 has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O-3. This can be done by performing the following steps:
-
- 	.. code-block:: bash
-
-	   conda create -n py36 python=3.6 anaconda
-	   source activate py36
-	   conda config --append channels conda-forge
-	   conda install -c h2oai h2o 
-
-After H2O-3 is installed, see the `Starting H2O-3 from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O-3 and to view a GBM example run in Jupyter Notebook. 
+After H2O-3 is installed, see the `Starting H2O-3 from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O-3 and to view a GBM example run in Jupyter Notebook.
 
 Install on Hadoop
 -----------------

@@ -1,25 +1,31 @@
 #!/bin/bash -ex
+set -uo pipefail
 
 # Script for installing all Py versions specified as comma separated list
 # in ${1} or in ${PYTHON_VERSIONS}.
 
-if [[ ! ${H2O_BRANCH} ]]; then
+if [[ -z "${H2O_BRANCH:-}" ]]; then
 	echo "H2O_BRANCH must be set"
 	exit 1
 fi
 
-VERSIONS_TO_INSTALL=${1}
-if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
-	VERSIONS_TO_INSTALL=${PYTHON_VERSIONS}
+VERSIONS_TO_INSTALL="${1:-}"
+if [[ -z "${VERSIONS_TO_INSTALL}" ]]; then
+	VERSIONS_TO_INSTALL="${PYTHON_VERSIONS:-}"
 fi
-if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+if [[ -z "${VERSIONS_TO_INSTALL}" ]]; then
 	echo "Either PYTHON_VERSIONS must be set or provide and argument containing required versions"
 	exit 1
 fi
 
-# Download requirements files from GitHub
-wget -nv https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt
-wget -nv https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/docs-requirements.txt
+# Download requirements files from GitHub. `wget` already exits non-zero on
+# HTTP errors thanks to `set -e`, but a quick post-check makes a corrupted /
+# empty download fail loudly here rather than at install time where the error
+# would surface as a confusing "no candidates" message.
+wget -nv "https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt"
+wget -nv "https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/docs-requirements.txt"
+[[ -s test-requirements.txt ]] || { echo "ERROR: test-requirements.txt is empty after wget"; exit 1; }
+[[ -s docs-requirements.txt ]] || { echo "ERROR: docs-requirements.txt is empty after wget"; exit 1; }
 
 IFS=',' read -r -a array <<<${VERSIONS_TO_INSTALL}
 for python_version in "${array[@]}"; do
@@ -74,18 +80,34 @@ for python_version in "${array[@]}"; do
 	# Install everything else first (populating cython + scikit-learn into the venv),
 	# then install causalml with --no-build-isolation so it sees them.
 	#
-	# Pass step-1 requirements files as constraints to the second pip call:
-	# without them, pip would silently upgrade already-pinned packages (e.g.
-	# scipy 1.10.1 -> 1.15.3 on Py3.10) to satisfy causalml's transitive deps
-	# (torch / pyro-ppl), and lifelines' `from scipy.integrate import trapz`
-	# would break because trapz was removed in scipy 1.14.
-	grep -v '^causalml' test-requirements.txt >test-requirements-no-causalml.txt || true
-	grep '^causalml' test-requirements.txt >causalml-requirements.txt || true
+	# Step 2 uses a `pip freeze` snapshot of step 1 as the constraint file rather
+	# than the requirements files. Constraint files only pin packages they
+	# literally name -- so passing the requirements files alone leaves causalml's
+	# transitive deps (e.g. torch, pyro-ppl) free to upgrade things like scipy
+	# 1.10.1 -> 1.15.3, which removes `trapz` and breaks lifelines. Freezing the
+	# whole resolved set after step 1 pins every transitive package as well.
+	#
+	# Detect whether `causalml` actually appears in test-requirements.txt for this
+	# Python version; if not, skip step 2 entirely instead of running pip with an
+	# empty -r argument (which would either no-op silently or error out).
+	grep -v '^causalml' test-requirements.txt > test-requirements-no-causalml.txt
+	if grep -q '^causalml' test-requirements.txt; then
+		grep '^causalml' test-requirements.txt > causalml-requirements.txt
+		HAVE_CAUSALML=1
+	else
+		HAVE_CAUSALML=0
+		echo "###### No causalml pin for Python ${python_version} -- skipping step-2 install ######"
+	fi
 	su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && \
 		pip install -r test-requirements-no-causalml.txt -r docs-requirements.txt && \
-		pip install --no-build-isolation \
-			-c test-requirements-no-causalml.txt -c docs-requirements.txt \
-			-r causalml-requirements.txt"
+		pip freeze > /tmp/step1-frozen-${python_version}.txt"
+	if [[ "${HAVE_CAUSALML}" == "1" ]]; then
+		su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && \
+			pip install --no-build-isolation \
+				-c /tmp/step1-frozen-${python_version}.txt \
+				-r causalml-requirements.txt"
+	fi
+	rm -f /tmp/step1-frozen-${python_version}.txt
 
 	su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"
 	echo "###### Show all packages installed for Python ${python_version} ######"

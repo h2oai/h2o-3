@@ -205,7 +205,16 @@ class ExprNode(object):
         if isinstance(arg, ASTId):
             return str(arg)
         if isinstance(arg, (list, tuple, range)):
-            return "[%s]" % " ".join(repr2(ExprNode._to_python_scalar(x)) for x in arg)
+            # Recurse into elements: a top-level _to_python_scalar only unwraps
+            # `[np.float64(1)]` element-wise, but `[[np.float64(1)]]` would slip
+            # through (repr of an inner list calls repr() on each element, and
+            # numpy 2.x repr is `np.float64(1)` — Rapids unparseable). Routing
+            # nested lists back through _arg_to_expr also covers tuples/ranges.
+            return "[%s]" % " ".join(
+                ExprNode._arg_to_expr(x) if isinstance(x, (list, tuple, range))
+                else repr2(ExprNode._to_python_scalar(x))
+                for x in arg
+            )
         if isinstance(arg, slice):
             start = 0 if arg.start is None else arg.start
             stop = float("nan") if arg.stop is None else arg.stop

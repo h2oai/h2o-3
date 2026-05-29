@@ -462,9 +462,12 @@ def _call_func_ex_bc(flags, idx, ops, keys):
 
     # Py3.14+: when flags=0, a PUSH_NULL fills the kwargs stack slot just before
     # CALL_FUNCTION_EX. Skip it so we land on the args (LIST_TO_TUPLE / iterable).
-    instr, _ = _get_instr(ops, idx)
-    if instr == "PUSH_NULL":
-        idx -= 1
+    # `idx > 0` guard mirrors `_to_rapids_expr` to avoid wrapping to `ops[-1]`
+    # when the PUSH_NULL is the first op in the subtree.
+    if idx > 0:
+        instr, _ = _get_instr(ops, idx)
+        if instr == "PUSH_NULL":
+            idx -= 1
 
     instr, nargs = _get_instr(ops, idx)
     while is_list_to_tuple(instr):

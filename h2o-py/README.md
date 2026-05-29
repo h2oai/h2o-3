@@ -2,7 +2,7 @@
 
 ## Prerequisites:
 
-  - Python 3.7.x, 3.8.x, 3.9.x, 3.10.x or 3.11.x
+  - Python 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x, 3.12.x, 3.13.x or 3.14.x
   - Numpy 1.9.2 or greater
 
 This module depends on **requests**, **tabulate**, and **scikit-learn** modules, all of which are available on pypi:

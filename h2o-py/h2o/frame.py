@@ -1956,10 +1956,23 @@ class H2OFrame(Keyed, H2ODisplay):
             multi-thread which is faster.
         :param na_values: Strings to recognize as NA when ``use_pandas=True``. Defaults to ``[""]``, matching
             H2O's CSV writer (NAs are written as empty fields). Pass e.g. ``["", "NA", "NULL"]`` to also coerce
-            those literal strings to NaN -- this restores the pre-3.46 behavior, but is lossy for categorical
+            those literal strings to NaN -- this restores the pre-3.46.0.10 behavior, but is lossy for categorical
             columns whose levels literally are ``"NA"`` / ``"NULL"`` / ``"None"`` / ``"NaN"``.
+            Note: STRING columns store the empty string as a quoted ``""`` literal, which pandas/polars
+            still strip before NA matching — so a legitimately empty string round-trips to NaN regardless.
+            Honored on both the single-thread pandas path and the multi-thread polars path.
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
+
+        .. versionchanged:: 3.46.0.10
+
+            Default NA handling tightened so that ``df.isna().sum()`` matches the H2O
+            cluster's NA count exactly. Previously ``pandas.read_csv`` was called with
+            its defaults, which coerced the literal strings ``"NA"``, ``"NULL"``,
+            ``"NaN"``, ``"None"``, ``"N/A"``, and ``"#N/A"`` to ``NaN`` -- silently
+            dropping categorical levels whose names matched those tokens. Pass
+            ``na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]`` to restore
+            the prior behavior on a per-call basis.
 
         :examples:
 
@@ -1974,14 +1987,17 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         if can_use_pandas() and use_pandas:
             import pandas
+            effective_na = [""] if na_values is None else na_values
+            if na_values is None:
+                _warn_as_data_frame_na_default()
             if use_multi_thread:
-                with local_context(polars_enabled=True): # turn on multi-thread toolboxes   
+                with local_context(polars_enabled=True): # turn on multi-thread toolboxes
                     if can_use_polars() and can_use_pyarrow(): # can use multi-thread
                         exportFile = tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv", delete=False)
                         try:
                             exportFile.close()  # needed for Windows
                             h2o.export_file(self, exportFile.name, force=True)
-                            return self.convert_with_polars(exportFile.name)
+                            return self.convert_with_polars(exportFile.name, null_values=effective_na)
                         finally:
                             os.unlink(exportFile.name)
             warnings.warn("Converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
@@ -1989,22 +2005,22 @@ class H2OFrame(Keyed, H2ODisplay):
                           "pandas_df = h2o_df.as_data_frame(use_multi_thread=True)\n", H2ODependencyWarning)
             # H2O writes NAs as empty CSV fields and emits non-NA strings literally, so only
             # treat empty as NA. Default pandas na_values would turn legitimate categorical
-            # levels like "None"/"NA"/"NULL" into NaN, which loses data on the round-trip
-            # (polars path via convert_with_polars uses null_values="" for the same reason).
+            # levels like "None"/"NA"/"NULL" into NaN, which loses data on the round-trip.
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False,
                                    keep_default_na=False,
-                                   na_values=[""] if na_values is None else na_values)
-                
+                                   na_values=effective_na)
+
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
         return frame
-    
-    
-    def convert_with_polars(self, fileName):
+
+
+    def convert_with_polars(self, fileName, null_values=""):
         import polars as pl
-        dt_frame = pl.read_csv(fileName, null_values = "")
+        # polars accepts a single string or a list of strings for null_values.
+        dt_frame = pl.read_csv(fileName, null_values=null_values)
         return dt_frame.to_pandas()
 
     def save_to_hive(self, jdbc_url, table_name, format="csv", table_path=None, tmp_path=None):
@@ -2122,10 +2138,22 @@ class H2OFrame(Keyed, H2ODisplay):
         fr = None
         flatten = False
         # sklearn cv splitters and other downstream consumers pass numpy arrays of
-        # integer or boolean indices for row selection; route them to the (rows, :)
-        # shape since a 1-D Python list already means column selection in H2OFrame.
-        if can_use_numpy() and isinstance(item, _np_ndarray()):
-            return self[(_np_index_to_list(item), slice(None, None, None))]
+        # integer or boolean indices for row selection. Normalize ndarrays once,
+        # before dispatching to the list/tuple branches below, so the two paths
+        # (bare ndarray vs ndarray-inside-tuple) share one conversion site.
+        if can_use_numpy():
+            _nd = _np_ndarray()
+            if isinstance(item, _nd):
+                # Bare ndarray means row selection; a 1-D Python list already
+                # means column selection in H2OFrame so we can't fold that path.
+                item = (_np_index_to_list(item), slice(None))
+            elif isinstance(item, tuple) and len(item) == 2:
+                rows, cols = item
+                if isinstance(rows, _nd):
+                    rows = _np_index_to_list(rows)
+                if isinstance(cols, _nd):
+                    cols = _np_index_to_list(cols)
+                item = (rows, cols)
         if isinstance(item, slice):
             item = normalize_slice(item, self.ncols)
         if is_type(item, str, int, list, slice):
@@ -2146,16 +2174,6 @@ class H2OFrame(Keyed, H2ODisplay):
                 rows = slice(None)
             if cols is Ellipsis:
                 cols = slice(None)
-            # sklearn _array_indexing passes a numpy array of indices inside the
-            # tuple form `arr[key, ...]`; convert to a plain Python list so the
-            # downstream rapids serializer doesn't leak `array(...)` repr into
-            # the AST.
-            if can_use_numpy():
-                _nd = _np_ndarray()
-                if isinstance(rows, _nd):
-                    rows = _np_index_to_list(rows)
-                if isinstance(cols, _nd):
-                    cols = _np_index_to_list(cols)
             allrows = allcols = False
             if isinstance(cols, slice):
                 cols = normalize_slice(cols, self.ncols)
@@ -5161,29 +5179,68 @@ class H2OFrame(Keyed, H2ODisplay):
 # Helpers
 # ----------------------------------------------------------------------------------------------------------------------
 
-def _np_ndarray():
-    """Return ``numpy.ndarray`` or a never-matching sentinel if numpy is missing.
+try:
+    import numpy as _np_module
+    _NP_NDARRAY = _np_module.ndarray
+except ImportError:
+    # Sentinel type that never matches isinstance; lets callers gate on
+    # can_use_numpy() without an extra import in the hot path.
+    class _NoNumpy(object):
+        pass
+    _np_module = None
+    _NP_NDARRAY = _NoNumpy
 
-    Hoisted to module scope so ``H2OFrame.__getitem__`` doesn't re-import numpy on every call.
-    """
-    import numpy as _np
-    return _np.ndarray
+
+def _np_ndarray():
+    """Return ``numpy.ndarray`` (cached at module load) or a never-matching sentinel."""
+    return _NP_NDARRAY
 
 
 def _np_index_to_list(arr):
-    """Normalize a 1-D numpy index array (bool or integer dtype) to a Python list."""
-    import numpy as _np
+    """Normalize a 1-D numpy index array (bool or integer dtype) to a Python list.
+
+    Driver-memory note: a length-N boolean mask materializes through
+    ``np.flatnonzero(arr).tolist()`` — for N=100M with 50% selectivity, peak
+    driver memory is ~2.2GB (numpy int64 → Python int boxing → rapids string).
+    Prefer H2O server-side filtering for cluster-scale frames.
+    """
+    if _np_module is None:
+        raise RuntimeError("numpy is required for numpy-array H2OFrame indexing")
     if arr.ndim != 1:
         raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
     if arr.dtype == bool:
-        return _np.flatnonzero(arr).tolist()
-    if not _np.issubdtype(arr.dtype, _np.integer):
+        return _np_module.flatnonzero(arr).tolist()
+    if not _np_module.issubdtype(arr.dtype, _np_module.integer):
         raise TypeError(
             "H2OFrame indexing requires a 1-D numpy array of integer or boolean dtype; "
             "got dtype %r. Convert via arr.astype(int) explicitly if truncation is intended."
             % arr.dtype
         )
     return arr.tolist()
+
+
+# Module-load lock for the one-shot as_data_frame() default-NA-handling warning.
+_AS_DATA_FRAME_NA_DEFAULT_WARNED = [False]
+
+
+def _warn_as_data_frame_na_default():
+    """Emit a one-shot FutureWarning the first time as_data_frame() relies on the
+    new default NA semantics. Visible by default (FutureWarning, not DeprecationWarning)
+    so users notice the silent break before observing wrong numbers downstream.
+    """
+    if _AS_DATA_FRAME_NA_DEFAULT_WARNED[0]:
+        return
+    _AS_DATA_FRAME_NA_DEFAULT_WARNED[0] = True
+    warnings.warn(
+        "H2OFrame.as_data_frame() NA-handling default changed in 3.46.0.10: "
+        "literal strings 'NA', 'NULL', 'NaN', 'None', 'N/A', '#N/A' are no longer "
+        "coerced to NaN by default (only empty CSV fields are). To restore the "
+        "previous behavior on a per-call basis pass "
+        "na_values=['', 'NA', 'NULL', 'NaN', 'None', 'N/A', '#N/A']. Set na_values "
+        "explicitly to silence this warning.",
+        category=FutureWarning,
+        stacklevel=3,
+    )
 
 
 def _getValidCols(by_idx, fr):  # so user can input names of the columns as well is idx num

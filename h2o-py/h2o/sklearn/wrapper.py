@@ -137,6 +137,24 @@ def _to_h2o_frame(X, as_factor=False, frame_params=None, **kwargs):
     return fr.asfactor() if as_factor else fr
 
 
+def _classes_array(domain):
+    # H2O stores categorical domains as String[] regardless of the original label type.
+    # sklearn scorers compare predictions against `classes_`, and `accuracy_score(np.array([0,1]),
+    # np.array(['0','1']))` silently mismatches (0% accuracy). Mirror sklearn LabelEncoder
+    # and attempt numeric coercion before falling back to string dtype.
+    if not can_use_numpy():
+        return list(domain)
+    try:
+        if all(s.lstrip('-').isdigit() for s in domain):
+            return np.asarray(domain, dtype=np.int64)
+    except (AttributeError, TypeError):
+        pass
+    try:
+        return np.asarray(domain, dtype=np.float64)
+    except (ValueError, TypeError):
+        return np.asarray(domain)
+
+
 def _to_numpy(fr, **kwargs):
     """
     Converts given frame to a :class:`numpy.ndarray`.
@@ -501,8 +519,13 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
 
     def __sklearn_is_fitted__(self):
         # sklearn's check_is_fitted (v1.x) calls this method when present, otherwise looks for trailing-underscore
-        # attributes. The wrapper sets `self._estimator` only after `fit()`, so its presence is the fitted signal.
-        return self._estimator is not None
+        # attributes. `_estimator` is assigned in _make_estimator() BEFORE train() runs, so its mere presence is
+        # not a reliable fit signal (a failed train() would leave the unfit instance attached). `_model_json` is
+        # populated by EstimatorBase.train only on a successful server-side fit, so use it as the ground truth.
+        return (
+            self._estimator is not None
+            and getattr(self._estimator, "_model_json", None) is not None
+        )
 
     @property
     def classes_(self):
@@ -510,9 +533,19 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # _get_response_values) reads `estimator.classes_` on the fitted classifier and
         # raises AttributeError otherwise. Surface the H2O response column's domain so
         # sklearn's accuracy/probability scorers work on H2O classifier wrappers.
-        if self._estimator is None or not self.is_classifier():
+        if not self.is_classifier():
             raise AttributeError(
-                "{} has no attribute 'classes_' (not a fitted classifier).".format(self.__class__.__name__)
+                "{} is a regressor; 'classes_' is only defined on classifiers.".format(
+                    self.__class__.__name__)
+            )
+        if not self.__sklearn_is_fitted__():
+            try:
+                from sklearn.exceptions import NotFittedError
+            except ImportError:
+                NotFittedError = RuntimeError
+            raise NotFittedError(
+                "{} is not fitted yet; call fit() before accessing 'classes_'.".format(
+                    self.__class__.__name__)
             )
         output = self._estimator._model_json.get("output") or {}
         domains = output.get("domains")
@@ -520,9 +553,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
             raise AttributeError(
                 "{}: response column has no categorical domain — model is not a classifier.".format(self.__class__.__name__)
             )
-        if can_use_numpy():
-            return np.asarray(domains[-1])
-        return list(domains[-1])
+        return _classes_array(domains[-1])
 
     def __sklearn_tags__(self):
         # sklearn 1.6+ resolves estimator type from __sklearn_tags__ rather than from
@@ -536,7 +567,12 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         if not hasattr(sup, "__sklearn_tags__"):
             raise AttributeError("__sklearn_tags__")
         tags = sup.__sklearn_tags__()
-        if isinstance(self, ClassifierMixin):
+        # Dispatch on resolved estimator type, not on Mixin isinstance: generic
+        # wrappers built via make_estimator(cls, estimator_type='classifier') do
+        # NOT inherit ClassifierMixin (see h2o.sklearn._order_estimator_mixins
+        # for type='estimator'), so an isinstance() check misses them.
+        est_type = getattr(self, "_estimator_type", None) or getattr(tags, "estimator_type", None)
+        if est_type == "classifier":
             tags.estimator_type = "classifier"
             try:
                 from sklearn.utils._tags import ClassifierTags
@@ -546,7 +582,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
             target_tags = getattr(tags, "target_tags", None)
             if target_tags is not None and hasattr(target_tags, "required"):
                 target_tags.required = True
-        elif isinstance(self, RegressorMixin):
+        elif est_type == "regressor":
             tags.estimator_type = "regressor"
             try:
                 from sklearn.utils._tags import RegressorTags
@@ -556,9 +592,6 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
             target_tags = getattr(tags, "target_tags", None)
             if target_tags is not None and hasattr(target_tags, "required"):
                 target_tags.required = True
-        explicit_type = getattr(self, "_estimator_type", None)
-        if explicit_type:
-            tags.estimator_type = explicit_type
         return tags
 
     def set_params(self, **params):

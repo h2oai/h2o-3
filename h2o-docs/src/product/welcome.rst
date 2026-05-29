@@ -68,7 +68,9 @@ At a minimum, we recommend the following for compatibility with H2O-3:
    -  Python 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x, 3.12.x, 3.13.x, 3.14.x
 
 -  **Browser**: An internet browser is required to use H2O-3's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
--  **numpy**: H2O-3 supports ``numpy<2`` on Python 3.7-3.10 and ``numpy>=2`` on Python 3.11+. The Python client auto-handles the differences in numpy 2.x scalar representations; no user action is required.
+-  **numpy**: H2O-3 supports ``numpy<2`` on Python 3.7-3.10 and ``numpy>=2`` on Python 3.11+. The Python client tolerates numpy 2.x's new scalar repr at the Rapids-AST boundary, so passing numpy 2.x scalars to ``H2OFrame`` indexing works without conversion. Other numpy 2.x behaviour changes (deprecated aliases, integer-overflow semantics, ``np.bool8`` removal) still apply to your own code — consult numpy's release notes. If a cascading dependency forces numpy 2 onto a Python 3.7-3.10 environment, recover with::
+
+      pip install --force-reinstall 'numpy<2'
 
 Java Requirements
 ~~~~~~~~~~~~~~~~~
