@@ -105,7 +105,7 @@ BINARY_OPS = {
     21: "**",  # NB_INPLACE_POWER
     23: "-",   # NB_INPLACE_SUBTRACT
     24: "/",   # NB_INPLACE_TRUE_DIVIDE
-    26: "cols",  # NB_SUBSCR — Py 3.14+ folds BINARY_SUBSCR into BINARY_OP
+    26: "cols",  # NB_SUBSCR — Py 3.12+ may lower BINARY_SUBSCR through BINARY_OP
 }
 
 def is_bytecode_instruction(instr):
@@ -162,9 +162,6 @@ def is_build_list(instr):
 def is_build_map(instr):
     return "BUILD_MAP" == instr
 
-def is_callable(instr):
-    return is_func(instr) or is_func_kw(instr) or is_func_ex(instr) or is_method_call(instr) or is_call(instr) or is_call_kw(instr)
-
 def is_builder(instr):
     return instr.startswith('BUILD_')
 
@@ -188,9 +185,6 @@ def is_load_outer_scope(instr):
 
 def is_return(instr):
     return "RETURN_VALUE" == instr
-
-def is_copy_free(instr):
-    return "COPY_FREE_VARS" == instr
 
 def should_be_skipped(instr):
     return instr in {"COPY_FREE_VARS", "RESUME", "PUSH_NULL"}  # from Py 3.11
@@ -272,12 +266,13 @@ def _lambda_bytecode_to_ast(co, ops):
     while s >= 0 and should_be_skipped(keys[s]):
         s -= 1
     if s >= 0:
-        print("Dumping disassembled code: ")
+        # Diagnostic dump goes to stderr so pyunit-captured stdout stays clean.
+        print("Dumping disassembled code: ", file=sys.stderr)
         for i in range(len(ops)):
             if i == s:
-                print(i, " --> " + str(ops[i]))
+                print(i, " --> " + str(ops[i]), file=sys.stderr)
             else:
-                print(i, str(ops[i]).rjust(5))
+                print(i, str(ops[i]).rjust(5), file=sys.stderr)
         raise ValueError("Unexpected bytecode disassembly @ " + str(s))
     result += [body] + [ASTId("}")]
     return result
@@ -428,10 +423,11 @@ def _call_func_ex_bc(flags, idx, ops, keys):
     # Python that yields None for a different reason fails loudly instead of
     # silently taking this branch.
     if flags is None:
-        assert sys.version_info >= (3, 14), (
-            "CALL_FUNCTION_EX without flags arg is only expected on Py3.14+; "
-            "got Python %s" % (sys.version,)
-        )
+        if sys.version_info < (3, 14):
+            raise RuntimeError(
+                "CALL_FUNCTION_EX without flags arg is only expected on Py3.14+; "
+                "got Python %s" % (sys.version,)
+            )
         prev_instr, _ = _get_instr(ops, idx)
         flags = 0 if prev_instr == "PUSH_NULL" else 1
     if flags & 1:
@@ -560,8 +556,9 @@ def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
     instr, op = _get_instr(ops, idx)
     # Py3.13+: explicit PUSH_NULL appears between the callable load and
     # CALL_FUNCTION_EX (e.g. for `x.method(*args)`). Skip it so we land on
-    # the LOAD_ATTR/LOAD_METHOD that names the call.
-    if instr == "PUSH_NULL":
+    # the LOAD_ATTR/LOAD_METHOD that names the call. Guard the decrement so
+    # we don't wrap to ops[-1] via Python's negative indexing.
+    if instr == "PUSH_NULL" and idx > 0:
         idx -= 1
         instr, op = _get_instr(ops, idx)
     rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs) if is_method(instr) else []

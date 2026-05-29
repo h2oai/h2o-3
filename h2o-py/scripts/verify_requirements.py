@@ -157,7 +157,16 @@ def test_requirements(kind, metayaml_file):
 
 
 def test_module(mod, min_version, installed_modules):
-    minv = tuple(int(x) for x in min_version.split("."))
+    # Accept alpha/beta-style versions like "1.0a1" -- pre-release suffixes are
+    # ignored for the minimum comparison rather than crashing the verifier.
+    def _component_to_int(s):
+        digits = ""
+        for ch in s:
+            if not ch.isdigit():
+                break
+            digits += ch
+        return int(digits) if digits else 0
+    minv = tuple(_component_to_int(x) for x in min_version.split("."))
     canonical_mod = _canonical_name(mod)
     matching_modules = [d for d in installed_modules if d.key == canonical_mod]
     if not matching_modules:

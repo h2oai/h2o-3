@@ -179,10 +179,16 @@ class ExprNode(object):
         #   repr(np.str_('foo'))  == "np.str_('foo')"   (was "'foo'")
         # Both forms break H2O's Rapids parser, which expects bare literals.
         # Convert numpy scalars to plain Python types before any repr() call.
-        # Duck-typed to avoid a hard import dependency on numpy at this layer.
         if isinstance(x, str):
             return str(x)  # unwraps np.str_ (str subclass) to plain str
-        if hasattr(x, 'item') and hasattr(x, 'dtype'):
+        # Narrow on isinstance(np.generic) instead of duck-typing on hasattr('item'),
+        # because pandas Timestamp / Timedelta / arrow scalars also expose .item() but
+        # converting them silently drops tz info or units.
+        try:
+            import numpy as _np
+        except ImportError:
+            return x
+        if isinstance(x, _np.generic):
             try:
                 return x.item()
             except (AttributeError, ValueError):

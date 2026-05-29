@@ -5,7 +5,9 @@ h2o -- module for using H2O services.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+import inspect
 import os
+import re
 import subprocess
 import tempfile
 import warnings
@@ -2145,8 +2147,6 @@ def _inspect_methods_separately(obj):
 
 
 def _default_source_provider(obj):
-    import inspect
-    import re
     # First try to get source code via inspect
     try:
         src = '    '.join(inspect.getsourcelines(obj)[0])
@@ -2156,7 +2156,10 @@ def _default_source_provider(obj):
         # runner script) and returns whatever happens to be at the class's
         # co_firstlineno in THAT file — i.e. unrelated garbage. Validate the
         # returned source actually defines our class; otherwise fall back.
-        if not re.match(r'\s*class\s+' + re.escape(obj.__name__) + r'\b', src):
+        # Use re.search with a multiline anchor so decorator lines (e.g. @dataclass)
+        # preceding `class Foo:` don't make the check fail and silently strip
+        # decorators via the _inspect_methods_separately fallback.
+        if not re.search(r'(?m)^\s*class\s+' + re.escape(obj.__name__) + r'\b', src):
             return _inspect_methods_separately(obj)
         return src
     except (OSError, TypeError, IOError):
