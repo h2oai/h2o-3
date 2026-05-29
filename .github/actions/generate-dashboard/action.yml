@@ -87,7 +87,7 @@ runs:
 
         gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
           --paginate \
-          --jq '.jobs[] | {name: .name, status: .status, conclusion: .conclusion, started_at: .started_at, completed_at: .completed_at, html_url: .html_url}' \
+          --jq '.jobs[] | {id: .id, name: .name, status: .status, conclusion: .conclusion, started_at: .started_at, completed_at: .completed_at}' \
           > /tmp/jobs.json 2>/dev/null || echo "[]" > /tmp/jobs.json
 
         echo "Jobs fetched:"
@@ -230,11 +230,12 @@ runs:
           name=$(echo "$line" | jq -r '.name // empty')
           [[ -z "$name" ]] && continue
 
+          job_id=$(echo "$line" | jq -r '.id // ""')
           conclusion=$(echo "$line" | jq -r '.conclusion // "pending"')
           status=$(echo "$line" | jq -r '.status // "queued"')
           started=$(echo "$line" | jq -r '.started_at // ""')
           completed=$(echo "$line" | jq -r '.completed_at // ""')
-          url=$(echo "$line" | jq -r '.html_url // ""')
+          url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}#summary-${job_id}"
 
           # Use conclusion if available, otherwise status
           result="$conclusion"
@@ -374,7 +375,11 @@ runs:
 
             for name in "${!jobs_ref[@]}"; do
               IFS='|' read -r j_status_icon j_name j_duration j_url j_result j_category <<< "${jobs_ref[$name]}"
-              echo "<tr><td>${category}</td><td>${j_name}</td><td align=\"center\">$(get_status_badge "$j_result")</td><td>${j_duration}</td></tr>"
+              if [[ "$j_result" == "failure" && -n "$j_url" && "$j_url" != "null" ]]; then
+                echo "<tr><td>${category}</td><td><a href=\"${j_url}\">${j_name}</a></td><td align=\"center\">$(get_status_badge "$j_result")</td><td>${j_duration}</td></tr>"
+              else
+                echo "<tr><td>${category}</td><td>${j_name}</td><td align=\"center\">$(get_status_badge "$j_result")</td><td>${j_duration}</td></tr>"
+              fi
             done
           }
 
@@ -396,7 +401,11 @@ runs:
             echo "<tr><th>Test Type</th><th>Test</th><th align=\"center\">Status</th><th>Duration</th></tr>"
             for entry in "${failed_jobs[@]}"; do
               IFS='|' read -r status_icon name duration url result category <<< "$entry"
-              echo "<tr><td>${category:-Unknown}</td><td>${name}</td><td align=\"center\">$(get_status_badge failure)</td><td>${duration}</td></tr>"
+              if [[ -n "$url" && "$url" != "null" ]]; then
+                echo "<tr><td>${category:-Unknown}</td><td><a href=\"${url}\">${name}</a></td><td align=\"center\">$(get_status_badge failure)</td><td>${duration}</td></tr>"
+              else
+                echo "<tr><td>${category:-Unknown}</td><td>${name}</td><td align=\"center\">$(get_status_badge failure)</td><td>${duration}</td></tr>"
+              fi
             done
             echo "</table>"
             echo ""
