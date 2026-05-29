@@ -43,13 +43,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/10/inde
 #### Improvement
 - [[#16718]](https://github.com/h2oai/h2o-3/issues/16718) – Removed support for Python 3.6.
 - [[#16707]](https://github.com/h2oai/h2o-3/issues/16707) – Added support for R 4.5.
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – Added support for Python 3.12, 3.13, and 3.14.
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OXGBoostEstimator.convert_H2OXGBoostParams_2_XGBoostParams()` now pins `base_score=0.5` so external `xgboost.train()` predictions stay consistent with H2O regardless of the native xgboost version installed alongside h2o-py (xgboost 2.x changed the default from 0.5 to auto-compute).
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` gained an `na_values` kwarg; the same kwarg is honored on the polars / multi-thread path.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – Added support for Python 3.12, 3.13, and 3.14 (PR CI smokes 3.7/3.11/3.14; full matrix runs nightly).
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OXGBoostEstimator.convert_H2OXGBoostParams_2_XGBoostParams()` now pins `base_score=0.5` to match H2O's bundled xgboost4j 1.6 default (native xgboost 2.x changed the default to auto-compute).
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` gained an `na_values` kwarg, also honored on the polars / multi-thread path.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` / `H2OStratifiedKFold` added `iter_h2oframes()` for server-side `(train, test)` splits without driver materialization.
 
 #### Breaking change
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` / `H2OStratifiedKFold` iterators now yield `(numpy int array, numpy int array)` instead of `(H2OFrame mask, H2OFrame mask)`. Required for scikit-learn >= 1.6 interop; a one-shot `H2ODeprecationWarning` is emitted from the iterator on first materialization (the warning filter is force-defaulted at module import so it surfaces outside `__main__`). A `UserWarning` is also emitted when materializing fold assignments for frames > 1M rows to flag the per-fold rapids POST cost. For cluster-scale CV prefer H2O's native `nfolds=` model parameter.
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` no longer coerces the literal strings `"NA"`, `"NULL"`, `"NaN"`, `"None"`, `"N/A"`, `"#N/A"` to `NaN` by default — only empty CSV fields are treated as NA, which matches H2O's CSV writer. This means `df.isna().sum()` now exactly matches the H2O cluster's NA count. A one-shot `FutureWarning` is emitted on the first call relying on the new default. Pass `na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]` (or set the `na_values` kwarg explicitly to silence the warning) to restore the prior behavior on a per-call basis.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` / `H2OStratifiedKFold` iterators now yield `(numpy int array, numpy int array)` instead of `(H2OFrame mask, H2OFrame mask)` (required for scikit-learn ≥ 1.6 interop). A one-shot `FutureWarning` is emitted on first materialization, plus a `UserWarning` for frames over 1M rows. For cluster-scale CV use `iter_h2oframes()` or H2O's native `nfolds=` parameter.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` no longer treats `"NA"`/`"NULL"`/`"NaN"`/`"None"`/`"N/A"`/`"#N/A"` strings as NaN by default — only empty CSV fields. Pass `na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]` to restore the prior behavior.
 
 #### Docs
 - [[#15991]](https://github.com/h2oai/h2o-3/issues/15991) – Updated Infogram pydocs.

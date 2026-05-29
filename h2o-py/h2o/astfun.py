@@ -380,9 +380,11 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
     if isinstance(keywords, tuple):  # Py >= 3.6
         # Skip the LOAD_CONST tuple
         idx -= 1
-        # Load keyword arguments from stack
+        # Values are pushed left-to-right matching kwnames-tuple order, so the
+        # value for the LAST kwname sits on top of stack. Walk kwnames in reverse
+        # so the first read (top-of-stack) binds to the last kwname.
         kwargs = {}
-        for key in keywords:
+        for key in reversed(keywords):
             val, idx = _opcode_read_arg(idx, ops, keys)
             kwargs[key] = val
             nargs -= 1
@@ -427,6 +429,11 @@ def _call_func_ex_bc(flags, idx, ops, keys):
             raise RuntimeError(
                 "CALL_FUNCTION_EX without flags arg is only expected on Py3.14+; "
                 "got Python %s" % (sys.version,)
+            )
+        if idx < 0:
+            raise RuntimeError(
+                "CALL_FUNCTION_EX appeared at the start of the bytecode stream — "
+                "cannot infer flags from a preceding op. ops=%r" % (ops,)
             )
         prev_instr, _ = _get_instr(ops, idx)
         flags = 0 if prev_instr == "PUSH_NULL" else 1
@@ -506,8 +513,10 @@ def _call_bc(nargs, idx, ops, keys):
     if instr == "KW_NAMES":
         # Skip the LOAD_CONST tuple
         idx -= 1
-        # Load keyword arguments from stack
-        for key in keywords:
+        # Values are pushed left-to-right matching kwnames-tuple order, so the
+        # value for the LAST kwname sits on top of stack. Walk kwnames in reverse
+        # so the first read (top-of-stack) binds to the last kwname.
+        for key in reversed(keywords):
             val, idx = _opcode_read_arg(idx, ops, keys)
             kwargs[key] = val
             nargs -= 1
@@ -522,11 +531,12 @@ def _call_kw_bc(nargs, idx, ops, keys):
     # Py 3.13+: CALL_KW replaces the KW_NAMES + CALL pattern. The keyword-name tuple
     # is loaded by a normal LOAD_CONST immediately preceding CALL_KW; below it on the
     # stack are the keyword values (in tuple order), then positional args, then callable.
+    # Walk kwnames in reverse so the first read (top-of-stack) binds to the last kwname.
     _, keywords = _get_instr(ops, idx)
     kwargs = {}
     if isinstance(keywords, tuple):
         idx -= 1
-        for key in keywords:
+        for key in reversed(keywords):
             val, idx = _opcode_read_arg(idx, ops, keys)
             kwargs[key] = val
             nargs -= 1

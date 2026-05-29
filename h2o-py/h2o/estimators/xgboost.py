@@ -2598,18 +2598,22 @@ class H2OXGBoostEstimator(H2OEstimator):
             nativeXGBoostParams[keyname]=keyvalue
         paramsSet = self.full_parameters
 
-        # H2O bundles xgboost4j 1.6, whose default base_score is 0.5 in probability
-        # space (XGBoost internally applies ProbToMargin for the configured objective).
-        # The Java side never records this in native_parameters because it relies on
-        # the default. Native xgboost 2.0+ changed the default to auto-compute from
-        # the training data, so without an explicit value the external xgb.train
-        # picks a different starting score and predictions diverge from H2O.
+        # H2O bundles xgboost4j 1.6, whose default base_score is 0.5 across all
+        # objectives. XGBoost interprets that value in probability space for
+        # classification (then applies ProbToMargin internally) and as raw margin
+        # for regression — both H2O and native xgboost 1.x agree on the value 0.5,
+        # they just interpret it through the objective's link function.
         #
-        # This pin REPRODUCES xgboost4j 1.6 behavior — it is NOT what a fresh native
-        # xgboost 2.x model would default to. For reg:squarederror with non-centered
-        # targets, 0.5 is a worse starting point than 2.x's auto-mean. Users debugging
-        # "why does my native xgboost 2.x diverge from H2O" should understand the
-        # comparison is against the bundled jar, not against native 2.x best-practice.
+        # Native xgboost 2.0+ changed the default to auto-compute from the training
+        # data, so without an explicit value the external xgb.train picks a different
+        # starting score and predictions diverge from H2O. This pin reproduces
+        # xgboost4j 1.6 behavior so a side-by-side comparison stays meaningful.
+        #
+        # The pin is suboptimal for some regression objectives (e.g. reg:squarederror
+        # with non-centered targets, where 2.x's auto-mean is a better starting
+        # point). Users debugging "why does my native xgboost 2.x diverge from H2O"
+        # should understand the comparison is against the bundled jar, not against
+        # native 2.x best-practice.
         #
         # WARNING: this constant is coupled to the bundled xgboost4j version. When
         # h2o-ext-xgboost bumps the jar to a version whose Java-side default differs

@@ -248,14 +248,24 @@ public class XMLTestReporter extends RunListener {
   }
 
   // Java 8 compatible PID lookup. RuntimeMXBean.getName() conventionally returns
-  // "<pid>@<hostname>" on the HotSpot JVM. Fall back to the bean name (or a fixed
-  // string) if the format is ever different, so we never break test reporting.
+  // "<pid>@<hostname>" on the HotSpot JVM. We strip past the '@' so the report
+  // filename never embeds a hostname (which would contain '.' chars that some
+  // xUnit collectors mis-glob as extra file extensions). On any unexpected
+  // shape, fall back to a fixed sentinel — we'd rather collide than leak host
+  // info into a filename or break test reporting altogether.
   private static String jvmPid() {
     try {
       String name = ManagementFactory.getRuntimeMXBean().getName();
       int at = name.indexOf('@');
-      if (at > 0) return name.substring(0, at);
-      return name;
+      if (at > 0) {
+        String pidPart = name.substring(0, at);
+        // Defense-in-depth: only accept all-digits as a PID
+        for (int i = 0; i < pidPart.length(); i++) {
+          if (!Character.isDigit(pidPart.charAt(i))) return "unknown";
+        }
+        return pidPart;
+      }
+      return "unknown";
     } catch (Throwable t) {
       return "unknown";
     }

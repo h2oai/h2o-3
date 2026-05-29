@@ -140,19 +140,35 @@ def _to_h2o_frame(X, as_factor=False, frame_params=None, **kwargs):
 def _classes_array(domain):
     # H2O stores categorical domains as String[] regardless of the original label type.
     # sklearn scorers compare predictions against `classes_`, and `accuracy_score(np.array([0,1]),
-    # np.array(['0','1']))` silently mismatches (0% accuracy). Mirror sklearn LabelEncoder
-    # and attempt numeric coercion before falling back to string dtype.
+    # np.array(['0','1']))` silently mismatches (0% accuracy), so we coerce numeric-looking
+    # domains to int when the conversion is round-trip-safe (str(int(s)) == s). Conservative
+    # by design: `['01','02']` is preserved as strings because int-coercion would destroy
+    # the leading-zero class identity, and tokens like `'--5'` that pass the int() parser but
+    # do not round-trip are rejected.
     if not can_use_numpy():
         return list(domain)
-    try:
-        if all(s.lstrip('-').isdigit() for s in domain):
+    if all(isinstance(s, str) and _is_canonical_int(s) for s in domain):
+        try:
             return np.asarray(domain, dtype=np.int64)
-    except (AttributeError, TypeError):
-        pass
+        except (ValueError, TypeError):
+            pass
+    return np.asarray(domain)
+
+
+def _is_canonical_int(s):
+    """Return True iff ``s`` is the canonical decimal repr of a Python int.
+
+    Canonical means ``str(int(s)) == s`` — no leading zeros (except "0" itself),
+    no leading "+" sign, no embedded underscores, and no double-minus tokens.
+    Used by :func:`_classes_array` to gate integer coercion of categorical class
+    labels so we do not silently rewrite ``"01"`` → ``1``.
+    """
+    if not s:
+        return False
     try:
-        return np.asarray(domain, dtype=np.float64)
+        return str(int(s)) == s
     except (ValueError, TypeError):
-        return np.asarray(domain)
+        return False
 
 
 def _to_numpy(fr, **kwargs):
