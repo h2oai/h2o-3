@@ -79,7 +79,7 @@ for python_version in "${array[@]}"; do
 	# scipy 1.10.1 -> 1.15.3 on Py3.10) to satisfy causalml's transitive deps
 	# (torch / pyro-ppl), and lifelines' `from scipy.integrate import trapz`
 	# would break because trapz was removed in scipy 1.14.
-	grep -v '^causalml' test-requirements.txt >test-requirements-no-causalml.txt
+	grep -v '^causalml' test-requirements.txt >test-requirements-no-causalml.txt || true
 	grep '^causalml' test-requirements.txt >causalml-requirements.txt || true
 	su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && \
 		pip install -r test-requirements-no-causalml.txt -r docs-requirements.txt && \
