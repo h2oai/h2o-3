@@ -269,6 +269,9 @@ runs:
             set -e
             git config --global --add safe.directory '*'
 
+            # Ensure permissions are always fixed, even when tests fail (set -e exits early)
+            trap 'echo \"=== Fixing file permissions ===\" && chmod -R a+rw . 2>/dev/null || true && find . -type d -exec chmod a+rx {} \; 2>/dev/null || true' EXIT
+
             # Activate Python environment if available
             if [ -d /envs/h2o_env_python\${PYTHON_VERSION} ]; then
               . /envs/h2o_env_python\${PYTHON_VERSION}/bin/activate 2>/dev/null || true
@@ -353,11 +356,6 @@ runs:
             # Run tests
             echo '=== Running: ${{ inputs.make_target }} ==='
             make -f scripts/jenkins/Makefile.jenkins ${{ inputs.make_target }} check-leaks
-
-            # Fix permissions so GitHub runner can access results
-            echo '=== Fixing file permissions ==='
-            chmod -R a+rw . 2>/dev/null || true
-            find . -type d -exec chmod a+rx {} \\; 2>/dev/null || true
           "
 
         EXIT_CODE=$?

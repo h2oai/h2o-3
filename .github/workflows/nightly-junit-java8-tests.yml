@@ -1207,3 +1207,4 @@ jobs:
       label: ${{ needs.start-java8-persist-http.outputs.label }}
       ec2_id: ${{ needs.start-java8-persist-http.outputs.ec2_id }}
     secrets: inherit
+

@@ -50,7 +50,7 @@ runs:
   using: 'composite'
   steps:
     - name: Sanitize JUnit XML files
-      if: inputs.job_status == 'failure'
+      if: always() && inputs.job_status == 'failure'
       shell: bash
       run: |
         # Fix invalid XML character entities and control characters in JUnit XML files
@@ -80,34 +80,162 @@ runs:
 
         echo "XML sanitization complete"
 
+    - name: Enrich JUnit XML with actual error output
+      if: always() && inputs.job_status == 'failure'
+      shell: bash
+      run: |
+        # The Python/R test harness (run.py) generates minimal JUnit XML where
+        # failure descriptions are just "See /workspace/.../file.out.txt" references.
+        # This step uses Python's XML parser to safely inline actual error output.
+        echo "Enriching JUnit XML files with test output..."
+
+        python3 << 'ENRICH_SCRIPT'
+        import os, re, glob
+        import xml.etree.ElementTree as ET
+
+        MAX_LINES = 200
+        enriched = 0
+        time_fixed = 0
+        pattern = re.compile(r'See (/workspace/(.+?\.out\.txt))')
+
+        xml_files = glob.glob('**/test-results/**/*.xml', recursive=True) + \
+                    glob.glob('**/results/**/*.xml', recursive=True)
+        print(f'Found {len(xml_files)} XML files to process')
+
+        for xml_path in xml_files:
+            try:
+                tree = ET.parse(xml_path)
+            except ET.ParseError:
+                print(f'  SKIP (parse error): {xml_path}')
+                continue
+
+            modified = False
+            root = tree.getroot()
+
+            for elem in root.iter():
+                # Add time='0' to testsuite/testcase elements missing it (invalid time breaks reporters)
+                if elem.tag in ('testsuite', 'testcase', 'testsuites'):
+                    if 'time' not in elem.attrib:
+                        elem.attrib['time'] = '0'
+                        modified = True
+                        time_fixed += 1
+                    else:
+                        try:
+                            float(elem.attrib['time'])
+                        except (ValueError, TypeError):
+                            elem.attrib['time'] = '0'
+                            modified = True
+                            time_fixed += 1
+
+                # Enrich failure/error elements that reference .out.txt files
+                # Check both elem.text and the message attribute
+                if elem.tag in ('failure', 'error'):
+                    text_to_search = (elem.text or '') + ' ' + elem.attrib.get('message', '')
+                    match = pattern.search(text_to_search)
+                    if match:
+                        rel_path = match.group(2)
+                        content = None
+                        for base in [f'h2o-3/{rel_path}', rel_path]:
+                            if os.path.isfile(base):
+                                try:
+                                    with open(base, 'r', errors='replace') as f:
+                                        lines = f.readlines()
+                                    if len(lines) > MAX_LINES:
+                                        lines = lines[:MAX_LINES]
+                                        lines.append('... (truncated, see full output in artifacts)\n')
+                                    content = ''.join(lines)
+                                except Exception as e:
+                                    print(f'  WARN: Could not read {base}: {e}')
+                                break
+                            else:
+                                print(f'  NOT FOUND: {base}')
+
+                        if content:
+                            elem.text = content
+                            elem.attrib.pop('message', None)
+                            modified = True
+                            enriched += 1
+
+            if modified:
+                print(f'  Enriched: {xml_path}')
+                tree.write(xml_path, encoding='unicode', xml_declaration=True)
+
+        print(f'XML enrichment complete ({enriched} files enriched, {time_fixed} time attributes fixed)')
+        ENRICH_SCRIPT
+
     - name: Debug - List XML files
-      if: inputs.job_status == 'failure'
+      if: always() && inputs.job_status == 'failure'
       shell: bash
       run: |
         echo "=== Searching for JUnit XML files ==="
-        find . -type f -name "*.xml" -path "*test-results*" 2>/dev/null | head -20
+        find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | head -20
         echo ""
-        echo "=== Total XML files in test-results ==="
-        find . -type f -name "*.xml" -path "*test-results*" 2>/dev/null | wc -l
+        echo "=== Total XML files ==="
+        find . -type f -name "*.xml" \( -path "*test-results*" -o -path "*results*" \) 2>/dev/null | wc -l
 
-    - name: Publish JUnit Report
-      if: inputs.job_status == 'failure'
-      uses: mikepenz/action-junit-report@v5
-      with:
-        report_paths: |
-          **/test-results/**/*.xml
-        check_name: Test Report (${{ inputs.name }})
-        fail_on_failure: false
-        include_passed: false
-        detailed_summary: true
-        require_tests: false
-        check_annotations: true
-        job_summary: true
+    - name: Generate Test Failure Summary
+      if: always() && inputs.job_status == 'failure'
+      shell: bash
+      run: |
+        python3 << 'SUMMARY_SCRIPT'
+        import os, glob
+        import xml.etree.ElementTree as ET
+
+        xml_files = glob.glob('**/test-results/**/*.xml', recursive=True) + \
+                    glob.glob('**/results/**/*.xml', recursive=True)
+
+        total_tests = 0
+        total_failures = 0
+        total_errors = 0
+        total_skipped = 0
+        failures = []
+
+        for f in xml_files:
+            try:
+                tree = ET.parse(f)
+                root = tree.getroot()
+                for suite in root.iter('testsuite'):
+                    total_tests += int(suite.get('tests', 0))
+                    total_failures += int(suite.get('failures', 0))
+                    total_errors += int(suite.get('errors', 0))
+                    total_skipped += int(suite.get('skipped', 0))
+                for case in root.iter('testcase'):
+                    for fail_elem in list(case.findall('failure')) + list(case.findall('error')):
+                        classname = case.get('classname', '')
+                        name = case.get('name', '')
+                        message = (fail_elem.text or fail_elem.get('message', ''))[:2000]
+                        failures.append({'class': classname, 'name': name, 'message': message})
+            except Exception as e:
+                print(f'WARN: Could not parse {f}: {e}')
+
+        summary_path = os.environ.get('GITHUB_STEP_SUMMARY', '')
+        if not summary_path:
+            print('GITHUB_STEP_SUMMARY not set')
+            exit(0)
+
+        with open(summary_path, 'a') as out:
+            total_passed = total_tests - total_failures - total_errors - total_skipped
+            out.write(f'## Test Report (${{ inputs.name }})\n\n')
+            out.write(f'| Tests | Passed | Failed | Errors | Skipped |\n')
+            out.write(f'|-------|--------|--------|--------|---------|\n')
+            out.write(f'| {total_tests} | {total_passed} | {total_failures} | {total_errors} | {total_skipped} |\n\n')
+
+            if failures:
+                out.write(f'### Failed Tests ({len(failures)})\n\n')
+                for fail in failures:
+                    label = f'{fail["class"]}.{fail["name"]}' if fail["class"] else fail["name"]
+                    msg = fail["message"].replace('`', "'")
+                    out.write(f'<details><summary>{label}</summary>\n\n```\n{msg}\n```\n\n</details>\n\n')
+            else:
+                out.write('No failed test details found in JUnit XML.\n\n')
+
+        print(f'Summary: {total_tests} tests, {total_failures} failures, {total_errors} errors')
+        SUMMARY_SCRIPT
 
     # Archive failure artifacts (similar to Jenkins archiveArtifacts on failure)
     # Jenkins archives: leak-check.out, **/*.log, **/out.*, **/results/*.txt, **/results/failed/*.txt
     - name: Archive Failure Artifacts
-      if: inputs.archive_logs_on_failure == 'true' && inputs.job_status == 'failure'
+      if: always() && inputs.archive_logs_on_failure == 'true' && inputs.job_status == 'failure'
       uses: actions/upload-artifact@v4
       with:
         name: failure-artifacts-${{ inputs.name }}

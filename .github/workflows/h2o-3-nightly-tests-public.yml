@@ -286,10 +286,10 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # SUMMARY: Generate comprehensive test dashboard
+  # SUMMARY: Generate comprehensive test dashboard and failure reports
   # ============================================================================
   summary:
-    name: Summary
+    name: Test Dashboard
     needs: [init, build, smoke, python, r, java, flow, final-cleanup]
     if: always()
     runs-on: ubuntu-latest
@@ -310,3 +310,79 @@ jobs:
           r_result: ${{ needs.r.result }}
           java_result: ${{ needs.java.result }}
           flow_result: ${{ needs.flow.result }}
+
+      - name: Download All Test Results
+        if: >-
+          needs.smoke.result == 'failure' ||
+          needs.python.result == 'failure' ||
+          needs.r.result == 'failure' ||
+          needs.java.result == 'failure' ||
+          needs.flow.result == 'failure'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: results-*
+          path: /tmp/test-results
+          merge-multiple: false
+
+      - name: Consolidated Test Failure Report
+        if: >-
+          needs.smoke.result == 'failure' ||
+          needs.python.result == 'failure' ||
+          needs.r.result == 'failure' ||
+          needs.java.result == 'failure' ||
+          needs.flow.result == 'failure'
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          check_name: All Failed Tests
+          files: |
+            /tmp/test-results/**/test-results/**/*.xml
+            /tmp/test-results/**/results/**/*.xml
+          job_summary: true
+          comment_mode: 'off'
+          check_run: true
+          report_individual_runs: true
+          report_suite_logs: error
+          large_files: true
+          fail_on: nothing
+          action_fail: false
+          action_fail_on_inconclusive: false
+
+      - name: Generate Test Failure Detail Report
+        if: >-
+          needs.smoke.result == 'failure' ||
+          needs.python.result == 'failure' ||
+          needs.r.result == 'failure' ||
+          needs.java.result == 'failure' ||
+          needs.flow.result == 'failure'
+        uses: ./.github/actions/generate-test-failure-report
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_download: 'true'
+
+      - name: Set Final Status
+        run: |
+          BUILD="${{ needs.build.result }}"
+          SMOKE="${{ needs.smoke.result }}"
+          PYTHON="${{ needs.python.result }}"
+          R="${{ needs.r.result }}"
+          JAVA="${{ needs.java.result }}"
+          FLOW="${{ needs.flow.result }}"
+
+          if [[ "$BUILD" == "failure" ]]; then
+            echo "::error::Build failed"
+            exit 1
+          fi
+
+          FAILED=""
+          [[ "$SMOKE" == "failure" ]] && FAILED="${FAILED} Smoke"
+          [[ "$PYTHON" == "failure" ]] && FAILED="${FAILED} Python"
+          [[ "$R" == "failure" ]] && FAILED="${FAILED} R"
+          [[ "$JAVA" == "failure" ]] && FAILED="${FAILED} Java"
+          [[ "$FLOW" == "failure" ]] && FAILED="${FAILED} Flow"
+
+          if [[ -n "$FAILED" ]]; then
+            echo "::error::Test failures in:${FAILED}"
+            exit 1
+          fi
+
+          echo "All requested tests passed!"

@@ -852,3 +852,4 @@ jobs:
       label: ${{ needs.start-java11-other.outputs.label }}
       ec2_id: ${{ needs.start-java11-other.outputs.ec2_id }}
     secrets: inherit
+
