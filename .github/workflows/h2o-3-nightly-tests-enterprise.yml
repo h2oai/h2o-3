@@ -288,7 +288,7 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # SUMMARY: Generate comprehensive test dashboard
+  # SUMMARY: Generate comprehensive test dashboard and failure reports
   # ============================================================================
   summary:
     name: Test Dashboard
@@ -360,3 +360,31 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           skip_download: 'true'
+
+      - name: Set Final Status
+        run: |
+          BUILD="${{ needs.build.result }}"
+          SMOKE="${{ needs.smoke.result }}"
+          PYTHON="${{ needs.python.result }}"
+          R="${{ needs.r.result }}"
+          JAVA="${{ needs.java.result }}"
+          FLOW="${{ needs.flow.result }}"
+
+          if [[ "$BUILD" == "failure" ]]; then
+            echo "::error::Build failed"
+            exit 1
+          fi
+
+          FAILED=""
+          [[ "$SMOKE" == "failure" ]] && FAILED="${FAILED} Smoke"
+          [[ "$PYTHON" == "failure" ]] && FAILED="${FAILED} Python"
+          [[ "$R" == "failure" ]] && FAILED="${FAILED} R"
+          [[ "$JAVA" == "failure" ]] && FAILED="${FAILED} Java"
+          [[ "$FLOW" == "failure" ]] && FAILED="${FAILED} Flow"
+
+          if [[ -n "$FAILED" ]]; then
+            echo "::error::Test failures in:${FAILED}"
+            exit 1
+          fi
+
+          echo "All requested tests passed!"
