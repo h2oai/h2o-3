@@ -88,6 +88,7 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
                            custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="") {
   outcome <- "ok"
   first_path <- if (length(path) > 1L) path[[1]] else path
+  tel_t0 <- Sys.time()
   res <- tryCatch(
     h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
                      na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns, force_col_types,
@@ -100,13 +101,24 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
     if (is.character(first_path) && length(first_path) == 1L && file.exists(first_path)) {
       csize <- as.integer(file.info(first_path)$size)
     }
+    fmt <- .h2o.derive_file_format(first_path)
     shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(res) else list()
     .h2o.send_import(.h2o.r_version_safe(),
                      .h2o.derive_source_scheme(first_path),
-                     .h2o.derive_file_format(first_path),
+                     fmt,
                      outcome,
                      compressed_size_bytes = csize,
                      frame_shape = shape)
+    # frame_parsed only when an actual parse ran and produced a frame with
+    # known rows/cols (both REQUIRED on that event).
+    if (outcome == "ok" && isTRUE(parse)) {
+      dims <- .h2o.derive_frame_dims(res)
+      if (!is.null(dims)) {
+        dur_ms <- as.numeric(difftime(Sys.time(), tel_t0, units = "secs")) * 1000
+        .h2o.send_frame_parsed(.h2o.r_version_safe(), fmt, outcome, dur_ms,
+                               dims$n_rows, dims$n_cols, frame_memory_gb = dims$frame_memory_gb)
+      }
+    }
   }, error = function(e) invisible(NULL))
   res
 }
@@ -200,6 +212,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
   .h2o.gc()  # Clear out H2O to make space for new file
   path <- normalizePath(path, winslash = "/")
   outcome <- "ok"
+  tel_t0 <- Sys.time()
   result <- tryCatch({
     srcKey <- .key.make( path )
     urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
@@ -226,9 +239,20 @@ h2o.uploadFile <- function(path, destination_frame = "",
   }, error = function(e) { outcome <<- "error"; stop(e) })
   tryCatch({
     size <- if (file.exists(path)) as.integer(file.info(path)$size) else 0L
+    fmt <- .h2o.derive_file_format(path)
     shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(result) else list()
-    .h2o.send_upload(.h2o.r_version_safe(), .h2o.derive_file_format(path), size, outcome,
+    .h2o.send_upload(.h2o.r_version_safe(), fmt, size, outcome,
                      frame_shape = shape)
+    # frame_parsed captures the parse itself; only on a completed parse with
+    # known rows/cols (both REQUIRED on that event).
+    if (outcome == "ok" && isTRUE(parse)) {
+      dims <- .h2o.derive_frame_dims(result)
+      if (!is.null(dims)) {
+        dur_ms <- as.numeric(difftime(Sys.time(), tel_t0, units = "secs")) * 1000
+        .h2o.send_frame_parsed(.h2o.r_version_safe(), fmt, outcome, dur_ms,
+                               dims$n_rows, dims$n_cols, frame_memory_gb = dims$frame_memory_gb)
+      }
+    }
   }, error = function(e) invisible(NULL))
   result
 }
