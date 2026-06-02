@@ -1,6 +1,7 @@
 package water;
 
 import water.init.NetworkInit;
+import water.telemetry.JvmTelemetry;
 import water.util.Log;
 
 import java.io.File;
@@ -20,6 +21,11 @@ public class H2OStarter {
     long time0 = System.currentTimeMillis();
     // Fire up the H2O Cluster
     H2O.main(args);
+
+    // Fire-and-forget JVM telemetry: one init event once the cluster locks.
+    // Only reached by real launches (java -jar / hadoop / k8s) — JUnit tests
+    // bootstrap via H2O.main() directly and never pass through here.
+    JvmTelemetry.scheduleInitEmit();
 
     if (H2O.ARGS.disable_flow) {
       Log.info("Access to H2O Flow is disabled");
