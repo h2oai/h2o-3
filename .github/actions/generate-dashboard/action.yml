@@ -73,6 +73,56 @@ inputs:
     required: false
     default: 'skipped'
 
+outputs:
+  smoke_passed:
+    description: 'Number of passed Smoke jobs'
+    value: ${{ steps.dashboard.outputs.smoke_passed }}
+  smoke_failed:
+    description: 'Number of failed Smoke jobs'
+    value: ${{ steps.dashboard.outputs.smoke_failed }}
+  smoke_total:
+    description: 'Total Smoke jobs'
+    value: ${{ steps.dashboard.outputs.smoke_total }}
+  python_passed:
+    description: 'Number of passed Python jobs'
+    value: ${{ steps.dashboard.outputs.python_passed }}
+  python_failed:
+    description: 'Number of failed Python jobs'
+    value: ${{ steps.dashboard.outputs.python_failed }}
+  python_total:
+    description: 'Total Python jobs'
+    value: ${{ steps.dashboard.outputs.python_total }}
+  r_passed:
+    description: 'Number of passed R jobs'
+    value: ${{ steps.dashboard.outputs.r_passed }}
+  r_failed:
+    description: 'Number of failed R jobs'
+    value: ${{ steps.dashboard.outputs.r_failed }}
+  r_total:
+    description: 'Total R jobs'
+    value: ${{ steps.dashboard.outputs.r_total }}
+  java_passed:
+    description: 'Number of passed Java jobs'
+    value: ${{ steps.dashboard.outputs.java_passed }}
+  java_failed:
+    description: 'Number of failed Java jobs'
+    value: ${{ steps.dashboard.outputs.java_failed }}
+  java_total:
+    description: 'Total Java jobs'
+    value: ${{ steps.dashboard.outputs.java_total }}
+  flow_passed:
+    description: 'Number of passed Flow jobs'
+    value: ${{ steps.dashboard.outputs.flow_passed }}
+  flow_failed:
+    description: 'Number of failed Flow jobs'
+    value: ${{ steps.dashboard.outputs.flow_failed }}
+  flow_total:
+    description: 'Total Flow jobs'
+    value: ${{ steps.dashboard.outputs.flow_total }}
+  failed_jobs_json:
+    description: 'JSON array of failed jobs for Slack alerts'
+    value: ${{ steps.dashboard.outputs.failed_jobs_json }}
+
 runs:
   using: 'composite'
   steps:
@@ -94,6 +144,7 @@ runs:
         cat /tmp/jobs.json | head -50
 
     - name: Generate Dashboard
+      id: dashboard
       shell: bash
       run: |
         # ==================================================
@@ -223,6 +274,9 @@ runs:
         flow_failed=0
         flow_total=0
 
+        FAILED_JOBS_JSON="["
+        FIRST_FAILED=true
+
         # Process each job
         while IFS= read -r line; do
           [[ -z "$line" ]] && continue
@@ -295,9 +349,36 @@ runs:
           # Track failed jobs
           if [[ "$result" == "failure" ]]; then
             failed_jobs+=("$job_entry")
+            if [[ "$FIRST_FAILED" == "true" ]]; then
+              FIRST_FAILED=false
+            else
+              FAILED_JOBS_JSON="${FAILED_JOBS_JSON},"
+            fi
+            escaped_name=$(echo "$name" | sed 's/"/\\"/g')
+            FAILED_JOBS_JSON="${FAILED_JOBS_JSON}{\"name\":\"${escaped_name}\",\"url\":\"${url}\"}"
           fi
 
         done < /tmp/jobs.json
+
+        FAILED_JOBS_JSON="${FAILED_JOBS_JSON}]"
+
+        # Export outputs for downstream steps (e.g., Slack alerts)
+        echo "smoke_passed=${smoke_passed}" >> $GITHUB_OUTPUT
+        echo "smoke_failed=${smoke_failed}" >> $GITHUB_OUTPUT
+        echo "smoke_total=${smoke_total}" >> $GITHUB_OUTPUT
+        echo "python_passed=${python_passed}" >> $GITHUB_OUTPUT
+        echo "python_failed=${python_failed}" >> $GITHUB_OUTPUT
+        echo "python_total=${python_total}" >> $GITHUB_OUTPUT
+        echo "r_passed=${r_passed}" >> $GITHUB_OUTPUT
+        echo "r_failed=${r_failed}" >> $GITHUB_OUTPUT
+        echo "r_total=${r_total}" >> $GITHUB_OUTPUT
+        echo "java_passed=${java_passed}" >> $GITHUB_OUTPUT
+        echo "java_failed=${java_failed}" >> $GITHUB_OUTPUT
+        echo "java_total=${java_total}" >> $GITHUB_OUTPUT
+        echo "flow_passed=${flow_passed}" >> $GITHUB_OUTPUT
+        echo "flow_failed=${flow_failed}" >> $GITHUB_OUTPUT
+        echo "flow_total=${flow_total}" >> $GITHUB_OUTPUT
+        echo "failed_jobs_json=${FAILED_JOBS_JSON}" >> $GITHUB_OUTPUT
 
         # ==================================================
         # CALCULATE OVERALL STATUS
