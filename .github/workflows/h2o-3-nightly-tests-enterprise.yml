@@ -352,6 +352,14 @@ jobs:
           build_sha: ${{ needs.build.outputs.build_sha }}
           build_result: ${{ needs.build.result }}
           overall_result: ${{ (needs.smoke.result == 'failure' || needs.python.result == 'failure' || needs.r.result == 'failure' || needs.java.result == 'failure' || needs.flow.result == 'failure') && 'failure' || 'success' }}
+          test_results_json: >-
+            [
+              {"name":"Smoke","result":"${{ needs.smoke.result }}","passed":${{ steps.dashboard.outputs.smoke_passed }},"failed":${{ steps.dashboard.outputs.smoke_failed }},"total":${{ steps.dashboard.outputs.smoke_total }}},
+              {"name":"Python","result":"${{ needs.python.result }}","passed":${{ steps.dashboard.outputs.python_passed }},"failed":${{ steps.dashboard.outputs.python_failed }},"total":${{ steps.dashboard.outputs.python_total }}},
+              {"name":"R","result":"${{ needs.r.result }}","passed":${{ steps.dashboard.outputs.r_passed }},"failed":${{ steps.dashboard.outputs.r_failed }},"total":${{ steps.dashboard.outputs.r_total }}},
+              {"name":"Java","result":"${{ needs.java.result }}","passed":${{ steps.dashboard.outputs.java_passed }},"failed":${{ steps.dashboard.outputs.java_failed }},"total":${{ steps.dashboard.outputs.java_total }}},
+              {"name":"Flow","result":"${{ needs.flow.result }}","passed":${{ steps.dashboard.outputs.flow_passed }},"failed":${{ steps.dashboard.outputs.flow_failed }},"total":${{ steps.dashboard.outputs.flow_total }}}
+            ]
           failed_jobs_json: ${{ steps.dashboard.outputs.failed_jobs_json }}
           workflow-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           slack-token: ${{ secrets.SLACK_BOT_TOKEN }}

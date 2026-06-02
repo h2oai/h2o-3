@@ -1,9 +1,16 @@
 # =============================================================================
 # Common Slack Alert for All Test Workflows
 # =============================================================================
-# Sends a Slack notification with failed job names and permalink hyperlinks.
+# Sends a Slack notification with test results table and failed job permalinks.
 # Works for nightly tests (Smoke/Python/R/Java/Flow), JUnit tests (Java 8/11/17),
 # and enterprise workflows.
+#
+# Features:
+#   - Test results summary table with passed/failed/total counts
+#   - Status indicators with emoji per test suite
+#   - Failed jobs breakdown with direct permalink hyperlinks
+#   - Scan mode detection (Nightly, Manual, Push)
+#   - Workflow run link button
 #
 # Usage:
 #   - uses: ./.github/actions/send-slack-alert
@@ -13,13 +20,14 @@
 #       branch: "master"
 #       build_result: "success"
 #       overall_result: "failure"
+#       test_results_json: '[{"name":"Smoke","result":"success","passed":8,"failed":0,"total":8}]'
 #       failed_jobs_json: '[{"name": "Py3.7 Smoke", "url": "..."}]'
 #       workflow-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 #       slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
 # =============================================================================
 
 name: "Send Slack Alert"
-description: "Send Slack notification with failed job details and permalink hyperlinks"
+description: "Send Slack notification with test results table and failed job permalink hyperlinks"
 
 inputs:
   pipeline:
@@ -47,6 +55,10 @@ inputs:
     description: "Overall test result (success/failure)"
     required: true
 
+  test_results_json:
+    description: 'JSON array of test suite results: [{"name":"Smoke","result":"success","passed":8,"failed":0,"total":8}]'
+    required: true
+
   failed_jobs_json:
     description: "JSON array of failed jobs: [{name, url}]"
     required: false
@@ -70,10 +82,59 @@ inputs:
     required: false
     default: "false"
 
+  dry-run:
+    description: "If true, build payload but don't send (for testing)"
+    required: false
+    default: "false"
+
+outputs:
+  sent:
+    description: "Whether the notification was sent (true/false)"
+    value: ${{ steps.finalize.outputs.sent }}
+
+  status:
+    description: "Overall status (PASS, FAIL)"
+    value: ${{ steps.build.outputs.status }}
+
 runs:
   using: "composite"
   steps:
-    - name: Build and send Slack alert
+    # =========================================================================
+    # Step 1: Validate inputs
+    # =========================================================================
+    - name: Validate inputs
+      shell: bash
+      env:
+        CHANNEL: ${{ inputs.channel }}
+        WORKFLOW_URL: ${{ inputs.workflow-url }}
+      run: |
+        ERRORS=0
+
+        if [[ -z "${CHANNEL}" ]]; then
+          echo "::error::Input 'channel' is required"
+          ERRORS=$((ERRORS + 1))
+        elif [[ ! "${CHANNEL}" =~ ^# ]]; then
+          echo "::error::Input 'channel' must start with # (got: ${CHANNEL})"
+          ERRORS=$((ERRORS + 1))
+        fi
+
+        if [[ -z "${WORKFLOW_URL}" ]]; then
+          echo "::error::Input 'workflow-url' is required"
+          ERRORS=$((ERRORS + 1))
+        fi
+
+        if [[ ${ERRORS} -gt 0 ]]; then
+          echo "::error::Input validation failed with ${ERRORS} error(s)"
+          exit 1
+        fi
+
+        echo "All inputs validated successfully"
+
+    # =========================================================================
+    # Step 2: Build Slack payload
+    # =========================================================================
+    - name: Build Slack payload
+      id: build
       shell: bash
       env:
         PIPELINE: ${{ inputs.pipeline }}
@@ -82,15 +143,31 @@ runs:
         BUILD_SHA: ${{ inputs.build_sha }}
         BUILD_RESULT: ${{ inputs.build_result }}
         OVERALL_RESULT: ${{ inputs.overall_result }}
+        TEST_RESULTS_JSON: ${{ inputs.test_results_json }}
         FAILED_JOBS_JSON: ${{ inputs.failed_jobs_json }}
         WORKFLOW_URL: ${{ inputs.workflow-url }}
-        SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
         EVENT_NAME: ${{ inputs.event-name }}
         SEND_ON_SUCCESS: ${{ inputs.send-on-success }}
       run: |
         python3 << 'PYTHON_SCRIPT'
         import json, os, sys
         from datetime import datetime, timezone
+
+        STATUS_EMOJI = {
+            "success": "✅",
+            "failure": "❌",
+            "skipped": "⏭️",
+            "cancelled": "⚪",
+        }
+
+        def get_scan_mode(event_name):
+            modes = {
+                "schedule": "Nightly Schedule",
+                "workflow_dispatch": "Manual Trigger",
+                "push": "Push",
+                "pull_request": "Pull Request",
+            }
+            return modes.get(event_name, event_name.title() if event_name else "Unknown")
 
         pipeline = os.environ["PIPELINE"]
         channel = os.environ["CHANNEL"]
@@ -99,9 +176,13 @@ runs:
         build_result = os.environ["BUILD_RESULT"]
         overall_result = os.environ["OVERALL_RESULT"]
         workflow_url = os.environ["WORKFLOW_URL"]
-        token = os.environ["SLACK_BOT_TOKEN"]
         event_name = os.environ.get("EVENT_NAME", "workflow_dispatch")
         send_on_success = os.environ.get("SEND_ON_SUCCESS", "false").lower() == "true"
+
+        try:
+            test_results = json.loads(os.environ.get("TEST_RESULTS_JSON", "[]"))
+        except json.JSONDecodeError:
+            test_results = []
 
         try:
             failed_jobs = json.loads(os.environ.get("FAILED_JOBS_JSON", "[]"))
@@ -109,30 +190,31 @@ runs:
             failed_jobs = []
 
         has_failure = overall_result == "failure" or build_result == "failure"
+        overall_status = "FAIL" if has_failure else "PASS"
 
+        should_send = True
         if not has_failure and not send_on_success:
+            should_send = False
             print("All tests passed and send-on-success is false — skipping")
+
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"status={overall_status}\n")
+            f.write(f"should_send={str(should_send).lower()}\n")
+
+        if not should_send:
+            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                f.write("payload_file=\n")
             sys.exit(0)
 
-        if not token:
-            print("::warning::No Slack token provided — skipping notification")
-            sys.exit(0)
-
-        # Header
-        if has_failure:
-            header = f"🔴 {pipeline} — FAILED"
-            color = "#E01E5A"
-        else:
-            header = f"✅ {pipeline} — PASSED"
-            color = "#2EB67D"
-
-        # Mode
-        modes = {"schedule": "Nightly", "workflow_dispatch": "Manual", "push": "Push"}
-        mode = modes.get(event_name, event_name.title())
-
+        scan_mode = get_scan_mode(event_name)
         scan_date = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-        # Build blocks
+        if has_failure:
+            header = f"🔴 {pipeline} — FAILED"
+        else:
+            header = f"✅ {pipeline} — PASSED"
+
+        # ── Build blocks ──
         blocks = [
             {
                 "type": "header",
@@ -142,7 +224,7 @@ runs:
                 "type": "section",
                 "fields": [
                     {"type": "mrkdwn", "text": f"*Branch:*\n`{branch}`"},
-                    {"type": "mrkdwn", "text": f"*Trigger:*\n{mode}"},
+                    {"type": "mrkdwn", "text": f"*Mode:*\n{scan_mode}"},
                 ]
             },
         ]
@@ -155,7 +237,74 @@ runs:
                 ]
             })
 
-        # Failed jobs section
+        blocks.append({"type": "divider"})
+
+        # ── Test Results Table ──
+        blocks.append({
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "*Test Results Summary*"}
+        })
+
+        table_rows = [
+            [
+                {"type": "raw_text", "text": "Test Suite"},
+                {"type": "raw_text", "text": "Status"},
+                {"type": "raw_text", "text": "Passed"},
+                {"type": "raw_text", "text": "Failed"},
+                {"type": "raw_text", "text": "Total"},
+            ]
+        ]
+
+        total_passed = 0
+        total_failed = 0
+        total_jobs = 0
+
+        for suite in test_results:
+            name = suite.get("name", "Unknown")
+            result = suite.get("result", "skipped")
+            passed = int(suite.get("passed", 0))
+            failed = int(suite.get("failed", 0))
+            total = int(suite.get("total", 0))
+
+            if total == 0 and (passed > 0 or failed > 0):
+                total = passed + failed
+
+            total_passed += passed
+            total_failed += failed
+            total_jobs += total
+
+            status_emoji = STATUS_EMOJI.get(result, "❓")
+
+            table_rows.append([
+                {"type": "raw_text", "text": name},
+                {"type": "raw_text", "text": status_emoji},
+                {"type": "raw_text", "text": str(passed)},
+                {"type": "raw_text", "text": str(failed)},
+                {"type": "raw_text", "text": str(total)},
+            ])
+
+        overall_emoji = "❌" if has_failure else "✅"
+        table_rows.append([
+            {"type": "raw_text", "text": "Total"},
+            {"type": "raw_text", "text": overall_emoji},
+            {"type": "raw_text", "text": str(total_passed)},
+            {"type": "raw_text", "text": str(total_failed)},
+            {"type": "raw_text", "text": str(total_jobs)},
+        ])
+
+        blocks.append({
+            "type": "table",
+            "column_settings": [
+                {"align": "left"},
+                {"align": "center"},
+                {"align": "center"},
+                {"align": "center"},
+                {"align": "center"},
+            ],
+            "rows": table_rows
+        })
+
+        # ── Failed Jobs with Permalinks ──
         if failed_jobs:
             blocks.append({"type": "divider"})
             blocks.append({
@@ -163,7 +312,6 @@ runs:
                 "text": {"type": "mrkdwn", "text": f"*Failed Jobs ({len(failed_jobs)}):*"}
             })
 
-            # Build failed jobs list with permalink hyperlinks
             lines = []
             for job in failed_jobs:
                 name = job.get("name", "Unknown")
@@ -173,7 +321,6 @@ runs:
                 else:
                     lines.append(f"• {name}")
 
-            # Slack has a 3000 char limit per text block — split if needed
             chunk = []
             chunk_len = 0
             for line in lines:
@@ -194,16 +341,13 @@ runs:
                 })
 
         blocks.append({"type": "divider"})
+
+        # ── Workflow link ──
         blocks.append({
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "View Workflow Run"},
-                    "url": workflow_url
-                }
-            ]
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"<{workflow_url}|View Workflow Run>"}
         })
+
         blocks.append({
             "type": "context",
             "elements": [
@@ -211,31 +355,51 @@ runs:
             ]
         })
 
-        payload = {"channel": channel, "text": header, "blocks": blocks}
+        payload = {"text": header, "blocks": blocks}
 
         payload_file = "/tmp/slack_payload.json"
         with open(payload_file, "w") as f:
             json.dump(payload, f, indent=2)
 
-        print(f"Slack payload built: {len(failed_jobs)} failed jobs, channel={channel}")
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"payload_file={payload_file}\n")
+
+        print(f"\nSlack payload built:")
+        print(f"  Pipeline: {pipeline}")
+        print(f"  Status: {overall_status}")
+        print(f"  Total Passed: {total_passed}")
+        print(f"  Total Failed: {total_failed}")
+        print(f"  Failed Jobs: {len(failed_jobs)}")
         PYTHON_SCRIPT
 
-        # Send via slackapi action's approach: direct API call
-        if [[ ! -f /tmp/slack_payload.json ]]; then
-          echo "No payload file — notification skipped"
-          exit 0
-        fi
+    # =========================================================================
+    # Step 3: Send Slack notification
+    # =========================================================================
+    - name: Send Slack notification
+      id: send
+      if: steps.build.outputs.should_send == 'true' && inputs.dry-run != 'true'
+      uses: slackapi/slack-github-action@v1.27.0
+      with:
+        channel-id: ${{ inputs.channel }}
+        payload-file-path: ${{ steps.build.outputs.payload_file }}
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
 
-        RESPONSE=$(curl -s -X POST https://slack.com/api/chat.postMessage \
-          -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d @/tmp/slack_payload.json)
-
-        OK=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok', False))" 2>/dev/null || echo "False")
-
-        if [[ "$OK" == "True" ]]; then
-          echo "Slack notification sent successfully to ${CHANNEL}"
+    # =========================================================================
+    # Step 4: Set final outputs
+    # =========================================================================
+    - name: Set final outputs
+      id: finalize
+      shell: bash
+      run: |
+        if [[ "${{ steps.build.outputs.should_send }}" == "true" && "${{ inputs.dry-run }}" != "true" ]]; then
+          echo "sent=true" >> $GITHUB_OUTPUT
+          echo "Slack notification sent successfully to ${{ inputs.channel }}"
         else
-          ERROR=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error', 'unknown'))" 2>/dev/null || echo "unknown")
-          echo "::warning::Slack notification failed: ${ERROR}"
+          echo "sent=false" >> $GITHUB_OUTPUT
+          if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+            echo "Dry run mode — notification not sent"
+          else
+            echo "Notification skipped based on configuration"
+          fi
         fi
