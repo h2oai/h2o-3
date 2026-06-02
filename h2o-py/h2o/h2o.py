@@ -8,6 +8,7 @@ h2o -- module for using H2O services.
 import os
 import subprocess
 import tempfile
+import time
 import warnings
 import webbrowser
 
@@ -455,6 +456,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
         path = os.path.expanduser(path)
     outcome = "ok"
     _result_frame = None
+    _t0 = time.time()
     try:
         _result_frame = H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
                                                  force_col_types, quotechar, escapechar)
@@ -466,9 +468,17 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
         # Fire-and-forget telemetry; never raises. size is best-effort.
         try:
             size = os.path.getsize(path) if os.path.exists(path) else 0
+            _fmt = _telemetry.derive_file_format(path)
             shape = _telemetry.derive_frame_shape(_result_frame) if outcome == "ok" else None
-            _telemetry.send_upload(_h2o_version_safe(), _telemetry.derive_file_format(path), size, outcome,
-                                   frame_shape=shape)
+            _telemetry.send_upload(_h2o_version_safe(), _fmt, size, outcome, frame_shape=shape)
+            # frame_parsed captures the parse operation itself. Only fire on a
+            # completed parse where rows/cols are known — both are REQUIRED.
+            if outcome == "ok":
+                _dims = _telemetry.derive_frame_dims(_result_frame)
+                if _dims is not None:
+                    _telemetry.send_frame_parsed(_h2o_version_safe(), _fmt, outcome,
+                                                 int((time.time() - _t0) * 1000),
+                                                 _dims[0], _dims[1], frame_memory_gb=_dims[2])
         except Exception:
             pass
 
@@ -560,6 +570,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                             "Please use absolute paths if possible.")
     outcome = "ok"
     _result_frame = None
+    _t0 = time.time()
     try:
         if not parse:
             _result_frame = lazy_import(path, pattern)
@@ -576,20 +587,29 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
             # Use the first path when a list is supplied; only the URL scheme leaks out.
             first = path[0] if isinstance(path, list) and path else path
             # For local paths, we can derive the on-disk size. For remote paths
-            # (s3/hdfs/gcs/http), we don't probe — leave compressed_size_bucket null.
+            # (s3/hdfs/gcs/http), we don't probe — leave data_size_bucket null.
             size = None
             if first and os.path.exists(first):
                 try:
                     size = os.path.getsize(first)
                 except Exception:
                     size = None
+            _fmt = _telemetry.derive_file_format(first)
             shape = _telemetry.derive_frame_shape(_result_frame) if (outcome == "ok" and parse) else None
             _telemetry.send_import(_h2o_version_safe(),
                                    _telemetry.derive_source_scheme(first),
-                                   _telemetry.derive_file_format(first),
+                                   _fmt,
                                    outcome,
                                    compressed_size_bytes=size,
                                    frame_shape=shape)
+            # frame_parsed only when an actual parse ran and produced a frame
+            # with known rows/cols (both REQUIRED on that event).
+            if outcome == "ok" and parse:
+                _dims = _telemetry.derive_frame_dims(_result_frame)
+                if _dims is not None:
+                    _telemetry.send_frame_parsed(_h2o_version_safe(), _fmt, outcome,
+                                                 int((time.time() - _t0) * 1000),
+                                                 _dims[0], _dims[1], frame_memory_gb=_dims[2])
         except Exception:
             pass
 
@@ -1514,18 +1534,40 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
         raise H2OValueError("Export to POJO not supported")
 
     path = str(os.path.join(path, ''))
-    if path == "":
-        java_code = api("GET /3/Models.java/%s" % model.model_id)
-        print(java_code)
-        return None
-    else:
-        filename = api("GET /3/Models.java/%s" % model.model_id, save_to=path)
-        if get_jar:
-            if jar_name == "":
-                api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
-            else:
-                api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, jar_name))
-        return filename
+    outcome = "ok"
+    _pojo_file = None
+    try:
+        if path == "":
+            java_code = api("GET /3/Models.java/%s" % model.model_id)
+            print(java_code)
+            return None
+        else:
+            filename = api("GET /3/Models.java/%s" % model.model_id, save_to=path)
+            _pojo_file = filename
+            if get_jar:
+                if jar_name == "":
+                    api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+                else:
+                    api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, jar_name))
+            return filename
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        # Fire-and-forget model_download telemetry (format=pojo); never raises.
+        try:
+            _algo = (model._model_json or {}).get("algo", "") if getattr(model, "_model_json", None) else ""
+            size = None
+            if _pojo_file and os.path.exists(_pojo_file):
+                try:
+                    size = os.path.getsize(_pojo_file)
+                except Exception:
+                    size = None
+            _telemetry.send_model_download(_h2o_version_safe(), algo=_algo, family=None,
+                                           outcome=outcome, fmt="pojo",
+                                           compressed_size_bytes=size)
+        except Exception:
+            pass
 
 
 def download_csv(data, filename):
@@ -1671,9 +1713,31 @@ def download_model(model, path="", export_cross_validation_predictions=False, fi
     else:
         assert_is_type(filename, str)
     path = os.path.join(os.getcwd() if path == "" else path, filename)
-    return api("GET /3/Models.fetch.bin/%s" % model.model_id,
-               data={"export_cross_validation_predictions": export_cross_validation_predictions}, 
-               save_to=path)
+    outcome = "ok"
+    _saved = None
+    try:
+        _saved = api("GET /3/Models.fetch.bin/%s" % model.model_id,
+                     data={"export_cross_validation_predictions": export_cross_validation_predictions},
+                     save_to=path)
+        return _saved
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        # Fire-and-forget model_download telemetry (format=binary); never raises.
+        try:
+            _algo = (model._model_json or {}).get("algo", "") if getattr(model, "_model_json", None) else ""
+            size = None
+            if _saved and os.path.exists(_saved):
+                try:
+                    size = os.path.getsize(_saved)
+                except Exception:
+                    size = None
+            _telemetry.send_model_download(_h2o_version_safe(), algo=_algo, family=None,
+                                           outcome=outcome, fmt="binary",
+                                           compressed_size_bytes=size)
+        except Exception:
+            pass
 
 
 def upload_model(path):

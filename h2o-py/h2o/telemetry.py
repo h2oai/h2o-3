@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Telemetry for h2o-py (v1.5).
+Telemetry for h2o-py (v2.1).
 
 Sends fire-and-forget HTTPS POSTs to the telemetry receiver describing
 client activity. Every request runs on a daemon thread with a hard 2s
@@ -14,8 +14,10 @@ Supported event types:
     algo_train       one per estimator.train()
     algo_score       one per model.predict()
     mojo_download    one per model.download_mojo()
+    model_download   one per h2o.download_pojo() / h2o.download_model() (non-MOJO)
     upload           one per h2o.upload_file()
     import           one per h2o.import_file()
+    frame_parsed     one per completed parse (alongside upload / import)
     automl_run       one per H2OAutoML.train()
     model_save       one per h2o.save_model()
     model_load       one per h2o.load_model()
@@ -27,7 +29,11 @@ Honors two opt-out environment variables (first match wins):
 URL override: H2O_TELEMETRY_URL.
 
 See `.planning/h2o-3-client-integration.md` and
-`.planning/h2o-3-update-v1.3-v1.4.md` for the wire contract.
+`.planning/h2o-3-update-v2.1.md` for the wire contract. The v2.1 delta is a
+breaking wire change: rebucketed numeric scales, `compressed_size_bucket`
+split into `mojo_size_bucket` / `artifact_size_bucket` / `data_size_bucket`,
+new `product` / `cpu_arch` / `python_distribution` fields, and the two new
+events above. A v2.0-shape payload is rejected (HTTP 422) by a v2.1 receiver.
 """
 import json
 import os
@@ -38,6 +44,13 @@ import threading
 import time
 import urllib.request
 import uuid
+
+# Product attribution is hardcoded per repo at build time (OSS vs Enterprise).
+# Guard the import so a missing/edited _product.py can never break `import h2o`.
+try:
+    from h2o._product import _PRODUCT
+except Exception:
+    _PRODUCT = "h2o-3-oss"
 
 # v2.0 production endpoint. Override per-deployment via H2O_TELEMETRY_URL
 # (internal / private receivers, local dev pointing at 127.0.0.1:8000, etc.).
@@ -114,59 +127,133 @@ def _cap_version(value, max_len=_MAX_VERSION_FIELD_LEN):
 
 
 # -- Bucketize helpers -- byte-identical labels across Python / R / Java per the wire contract.
+# v2.1 boundaries (`.planning/h2o-3-update-v2.1.md` sections 2-3). Old v2.0 labels are REJECTED.
 
 def bucketize_duration_ms(ms):
-    if ms < 1_000:          return "<1s"
-    if ms < 10_000:         return "1s-10s"
-    if ms < 60_000:         return "10s-60s"
-    if ms < 600_000:        return "1m-10m"
-    if ms < 3_600_000:      return "10m-1h"
-    return ">1h"
+    # Sub-second values floor to "<5s" — no sub-second resolution in v2.1.
+    seconds = ms / 1000.0
+    if seconds < 5:         return "<5s"
+    if seconds < 15:        return "5s-15s"
+    if seconds < 30:        return "15s-30s"
+    if seconds < 60:        return "30s-1m"
+    if seconds < 120:       return "1m-2m"
+    if seconds < 300:       return "2m-5m"
+    if seconds < 600:       return "5m-10m"
+    if seconds < 900:       return "10m-15m"
+    if seconds < 1_800:     return "15m-30m"
+    if seconds < 3_600:     return "30m-1h"
+    if seconds < 7_200:     return "1h-2h"
+    if seconds < 14_400:    return "2h-4h"
+    if seconds < 21_600:    return "4h-6h"
+    return ">6h"
 
 
 def bucketize_rows(n):
     if n < 1_000:           return "<1k"
-    if n < 10_000:          return "1k-10k"
-    if n < 100_000:         return "10k-100k"
-    if n < 1_000_000:       return "100k-1M"
-    if n < 10_000_000:      return "1M-10M"
-    return ">10M"
+    if n < 3_000:           return "1k-3k"
+    if n < 10_000:          return "3k-10k"
+    if n < 30_000:          return "10k-30k"
+    if n < 100_000:         return "30k-100k"
+    if n < 300_000:         return "100k-300k"
+    if n < 1_000_000:       return "300k-1M"
+    if n < 3_000_000:       return "1M-3M"
+    if n < 10_000_000:      return "3M-10M"
+    if n < 30_000_000:      return "10M-30M"
+    if n < 100_000_000:     return "30M-100M"
+    return ">100M"
 
 
 def bucketize_cols(n):
     if n < 10:              return "<10"
-    if n < 100:             return "10-100"
-    if n < 1_000:           return "100-1k"
-    if n < 10_000:          return "1k-10k"
-    return ">10k"
+    if n < 30:              return "10-30"
+    if n < 100:             return "30-100"
+    if n < 300:             return "100-300"
+    if n < 1_000:           return "300-1k"
+    if n < 3_000:           return "1k-3k"
+    if n < 10_000:          return "3k-10k"
+    if n < 30_000:          return "10k-30k"
+    if n < 100_000:         return "30k-100k"
+    if n < 300_000:         return "100k-300k"
+    if n < 1_000_000:       return "300k-1M"
+    return ">1M"
 
 
-def bucketize_size_bytes(b):
-    # Decimal MB/GB per v1.5 contract — labels are "MB" / "GB", not "MiB".
-    if b < 1_000_000:        return "<1MB"
-    if b < 10_000_000:       return "1MB-10MB"
-    if b < 100_000_000:      return "10MB-100MB"
-    if b < 1_000_000_000:    return "100MB-1GB"
+# v2.1 splits the single v2.0 `compressed_size_bucket` into three range-tuned
+# scales. All three use MiB (1_048_576), per the v2.1 spec helpers in section 3.
+
+def bucketize_mojo_size(b):
+    # MOJOs are typically 1-50 MB; the 100KB floor catches tiny GLM MOJOs.
+    mb = b / 1_048_576.0
+    if mb < 0.1:    return "<100KB"
+    if mb < 1:      return "100KB-1MB"
+    if mb < 5:      return "1MB-5MB"
+    if mb < 10:     return "5MB-10MB"
+    if mb < 50:     return "10MB-50MB"
+    if mb < 100:    return "50MB-100MB"
+    return ">100MB"
+
+
+def bucketize_artifact_size(b):
+    # Binary / POJO models; deep-stacked ensembles can exceed 1 GB.
+    mb = b / 1_048_576.0
+    if mb < 0.1:    return "<100KB"
+    if mb < 1:      return "100KB-1MB"
+    if mb < 10:     return "1MB-10MB"
+    if mb < 100:    return "10MB-100MB"
+    if mb < 1024:   return "100MB-1GB"
     return ">1GB"
 
 
-# -- v1.4 / v1.5 bucket helpers --
+def bucketize_data_size(b):
+    # Uploaded / imported datasets. Spans MB to multi-TB.
+    mb = b / 1_048_576.0
+    gb = mb / 1024.0
+    if mb < 10:     return "<10MB"
+    if mb < 100:    return "10MB-100MB"
+    if mb < 500:    return "100MB-500MB"
+    if mb < 1024:   return "500MB-1GB"
+    if gb < 5:      return "1GB-5GB"
+    if gb < 10:     return "5GB-10GB"
+    if gb < 50:     return "10GB-50GB"
+    if gb < 100:    return "50GB-100GB"
+    if gb < 250:    return "100GB-250GB"
+    if gb < 500:    return "250GB-500GB"
+    if gb < 1024:   return "500GB-1TB"
+    if gb < 1536:   return "1TB-1.5TB"
+    if gb < 2048:   return "1.5TB-2TB"
+    return ">2TB"
+
+
+# -- cluster-shape bucket helpers (v2.1 section 2.4 / 2.5) --
 
 def bucketize_cluster_nodes(n):
-    if n == 1:    return "1"
-    if n <= 4:    return "2-4"
-    if n <= 16:   return "5-16"
-    if n <= 64:   return "17-64"
-    return ">64"
+    # Capture fine, display coarse: exact node count for n <= 16 (1-node vs
+    # 4-node is operationally meaningful), doubling-ish buckets above 16.
+    if n <= 16:   return str(n)
+    if n <= 20:   return "17-20"
+    if n <= 24:   return "21-24"
+    if n <= 32:   return "25-32"
+    if n <= 48:   return "33-48"
+    if n <= 64:   return "49-64"
+    if n <= 128:  return "65-128"
+    if n <= 256:  return "129-256"
+    return ">256"
 
 
 def bucketize_cluster_memory_gb(gb):
-    if gb < 1:    return "<1"
-    if gb < 8:    return "1-8"
-    if gb < 32:   return "8-32"
-    if gb < 128:  return "32-128"
-    if gb < 512:  return "128-512"
-    return ">512"
+    # Doubling scale matching how RAM physically ships; floor at "<4".
+    if gb < 4:     return "<4"
+    if gb < 8:     return "4-8"
+    if gb < 16:    return "8-16"
+    if gb < 32:    return "16-32"
+    if gb < 64:    return "32-64"
+    if gb < 128:   return "64-128"
+    if gb < 256:   return "128-256"
+    if gb < 512:   return "256-512"
+    if gb < 1024:  return "512-1024"
+    if gb < 2048:  return "1024-2048"
+    if gb < 4096:  return "2048-4096"
+    return ">4096"
 
 
 # `frame_memory_gb_bucket` shares boundaries with cluster_memory_gb_bucket per v1.5 spec.
@@ -192,6 +279,25 @@ def bucketize_leaderboard_size(n):
     if n < 50:    return "10-50"
     if n < 100:   return "50-100"
     return ">100"
+
+
+# The receiver constrains automl_run.sort_metric to a closed lowercase Literal
+# AND requires it (a missing value is rejected). H2O AutoML's own metric names
+# map onto this set case-insensitively, so we lowercase; anything unrecognized
+# falls back to "auto" (AutoML's default) so an odd metric can never 422 the
+# whole event.
+_ALLOWED_SORT_METRICS = frozenset((
+    "auto", "deviance", "logloss", "rmse", "mse", "mae",
+    "rmsle", "auc", "aucpr", "mean_per_class_error",
+))
+
+
+def _normalize_sort_metric(metric):
+    if metric is not None:
+        s = str(metric).strip().lower()
+        if s in _ALLOWED_SORT_METRICS:
+            return s
+    return "auto"
 
 
 # -- Runtime version detection --
@@ -249,6 +355,68 @@ def _java_version_safe():
 def _java_vendor_safe():
     info = _detect_java_info()
     return _cap_version(info.get("vendor")) if info.get("vendor") else None
+
+
+# -- Host fingerprint (v2.1 section 5) — cpu_arch + python_distribution --
+# Both are caller-side context carried only on `init` / `cluster_connect`.
+
+def _detect_cpu_arch():
+    """Map ``platform.machine()`` to the closed cpu_arch Literal. Never raises.
+
+    ``arm64`` (macOS / Apple Silicon) and ``aarch64`` (Linux ARM64) are kept
+    deliberately distinct even though they are the same ISA — the OS-native
+    string lets analytics separate Apple-Silicon-Mac from Graviton-Linux
+    without joining on the `os` field.
+    """
+    try:
+        machine = platform.machine().lower()
+    except Exception:
+        return "other"
+    if machine in ("x86_64", "amd64"):
+        return "x86_64"
+    if machine == "arm64":
+        return "arm64"
+    if machine == "aarch64":
+        return "aarch64"
+    if machine in ("ppc64le", "ppc64"):
+        return "ppc64le"
+    if machine == "s390x":
+        return "s390x"
+    return "other"
+
+
+def _detect_python_distribution():
+    """Read the INSTALLER file the install tool itself wrote.
+
+    Not a CONDA_PREFIX heuristic — pip-into-a-conda-env is real and the
+    heuristic would mislabel it. Returns None when the `h2o` distribution
+    can't be located (e.g. running from a source checkout). Never raises.
+    """
+    try:
+        import importlib.metadata as _im
+    except Exception:
+        return None
+    try:
+        dist = _im.distribution("h2o")
+    except Exception:
+        return None  # PackageNotFoundError (source checkout) or anything else
+    try:
+        installer_raw = dist.read_text("INSTALLER")
+    except Exception:
+        installer_raw = None
+    if installer_raw is None:
+        return "system"  # no INSTALLER file → installed by a system package manager
+    installer = installer_raw.strip().lower()
+    if installer == "pip":
+        return "pip"
+    if installer == "conda":
+        return "conda"
+    return "other"
+
+
+# Computed once at import — no per-emit overhead.
+_CPU_ARCH = _detect_cpu_arch()
+_PYTHON_DIST = _detect_python_distribution()
 
 
 # -- Cluster-shape detection --
@@ -336,6 +504,8 @@ def _envelope(h2o_version):
         "jvm_version": _java_version_safe() or "",
         "session_id": _current_session_id(),
         "ts": int(time.time()),
+        # v2.1: build-flavor attribution (OSS vs Enterprise), on every event.
+        "product": _PRODUCT,
     }
 
 
@@ -393,6 +563,8 @@ def send_init_telemetry(h2o_version, *, cluster_shape=None, attributes=None):
         "python_version": _python_version_safe(),
         "java_version":   _java_version_safe(),
         "java_vendor":    _java_vendor_safe(),
+        "cpu_arch":            _CPU_ARCH,
+        "python_distribution": _PYTHON_DIST,
     }))
     if cluster_shape:
         payload.update(_strip_none(cluster_shape))
@@ -414,6 +586,8 @@ def send_cluster_connect_telemetry(h2o_version, *, cluster_shape=None, attribute
         "python_version": _python_version_safe(),
         "java_version":   _java_version_safe(),
         "java_vendor":    _java_vendor_safe(),
+        "cpu_arch":            _CPU_ARCH,
+        "python_distribution": _PYTHON_DIST,
     }))
     if cluster_shape:
         payload.update(_strip_none(cluster_shape))
@@ -465,7 +639,7 @@ def send_mojo_download(h2o_version, algo, family, outcome, compressed_size_bytes
         "algo": algo,
         "family": family,
         "outcome": outcome,
-        "compressed_size_bucket": bucketize_size_bytes(compressed_size_bytes),
+        "mojo_size_bucket": bucketize_mojo_size(compressed_size_bytes),
     }
     _attach_extras(payload, attributes)
     _post_async(payload)
@@ -478,6 +652,9 @@ def send_upload(h2o_version, file_format, compressed_size_bytes, outcome,
     ``frame_shape`` is an optional dict with keys ``rows_bucket``, ``cols_bucket``,
     ``frame_memory_gb_bucket`` (v1.5 Phase 23). Pass ``None`` (or omit) when
     the parse failed — sending bucket values for an error path is misleading.
+
+    ``data_size_bucket`` is REQUIRED on upload (the client always knows the
+    on-disk size of the bytes it is about to push).
     """
     if _telemetry_disabled():
         return
@@ -485,7 +662,7 @@ def send_upload(h2o_version, file_format, compressed_size_bytes, outcome,
         **_envelope(h2o_version),
         "event": "upload",
         "file_format": file_format,
-        "compressed_size_bucket": bucketize_size_bytes(compressed_size_bytes),
+        "data_size_bucket": bucketize_data_size(compressed_size_bytes),
         "outcome": outcome,
     }
     if frame_shape:
@@ -501,6 +678,10 @@ def send_import(h2o_version, source_scheme, file_format, outcome,
     v1.5 Phase 23 adds optional ``compressed_size_bytes`` (the size of the
     remote payload) and ``frame_shape`` (post-parse). Both omitted on error
     paths or when the size isn't cheap to derive.
+
+    ``data_size_bucket`` is nullable on import (the source is often
+    HDFS/S3/GCS where size is metadata the cluster must round-trip to
+    discover) — send None / omit when it isn't cheaply known.
     """
     if _telemetry_disabled():
         return
@@ -512,7 +693,7 @@ def send_import(h2o_version, source_scheme, file_format, outcome,
         "outcome": outcome,
     }
     if compressed_size_bytes is not None:
-        payload["compressed_size_bucket"] = bucketize_size_bytes(compressed_size_bytes)
+        payload["data_size_bucket"] = bucketize_data_size(compressed_size_bytes)
     if frame_shape:
         payload.update(_strip_none(frame_shape))
     _attach_extras(payload, attributes)
@@ -538,7 +719,7 @@ def send_automl_run(h2o_version, algo, family, outcome,
         "outcome": outcome,
         "max_models_bucket":      bucketize_max_models(int(max_models)) if max_models is not None else None,
         "max_runtime_secs_bucket": bucketize_max_runtime_secs(float(max_runtime_secs)) if max_runtime_secs is not None else None,
-        "sort_metric":            sort_metric,
+        "sort_metric":            _normalize_sort_metric(sort_metric),
         "leaderboard_size_bucket": bucketize_leaderboard_size(int(leaderboard_size)) if leaderboard_size is not None else None,
     }
     payload = _strip_none(payload)
@@ -560,7 +741,7 @@ def send_model_save(h2o_version, algo, family, outcome, fmt, compressed_size_byt
         "family": family,
         "outcome": outcome,
         "format": fmt,
-        "compressed_size_bucket": bucketize_size_bytes(compressed_size_bytes) if compressed_size_bytes is not None else None,
+        "artifact_size_bucket": bucketize_artifact_size(compressed_size_bytes) if compressed_size_bytes is not None else None,
     }
     payload = _strip_none(payload)
     _attach_extras(payload, attributes)
@@ -578,9 +759,59 @@ def send_model_load(h2o_version, algo, family, outcome, fmt, compressed_size_byt
         "family": family,
         "outcome": outcome,
         "format": fmt,
-        "compressed_size_bucket": bucketize_size_bytes(compressed_size_bytes) if compressed_size_bytes is not None else None,
+        "artifact_size_bucket": bucketize_artifact_size(compressed_size_bytes) if compressed_size_bytes is not None else None,
     }
     payload = _strip_none(payload)
+    _attach_extras(payload, attributes)
+    _post_async(payload)
+
+
+def send_model_download(h2o_version, algo, family, outcome, fmt, compressed_size_bytes, attributes=None):
+    """Fire one `event=model_download` POST (v2.1 NEW — non-MOJO downloads).
+
+    ``fmt`` is ``"binary"`` or ``"pojo"`` — never ``"mojo"`` (MOJOs go through
+    :func:`send_mojo_download`). Sibling of mojo_download but for the
+    artifact-scale size distribution of binary models and POJO source.
+    """
+    if _telemetry_disabled():
+        return
+    payload = {
+        **_envelope(h2o_version),
+        "event": "model_download",
+        "algo": algo,
+        "family": family,
+        "outcome": outcome,
+        "format": fmt,
+        "artifact_size_bucket": bucketize_artifact_size(compressed_size_bytes) if compressed_size_bytes is not None else None,
+    }
+    payload = _strip_none(payload)
+    _attach_extras(payload, attributes)
+    _post_async(payload)
+
+
+def send_frame_parsed(h2o_version, file_format, outcome, duration_ms, n_rows, n_cols,
+                      frame_memory_gb=None, attributes=None):
+    """Fire one `event=frame_parsed` POST (v2.1 NEW — fires alongside upload / import).
+
+    Captures the parse operation itself. ``rows_bucket`` / ``cols_bucket`` /
+    ``duration_ms_bucket`` are REQUIRED — the receiver rejects a null/missing
+    value for any of them with 422 (stricter than upload / import). Only
+    ``frame_memory_gb_bucket`` is nullable. Callers must only fire this on a
+    completed parse (``outcome="ok"`` with a real frame in hand).
+    """
+    if _telemetry_disabled():
+        return
+    payload = {
+        **_envelope(h2o_version),
+        "event": "frame_parsed",
+        "file_format": file_format,
+        "outcome": outcome,
+        "rows_bucket": bucketize_rows(n_rows),
+        "cols_bucket": bucketize_cols(n_cols),
+        "duration_ms_bucket": bucketize_duration_ms(duration_ms),
+    }
+    if frame_memory_gb is not None:
+        payload["frame_memory_gb_bucket"] = bucketize_frame_memory_gb(frame_memory_gb)
     _attach_extras(payload, attributes)
     _post_async(payload)
 
@@ -646,3 +877,28 @@ def derive_frame_shape(frame):
     except Exception:
         pass
     return out
+
+
+def derive_frame_dims(frame):
+    """Return ``(n_rows, n_cols, frame_memory_gb)`` for a parsed H2OFrame.
+
+    Used by the ``frame_parsed`` call sites, which need raw counts (not
+    buckets) and REQUIRE rows + cols. Returns ``None`` when rows/cols can't
+    be determined so the caller skips the event. ``frame_memory_gb`` is None
+    when ``byte_size`` is unavailable (that field is nullable on the wire).
+    """
+    if frame is None:
+        return None
+    try:
+        n_rows = int(frame.nrow or 0)
+        n_cols = int(frame.ncol or 0)
+    except Exception:
+        return None
+    frame_memory_gb = None
+    try:
+        b = int(getattr(frame, "byte_size", 0) or 0)
+        if b > 0:
+            frame_memory_gb = b / (1024 ** 3)
+    except Exception:
+        frame_memory_gb = None
+    return (n_rows, n_cols, frame_memory_gb)
