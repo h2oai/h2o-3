@@ -362,5 +362,6 @@ jobs:
             ]
           failed_jobs_json: ${{ steps.dashboard.outputs.failed_jobs_json }}
           workflow-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          send-on-success: "true"
+          slack-token: ${{ secrets.H2O_OPS_SLACK_BOT_TOKEN }}
           event-name: ${{ github.event_name }}
