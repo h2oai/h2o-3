@@ -221,21 +221,29 @@ runs:
                 "text": {"type": "plain_text", "text": header}
             },
             {
-                "type": "section",
-                "fields": [
-                    {"type": "mrkdwn", "text": f"*Branch:*\n`{branch}`"},
-                    {"type": "mrkdwn", "text": f"*Mode:*\n{scan_mode}"},
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": f"{scan_mode}  |  {scan_date}"}
                 ]
             },
         ]
 
+        left_lines = [f"*Branch:* `{branch}`"]
         if build_sha:
-            blocks.append({
-                "type": "context",
-                "elements": [
-                    {"type": "mrkdwn", "text": f"Commit: <https://github.com/h2oai/h2o-3/commit/{build_sha}|`{build_sha[:8]}`> · {scan_date}"}
-                ]
-            })
+            left_lines.append(f"*Commit:* <https://github.com/h2oai/h2o-3/commit/{build_sha}|{build_sha[:8]}>")
+
+        right_lines = [
+            "*Links:*",
+            f"• <{workflow_url}|Workflow Run>",
+        ]
+
+        blocks.append({
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": "\n".join(left_lines)},
+                {"type": "mrkdwn", "text": "\n".join(right_lines)},
+            ]
+        })
 
         blocks.append({"type": "divider"})
 
@@ -340,18 +348,10 @@ runs:
                     "text": {"type": "mrkdwn", "text": "\n".join(chunk)}
                 })
 
-        blocks.append({"type": "divider"})
-
-        # ── Workflow link ──
-        blocks.append({
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": f"<{workflow_url}|View Workflow Run>"}
-        })
-
         blocks.append({
             "type": "context",
             "elements": [
-                {"type": "mrkdwn", "text": f"{pipeline} · GitHub Actions"}
+                {"type": "mrkdwn", "text": f"{pipeline} | GitHub Actions"}
             ]
         })
 
