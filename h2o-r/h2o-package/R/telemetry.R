@@ -1,5 +1,5 @@
 #'
-#' Telemetry for h2o-r (v1.5).
+#' Telemetry for h2o-r (v2.1).
 #'
 #' Sends fire-and-forget HTTPS POSTs to the telemetry receiver describing
 #' client activity. Primary delivery path is system `curl` invoked with
@@ -16,7 +16,11 @@
 #' URL override: H2O_TELEMETRY_URL.
 #'
 #' See `.planning/h2o-3-client-integration.md` and
-#' `.planning/h2o-3-update-v1.3-v1.4.md` for the wire contract.
+#' `.planning/h2o-3-update-v2.1.md` for the wire contract. The v2.1 delta is a
+#' breaking wire change: rebucketed numeric scales, `compressed_size_bucket`
+#' split into `mojo_size_bucket` / `artifact_size_bucket` / `data_size_bucket`,
+#' new `product` / `cpu_arch` fields, and two new events (`model_download`,
+#' `frame_parsed`). A v2.0-shape payload is rejected (HTTP 422) by a v2.1 receiver.
 
 # v2.0 production endpoint. Override per-deployment via H2O_TELEMETRY_URL
 # (internal / private receivers, local dev pointing at 127.0.0.1:8000, etc.).
@@ -24,6 +28,10 @@
 .h2o.telemetry.payload_version <- 1L
 .h2o.telemetry.timeout_secs <- 2L
 .h2o.telemetry.max_version_len <- 64L
+
+# Build-flavor attribution (OSS vs Enterprise), hardcoded per repo at build
+# time. This is the OSS repo. Mirrors h2o-py/h2o/_product.py.
+.h2o.telemetry.product <- "h2o-3-oss"
 
 # Per-process shared session_id + caches in a private env so they persist
 # across function calls without leaking package globals.
@@ -110,59 +118,131 @@
 }
 
 # -- Bucketize helpers — byte-identical labels across Python / R / Java --
+# v2.1 boundaries (`.planning/h2o-3-update-v2.1.md` sections 2-3). Old v2.0
+# labels are REJECTED (closed Literals). Mirrors h2o-py/h2o/telemetry.py.
 
 bucketize_duration_ms <- function(ms) {
-  if (ms < 1000)          return("<1s")
-  if (ms < 10000)         return("1s-10s")
-  if (ms < 60000)         return("10s-60s")
-  if (ms < 600000)        return("1m-10m")
-  if (ms < 3600000)       return("10m-1h")
-  ">1h"
+  # Sub-second values floor to "<5s" — no sub-second resolution in v2.1.
+  seconds <- ms / 1000
+  if (seconds < 5)      return("<5s")
+  if (seconds < 15)     return("5s-15s")
+  if (seconds < 30)     return("15s-30s")
+  if (seconds < 60)     return("30s-1m")
+  if (seconds < 120)    return("1m-2m")
+  if (seconds < 300)    return("2m-5m")
+  if (seconds < 600)    return("5m-10m")
+  if (seconds < 900)    return("10m-15m")
+  if (seconds < 1800)   return("15m-30m")
+  if (seconds < 3600)   return("30m-1h")
+  if (seconds < 7200)   return("1h-2h")
+  if (seconds < 14400)  return("2h-4h")
+  if (seconds < 21600)  return("4h-6h")
+  ">6h"
 }
 
 bucketize_rows <- function(n) {
-  if (n < 1000)           return("<1k")
-  if (n < 10000)          return("1k-10k")
-  if (n < 100000)         return("10k-100k")
-  if (n < 1000000)        return("100k-1M")
-  if (n < 10000000)       return("1M-10M")
-  ">10M"
+  if (n < 1000)      return("<1k")
+  if (n < 3000)      return("1k-3k")
+  if (n < 10000)     return("3k-10k")
+  if (n < 30000)     return("10k-30k")
+  if (n < 100000)    return("30k-100k")
+  if (n < 300000)    return("100k-300k")
+  if (n < 1000000)   return("300k-1M")
+  if (n < 3000000)   return("1M-3M")
+  if (n < 10000000)  return("3M-10M")
+  if (n < 30000000)  return("10M-30M")
+  if (n < 100000000) return("30M-100M")
+  ">100M"
 }
 
 bucketize_cols <- function(n) {
-  if (n < 10)             return("<10")
-  if (n < 100)            return("10-100")
-  if (n < 1000)           return("100-1k")
-  if (n < 10000)          return("1k-10k")
-  ">10k"
+  if (n < 10)      return("<10")
+  if (n < 30)      return("10-30")
+  if (n < 100)     return("30-100")
+  if (n < 300)     return("100-300")
+  if (n < 1000)    return("300-1k")
+  if (n < 3000)    return("1k-3k")
+  if (n < 10000)   return("3k-10k")
+  if (n < 30000)   return("10k-30k")
+  if (n < 100000)  return("30k-100k")
+  if (n < 300000)  return("100k-300k")
+  if (n < 1000000) return("300k-1M")
+  ">1M"
 }
 
-bucketize_size_bytes <- function(b) {
-  # Decimal MB/GB per v1.5 contract — labels are "MB" / "GB", not "MiB".
-  if (b < 1000000)        return("<1MB")
-  if (b < 10000000)       return("1MB-10MB")
-  if (b < 100000000)      return("10MB-100MB")
-  if (b < 1000000000)     return("100MB-1GB")
+# v2.1 splits the single v2.0 size bucket into three range-tuned scales.
+# All three use MiB (1048576), per the v2.1 spec helpers in section 3.
+
+bucketize_mojo_size <- function(b) {
+  mb <- b / 1048576
+  if (mb < 0.1) return("<100KB")
+  if (mb < 1)   return("100KB-1MB")
+  if (mb < 5)   return("1MB-5MB")
+  if (mb < 10)  return("5MB-10MB")
+  if (mb < 50)  return("10MB-50MB")
+  if (mb < 100) return("50MB-100MB")
+  ">100MB"
+}
+
+bucketize_artifact_size <- function(b) {
+  mb <- b / 1048576
+  if (mb < 0.1)  return("<100KB")
+  if (mb < 1)    return("100KB-1MB")
+  if (mb < 10)   return("1MB-10MB")
+  if (mb < 100)  return("10MB-100MB")
+  if (mb < 1024) return("100MB-1GB")
   ">1GB"
 }
 
-# -- v1.4 / v1.5 bucket helpers --
+bucketize_data_size <- function(b) {
+  mb <- b / 1048576
+  gb <- mb / 1024
+  if (mb < 10)   return("<10MB")
+  if (mb < 100)  return("10MB-100MB")
+  if (mb < 500)  return("100MB-500MB")
+  if (mb < 1024) return("500MB-1GB")
+  if (gb < 5)    return("1GB-5GB")
+  if (gb < 10)   return("5GB-10GB")
+  if (gb < 50)   return("10GB-50GB")
+  if (gb < 100)  return("50GB-100GB")
+  if (gb < 250)  return("100GB-250GB")
+  if (gb < 500)  return("250GB-500GB")
+  if (gb < 1024) return("500GB-1TB")
+  if (gb < 1536) return("1TB-1.5TB")
+  if (gb < 2048) return("1.5TB-2TB")
+  ">2TB"
+}
+
+# -- cluster-shape bucket helpers (v2.1 section 2.4 / 2.5) --
 
 bucketize_cluster_nodes <- function(n) {
-  if (n == 1)  return("1")
-  if (n <= 4)  return("2-4")
-  if (n <= 16) return("5-16")
-  if (n <= 64) return("17-64")
-  ">64"
+  # Capture fine, display coarse: exact node count for n <= 16, buckets above.
+  n <- as.integer(n)
+  if (n <= 16)  return(as.character(n))
+  if (n <= 20)  return("17-20")
+  if (n <= 24)  return("21-24")
+  if (n <= 32)  return("25-32")
+  if (n <= 48)  return("33-48")
+  if (n <= 64)  return("49-64")
+  if (n <= 128) return("65-128")
+  if (n <= 256) return("129-256")
+  ">256"
 }
 
 bucketize_cluster_memory_gb <- function(gb) {
-  if (gb < 1)   return("<1")
-  if (gb < 8)   return("1-8")
-  if (gb < 32)  return("8-32")
-  if (gb < 128) return("32-128")
-  if (gb < 512) return("128-512")
-  ">512"
+  # Doubling scale matching how RAM physically ships; floor at "<4".
+  if (gb < 4)    return("<4")
+  if (gb < 8)    return("4-8")
+  if (gb < 16)   return("8-16")
+  if (gb < 32)   return("16-32")
+  if (gb < 64)   return("32-64")
+  if (gb < 128)  return("64-128")
+  if (gb < 256)  return("128-256")
+  if (gb < 512)  return("256-512")
+  if (gb < 1024) return("512-1024")
+  if (gb < 2048) return("1024-2048")
+  if (gb < 4096) return("2048-4096")
+  ">4096"
 }
 
 # frame_memory_gb_bucket shares boundaries with cluster_memory_gb_bucket.
@@ -189,6 +269,23 @@ bucketize_leaderboard_size <- function(n) {
   ">100"
 }
 
+# The receiver constrains automl_run.sort_metric to a closed lowercase Literal
+# AND requires it. H2O AutoML's own metric names map onto this set
+# case-insensitively, so we lowercase; anything unrecognized falls back to
+# "auto" (AutoML's default) so an odd metric can never 422 the whole event.
+.h2o.telemetry.allowed_sort_metrics <- c(
+  "auto", "deviance", "logloss", "rmse", "mse", "mae",
+  "rmsle", "auc", "aucpr", "mean_per_class_error"
+)
+
+.h2o.telemetry.normalize_sort_metric <- function(metric) {
+  if (!is.null(metric) && length(metric) > 0L && !is.na(metric)) {
+    s <- tolower(trimws(as.character(metric)[[1L]]))
+    if (s %in% .h2o.telemetry.allowed_sort_metrics) return(s)
+  }
+  "auto"
+}
+
 # -- Runtime version detection --
 
 .h2o.telemetry.r_version <- function() {
@@ -198,6 +295,23 @@ bucketize_leaderboard_size <- function(n) {
     ),
     error = function(e) NULL
   )
+}
+
+# Map R.version$arch to the closed cpu_arch Literal (v2.1 section 5). To mirror
+# the Python client's OS-native arm64/aarch64 split, Apple-Silicon macOS (which
+# R reports as "aarch64") is reported as "arm64"; Linux ARM64 stays "aarch64".
+.h2o.telemetry.cpu_arch <- function() {
+  arch <- tryCatch(tolower(R.version$arch), error = function(e) "")
+  sysname <- tryCatch(tolower(Sys.info()[["sysname"]]), error = function(e) "")
+  if (length(arch) == 0L || is.na(arch)) arch <- ""
+  if (arch %in% c("x86_64", "amd64")) return("x86_64")
+  if (grepl("aarch64|arm64", arch)) {
+    if (identical(sysname, "darwin")) return("arm64")
+    return("aarch64")
+  }
+  if (grepl("ppc64", arch)) return("ppc64le")
+  if (identical(arch, "s390x")) return("s390x")
+  "other"
 }
 
 .h2o.telemetry.detect_java <- function() {
@@ -303,7 +417,9 @@ bucketize_leaderboard_size <- function(n) {
     os_version      = .h2o.telemetry.str(Sys.info()[["release"]]),
     jvm_version     = .h2o.telemetry.str(.h2o.telemetry.java_version() %||% ""),
     session_id      = .h2o.telemetry.current_session_id(),
-    ts              = as.integer(Sys.time())
+    ts              = as.integer(Sys.time()),
+    # v2.1: build-flavor attribution (OSS vs Enterprise), on every event.
+    product         = .h2o.telemetry.product
   )
 }
 
@@ -410,7 +526,9 @@ bucketize_leaderboard_size <- function(n) {
     python_version = NULL,                                # not applicable to R client
     r_version      = .h2o.telemetry.r_version(),
     java_version   = .h2o.telemetry.java_version(),
-    java_vendor    = .h2o.telemetry.java_vendor()
+    java_vendor    = .h2o.telemetry.java_vendor(),
+    cpu_arch       = .h2o.telemetry.cpu_arch(),           # v2.1: on init / cluster_connect
+    python_distribution = NULL                            # Python-specific; always null on R
   ))
 }
 
@@ -496,10 +614,10 @@ bucketize_leaderboard_size <- function(n) {
       list(event = "mojo_download"),
       .h2o.telemetry.envelope(h2o_version),
       list(
-        algo                   = algo,
-        family                 = if (is.null(family) || is.na(family)) NULL else family,
-        outcome                = outcome,
-        compressed_size_bucket = bucketize_size_bytes(compressed_size_bytes)
+        algo             = algo,
+        family           = if (is.null(family) || is.na(family)) NULL else family,
+        outcome          = outcome,
+        mojo_size_bucket = bucketize_mojo_size(compressed_size_bytes)
       )
     )
     .h2o.telemetry.with_extras(base, attributes = attributes)
@@ -517,9 +635,10 @@ bucketize_leaderboard_size <- function(n) {
       list(event = "upload"),
       .h2o.telemetry.envelope(h2o_version),
       list(
-        file_format            = file_format,
-        compressed_size_bucket = bucketize_size_bytes(compressed_size_bytes),
-        outcome                = outcome
+        file_format      = file_format,
+        # data_size_bucket is REQUIRED on upload (client always knows the size).
+        data_size_bucket = bucketize_data_size(compressed_size_bytes),
+        outcome          = outcome
       )
     )
     .h2o.telemetry.with_extras(base,
@@ -546,8 +665,10 @@ bucketize_leaderboard_size <- function(n) {
       )
     )
     extras <- .h2o.telemetry.strip_null(c(
+      # data_size_bucket is nullable on import (remote sources may not expose
+      # the size cheaply) — omit when unknown.
       if (!is.null(compressed_size_bytes))
-        list(compressed_size_bucket = bucketize_size_bytes(compressed_size_bytes))
+        list(data_size_bucket = bucketize_data_size(compressed_size_bytes))
       else NULL,
       frame_shape %||% list()
     ))
@@ -573,7 +694,7 @@ bucketize_leaderboard_size <- function(n) {
         outcome                  = outcome,
         max_models_bucket        = if (!is.null(max_models))       bucketize_max_models(as.integer(max_models)) else NULL,
         max_runtime_secs_bucket  = if (!is.null(max_runtime_secs)) bucketize_max_runtime_secs(as.numeric(max_runtime_secs)) else NULL,
-        sort_metric              = if (is.null(sort_metric) || is.na(sort_metric)) NULL else as.character(sort_metric),
+        sort_metric              = .h2o.telemetry.normalize_sort_metric(sort_metric),
         leaderboard_size_bucket  = if (!is.null(leaderboard_size)) bucketize_leaderboard_size(as.integer(leaderboard_size)) else NULL
       )
     )
@@ -592,11 +713,11 @@ bucketize_leaderboard_size <- function(n) {
       list(event = "model_save"),
       .h2o.telemetry.envelope(h2o_version),
       list(
-        algo                   = algo,
-        family                 = if (is.null(family) || is.na(family)) NULL else family,
-        outcome                = outcome,
-        format                 = fmt,
-        compressed_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_size_bytes(compressed_size_bytes) else NULL
+        algo                 = algo,
+        family               = if (is.null(family) || is.na(family)) NULL else family,
+        outcome              = outcome,
+        format               = fmt,
+        artifact_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_artifact_size(compressed_size_bytes) else NULL
       )
     )
     .h2o.telemetry.with_extras(.h2o.telemetry.strip_null(base), attributes = attributes)
@@ -614,14 +735,62 @@ bucketize_leaderboard_size <- function(n) {
       list(event = "model_load"),
       .h2o.telemetry.envelope(h2o_version),
       list(
-        algo                   = algo,
-        family                 = if (is.null(family) || is.na(family)) NULL else family,
-        outcome                = outcome,
-        format                 = fmt,
-        compressed_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_size_bytes(compressed_size_bytes) else NULL
+        algo                 = algo,
+        family               = if (is.null(family) || is.na(family)) NULL else family,
+        outcome              = outcome,
+        format               = fmt,
+        artifact_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_artifact_size(compressed_size_bytes) else NULL
       )
     )
     .h2o.telemetry.with_extras(.h2o.telemetry.strip_null(base), attributes = attributes)
+  }, error = function(e) NULL)
+  if (is.null(payload)) return(invisible(NULL))
+  .h2o.telemetry.send(payload)
+}
+
+#' @keywords internal
+.h2o.send_model_download <- function(h2o_version, algo, family, outcome, fmt,
+                                     compressed_size_bytes = NULL, attributes = NULL) {
+  if (.h2o.telemetry.disabled()) return(invisible(NULL))
+  payload <- tryCatch({
+    base <- c(
+      list(event = "model_download"),
+      .h2o.telemetry.envelope(h2o_version),
+      list(
+        algo                 = algo,
+        family               = if (is.null(family) || is.na(family)) NULL else family,
+        outcome              = outcome,
+        format               = fmt,  # "binary" or "pojo" — never "mojo"
+        artifact_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_artifact_size(compressed_size_bytes) else NULL
+      )
+    )
+    .h2o.telemetry.with_extras(.h2o.telemetry.strip_null(base), attributes = attributes)
+  }, error = function(e) NULL)
+  if (is.null(payload)) return(invisible(NULL))
+  .h2o.telemetry.send(payload)
+}
+
+#' @keywords internal
+.h2o.send_frame_parsed <- function(h2o_version, file_format, outcome, duration_ms,
+                                   n_rows, n_cols, frame_memory_gb = NULL, attributes = NULL) {
+  if (.h2o.telemetry.disabled()) return(invisible(NULL))
+  payload <- tryCatch({
+    # rows / cols / duration are REQUIRED on frame_parsed — never stripped.
+    base <- c(
+      list(event = "frame_parsed"),
+      .h2o.telemetry.envelope(h2o_version),
+      list(
+        file_format        = file_format,
+        outcome            = outcome,
+        rows_bucket        = bucketize_rows(n_rows),
+        cols_bucket        = bucketize_cols(n_cols),
+        duration_ms_bucket = bucketize_duration_ms(duration_ms)
+      )
+    )
+    if (!is.null(frame_memory_gb)) {
+      base$frame_memory_gb_bucket <- bucketize_frame_memory_gb(frame_memory_gb)
+    }
+    .h2o.telemetry.with_extras(base, attributes = attributes)
   }, error = function(e) NULL)
   if (is.null(payload)) return(invisible(NULL))
   .h2o.telemetry.send(payload)
@@ -693,4 +862,19 @@ bucketize_leaderboard_size <- function(n) {
     out$frame_memory_gb_bucket <- bucketize_frame_memory_gb(bs / (1024^3))
   }
   out
+}
+
+#' Return list(n_rows, n_cols, frame_memory_gb) for a parsed H2OFrame, used by
+#' the frame_parsed call sites (which need raw counts and REQUIRE rows + cols).
+#' Returns NULL when rows/cols can't be determined so the caller skips the event.
+#' @keywords internal
+.h2o.derive_frame_dims <- function(frame) {
+  if (is.null(frame)) return(NULL)
+  nr <- tryCatch(as.integer(nrow(frame)), error = function(e) NA_integer_)
+  nc <- tryCatch(as.integer(ncol(frame)), error = function(e) NA_integer_)
+  if (is.na(nr) || is.na(nc)) return(NULL)
+  fmg <- NULL
+  bs <- tryCatch(attr(frame, "byte_size"), error = function(e) NULL)
+  if (!is.null(bs) && is.numeric(bs) && bs > 0) fmg <- bs / (1024^3)
+  list(n_rows = nr, n_cols = nc, frame_memory_gb = fmg)
 }
