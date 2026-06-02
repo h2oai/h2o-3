@@ -1,0 +1,241 @@
+# =============================================================================
+# Common Slack Alert for All Test Workflows
+# =============================================================================
+# Sends a Slack notification with failed job names and permalink hyperlinks.
+# Works for nightly tests (Smoke/Python/R/Java/Flow), JUnit tests (Java 8/11/17),
+# and enterprise workflows.
+#
+# Usage:
+#   - uses: ./.github/actions/send-slack-alert
+#     with:
+#       pipeline: "H2O-3 Nightly Tests"
+#       channel: "#h2o-3-alerts"
+#       branch: "master"
+#       build_result: "success"
+#       overall_result: "failure"
+#       failed_jobs_json: '[{"name": "Py3.7 Smoke", "url": "..."}]'
+#       workflow-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+#       slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+# =============================================================================
+
+name: "Send Slack Alert"
+description: "Send Slack notification with failed job details and permalink hyperlinks"
+
+inputs:
+  pipeline:
+    description: "Pipeline name (e.g., H2O-3 Nightly Tests, H2O-3 JUnit Tests)"
+    required: true
+
+  channel:
+    description: "Slack channel (e.g., #h2o-3-alerts)"
+    required: true
+
+  branch:
+    description: "Branch tested"
+    required: true
+
+  build_sha:
+    description: "Commit SHA"
+    required: false
+    default: ""
+
+  build_result:
+    description: "Build job result (success/failure/skipped)"
+    required: true
+
+  overall_result:
+    description: "Overall test result (success/failure)"
+    required: true
+
+  failed_jobs_json:
+    description: "JSON array of failed jobs: [{name, url}]"
+    required: false
+    default: "[]"
+
+  workflow-url:
+    description: "URL to the workflow run"
+    required: true
+
+  slack-token:
+    description: "Slack Bot Token"
+    required: true
+
+  event-name:
+    description: "GitHub event name (schedule, workflow_dispatch)"
+    required: false
+    default: "workflow_dispatch"
+
+  send-on-success:
+    description: "Send notification when all tests pass"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build and send Slack alert
+      shell: bash
+      env:
+        PIPELINE: ${{ inputs.pipeline }}
+        CHANNEL: ${{ inputs.channel }}
+        BRANCH: ${{ inputs.branch }}
+        BUILD_SHA: ${{ inputs.build_sha }}
+        BUILD_RESULT: ${{ inputs.build_result }}
+        OVERALL_RESULT: ${{ inputs.overall_result }}
+        FAILED_JOBS_JSON: ${{ inputs.failed_jobs_json }}
+        WORKFLOW_URL: ${{ inputs.workflow-url }}
+        SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
+        EVENT_NAME: ${{ inputs.event-name }}
+        SEND_ON_SUCCESS: ${{ inputs.send-on-success }}
+      run: |
+        python3 << 'PYTHON_SCRIPT'
+        import json, os, sys
+        from datetime import datetime, timezone
+
+        pipeline = os.environ["PIPELINE"]
+        channel = os.environ["CHANNEL"]
+        branch = os.environ["BRANCH"]
+        build_sha = os.environ.get("BUILD_SHA", "")
+        build_result = os.environ["BUILD_RESULT"]
+        overall_result = os.environ["OVERALL_RESULT"]
+        workflow_url = os.environ["WORKFLOW_URL"]
+        token = os.environ["SLACK_BOT_TOKEN"]
+        event_name = os.environ.get("EVENT_NAME", "workflow_dispatch")
+        send_on_success = os.environ.get("SEND_ON_SUCCESS", "false").lower() == "true"
+
+        try:
+            failed_jobs = json.loads(os.environ.get("FAILED_JOBS_JSON", "[]"))
+        except json.JSONDecodeError:
+            failed_jobs = []
+
+        has_failure = overall_result == "failure" or build_result == "failure"
+
+        if not has_failure and not send_on_success:
+            print("All tests passed and send-on-success is false — skipping")
+            sys.exit(0)
+
+        if not token:
+            print("::warning::No Slack token provided — skipping notification")
+            sys.exit(0)
+
+        # Header
+        if has_failure:
+            header = f"🔴 {pipeline} — FAILED"
+            color = "#E01E5A"
+        else:
+            header = f"✅ {pipeline} — PASSED"
+            color = "#2EB67D"
+
+        # Mode
+        modes = {"schedule": "Nightly", "workflow_dispatch": "Manual", "push": "Push"}
+        mode = modes.get(event_name, event_name.title())
+
+        scan_date = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+        # Build blocks
+        blocks = [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": header}
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*Branch:*\n`{branch}`"},
+                    {"type": "mrkdwn", "text": f"*Trigger:*\n{mode}"},
+                ]
+            },
+        ]
+
+        if build_sha:
+            blocks.append({
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": f"Commit: <https://github.com/h2oai/h2o-3/commit/{build_sha}|`{build_sha[:8]}`> · {scan_date}"}
+                ]
+            })
+
+        # Failed jobs section
+        if failed_jobs:
+            blocks.append({"type": "divider"})
+            blocks.append({
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*Failed Jobs ({len(failed_jobs)}):*"}
+            })
+
+            # Build failed jobs list with permalink hyperlinks
+            lines = []
+            for job in failed_jobs:
+                name = job.get("name", "Unknown")
+                url = job.get("url", "")
+                if url:
+                    lines.append(f"• <{url}|{name}>")
+                else:
+                    lines.append(f"• {name}")
+
+            # Slack has a 3000 char limit per text block — split if needed
+            chunk = []
+            chunk_len = 0
+            for line in lines:
+                if chunk_len + len(line) + 1 > 2800:
+                    blocks.append({
+                        "type": "section",
+                        "text": {"type": "mrkdwn", "text": "\n".join(chunk)}
+                    })
+                    chunk = []
+                    chunk_len = 0
+                chunk.append(line)
+                chunk_len += len(line) + 1
+
+            if chunk:
+                blocks.append({
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": "\n".join(chunk)}
+                })
+
+        blocks.append({"type": "divider"})
+        blocks.append({
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "View Workflow Run"},
+                    "url": workflow_url
+                }
+            ]
+        })
+        blocks.append({
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f"{pipeline} · GitHub Actions"}
+            ]
+        })
+
+        payload = {"channel": channel, "text": header, "blocks": blocks}
+
+        payload_file = "/tmp/slack_payload.json"
+        with open(payload_file, "w") as f:
+            json.dump(payload, f, indent=2)
+
+        print(f"Slack payload built: {len(failed_jobs)} failed jobs, channel={channel}")
+        PYTHON_SCRIPT
+
+        # Send via slackapi action's approach: direct API call
+        if [[ ! -f /tmp/slack_payload.json ]]; then
+          echo "No payload file — notification skipped"
+          exit 0
+        fi
+
+        RESPONSE=$(curl -s -X POST https://slack.com/api/chat.postMessage \
+          -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d @/tmp/slack_payload.json)
+
+        OK=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok', False))" 2>/dev/null || echo "False")
+
+        if [[ "$OK" == "True" ]]; then
+          echo "Slack notification sent successfully to ${CHANNEL}"
+        else
+          ERROR=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error', 'unknown'))" 2>/dev/null || echo "unknown")
+          echo "::warning::Slack notification failed: ${ERROR}"
+        fi

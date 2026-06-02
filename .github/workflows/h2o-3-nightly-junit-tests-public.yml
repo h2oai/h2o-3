@@ -299,3 +299,18 @@ jobs:
           java11_result: ${{ needs.java11.result }}
           java17_result: ${{ needs.java17.result }}
 
+      - name: Send Slack Alert
+        if: always()
+        uses: ./.github/actions/send-slack-alert
+        with:
+          pipeline: "H2O-3 JUnit Tests"
+          channel: "#h2o-3-alerts"
+          branch: ${{ needs.init.outputs.branch }}
+          build_sha: ${{ needs.build.outputs.build_sha }}
+          build_result: ${{ needs.build.result }}
+          overall_result: ${{ (needs.java8.result == 'failure' || needs.java11.result == 'failure' || needs.java17.result == 'failure') && 'failure' || 'success' }}
+          failed_jobs_json: ${{ steps.dashboard.outputs.failed_jobs_json }}
+          workflow-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          event-name: ${{ github.event_name }}
+
