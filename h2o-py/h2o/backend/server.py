@@ -291,6 +291,12 @@ class H2OLocalServer(object):
                 assert type(arg) is str
                 cmd += [arg]
 
+        # Suppress the spawned server's own JVM telemetry: this local server was
+        # launched by the Python client, which already reports the session via its
+        # own init event. The JVM emitter treats this flag as opt-out, so a single
+        # h2o.init() that spawns a local server is counted once, not twice.
+        cmd += ["-Dsys.ai.h2o.telemetry.clientLaunched=true"]
+
         # This should be the last JVM option
         if self._extra_classpath is None:
             # Use jar file directly

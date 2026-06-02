@@ -706,6 +706,12 @@ h2o.resume <- function(recovery_dir=NULL) {
   if(enable_assertions) args <- c(args, "-ea")
   if(!is.null(jvm_custom_args)) args <- c(args,jvm_custom_args)
 
+  # Suppress the spawned server's own JVM telemetry: this local server was
+  # launched by the R client, which already reports the session via its own init
+  # event. The JVM emitter treats this flag as opt-out, so a single h2o.init()
+  # that spawns a local server is counted once, not twice.
+  args <- c(args, "-Dsys.ai.h2o.telemetry.clientLaunched=true")
+
   if (!is.null(extra_classpath)) {
     class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
     args <- c(args, "-cp", class_path, "water.H2OApp")
