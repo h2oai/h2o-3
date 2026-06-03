@@ -260,19 +260,14 @@ runs:
 
         smoke_passed=0
         smoke_failed=0
-        smoke_total=0
         python_passed=0
         python_failed=0
-        python_total=0
         r_passed=0
         r_failed=0
-        r_total=0
         java_passed=0
         java_failed=0
-        java_total=0
         flow_passed=0
         flow_failed=0
-        flow_total=0
 
         FAILED_JOBS_JSON="["
         FIRST_FAILED=true
@@ -316,31 +311,26 @@ runs:
           case "$category" in
             smoke)
               smoke_jobs["$name"]="$job_entry"
-              smoke_total=$((smoke_total + 1))
               [[ "$result" == "success" ]] && smoke_passed=$((smoke_passed + 1))
               [[ "$result" == "failure" ]] && smoke_failed=$((smoke_failed + 1))
               ;;
             python)
               python_jobs["$name"]="$job_entry"
-              python_total=$((python_total + 1))
               [[ "$result" == "success" ]] && python_passed=$((python_passed + 1))
               [[ "$result" == "failure" ]] && python_failed=$((python_failed + 1))
               ;;
             r)
               r_jobs["$name"]="$job_entry"
-              r_total=$((r_total + 1))
               [[ "$result" == "success" ]] && r_passed=$((r_passed + 1))
               [[ "$result" == "failure" ]] && r_failed=$((r_failed + 1))
               ;;
             java)
               java_jobs["$name"]="$job_entry"
-              java_total=$((java_total + 1))
               [[ "$result" == "success" ]] && java_passed=$((java_passed + 1))
               [[ "$result" == "failure" ]] && java_failed=$((java_failed + 1))
               ;;
             flow)
               flow_jobs["$name"]="$job_entry"
-              flow_total=$((flow_total + 1))
               [[ "$result" == "success" ]] && flow_passed=$((flow_passed + 1))
               [[ "$result" == "failure" ]] && flow_failed=$((flow_failed + 1))
               ;;
@@ -361,6 +351,13 @@ runs:
         done < /tmp/jobs.json
 
         FAILED_JOBS_JSON="${FAILED_JOBS_JSON}]"
+
+        # Derive totals from passed + failed
+        smoke_total=$((smoke_passed + smoke_failed))
+        python_total=$((python_passed + python_failed))
+        r_total=$((r_passed + r_failed))
+        java_total=$((java_passed + java_failed))
+        flow_total=$((flow_passed + flow_failed))
 
         # Export outputs for downstream steps (e.g., Slack alerts)
         echo "smoke_passed=${smoke_passed}" >> $GITHUB_OUTPUT

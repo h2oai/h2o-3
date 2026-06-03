@@ -258,11 +258,7 @@ runs:
             result = os.environ.get(f"JAVA{version}_RESULT", "skipped")
             passed = int(os.environ.get(f"JAVA{version}_PASSED", "0"))
             failed = int(os.environ.get(f"JAVA{version}_FAILED", "0"))
-            total = int(os.environ.get(f"JAVA{version}_TOTAL", "0"))
-
-            # Calculate total if not provided
-            if total == 0 and (passed > 0 or failed > 0):
-                total = passed + failed
+            total = passed + failed
 
             java_suites.append({
                 "version": version,

@@ -272,10 +272,7 @@ runs:
             result = suite.get("result", "skipped")
             passed = int(suite.get("passed", 0))
             failed = int(suite.get("failed", 0))
-            total = int(suite.get("total", 0))
-
-            if total == 0 and (passed > 0 or failed > 0):
-                total = passed + failed
+            total = passed + failed
 
             total_passed += passed
             total_failed += failed
