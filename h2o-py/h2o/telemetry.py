@@ -52,6 +52,16 @@ try:
 except Exception:
     _PRODUCT = "h2o-3-oss"
 
+# Distribution marker: which PyPI package this is — "h2o" (full) vs "h2o_client"
+# (client-only). Baked per build flavor by createVersionFiles (h2o-py/build.gradle);
+# absent in a source checkout, so default to "h2o" (the full package). Reported as
+# attributes.distribution on the session-start events. Distinct from _PRODUCT
+# (build flavor) and python_distribution (pip/conda installer).
+try:
+    from h2o._distribution import _DISTRIBUTION
+except Exception:
+    _DISTRIBUTION = "h2o"
+
 # v2.0 production endpoint. Override per-deployment via H2O_TELEMETRY_URL
 # (internal / private receivers, local dev pointing at 127.0.0.1:8000, etc.).
 TELEMETRY_URL = "https://telemetry.h2o.ai/v1/event"
@@ -517,6 +527,16 @@ def _attach_extras(payload, attributes=None):
     return payload
 
 
+def _attributes_with_distribution(attributes):
+    """Merge ``attributes.distribution`` (h2o vs h2o_client) for the session-start
+    events. A caller-supplied ``distribution`` wins. Returns a new dict (never
+    mutates the caller's), so it is safe to call with ``attributes=None``.
+    """
+    merged = dict(attributes) if attributes else {}
+    merged.setdefault("distribution", _DISTRIBUTION)
+    return merged
+
+
 def _post_async(payload):
     if _telemetry_disabled():
         return
@@ -568,7 +588,7 @@ def send_init_telemetry(h2o_version, *, cluster_shape=None, attributes=None):
     }))
     if cluster_shape:
         payload.update(_strip_none(cluster_shape))
-    _attach_extras(payload, attributes)
+    _attach_extras(payload, _attributes_with_distribution(attributes))
     _post_async(payload)
 
 
@@ -591,7 +611,7 @@ def send_cluster_connect_telemetry(h2o_version, *, cluster_shape=None, attribute
     }))
     if cluster_shape:
         payload.update(_strip_none(cluster_shape))
-    _attach_extras(payload, attributes)
+    _attach_extras(payload, _attributes_with_distribution(attributes))
     _post_async(payload)
 
 

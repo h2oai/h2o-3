@@ -29,6 +29,13 @@ task createVersionFiles() {
 
             File build_file = new File("${buildDir}/$it/h2o", "buildinfo.txt")
             build_file.write(buildVersion.toString())
+
+            // Telemetry distribution marker, baked per build flavor: "h2o" (full
+            // package) vs "h2o_client" (client-only). Lets the client report
+            // attributes.distribution unambiguously without runtime guessing.
+            String distName = (it == "client") ? "h2o_client" : "h2o"
+            File dist_file = new File("${buildDir}/$it/h2o", "_distribution.py")
+            dist_file.write("# Generated at build time by createVersionFiles (build.gradle); do not edit.\n_DISTRIBUTION = \"${distName}\"\n")
         }
     }
 }
