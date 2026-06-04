@@ -2,7 +2,7 @@
 #                           PYTHON TEST SUITE
 # ==============================================================================
 #
-# 17 Python tests across Python 3.7 and 3.11 - All on EC2 runners
+# 16 Python tests across Python 3.7 and 3.11 - All on EC2 runners
 #
 # CATEGORIES:
 #   - Assembly Smoke (3)  : Main, Minimal, Steam package validation
@@ -42,7 +42,7 @@ env:
 
 jobs:
   # ============================================================================
-  # START EC2 RUNNERS (27 in parallel)
+  # START EC2 RUNNERS (in parallel)
   # ============================================================================
 
   # Assembly Smoke Tests
@@ -87,14 +87,6 @@ jobs:
     uses: ./.github/workflows/ec2-runner-start.yml
     with:
       name: py37-small
-      use_spot: true
-    secrets: inherit
-
-  start-py37-mojo2:
-    name: Start EC2 - Py3.7 MOJO2
-    uses: ./.github/workflows/ec2-runner-start.yml
-    with:
-      name: py37-mojo2
       use_spot: true
     secrets: inherit
 
@@ -338,30 +330,6 @@ jobs:
         uses: ./.github/actions/publish-results
         with:
           name: Py3.7 Small
-          job_status: ${{ job.status }}
-
-  py37-mojo2:
-    name: Py3.7 MOJO2
-    needs: start-py37-mojo2
-    runs-on: ${{ needs.start-py37-mojo2.outputs.label }}
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/run-test
-        with:
-          name: Py3.7 MOJO2
-          make_target: test-pyunit-mojo2
-          test_package: py
-          python: "3.7"
-          h2o3_branch: ${{ inputs.h2o3_branch }}
-          mount_efs: "true"
-          smalldata_path: ${{ env.EFS_SMALLDATA }}
-          bigdata_path: ${{ env.EFS_BIGDATA }}
-      - name: Publish Results
-        if: failure()
-        uses: ./.github/actions/publish-results
-        with:
-          name: Py3.7 MOJO2
           job_status: ${{ job.status }}
 
   py37-automl:
@@ -743,16 +711,6 @@ jobs:
     with:
       label: ${{ needs.start-py37-small.outputs.label }}
       ec2_id: ${{ needs.start-py37-small.outputs.ec2_id }}
-    secrets: inherit
-
-  stop-py37-mojo2:
-    name: Stop EC2 - Py3.7 MOJO2
-    needs: [start-py37-mojo2, py37-mojo2]
-    if: always()
-    uses: ./.github/workflows/ec2-runner-stop.yml
-    with:
-      label: ${{ needs.start-py37-mojo2.outputs.label }}
-      ec2_id: ${{ needs.start-py37-mojo2.outputs.ec2_id }}
     secrets: inherit
 
   stop-py37-automl:
