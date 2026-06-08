@@ -17,8 +17,6 @@ The tests do NOT require an H2O server connection: a duck-typed fake
 """
 import sys
 
-import pytest
-
 import sklearn
 
 from h2o.sklearn.wrapper import (
@@ -29,6 +27,22 @@ from h2o.sklearn.wrapper import (
 
 
 SKLEARN_VERSION = tuple(int(p) for p in sklearn.__version__.split(".")[:2])
+
+
+class _Skip(Exception):
+    """Sentinel raised by a test to signal a version-conditional skip."""
+
+
+def _assert_raises(exc_type, fn):
+    try:
+        fn()
+    except exc_type as e:
+        return e
+    except Exception as e:
+        raise AssertionError(
+            "expected %s, got %s: %s" % (exc_type.__name__, type(e).__name__, e)
+        )
+    raise AssertionError("expected %s, no exception raised" % exc_type.__name__)
 
 
 class _FakeFittedEstimator(object):
@@ -103,16 +117,14 @@ def test_classes_canonical_int_domain_is_coerced():
 
 def test_classes_raises_attributeerror_for_regressor():
     w = _make_wrapper("regressor", domains=[None, [None]])
-    with pytest.raises(AttributeError):
-        _ = w.classes_
+    _assert_raises(AttributeError, lambda: w.classes_)
 
 
 def test_classes_raises_for_unfitted_classifier():
     w = _make_wrapper("classifier", domains=None)
     # NotFittedError on sklearn ≥ 0.22; RuntimeError fallback otherwise
-    with pytest.raises(Exception) as exc:
-        _ = w.classes_
-    assert "not fitted" in str(exc.value).lower()
+    exc = _assert_raises(Exception, lambda: w.classes_)
+    assert "not fitted" in str(exc).lower()
 
 
 def test_hasattr_classes_is_false_for_regressor():
@@ -125,7 +137,7 @@ def test_hasattr_classes_is_false_for_regressor():
 
 def test_classifier_tags_populated_on_sklearn_16_plus():
     if SKLEARN_VERSION < (1, 6):
-        pytest.skip("__sklearn_tags__ only meaningful on sklearn ≥ 1.6")
+        raise _Skip("__sklearn_tags__ only meaningful on sklearn >= 1.6")
     w = _make_wrapper("classifier", domains=[None, ["A", "B"]])
     tags = w.__sklearn_tags__()
     assert tags.estimator_type == "classifier"
@@ -138,7 +150,7 @@ def test_classifier_tags_populated_on_sklearn_16_plus():
 
 def test_regressor_tags_populated_on_sklearn_16_plus():
     if SKLEARN_VERSION < (1, 6):
-        pytest.skip("__sklearn_tags__ only meaningful on sklearn ≥ 1.6")
+        raise _Skip("__sklearn_tags__ only meaningful on sklearn >= 1.6")
     w = _make_wrapper("regressor", domains=[None, [None]])
     tags = w.__sklearn_tags__()
     assert tags.estimator_type == "regressor"
@@ -151,15 +163,12 @@ def test_regressor_tags_populated_on_sklearn_16_plus():
 def test_sklearn_tags_raises_attributeerror_on_legacy_sklearn():
     """For sklearn < 1.6 the wrapper must raise AttributeError so hasattr returns False."""
     if SKLEARN_VERSION >= (1, 6):
-        pytest.skip("legacy sklearn lacks __sklearn_tags__ on BaseEstimator")
+        raise _Skip("legacy sklearn lacks __sklearn_tags__ on BaseEstimator")
     w = _make_wrapper("classifier", domains=[None, ["A", "B"]])
-    with pytest.raises(AttributeError):
-        w.__sklearn_tags__()
+    _assert_raises(AttributeError, lambda: w.__sklearn_tags__())
 
 
 if __name__ == "__main__":
-    # Direct invocation prints results in the same style as the other pyunits;
-    # pytest invocation handles the skipif marks automatically.
     failed = []
     for name, fn in list(globals().items()):
         if not name.startswith("test_") or not callable(fn):
@@ -167,7 +176,7 @@ if __name__ == "__main__":
         try:
             fn()
             print("PASS:", name)
-        except pytest.skip.Exception as e:
+        except _Skip as e:
             print("SKIP:", name, "—", e)
         except Exception as e:
             failed.append((name, e))

@@ -287,7 +287,7 @@ def test_glm_aic_tweedie_no_regularization():
         dispersion_parameter_method="ml",
     )
     glm_ml_phi.train(y=y, training_frame=train_h2o)
-    h2o_phi = glm_ml_phi.dispersion()
+    h2o_phi = glm_ml_phi._model_json["output"]["dispersion"]
     sm_phi = sm_glm_no_reg.scale
     assert abs(h2o_phi - sm_phi) / sm_phi < 0.25, (
         "H2O ML-estimated Tweedie phi %g differs from statsmodels Pearson scale %g "
