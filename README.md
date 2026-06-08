@@ -670,7 +670,7 @@ H2O-3 sends anonymous usage telemetry to help us prioritize features and platfor
 - **Default is on.** Opt-out, industry-standard for open-source server software. Setting an environment variable below stops everything instantly.
 - **One small ping per `h2o.init()`** plus one per major user action (training, scoring, MOJO download, upload, import, save/load, AutoML). Each ping is ~200 bytes of JSON over HTTPS.
 - **Standalone & Hadoop clusters too.** A cluster started directly with `java -jar h2o.jar` or `hadoop jar h2odriver.jar` — even with no Python/R client attached — sends one ping when the cluster forms. Same fields, same opt-outs.
-- **What's sent:** version strings, OS, an ephemeral session UUID regenerated on every `h2o.init()`, a Unix timestamp, the algorithm name, and coarse bucket labels for counts (rows, columns, durations, sizes). Numeric values are always ranges, never raw integers.
+- **What's sent:** version strings, OS, an ephemeral session UUID regenerated on every `h2o.init()`, a Unix timestamp, the algorithm name, and coarse bucket labels for counts (rows, columns, durations, sizes) — reported as ranges, not raw integers. One exception: a small cluster's exact node count (1–16) is sent, since 1-node vs 4-node is operationally meaningful; larger clusters are bucketed.
 - **What's never sent:** code, file paths, dataset names, model names, column names, hyperparameter values, hostnames, usernames, email addresses, or any user-generated content.
 - **Opt out anytime.** Either set an environment variable:
   ```bash

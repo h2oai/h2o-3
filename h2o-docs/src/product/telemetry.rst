@@ -7,7 +7,7 @@ What is sent
 ------------
 
 - One small ping when you start or connect to H2O (``h2o.init()`` / ``h2o.connect()`` in Python or R, or a standalone ``java -jar h2o.jar`` / ``hadoop jar h2odriver.jar`` cluster), plus one per major action: training, scoring, MOJO and model download, upload, import, parse, AutoML, and model save/load.
-- Each ping contains the H2O version, the client (``python`` / ``r`` / ``jvm``), the operating system, an ephemeral session ID regenerated on every start, a timestamp, the algorithm name, and **coarse range buckets** for counts such as rows, columns, durations, and sizes. Numeric values are always ranges, never exact figures.
+- Each ping contains the H2O version, the client (``python`` / ``r`` / ``jvm``), the operating system, an ephemeral session ID regenerated on every start, a timestamp, the algorithm name, and **coarse range buckets** for counts such as rows, columns, durations, and sizes. These counts are reported as ranges rather than exact figures. One notable exception: a small cluster's node count (1–16) is sent exactly, since 1-node vs 4-node is operationally meaningful; larger clusters are bucketed.
 
 What is never sent
 ------------------
@@ -22,6 +22,10 @@ Any one of the following disables telemetry completely:
 - Set an environment variable: ``H2O_DISABLE_TELEMETRY=1`` or ``DO_NOT_TRACK=1``.
 - Pass ``telemetry=False`` (Python) or ``telemetry = FALSE`` (R) to ``h2o.init()``.
 - For a cluster started directly on the JVM, add ``-Dsys.ai.h2o.telemetry.disabled=true``.
+
+The receiver also honors the standard ``DNT: 1`` (Do Not Track) and ``Sec-GPC: 1``
+(Global Privacy Control) request headers: any event arriving with either header set
+is dropped and never stored.
 
 The wire format and the receiver software are open source in the
 `h2o-3-telemetry <https://github.com/h2oai/h2o-3-telemetry>`__ repository. To send
