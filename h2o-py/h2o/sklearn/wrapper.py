@@ -536,12 +536,16 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
     def __sklearn_is_fitted__(self):
         # sklearn's check_is_fitted (v1.x) calls this method when present, otherwise looks for trailing-underscore
         # attributes. `_estimator` is assigned in _make_estimator() BEFORE train() runs, so its mere presence is
-        # not a reliable fit signal (a failed train() would leave the unfit instance attached). `_model_json` is
-        # populated by EstimatorBase.train only on a successful server-side fit, so use it as the ground truth.
-        return (
-            self._estimator is not None
-            and getattr(self._estimator, "_model_json", None) is not None
-        )
+        # not a reliable fit signal (a failed train() would leave the unfit instance attached). We need a
+        # post-fit attribute that's only populated on a successful server-side fit:
+        #   - plain estimators (H2OEstimator subclasses): `_model_json` is set by EstimatorBase.train.
+        #   - H2OAutoML: has no `_model_json` of its own — the leader's _model_json lives under `.leader`,
+        #     which is None until AutoML.train completes.
+        if self._estimator is None:
+            return False
+        if getattr(self._estimator, "_model_json", None) is not None:
+            return True
+        return getattr(self._estimator, "leader", None) is not None
 
     @property
     def classes_(self):
@@ -563,7 +567,11 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
                 "{} is not fitted yet; call fit() before accessing 'classes_'.".format(
                     self.__class__.__name__)
             )
-        output = self._estimator._model_json.get("output") or {}
+        # For AutoML, `_model_json` lives on the leader, not on the H2OAutoML wrapper itself.
+        model = self._estimator
+        if getattr(model, "_model_json", None) is None:
+            model = getattr(model, "leader", None) or model
+        output = model._model_json.get("output") or {}
         domains = output.get("domains")
         if not domains or domains[-1] is None:
             raise AttributeError(
