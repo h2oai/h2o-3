@@ -70,7 +70,7 @@ on:
 # ==============================================================================
 env:
   AWS_REGION: us-east-1
-  DEFAULT_S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  DEFAULT_S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
 
 # ==============================================================================
 # JOB
