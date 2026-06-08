@@ -265,18 +265,15 @@ def test_glm_aic_tweedie_no_regularization():
     glm_no_reg.train(y=y, training_frame=train_h2o)
     assert_equal(glm_no_reg, sm_glm_no_reg, coef_tolerance=1e-3, aic_tolerance=1e-4)
 
-    # Sanity-bound on H2O's own ML phi estimator: train a second model WITHOUT the
-    # phi pin and assert the estimated dispersion is in a reasonable neighborhood
-    # of statsmodels' Pearson chi^2 scale. The fixed-phi assertion above verifies
-    # H2O's AIC formula at the same phi; this second assertion guards against a
-    # regression in H2O's ML-phi golden-section search itself flowing silently
-    # into AIC.
-    #
-    # NOTE: `dispersion_parameter_method` defaults to "pearson" — explicitly set
-    # to "ml" so the test actually exercises the ML golden-section search.
-    # Tolerance is 25% (not tighter): ML phi vs Pearson chi^2 / df_resid
-    # legitimately differ on small datasets (prostate.csv n=380) under a
-    # potentially mis-specified variance function.
+    # Sanity check on H2O's ML phi estimator: by definition, the ML phi must
+    # produce a loglikelihood at least as high as any other phi on the same
+    # data. `glm_no_reg` above was trained with phi pinned to statsmodels'
+    # Pearson chi^2 / df_resid scale; if H2O's golden-section ML search
+    # regresses (returns a non-optimal phi), `glm_ml_phi.loglikelihood()` will
+    # drop below `glm_no_reg.loglikelihood()`. This is a self-consistency
+    # check on H2O alone — we do NOT compare phi values across libraries,
+    # because statsmodels and H2O use different default estimators (Pearson
+    # vs ML) and legitimately produce different phi on small datasets.
     glm_ml_phi = H2OGeneralizedLinearEstimator(
         lambda_=0,
         family="tweedie",
@@ -287,12 +284,16 @@ def test_glm_aic_tweedie_no_regularization():
         dispersion_parameter_method="ml",
     )
     glm_ml_phi.train(y=y, training_frame=train_h2o)
-    h2o_phi = glm_ml_phi._model_json["output"]["dispersion"]
-    sm_phi = sm_glm_no_reg.scale
-    assert abs(h2o_phi - sm_phi) / sm_phi < 0.25, (
-        "H2O ML-estimated Tweedie phi %g differs from statsmodels Pearson scale %g "
-        "by more than 25%% -- the ML dispersion estimator may have regressed."
-        % (h2o_phi, sm_phi)
+    ml_llf = glm_ml_phi.loglikelihood()
+    pearson_llf = glm_no_reg.loglikelihood()
+    assert ml_llf >= pearson_llf - 1e-6, (
+        "H2O ML phi=%g yields loglikelihood %g, which is LOWER than the "
+        "loglikelihood %g at the pinned Pearson phi=%g. The ML estimator "
+        "must maximize likelihood by definition -- the golden-section "
+        "search may have regressed." % (
+            glm_ml_phi._model_json["output"]["dispersion"], ml_llf,
+            pearson_llf, sm_glm_no_reg.scale,
+        )
     )
 
     # Without calculating likelihood, H2O can't guess AIC
