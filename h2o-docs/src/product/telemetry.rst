@@ -26,7 +26,3 @@ Any one of the following disables telemetry completely:
 The receiver also honors the standard ``DNT: 1`` (Do Not Track) and ``Sec-GPC: 1``
 (Global Privacy Control) request headers: any event arriving with either header set
 is dropped and never stored.
-
-The wire format and the receiver software are open source in the
-`h2o-3-telemetry <https://github.com/h2oai/h2o-3-telemetry>`__ repository. To send
-telemetry to your own receiver instead, set the ``H2O_TELEMETRY_URL`` environment variable.

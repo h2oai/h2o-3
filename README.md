@@ -680,8 +680,6 @@ H2O-3 sends anonymous usage telemetry to help us prioritize features and platfor
   Or pass `telemetry=False` (Python) / `telemetry = FALSE` (R) to `h2o.init()`. For a cluster launched directly on the JVM, the same environment variables work, or pass `-Dsys.ai.h2o.telemetry.disabled=true`.
 - **Fire-and-forget.** Every call runs on a background task with a 2-second timeout. If the receiver is unreachable, your code returns exactly as if telemetry never happened — never blocks, never raises, never retries.
 
-The full wire contract and the receiver software are open source in the [`h2o-3-telemetry`](https://github.com/h2oai/h2o-3-telemetry) repository. To run a private receiver, set `H2O_TELEMETRY_URL` to your `/v1/event` endpoint.
-
 
 <a name="Citing"></a>
 ## 10. Citing H2O
