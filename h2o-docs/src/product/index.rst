@@ -155,6 +155,11 @@ The following are additional resources to learn more information about H2O-3:
    security
 
 .. toctree::
+   :maxdepth: 2
+
+   telemetry
+
+.. toctree::
    :maxdepth: 1
 
    faq
