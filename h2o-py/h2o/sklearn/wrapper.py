@@ -596,6 +596,18 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # NOT inherit ClassifierMixin (see h2o.sklearn._order_estimator_mixins
         # for type='estimator'), so an isinstance() check misses them.
         est_type = getattr(self, "_estimator_type", None) or getattr(tags, "estimator_type", None)
+        if est_type is None:
+            # sklearn 1.8 removed `_estimator_type = "classifier"` from ClassifierMixin
+            # and the same for RegressorMixin. Wrappers built via make_classifier /
+            # make_regressor add the respective mixin to bases but rely on the mixin
+            # for the type tag (is_generic=False, so __init__ doesn't take an
+            # estimator_type arg). Detect the mixin in the class MRO as the final
+            # fallback so is_classifier(self) returns the right answer on sklearn 1.8.
+            mro = type(self).__mro__
+            if ClassifierMixin in mro:
+                est_type = "classifier"
+            elif RegressorMixin in mro:
+                est_type = "regressor"
         if est_type == "classifier":
             tags.estimator_type = "classifier"
             try:
