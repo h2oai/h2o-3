@@ -19,7 +19,7 @@ import java.util.UUID;
  * standalone {@code java -jar h2o.jar} and {@code hadoop jar h2odriver.jar}
  * clusters — which no Python/R client ever attaches to — visible to telemetry.
  *
- * Design constraints (see {@code .planning/h2o-3-update-v2.1.md} section 9):
+ * Design constraints:
  * <ul>
  *   <li><b>Leader-only:</b> only {@code H2O.CLOUD.leader()} emits, so an N-node
  *       cluster produces exactly one event, not N.</li>
@@ -86,7 +86,7 @@ public class JvmTelemetry {
     if (_fired) return;
     _fired = true;
 
-    // os is a REQUIRED closed Literal (linux/macos/windows); skip on anything else.
+    // os must be one of linux/macos/windows; skip emission on anything else.
     String os = normalizeOs(System.getProperty("os.name"));
     if (os == null) return;
 
@@ -157,7 +157,7 @@ public class JvmTelemetry {
     if (s.contains("mac") || s.contains("darwin")) return "macos";
     if (s.contains("win")) return "windows";
     if (s.contains("linux")) return "linux";
-    return null;  // Solaris/AIX/BSD etc. — not in the closed Literal, so don't emit
+    return null;  // Solaris/AIX/BSD etc. — not an accepted value, so don't emit
   }
 
   private static String cpuArch(String os) {

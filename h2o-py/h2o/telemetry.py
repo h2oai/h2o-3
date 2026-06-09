@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
 """
-Telemetry for h2o-py (v2.1).
+Anonymous usage telemetry for h2o-py.
 
-Sends fire-and-forget HTTPS POSTs to the telemetry receiver describing
+Sends fire-and-forget HTTPS POSTs to the telemetry endpoint describing
 client activity. Every request runs on a daemon thread with a hard 2s
 timeout, all exceptions are swallowed — telemetry must never block,
 slow down, or fail any h2o-py call site. An unreachable server is
@@ -27,13 +27,6 @@ Honors two opt-out environment variables (first match wins):
     DO_NOT_TRACK            -- industry-standard opt-out
 
 URL override: H2O_TELEMETRY_URL.
-
-See `.planning/h2o-3-client-integration.md` and
-`.planning/h2o-3-update-v2.1.md` for the wire contract. The v2.1 delta is a
-breaking wire change: rebucketed numeric scales, `compressed_size_bucket`
-split into `mojo_size_bucket` / `artifact_size_bucket` / `data_size_bucket`,
-new `product` / `cpu_arch` / `python_distribution` fields, and the two new
-events above. A v2.0-shape payload is rejected (HTTP 422) by a v2.1 receiver.
 """
 import json
 import os
@@ -62,13 +55,12 @@ try:
 except Exception:
     _DISTRIBUTION = "h2o"
 
-# v2.0 production endpoint. Override per-deployment via H2O_TELEMETRY_URL
-# (internal / private receivers, local dev pointing at 127.0.0.1:8000, etc.).
+# Production endpoint. Override via the H2O_TELEMETRY_URL environment variable.
 TELEMETRY_URL = "https://telemetry.h2o.ai/v1/event"
 
 _PAYLOAD_VERSION = 1
 _TIMEOUT_SECONDS = 2.0
-_MAX_VERSION_FIELD_LEN = 64  # v1.5 Phase 24 — cap every *_version / *_vendor field
+_MAX_VERSION_FIELD_LEN = 64  # cap every *_version / *_vendor field
 
 # Shared session_id — minted on first init/cluster_connect call from this
 # process, reused for every subsequent event. Reset on the next h2o.init().
@@ -136,11 +128,11 @@ def _cap_version(value, max_len=_MAX_VERSION_FIELD_LEN):
     return s[:max_len] if len(s) > max_len else s
 
 
-# -- Bucketize helpers -- byte-identical labels across Python / R / Java per the wire contract.
-# v2.1 boundaries (`.planning/h2o-3-update-v2.1.md` sections 2-3). Old v2.0 labels are REJECTED.
+# -- Bucketize helpers. The label strings must stay byte-identical across the
+# -- Python / R / JVM clients, since they are compared as a fixed set server-side.
 
 def bucketize_duration_ms(ms):
-    # Sub-second values floor to "<5s" — no sub-second resolution in v2.1.
+    # Sub-second values floor to "<5s" — no sub-second resolution.
     seconds = ms / 1000.0
     if seconds < 5:         return "<5s"
     if seconds < 15:        return "5s-15s"
@@ -188,8 +180,7 @@ def bucketize_cols(n):
     return ">1M"
 
 
-# v2.1 splits the single v2.0 `compressed_size_bucket` into three range-tuned
-# scales. All three use MiB (1_048_576), per the v2.1 spec helpers in section 3.
+# Three range-tuned size scales (MOJO, model artifact, dataset). All use MiB (1_048_576).
 
 def bucketize_mojo_size(b):
     # MOJOs are typically 1-50 MB; the 100KB floor catches tiny GLM MOJOs.
@@ -234,7 +225,7 @@ def bucketize_data_size(b):
     return ">2TB"
 
 
-# -- cluster-shape bucket helpers (v2.1 section 2.4 / 2.5) --
+# -- cluster-shape bucket helpers --
 
 def bucketize_cluster_nodes(n):
     # Capture fine, display coarse: exact node count for n <= 16 (1-node vs
@@ -266,7 +257,7 @@ def bucketize_cluster_memory_gb(gb):
     return ">4096"
 
 
-# `frame_memory_gb_bucket` shares boundaries with cluster_memory_gb_bucket per v1.5 spec.
+# `frame_memory_gb_bucket` shares boundaries with cluster_memory_gb_bucket.
 bucketize_frame_memory_gb = bucketize_cluster_memory_gb
 
 
@@ -291,11 +282,10 @@ def bucketize_leaderboard_size(n):
     return ">100"
 
 
-# The receiver constrains automl_run.sort_metric to a closed lowercase Literal
-# AND requires it (a missing value is rejected). H2O AutoML's own metric names
-# map onto this set case-insensitively, so we lowercase; anything unrecognized
-# falls back to "auto" (AutoML's default) so an odd metric can never 422 the
-# whole event.
+# sort_metric must be one of this fixed lowercase set, and is required. H2O
+# AutoML's own metric names map onto it case-insensitively, so we lowercase;
+# anything unrecognized falls back to "auto" (AutoML's default) so an odd
+# metric can never drop the event.
 _ALLOWED_SORT_METRICS = frozenset((
     "auto", "deviance", "logloss", "rmse", "mse", "mae",
     "rmsle", "auc", "aucpr", "mean_per_class_error",
@@ -367,7 +357,7 @@ def _java_vendor_safe():
     return _cap_version(info.get("vendor")) if info.get("vendor") else None
 
 
-# -- Host fingerprint (v2.1 section 5) — cpu_arch + python_distribution --
+# -- Host fingerprint — cpu_arch + python_distribution --
 # Both are caller-side context carried only on `init` / `cluster_connect`.
 
 def _detect_cpu_arch():
@@ -436,7 +426,7 @@ _HADOOP_ENV_HINTS = ("HADOOP_HOME", "HADOOP_CONF_DIR", "HADOOP_PREFIX")
 
 
 def _derive_cluster_topology(cloud_size, hadoop_version=None):
-    """Derive the cluster_topology enum per v1.4 Phase 19 rules.
+    """Derive the cluster_topology enum.
 
     `hadoop_version` non-empty implies a Hadoop deployment. Otherwise we
     fall back to env-var sniffing for Kubernetes / Hadoop signals.
@@ -514,15 +504,15 @@ def _envelope(h2o_version):
         "jvm_version": _java_version_safe() or "",
         "session_id": _current_session_id(),
         "ts": int(time.time()),
-        # v2.1: build-flavor attribution (OSS vs Enterprise), on every event.
+        # build-flavor attribution (OSS vs Enterprise), on every event.
         "product": _PRODUCT,
     }
 
 
 def _attach_extras(payload, attributes=None):
-    """Add the nullable v1.3+ `attributes` field if any keys were supplied."""
+    """Add the nullable `attributes` field if any keys were supplied."""
     if attributes:
-        # Coerce all values to strings per the v1.3 attribute contract.
+        # Attribute values must be strings.
         payload["attributes"] = {str(k): str(v) for k, v in attributes.items() if v is not None}
     return payload
 
@@ -563,7 +553,7 @@ def _post_async(payload):
 
 
 def _strip_none(d):
-    """Drop None values from a dict (receiver treats omitted == null)."""
+    """Drop None values from a dict (omitted keys are treated as null)."""
     return {k: v for k, v in d.items() if v is not None}
 
 
@@ -670,10 +660,10 @@ def send_upload(h2o_version, file_format, compressed_size_bytes, outcome,
     """Fire one `event=upload` POST.
 
     ``frame_shape`` is an optional dict with keys ``rows_bucket``, ``cols_bucket``,
-    ``frame_memory_gb_bucket`` (v1.5 Phase 23). Pass ``None`` (or omit) when
-    the parse failed — sending bucket values for an error path is misleading.
+    ``frame_memory_gb_bucket``. Pass ``None`` (or omit) when the parse failed —
+    sending bucket values for an error path is misleading.
 
-    ``data_size_bucket`` is REQUIRED on upload (the client always knows the
+    ``data_size_bucket`` is required on upload (the client always knows the
     on-disk size of the bytes it is about to push).
     """
     if _telemetry_disabled():
@@ -695,9 +685,9 @@ def send_import(h2o_version, source_scheme, file_format, outcome,
                 *, compressed_size_bytes=None, frame_shape=None, attributes=None):
     """Fire one `event=import` POST.
 
-    v1.5 Phase 23 adds optional ``compressed_size_bytes`` (the size of the
-    remote payload) and ``frame_shape`` (post-parse). Both omitted on error
-    paths or when the size isn't cheap to derive.
+    Optional ``compressed_size_bytes`` (the size of the remote payload) and
+    ``frame_shape`` (post-parse) are both omitted on error paths or when the
+    size isn't cheap to derive.
 
     ``data_size_bucket`` is nullable on import (the source is often
     HDFS/S3/GCS where size is metadata the cluster must round-trip to
@@ -787,11 +777,10 @@ def send_model_load(h2o_version, algo, family, outcome, fmt, compressed_size_byt
 
 
 def send_model_download(h2o_version, algo, family, outcome, fmt, compressed_size_bytes, attributes=None):
-    """Fire one `event=model_download` POST (v2.1 NEW — non-MOJO downloads).
+    """Fire one `event=model_download` POST (non-MOJO downloads).
 
     ``fmt`` is ``"binary"`` or ``"pojo"`` — never ``"mojo"`` (MOJOs go through
-    :func:`send_mojo_download`). Sibling of mojo_download but for the
-    artifact-scale size distribution of binary models and POJO source.
+    :func:`send_mojo_download`).
     """
     if _telemetry_disabled():
         return
@@ -811,13 +800,12 @@ def send_model_download(h2o_version, algo, family, outcome, fmt, compressed_size
 
 def send_frame_parsed(h2o_version, file_format, outcome, duration_ms, n_rows, n_cols,
                       frame_memory_gb=None, attributes=None):
-    """Fire one `event=frame_parsed` POST (v2.1 NEW — fires alongside upload / import).
+    """Fire one `event=frame_parsed` POST (fires alongside upload / import).
 
     Captures the parse operation itself. ``rows_bucket`` / ``cols_bucket`` /
-    ``duration_ms_bucket`` are REQUIRED — the receiver rejects a null/missing
-    value for any of them with 422 (stricter than upload / import). Only
-    ``frame_memory_gb_bucket`` is nullable. Callers must only fire this on a
-    completed parse (``outcome="ok"`` with a real frame in hand).
+    ``duration_ms_bucket`` are required — omitting any of them drops the event.
+    Only ``frame_memory_gb_bucket`` is nullable. Callers must only fire this on
+    a completed parse (``outcome="ok"`` with a real frame in hand).
     """
     if _telemetry_disabled():
         return
@@ -881,7 +869,7 @@ def derive_file_format(path_or_name):
 
 
 def derive_frame_shape(frame):
-    """Return v1.5 bucket fields for a parsed H2OFrame, or empty dict on failure."""
+    """Return bucket fields for a parsed H2OFrame, or empty dict on failure."""
     if frame is None:
         return {}
     out = {}

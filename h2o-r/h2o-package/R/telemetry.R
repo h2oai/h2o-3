@@ -1,7 +1,7 @@
 #'
-#' Telemetry for h2o-r (v2.1).
+#' Anonymous usage telemetry for h2o-r.
 #'
-#' Sends fire-and-forget HTTPS POSTs to the telemetry receiver describing
+#' Sends fire-and-forget HTTPS POSTs to the telemetry endpoint describing
 #' client activity. Primary delivery path is system `curl` invoked with
 #' `wait = FALSE` — the child process runs detached, R returns
 #' immediately, and an unreachable server is invisible to the caller.
@@ -14,16 +14,8 @@
 #'     DO_NOT_TRACK          -- industry-standard opt-out
 #'
 #' URL override: H2O_TELEMETRY_URL.
-#'
-#' See `.planning/h2o-3-client-integration.md` and
-#' `.planning/h2o-3-update-v2.1.md` for the wire contract. The v2.1 delta is a
-#' breaking wire change: rebucketed numeric scales, `compressed_size_bucket`
-#' split into `mojo_size_bucket` / `artifact_size_bucket` / `data_size_bucket`,
-#' new `product` / `cpu_arch` fields, and two new events (`model_download`,
-#' `frame_parsed`). A v2.0-shape payload is rejected (HTTP 422) by a v2.1 receiver.
 
-# v2.0 production endpoint. Override per-deployment via H2O_TELEMETRY_URL
-# (internal / private receivers, local dev pointing at 127.0.0.1:8000, etc.).
+# Production endpoint. Override via the H2O_TELEMETRY_URL environment variable.
 .h2o.telemetry.url <- "https://telemetry.h2o.ai/v1/event"
 .h2o.telemetry.payload_version <- 1L
 .h2o.telemetry.timeout_secs <- 2L
@@ -117,12 +109,11 @@
   if (nchar(s) > max_len) substr(s, 1L, max_len) else s
 }
 
-# -- Bucketize helpers — byte-identical labels across Python / R / Java --
-# v2.1 boundaries (`.planning/h2o-3-update-v2.1.md` sections 2-3). Old v2.0
-# labels are REJECTED (closed Literals). Mirrors h2o-py/h2o/telemetry.py.
+# -- Bucketize helpers. The label strings must stay byte-identical across the
+# -- Python / R / JVM clients. Mirrors h2o-py/h2o/telemetry.py.
 
 bucketize_duration_ms <- function(ms) {
-  # Sub-second values floor to "<5s" — no sub-second resolution in v2.1.
+  # Sub-second values floor to "<5s" — no sub-second resolution.
   seconds <- ms / 1000
   if (seconds < 5)      return("<5s")
   if (seconds < 15)     return("5s-15s")
@@ -170,8 +161,7 @@ bucketize_cols <- function(n) {
   ">1M"
 }
 
-# v2.1 splits the single v2.0 size bucket into three range-tuned scales.
-# All three use MiB (1048576), per the v2.1 spec helpers in section 3.
+# Three range-tuned size scales (MOJO, model artifact, dataset). All use MiB (1048576).
 
 bucketize_mojo_size <- function(b) {
   mb <- b / 1048576
@@ -213,7 +203,7 @@ bucketize_data_size <- function(b) {
   ">2TB"
 }
 
-# -- cluster-shape bucket helpers (v2.1 section 2.4 / 2.5) --
+# -- cluster-shape bucket helpers --
 
 bucketize_cluster_nodes <- function(n) {
   # Capture fine, display coarse: exact node count for n <= 16, buckets above.
@@ -269,10 +259,10 @@ bucketize_leaderboard_size <- function(n) {
   ">100"
 }
 
-# The receiver constrains automl_run.sort_metric to a closed lowercase Literal
-# AND requires it. H2O AutoML's own metric names map onto this set
-# case-insensitively, so we lowercase; anything unrecognized falls back to
-# "auto" (AutoML's default) so an odd metric can never 422 the whole event.
+# sort_metric must be one of this fixed lowercase set, and is required. H2O
+# AutoML's own metric names map onto it case-insensitively, so we lowercase;
+# anything unrecognized falls back to "auto" (AutoML's default) so an odd
+# metric can never drop the event.
 .h2o.telemetry.allowed_sort_metrics <- c(
   "auto", "deviance", "logloss", "rmse", "mse", "mae",
   "rmsle", "auc", "aucpr", "mean_per_class_error"
@@ -297,9 +287,9 @@ bucketize_leaderboard_size <- function(n) {
   )
 }
 
-# Map R.version$arch to the closed cpu_arch Literal (v2.1 section 5). To mirror
-# the Python client's OS-native arm64/aarch64 split, Apple-Silicon macOS (which
-# R reports as "aarch64") is reported as "arm64"; Linux ARM64 stays "aarch64".
+# Map R.version$arch to the cpu_arch value. To mirror the Python client's
+# OS-native arm64/aarch64 split, Apple-Silicon macOS (which R reports as
+# "aarch64") is reported as "arm64"; Linux ARM64 stays "aarch64".
 .h2o.telemetry.cpu_arch <- function() {
   arch <- tryCatch(tolower(R.version$arch), error = function(e) "")
   sysname <- tryCatch(tolower(Sys.info()[["sysname"]]), error = function(e) "")
@@ -418,7 +408,7 @@ bucketize_leaderboard_size <- function(n) {
     jvm_version     = .h2o.telemetry.str(.h2o.telemetry.java_version() %||% ""),
     session_id      = .h2o.telemetry.current_session_id(),
     ts              = as.integer(Sys.time()),
-    # v2.1: build-flavor attribution (OSS vs Enterprise), on every event.
+    # build-flavor attribution (OSS vs Enterprise), on every event.
     product         = .h2o.telemetry.product
   )
 }
@@ -527,7 +517,7 @@ bucketize_leaderboard_size <- function(n) {
     r_version      = .h2o.telemetry.r_version(),
     java_version   = .h2o.telemetry.java_version(),
     java_vendor    = .h2o.telemetry.java_vendor(),
-    cpu_arch       = .h2o.telemetry.cpu_arch(),           # v2.1: on init / cluster_connect
+    cpu_arch       = .h2o.telemetry.cpu_arch(),           # on init / cluster_connect
     python_distribution = NULL                            # Python-specific; always null on R
   ))
 }
@@ -847,7 +837,7 @@ bucketize_leaderboard_size <- function(n) {
   "other"
 }
 
-#' Return v1.5 bucket fields for a parsed H2OFrame, or empty list on failure.
+#' Return bucket fields for a parsed H2OFrame, or empty list on failure.
 #' @keywords internal
 .h2o.derive_frame_shape <- function(frame) {
   if (is.null(frame)) return(list())
