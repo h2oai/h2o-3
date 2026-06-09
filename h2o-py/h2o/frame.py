@@ -2017,9 +2017,14 @@ class H2OFrame(Keyed, H2ODisplay):
         return frame
 
 
-    def convert_with_polars(self, fileName, null_values=""):
+    def convert_with_polars(self, fileName, null_values=None):
         import polars as pl
         # polars accepts a single string or a list of strings for null_values.
+        # Default to [""] to match as_data_frame's new NA default: only empty
+        # CSV fields are NaN. Avoids divergent NA semantics between the two
+        # entry points.
+        if null_values is None:
+            null_values = [""]
         dt_frame = pl.read_csv(fileName, null_values=null_values)
         return dt_frame.to_pandas()
 
@@ -3866,7 +3871,10 @@ class H2OFrame(Keyed, H2ODisplay):
                 enumCols.append(predName)
                 enumColsIndices.append(colnames.index(predName))
 
-        pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True)
+        # Pass na_values=[""] explicitly: h2o-internal call, must not surface the
+        # FutureWarning about the new as_data_frame NA default to end users (the
+        # warning is for users calling as_data_frame in their own code).
+        pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True, na_values=[""])
         nrows = tempFrame.nrow
 
         # convert H2OFrame to DMatrix starts here
@@ -3887,7 +3895,8 @@ class H2OFrame(Keyed, H2ODisplay):
                
             enumCols = c2.names
             tempFrame = c2.cbind(tempFrame)
-            pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True) # redo translation from H2O to panda
+            # See note above: na_values=[""] avoids surfacing the new NA-default FutureWarning to users.
+            pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True, na_values=[""]) # redo translation from H2O to panda
         
             pandaTrainPart = generatePandaEnumCols(pandaFtrain, enumCols[0], nrows, tempFrame[enumCols[0]].categories())
             pandaFtrain.drop([enumCols[0]], axis=1, inplace=True)
@@ -3900,7 +3909,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
             pandaFtrain = pd.concat([pandaTrainPart, pandaFtrain], axis=1)
 
-        c0= tempFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True)
+        c0= tempFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True, na_values=[""])
         pandaFtrain.drop([yresp], axis=1, inplace=True)
         pandaF = pd.concat([c0, pandaFtrain], axis=1)
         pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
@@ -5032,7 +5041,9 @@ class H2OFrame(Keyed, H2ODisplay):
         cols = local_env('cols', 200)
         use_pandas = local_env('pandas', H2OTableDisplay.use_pandas(), use_default_if_none=True)
         if use_pandas:
-            df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True)
+            # Internal head()/repr() path — pass na_values=[""] explicitly so the
+            # NA-default FutureWarning does not surface from h2o's own display code.
+            df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True, na_values=[""])
             table = df.to_html() if fmt == 'html' else df.to_string()
         else:
             tablefmt = dict(
