@@ -21,11 +21,18 @@ import warnings
 import numpy as np
 import pandas as pd
 
+import h2o.cross_validation as _cv
 from h2o.cross_validation import (
     _materialize_fold_column,
     H2OKFold,
     H2OStratifiedKFold,
 )
+
+
+def _reset_module_latches():
+    """Reset the process-wide warning latches so each test gets a clean slate."""
+    _cv._CONTRACT_WARN_FIRED = False
+    _cv._LARGE_FRAME_WARN_FIRED = False
 
 
 class _FakeFoldColumn(object):
@@ -124,6 +131,7 @@ def test_materialize_fold_column_does_not_emit_future_warning():
 
 def test_h2okfold_emits_future_warning_not_deprecation():
     """The contract-change warning must be a FutureWarning, not a DeprecationWarning."""
+    _reset_module_latches()
     fr = _FakeH2OFrame(n=6)
     kf = H2OKFold(fr, n_folds=3, seed=42)
     with warnings.catch_warnings(record=True) as caught:
@@ -138,6 +146,7 @@ def test_h2okfold_emits_future_warning_not_deprecation():
 
 
 def test_h2ostratifiedkfold_emits_future_warning():
+    _reset_module_latches()
     fr = _FakeH2OFrame(n=6)
     kf = H2OStratifiedKFold(fr, n_folds=3, seed=42)
     with warnings.catch_warnings(record=True) as caught:
@@ -147,19 +156,95 @@ def test_h2ostratifiedkfold_emits_future_warning():
     assert future, "Expected a FutureWarning"
 
 
-def test_contract_change_warning_is_one_shot_per_iterator():
-    """Repeated iter() on the same iterator must not re-emit the FutureWarning."""
+def test_contract_change_warning_is_one_shot_across_iterators():
+    """Process-wide dedup: the FutureWarning fires once per process, not once per iterator.
+
+    Previously the latch was per-iterator, so GridSearchCV over N hyperparameter
+    sets emitted N identical warnings. The 3.46.0.11 latch is module-scoped.
+    """
+    _reset_module_latches()
     fr = _FakeH2OFrame(n=6)
-    kf = H2OKFold(fr, n_folds=3, seed=42)
+    kfs = [H2OKFold(fr, n_folds=3, seed=42) for _ in range(3)]
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        list(iter(kf))
-        list(iter(kf))
-        list(iter(kf))
+        for kf in kfs:
+            list(iter(kf))
+            list(iter(kf))
     future = [w for w in caught if issubclass(w.category, FutureWarning)]
     assert len(future) == 1, \
-        "Expected exactly one FutureWarning across repeated iter() calls; got %d" \
+        "Expected exactly one FutureWarning across 3 iterators × 2 iter() calls; got %d" \
         % (len(future),)
+
+
+# ---------- P0-2: H2OStratifiedKFold.iter_h2oframes() contract ---------------
+
+def test_stratified_iter_h2oframes_raises_without_feature_frame():
+    """Pre-3.46.0.11, iter_h2oframes() silently yielded slices of y only — broken for
+    the documented sklearn-compat migration path. New behavior: raise loudly unless
+    the caller passed fr= at construction time.
+    """
+    _reset_module_latches()
+    y = _FakeH2OFrame(n=6)
+    skf = H2OStratifiedKFold(y, n_folds=3, seed=42)
+    skf._fold_column = _FakeFoldColumn()
+    raised = False
+    try:
+        list(skf.iter_h2oframes())
+    except NotImplementedError as exc:
+        raised = True
+        assert "feature frame" in str(exc), "Error must explain the missing arg"
+    assert raised, "Expected NotImplementedError when fr= is not provided"
+
+
+def test_stratified_iter_h2oframes_works_with_feature_frame():
+    """When fr= is passed, iter_h2oframes() yields slices of the feature frame."""
+    _reset_module_latches()
+    y = _FakeH2OFrame(n=6)
+    fr = _FakeH2OFrame(n=6)
+    skf = H2OStratifiedKFold(y, n_folds=3, seed=42, fr=fr)
+    skf._fold_column = _FakeFoldColumn()
+    splits = list(skf.iter_h2oframes())
+    assert len(splits) == 3, "Expected 3 fold splits"
+    # Each fold issues 2 slices into fr (train + test) = 6 total
+    assert len(fr.slice_calls) == 6, "iter_h2oframes must slice the feature frame, not y"
+
+
+# ---------- P0-8: iter_legacy() transition shim ------------------------------
+
+def test_iter_legacy_yields_masks_with_deprecation_warning():
+    """iter_legacy() preserves the pre-3.46.0.11 mask-yielding contract for one release."""
+    _reset_module_latches()
+    fr = _FakeH2OFrame(n=6)
+    kf = H2OKFold(fr, n_folds=3, seed=42)
+    kf._fold_column = _FakeFoldColumn()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        splits = list(kf.iter_legacy())
+    deprec = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+    assert deprec, "iter_legacy() must emit a DeprecationWarning"
+    assert len(splits) == 3
+    # Each yielded pair should look like (train_mask, test_mask) — server-side masks,
+    # i.e. tuples produced by _FakeMaskedComparison, not numpy arrays.
+    for train_mask, test_mask in splits:
+        assert isinstance(train_mask, tuple) and train_mask[0] == "mask_ne"
+        assert isinstance(test_mask, tuple) and test_mask[0] == "mask_eq"
+
+
+# ---------- P1-27: fold_assignments property alias ---------------------------
+
+def test_fold_assignments_property_deprecation_alias():
+    """Old `kf.fold_assignments` attribute is preserved for one release as a deprecation."""
+    _reset_module_latches()
+    fr = _FakeH2OFrame(n=6)
+    kf = H2OKFold(fr, n_folds=3, seed=42)
+    fake = _FakeFoldColumn()
+    kf._fold_column = fake
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        result = kf.fold_assignments
+    deprec = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+    assert deprec, "fold_assignments must emit a DeprecationWarning"
+    assert result is fake, "fold_assignments must return the fold-assignment column"
 
 
 # ---------- P1-3 -------------------------------------------------------------
