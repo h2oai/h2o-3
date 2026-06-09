@@ -5,6 +5,8 @@ import water.H2ONode;
 import water.HeartBeat;
 import water.Paxos;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -90,7 +92,33 @@ public class JvmTelemetry {
     String os = normalizeOs(System.getProperty("os.name"));
     if (os == null) return;
 
+    maybePrintNotice();
     post(buildInit(os, H2O.CLOUD.size()));
+  }
+
+  private static final String NOTICE_TEXT =
+      "H2O-3 collects anonymous usage telemetry (H2O version, OS, and coarse cluster\n" +
+      "buckets) to help prioritize features and platforms. It never sends your code,\n" +
+      "data, file paths, or any identifiers.\n" +
+      "To opt out: set H2O_DISABLE_TELEMETRY=1 (or DO_NOT_TRACK=1), or pass\n" +
+      "-Dsys.ai.h2o.telemetry.disabled=true.\n" +
+      "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html\n" +
+      "(This notice is shown only once.)";
+
+  /** Print the disclosure notice once per environment (per-client marker under ~/.h2o). */
+  private static void maybePrintNotice() {
+    try {
+      String home = System.getProperty("user.home");
+      if (home == null || home.isEmpty()) return;
+      File marker = new File(new File(home, ".h2o"), ".telemetry_notice_jvm");
+      if (marker.exists()) return;
+      System.out.println("\n" + NOTICE_TEXT + "\n");
+      marker.getParentFile().mkdirs();
+      FileWriter w = new FileWriter(marker);
+      try { w.write("1\n"); } finally { w.close(); }
+    } catch (Throwable ignore) {
+      // best-effort — never block or fail startup over a notice
+    }
   }
 
   // -- opt-out -----------------------------------------------------------------
