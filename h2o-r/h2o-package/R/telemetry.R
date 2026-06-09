@@ -875,11 +875,8 @@ bucketize_leaderboard_size <- function(n) {
   nc <- tryCatch(as.integer(ncol(frame)), error = function(e) NA_integer_)
   if (!is.na(nr) && nr >= 0L) out$rows_bucket <- bucketize_rows(nr)
   if (!is.na(nc) && nc >= 0L) out$cols_bucket <- bucketize_cols(nc)
-  # frame.byte_size equivalent in R: use h2o.getFrame()'s byte_size if accessible.
-  bs <- tryCatch(attr(frame, "byte_size"), error = function(e) NULL)
-  if (!is.null(bs) && is.numeric(bs) && bs > 0) {
-    out$frame_memory_gb_bucket <- bucketize_frame_memory_gb(bs / (1024^3))
-  }
+  # frame_memory_gb_bucket is intentionally omitted: the R client does not expose
+  # a frame's in-memory byte size, and this field is nullable on the wire.
   out
 }
 
@@ -892,8 +889,7 @@ bucketize_leaderboard_size <- function(n) {
   nr <- tryCatch(as.integer(nrow(frame)), error = function(e) NA_integer_)
   nc <- tryCatch(as.integer(ncol(frame)), error = function(e) NA_integer_)
   if (is.na(nr) || is.na(nc)) return(NULL)
-  fmg <- NULL
-  bs <- tryCatch(attr(frame, "byte_size"), error = function(e) NULL)
-  if (!is.null(bs) && is.numeric(bs) && bs > 0) fmg <- bs / (1024^3)
-  list(n_rows = nr, n_cols = nc, frame_memory_gb = fmg)
+  # frame_memory_gb is left NULL: the R client does not expose a frame's
+  # in-memory byte size, and this field is nullable on the wire.
+  list(n_rows = nr, n_cols = nc, frame_memory_gb = NULL)
 }
