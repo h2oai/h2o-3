@@ -105,7 +105,7 @@ BINARY_OPS = {
     21: "**",  # NB_INPLACE_POWER
     23: "-",   # NB_INPLACE_SUBTRACT
     24: "/",   # NB_INPLACE_TRUE_DIVIDE
-    26: "cols",  # NB_SUBSCR — Py 3.12+ may lower BINARY_SUBSCR through BINARY_OP
+    26: "cols",  # NB_SUBSCR — Py 3.14 folds BINARY_SUBSCR into BINARY_OP (3.12/3.13 keep BINARY_SUBSCR distinct)
 }
 
 def is_bytecode_instruction(instr):
@@ -186,8 +186,12 @@ def is_load_outer_scope(instr):
 def is_return(instr):
     return "RETURN_VALUE" == instr
 
+# Named constants for opcodes inspected by name in multiple call sites — keeps
+# the literal in one place so a future opcode rename surfaces in one diff.
+_PUSH_NULL = "PUSH_NULL"
+
 def should_be_skipped(instr):
-    return instr in {"COPY_FREE_VARS", "RESUME", "PUSH_NULL"}  # from Py 3.11
+    return instr in {"COPY_FREE_VARS", "RESUME", _PUSH_NULL}  # from Py 3.11+
 
 def _disassemble_lambda(co):
     ops = []
@@ -436,7 +440,7 @@ def _call_func_ex_bc(flags, idx, ops, keys):
                 "cannot infer flags from a preceding op. ops=%r" % (ops,)
             )
         prev_instr, _ = _get_instr(ops, idx)
-        flags = 0 if prev_instr == "PUSH_NULL" else 1
+        flags = 0 if prev_instr == _PUSH_NULL else 1
     if flags & 1:
         instr, nargs = _get_instr(ops, idx)
         if is_builder(instr):  # first instr can be a map builder if we have to unpack kwargs, followed by normal keywords args
@@ -469,11 +473,12 @@ def _call_func_ex_bc(flags, idx, ops, keys):
 
     # Py3.14+: when flags=0, a PUSH_NULL fills the kwargs stack slot just before
     # CALL_FUNCTION_EX. Skip it so we land on the args (LIST_TO_TUPLE / iterable).
-    # `idx > 0` guard mirrors `_to_rapids_expr` to avoid wrapping to `ops[-1]`
-    # when the PUSH_NULL is the first op in the subtree.
-    if idx > 0:
+    # Version-gated to match the sibling `flags is None` block above — on earlier
+    # Pythons a PUSH_NULL at this position belongs to a different expression and
+    # must not be consumed.
+    if sys.version_info >= (3, 14) and not (flags & 1) and idx > 0:
         instr, _ = _get_instr(ops, idx)
-        if instr == "PUSH_NULL":
+        if instr == _PUSH_NULL:
             idx -= 1
 
     instr, nargs = _get_instr(ops, idx)
@@ -571,10 +576,24 @@ def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
     # CALL_FUNCTION_EX (e.g. for `x.method(*args)`). Skip it so we land on
     # the LOAD_ATTR/LOAD_METHOD that names the call. Guard the decrement so
     # we don't wrap to ops[-1] via Python's negative indexing.
-    if instr == "PUSH_NULL" and idx > 0:
+    if instr == _PUSH_NULL and idx > 0:
         idx -= 1
         instr, op = _get_instr(ops, idx)
-    rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs) if is_method(instr) else []
+    if is_method(instr):
+        rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs)
+    else:
+        # Free-function calls (LOAD_GLOBAL/LOAD_FAST/LOAD_CONST/LOAD_DEREF) cannot be
+        # translated to Rapids because there is no server-side counterpart. Pre-3.46.0.11
+        # the args were silently discarded, producing an ExprNode with zero children —
+        # the call appeared to work but returned the bare function name. Raise loudly so
+        # the user can switch to a method-style lambda (e.g. `lambda x: x.somefunc()`).
+        if args or kwargs:
+            raise ValueError(
+                "Free-function calls are not supported in H2OFrame lambdas; "
+                "use a method on the frame (e.g. `lambda x: x.somefunc(...)`). "
+                "Got call to %r with args=%r kwargs=%r." % (op, args, kwargs)
+            )
+        rapids_args = []
     # Map function name to proper rapids name
     rapids_op = _get_func_name(op, rapids_args)
     # Go to next instruction

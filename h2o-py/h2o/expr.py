@@ -216,9 +216,13 @@ class ExprNode(object):
                 for x in arg
             )
         if isinstance(arg, slice):
-            start = 0 if arg.start is None else arg.start
-            stop = float("nan") if arg.stop is None else arg.stop
-            step = 1 if arg.step is None else arg.step
+            # Unwrap numpy 2.x scalars from start/stop/step before arithmetic so that
+            # `slice(np.int64(0), np.int64(5), np.int64(2))` (e.g. from np.arange) does
+            # not produce `str(np.int64(5)) == "np.int64(5)"` in the Rapids expression,
+            # which the JVM parser rejects.
+            start = 0 if arg.start is None else ExprNode._to_python_scalar(arg.start)
+            stop = float("nan") if arg.stop is None else ExprNode._to_python_scalar(arg.stop)
+            step = 1 if arg.step is None else ExprNode._to_python_scalar(arg.step)
             assert start >= 0 and step >= 1 and (math.isnan(stop) or stop >= start + step)
             if step == 1:
                 return "[%d:%s]" % (start, str(stop - start))
