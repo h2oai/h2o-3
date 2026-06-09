@@ -63,7 +63,8 @@ def _h2o_version_safe():
 
 def connect(server=None, url=None, ip=None, port=None,
             https=None, verify_ssl_certificates=None, cacert=None,
-            auth=None, proxy=None, cookies=None, verbose=True, config=None, strict_version_check=False):
+            auth=None, proxy=None, cookies=None, verbose=True, config=None, strict_version_check=False,
+            telemetry=True):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -84,6 +85,8 @@ def connect(server=None, url=None, ip=None, port=None,
     :param verbose: Set to False to disable printing connection status messages.
     :param config: Connection configuration object encapsulating connection parameters.
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
+    :param telemetry: Set to False to disable all anonymous usage telemetry for this process. Equivalent to setting
+                      the ``H2O_DISABLE_TELEMETRY`` environment variable.
     :returns: the new :class:`H2OConnection` object.
 
     :examples:
@@ -98,6 +101,8 @@ def connect(server=None, url=None, ip=None, port=None,
 
     """
     global h2oconn
+    # Programmatic telemetry opt-out — set before any event can fire.
+    _telemetry.set_disabled(not telemetry)
     svc = _strict_version_check(strict_version_check, config=config)
     if config:
         if "connect_params" in config:
