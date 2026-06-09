@@ -286,13 +286,19 @@ def test_glm_aic_tweedie_no_regularization():
     glm_ml_phi.train(y=y, training_frame=train_h2o)
     ml_llf = glm_ml_phi.loglikelihood()
     pearson_llf = glm_no_reg.loglikelihood()
-    assert ml_llf >= pearson_llf - 1e-6, (
+    # Mixed tolerance: the absolute 1e-6 was too tight for LL values in the
+    # 1e3-1e5 range (golden-section search converges to ~eps*(b-a), and any
+    # bump in H2O's dispersion_epsilon could trip the bound spuriously).
+    # Allow the larger of 1e-6 absolute and 1e-8 relative slack -- still
+    # strict enough to catch a real ML-search regression.
+    slack = max(1e-6, abs(pearson_llf) * 1e-8)
+    assert ml_llf >= pearson_llf - slack, (
         "H2O ML phi=%g yields loglikelihood %g, which is LOWER than the "
-        "loglikelihood %g at the pinned Pearson phi=%g. The ML estimator "
-        "must maximize likelihood by definition -- the golden-section "
+        "loglikelihood %g at the pinned Pearson phi=%g (slack=%g). The ML "
+        "estimator must maximize likelihood by definition -- the golden-section "
         "search may have regressed." % (
             glm_ml_phi._model_json["output"]["dispersion"], ml_llf,
-            pearson_llf, sm_glm_no_reg.scale,
+            pearson_llf, sm_glm_no_reg.scale, slack,
         )
     )
 
