@@ -57,7 +57,17 @@
 }
 
 # Generate a random UUIDv4 from 16 bytes — avoids depending on the uuid package.
+# Save and restore .Random.seed so telemetry never perturbs the user's RNG
+# stream (otherwise enabling/disabling telemetry would change reproducible results).
 .h2o.telemetry.uuid <- function() {
+  if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+    old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    on.exit(assign(".Random.seed", old_seed, envir = .GlobalEnv), add = TRUE)
+  } else {
+    # RNG was never initialized in this session; remove the seed we are about
+    # to create so the user's stream stays in its pristine, uninitialized state.
+    on.exit(suppressWarnings(rm(".Random.seed", envir = .GlobalEnv)), add = TRUE)
+  }
   b <- as.integer(sample.int(256L, 16L, replace = TRUE) - 1L)
   b[7]  <- bitwOr(bitwAnd(b[7],  0x0F), 0x40)
   b[9]  <- bitwOr(bitwAnd(b[9],  0x3F), 0x80)
