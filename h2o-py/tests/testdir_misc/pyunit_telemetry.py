@@ -1,7 +1,9 @@
 import sys
 sys.path.insert(1, "../../")
+import io
 import json
 import os
+import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -122,14 +124,52 @@ def telemetry_http_delivery_smoke():
     print("OK telemetry_http_delivery_smoke: worker delivered 1 event over HTTP")
 
 
+def telemetry_first_run_notice():
+    # Use a throwaway HOME so the per-environment marker doesn't touch the real one.
+    old_home = os.environ.get("HOME")
+    tmp = tempfile.mkdtemp()
+    os.environ["HOME"] = tmp
+
+    def run():
+        err = io.StringIO()
+        old = sys.stderr
+        sys.stderr = err
+        try:
+            t._maybe_print_notice()
+        finally:
+            sys.stderr = old
+        return err.getvalue()
+
+    try:
+        t.set_disabled(False)
+        first, second = run(), run()
+        assert "anonymous usage telemetry" in first, "notice not printed on first run"
+        assert second == "", "notice repeated on second run (marker not honored)"
+        assert os.path.exists(os.path.join(tmp, ".h2o", ".telemetry_notice_python"))
+
+        # Disabled telemetry never prints, even with no marker.
+        os.remove(os.path.join(tmp, ".h2o", ".telemetry_notice_python"))
+        t.set_disabled(True)
+        assert run() == "", "notice printed while telemetry disabled"
+    finally:
+        t.set_disabled(False)
+        if old_home is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = old_home
+    print("OK telemetry_first_run_notice: shown once, suppressed when disabled")
+
+
 if __name__ == "__main__":
     telemetry_wire_contract()
     telemetry_bucket_boundaries()
     telemetry_disabled_emits_nothing()
+    telemetry_first_run_notice()
     telemetry_http_delivery_smoke()
     print("\nALL TELEMETRY TESTS PASSED")
 else:
     telemetry_wire_contract()
     telemetry_bucket_boundaries()
     telemetry_disabled_emits_nothing()
+    telemetry_first_run_notice()
     telemetry_http_delivery_smoke()

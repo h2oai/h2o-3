@@ -66,6 +66,18 @@ test.telemetry <- function() {
   check(identical(h2o:::bucketize_data_size(3 * 1024^3), "1GB-5GB"),
         "files larger than 2GB bucket correctly")
 
+  # First-run disclosure notice: shown once per environment, then suppressed.
+  # Use a throwaway HOME so the marker doesn't touch the real one.
+  old_home <- Sys.getenv("HOME")
+  tmp_home <- tempfile("h2o_home"); dir.create(tmp_home)
+  Sys.setenv(HOME = tmp_home)
+  on.exit(Sys.setenv(HOME = old_home), add = TRUE)
+  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
+  first  <- capture.output(h2o:::.h2o.telemetry.maybe_print_notice(), type = "message")
+  second <- capture.output(h2o:::.h2o.telemetry.maybe_print_notice(), type = "message")
+  check(any(grepl("anonymous usage telemetry", first)), "notice printed on first run")
+  check(length(second) == 0L, "notice not repeated on second run (marker honored)")
+
   # Disabled telemetry emits nothing.
   h2o:::.h2o.telemetry.state$disabled_by_kwarg <- TRUE
   before <- length(captured$events)
