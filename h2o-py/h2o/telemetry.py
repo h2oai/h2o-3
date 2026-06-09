@@ -36,6 +36,7 @@ import queue
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import urllib.request
@@ -659,6 +660,41 @@ def _enrich_with_java(payload):
         payload["java_vendor"] = jd
 
 
+# -- First-run disclosure notice ----------------------------------------------
+
+_NOTICE_TEXT = (
+    "H2O-3 collects anonymous usage telemetry (H2O version, OS, algorithm names, and\n"
+    "coarse usage buckets) to help prioritize features and platforms. It never sends\n"
+    "your code, data, file paths, or any identifiers.\n"
+    "To opt out: set H2O_DISABLE_TELEMETRY=1 (or DO_NOT_TRACK=1), or pass\n"
+    "telemetry=False to h2o.init() / h2o.connect().\n"
+    "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html\n"
+    "(This notice is shown only once.)"
+)
+
+
+def _maybe_print_notice():
+    """Print the disclosure notice once per environment, then never again.
+
+    Gated on telemetry being enabled (no point notifying an opted-out user) and
+    on a per-client marker file under ``~/.h2o``. Entirely best-effort: any
+    failure (no home dir, read-only fs) is swallowed and never blocks startup.
+    """
+    if _telemetry_disabled():
+        return
+    try:
+        marker = os.path.join(os.path.expanduser("~"), ".h2o", ".telemetry_notice_python")
+        if os.path.exists(marker):
+            return
+        sys.stderr.write("\n" + _NOTICE_TEXT + "\n\n")
+        sys.stderr.flush()
+        os.makedirs(os.path.dirname(marker), exist_ok=True)
+        with open(marker, "w") as f:
+            f.write("1\n")
+    except Exception:
+        pass
+
+
 # -- Public emitters ----------------------------------------------------------
 
 @_never_raises
@@ -670,6 +706,7 @@ def send_init_telemetry(h2o_version, *, cluster_shape=None, attributes=None):
     """
     if _telemetry_disabled():
         return
+    _maybe_print_notice()
     _new_session_id()
     payload = {**_envelope(h2o_version), "event": "init"}
     payload.update(_strip_none({
@@ -693,6 +730,7 @@ def send_cluster_connect_telemetry(h2o_version, *, cluster_shape=None, attribute
     """
     if _telemetry_disabled():
         return
+    _maybe_print_notice()
     _new_session_id()
     payload = {**_envelope(h2o_version), "event": "cluster_connect"}
     payload.update(_strip_none({

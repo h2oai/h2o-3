@@ -599,9 +599,34 @@ bucketize_leaderboard_size <- function(n) {
   attrs
 }
 
+# First-run disclosure notice: shown once per environment, then never again.
+# Gated on a per-client marker under ~/.h2o; entirely best-effort.
+.h2o.telemetry.notice_text <- function() paste(
+  "H2O-3 collects anonymous usage telemetry (H2O version, OS, algorithm names, and",
+  "coarse usage buckets) to help prioritize features and platforms. It never sends",
+  "your code, data, file paths, or any identifiers.",
+  "To opt out: set H2O_DISABLE_TELEMETRY=1 (or DO_NOT_TRACK=1), or pass",
+  "telemetry = FALSE to h2o.init() / h2o.connect().",
+  "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html",
+  "(This notice is shown only once.)",
+  sep = "\n")
+
+.h2o.telemetry.maybe_print_notice <- function() {
+  if (.h2o.telemetry.disabled()) return(invisible(NULL))
+  tryCatch({
+    marker <- file.path(path.expand("~"), ".h2o", ".telemetry_notice_r")
+    if (file.exists(marker)) return(invisible(NULL))
+    message("\n", .h2o.telemetry.notice_text(), "\n")
+    dir.create(dirname(marker), showWarnings = FALSE, recursive = TRUE)
+    writeLines("1", marker)
+  }, error = function(e) invisible(NULL))
+  invisible(NULL)
+}
+
 #' @keywords internal
 .h2o.send_init_telemetry <- function(h2o_version, cluster_shape = NULL, attributes = NULL) {
   if (.h2o.telemetry.disabled()) return(invisible(NULL))
+  .h2o.telemetry.maybe_print_notice()
   .h2o.telemetry.new_session_id()
   payload <- tryCatch({
     base <- c(list(event = "init"), .h2o.telemetry.envelope(h2o_version))
@@ -616,6 +641,7 @@ bucketize_leaderboard_size <- function(n) {
 #' @keywords internal
 .h2o.send_cluster_connect_telemetry <- function(h2o_version, cluster_shape = NULL, attributes = NULL) {
   if (.h2o.telemetry.disabled()) return(invisible(NULL))
+  .h2o.telemetry.maybe_print_notice()
   .h2o.telemetry.new_session_id()
   payload <- tryCatch({
     base <- c(list(event = "cluster_connect"), .h2o.telemetry.envelope(h2o_version))
