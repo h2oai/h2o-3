@@ -49,8 +49,13 @@ test.telemetry <- function() {
         paste("data_size_bucket bucketed, got:", imp$data_size_bucket))
   check(identical(imp$rows_bucket, "1K-10K"),      "rows_bucket carried through")
 
-  # init carries the runtime fields (r_version always; java_* when resolvable).
+  # init carries the runtime fields (r_version always) and the build-flavor
+  # distribution attribute (h2o vs h2o_client; falls back to "h2o" for a
+  # source/dev install with no baked marker).
   check(!is.null(by_event[["init"]]$r_version), "init event carries r_version")
+  dist <- by_event[["init"]]$attributes$distribution
+  check(!is.null(dist) && dist %in% c("h2o", "h2o_client"),
+        paste("init event has attributes.distribution, got:", dist))
 
   # Bucket boundaries are byte-exact (shared wire contract across clients).
   check(identical(h2o:::bucketize_data_size(9 * 1024 * 1024),  "<10MB"),      "data_size <10MB boundary")

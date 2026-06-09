@@ -147,6 +147,10 @@ task cpMainPKG {
             from "h2o-package"
             into "${buildDir}/h2o-package-main"
         }
+        // Telemetry distribution marker for the full package ("h2o"); read at
+        // runtime so the client reports attributes.distribution unambiguously.
+        file("${buildDir}/h2o-package-main/inst").mkdirs()
+        new File("${buildDir}/h2o-package-main/inst", "telemetry_distribution.txt").write("h2o\n")
     }
 }
 
@@ -179,6 +183,8 @@ task cpClientPKG {
             }
             into "${buildDir}/h2o-package-client/inst/"
         }
+        // Telemetry distribution marker for the client-only package.
+        new File("${buildDir}/h2o-package-client/inst", "telemetry_distribution.txt").write("h2o_client\n")
     }
 }
 

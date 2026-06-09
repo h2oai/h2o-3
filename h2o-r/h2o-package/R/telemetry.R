@@ -577,6 +577,28 @@ bucketize_leaderboard_size <- function(n) {
   ))
 }
 
+# Build-flavor distribution marker ("h2o" full package vs "h2o_client").
+# The marker file is baked per flavor at build time (see h2o-r/build.gradle);
+# a source/dev install with no marker falls back to "h2o".
+.h2o.telemetry.distribution <- function() {
+  if (!is.null(.h2o.telemetry.state$distribution)) return(.h2o.telemetry.state$distribution)
+  d <- tryCatch({
+    f <- system.file("telemetry_distribution.txt", package = "h2o")
+    if (nzchar(f) && file.exists(f)) trimws(readLines(f, n = 1L, warn = FALSE)) else "h2o"
+  }, error = function(e) "h2o")
+  if (length(d) != 1L || is.na(d) || !nzchar(d)) d <- "h2o"
+  .h2o.telemetry.state$distribution <- d
+  d
+}
+
+# Merge attributes.distribution onto the session-start events (init /
+# cluster_connect), mirroring the Python client. A caller-supplied value wins.
+.h2o.telemetry.attributes_with_distribution <- function(attributes) {
+  attrs <- if (is.null(attributes)) list() else attributes
+  if (is.null(attrs$distribution)) attrs$distribution <- .h2o.telemetry.distribution()
+  attrs
+}
+
 #' @keywords internal
 .h2o.send_init_telemetry <- function(h2o_version, cluster_shape = NULL, attributes = NULL) {
   if (.h2o.telemetry.disabled()) return(invisible(NULL))
@@ -584,7 +606,8 @@ bucketize_leaderboard_size <- function(n) {
   payload <- tryCatch({
     base <- c(list(event = "init"), .h2o.telemetry.envelope(h2o_version))
     extras <- c(.h2o.telemetry.runtime_fields(), .h2o.telemetry.strip_null(cluster_shape %||% list()))
-    .h2o.telemetry.with_extras(base, extras = extras, attributes = attributes)
+    .h2o.telemetry.with_extras(base, extras = extras,
+                               attributes = .h2o.telemetry.attributes_with_distribution(attributes))
   }, error = function(e) NULL)
   if (is.null(payload)) return(invisible(NULL))
   .h2o.telemetry.send(payload)
@@ -597,7 +620,8 @@ bucketize_leaderboard_size <- function(n) {
   payload <- tryCatch({
     base <- c(list(event = "cluster_connect"), .h2o.telemetry.envelope(h2o_version))
     extras <- c(.h2o.telemetry.runtime_fields(), .h2o.telemetry.strip_null(cluster_shape %||% list()))
-    .h2o.telemetry.with_extras(base, extras = extras, attributes = attributes)
+    .h2o.telemetry.with_extras(base, extras = extras,
+                               attributes = .h2o.telemetry.attributes_with_distribution(attributes))
   }, error = function(e) NULL)
   if (is.null(payload)) return(invisible(NULL))
   .h2o.telemetry.send(payload)
