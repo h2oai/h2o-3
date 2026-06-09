@@ -215,9 +215,9 @@ permissions:
 env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
-  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
   # Production S3 role (shared-services-prod)
-  S3_ROLE: arn:aws:iam::851725263148:role/Github-OIDC-Role-h2o-3-enterprise
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
   RELEASE_BUCKET: s3://h2o-release/h2o
   DOCKER_VERSION: "47"
   H2O3_REPO: h2oai/h2o-3

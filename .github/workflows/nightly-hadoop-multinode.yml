@@ -35,7 +35,7 @@ permissions:
 env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
-  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14

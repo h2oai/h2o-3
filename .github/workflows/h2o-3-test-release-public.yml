@@ -128,9 +128,9 @@ permissions:
 env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
-  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
   # Test release uses different S3 role (test.0xdata.com bucket)
-  S3_ROLE: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   TEST_RELEASE_BUCKET: s3://test.0xdata.com/test-release/h2o
 
 # ==============================================================================
@@ -213,7 +213,7 @@ jobs:
       s3_root: ${{ needs.init.outputs.s3_root }}
       update_latest: false
       update_latest_branch: true
-      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
     secrets: inherit
 
   # ============================================================================
@@ -230,7 +230,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_conda: false
-      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
     secrets: inherit
 
   # ============================================================================
@@ -246,7 +246,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       test_release: true
       is_nightly: false
-      s3_role: arn:aws:iam::905418351423:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
       repository: h2oai/h2o-3
     secrets: inherit
 

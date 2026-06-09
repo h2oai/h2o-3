@@ -169,10 +169,10 @@ permissions:
 env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
-  ECR_ROLE: arn:aws:iam::353750902984:role/GitHub-OIDC-Role
+  ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
   # Enterprise release bucket (OSS account)
   RELEASE_BUCKET: s3://h2o-3-enterprise-release/h2o
-  S3_ROLE: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_OSS }}
 
 # ==============================================================================
 # JOBS
@@ -554,7 +554,7 @@ jobs:
       s3_root: ${{ needs.init.outputs.s3_root }}
       update_latest: ${{ inputs.update_latest }}
       update_latest_branch: ${{ inputs.update_latest_branch }}
-      s3_role: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: ${{ secrets.GH_OIDC_ROLE_OSS }}
     secrets: inherit
 
   # ============================================================================
@@ -621,7 +621,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_pypi: true
-      s3_role: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: ${{ secrets.GH_OIDC_ROLE_OSS }}
     secrets: inherit
 
   # ============================================================================
@@ -642,7 +642,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_conda: ${{ inputs.dry_run != true }}
-      s3_role: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: ${{ secrets.GH_OIDC_ROLE_OSS }}
     secrets: inherit
 
   # ============================================================================
@@ -663,7 +663,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       test_release: false
       is_nightly: false
-      s3_role: arn:aws:iam::041740254655:role/Github-OIDC-Role-h2o-3-enterprise
+      s3_role: ${{ secrets.GH_OIDC_ROLE_OSS }}
       repository: h2oai/h2o-3-enterprise
     secrets: inherit
 

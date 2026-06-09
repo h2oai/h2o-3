@@ -86,7 +86,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  EC2_ROLE: arn:aws:iam::041740254655:role/GitHub-OIDC-Role
+  EC2_ROLE: ${{ secrets.GH_OIDC_ROLE_OSS }}
   AMI_ID: ami-0b754f369244f678b
   SUBNET_ID: subnet-0b990c6f0c5a7f708
   SECURITY_GROUP: sg-0624a8f944a8e8b57
