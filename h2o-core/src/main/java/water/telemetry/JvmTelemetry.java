@@ -151,7 +151,7 @@ public class JvmTelemetry {
 
   // -- derivations (byte-identical to the Python/R clients) --------------------
 
-  private static String normalizeOs(String osName) {
+  static String normalizeOs(String osName) {
     if (osName == null) return null;
     String s = osName.toLowerCase();
     if (s.contains("mac") || s.contains("darwin")) return "macos";
@@ -160,7 +160,7 @@ public class JvmTelemetry {
     return null;  // Solaris/AIX/BSD etc. — not an accepted value, so don't emit
   }
 
-  private static String cpuArch(String os) {
+  static String cpuArch(String os) {
     String a = System.getProperty("os.arch");
     if (a == null) return "other";
     a = a.toLowerCase();
@@ -173,7 +173,7 @@ public class JvmTelemetry {
     return "other";
   }
 
-  private static String topology(int size, String hadoopVer) {
+  static String topology(int size, String hadoopVer) {
     if (size == 1) return "single_node";
     if (notEmpty(hadoopVer)) return "multi_node_hadoop";
     if (notEmpty(System.getenv("KUBERNETES_SERVICE_HOST"))) return "kubernetes";
@@ -184,7 +184,7 @@ public class JvmTelemetry {
     return "unknown";
   }
 
-  private static String bucketNodes(int n) {
+  static String bucketNodes(int n) {
     if (n <= 16)  return Integer.toString(n);
     if (n <= 20)  return "17-20";
     if (n <= 24)  return "21-24";
@@ -196,7 +196,7 @@ public class JvmTelemetry {
     return ">256";
   }
 
-  private static String bucketMemGb(double gb) {
+  static String bucketMemGb(double gb) {
     if (gb < 4)    return "<4";
     if (gb < 8)    return "4-8";
     if (gb < 16)   return "8-16";
@@ -229,6 +229,10 @@ public class JvmTelemetry {
   private static void post(String body) {
     String urlStr = notEmpty(System.getenv("H2O_TELEMETRY_URL"))
         ? System.getenv("H2O_TELEMETRY_URL") : DEFAULT_URL;
+    post(body, urlStr);
+  }
+
+  static void post(String body, String urlStr) {
     HttpURLConnection con = null;
     try {
       con = (HttpURLConnection) new URL(urlStr).openConnection();
@@ -257,7 +261,7 @@ public class JvmTelemetry {
     return s.length() > MAX_VERSION_LEN ? s.substring(0, MAX_VERSION_LEN) : s;
   }
 
-  private static String jsonStr(String s) {
+  static String jsonStr(String s) {
     if (s == null) return "null";
     StringBuilder b = new StringBuilder(s.length() + 2);
     b.append('"');
