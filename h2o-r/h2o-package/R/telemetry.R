@@ -453,17 +453,12 @@ bucketize_leaderboard_size <- function(n) {
   writeLines(body, tf, useBytes = TRUE)
   curl_bin <- .h2o.telemetry.find_curl()
   tryCatch({
-    # DNT: 0 explicitly signals "user has not opted out via the W3C DNT
-    # mechanism" — defends against transparent proxies that inject DNT: 1
-    # on outbound traffic and would otherwise silently kill telemetry.
-    # Users opt out via env vars, never by us sending DNT: 1.
     system2(
       curl_bin,
       args = c("-s", "-o", if (.Platform$OS.type == "windows") "NUL" else "/dev/null",
                "-m", as.character(.h2o.telemetry.timeout_secs),
                "--connect-timeout", "1",
                "-H", "Content-Type: application/json",
-               "-H", "DNT: 0",
                "--data-binary", paste0("@", tf),
                "-X", "POST",
                url),
@@ -482,7 +477,7 @@ bucketize_leaderboard_size <- function(n) {
       postfields     = body,
       writefunction  = t$update,
       headerfunction = h$update,
-      httpheader     = c("Content-Type" = "application/json", "DNT" = "0"),
+      httpheader     = c("Content-Type" = "application/json"),
       customrequest  = "POST",
       connecttimeout = 1L,
       timeout        = .h2o.telemetry.timeout_secs,

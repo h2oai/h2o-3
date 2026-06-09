@@ -236,9 +236,6 @@ public class JvmTelemetry {
       con.setReadTimeout(TIMEOUT_MS);
       con.setRequestMethod("POST");
       con.setRequestProperty("Content-Type", "application/json");
-      // DNT: 0 defends against transparent proxies that inject DNT: 1; users
-      // opt out via env vars / sysprops, never by us emitting DNT: 1.
-      con.setRequestProperty("DNT", "0");
       con.setDoOutput(true);
       byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
       OutputStream os = con.getOutputStream();
