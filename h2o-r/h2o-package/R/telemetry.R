@@ -377,18 +377,25 @@ bucketize_leaderboard_size <- function(n) {
               cluster_memory_gb_bucket = NULL,
               cluster_topology = NULL)
   tryCatch({
-    info <- tryCatch(h2o.clusterStatus(), error = function(e) NULL)
-    if (is.null(info)) info <- tryCatch(h2o.clusterInfo(), error = function(e) NULL)
+    # Read CloudV3 directly. h2o.clusterStatus()/clusterInfo() print to the
+    # console and reshape the response into a per-node data.frame (no
+    # $cloud_size), so they are unusable for silent telemetry.
+    info <- tryCatch(
+      .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD),
+                                       simplifyDataFrame = FALSE)),
+      error = function(e) NULL)
     if (is.null(info)) return(out)
     cloud_size <- tryCatch(as.integer(info$cloud_size %||% NA), error = function(e) NA_integer_)
     if (length(cloud_size) > 1L) cloud_size <- cloud_size[[1L]]
     if (!is.na(cloud_size) && cloud_size > 0L) {
       out$cluster_nodes_bucket <- bucketize_cluster_nodes(cloud_size)
     }
-    # cluster total memory: prefer max_mem if exposed, else free_mem
-    max_mem <- info$max_mem %||% info$free_mem %||% NULL
-    if (!is.null(max_mem)) {
-      total <- tryCatch(sum(as.numeric(max_mem), na.rm = TRUE), error = function(e) 0)
+    # Total cluster memory = sum of per-node JVM heap ceilings (max_mem, bytes).
+    nodes <- info$nodes %||% NULL
+    if (!is.null(nodes) && length(nodes) > 0L) {
+      total <- tryCatch(
+        sum(vapply(nodes, function(n) as.numeric(n$max_mem %||% 0), numeric(1L)), na.rm = TRUE),
+        error = function(e) 0)
       if (total > 0) {
         out$cluster_memory_gb_bucket <- bucketize_cluster_memory_gb(total / (1024^3))
       }
