@@ -362,6 +362,7 @@ jobs:
       should_build: ${{ steps.config.outputs.should_build }}
       should_publish: ${{ steps.config.outputs.should_publish }}
       is_release_branch: ${{ steps.config.outputs.is_release_branch }}
+      s3_role: ${{ steps.roles.outputs.s3_role }}
 
     steps:
       - name: Validate Inputs
@@ -377,6 +378,10 @@ jobs:
           fi
 
           echo "Inputs validated successfully"
+
+      - name: Export S3 Role
+        id: roles
+        run: echo "s3_role=$S3_ROLE" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4.0.2
@@ -688,7 +693,7 @@ jobs:
       s3_root: ${{ needs.init.outputs.s3_root }}
       update_latest: ${{ inputs.update_latest }}
       update_latest_branch: ${{ inputs.update_latest_branch }}
-      s3_role: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+      s3_role: ${{ needs.init.outputs.s3_role }}
     secrets: inherit
 
   # ============================================================================
@@ -755,7 +760,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_pypi: true
-      s3_role: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+      s3_role: ${{ needs.init.outputs.s3_role }}
     secrets: inherit
 
   # ============================================================================
@@ -776,7 +781,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_conda: ${{ inputs.dry_run != true }}
-      s3_role: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+      s3_role: ${{ needs.init.outputs.s3_role }}
     secrets: inherit
 
   # ============================================================================
@@ -797,7 +802,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       test_release: false
       is_nightly: false
-      s3_role: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+      s3_role: ${{ needs.init.outputs.s3_role }}
       repository: h2oai/h2o-3
     secrets: inherit
 
