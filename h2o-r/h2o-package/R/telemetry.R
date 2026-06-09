@@ -485,6 +485,17 @@ bucketize_leaderboard_size <- function(n) {
   invisible(NULL)
 }
 
+.h2o.telemetry.post_sync_curl <- function(body, url) {
+  tryCatch({
+    h <- curl::new_handle()
+    curl::handle_setheaders(h, "Content-Type" = "application/json")
+    curl::handle_setopt(h, post = TRUE, postfields = body,
+                        connecttimeout = 1L, timeout = .h2o.telemetry.timeout_secs)
+    curl::curl_fetch_memory(url, handle = h)
+  }, error = function(e) invisible(NULL))
+  invisible(NULL)
+}
+
 .h2o.telemetry.post_sync_rcurl <- function(body, url) {
   tryCatch({
     h <- RCurl::basicHeaderGatherer()
@@ -507,8 +518,14 @@ bucketize_leaderboard_size <- function(n) {
 .h2o.telemetry.post <- function(payload) {
   body <- jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null")
   url  <- .h2o.telemetry.resolve_url()
+  # A detached `curl` process is the only true non-blocking ("fire-and-forget")
+  # transport in single-threaded R. When no curl binary is present we fall back
+  # to a synchronous request (blocks only for the short timeout), preferring the
+  # modern `curl` package over legacy RCurl.
   if (nzchar(.h2o.telemetry.find_curl())) {
     .h2o.telemetry.post_async_curl(body, url)
+  } else if (requireNamespace("curl", quietly = TRUE)) {
+    .h2o.telemetry.post_sync_curl(body, url)
   } else {
     .h2o.telemetry.post_sync_rcurl(body, url)
   }
