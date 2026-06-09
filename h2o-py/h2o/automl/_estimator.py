@@ -705,8 +705,10 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             try:
                 leader_algo = ""
                 try:
-                    if self.leader is not None and hasattr(self.leader, "_model_json"):
-                        leader_algo = (self.leader._model_json or {}).get("algo", "") or ""
+                    # Resolve the leader once; the property may query the backend.
+                    leader = self.leader
+                    if leader is not None and hasattr(leader, "_model_json"):
+                        leader_algo = (leader._model_json or {}).get("algo", "") or ""
                 except Exception:
                     pass
                 lb_size = None
