@@ -127,7 +127,12 @@ def extract_tabs(lines):
                 break
             body.append(ln)
             i += 1
+        # Blank lines around the placeholder so it stays its own block — the
+        # tab body absorbs trailing blanks, which would otherwise glue the
+        # placeholder to a following heading/paragraph and break MDX.
+        out.append("")
         out.append(f"@@TABS{len(blocks)}@@")
+        out.append("")
         blocks.append(render_tabs(body))
     return out, blocks
 
