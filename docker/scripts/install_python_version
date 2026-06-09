@@ -1,5 +1,8 @@
-#!/bin/bash -ex
-set -uo pipefail
+#!/bin/bash
+# Explicit `set -euxo pipefail` so the script keeps failing-fast semantics even
+# if a future maintainer invokes it as `bash install_python_version ...` (which
+# drops shebang flags).
+set -euxo pipefail
 
 # Script for installing all Py versions specified as comma separated list
 # in ${1} or in ${PYTHON_VERSIONS}.
@@ -114,4 +117,8 @@ for python_version in "${array[@]}"; do
 	su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip freeze"
 done
 
-rm *-requirements*.txt
+# Explicit filenames (not glob): the script downloads these into the current
+# working dir (Docker default `/`), and a bare glob would broaden the blast
+# radius if anything else matching the pattern landed there.
+rm -f test-requirements.txt docs-requirements.txt \
+      test-requirements-no-causalml.txt causalml-requirements.txt

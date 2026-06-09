@@ -129,7 +129,7 @@ ansiColor('xterm') {
 
 		PYTHON_VERSIONS = pipelineContext.getBuildConfig().PYTHON_VERSIONS
 		R_VERSIONS = pipelineContext.getBuildConfig().R_VERSIONS
-
+		
         buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
 

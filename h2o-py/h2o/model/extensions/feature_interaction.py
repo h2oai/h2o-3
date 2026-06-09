@@ -46,9 +46,9 @@ class FeatureInteraction:
         json = h2o.api("POST /3/FeatureInteraction", data=kwargs)
         if path is not None:
             import pandas as pd
-            writer = pd.ExcelWriter(path, engine='xlsxwriter')
-            for fi in json['feature_interaction']:
-                fi.as_data_frame().to_excel(writer, sheet_name=fi._table_header)
-            writer.close()
+            # `with` block guarantees writer.close() runs even if to_excel raises mid-loop.
+            with pd.ExcelWriter(path, engine='xlsxwriter') as writer:
+                for fi in json['feature_interaction']:
+                    fi.as_data_frame().to_excel(writer, sheet_name=fi._table_header)
 
         return json['feature_interaction']
