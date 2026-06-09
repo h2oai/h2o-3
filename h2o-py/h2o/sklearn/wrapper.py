@@ -150,7 +150,9 @@ def _classes_array(domain):
     if all(isinstance(s, str) and _is_canonical_int(s) for s in domain):
         try:
             return np.asarray(domain, dtype=np.int64)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, OverflowError):
+            # OverflowError fires when a token round-trips through int() but exceeds int64
+            # (e.g. "9223372036854775808" = INT64_MAX+1). Fall through to string array.
             pass
     return np.asarray(domain)
 
@@ -539,13 +541,15 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # not a reliable fit signal (a failed train() would leave the unfit instance attached). We need a
         # post-fit attribute that's only populated on a successful server-side fit:
         #   - plain estimators (H2OEstimator subclasses): `_model_json` is set by EstimatorBase.train.
-        #   - H2OAutoML: has no `_model_json` of its own — the leader's _model_json lives under `.leader`,
-        #     which is None until AutoML.train completes.
+        #   - H2OAutoML: has no `_model_json` of its own — `_leader_id` is populated by AutoML.train
+        #     on completion. We read `_leader_id` rather than the `leader` property because `leader`
+        #     triggers a server round-trip via h2o.get_model, which sklearn's check_is_fitted runs
+        #     from every predict/score/decision_function call.
         if self._estimator is None:
             return False
         if getattr(self._estimator, "_model_json", None) is not None:
             return True
-        return getattr(self._estimator, "leader", None) is not None
+        return getattr(self._estimator, "_leader_id", None) is not None
 
     @property
     def classes_(self):
@@ -608,6 +612,21 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
                 est_type = "classifier"
             elif RegressorMixin in mro:
                 est_type = "regressor"
+        if est_type is None and hasattr(self, "_is_classifier_distribution"):
+            # Generic wrappers (make_estimator with type='estimator') have neither
+            # _estimator_type nor ClassifierMixin / RegressorMixin in MRO but still
+            # behave as classifiers when distribution=bernoulli/binomial/quasibinomial/multinomial.
+            # Without this branch, sklearn 1.6+'s is_classifier(est) reads False from
+            # tags while BaseEstimatorMixin.is_classifier() reads True via the distribution
+            # check — Pipeline / GridSearchCV(scoring='accuracy') then silently picks regression
+            # metrics. Guard against _custom_params not yet being populated during __init__.
+            try:
+                if self._is_classifier_distribution():
+                    est_type = "classifier"
+                elif self._is_regressor_distribution():
+                    est_type = "regressor"
+            except AttributeError:
+                pass
         if est_type == "classifier":
             tags.estimator_type = "classifier"
             try:
