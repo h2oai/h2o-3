@@ -1,0 +1,72 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
+
+# Telemetry needs no cluster: we stub the transport and assert the payloads the
+# public emitters build (envelope + bucket label strings). The real detached-curl
+# transport is covered by the Python/Java HTTP smoke tests; R has no lightweight
+# in-process HTTP server, so we don't duplicate a delivery test here.
+
+test.telemetry <- function() {
+  check <- function(cond, msg) if (!isTRUE(cond)) stop("FAIL: ", msg)
+
+  # Make sure telemetry is enabled for the duration of the test.
+  Sys.unsetenv("H2O_DISABLE_TELEMETRY")
+  Sys.unsetenv("DO_NOT_TRACK")
+  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
+
+  # Intercept the transport: capture each payload instead of POSTing it.
+  captured <- new.env()
+  captured$events <- list()
+  orig_post <- h2o:::.h2o.telemetry.post
+  assignInNamespace(".h2o.telemetry.post",
+                    function(payload) {
+                      captured$events[[length(captured$events) + 1L]] <- payload
+                      invisible(NULL)
+                    },
+                    ns = "h2o")
+  on.exit(assignInNamespace(".h2o.telemetry.post", orig_post, ns = "h2o"), add = TRUE)
+
+  ver <- "3.46.0.12"
+  h2o:::.h2o.send_import(ver, "hdfs", "csv", "ok",
+                         compressed_size_bytes = 50 * 1024 * 1024,
+                         frame_shape = list(rows_bucket = "1K-10K", cols_bucket = "1-10"))
+  h2o:::.h2o.send_init_telemetry(ver)
+
+  by_event <- list()
+  for (e in captured$events) by_event[[e$event]] <- e
+
+  check(!is.null(by_event[["import"]]), "import event emitted")
+  check(!is.null(by_event[["init"]]),   "init event emitted")
+
+  imp <- by_event[["import"]]
+  for (k in c("payload_version", "client", "h2o_version", "session_id", "ts", "product"))
+    check(!is.null(imp[[k]]), paste("envelope key present:", k))
+  check(identical(imp$client, "r"),                "client = r")
+  check(identical(imp$source_scheme, "hdfs"),      "source_scheme = hdfs")
+  check(identical(imp$file_format, "csv"),         "file_format = csv")
+  check(identical(imp$outcome, "ok"),              "outcome = ok")
+  check(identical(imp$data_size_bucket, "10MB-100MB"),
+        paste("data_size_bucket bucketed, got:", imp$data_size_bucket))
+  check(identical(imp$rows_bucket, "1K-10K"),      "rows_bucket carried through")
+
+  # init carries the runtime fields (r_version always; java_* when resolvable).
+  check(!is.null(by_event[["init"]]$r_version), "init event carries r_version")
+
+  # Bucket boundaries are byte-exact (shared wire contract across clients).
+  check(identical(h2o:::bucketize_data_size(9 * 1024 * 1024),  "<10MB"),      "data_size <10MB boundary")
+  check(identical(h2o:::bucketize_data_size(10 * 1024 * 1024), "10MB-100MB"), "data_size 10MB boundary")
+  check(identical(h2o:::bucketize_data_size(5 * 1024^3),       "5GB-10GB"),   "data_size 5GB boundary")
+
+  # A >2GB file must not overflow to NA (the as.integer bug) — it buckets cleanly.
+  check(identical(h2o:::bucketize_data_size(3 * 1024^3), "1GB-5GB"),
+        "files larger than 2GB bucket correctly")
+
+  # Disabled telemetry emits nothing.
+  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- TRUE
+  before <- length(captured$events)
+  h2o:::.h2o.send_import(ver, "s3", "parquet", "ok")
+  check(length(captured$events) == before, "no events emitted while telemetry disabled")
+  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
+}
+
+doTest("Telemetry: wire contract + bucket boundaries (no cluster needed)", test.telemetry)
