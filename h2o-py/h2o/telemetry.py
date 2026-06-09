@@ -33,6 +33,7 @@ import os
 import platform
 import queue
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -307,6 +308,34 @@ _JAVA_VERSION_RE = re.compile(r'version\s+"([^"]+)"')
 _JAVA_PROP_RE   = re.compile(r'^\s*(java\.version|java\.vendor)\s*=\s*(.+?)\s*$', re.MULTILINE)
 
 
+def _resolve_java_bin():
+    """Resolve the java binary, honoring JAVA_HOME before PATH.
+
+    Returns None rather than the bare macOS ``/usr/bin/java`` stub, which pops
+    an "install a JDK" dialog when no JDK is present — telemetry must never
+    produce user-visible side effects.
+    """
+    jh = os.environ.get("JAVA_HOME")
+    if jh:
+        cand = os.path.join(jh, "bin", "java.exe" if os.name == "nt" else "java")
+        return cand if os.path.isfile(cand) else None
+    java = shutil.which("java")
+    if not java:
+        return None
+    if platform.system() == "Darwin" and os.path.realpath(java) == "/usr/bin/java":
+        try:
+            proc = subprocess.run(["/usr/libexec/java_home"],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=2.0)
+            home = (proc.stdout or b"").decode("utf-8", "replace").strip()
+            if proc.returncode != 0 or not home:
+                return None
+            cand = os.path.join(home, "bin", "java")
+            return cand if os.path.isfile(cand) else None
+        except Exception:
+            return None
+    return java
+
+
 def _detect_java_info():
     """Best-effort detection of Java version + vendor by parsing `java -version`.
 
@@ -318,9 +347,13 @@ def _detect_java_info():
         if _java_info_cache is not None:
             return _java_info_cache
         info = {}
+        java_bin = _resolve_java_bin()
+        if java_bin is None:
+            _java_info_cache = info
+            return info
         try:
             proc = subprocess.run(
-                ["java", "-XshowSettings:properties", "-version"],
+                [java_bin, "-XshowSettings:properties", "-version"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 timeout=2.0,
             )

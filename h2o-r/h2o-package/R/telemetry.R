@@ -314,16 +314,42 @@ bucketize_leaderboard_size <- function(n) {
   "other"
 }
 
+# Resolve the java binary the same way H2O does when launching a local server
+# (.h2o.checkJava honors JAVA_HOME, then scans the OS). Returns NULL rather than
+# invoking the macOS /usr/bin/java stub, which pops an "install a JDK" dialog
+# when no JDK is present — telemetry must never produce user-visible side effects.
+.h2o.telemetry.resolve_java <- function() {
+  java_bin <- tryCatch(.h2o.checkJava(), error = function(e) NULL)
+  if (is.null(java_bin) || !nzchar(java_bin)) return(NULL)
+  if (!nzchar(Sys.getenv("JAVA_HOME")) &&
+      identical(Sys.info()[["sysname"]], "Darwin") &&
+      identical(normalizePath(java_bin, mustWork = FALSE), "/usr/bin/java")) {
+    jh <- tryCatch(suppressWarnings(system2("/usr/libexec/java_home",
+                                            stdout = TRUE, stderr = FALSE)),
+                   error = function(e) character(0))
+    jh <- jh[nzchar(jh)]
+    if (length(jh) == 0L) return(NULL)
+    cand <- file.path(jh[[1L]], "bin", "java")
+    return(if (file.exists(cand)) cand else NULL)
+  }
+  java_bin
+}
+
 .h2o.telemetry.detect_java <- function() {
   if (!is.null(.h2o.telemetry.state$java_info)) {
     return(.h2o.telemetry.state$java_info)
   }
   info <- list(version = NULL, vendor = NULL)
+  java_bin <- .h2o.telemetry.resolve_java()
+  if (is.null(java_bin)) {
+    .h2o.telemetry.state$java_info <- info
+    return(info)
+  }
   tryCatch({
     out <- suppressWarnings(system2(
-      "java",
+      java_bin,
       args = c("-XshowSettings:properties", "-version"),
-      stdout = TRUE, stderr = TRUE
+      stdout = TRUE, stderr = TRUE, timeout = 2
     ))
     text <- paste(out, collapse = "\n")
     m_ver <- regmatches(text, regexpr("java\\.version\\s*=\\s*[^\n]+", text))
