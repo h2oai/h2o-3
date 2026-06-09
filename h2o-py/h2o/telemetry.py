@@ -31,6 +31,7 @@ URL override: H2O_TELEMETRY_URL.
 import json
 import os
 import platform
+import queue
 import re
 import subprocess
 import threading
@@ -527,12 +528,17 @@ def _attributes_with_distribution(attributes):
     return merged
 
 
-def _post_async(payload):
-    if _telemetry_disabled():
-        return
-    url = _resolve_url()
+# Single background worker drains a bounded queue, so emitting many events
+# (e.g. a tight import/parse loop) never spawns a thread per event.
+_QUEUE_MAXSIZE = 64
+_telemetry_queue = None
+_telemetry_worker = None
+_worker_lock = threading.Lock()
 
-    def _post():
+
+def _telemetry_worker_loop():
+    while True:
+        url, payload = _telemetry_queue.get()
         try:
             req = urllib.request.Request(
                 url,
@@ -543,8 +549,33 @@ def _post_async(payload):
             urllib.request.urlopen(req, timeout=_TIMEOUT_SECONDS).read()
         except Exception:
             pass
+        finally:
+            _telemetry_queue.task_done()
 
-    threading.Thread(target=_post, daemon=True).start()
+
+def _ensure_worker():
+    global _telemetry_queue, _telemetry_worker
+    if _telemetry_worker is not None and _telemetry_worker.is_alive():
+        return
+    with _worker_lock:
+        if _telemetry_queue is None:
+            _telemetry_queue = queue.Queue(maxsize=_QUEUE_MAXSIZE)
+        if _telemetry_worker is None or not _telemetry_worker.is_alive():
+            _telemetry_worker = threading.Thread(
+                target=_telemetry_worker_loop, name="h2o-telemetry", daemon=True)
+            _telemetry_worker.start()
+
+
+def _post_async(payload):
+    if _telemetry_disabled():
+        return
+    url = _resolve_url()
+    _ensure_worker()
+    try:
+        # Never block the caller; drop the event if the backlog is saturated.
+        _telemetry_queue.put_nowait((url, payload))
+    except queue.Full:
+        pass
 
 
 def _strip_none(d):
