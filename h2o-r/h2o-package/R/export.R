@@ -270,7 +270,7 @@ h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_
     res$dir
   }, error = function(e) { outcome <<- "error"; stop(e) })
   tryCatch({
-    size <- if (!is.null(saved) && file.exists(saved)) as.integer(file.info(saved)$size) else NULL
+    size <- if (!is.null(saved) && file.exists(saved)) file.info(saved)$size else NULL
     .h2o.send_model_save(.h2o.r_version_safe(),
                          algo = tryCatch(object@algorithm, error = function(e) ""),
                          family = NULL, outcome = outcome, fmt = "binary",

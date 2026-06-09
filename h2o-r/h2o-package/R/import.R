@@ -99,7 +99,7 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
     # Best-effort size for local paths; remote paths leave it null.
     csize <- NULL
     if (is.character(first_path) && length(first_path) == 1L && file.exists(first_path)) {
-      csize <- as.integer(file.info(first_path)$size)
+      csize <- file.info(first_path)$size  # numeric (double): avoids 2GB integer overflow
     }
     fmt <- .h2o.derive_file_format(first_path)
     shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(res) else list()
@@ -238,7 +238,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
     }
   }, error = function(e) { outcome <<- "error"; stop(e) })
   tryCatch({
-    size <- if (file.exists(path)) as.integer(file.info(path)$size) else 0L
+    size <- if (file.exists(path)) file.info(path)$size else 0
     fmt <- .h2o.derive_file_format(path)
     shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(result) else list()
     .h2o.send_upload(.h2o.r_version_safe(), fmt, size, outcome,
@@ -450,7 +450,7 @@ h2o.loadModel <- function(path) {
     h2o.getModel(res$model_id$name)
   }, error = function(e) { outcome <<- "error"; stop(e) })
   tryCatch({
-    size <- if (file.exists(path)) as.integer(file.info(path)$size) else NULL
+    size <- if (file.exists(path)) file.info(path)$size else NULL
     algo <- tryCatch(loaded_model@algorithm, error = function(e) "")
     .h2o.send_model_load(.h2o.r_version_safe(),
                          algo = algo, family = NULL, outcome = outcome, fmt = "binary",

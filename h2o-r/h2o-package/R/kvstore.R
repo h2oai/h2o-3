@@ -501,7 +501,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 
   # Fire-and-forget model_download telemetry (format=pojo); never raises.
   tryCatch({
-    size <- if (!is.null(path) && file.exists(file_path)) as.integer(file.info(file_path)$size) else NULL
+    size <- if (!is.null(path) && file.exists(file_path)) file.info(file_path)$size else NULL
     .h2o.send_model_download(.h2o.r_version_safe(),
                              algo = tryCatch(model@algorithm, error = function(e) ""),
                              family = NULL,
@@ -596,7 +596,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), jar.path, useBytes = TRUE)
   }
   tryCatch({
-    size <- if (file.exists(mojo.path)) as.integer(file.info(mojo.path)$size) else 0L
+    size <- if (file.exists(mojo.path)) file.info(mojo.path)$size else 0
     .h2o.send_mojo_download(.h2o.r_version_safe(),
                             algo = tryCatch(model@algorithm, error = function(e) ""),
                             family = NULL,
@@ -662,7 +662,7 @@ h2o.download_model <- function(model, path=NULL, export_cross_validation_predict
 
     # Fire-and-forget model_download telemetry (format=binary); never raises.
     tryCatch({
-      size <- if (file.exists(file_path)) as.integer(file.info(file_path)$size) else NULL
+      size <- if (file.exists(file_path)) file.info(file_path)$size else NULL
       .h2o.send_model_download(.h2o.r_version_safe(),
                                algo = tryCatch(model@algorithm, error = function(e) ""),
                                family = NULL,
