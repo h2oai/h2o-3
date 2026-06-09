@@ -18,6 +18,16 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/11/inde
 - [[#16676]](https://github.com/h2oai/h2o-3/issues/16676) – Added support for removing offset effects in GLM.
 - [[#16786]](https://github.com/h2oai/h2o-3/issues/16786) – Added MOJO support for GLM remove offset effects.
 
+#### Improvement
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – Added support for Python 3.12, 3.13, and 3.14.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OXGBoostEstimator.convert_H2OXGBoostParams_2_XGBoostParams()` now pins `base_score=0.5` to match H2O's bundled xgboost4j 1.6 default (native xgboost 2.x changed the default to auto-compute).
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` gained an `na_values` kwarg, also honored on the polars / multi-thread path.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` added `iter_h2oframes()` for server-side `(train, test)` splits without driver materialization.
+
+#### Breaking change
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` / `H2OStratifiedKFold` iterators now yield `(numpy int array, numpy int array)` instead of `(H2OFrame mask, H2OFrame mask)` (required for scikit-learn ≥ 1.6 interop). A one-shot `FutureWarning` is emitted on first materialization, plus a `UserWarning` for frames over 1M rows. The legacy mask-yielding iterator is available for one release as `H2OKFold.iter_legacy()` / `H2OStratifiedKFold.iter_legacy()` with a `DeprecationWarning`. For cluster-scale CV use `H2OKFold.iter_h2oframes()` or H2O's native `nfolds=` parameter.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` no longer treats `"NA"`/`"NULL"`/`"NaN"`/`"None"`/`"N/A"`/`"#N/A"` strings as NaN by default — only empty CSV fields. Pass `na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]` to restore the prior behavior.
+
 #### Docs
 - [[#16809]](https://github.com/h2oai/h2o-3/issues/16809) – Reconciled Grid Search docs with parameter and algorithm pages.
 - [[#16804]](https://github.com/h2oai/h2o-3/issues/16804) – Added `h2o.make_derived_glm_model` to R `_pkgdown.yml`.
@@ -43,14 +53,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/10/inde
 #### Improvement
 - [[#16718]](https://github.com/h2oai/h2o-3/issues/16718) – Removed support for Python 3.6.
 - [[#16707]](https://github.com/h2oai/h2o-3/issues/16707) – Added support for R 4.5.
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – Added support for Python 3.12, 3.13, and 3.14 (PR CI smokes 3.7/3.11/3.14; full matrix runs nightly).
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OXGBoostEstimator.convert_H2OXGBoostParams_2_XGBoostParams()` now pins `base_score=0.5` to match H2O's bundled xgboost4j 1.6 default (native xgboost 2.x changed the default to auto-compute).
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` gained an `na_values` kwarg, also honored on the polars / multi-thread path.
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` / `H2OStratifiedKFold` added `iter_h2oframes()` for server-side `(train, test)` splits without driver materialization.
-
-#### Breaking change
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` / `H2OStratifiedKFold` iterators now yield `(numpy int array, numpy int array)` instead of `(H2OFrame mask, H2OFrame mask)` (required for scikit-learn ≥ 1.6 interop). A one-shot `FutureWarning` is emitted on first materialization, plus a `UserWarning` for frames over 1M rows. For cluster-scale CV use `iter_h2oframes()` or H2O's native `nfolds=` parameter.
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` no longer treats `"NA"`/`"NULL"`/`"NaN"`/`"None"`/`"N/A"`/`"#N/A"` strings as NaN by default — only empty CSV fields. Pass `na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]` to restore the prior behavior.
 
 #### Docs
 - [[#15991]](https://github.com/h2oai/h2o-3/issues/15991) – Updated Infogram pydocs.

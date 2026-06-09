@@ -98,8 +98,7 @@ Run the following commands in a Terminal window to install H2O-3 for Python.
 
 	pip install requests
 	pip install tabulate
-	pip install future
-	
+
 	# Required for plotting:
 	pip install matplotlib
 
