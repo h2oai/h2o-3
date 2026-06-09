@@ -26,6 +26,14 @@ def comparison_test_dense():
         h2oParamsD = {"ntrees":ntrees, "max_depth":maxdepth, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                      "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "backend":"cpu"}
         nativeParam = {'colsample_bytree': h2oParamsD["col_sample_rate_per_tree"],
+                       # H2O resolves the unset tree_method to TreeMethod.exact for single-node
+                       # runs with rows < 4M (see XGBoostModel.getActualTreeMethod): GPU -> hist,
+                       # multi-node -> approx, single-node + small data -> exact. The H2O params
+                       # above pin "backend":"cpu" and this test is _singleNode with a small
+                       # mixed-frame fixture, so the H2O Booster is built with tree_method=exact.
+                       # Pinning the native side to 'exact' here makes the comparison apples-to-
+                       # apples (the pre-PR 'auto' had native xgboost resolving to approx/hist
+                       # depending on sparsity heuristics, which is a different algorithm).
                        'tree_method': 'exact',
                        # Pin base_score=0.5 (xgboost4j 1.6 default) to neutralize
                        # xgboost 2.0+'s auto-estimated base_score in cross-version comparisons.
