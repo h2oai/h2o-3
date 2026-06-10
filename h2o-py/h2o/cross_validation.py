@@ -77,7 +77,6 @@ class H2OPartitionIterator(object):
             stacklevel=2,
         )
         fold_col = self._fold_assignment_column()
-        target = self._fold_h2oframe()
         col = fold_col.columns[0]
         for fold_index in range(len(self)):
             test_mask = fold_col[col] == fold_index

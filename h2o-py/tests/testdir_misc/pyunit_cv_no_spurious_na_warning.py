@@ -230,6 +230,28 @@ def test_iter_legacy_yields_masks_with_deprecation_warning():
         assert isinstance(test_mask, tuple) and test_mask[0] == "mask_eq"
 
 
+def test_stratified_iter_legacy_works_without_feature_frame():
+    """iter_legacy() must work for H2OStratifiedKFold built the legacy way (no fr=).
+
+    Regression guard: iter_legacy() used to call _fold_h2oframe(), which raises
+    NotImplementedError without fr= — crashing the shim for exactly the legacy
+    callers it exists for. Masks only need the fold column, not the feature frame.
+    """
+    _reset_module_latches()
+    y = _FakeH2OFrame(n=6)
+    skf = H2OStratifiedKFold(y, n_folds=3, seed=42)
+    skf._fold_column = _FakeFoldColumn()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        splits = list(skf.iter_legacy())
+    deprec = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+    assert deprec, "iter_legacy() must emit a DeprecationWarning"
+    assert len(splits) == 3
+    for train_mask, test_mask in splits:
+        assert isinstance(train_mask, tuple) and train_mask[0] == "mask_ne"
+        assert isinstance(test_mask, tuple) and test_mask[0] == "mask_eq"
+
+
 # ---------- P1-27: fold_assignments property alias ---------------------------
 
 def test_fold_assignments_property_deprecation_alias():
