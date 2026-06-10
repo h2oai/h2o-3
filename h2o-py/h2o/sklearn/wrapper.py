@@ -182,7 +182,9 @@ def _to_numpy(fr, **kwargs):
         return fr
     arr = fr
     if isinstance(fr, H2OFrame):
-        arr = fr.as_data_frame()
+        # na_values=[""] keeps the 3.46.0.12 default semantics while reserving the
+        # one-shot FutureWarning for direct as_data_frame() callers.
+        arr = fr.as_data_frame(na_values=[""])
         if can_use_pandas():
             arr = arr.values
     return (np.array(arr) if can_use_numpy() and isinstance(arr, list)

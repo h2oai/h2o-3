@@ -1362,7 +1362,9 @@ def ls():
     >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
     >>> h2o.ls()
     """
-    return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
+    # na_values=[""] keeps frame ids verbatim (an id literally named "NA" must not
+    # become NaN) and keeps the one-shot FutureWarning for direct user call sites.
+    return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True, na_values=[""])
 
 
 def frame(frame_id):
@@ -1926,7 +1928,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     return get_frame(parms["dest"])
 
 
-def as_list(data, use_pandas=True, header=True):
+def as_list(data, use_pandas=True, header=True, na_values=None):
     """
     Convert an H2O data object into a python-specific object.
 
@@ -1939,6 +1941,8 @@ def as_list(data, use_pandas=True, header=True):
     :param data: an H2O data object.
     :param use_pandas: If True, try to use pandas for reading in the data.
     :param header: If True, return column names as first element in list
+    :param na_values: Forwarded to :meth:`H2OFrame.as_data_frame` on the pandas path;
+        see its documentation for the default NA-handling semantics.
 
     :returns: List of lists (Rows x Columns).
 
@@ -1956,7 +1960,10 @@ def as_list(data, use_pandas=True, header=True):
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
     assert_is_type(header, bool)
-    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header)
+    # Default to [""] (the 3.46.0.12 as_data_frame default) so the one-shot
+    # FutureWarning is reserved for direct as_data_frame() callers, who can act on it.
+    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header,
+                                  na_values=[""] if na_values is None else na_values)
 
 
 def demo(funcname, interactive=True, echo=True, test=False):
