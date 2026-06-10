@@ -507,6 +507,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
 
         assert estimator_type in (None, 'classifier', 'regressor')
         self._estimator = None
+        self._leader_cache = None  # (automl_estimator, resolved_leader) — see classes_
         self._estimator_cls = estimator_cls
         estimator_type = self._get_custom_param('default_estimator_type', estimator_type)
         if estimator_type:
@@ -565,10 +566,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
                     self.__class__.__name__)
             )
         if not self.__sklearn_is_fitted__():
-            try:
-                from sklearn.exceptions import NotFittedError
-            except ImportError:
-                NotFittedError = RuntimeError
+            from sklearn.exceptions import NotFittedError
             raise NotFittedError(
                 "{} is not fitted yet; call fit() before accessing 'classes_'.".format(
                     self.__class__.__name__)
@@ -576,7 +574,12 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # For AutoML, `_model_json` lives on the leader, not on the H2OAutoML wrapper itself.
         model = self._estimator
         if getattr(model, "_model_json", None) is None:
-            model = getattr(model, "leader", None) or model
+            # `leader` is a property that round-trips to the server (h2o.get_model), and
+            # sklearn >= 1.6 reads `classes_` on every score call — resolve it once per
+            # fitted estimator (refits replace self._estimator, invalidating the cache).
+            if self._leader_cache is None or self._leader_cache[0] is not model:
+                self._leader_cache = (model, getattr(model, "leader", None) or model)
+            model = self._leader_cache[1]
         output = model._model_json.get("output") or {}
         domains = output.get("domains")
         if not domains or domains[-1] is None:
