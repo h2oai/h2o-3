@@ -1960,7 +1960,10 @@ class H2OFrame(Keyed, H2ODisplay):
             columns whose levels literally are ``"NA"`` / ``"NULL"`` / ``"None"`` / ``"NaN"``.
             Note: STRING columns store the empty string as a quoted ``""`` literal, which pandas/polars
             still strip before NA matching — so a legitimately empty string round-trips to NaN regardless.
-            Honored on both the single-thread pandas path and the multi-thread polars path.
+            NA *recognition* is consistent between the single-thread pandas path and the multi-thread
+            polars path (the dtype of an all-NA column may still differ: pandas yields ``float64``,
+            polars a string dtype). Ignored when ``use_pandas=False`` (the plain list-of-lists reader
+            returns cell contents verbatim).
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
 
@@ -2021,8 +2024,9 @@ class H2OFrame(Keyed, H2ODisplay):
         import polars as pl
         # polars accepts a single string or a list of strings for null_values.
         # Default to [""] to match as_data_frame's new NA default: only empty
-        # CSV fields are NaN. Avoids divergent NA semantics between the two
-        # entry points.
+        # CSV fields are NaN. Keeps NA recognition consistent between the two
+        # entry points (all-NA column dtype may still differ: pandas float64
+        # vs polars string).
         if null_values is None:
             null_values = [""]
         dt_frame = pl.read_csv(fileName, null_values=null_values)
@@ -2113,10 +2117,14 @@ class H2OFrame(Keyed, H2ODisplay):
             - a list of ints or strings, selecting several columns with the given indices / names
             - a slice, selecting columns with the indices within this slice
             - a single-column boolean frame, selecting rows for which the selector is true
+            - a 1-D numpy array of integer or boolean dtype, selecting ROWS (this follows
+              scikit-learn's ``_safe_indexing`` semantics; note the asymmetry with a plain
+              Python list of ints, which selects COLUMNS)
             - a 2-element tuple, where the first element is a row selector, and the second element is the
-              column selector. Here the row selector may be one of: an int, a list of ints, a slice, or
-              a boolean frame. The column selector is similarly one of: an int, a list of ints, a string,
-              a list of strings, or a slice. It is also possible to use the empty slice (``:``) to select
+              column selector. Here the row selector may be one of: an int, a list of ints, a slice, a
+              boolean frame, or a 1-D numpy integer/boolean array. The column selector is similarly one
+              of: an int, a list of ints, a string, a list of strings, a slice, or a 1-D numpy array.
+              It is also possible to use the empty slice (``:``) or ``Ellipsis`` (``...``) to select
               all elements within one of the dimensions.
 
         :returns: A new frame comprised of some rows / columns of the source frame.
@@ -2147,7 +2155,7 @@ class H2OFrame(Keyed, H2ODisplay):
         # before dispatching to the list/tuple branches below, so the two paths
         # (bare ndarray vs ndarray-inside-tuple) share one conversion site.
         if can_use_numpy():
-            _nd = _np_ndarray()
+            _nd = _NP_NDARRAY
             if isinstance(item, _nd):
                 # Bare ndarray means row selection; a 1-D Python list already
                 # means column selection in H2OFrame so we can't fold that path.
@@ -5202,18 +5210,12 @@ except ImportError:
     _NP_NDARRAY = _NoNumpy
 
 
-def _np_ndarray():
-    """Return ``numpy.ndarray`` (cached at module load) or a never-matching sentinel."""
-    return _NP_NDARRAY
-
-
 def _np_index_to_list(arr):
     """Normalize a 1-D numpy index array (bool or integer dtype) to a Python list.
 
-    Driver-memory note: a length-N boolean mask materializes through
-    ``np.flatnonzero(arr).tolist()`` — for N=100M with 50% selectivity, peak
-    driver memory is ~2.2GB (numpy int64 → Python int boxing → rapids string).
-    Prefer H2O server-side filtering for cluster-scale frames.
+    Driver-memory note: the selected indices are materialized in driver memory
+    (and serialized into the rapids expression). Prefer H2O server-side
+    filtering for cluster-scale frames.
     """
     if _np_module is None:
         raise RuntimeError("numpy is required for numpy-array H2OFrame indexing")
