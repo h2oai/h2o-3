@@ -554,14 +554,12 @@ jobs:
     name: Publish Helm
     needs: [init, build, publish-s3]
     if: needs.init.outputs.is_release_branch == 'true'
-    uses: ./.github/workflows/release-publish-helm.yml
+    uses: ./.github/workflows/release-publish-helm-enterprise.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       project_version: ${{ needs.build.outputs.project_version }}
       test_release: false
       is_nightly: ${{ needs.init.outputs.is_nightly == 'true' }}
-      s3_role: ${{ needs.init.outputs.s3_role }}
-      repository: h2oai/h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================

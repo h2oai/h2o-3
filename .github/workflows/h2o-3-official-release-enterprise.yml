@@ -727,14 +727,12 @@ jobs:
       inputs.publish_helm == true &&
       inputs.dry_run != true &&
       (needs.publish-s3.result == 'success' || needs.publish-s3.result == 'skipped')
-    uses: ./.github/workflows/release-publish-helm.yml
+    uses: ./.github/workflows/release-publish-helm-enterprise.yml
     with:
       branch: ${{ needs.init.outputs.branch }}
       project_version: ${{ needs.build.outputs.project_version || needs.fetch-version.outputs.project_version }}
       test_release: false
       is_nightly: false
-      s3_role: ${{ needs.init.outputs.s3_role }}
-      repository: h2oai/h2o-3-enterprise
     secrets: inherit
 
   # ============================================================================
