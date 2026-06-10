@@ -37,7 +37,7 @@ def xgboost_reweight_tree():
     contribs_reweighted = xgb_model.predict_contributions(prostate_frame)
     # check_less_precise was removed in pandas 2.0. Per the pandas 2.0 migration
     # notes, check_less_precise=N translates to BOTH atol and rtol set to
-    # 0.5 * 10^-(N+1), i.e. for N=3 that's atol=rtol=5e-4. Using rtol alone (as a
+    # 0.5 * 10^-N, i.e. for N=3 that's atol=rtol=5e-4. Using rtol alone (as a
     # prior cleanup did) silently drops the absolute component, which matters for
     # SHAP contributions near zero where |value| can be << 1.
     assert_frame_equal(contribs_reweighted.as_data_frame(), contribs_original.as_data_frame(),

@@ -24,6 +24,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -247,12 +248,18 @@ public class XMLTestReporter extends RunListener {
     successCount++;
   }
 
+  // Per-JVM fallback token: must be unique across processes — two JVMs that both
+  // fail PID parsing and share a constant fallback would reintroduce the very
+  // file-write collision the PID suffix exists to prevent.
+  private static final String FALLBACK_JVM_ID =
+      "unknown-" + UUID.randomUUID().toString().substring(0, 8);
+
   // Java 8 compatible PID lookup. RuntimeMXBean.getName() conventionally returns
   // "<pid>@<hostname>" on the HotSpot JVM. We strip past the '@' so the report
   // filename never embeds a hostname (which would contain '.' chars that some
   // xUnit collectors mis-glob as extra file extensions). On any unexpected
-  // shape, fall back to a fixed sentinel — we'd rather collide than leak host
-  // info into a filename or break test reporting altogether.
+  // shape, fall back to a per-JVM unique sentinel — still collision-free, without
+  // leaking host info into a filename or breaking test reporting altogether.
   private static String jvmPid() {
     try {
       String name = ManagementFactory.getRuntimeMXBean().getName();
@@ -261,13 +268,13 @@ public class XMLTestReporter extends RunListener {
         String pidPart = name.substring(0, at);
         // Defense-in-depth: only accept all-digits as a PID
         for (int i = 0; i < pidPart.length(); i++) {
-          if (!Character.isDigit(pidPart.charAt(i))) return "unknown";
+          if (!Character.isDigit(pidPart.charAt(i))) return FALLBACK_JVM_ID;
         }
         return pidPart;
       }
-      return "unknown";
+      return FALLBACK_JVM_ID;
     } catch (Throwable t) {
-      return "unknown";
+      return FALLBACK_JVM_ID;
     }
   }
   

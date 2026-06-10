@@ -36,7 +36,9 @@ def _installed_packages():
             # to metadata.get("Name") for 3.8/3.9. Using .get() avoids the
             # 3.12 DeprecationWarning about implicit None from message["Name"].
             name = getattr(dist, "name", None) or dist.metadata.get("Name")
-            if not name:
+            # version is None for corrupted/partial installs (missing Version
+            # metadata) and would blow up the max() over version strings later.
+            if not name or not dist.version:
                 continue
             dists.append(_InstalledDist(_canonical_name(name), dist.version))
         return dists

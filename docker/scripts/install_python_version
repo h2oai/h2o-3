@@ -92,8 +92,11 @@ for python_version in "${array[@]}"; do
 	#
 	# Detect whether `causalml` actually appears in test-requirements.txt for this
 	# Python version; if not, skip step 2 entirely instead of running pip with an
-	# empty -r argument (which would either no-op silently or error out).
-	grep -v '^causalml' test-requirements.txt > test-requirements-no-causalml.txt
+	# empty -r argument (which would either no-op silently or error out). (Today
+	# every supported version pins causalml, so the skip branch is defensive only.)
+	# `|| true`: under `set -e` a grep selecting zero lines exits 1 and would kill
+	# the build if the file ever contained nothing but causalml pins.
+	grep -v '^causalml' test-requirements.txt > test-requirements-no-causalml.txt || true
 	if grep -q '^causalml' test-requirements.txt; then
 		grep '^causalml' test-requirements.txt > causalml-requirements.txt
 		HAVE_CAUSALML=1

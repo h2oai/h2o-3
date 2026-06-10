@@ -42,6 +42,14 @@ def arlines_test():
     # test images so this cross-check survives the upgrade -- right now Py3.11+
     # is reduced to an H2O-only determinism sanity check, which is what the
     # original PR landed.
+    #
+    # Policy note: the pyunit_H2OXGBoost_native_* comparison tests DO run on
+    # xgboost >= 2 — they build native params via
+    # convert_H2OXGBoostParams_2_XGBoostParams, which pins the divergent
+    # defaults (base_score=0.5, resolved tree_method). This test hand-rolls a
+    # raw native param dict instead, so it would have to replicate that pinning
+    # by hand to stay meaningful; skipping until 1.7.6 is co-installed is the
+    # deliberate alternative.
     import xgboost as xgb
     xgb_major = int(xgb.__version__.split(".", 1)[0])
     if xgb_major >= 2:

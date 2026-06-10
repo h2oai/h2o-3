@@ -23,6 +23,16 @@ from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
 from h2o.expr_optimizer import optimize
 
+# Resolve numpy once at module load: _to_python_scalar runs for every Rapids
+# argument (per element for list args), so a per-call import is measurable.
+try:
+    import numpy as _np_module
+    _NP_GENERIC = _np_module.generic
+except ImportError:
+    class _NoNumpyGeneric(object):
+        """Sentinel type that never matches isinstance when numpy is absent."""
+    _NP_GENERIC = _NoNumpyGeneric
+
 
 class ExprNode(object):
     """
@@ -180,15 +190,12 @@ class ExprNode(object):
         # Both forms break H2O's Rapids parser, which expects bare literals.
         # Convert numpy scalars to plain Python types before any repr() call.
         if isinstance(x, str):
-            return str(x)  # unwraps np.str_ (str subclass) to plain str
+            # unwraps np.str_ (str subclass) to plain str; skip the copy for exact str
+            return x if type(x) is str else str(x)
         # Narrow on isinstance(np.generic) instead of duck-typing on hasattr('item'),
         # because pandas Timestamp / Timedelta / arrow scalars also expose .item() but
         # converting them silently drops tz info or units.
-        try:
-            import numpy as _np
-        except ImportError:
-            return x
-        if isinstance(x, _np.generic):
+        if isinstance(x, _NP_GENERIC):
             try:
                 return x.item()
             except (AttributeError, ValueError):
