@@ -30,13 +30,17 @@ def assert_equal(
     # The old version doesn't have a way to incorporate dispersion estimation.
     sm_aic = float(-2 * sm_model.llf + 2 * (sm_model.df_model + 1 + dk_params))
     coefs = h2o_model.coef()
+    offenders = []
     for cn, cv in coefs.items():
         if cn == "Intercept":
             cn = "const"
         if abs(cv - sm_model.params.at[cn]) > coef_tolerance:
-            print(
+            offenders.append(
                 f"Coefficient '{cn}' differs by {cv - sm_model.params.at[cn]}; h2o: {cv}; statsmodels: {sm_model.params.at[cn]}"
             )
+    assert not offenders, "Coefficients diverge beyond coef_tolerance=%g:\n%s" % (
+        coef_tolerance, "\n".join(offenders)
+    )
     if abs(h2o_aic - sm_aic) > aic_tolerance:
         message = f"H2O's and statsmodels' AIC estimates don't match by {h2o_aic - sm_aic}. AIC(h2o)={h2o_aic}, AIC(sm)={sm_aic}"
         assert h2o_aic == sm_aic, message
@@ -58,7 +62,6 @@ def test_glm_aic_binomial_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Binomial(),
     ).fit()
 
@@ -88,7 +91,6 @@ def test_glm_aic_gamma_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Gamma(link=sm.families.links.log()),
     ).fit()
 
@@ -123,7 +125,6 @@ def test_glm_aic_gaussian_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Gaussian(),
     ).fit()
 
@@ -165,7 +166,6 @@ def test_glm_aic_negative_binomial_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.NegativeBinomial(alpha=1 / theta),
     ).fit()
 
@@ -191,7 +191,6 @@ def test_glm_aic_negative_binomial_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.NegativeBinomial(alpha=1 / theta),
     ).fit()
 
@@ -220,7 +219,6 @@ def test_glm_aic_poisson_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Poisson(),
     ).fit()
     assert_equal(glm_no_reg, sm_glm_no_reg)
@@ -244,7 +242,6 @@ def test_glm_aic_tweedie_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Tweedie(link=sm.families.links.log(), var_power=1.5),
     ).fit()
 
