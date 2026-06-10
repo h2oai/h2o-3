@@ -19,7 +19,7 @@ path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader
 df = h2o.import_file(path=path)
 
 # Slice a column by index. The resulting dataset will include the first (left-most) 
-# colum of the original dataset. 
+# column of the original dataset. 
 c1 = df[:,0]
 c1.describe
   sepal_len
