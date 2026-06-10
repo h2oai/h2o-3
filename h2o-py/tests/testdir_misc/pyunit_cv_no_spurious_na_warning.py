@@ -160,7 +160,7 @@ def test_contract_change_warning_is_one_shot_across_iterators():
     """Process-wide dedup: the FutureWarning fires once per process, not once per iterator.
 
     Previously the latch was per-iterator, so GridSearchCV over N hyperparameter
-    sets emitted N identical warnings. The 3.46.0.11 latch is module-scoped.
+    sets emitted N identical warnings. The 3.46.0.12 latch is module-scoped.
     """
     _reset_module_latches()
     fr = _FakeH2OFrame(n=6)
@@ -179,7 +179,7 @@ def test_contract_change_warning_is_one_shot_across_iterators():
 # ---------- P0-2: H2OStratifiedKFold.iter_h2oframes() contract ---------------
 
 def test_stratified_iter_h2oframes_raises_without_feature_frame():
-    """Pre-3.46.0.11, iter_h2oframes() silently yielded slices of y only — broken for
+    """Pre-3.46.0.12, iter_h2oframes() silently yielded slices of y only — broken for
     the documented sklearn-compat migration path. New behavior: raise loudly unless
     the caller passed fr= at construction time.
     """
@@ -212,7 +212,7 @@ def test_stratified_iter_h2oframes_works_with_feature_frame():
 # ---------- P0-8: iter_legacy() transition shim ------------------------------
 
 def test_iter_legacy_yields_masks_with_deprecation_warning():
-    """iter_legacy() preserves the pre-3.46.0.11 mask-yielding contract for one release."""
+    """iter_legacy() preserves the pre-3.46.0.12 mask-yielding contract for one release."""
     _reset_module_latches()
     fr = _FakeH2OFrame(n=6)
     kf = H2OKFold(fr, n_folds=3, seed=42)

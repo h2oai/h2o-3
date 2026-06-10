@@ -588,7 +588,7 @@ def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
         rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs)
     else:
         # Free-function calls (LOAD_GLOBAL/LOAD_FAST/LOAD_CONST/LOAD_DEREF) cannot be
-        # translated to Rapids because there is no server-side counterpart. Pre-3.46.0.11
+        # translated to Rapids because there is no server-side counterpart. Pre-3.46.0.12
         # the args were silently discarded, producing an ExprNode with zero children —
         # the call appeared to work but returned the bare function name. Raise loudly so
         # the user can switch to a method-style lambda (e.g. `lambda x: x.somefunc()`).

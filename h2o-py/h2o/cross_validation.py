@@ -26,7 +26,7 @@ class H2OPartitionIterator(object):
     """Base class for cross-validation iterators that emit ``(train_idx, test_idx)``
     as 1-D numpy integer arrays.
 
-    .. versionchanged:: 3.46.0.11
+    .. versionchanged:: 3.46.0.12
 
         Yield contract changed from ``(H2OFrame mask, H2OFrame mask)`` to
         ``(numpy int array, numpy int array)`` so iterators interoperate with
@@ -52,7 +52,7 @@ class H2OPartitionIterator(object):
     def __iter__(self):
         """Yield ``(train_indices, test_indices)`` as 1-D numpy integer arrays.
 
-        See class docstring for the 3.46.0.11 contract change.
+        See class docstring for the 3.46.0.12 contract change.
         """
         import numpy as np
         fold_arr = self._fold_assignment_numpy()
@@ -62,7 +62,7 @@ class H2OPartitionIterator(object):
             yield all_idx[~test_mask], all_idx[test_mask]
 
     def iter_legacy(self):
-        """Yield the pre-3.46.0.11 ``(train_mask_frame, test_mask_frame)`` contract.
+        """Yield the pre-3.46.0.12 ``(train_mask_frame, test_mask_frame)`` contract.
 
         Emits a :class:`DeprecationWarning` on the first call. Provided as a
         one-release transition shim for callers that indexed back into the
@@ -142,7 +142,7 @@ class H2OPartitionIterator(object):
 
 
 _CONTRACT_CHANGE_MSG = (
-    "H2OKFold/H2OStratifiedKFold yield contract changed in 3.46.0.11: iterators now "
+    "H2OKFold/H2OStratifiedKFold yield contract changed in 3.46.0.12: iterators now "
     "emit (numpy int array, numpy int array) instead of (H2OFrame mask, H2OFrame mask). "
     "If you indexed back into the H2OFrame with the yielded masks, switch to integer "
     "indexing, use the new iter_h2oframes() method for server-side splits, or call "
@@ -220,7 +220,7 @@ class H2OKFold(H2OPartitionIterator):
 
     @property
     def fold_assignments(self):
-        """Pre-3.46.0.11 attribute: the fold-assignment H2OFrame column.
+        """Pre-3.46.0.12 attribute: the fold-assignment H2OFrame column.
 
         Preserved for one release as a property alias of :meth:`_fold_assignment_column`.
         New code should call :meth:`__iter__` (yields numpy int arrays) or
@@ -238,7 +238,7 @@ class H2OKFold(H2OPartitionIterator):
 class H2OStratifiedKFold(H2OPartitionIterator):
     """Stratified K-fold iterator.
 
-    .. versionchanged:: 3.46.0.11
+    .. versionchanged:: 3.46.0.12
 
         Constructor now accepts an optional ``fr`` keyword: the feature frame
         to split. If provided, :meth:`iter_h2oframes` yields ``(train_fr,
@@ -275,7 +275,7 @@ class H2OStratifiedKFold(H2OPartitionIterator):
 
     @property
     def fold_assignments(self):
-        """Pre-3.46.0.11 attribute: the fold-assignment H2OFrame column. See :class:`H2OKFold.fold_assignments`."""
+        """Pre-3.46.0.12 attribute: the fold-assignment H2OFrame column. See :class:`H2OKFold.fold_assignments`."""
         warnings.warn(
             "H2OStratifiedKFold.fold_assignments is preserved for one release. "
             "Use _fold_assignment_column(), iter_h2oframes(), or H2O's native nfolds= parameter instead.",

@@ -1956,7 +1956,7 @@ class H2OFrame(Keyed, H2ODisplay):
             multi-thread which is faster.
         :param na_values: Strings to recognize as NA when ``use_pandas=True``. Defaults to ``[""]``, matching
             H2O's CSV writer (NAs are written as empty fields). Pass e.g. ``["", "NA", "NULL"]`` to also coerce
-            those literal strings to NaN -- this restores the pre-3.46.0.10 behavior, but is lossy for categorical
+            those literal strings to NaN -- this restores the pre-3.46.0.12 behavior, but is lossy for categorical
             columns whose levels literally are ``"NA"`` / ``"NULL"`` / ``"None"`` / ``"NaN"``.
             Note: STRING columns store the empty string as a quoted ``""`` literal, which pandas/polars
             still strip before NA matching — so a legitimately empty string round-trips to NaN regardless.
@@ -1964,7 +1964,7 @@ class H2OFrame(Keyed, H2ODisplay):
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
 
-        .. versionchanged:: 3.46.0.10
+        .. versionchanged:: 3.46.0.12
 
             Default NA handling tightened so that ``df.isna().sum()`` matches the H2O
             cluster's NA count exactly. Previously ``pandas.read_csv`` was called with
@@ -5243,7 +5243,7 @@ def _warn_as_data_frame_na_default():
         return
     _AS_DATA_FRAME_NA_DEFAULT_WARNED[0] = True
     warnings.warn(
-        "H2OFrame.as_data_frame() NA-handling default changed in 3.46.0.10: "
+        "H2OFrame.as_data_frame() NA-handling default changed in 3.46.0.12: "
         "literal strings 'NA', 'NULL', 'NaN', 'None', 'N/A', '#N/A' are no longer "
         "coerced to NaN by default (only empty CSV fields are). To restore the "
         "previous behavior on a per-call basis pass "
