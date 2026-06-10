@@ -116,6 +116,3 @@ leak-check.out
 .terraform/
 
 .claude/
-
-# Internal reference materials (meeting transcript, recording, PDF) — keep local; this repo mirrors to public
-references/
