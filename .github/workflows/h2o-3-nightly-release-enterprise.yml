@@ -88,7 +88,8 @@
 #
 #   S3 OUTPUT STRUCTURE
 #   -------------------
-#   Production:  s3://h2o-3-enterprise-release/h2o/{branch}/{build_number}/
+#   Artifacts (private):  s3://h2o-3-enterprise-release/h2o/{branch}/{build_number}/
+#   Docs (public):        s3://h2o-release/h2o-e/{branch}/{build_number}/
 #
 # ==============================================================================
 #
@@ -208,10 +209,13 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
-  # Enterprise S3 role (OSS account)
+  # Enterprise S3 role (OSS account, private artifacts)
   S3_ROLE: ${{ secrets.GH_OIDC_ROLE_OSS }}
-  # Enterprise release bucket (same for test and production)
+  # Enterprise release bucket (private)
   RELEASE_BUCKET: s3://h2o-3-enterprise-release/h2o
+  # Public docs bucket (shared-services-prod account)
+  DOCS_BUCKET: s3://h2o-release/h2o-e
+  DOCS_S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
   DOCKER_VERSION: "47"
   H2O3_ENTERPRISE_REPO: h2oai/h2o-3-enterprise
   SLACK_CHANNEL: "#h2o-3-alerts"
@@ -454,6 +458,56 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # PUBLISH DOCS TO PUBLIC S3 (sphinx docs go to h2o-release/h2o-e for public access)
+  # ============================================================================
+  publish-docs-public:
+    name: Publish Docs (Public)
+    needs: [init, build, publish-s3]
+    if: needs.build.result == 'success' && needs.publish-s3.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS (Shared Services Prod)
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ env.DOCS_S3_ROLE }}
+          role-session-name: h2oai-h2o-3-release-docs-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download Docs Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: h2o-release-docs
+          path: docs/
+
+      - name: Upload Docs to Public S3
+        env:
+          BRANCH: ${{ needs.init.outputs.branch }}
+          BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
+        run: |
+          BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
+          S3_DOCS_DEST="${{ env.DOCS_BUCKET }}/${BRANCH_SAFE}/${BUILD_NUMBER}/"
+
+          echo "=== Uploading documentation to public S3 ==="
+          echo "Destination: ${S3_DOCS_DEST}"
+
+          if [ -d "docs" ] && [ "$(ls -A docs/)" ]; then
+            aws s3 sync docs/ "${S3_DOCS_DEST}" --delete
+            echo "Documentation uploaded successfully!"
+            echo "Public URL: https://h2o-release.s3.amazonaws.com/h2o-e/${BRANCH_SAFE}/${BUILD_NUMBER}/h2o-docs/index.html"
+          else
+            echo "::warning::No documentation artifacts found — skipping public docs upload"
+          fi
+
+          echo "## Public Documentation Upload" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Public S3 Path | \`${S3_DOCS_DEST}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Public URL | [h2o-release.s3.amazonaws.com/h2o-e/${BRANCH_SAFE}/${BUILD_NUMBER}/](https://h2o-release.s3.amazonaws.com/h2o-e/${BRANCH_SAFE}/${BUILD_NUMBER}/h2o-docs/index.html) |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
   # BUILD AND PUBLISH PYPI
   # Only for release branches
   # Nightly builds skip PyPI/Conda/Helm entirely
@@ -532,7 +586,7 @@ jobs:
   # ============================================================================
   rollback:
     name: Rollback on Failure
-    needs: [init, build, publish-s3, publish-pypi, publish-conda, publish-helm, publish-docker]
+    needs: [init, build, publish-s3, publish-docs-public, publish-pypi, publish-conda, publish-helm, publish-docker]
     if: failure() && needs.publish-s3.outputs.previous_latest_build != ''
     runs-on: ubuntu-latest
 
@@ -640,7 +694,7 @@ jobs:
   # ============================================================================
   summary:
     name: Summary
-    needs: [init, build, create-tag, publish-s3, publish-pypi, publish-conda, publish-helm, publish-docker, rollback]
+    needs: [init, build, create-tag, publish-s3, publish-docs-public, publish-pypi, publish-conda, publish-helm, publish-docker, rollback]
     if: always()
     runs-on: ubuntu-latest
 
@@ -654,6 +708,7 @@ jobs:
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Create Tag | ${{ needs.create-tag.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Publish S3 | ${{ needs.publish-s3.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish Docs (Public) | ${{ needs.publish-docs-public.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Publish PyPI | ${{ needs.publish-pypi.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Publish Conda | ${{ needs.publish-conda.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Publish Helm | ${{ needs.publish-helm.result }} |" >> $GITHUB_STEP_SUMMARY
@@ -666,6 +721,7 @@ jobs:
           echo "- **Version:** \`${{ needs.build.outputs.project_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** \`${{ needs.init.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **S3 Location:** \`${{ needs.init.outputs.s3_root }}/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Public Docs:** \`s3://h2o-release/h2o-e/${{ needs.init.outputs.branch }}/${{ needs.init.outputs.build_number }}/\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Check Overall Status
         id: status
