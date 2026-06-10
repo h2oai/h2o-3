@@ -166,8 +166,44 @@ def test_subscript_cross_version_consistency():
     # H2O Rapids prints "(cols x 0)" with the LOAD_FAST variable name preserved.
     assert ast_str.startswith("(cols "), \
         "Rapids form for x[0] should start with '(cols '; got %r" % (ast_str,)
-    assert " 0)" in ast_str or ast_str.endswith("0)"), \
+    assert " 0)" in ast_str, \
         "Rapids form should end with the index 0; got %r" % (ast_str,)
+
+
+# ---------- C3 : unary ops across opcode reshuffles -------------------------
+
+def test_unary_not_maps_to_rapids_not():
+    """``lambda col: not col`` must produce ``(! col)`` on every Python.
+
+    Py 3.13+ inserts an explicit TO_BOOL before UNARY_NOT; the disassembler
+    must skip it or the leftover-ops check raises.
+    """
+    expr = _body_of(lambda col: not col)
+    assert expr._op == "!", "not should map to Rapids '!'; got %r" % (expr._op,)
+
+
+def test_unary_positive_maps_to_rapids_plus():
+    """``lambda col: +col`` must produce ``(+ col)`` on every Python.
+
+    Py 3.12+ removed UNARY_POSITIVE in favor of CALL_INTRINSIC_1 with
+    INTRINSIC_UNARY_POSITIVE; the disassembler must normalize it back.
+    """
+    expr = _body_of(lambda col: +col)
+    assert expr._op == "+", "+col should map to Rapids '+'; got %r" % (expr._op,)
+
+
+def test_unary_negative_maps_to_rapids_minus():
+    """``lambda col: -col`` must produce ``(- col)`` on every Python."""
+    expr = _body_of(lambda col: -col)
+    assert expr._op == "-", "-col should map to Rapids '-'; got %r" % (expr._op,)
+
+
+def test_unary_not_of_comparison():
+    """``not (col > 2)`` exercises TO_BOOL on a non-trivial operand."""
+    expr = _body_of(lambda col: not (col > 2))
+    assert expr._op == "!", "op=%r" % (expr._op,)
+    inner = expr._children[0]
+    assert inner._op == ">", "inner op should be '>'; got %r" % (inner._op,)
 
 
 def test_binary_ops_table_nb_subscr_constant():

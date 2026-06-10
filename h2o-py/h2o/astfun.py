@@ -17,7 +17,7 @@ from .expr import ExprNode, ASTId
 # List of supported bytecode instructions: cf. https://docs.python.org/3/library/dis.html#python-bytecode-instructions
 #
 BYTECODE_INSTRS = {
-    "BINARY_SUBSCR": "cols",  # column slice; could be row slice?
+    "BINARY_SUBSCR": "cols",  # column slice; could be row slice? On Py3.14 the same op arrives as BINARY_OP 26 (NB_SUBSCR) — see BINARY_OPS below; keep both in sync.
     "UNARY_POSITIVE": "+",
     "UNARY_NEGATIVE": "-",
     "UNARY_NOT": "!",
@@ -196,6 +196,11 @@ def should_be_skipped(instr):
 def _disassemble_lambda(co):
     ops = []
     for i in dis.get_instructions(co):
+        if i.opname == "TO_BOOL":
+            # Python 3.13+ emits an explicit boolean coercion before UNARY_NOT /
+            # conditional jumps. A no-op for AST extraction — the underlying
+            # value is what the Rapids expression operates on.
+            continue
         args = []
         if i.arg is not None:
             if i.opname == "BINARY_OP":
@@ -214,6 +219,11 @@ def _disassemble_lambda(co):
                 # Python 3.12+ replaced the LIST_TO_TUPLE opcode with this intrinsic call.
                 # Normalize so the rest of the disassembler keeps working unchanged.
                 ops.append(["LIST_TO_TUPLE", []])
+                continue
+            elif i.opname == "CALL_INTRINSIC_1" and i.argrepr == "INTRINSIC_UNARY_POSITIVE":
+                # Python 3.12+ replaced the UNARY_POSITIVE opcode with this intrinsic
+                # call. Normalize back so the BYTECODE_INSTRS entry keeps working.
+                ops.append(["UNARY_POSITIVE", []])
                 continue
             elif i.opname == "LOAD_FAST_LOAD_FAST":
                 # Python 3.13+: two consecutive LOAD_FAST packed into one instruction
@@ -376,6 +386,18 @@ def _call_func_bc(nargs, idx, ops, keys):
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
+def _read_kwnames_args(keywords, nargs, idx, ops, keys):
+    # Values are pushed left-to-right matching kwnames-tuple order, so the
+    # value for the LAST kwname sits on top of stack. Walk kwnames in reverse
+    # so the first read (top-of-stack) binds to the last kwname.
+    kwargs = {}
+    for key in reversed(keywords):
+        val, idx = _opcode_read_arg(idx, ops, keys)
+        kwargs[key] = val
+        nargs -= 1
+    return kwargs, idx, nargs
+
+
 def _call_func_kw_bc(nargs, idx, ops, keys):
     # Implements calling convention defined by CALL_FUNCTION_KW
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_KW
@@ -384,14 +406,7 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
     if isinstance(keywords, tuple):  # Py >= 3.6
         # Skip the LOAD_CONST tuple
         idx -= 1
-        # Values are pushed left-to-right matching kwnames-tuple order, so the
-        # value for the LAST kwname sits on top of stack. Walk kwnames in reverse
-        # so the first read (top-of-stack) binds to the last kwname.
-        kwargs = {}
-        for key in reversed(keywords):
-            val, idx = _opcode_read_arg(idx, ops, keys)
-            kwargs[key] = val
-            nargs -= 1
+        kwargs, idx, nargs = _read_kwnames_args(keywords, nargs, idx, ops, keys)
     else:  # Py <= 3.5
         kwargs, idx = _opcode_read_arg(idx, ops, keys)
 
@@ -518,13 +533,7 @@ def _call_bc(nargs, idx, ops, keys):
     if instr == "KW_NAMES":
         # Skip the LOAD_CONST tuple
         idx -= 1
-        # Values are pushed left-to-right matching kwnames-tuple order, so the
-        # value for the LAST kwname sits on top of stack. Walk kwnames in reverse
-        # so the first read (top-of-stack) binds to the last kwname.
-        for key in reversed(keywords):
-            val, idx = _opcode_read_arg(idx, ops, keys)
-            kwargs[key] = val
-            nargs -= 1
+        kwargs, idx, nargs = _read_kwnames_args(keywords, nargs, idx, ops, keys)
         exp_kwargs, idx, nargs = _read_explicit_keyword_args(nargs, idx, ops, keys)
         kwargs.update(exp_kwargs)
 
@@ -536,15 +545,11 @@ def _call_kw_bc(nargs, idx, ops, keys):
     # Py 3.13+: CALL_KW replaces the KW_NAMES + CALL pattern. The keyword-name tuple
     # is loaded by a normal LOAD_CONST immediately preceding CALL_KW; below it on the
     # stack are the keyword values (in tuple order), then positional args, then callable.
-    # Walk kwnames in reverse so the first read (top-of-stack) binds to the last kwname.
     _, keywords = _get_instr(ops, idx)
     kwargs = {}
     if isinstance(keywords, tuple):
         idx -= 1
-        for key in reversed(keywords):
-            val, idx = _opcode_read_arg(idx, ops, keys)
-            kwargs[key] = val
-            nargs -= 1
+        kwargs, idx, nargs = _read_kwnames_args(keywords, nargs, idx, ops, keys)
     args, idx, nargs = _read_explicit_positional_args(nargs, idx, ops, keys)
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
