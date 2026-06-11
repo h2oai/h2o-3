@@ -16,9 +16,9 @@ model@model$aggregated_frame_id <- model@model$output_frame$name
 #'
 #' Retrieve an aggregated frame from the Aggregator model and use it to create a new frame.
 #'
-#' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
+#' @param model an \\linkS4class{H2OClusteringModel} corresponding from a \\code{h2o.aggregator} call.
 #' @examples
-#' \dontrun{
+#' \\dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows = 100, 
@@ -54,7 +54,7 @@ Build an Aggregated Frame
 Builds an Aggregated Frame of an H2OFrame.
 """,
     params=dict(
-        x="""A vector containing the \code{character} names of the predictors in the model."""
+        x="""A vector containing the \\code{character} names of the predictors in the model."""
     ),
     examples="""
 library(h2o)

@@ -41,14 +41,14 @@ Builds a Uplift Random Forest model on an H2OFrame.
 """,
     params=dict(
         verbose="""
-\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
+\\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 """
     ),
     returns="""
-Creates a \linkS4class{H2OModel} object of the right type.
+Creates a \\linkS4class{H2OModel} object of the right type.
 """,
     seealso="""
-\code{\link{predict.H2OModel}} for prediction
+\\code{\\link{predict.H2OModel}} for prediction
 """,
     examples=""""""
 )

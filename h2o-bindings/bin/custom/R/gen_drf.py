@@ -25,14 +25,14 @@ Builds a Random Forest model on an H2OFrame.
         distribution="Distribution. This argument is deprecated and has no use for Random Forest.",
         offset_column="Offset column. This argument is deprecated and has no use for Random Forest.",
         verbose="""
-\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
+\\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 """
     ),
     returns="""
-Creates a \linkS4class{H2OModel} object of the right type.
+Creates a \\linkS4class{H2OModel} object of the right type.
 """,
     seealso="""
-\code{\link{predict.H2OModel}} for prediction
+\\code{\\link{predict.H2OModel}} for prediction
 """,
     examples="""
 library(h2o)

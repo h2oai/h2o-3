@@ -17,10 +17,10 @@ Build a Decision Tree model
 Builds a Decision Tree model on an H2OFrame.
 """,
     returns="""
-Creates a \linkS4class{H2OModel} object of the right type.
+Creates a \\linkS4class{H2OModel} object of the right type.
 """,
     seealso="""
-\code{\link{predict.H2OModel}} for prediction
+\\code{\\link{predict.H2OModel}} for prediction
 """,
     examples="""
 library(h2o)

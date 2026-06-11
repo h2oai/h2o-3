@@ -96,7 +96,7 @@ def gen_module(schema, algo, module):
         yield reformat_block("%s %s" % (tag, doc_references.lstrip('\n')), indent=len(tag)+1, indent_first=False, prefix="#' ")
     if doc_examples:
         yield "#' @examples"
-        yield "#' \dontrun{"
+        yield "#' \\dontrun{"
         yield reformat_block(doc_examples, prefix="#' ")
         yield "#' }"
     yield "#' @export"
@@ -285,9 +285,9 @@ def get_help(param, indent=0):
     if not phelp:
         return
     # fix braces so that CRAN doesn't complain
-    phelp = phelp.replace("{", "\{").replace("}", "\}")
+    phelp = phelp.replace("{", "\\{").replace("}", "\\}")
     if ptype == 'boolean':
-        phelp = "\code{Logical}. " + phelp
+        phelp = "\\code{Logical}. " + phelp
     if pvalues:
         phelp += " Must be one of: %s." % ", ".join('"%s"' % v for v in pvalues)
     if pdefault is not None:

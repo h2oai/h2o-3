@@ -36,13 +36,13 @@ Principal components analysis of an H2O data frame using the power method
 to calculate the singular value decomposition of the Gram matrix.
 """,
     params=dict(
-        x="""A vector containing the \code{character} names of the predictors in the model."""
+        x="""A vector containing the \\code{character} names of the predictors in the model."""
     ),
     returns="""
-an object of class \linkS4class{H2ODimReductionModel}.
+an object of class \\linkS4class{H2ODimReductionModel}.
 """,
     seealso="""
-\code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
+\\code{\\link{h2o.svd}}, \\code{\\link{h2o.glrm}}
 """,
     references="""
 N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.

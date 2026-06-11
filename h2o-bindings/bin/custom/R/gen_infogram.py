@@ -56,12 +56,12 @@ model <- infogram_model
 #'
 #' Plots the Infogram for an H2OInfogram object.
 #'
-#' @param x A fitted \linkS4class{H2OInfogram} object.
+#' @param x A fitted \\linkS4class{H2OInfogram} object.
 #' @param ... additional arguments to pass on.
 #' @return A ggplot2 object.
-#' @seealso \code{\link{h2o.infogram}}
+#' @seealso \\code{\\link{h2o.infogram}}
 #' @examples
-#' \dontrun{
+#' \\dontrun{
 #' h2o.init()
 #' 
 #' # Convert iris dataset to an H2OFrame
@@ -147,7 +147,7 @@ The y-axis is net information, a measure of how unique the variable is.  The top
 located in this quadrant are the admissible features.  In the Core Infogram, the admissible features are the strongest, unique drivers of 
 the response.
 
-If sensitive or protected variables are present in data, the user can specify which attributes should be protected while training using the \code{protected_columns} 
+If sensitive or protected variables are present in data, the user can specify which attributes should be protected while training using the \\code{protected_columns} 
 argument. All non-protected predictor variables will be checked to make sure that there's no information pathway to the response through a protected feature, and 
 deemed inadmissible if they possess little or no informational value beyond their use as a dummy for protected attributes. The Fair Infogram plots all the features 
 as points on two-dimensional grid of relevance vs safety.  The x-axis is relevance index, a measure of how much the variable drives the response (the more predictive, 

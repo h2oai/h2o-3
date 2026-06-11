@@ -73,8 +73,8 @@ Cutoff below which probability is replaced with min_prob.
 """,
     ),
     returns="""
-an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
-and \linkS4class{H2OMultinomialModel} otherwise.
+an object of class \\linkS4class{H2OBinomialModel} if the response has two categorical levels,
+and \\linkS4class{H2OMultinomialModel} otherwise.
 """,
     examples="""
 h2o.init()
