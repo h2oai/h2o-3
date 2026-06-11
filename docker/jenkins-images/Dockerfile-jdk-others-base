@@ -15,7 +15,9 @@ RUN \
     rm -rf /var/cache/apt/*
 
 COPY scripts/install_java_version scripts/install_python_version /tmp/
-ENV PYTHON_VERSION=3.7
+# Keep in sync with DEFAULT_PYTHON_VERSION (buildConfig.groovy): Java test stages
+# inherit the default pythonVersion, so the env baked into the jdk images must match.
+ENV PYTHON_VERSION=3.14
 ARG H2O_BRANCH='master'
 RUN \
     chmod +x /tmp/install_java_version /tmp/install_python_version && \

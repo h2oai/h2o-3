@@ -51,7 +51,11 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
-  public static final String DEFAULT_PYTHON_VERSION = '3.7'
+  // Build/default Python: used by the "Build H2O-3" stage (jar, wheel, generated
+  // bindings, R pkg) and by stages without an explicit pythonVersion (Flow, etc.).
+  // The dev-r-base / dev-build-base image chain must contain this env — keep in
+  // sync with docker/jenkins-images/Dockerfile-r-base and docker/scripts/build-h2o-3.
+  public static final String DEFAULT_PYTHON_VERSION = '3.14'
   public static final List PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
   // PR builds smoke only oldest, midpoint, and newest supported Python versions
   // (full PYTHON_VERSIONS x 13 stages otherwise yields ~100 parallel PR stages).

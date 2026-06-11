@@ -59,7 +59,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-base: dev-python-3.7
+dev-r-base: dev-python-3.14
 endif
 dev-r-base:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-base:$(VERSION) \
@@ -216,7 +216,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-mojocompat: dev-python-3.7
+dev-mojocompat: dev-python-3.14
 
 endif
 dev-mojocompat:
