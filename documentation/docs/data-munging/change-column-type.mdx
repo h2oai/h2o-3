@@ -1,5 +1,5 @@
 ---
-title: Change the Column Type
+title: Change the column type
 ---
 
 import Tabs from '@theme/Tabs';
@@ -117,7 +117,7 @@ cars_df["name"] <- as.numeric(cars_df["name"])
 
 ## Convert dates columns
 
-H2O-3 represents dates as (unix) timestamps. These are then raw input to the algorithm. However, this is not very useful in most cases. You are expected to do your own feature engineering and break the data into day, month, and year using the functions H2O-3 provides.
+H2O-3 represents dates as (unix) timestamps. These are then raw input to the algorithm. However, raw timestamps are rarely useful on their own. You are expected to do your own feature engineering and break the data into day, month, and year using the functions H2O-3 provides.
 
 <Tabs groupId="lang">
 <TabItem value="python" label="Python" default>

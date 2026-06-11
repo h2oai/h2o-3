@@ -5,14 +5,14 @@ title: Sort columns
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Use the `sort` function in Python or the `arrange` function in R to create a new frame that is sorted by column(s) in ascending (default) or descending order.
+Use the `sort` function in Python or the `arrange` function in R to create a new frame that is sorted by one or more columns in ascending (default) or descending order.
 
 If only one column is specified in the sort, then the final results are sorted according to that one single column either in ascending (default) or in descending order. However, if you specify more than one column in the sort, then H2O-3 performs as described below:
 
-> Assuming two columns, X (first column) and Y (second column):
->
-> > - H2O-3 will sort on the first specified column, so in the case of \[0,1\], the X column will be sorted first. Similarly, in the case of \[1,0\], the Y column will be sorted first.
-> > - H2O-3 will sort on subsequent columns in the order they are specified, but only on those rows that have the same values as the first sorted column. No sorting will be done on subsequent columns if the values are not also duplicated in the first sorted column.
+Assuming two columns, X (first column) and Y (second column):
+
+- H2O-3 will sort on the first specified column, so in the case of `[0,1]`, the X column will be sorted first. Similarly, in the case of `[1,0]`, the Y column will be sorted first.
+- H2O-3 will sort on subsequent columns in the order they are specified, but only on those rows that have the same values as the first sorted column. No sorting will be done on subsequent columns if the values are not also duplicated in the first sorted column.
 
 <Tabs groupId="lang">
 <TabItem value="python" label="Python" default>
@@ -99,7 +99,6 @@ df4
 <TabItem value="r" label="R">
 
 ```r
-# Currently, this function only supports `all.x = TRUE`. All other permutations will fail.
 library(h2o)
 h2o.init()
 

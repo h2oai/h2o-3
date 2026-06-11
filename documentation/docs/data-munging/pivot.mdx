@@ -13,18 +13,10 @@ Use this function to pivot tables. This is performed by designating three column
 
 For cases with multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame.
 
-<div class="note">
-
-<div class="title">
-
-Note
-
-</div>
-
+:::note
 - All rows of a single index value must fit on one node.
 - The maximum rows for a single index value and column label is `Chunk size * Chunk size`.
-
-</div>
+:::
 
 <Tabs groupId="lang">
 <TabItem value="python" label="Python" default>

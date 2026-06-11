@@ -5,41 +5,27 @@ title: Import multiple files
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-The `import_file` (Python)/`importFolder` (R) function can be used to import multiple local files by specifying a directory and a pattern. Example patterns include:
+Use `import_file` in Python or `importFolder` in R to import multiple local files by specifying a directory and a pattern. Example patterns include:
 
 - `pattern="/A/.*/iris_.*"`: Import all files that have the pattern `/A/.*/iris_.*` in the specified directory.
 - `pattern="/A/iris_.*"`: Import all files that have the pattern `/A/iris_.*` in the specified directory.
 - `pattern="/A/B/iris_.*"`: Import all files that have the pattern `/A/B/iris_.*` in the specified directory.
 - `pattern="iris_.*"`: Import all files that have the pattern `iris_.*` in the specified directory.
 
-<div class="note">
-
-<div class="title">
-
-Note
-
-</div>
-
+:::note
 - All files that are specified to be included must have the same number and set of columns.
 - When parsing a data file containing timestamps that do not include a timezone, the timestamps will be interpreted as UTC (GMT). You can override the parsing timezone using the following:
   - **Python**: `h2o.cluster().timezone = "America/Los Angeles"`
   - **R**: `h2o.setTimezone("America/Los Angeles")`
+:::
 
-</div>
-
-<div class="attention">
-
-<div class="title">
-
-Attention
-
-</div>
-
+:::caution
 The following examples assume that you've cloned the H2O-3 GitHub repository and that the following command was run in the `h2o-3` folder to retrieve the `smalldata` datasets:
 
-    ./gradlew syncSmalldata
-
-</div>
+```bash
+./gradlew syncSmalldata
+```
+:::
 
 <Tabs groupId="lang">
 <TabItem value="python" label="Python" default>

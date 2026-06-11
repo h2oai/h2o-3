@@ -15,10 +15,10 @@ The `impute` function accepts the following arguments:
 
 - `combine_method`: (`method` must be set to `median`) This option will choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases. The available options are:
 
-  > - `average`
-  > - `high`
-  > - `interpolate`
-  > - `low`
+  - `average`
+  - `high`
+  - `interpolate`
+  - `low`
 
 - `dataset`: The dataset containing the column to impute.
 
@@ -26,9 +26,9 @@ The `impute` function accepts the following arguments:
 
 - `method`: The type of imputation to perform. The available options are:
 
-  > - `mean`: Replaces NA values with the column mean.
-  > - `median`: Replaces NA values with the column median.
-  > - `mode`: Replaces NA values with the most common factor (for factor columns only).
+  - `mean`: Replaces NA values with the column mean.
+  - `median`: Replaces NA values with the column median.
+  - `mode`: Replaces NA values with the most common factor (for factor columns only).
 
 :::note
 If a factor column is supplied, then the method must be `mode`.
@@ -126,7 +126,7 @@ h2o.impute(air, "DepTime", method = "mean")
 [25]    NaN      NaN      NaN      NaN      NaN      NaN      NaN
 
 # Revert the imputations
-air <- h2o.importFile(filePath, "air")
+air <- h2o.importFile(file_path, "air")
 
 # Impute the column using a grouping based on the Origin and Distance
 # If the Origin and Distance produce groupings of NAs, then no imputation will be done (NAs will result).
@@ -142,7 +142,7 @@ h2o.impute(air, "DepTime", method = "mean", by = c("Dest"))
 [134 rows x 2 columns]
 
 # Revert the imputations
-air <- h2o.importFile(filePath, "air")
+air <- h2o.importFile(file_path, "air")
 
 # Impute a factor column by the most common factor in that column
 h2o.impute(air, "TailNum", method = "mode")
@@ -151,7 +151,7 @@ h2o.impute(air, "TailNum", method = "mode")
 [31]  NaN
 
 # Revert imputations
-air <- h2o.importFile(filePath, "air")
+air <- h2o.importFile(file_path, "air")
 
 # Impute a factor column using a grouping based on the Month
 h2o.impute(air, "TailNum", method = "mode", by=c("Month"))

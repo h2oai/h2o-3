@@ -12,7 +12,7 @@ Sometimes you need to download data from the H2O-3 cluster. For example, when co
 H2O-3 has functions like `as_data_frame` and `get_frame_data` in Python and `as.data.frame` in R that let you download the data directly into the client program memory.
 
 :::note
-For very large data this might not be feasible since the whole frame is downloaded as CSV into the client program memory.
+For large datasets this might not be practical because the whole frame is downloaded as CSV into the client program memory.
 :::
 
 <Tabs groupId="lang">
@@ -74,38 +74,3 @@ h2o.exportFile(iris.hex, path, format="parquet")
 </TabItem>
 </Tabs>
 
-## Save as a Hive table
-
-When running on Hadoop, H2O-3 can also export data into Hive tables. In order to do so, you must have the privileges to create new Hive tables. You can specify the table name and storage format (currently supported are `csv` and `parquet`) as well as table location for external tables.
-
-<Tabs groupId="lang">
-<TabItem value="python" label="Python" default>
-
-```python
-import h2o
-h2o.init()
-iris_hex = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-iris_hex.save_to_hive(
-        jdbc_url = "jdbc:hive2://hive-server:10000/default", 
-        table_name = "airlines",
-        format = "parquet",
-        table_path = "/user/bob/tables/iris"
-)
-```
-
-</TabItem>
-<TabItem value="r" label="R">
-
-```r
-library(h2o)
-h2o.init()
-iris.hex <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-h2o.save_to_hive(iris.hex, jdbc_url = "jdbc:hive2://hive-server:10000/default", table_name = "airlines")        
-```
-
-</TabItem>
-</Tabs>
-
-:::note
-The provided JDBC URL must include the necessary authentication details. For example, when running on a Kerberized Hadoop cluster, some form of `auth` parameter must be used in the URL.
-:::

@@ -19,8 +19,8 @@ The `group_by` function accepts the following parameters:
 
 ### Python and R
 
-> - `by`: The `by` option can take a list of columns if you want to group by more than one column to compute the summary.
-> - `H2OFrame`: This specifies the H2OFrame that you want the group by operation to be performed on.
+- `by`: The `by` option can take a list of columns if you want to group by more than one column to compute the summary.
+- `H2OFrame`: This specifies the H2OFrame that you want the group by operation to be performed on.
 
 ### Python only
 
@@ -57,7 +57,7 @@ In addition to the above parameters, any number of the following aggregations ca
 - `var`: Calculate the variance of each column specified in `col` for each group of a GroupBy object.
 
 :::note
-If no arguments are given to the aggregation (e.g. `max()` in `grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()`), then it is assumed that the aggregation should apply to all columns except the GroupBy columns.
+If no arguments are given to the aggregation (for example, `max()` in `grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()`), then it is assumed that the aggregation should apply to all columns except the GroupBy columns.
 :::
 
 Once the aggregation operations are complete, calling the GroupBy object with a new set of aggregations will yield no effect. You must generate a new GroupBy object in order to apply a new aggregation on it. In addition, certain aggregations are only defined for numerical or categorical columns. An error will be thrown for calling aggregation on the wrong data types.
@@ -80,8 +80,8 @@ air.dim
 
 # Find number of flights by airport
 origin_flights = air.group_by("Origin")
-origin_fights.count()
-origin_fights.get_frame()
+origin_flights.count()
+origin_flights.get_frame()
 Origin      nrow
 --------  ------
 ABE           59
@@ -224,56 +224,25 @@ The following R code shows the options by-variable with `gb.control`.
 <TabItem value="r" label="R" default>
 
 ```r
-# Import H2O-3:
 library(h2o)
 h2o.init()
 
 # Import the airlines dataset:
 airlines.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k.zip")
 
-# View quantiles and histograms:
-quantile(x = airlines.hex$ArrDelay, na.rm = TRUE)
-h2o.hist(airlines.hex$ArrDelay)
-
-# Find the number of flights by airport:
-originFlights <- h2o.group_by(data = airlines.hex, by = "Origin", nrow("Origin"), gb.control <- list(na.methods = "rm"))
+# Find the number of flights by airport using gb.control to handle NAs:
+originFlights <- h2o.group_by(data = airlines.hex, by = "Origin", nrow("Origin"), gb.control = list(na.methods = "rm"))
 originFlights.R <- as.data.frame(originFlights)
 
 # Find the number of flights per month:
-flightsByMonth <- h2o.group_by(data = airlines.hex, by = "Month", nrow("Month"), gb.control <- list(na.methods = "rm"))
+flightsByMonth <- h2o.group_by(data = airlines.hex, by = "Month", nrow("Month"), gb.control = list(na.methods = "rm"))
 flightsByMonth.R <- as.data.frame(flightsByMonth)
 
 # Find months with the highest cancellation ratio:
-which(colnames(airlines.hex)=="Cancelled")
-cancellationsByMonth <- h2o.group_by(data = airlines.hex, by = "Month", sum("Cancelled"), gb.control <- list(na.methods = "rm"))
+cancellationsByMonth <- h2o.group_by(data = airlines.hex, by = "Month", sum("Cancelled"), gb.control = list(na.methods = "rm"))
 cancellation_rate <- cancellationsByMonth$sum_Cancelled/flightsByMonth$nrow
 rates_table <- h2o.cbind(flightsByMonth$Month, cancellation_rate)
 rates_table.R <- as.data.frame(rates_table)
-
-# Construct test and train sets using sampling:
-airlines.split <- h2o.splitFrame(data = airlines.hex, ratio = 0.85)
-airlines.train <- airlines.split[[1]]
-airlines.test <- airlines.split[[2]]
-
-# Display a summary using table-like functions: 
-h2o.table(airlines.train$Cancelled)
-h2o.table(airlines.test$Cancelled)
-
-# Set the predictor and response variables:
-Y <- "IsDepDelayed"
-X <- c("Origin", "Dest", "DayofMonth", "Year", "UniqueCarrier", "DayOfWeek", "Month", "DepTime", "ArrTime", "Distance")
-
-# Define the data for the model and display the results:
-airlines.glm <- h2o.glm(training_frame = airlines.train, x = X, y = Y, family = "binomial", alpha = 0.5)
-
-# View the model information (training statistics, performance, important variables):
-summary(airlines.glm)
-
-# Predict using the GLM model:
-pred <- h2o.predict(object = airlines.glm, newdata = airlines.test)
-
-# Look at the summary of predictions (probability of TRUE class p1):
-summary(pred$p1)
 ```
 
 </TabItem>
