@@ -2561,6 +2561,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
+  public void deleteCrossValidationPreds() {
+      super.deleteCrossValidationPreds();
+      GLMOutput out = (GLMOutput) _output;
+      Keyed.remove(out._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+      if (out._cross_validation_metrics_unrestricted_model != null)
+          Keyed.remove(out._cross_validation_metrics_unrestricted_model._key);
+  }
+
+  @Override
   public GLMMojoWriter getMojo() {
     return new GLMMojoWriter(this);
   }
@@ -2611,6 +2620,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);
+    GLMOutput out = (GLMOutput) _output;
+    // _training/_validation_metrics_unrestricted_model are Keyed but not tracked in _model_metrics,
+    // so they must be removed explicitly.
+    if (out._training_metrics_unrestricted_model != null)
+      Keyed.remove(out._training_metrics_unrestricted_model._key, fs, true);
+    if (out._validation_metrics_unrestricted_model != null)
+      Keyed.remove(out._validation_metrics_unrestricted_model._key, fs, true);
     Keyed.remove(_output._regression_influence_diagnostics, fs, cascade);
     return fs;
   }

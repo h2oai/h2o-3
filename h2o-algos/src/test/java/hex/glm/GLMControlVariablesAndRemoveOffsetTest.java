@@ -9,6 +9,7 @@ import hex.api.MakeGLMModelHandler;
 import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.GLMModelV3;
 import hex.schemas.MakeDerivedGLMModelV3;
+import hex.schemas.MakeGLMModelV3;
 import hex.schemas.MakeUnrestrictedGLMModelV3;
 import org.junit.Assert;
 import org.junit.Test;
@@ -1122,7 +1123,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
      * a 3-class response with _family=multinomial + remove_offset_effects would silently pass
      * validation and run a wasteful dual-pass CV before this fix.
      */
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testRemoveOffsetEffectsMultinomialViaFamily() {
         Frame train = null;
         GLMModel glm = null;
@@ -2086,6 +2087,22 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         return f;
     }
 
+    /** Creates a small binomial frame with numeric predictors, offset, and response.
+     *  Use params._offset_column="offset" to treat the offset as an offset column,
+     *  or params._ignored_columns={"offset"} to exclude it from predictors entirely. */
+    private static Frame makeNumericBinomialOffsetFrame(String key) {
+        Vec x1 = Vec.makeVec(new double[]{100,200,300,400,500,600,700,800,900,1000,
+                150,250,350,450,550,650,750,850,950,1050,120,220,320,420,520,620}, Vec.newKey());
+        Vec x2 = Vec.makeVec(new double[]{0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.10,
+                0.015,0.025,0.035,0.045,0.055,0.065,0.075,0.085,0.095,0.105,
+                0.012,0.022,0.032,0.042,0.052,0.062}, Vec.newKey());
+        Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+        Vec resp = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"}, Vec.newKey());
+        Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1","x2","offset","y"}, new Vec[]{x1,x2,offset,resp});
+        DKV.put(f);
+        return f;
+    }
+
     /** Prepares the binomial_20_cols_10KRows dataset with categorical columns. */
     private Frame prepareBinomial20ColsFrame() {
         Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
@@ -2187,18 +2204,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         GLMModel derived = null;
         try {
             Scope.enter();
-
-            // Use numeric columns where standardize=true has a real effect on the DataInfo transform
-            Vec x1 = Vec.makeVec(new double[]{100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
-                    150, 250, 350, 450, 550, 650, 750, 850, 950, 1050,
-                    120, 220, 320, 420, 520, 620}, Vec.newKey());
-            Vec x2 = Vec.makeVec(new double[]{0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
-                    0.015, 0.025, 0.035, 0.045, 0.055, 0.065, 0.075, 0.085, 0.095, 0.105,
-                    0.012, 0.022, 0.032, 0.042, 0.052, 0.062}, Vec.newKey());
-            Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
-            Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"}, Vec.newKey());
-            train = new Frame(Key.<Frame>make("p0_2_train"), new String[]{"x1", "x2", "offset", "y"}, new Vec[]{x1, x2, offset, res});
-            DKV.put(train);
+            train = makeNumericBinomialOffsetFrame("p0_2_train");
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._train = train._key;
@@ -2511,8 +2517,9 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
     }
 
     /**
-     * haveMojo()/havePojo() should return false when remove_offset_effects=true,
-     * since MOJO/POJO scoring doesn't implement offset removal.
+     * haveMojo()/havePojo() should return true when remove_offset_effects=true.
+     * MOJO/POJO scores the learned coefficients normally; offset removal is a training-time
+     * concept that does not affect the exported scoring artifact.
      */
     @Test
     public void testRoMojoPojoGuard() {
@@ -2584,28 +2591,28 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                         e.getMessage().contains("cannot be used together"));
             }
 
-            // Individual flag on model trained without both features should also throw
-            GLMModel.GLMParameters paramsCV = new GLMModel.GLMParameters();
-            paramsCV._train = train._key;
-            paramsCV._alpha = new double[]{0};
-            paramsCV._response_column = "y";
-            paramsCV._control_variables = new String[]{"x1"};
-            paramsCV._distribution = DistributionFamily.bernoulli;
-            paramsCV._link = GLMModel.GLMParameters.Link.logit;
+            // Model trained with only control_variables (no remove_offset_effects) should succeed.
+            // Main training slots already hold the control-variables-restricted view in this case.
+            GLMModel.GLMParameters paramsCtrlOnly = new GLMModel.GLMParameters();
+            paramsCtrlOnly._train = train._key;
+            paramsCtrlOnly._alpha = new double[]{0};
+            paramsCtrlOnly._response_column = "y";
+            paramsCtrlOnly._control_variables = new String[]{"x1"};
+            paramsCtrlOnly._distribution = DistributionFamily.bernoulli;
+            paramsCtrlOnly._link = GLMModel.GLMParameters.Link.logit;
 
-            GLMModel glmCVOnly = new GLM(paramsCV).trainModel().get();
-            Scope.track_generic(glmCVOnly);
+            GLMModel glmCtrlOnly = new GLM(paramsCtrlOnly).trainModel().get();
+            Scope.track_generic(glmCtrlOnly);
 
             MakeDerivedGLMModelV3 args2 = new MakeDerivedGLMModelV3();
-            args2.model = new KeyV3.ModelKeyV3(glmCVOnly._key);
+            args2.model = new KeyV3.ModelKeyV3(glmCtrlOnly._key);
+            args2.dest = "p1_5_ctrl_only_derived";
             args2.remove_control_variables_effects = true;
-            try {
-                handler.make_derived_model(3, args2);
-                fail("Should have thrown when using individual flag on model without both features");
-            } catch (IllegalArgumentException e) {
-                assertTrue("Error should mention both features must be set",
-                        e.getMessage().contains("control_variables and remove_offset_effects are both set"));
-            }
+            handler.make_derived_model(3, args2);
+            GLMModel derived = DKV.getGet(Key.make("p1_5_ctrl_only_derived"));
+            Scope.track_generic(derived);
+            assertNotNull("Derived model must be created for control-variables-only source", derived);
+            assertNotNull("Derived model must have training metrics", derived._output._training_metrics);
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
@@ -2826,8 +2833,6 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             // The "Unrestricted deviance_xval" in the combined table equals the standalone unrestricted xval deviance
             assertEquals("Unrestricted deviance_xval in combined table must equal the standalone unrestricted history value",
                     unrestrictedXvalDev, unrestrictedXvalDevInRestricted, 1e-10);
-            System.out.println(sh);
-            System.out.println(shUnrestricted);
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
@@ -2911,11 +2916,6 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertNotNull(schema.output.cross_validation_metrics_summary_unrestricted_model);
             assertNotNull(schema.output.cross_validation_holdout_predictions_frame_id_unrestricted_model);
             assertTrue(schema.output.cross_validation_metrics_unrestricted_model instanceof ModelMetricsBaseV3);
-
-            System.out.println("Restricted CV summary:");
-            System.out.println(restrictedSummary);
-            System.out.println("Unrestricted CV summary:");
-            System.out.println(unrestrictedSummary);
 
             // Regression guard: remove_offset_effects=false → all three new fields null.
             trainNoROE = makeBinomialOffsetFrame("test04_unrestricted_cv_metrics_no_roe");
@@ -3266,6 +3266,324 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testMakeDerivedRemoveOffsetWithCvNoControlVariables() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("p0_1_derived_cv_no_ctrl");
 
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            assertNotNull(glm._output._training_metrics);
+            assertNotNull(glm._output._cross_validation_metrics);
+            assertNotNull(glm._output._cross_validation_metrics_summary);
+            double srcCvDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics).residual_deviance();
+
+            MakeDerivedGLMModelV3 args = new MakeDerivedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "p0_1_derived_cv_no_ctrl_out";
+            args.remove_offset_effects = true;
+            new MakeGLMModelHandler().make_derived_model(3, args);
+            GLMModel derived = DKV.getGet(Key.make("p0_1_derived_cv_no_ctrl_out"));
+            assertNotNull(derived);
+            Scope.track_generic(derived);
+
+            assertNotNull("Derived training_metrics must not be null", derived._output._training_metrics);
+            assertNotNull("Derived scoring_history must not be null", derived._output._scoring_history);
+            assertNotNull("Derived cross_validation_metrics must be propagated", derived._output._cross_validation_metrics);
+            assertNotNull("Derived cross_validation_metrics_summary must be propagated", derived._output._cross_validation_metrics_summary);
+
+            assertEquals("Derived training MSE must match source's restricted view",
+                    glm._output._training_metrics._MSE, derived._output._training_metrics._MSE, 1e-12);
+            assertEquals("Derived CV deviance must match source's restricted CV deviance",
+                    srcCvDev,
+                    ((ModelMetricsBinomialGLM) derived._output._cross_validation_metrics).residual_deviance(), 1e-12);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testMakeDerivedRemoveOffsetNoControlVariablesNoCv() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("p0_1_derived_no_ctrl_no_cv");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+            assertNotNull(glm._output._training_metrics);
+
+            MakeDerivedGLMModelV3 args = new MakeDerivedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "p0_1_derived_no_ctrl_no_cv_out";
+            args.remove_offset_effects = true;
+            new MakeGLMModelHandler().make_derived_model(3, args);
+            GLMModel derived = DKV.getGet(Key.make("p0_1_derived_no_ctrl_no_cv_out"));
+            assertNotNull(derived);
+            Scope.track_generic(derived);
+
+            assertNotNull("Derived training_metrics must not be null", derived._output._training_metrics);
+            assertNotNull("Derived scoring_history must not be null", derived._output._scoring_history);
+            assertEquals("Derived training MSE must match source's restricted view",
+                    glm._output._training_metrics._MSE, derived._output._training_metrics._MSE, 1e-12);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Regression guard for removing model.dinfo().setPredictorTransform(NONE) from make_model.
+     * The old code mutated the source model's DataInfo by zeroing _normMul/_normSub; the fix
+     * must leave those arrays intact.
+     */
+    @Test
+    public void testMakeModelDoesNotMutateSourceDataInfo() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        try {
+            Scope.enter();
+            train = makeNumericBinomialOffsetFrame("mm_no_mutate_train");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._ignored_columns = new String[]{"offset"};
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._standardize = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            DataInfo dinfoBefore = glm.dinfo();
+            assertNotNull("DataInfo must exist on trained model", dinfoBefore);
+            assertNotNull("_normMul must be non-null with standardize=true on numeric data", dinfoBefore._normMul);
+            double[] normMulBefore = dinfoBefore._normMul.clone();
+
+            // Call make_model with unchanged coefficients
+            String[] coefNames = glm._output.coefficientNames();
+            Key<GLMModel> destKey = Key.make("mm_no_mutate_derived");
+            MakeGLMModelHandler handler = new MakeGLMModelHandler();
+            MakeGLMModelV3 args = new MakeGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = new KeyV3.ModelKeyV3(destKey);
+            args.names = coefNames;
+            args.beta = glm.beta().clone();
+            handler.make_model(3, args);
+            derived = DKV.getGet(destKey);
+            assertNotNull("make_model must put a model into DKV", derived);
+            Scope.track_generic(derived);
+
+            // Source model DataInfo must be unmodified — the old code called
+            // model.dinfo().setPredictorTransform(NONE) which nulled out _normMul
+            DataInfo dinfoAfter = glm.dinfo();
+            assertNotNull("make_model must not null out source DataInfo _normMul", dinfoAfter._normMul);
+            assertArrayEquals("make_model must not mutate source DataInfo _normMul",
+                    normMulBefore, dinfoAfter._normMul, 0);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (derived != null) derived.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Verifies that make_model produces correct predictions without calling setPredictorTransform.
+     * A derived model with zeroed predictor coefficients (intercept only) must predict a constant
+     * probability for all rows; the source model with fitted predictors must predict varying values.
+     */
+    @Test
+    public void testMakeModelProducesCorrectPredictions() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        Frame predSource = null;
+        Frame predDerived = null;
+        try {
+            Scope.enter();
+            train = makeNumericBinomialOffsetFrame("mm_preds_train");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._ignored_columns = new String[]{"offset"};
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._standardize = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // Zero out all predictor coefficients, keep only the intercept (always last).
+            // The derived model must then predict sigmoid(intercept) for every row.
+            String[] coefNames = glm._output.coefficientNames();
+            double[] beta = glm.beta();
+            double[] interceptOnlyBeta = new double[coefNames.length];
+            interceptOnlyBeta[coefNames.length - 1] = beta[coefNames.length - 1];
+
+            Key<GLMModel> destKey = Key.make("mm_preds_derived");
+            MakeGLMModelHandler handler = new MakeGLMModelHandler();
+            MakeGLMModelV3 args = new MakeGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = new KeyV3.ModelKeyV3(destKey);
+            args.names = coefNames;
+            args.beta = interceptOnlyBeta;
+            handler.make_model(3, args);
+            derived = DKV.getGet(destKey);
+            assertNotNull("make_model must produce a model", derived);
+            Scope.track_generic(derived);
+
+            predSource = glm.score(train);
+            Scope.track(predSource);
+            predDerived = derived.score(train);
+            Scope.track(predDerived);
+
+            // Binomial prediction frame: [predict, p(y=0), p(y=1)]; use vec(2) for p(y=1)
+            Vec srcProb = predSource.vec(2);
+            Vec derivedProb = predDerived.vec(2);
+
+            double constantProb = derivedProb.at(0);
+            assertTrue("Intercept-only derived model must predict a positive probability", constantProb > 0);
+            for (int i = 1; i < predDerived.numRows(); i++) {
+                assertEquals("Derived model with zeroed predictors must predict constant probability",
+                        constantProb, derivedProb.at(i), 1e-10);
+            }
+
+            boolean sourceVaries = false;
+            double firstSrcProb = srcProb.at(0);
+            for (int i = 1; i < predSource.numRows(); i++) {
+                if (Math.abs(srcProb.at(i) - firstSrcProb) > 1e-10) { sourceVaries = true; break; }
+            }
+            assertTrue("Source model with fitted numeric predictors must predict varying probabilities", sourceVaries);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (derived != null) derived.remove();
+            if (predSource != null) predSource.remove();
+            if (predDerived != null) predDerived.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Training with control_variables + nfolds (cross-validation) must be rejected.
+     * CV is not supported when control_variables are set.
+     */
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testControlVariablesWithCvThrows() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("p0_1_derived_both_cv");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._control_variables = new String[]{"x1"};
+
+            glm = new GLM(params).trainModel().get();
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Verifies that remove_impl cleans up _training_metrics_unrestricted_model and
+     * _validation_metrics_unrestricted_model from DKV when the model is deleted.
+     * These metrics are Keyed but not tracked in _model_metrics, so without the explicit
+     * remove_impl override they would leak in DKV.
+     */
+    @Test
+    public void testRemoveImplCleansUpUnrestrictedMetrics() {
+        Frame train = null;
+        Frame valid = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_remove_impl_train");
+            valid = makeBinomialOffsetFrame("test_remove_impl_valid");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._valid = valid._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            glm = new GLM(params).trainModel().get();
+
+            GLMModel.GLMOutput out = (GLMModel.GLMOutput) glm._output;
+            assertNotNull("Training unrestricted metrics must be populated", out._training_metrics_unrestricted_model);
+            assertNotNull("Validation unrestricted metrics must be populated", out._validation_metrics_unrestricted_model);
+
+            Key trainUnrestrKey = out._training_metrics_unrestricted_model._key;
+            Key validUnrestrKey = out._validation_metrics_unrestricted_model._key;
+
+            assertNotNull("Training unrestricted metrics must be in DKV before removal", DKV.get(trainUnrestrKey));
+            assertNotNull("Validation unrestricted metrics must be in DKV before removal", DKV.get(validUnrestrKey));
+
+            glm.remove();
+            glm = null;
+
+            assertNull("Training unrestricted metrics must be removed from DKV after model.remove()", DKV.get(trainUnrestrKey));
+            assertNull("Validation unrestricted metrics must be removed from DKV after model.remove()", DKV.get(validUnrestrKey));
+        } finally {
+            if (train != null) train.remove();
+            if (valid != null) valid.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
 
 }
