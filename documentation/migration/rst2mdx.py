@@ -195,7 +195,7 @@ TAB_ITEM = re.compile(r"^(\s*)\.\. (code-tab|tab|group-tab)::\s*(\S+)?(?:\s+(.*)
 
 def run_pandoc(rst_text, cwd):
     res = subprocess.run(
-        ["pandoc", "-f", "rst", "-t", "gfm-indented_code_blocks", "--wrap=none"],
+        ["pandoc", "-f", "rst", "-t", "gfm", "--wrap=none"],
         input=rst_text, capture_output=True, text=True, cwd=cwd,
     )
     if res.returncode != 0:
@@ -332,15 +332,120 @@ def convert_admonitions(md):
     return "\n".join(out)
 
 
+def convert_indented_code_blocks(md):
+    """Convert pandoc GFM indented code blocks (4-space) to fenced blocks.
+
+    Pandoc uses indented code blocks inside list items. MDX parses < inside
+    them as JSX tag starts (e.g. 'numpy<2' triggers 'unexpected character 2').
+    Fenced blocks are always safe. Preserves list-item base indentation.
+    """
+    lines = md.split("\n")
+    out = []
+    in_fence = False
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+
+        if re.match(r"^ {0,3}(`{3,}|~{3,})", line):
+            in_fence = not in_fence
+            out.append(line)
+            i += 1
+            continue
+
+        if in_fence:
+            out.append(line)
+            i += 1
+            continue
+
+        prev_blank = not out or out[-1].strip() == ""
+
+        # Blockquote + indented code: ">     code" — pandoc output for RST ::
+        # blocks inside list items. Convert to fenced block inside blockquote.
+        bq_m = re.match(r"^(> ?)( {4,})(.+)$", line)
+        if prev_blank and bq_m:
+            bq = bq_m.group(1)
+            content_lines = [bq_m.group(3)]
+            i += 1
+            while i < len(lines):
+                l = lines[i]
+                m2 = re.match(r"^" + re.escape(bq) + r"( {4,})(.+)$", l)
+                blank_bq = re.match(r"^" + re.escape(bq) + r"\s*$", l)
+                if m2:
+                    content_lines.append(m2.group(2))
+                    i += 1
+                elif blank_bq and i + 1 < len(lines) and re.match(r"^" + re.escape(bq) + r" {4,}", lines[i + 1]):
+                    content_lines.append("")
+                    i += 1
+                else:
+                    break
+            while content_lines and not content_lines[-1].strip():
+                content_lines.pop()
+            out.append(bq + "```")
+            for cl in content_lines:
+                out.append(bq + cl)
+            out.append(bq + "```")
+            continue
+
+        if prev_blank and re.match(r"^ {4}", line) and line.strip():
+            # Collect: 4+-space lines, bridging blank lines between them
+            block = [line]
+            i += 1
+            while i < len(lines):
+                l = lines[i]
+                if re.match(r"^ {4}", l):
+                    block.append(l)
+                    i += 1
+                elif l.strip() == "" and i + 1 < len(lines) and re.match(r"^ {4}", lines[i + 1]):
+                    block.append(l)
+                    i += 1
+                else:
+                    break
+
+            # Trim trailing blank lines (put them back for normal processing)
+            trimmed = 0
+            while block and not block[-1].strip():
+                block.pop()
+                trimmed += 1
+            i -= trimmed
+
+            if block:
+                non_blank = [l for l in block if l.strip()]
+                min_indent = min(len(l) - len(l.lstrip()) for l in non_blank)
+                base = " " * max(0, min_indent - 4)
+                dedented = [(base + l[min_indent:]) if l.strip() else "" for l in block]
+                out.append(base + "```")
+                out.extend(dedented)
+                out.append(base + "```")
+            continue
+
+        out.append(line)
+        i += 1
+
+    return "\n".join(out)
+
+
 def postprocess_md(md):
     # Drop the .html suffix from internal (relative) links so they resolve as
     # Docusaurus routes (e.g. algo-params/foo.html -> algo-params/foo).
     md = re.sub(r"\]\((?!https?://)([^)\s]+?)\.html(#[^)]*)?\)", r"](\1\2)", md)
     md = convert_admonitions(md)
+    # Pandoc indented code blocks (4-space) confuse MDX's JSX parser — convert
+    # to fenced blocks before anything else reads the output.
+    md = convert_indented_code_blocks(md)
     # Raw HTML attributes must be JSX-safe in MDX.
     md = md.replace(' class="', ' className="')
-    # GFM autolinks (<http://...>) are JSX syntax errors in MDX.
+    # GFM URL autolinks → markdown links.
     md = re.sub(r"<(https?://[^>\s]+)>", r"[\1](\1)", md)
+    # GFM email autolinks → mailto links (MDX fails on @ in JSX tag names).
+    md = re.sub(
+        r"<([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})>",
+        r"[\1](mailto:\1)", md,
+    )
+    # Bare protocol placeholders <https://> / <http://> → inline code.
+    md = re.sub(r"<((?:https?|ftp)://)>", r"`\1`", md)
+    # Kerberos/SAML templates like <http/HOSTNAME@DOMAIN> → inline code.
+    md = re.sub(r"<([a-zA-Z][a-zA-Z0-9]*(?:/)[^>\s]+)>", r"`\1`", md)
     md = escape_prose_braces(md)
     return md
 

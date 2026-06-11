@@ -24,6 +24,21 @@ module.exports = {
       ],
     },
     {
+      "Using H2O-3": [
+        "downloading",
+        "starting-h2o",
+        "h2o-client",
+        "flow",
+        "logs",
+        "security",
+        "architecture",
+        "glossary",
+        "additional-resources",
+        "data-sources",
+        "docker",
+      ],
+    },
+    {
       "Data manipulation": [
         "data-munging/uploading-data",
         "data-munging/importing-data",
