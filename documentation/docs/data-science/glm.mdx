@@ -1,13 +1,17 @@
 ---
-title: "Generalized Linear Model (GLM)"
+title: "Generalized linear model (GLM)"
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import gamIcon from '../images/GAM.png';
+import modSelectIcon from '../images/ModSelect.png';
+import anovaIcon from '../images/ANOVA.png';
+import hglmIcon from '../images/HGLM.png';
 
 ## Introduction
 
-Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
+Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (that is, normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
 
 The GLM suite includes:
 
@@ -22,7 +26,7 @@ The GLM suite includes:
 - Negative Binomial regression
 - Tweedie distribution
 
-### MOJO Support
+### MOJO support
 
 GLM supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
 
@@ -30,7 +34,7 @@ GLM supports importing and exporting [MOJOs](../save-and-load-model#supported-mo
 
 - [GLM Booklet](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf)
 
-## Defining a GLM Model
+## Defining a GLM model
 
 Parameters are optional unless specified as *required*.
 
@@ -43,14 +47,14 @@ Parameters are optional unless specified as *required*.
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than `dispersion_epsilon`, this will break out of the dispersion parameter estimation loop using maximum likelihood. This option defaults to `0.0001`.
 - **dispersion_learning_rate**: (Applicable only when `dispersion_parameter_method="ml"`) This value controls how much the dispersion parameter estimate will be changed when the calculated loglikelihood actually decreases with the new dispersion. In this case, instead of setting *dispersion = dispersion + change*, it is *dispersion + dispersion_learning_rate* $\times$ *change*. This option must be \> 0 and defaults to `0.5`.
 - **dispersion_parameter_method**: Method used to estimate the dispersion factor for Tweedie, Gamma, and Negative Binomial only. Can be one of `"pearson"` (default), `"deviance"`, or `"ml"`.
-- **fix_dispersion_parameter**: Only used for Tweedie, Gamma and Negative Binomial GLM. If enabled, this option will use the dispsersion parameter in `init_dispersion_parameter` as the standard error and use it to calculate the p-values. This option defaults to `False`.
+- **fix_dispersion_parameter**: Only used for Tweedie, Gamma and Negative Binomial GLM. If enabled, this option will use the dispersion parameter in `init_dispersion_parameter` as the standard error and use it to calculate the p-values. This option defaults to `False`.
 - **generate_scoring_history**: Generate the scoring history for the GLM model when enabled. This may significantly slow down the algorithm. When enabled, you will also be able to fetch the average objective and the negative log likelihood using their accessor functions: `average_objective` and `negative_log_likelihood`. This option defaults to `False` (disabled).
 - **generate_variable_inflation_factors**: If enabled, this option generates the variable inflation factors for numerical predictors. This option defaults to `False` (disabled).
-- **init_dispersion_parameter**: Initial value of disperion factor before being estimated using either `"pearson"` or `"ml"`. This option defaults to `1.0`.
+- **init_dispersion_parameter**: Initial value of dispersion factor before being estimated using either `"pearson"` or `"ml"`. This option defaults to `1.0`.
 - [interactions](algo-params/interactions): Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list.
 - [interaction_pairs](algo-params/interaction_pairs): When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than `interactions`, which will compute all pairwise combinations of specified columns.
 
-**max_iterations**: For GLM, must be $\geq$ 1 to obtain a proper model (or -1 for unlimited which is the default setting). Setting it to 0 will only return the correct coefficient names and an empty model.
+- **max_iterations**: For GLM, must be $\geq$ 1 to obtain a proper model (or -1 for unlimited which is the default setting). Setting it to 0 will only return the correct coefficient names and an empty model.
 
 - **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. This option defaults to `1000000`.
 - [rand_family](algo-params/rand_family): The Random Component Family specified as an array. You must include one family for each random component. Currently only `rand_family=["gaussisan"]` is supported.
@@ -58,21 +62,23 @@ Parameters are optional unless specified as *required*.
 
 ### Shared GLM family parameters
 
-**GLM Family**: <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> [Generalized Additive Models](gam#defining-a-gam-model) (GAM) <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> [ModelSelection](model_selection#defining-a-modelselection-model) <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> [ANOVA GLM](anova_glm#defining-an-anova-glm-model) <img src="../images/HGLM.png" className="align-middle" alt="HGLM" /> [Hierarchical Generalized Linear Model](hglm) (HGLM)
+**GLM Family**: <img src={gamIcon} className="align-middle" alt="GAM" /> [Generalized Additive Models](gam#defining-a-gam-model) (GAM) <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> [ModelSelection](model_selection#defining-a-modelselection-model) <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> [ANOVA GLM](anova_glm#defining-an-anova-glm-model) <img src={hglmIcon} className="align-middle" alt="HGLM" /> [Hierarchical Generalized Linear Model](hglm) (HGLM)
 
-- [alpha](algo-params/alpha): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Specify the regularization distribution between L1 and L2. A value of `1` produces LASSO regression; a value of `0` produces Ridge regression. The default value of `alpha` is `0` when `SOLVER = 'L-BFGS'`; otherwise it is `0.5` to specify a mixing between LASSO and Ridge regression.
+- [alpha](algo-params/alpha): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Specify the regularization distribution between L1 and L2. A value of `1` produces LASSO regression; a value of `0` produces Ridge regression. The default value of `alpha` is `0` when `SOLVER = 'L-BFGS'`; otherwise it is `0.5` to specify a mixing between LASSO and Ridge regression.
 
-- [beta_constraints](algo-params/beta_constraints): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Specify a dataset to use beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a "names" column with valid coefficient names.
+- [beta_constraints](algo-params/beta_constraints): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Specify a dataset to use beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a "names" column with valid coefficient names.
 
-- [beta_epsilon](algo-params/beta_epsilon): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Converge if beta changes less than this value (using L-infinity norm). This only applies to `IRLSM` solver, and the value defaults to `0.0001`.
+- [beta_epsilon](algo-params/beta_epsilon): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Converge if beta changes less than this value (using L-infinity norm). This only applies to `IRLSM` solver, and the value defaults to `0.0001`.
 
-- **cold_start**: <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple `alpha`/`lambda` values. If `False` and for a fixed `alpha` value, the next model with the next `lambda` value out of the `lambda` array will be built using the coefficients and the GLM state values of the current model. If `True`, the next GLM model will be built from scratch. The default value is `False`.
+- **cold_start**: <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple `alpha`/`lambda` values. If `False` and for a fixed `alpha` value, the next model with the next `lambda` value out of the `lambda` array will be built using the coefficients and the GLM state values of the current model. If `True`, the next GLM model will be built from scratch. The default value is `False`.
 
-  > **note** If an `alpha` array is specified and for a brand new `alpha`, the model will be built from scratch regardless of the value of `cold_start`.
+  :::note
+  If an `alpha` array is specified and for a brand new `alpha`, the model will be built from scratch regardless of the value of `cold_start`.
+  :::
 
-- [compute_p_values](algo-params/compute_p_values): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Request computation of p-values. P-values can be computed with or without regularization. Setting `remove_collinear_columns` is recommended. H2O will return an error if p-values are requested and there are collinear columns and `remove_collinear_columns` flag is not enabled. Note that this option is not available for `family="multinomial"` or `family="ordinal"`; `IRLSM` solver requried. This option defaults to `False` (disabled).
+- [compute_p_values](algo-params/compute_p_values): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Request computation of p-values. P-values can be computed with or without regularization. Setting `remove_collinear_columns` is recommended. H2O will return an error if p-values are requested and there are collinear columns and `remove_collinear_columns` flag is not enabled. Note that this option is not available for `family="multinomial"` or `family="ordinal"`; `IRLSM` solver required. This option defaults to `False` (disabled).
 
-- [family](algo-params/family): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> <img src="../images/HGLM.png" className="align-middle" alt="HGLM" /> Specify the model type.
+- [family](algo-params/family): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> <img src={hglmIcon} className="align-middle" alt="HGLM" /> Specify the model type.
 
   - If the family is `gaussian`, the response must be numeric (**Real** or **Int**).
   - If the family is `binomial`, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
@@ -89,17 +95,17 @@ Parameters are optional unless specified as *required*.
     - and the response is **Enum** with cardinality \> 2, then the family is automatically determined as `multinomial`.
     - and the response is numeric (**Real** or **Int**), then the family is automatically determined as `gaussian`.
 
-- [gradient_epsilon](algo-params/gradient_epsilon): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> (For `solver="L_BFGS"` only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. If `lambda_search=True`, then this value defaults to `.0001`. If `lambda_search=False` and `lambda` is equal to zero, then this value defaults to `.000001`. For any other value of `lambda`, this value defaults to `.0001`. This value defaults to `-1`.
+- [gradient_epsilon](algo-params/gradient_epsilon): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> (For `solver="L_BFGS"` only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. If `lambda_search=True`, then this value defaults to `.0001`. If `lambda_search=False` and `lambda` is equal to zero, then this value defaults to `.000001`. For any other value of `lambda`, this value defaults to `.0001`. This value defaults to `-1`.
 
-- [intercept](algo-params/intercept): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Specify whether to include a constant term in the model. This option defaults to `True` (enabled).
+- [intercept](algo-params/intercept): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Specify whether to include a constant term in the model. This option defaults to `True` (enabled).
 
-- [lambda](algo-params/lambda): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Specify the regularization strength.
+- [lambda](algo-params/lambda): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Specify the regularization strength.
 
-- [lambda_min_ratio](algo-params/lambda_min_ratio): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda_max**, which is the smallest $\lambda$ for which the solution is all zeros). This value defaults to `-1` which indicates that if the number of observations is greater than the number of variables, then `lambda_min_ratio` is set to 0.0001; if the number of observations is less than the number of variables, then `lambda_min_ratio` is set to 0.01.
+- [lambda_min_ratio](algo-params/lambda_min_ratio): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda_max**, which is the smallest $\lambda$ for which the solution is all zeros). This value defaults to `-1` which indicates that if the number of observations is greater than the number of variables, then `lambda_min_ratio` is set to 0.0001; if the number of observations is less than the number of variables, then `lambda_min_ratio` is set to 0.01.
 
-- [lambda_search](algo-params/lambda_search): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Specify whether to enable lambda search, starting with lambda max (the smallest $\lambda$ that drives all coefficients to zero). If you also specify a value for `lambda_min_ratio`, then this value is interpreted as lambda min. If you do not specify a value for `lambda_min_ratio`, then GLM will calculate the minimum lambda. This option defaults to `False` (disabled).
+- [lambda_search](algo-params/lambda_search): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Specify whether to enable lambda search, starting with lambda max (the smallest $\lambda$ that drives all coefficients to zero). If you also specify a value for `lambda_min_ratio`, then this value is interpreted as lambda min. If you do not specify a value for `lambda_min_ratio`, then GLM will calculate the minimum lambda. This option defaults to `False` (disabled).
 
-- [link](algo-params/link): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Specify a link function (one of: `Identity`, `Family_Default` (default), `Logit`, `Log`, `Inverse`, `Tweedie`, or `Ologit`).
+- [link](algo-params/link): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Specify a link function (one of: `Identity`, `Family_Default` (default), `Logit`, `Log`, `Inverse`, `Tweedie`, or `Ologit`).
 
   - If the family is `Gaussian`, then `Identity`, `Log`, and `Inverse` are supported.
 
@@ -123,37 +129,39 @@ Parameters are optional unless specified as *required*.
 
   - If the family is `AUTO`,
 
-    > - and a link is not specified, then the link is determined as `Family_Default` (defaults to the family to which `AUTO` is determined).
-    >
-    > - and a link is specified, the link is used so long as the specified link is compatible with the family to which `AUTO` is determined. Otherwise, an error message is thrown stating that `AUTO` for underlying data requires a different link and gives a list of possible compatible links.
-    >
-    > - The list of supported links for `family = AUTO` is:
-    >
-    >   > 1.  If the response is **Enum** with cardinality = 2, then `Logit` is supported.
-    >   > 2.  If the response is **Enum** with cardinality \> 2, then only `Family_Default` is supported (this defaults to `multinomial`).
-    >   > 3.  If the response is numeric (**Real** or **Int**), then `Identity`, `Log`, and `Inverse` are suported.
+    - and a link is not specified, then the link is determined as `Family_Default` (defaults to the family to which `AUTO` is determined).
 
-- [max_active_predictors](algo-params/max_active_predictors): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to `-1`.
+    - and a link is specified, the link is used so long as the specified link is compatible with the family to which `AUTO` is determined. Otherwise, an error message is thrown stating that `AUTO` for underlying data requires a different link and gives a list of possible compatible links.
 
-- [nlambdas](algo-params/nlambdas): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> (Applicable only if `lambda_search=True`) Specify the number of lambdas to use in the search. When `alpha` \> 0, the default value for `lambda_min_ratio` is $1e^{-4}$, then the default value for `nlambdas` is 100. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When `alpha=0`, the default value for `nlamdas` is set to `30` because fewer lambdas are needed for ridge regression. This value defaults to `-1`.
+    - The list of supported links for `family = AUTO` is:
 
-- [non_negative](algo-params/non_negative): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Specify whether to force coefficients to have non-negative values. This option defaults to `False` (disabled).
+      1. If the response is **Enum** with cardinality = 2, then `Logit` is supported.
+      2. If the response is **Enum** with cardinality \> 2, then only `Family_Default` is supported (this defaults to `multinomial`).
+      3. If the response is numeric (**Real** or **Int**), then `Identity`, `Log`, and `Inverse` are supported.
 
-- **obj_reg**: <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Specifies the likelihood divider in objective value computation. This defaults to `1/nobs`.
+- [max_active_predictors](algo-params/max_active_predictors): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to `-1`.
 
-- [objective_epsilon](algo-params/objective_epsilon): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> If the objective value is less than this threshold, then the model is converged. If `lambda_search=True`, then this value defaults to `.0001`. If `lambda_search=False` and `lambda` is equal to zero, then this value defaults to `.000001`. For any other value of `lambda`, the default value of `objective_epsilon` is set to `.0001`. The default value is `-1`.
+- [nlambdas](algo-params/nlambdas): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> (Applicable only if `lambda_search=True`) Specify the number of lambdas to use in the search. When `alpha` \> 0, the default value for `lambda_min_ratio` is $1e^{-4}$, then the default value for `nlambdas` is 100. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When `alpha=0`, the default value for `nlamdas` is set to `30` because fewer lambdas are needed for ridge regression. This value defaults to `-1`.
 
-- [plug_values](algo-params/plug_values): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> <img src="../images/HGLM.png" className="align-middle" alt="HGLM" /> (Applicable only if `missing_values_handling="PlugValues"`) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
+- [non_negative](algo-params/non_negative): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Specify whether to force coefficients to have non-negative values. This option defaults to `False` (disabled).
 
-- [prior](algo-params/prior): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Specify prior probability for $p(y==1)$. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to `-1` and must be a value in the range (0,1).
+- **obj_reg**: <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Specifies the likelihood divider in objective value computation. This defaults to `1/nobs`.
 
-  > **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
+- [objective_epsilon](algo-params/objective_epsilon): <img src={gamIcon} className="align-middle" alt="GAM" /> If the objective value is less than this threshold, then the model is converged. If `lambda_search=True`, then this value defaults to `.0001`. If `lambda_search=False` and `lambda` is equal to zero, then this value defaults to `.000001`. For any other value of `lambda`, the default value of `objective_epsilon` is set to `.0001`. The default value is `-1`.
 
-- [remove_collinear_columns](algo-params/remove_collinear_columns): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This option defaults to `False` (disabled).
+- [plug_values](algo-params/plug_values): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> <img src={hglmIcon} className="align-middle" alt="HGLM" /> (Applicable only if `missing_values_handling="PlugValues"`) Specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
 
-- **score_iteration_interval**: <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/HGLM.png" className="align-middle" alt="HGLM" /> Perform scoring for every `score_iteration_interval` iteration. This option defaults to `-1`.
+- [prior](algo-params/prior): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Specify prior probability for $p(y==1)$. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to `-1` and must be a value in the range (0,1).
 
-- [solver](algo-params/solver): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Specify the solver to use. One of:
+  :::note
+  This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
+  :::
+
+- [remove_collinear_columns](algo-params/remove_collinear_columns): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This option defaults to `False` (disabled).
+
+- **score_iteration_interval**: <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={hglmIcon} className="align-middle" alt="HGLM" /> Perform scoring for every `score_iteration_interval` iteration. This option defaults to `-1`.
+
+- [solver](algo-params/solver): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Specify the solver to use. One of:
 
   - `IRLSM`: fast on problems with a small number of predictors and for lambda search with L1 penalty
   - `L_BFGS`: scales better for datasets with many columns; [read more on L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf)
@@ -163,22 +171,22 @@ Parameters are optional unless specified as *required*.
   - `GRADIENT_DESCENT_SQERR`: can only be used with the `ordinal` family
   - `AUTO` (default): will set the solver based on the given data and other parameters
 
-- [theta](algo-params/theta): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> Theta value (equal to $\frac{1}{r}$) for use when `family="negativebinomial`. This value must be \> 0 and defaults to `1e-10`.
+- [theta](algo-params/theta): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> Theta value (equal to $\frac{1}{r}$) for use when `family="negativebinomial`. This value must be \> 0 and defaults to `1e-10`.
 
-- [tweedie_link_power](algo-params/tweedie_link_power): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> (Only applicable if `family="tweedie"`) Specify the Tweedie link power. This option defaults to `1`.
+- [tweedie_link_power](algo-params/tweedie_link_power): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> (Only applicable if `family="tweedie"`) Specify the Tweedie link power. This option defaults to `1`.
 
-- [tweedie_variance_power](algo-params/tweedie_variance_power): <img src="../images/GAM.png" className="align-middle" alt="Generalized Additive Models" /> <img src="../images/ModSelect.png" className="align-middle" alt="ModelSelection" /> <img src="../images/ANOVA.png" className="align-middle" alt="ANOVA GLM" /> (Only applicable if `family="tweedie"`) Specify the Tweedie variance power. This option defaults to `0`.
+- [tweedie_variance_power](algo-params/tweedie_variance_power): <img src={gamIcon} className="align-middle" alt="GAM" /> <img src={modSelectIcon} className="align-middle" alt="ModelSelection" /> <img src={anovaIcon} className="align-middle" alt="ANOVA GLM" /> (Only applicable if `family="tweedie"`) Specify the Tweedie variance power. This option defaults to `0`.
 
 ### Common parameters
 
 - [auc_type](algo-params/auc_type): Set the default multinomial AUC type. Must be one of:
 
-  > - `"AUTO"` (default)
-  > - `"NONE"`
-  > - `"MACRO_OVR"`
-  > - `"WEIGHTED_OVR"`
-  > - `"MACRO_OVO"`
-  > - `"WEIGHTED_OVO"`
+  - `"AUTO"` (default)
+  - `"NONE"`
+  - `"MACRO_OVR"`
+  - `"WEIGHTED_OVR"`
+  - `"MACRO_OVO"`
+  - `"WEIGHTED_OVO"`
 
 - [checkpoint](algo-params/checkpoint): Enter a model key associated with a previously trained model. Use this option to build a new model as a continuation of a previously generated model.
 
@@ -217,7 +225,9 @@ Parameters are optional unless specified as *required*.
 
 - [offset_column](algo-params/offset_column): Specify a column to use as the offset; the value cannot be the same as the value for the `weights_column`.
 
-  > **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (`y`) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.
+  :::note
+  Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (`y`) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.
+  :::
 
 - [score_each_iteration](algo-params/score_each_iteration): Enable this option to score during each iteration of the model training. This option defaults to `False` (disabled).
 
@@ -242,23 +252,27 @@ Parameters are optional unless specified as *required*.
 
 - [stopping_rounds](algo-params/stopping_rounds): Stops training when the option selected for `stopping_metric` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify `0` (default).
 
-  > **Note:** If cross-validation is enabled:
-  >
-  > - All cross-validation models stop training when the validation metric doesn't improve.
-  > - The main model runs for the mean number of epochs.
-  > - N+1 models may be off by the number specified for `stopping_rounds` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+  :::note
+  If cross-validation is enabled:
+
+  - All cross-validation models stop training when the validation metric doesn't improve.
+  - The main model runs for the mean number of epochs.
+  - N+1 models may be off by the number specified for `stopping_rounds` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+  :::
 
 - [stopping_tolerance](algo-params/stopping_tolerance): Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. Defaults to `0.001`.
 
-- [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+- [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model. In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
 
 - [validation_frame](algo-params/validation_frame): Specify the dataset used to evaluate the accuracy of the model.
 
 - [weights_column](algo-params/weights_column): Specify a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`.
 
-  > *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`.
-  >
-  > **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+  *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`.
+
+  :::note
+  Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+  :::
 
 - [x](algo-params/x): Specify a vector containing the names or indices of the predictor variables to use when building the model. If `x` is missing, then all columns except `y` are used.
 
@@ -267,7 +281,7 @@ Parameters are optional unless specified as *required*.
   - For a regression model, this column must be numeric (**Real** or **Int**).
   - For a classification model, this column must be categorical (**Enum** or **String**). If the family is `Binomial`, the dataset cannot contain more than two levels.
 
-## Interpreting a GLM Model
+## Interpreting a GLM model
 
 By default, the following output displays:
 
@@ -281,23 +295,23 @@ By default, the following output displays:
 - Coefficients
 - Standardized coefficient magnitudes (if standardization is enabled)
 
-## Classification and Regression
+## Classification and regression
 
 GLM can produce two categories of models: classification and regression. Logistic regression is the GLM performing binary classification.
 
-### Handling of Categorical Variables
+### Handling of categorical variables
 
-GLM supports both binary and multinomial classification. For binary classification, the response column can only have two levels; for multinomial classification, the response column will have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
+GLM supports both binary and multinomial classification. For binary classification, the response column can only have two levels; for multinomial classification, the response column will have more than two levels. Let GLM handle categorical columns—it takes advantage of the categorical structure for better performance and memory utilization.
 
-We strongly recommend avoiding one-hot encoding categorical columns with any levels into many binary columns, as this is very inefficient. This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
+Avoid one-hot encoding categorical columns into many binary columns. This is inefficient, particularly for Python users who are accustomed to expanding categorical variables manually for other frameworks.
 
-### Handling of Numeric Variables
+### Handling of numeric variables
 
-When GLM performs regression (with factor columns), one category can be left out to avoid multicollinearity. If regularization is disabled (`lambda = 0`), then one category is left out. However, when using a the default lambda parameter, all categories are included.
+When GLM performs regression (with factor columns), one category can be left out to avoid multicollinearity. If regularization is disabled (`lambda = 0`), then one category is left out. However, when using the default lambda parameter, all categories are included.
 
 The reason for the different behavior with regularization is that collinearity is not a problem with regularization. And it’s better to leave regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
 
-### Regression Influence Diagnostics
+### Regression influence diagnostics
 
 Regression influence diagnostics reveal the influence of each data row on the GLM parameter determination for IRLSM. This shows the parameter value change for each predictor when a data row is included and excluded in the dataset used to train the GLM model.
 
@@ -335,7 +349,7 @@ $$\Delta_l \hat{\beta} = \hat{\beta} - \hat{\beta}(l) \quad \text{equation 3.}$$
 
 The DFBETAS for the $k\text{th}$ coefficient due to the absence of data row $l$ is calculated as:
 
-$$DFBETAS(l)_k = \frac{\Delta_l \hat{\beta}_k}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} = \frac{\beta_k - \beta_{(l)k}}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} \quad \text{euqation 4}$$
+$$DFBETAS(l)_k = \frac{\Delta_l \hat{\beta}_k}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} = \frac{\beta_k - \beta_{(l)k}}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} \quad \text{equation 4}$$
 
 where:
 
@@ -355,7 +369,7 @@ where:
 - $V$ is a diagonal matrix with diagonal value $v_{ii} = \mu_i (1-\mu_i)$;
 - $s_i = y_i - \mu_i$.
 
-The formula for DFBETAS for the $k\text{th}$ coefficient due to the ansence of data row $l$ is defined as:
+The formula for DFBETAS for the $k\text{th}$ coefficient due to the absence of data row $l$ is defined as:
 
 $$DFBETAS(l)_k = \quad ^{\Delta_l \hat{\beta}_k} \big/ _{\hat{\sigma}_k} \quad \text{equation 6}$$
 
@@ -371,7 +385,7 @@ $$\Delta_l \hat{\beta} = \frac{w_l(y_l-\mu_l)}{1-h_{ll}} (X^TVX)^{-1}x_l \quad \
 
 $$h_{ll} = w_l \mu_l (1-\mu_l)x_l^T(X^TVX)^{-1}x_l \quad \text{equation 8.}$$
 
-## Family and Link Functions
+## Family and link functions
 
 GLM problems consist of three main components:
 
@@ -388,7 +402,7 @@ The `family` option specifies a probability distribution from an exponential fam
 - `gaussian`: (See [Linear Regression (Gaussian Family)](#linear-regression-gaussian-family).) The response must be numeric (Real or Int). This is the default family.
 - `binomial`: (See [Logistic Regression (Binomial Family)](#logistic-regression-binomial-family)). The response must be categorical 2 levels/classes or binary (Enum or Int).
 - `fractionalbinomial`: See ([Fractional Logit Model (Fraction Binomial)](#fractional-logit-model-fraction-binomial)). The response must be a numeric between 0 and 1.
-- `ordinal`: (See [Logistic Ordinal Regression (Ordinal Family)](#logistic-ordinal-regression-ordinal-family)). Requires a categorical response with at least 3 levels. (For 2-class problems, use family="binomial".)
+- `ordinal`: (See [Logistic Ordinal Regression (Ordinal Family)](#logistic-ordinal-regression-ordinal-family)). Requires a categorical response with at least 3 levels. (For 2-class problems, use `family="binomial"`.)
 - `quasibinomial`: (See [Pseudo-Logistic Regression (Quasibinomial Family)](#pseudo-logistic-regression-quasibinomial-family)). The response must be numeric.
 - `multinomial`: (See [Multiclass Classification (Multinomial Family)](#multiclass-classification-multinomial-family)). The response can be categorical with more than two levels/classes (Enum).
 - `poisson`: (See [Poisson Models](#poisson-models)). The response must be numeric and non-negative (Int).
@@ -397,12 +411,14 @@ The `family` option specifies a probability distribution from an exponential fam
 - `negativebinomial`: (See [Negative Binomial Models](#negative-binomial-models)). The response must be numeric and non-negative (Int).
 - `AUTO`: Determines the family automatically for the user.
 
-**Note**: If your response column is binomial, then you must convert that column to a categorical (`.asfactor()` in Python and `as.factor()` in R) and set `family = binomial`. The following configurations can lead to unexpected results.
+:::note
+If your response column is binomial, then you must convert that column to a categorical (`.asfactor()` in Python and `as.factor()` in R) and set `family = binomial`. The following configurations can lead to unexpected results.
 
-> - If you DO convert the response column to categorical and DO NOT to set `family=binomial`, then you will receive an error message.
-> - If you DO NOT convert response column to categorical and DO NOT set the family, then GLM will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
+- If you DO convert the response column to categorical and DO NOT set `family=binomial`, then you will receive an error message.
+- If you DO NOT convert response column to categorical and DO NOT set the family, then GLM will assume the zeros and ones are numbers and will provide a Gaussian solution to a regression problem.
+:::
 
-#### Linear Regression (Gaussian Family)
+#### Linear regression (Gaussian family)
 
 Linear regression corresponds to the Gaussian family model. The link function $g$ is the identity, and density $f$ corresponds to a normal distribution. It is the simplest example of a GLM but has many uses and several advantages over other families. Specifically, it is faster and requires more stable computations. Gaussian models the dependency between a response $y$ and a covariates vector $x$ as a linear function:
 
@@ -416,13 +432,11 @@ The deviance is the sum of the squared prediction errors:
 
 $$D = \sum_{i=1}^{N}(y_i - \hat {y}_i)^2$$
 
-#### Logistic Regression (Binomial Family)
+#### Logistic regression (Binomial family)
 
 Logistic regression is used for binary classification problems where the response is a categorical variable with two levels. It models the probability of an observation belonging to an output category given the data (for example, $Pr(y=1|x)$). The canonical link for the binomial family is the logit function (also known as log odds). Its inverse is the logistic function, which takes any real number and projects it onto the \[0,1\] range as desired to model the probability of belonging to a class. The corresponding s-curve is below:
 
-<figure>
-<img src="../images/scurve.png" width="400" alt="../images/scurve.png" />
-</figure>
+![S-curve for logistic regression showing probability mapped to the [0,1] range](../images/scurve.png)
 
 The fitted model has the form:
 
@@ -440,7 +454,7 @@ The corresponding deviance is equal to:
 
 $$D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)$$
 
-#### Fractional Logit Model (Fraction Binomial)
+#### Fractional logit model (fractional binomial)
 
 In the financial service industry, there are many outcomes that are fractional in the range of \[0,1\]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval \[0, 1\]. The following assumptions are made for this model.
 
@@ -450,7 +464,7 @@ In the financial service industry, there are many outcomes that are fractional i
 
 Note that these are exactly the same as the binomial distribution. However, the values are calculated with the value of $y$ in the range of 0 and 1 instead of just 0 and 1. Therefore, we implemented the fractional binomial family using the code of binomial. Changes are made when needed.
 
-#### Logistic Ordinal Regression (Ordinal Family)
+#### Logistic ordinal regression (Ordinal family)
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
 
@@ -482,9 +496,7 @@ $$\beta^{T}X_i + \theta_{j'} \leq 0 \; \text{for} \; j' < j$$
 
 Hence, for each training data sample $(X_{i}, y_i)$, we adjust the model parameters $\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}$ by considering the thresholds $\beta^{T}X_i + \theta_j$ directly. The following loss function is used to adjust the model parameters:
 
-<figure>
-<img src="../images/ordinal_equation.png" className="align-center" width="565" height="243" alt="../images/ordinal_equation.png" />
-</figure>
+![Loss function for ordinal regression parameter adjustment](../images/ordinal_equation.png)
 
 Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the `solver` parameter will automatically be set to `GRADIENT_DESCENT_LH` and use the log-likelihood function. To adjust the model parameters using the loss function, you can set the solver parameter to `GRADIENT_DESCENT_SQERR`.
 
@@ -492,13 +504,13 @@ Because only first-order methods are used in adjusting the model parameters, use
 
 In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
 
-#### Pseudo-Logistic Regression (Quasibinomial Family)
+#### Pseudo-logistic regression (Quasibinomial family)
 
 The quasibinomial family option works in the same way as the aforementioned binomial family. The difference is that binomial models only support 0/1 for the values of the target. A quasibinomial model supports "pseudo" logistic regression and allows for two arbitrary integer values (for example -4, 7). Additional information about the quasibinomial option can be found in the ["Estimating Effects on Rare Outcomes: Knowledge is Power"](http://biostats.bepress.com/ucbbiostat/paper310/) paper.
 
-#### Multiclass Classification (Multinomial Family)
+#### Multiclass classification (Multinomial family)
 
-Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the binomail family, GLM models the conditional probability of observing class "c" given "x". A vector of coefficients exists for each of the output classes. ($\beta$ is a matrix.) The probabilities are defined as:
+Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the binomial family, GLM models the conditional probability of observing class `c` given `x`. A vector of coefficients exists for each of the output classes. ($\beta$ is a matrix.) The probabilities are defined as:
 
 $$\hat{y}_c = Pr(y = c|x) = \frac{e^{x^\top\beta_c + \beta_{c0}}}{\sum^K_{k=1}(e^{x^\top\beta_k+\beta_{k0}})}$$
 
@@ -506,9 +518,9 @@ The penalized negative log-likelihood is defined as:
 
 $$- \Big[ \dfrac {1} {N} \sum_{i=1}^N \sum_{k=1}^K \big( y_{i,k} (x^T_i \beta_k + \beta_{k0}) \big) - \text{log} \big( \sum_{k=1}^K e^{x{^T_i}\beta_k + {\beta_{k0}}} \big) \Big] + \lambda \Big[ \dfrac {(1-\alpha)} {2} ||\beta || ^2_F + \alpha \sum_{j=1}^P ||\beta_j ||_1 \Big]$$
 
-where $\beta_c$ is a vector of coefficients for class "c", and $y_{i,k}$ is the $k\text{th}$ element of the binary vector produced by expanding the response variable using one-hot encoding (i.e., $y_{i,k} == 1$ iff the response at the $i\text{th}$ observation is "k"; otherwise it is 0.)
+where $\beta_c$ is a vector of coefficients for class `c`, and $y_{i,k}$ is the $k\text{th}$ element of the binary vector produced by expanding the response variable using one-hot encoding (that is, $y_{i,k} == 1$ iff the response at the $i\text{th}$ observation is `k`; otherwise it is 0.)
 
-#### Poisson Models
+#### Poisson models
 
 Poisson regression is typically used for datasets where the response represents counts, and the errors are assumed to have a Poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the response and covariates as:
 
@@ -524,9 +536,9 @@ $$D = -2 \sum_{i=1}^{N} \big( y_i \text{log}(y_i / \hat {y}_i) - (y_i - \hat {y}
 
 Note in the equation above that H2O-3 uses the negative log of the likelihood. This is different than the way deviance is specified in [https://onlinecourses.science.psu.edu/stat501/node/377/](https://onlinecourses.science.psu.edu/stat501/node/377/). In order to use this deviance definition, simply multiply the H2O-3 deviance by -1.
 
-#### Gamma Models
+#### Gamma models
 
-The gamma distribution is useful for modeling a positive continuous response variable, where the conditional variance of the response grows with its mean, but the coefficientof variation of the response $\sigma^2(y_i)/\mu_i$ is constant. It is usually used with the log link $g(\mu_i) = \text{log}(\mu_i)$ or the inverse link $g(\mu_i) = \dfrac {1} {\mu_i}$, which is equivalent to the canonical link.
+The gamma distribution is useful for modeling a positive continuous response variable, where the conditional variance of the response grows with its mean, but the coefficient of variation of the response $\sigma^2(y_i)/\mu_i$ is constant. It is usually used with the log link $g(\mu_i) = \text{log}(\mu_i)$ or the inverse link $g(\mu_i) = \dfrac {1} {\mu_i}$, which is equivalent to the canonical link.
 
 The model is fitted by solving the following likelihood maximization:
 
@@ -536,7 +548,7 @@ The corresponding deviance is equal to:
 
 $$D = 2 \sum_{i=1}^{N} - \text{log} \bigg (\dfrac {y_i} {\hat {y}_i} \bigg) + \dfrac {(y_i - \hat{y}_i)} {\hat {y}_i}$$
 
-#### Tweedie Models
+#### Tweedie models
 
 Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the $p$-th power of the mean $var(y_i) = \phi\mu{^p_i}$, where $\phi$ is the dispersion parameter and $p$ is the variance power.
 
@@ -549,37 +561,29 @@ The Tweedie distribution is parametrized by variance power $p$ while $\phi$ is a
 - $p = 3$: Inverse-Gaussian
 - $p > 2$: Stable, with support on the positive reals
 
-The model likelood to maximize has the form:
+The model likelihood to maximize has the form:
 
-<figure>
-<img src="../images/model_log_likelihood_tweedie.png" alt="../images/model_log_likelihood_tweedie.png" />
-</figure>
+![Tweedie model log likelihood formula](../images/model_log_likelihood_tweedie.png)
 
 where the function $a(y_i,\phi)$ is evaluated using an infinite series expansion and does not have an analytical solution. However, because $\phi$ is an unknown constant, $\sum_{i=1}^N\text{log}(a(y_i,\phi))$ is a constant and will be ignored. Hence, the final objective function to minimize with the penalty term is:
 
-<figure>
-<img src="../images/minimize_penalty.png" alt="../images/minimize_penalty.png" />
-</figure>
+![Tweedie objective function to minimize with penalty term](../images/minimize_penalty.png)
 
 The link function in the GLM representation of the Tweedie distribution defaults to:
 
-<figure>
-<img src="../images/link_function_tweedie.png" alt="../images/link_function_tweedie.png" />
-</figure>
+![Default link function for the Tweedie distribution](../images/link_function_tweedie.png)
 
 And $q = 1 - p$. The link power $q$ can be set to other values as well.
 
 The corresponding deviance is equal to:
 
-<figure>
-<img src="../images/tweedie_deviance.png" alt="../images/tweedie_deviance.png" />
-</figure>
+![Tweedie deviance formula](../images/tweedie_deviance.png)
 
-#### Negative Binomial Models
+#### Negative Binomial models
 
 Negative binomial regression is a generalization of Poisson regression that loosens the restrictive assumption that the variance is equal to the mean. Instead, the variance of negative binomial is a function of its mean and parameter $\theta$, the dispersion parameter.
 
-Let $Y$ denote a random variable with negative binomial distribution, and let $\mu$ be the mean. The variance of $Y (\sigma^2)$ will be $\sigma^2 = \mu + \theta\mu^2$. The possible values of $Y$ are non-negative integers like 0, 1, 2, ...
+Let $Y$ denote a random variable with negative binomial distribution, and let $\mu$ be the mean. The variance of $Y (\sigma^2)$ will be $\sigma^2 = \mu + \theta\mu^2$. The possible values of $Y$ are non-negative integers: 0, 1, 2, and so on.
 
 The negative binomial regression for an observation $i$ is:
 
@@ -608,7 +612,9 @@ The corresponding deviance is:
 
 $$D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y_i + \theta^{-1}) \text{log} \frac{(1+\theta y_i)}{(1+\theta \mu_i)} \bigg \}$$
 
-**Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
+:::note
+Future versions of this model will optimize the coefficients as well as the dispersion parameter.
+:::
 
 ### Links
 
@@ -640,7 +646,7 @@ For **AUTO**:
 - X\*\*: the data is `Enum` with cardinality = 2 (family determined as `binomial`)
 - X\*\*\*: the data is `Enum` with cardinality \> 2 (family determined as `multinomial`)
 
-## Dispersion Parameter Estimation
+## Dispersion parameter estimation
 
 Regularization is not supported when you use dispersion parameter estimation with maximum likelihood.
 
@@ -682,9 +688,7 @@ $$W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2
 
 The $W_j$ terms are all positive. The following figure plots for $\mu = 0.5, p=1.5, \phi =1. y=0.1$.
 
-<figure>
-<img src="../images/dispersion_param_fig1.png" width="600" alt="../images/dispersion_param_fig1.png" />
-</figure>
+![Plot of W_j terms for Tweedie dispersion estimation (μ=0.5, p=1.5, φ=1, y=0.1)](../images/dispersion_param_fig1.png)
 
 ### $\alpha (y,\phi)$ when $p > 2$
 
@@ -702,9 +706,7 @@ $$V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)
 
 In the following figure, we use $\mu =0.5,p=2.5,\phi =1, y=0.1$.
 
-<figure>
-<img src="../images/dispersion_param_fig2.png" width="600" alt="../images/dispersion_param_fig2.png" />
-</figure>
+![Plot of V_k terms for Tweedie dispersion estimation (μ=0.5, p=2.5, φ=1, y=0.1)](../images/dispersion_param_fig2.png)
 
 ### Warnings
 
@@ -718,7 +720,7 @@ As $p$ closes in on 1, the Tweedie density function becomes multimodal. This mea
 
 As a conservative condition, to ensure that the density is unimodal for most values of $y,\phi$, we should have $p>1.2$.
 
-#### Tweedie Dispersion Example
+#### Tweedie dispersion example
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -757,7 +759,7 @@ model@model$dispersion
 training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
 
 # Set the predictors and response:
-predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.""]
+predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5."]
 response = "x"
 
 # Build and train the model:
@@ -796,65 +798,69 @@ While not converged:
 
 ## Regularization
 
-Regularization is used to attempt to solve problems with overfitting that can occur in GLM. Penalties can be introduced to the model building process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties using both the `alpha` and `lambda` options (i.e., values greater than 0 for both).
+Regularization is used to attempt to solve problems with overfitting that can occur in GLM. Penalties can be introduced to the model building process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties using both the `alpha` and `lambda` options (that is, values greater than 0 for both).
 
-### LASSO and Ridge Regression
+### LASSO and ridge regression
 
 LASSO represents the $\ell{_1}$ penalty and is an alternative regularized least squares method that penalizes the sum of the absolute coefficents $||\beta||{_1} = \sum{^p_{k=1}} \beta{^2_k}$. LASSO leads to a sparse solution when the tuning parameter is sufficiently large. As the tuning parameter value $\lambda$ is increased, all coefficients are set to zero. Because reducing parameters to zero removes them from the model, LASSO is a good selection tool.
 
 Ridge regression penalizes the $\ell{_2}$ norm of the model coefficients $||\beta||{^2_2} = \sum{^p_{k=1}} \beta{^2_k}$. It provides greater numerical stability and is easier and faster to compute than LASSO. It keeps all the predictors in the model and shrinks them proportionally. Ridge regression reduces coefficient values simultaneously as the penalty is increased without setting any of them to zero.
 
-Variable selection is important in numerous modern applications wiht many covariates where the $\ell{_1}$ penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, we recommend using LASSO, which will select a small number of variables for sufficiently high $\lambda$ that could be crucial to the inperpretability of the mode. The $\ell{_2}$ norm does not have this effect; it shrinks the coefficients but does not set them exactly to zero.
+Variable selection is important in numerous modern applications with many covariates where the $\ell{_1}$ penalty has proven to be successful. H2O recommends using LASSO if the number of variables is large or if the solution is known to be sparse, as it selects a small number of variables for sufficiently high $\lambda$—which can be important to the interpretability of the model. The $\ell{_2}$ norm does not have this effect; it shrinks the coefficients but does not set them exactly to zero.
 
-The two penalites also differ in the presence of correlated predictors. The $\ell{_2}$ penalty shrinks coefficients for correlated columns toward each other, while the $\ell{_1}$ penalty tends to select only one of them and sets the other coefficients to zero. Using the elastic net argument $\alpha$ combines these two behaviors.
+The two penalties also differ in the presence of correlated predictors. The $\ell{_2}$ penalty shrinks coefficients for correlated columns toward each other, while the $\ell{_1}$ penalty tends to select only one of them and sets the other coefficients to zero. Using the elastic net argument $\alpha$ combines these two behaviors.
 
 The elastic net method selects variables and preserves the grouping effect (shrinking coefficients of correlated columns together). Moreover, while the number of predictors that can enter a LASSO model saturates at min $(n,p)$ (where $n$ is the number of observations, and $p$ is the number of variables in the model), the elastic net does not have this limitation and can fit models with a larger number of predictors.
 
-### Elastic Net Penalty
+### Elastic net penalty
 
-As indicated previously, elastic net regularization is a combination of the $\ell{_1}$ and $\ell{_2}$ penalties parametrized by the $\alpha$ and $\lambda$ arguments (similar to "Regularization Paths for Genarlized Linear Models via Coordinate Descent" by Friedman et all).
+As indicated previously, elastic net regularization is a combination of the $\ell{_1}$ and $\ell{_2}$ penalties parametrized by the $\alpha$ and $\lambda$ arguments (similar to "Regularization Paths for Generalized Linear Models via Coordinate Descent" by Friedman et al.).
 
-> - $\alpha$ controls the elastic net penalty distribution between the $\ell_1$ and $\ell_2$ norms. It can have any value in the \[0,1\] range or a vector of values (via grid search). If $\alpha=0$, then H2O solves the GLM using ridge regression. If $\alpha=1$, then LASSO penalty is used.
-> - $\lambda$ controls the penalty strength. The range is any positive value or a vector of values (via grid search). Note that $\lambda$ values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is all zeros (except for the intercept term).
+- $\alpha$ controls the elastic net penalty distribution between the $\ell_1$ and $\ell_2$ norms. It can have any value in the \[0,1\] range or a vector of values (via grid search). If $\alpha=0$, then H2O solves the GLM using ridge regression. If $\alpha=1$, then LASSO penalty is used.
+- $\lambda$ controls the penalty strength. The range is any positive value or a vector of values (via grid search). Note that $\lambda$ values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is all zeros (except for the intercept term).
 
-The combination of the $\ell_1$ and $\ell_2$ penalties is beneficial because $\ell_1$ induces sparsity, while $\ell_2$ gives stability and encourages the grouping effect (where a group of correlated variables tend to be dropped or added into the model simultaneously). When focusing on sparsity, one possible use of the $\alpha$ argument involves using the $\ell_1$ mainly with very little $\ell_2$ ($\alpha$ almost 1) to stabilize the computation and improve convergence speed.
+The combination of the $\ell_1$ and $\ell_2$ penalties is beneficial because $\ell_1$ induces sparsity, while $\ell_2$ gives stability and encourages the grouping effect (where a group of correlated variables tend to be dropped or added into the model simultaneously). When focusing on sparsity, one possible use of the $\alpha$ argument involves using the $\ell_1$ mainly with minimal $\ell_2$ ($\alpha$ almost 1) to stabilize the computation and improve convergence speed.
 
-### Regularization Parameters in GLM
+### Regularization parameters in GLM
 
-To get the best possible model, we need to find the optimal values of the regularization parameters $\alpha$ and $\lambda$. To find the optimal values, H2O allows you to perform a grid search over $\alpha$ and a special form of grid search called "lambda search" over $\lambda$.
+To get the best possible model, find the optimal values of the regularization parameters $\alpha$ and $\lambda$. H2O supports a grid search over $\alpha$ and a special form of grid search called "lambda search" over $\lambda$.
 
 The recommended way to find optimal regularization settings on H2O is to do a grid search over a few $\alpha$ values with an automatic lambda search for each $\alpha$.
 
 - **Alpha**
 
-> The `alpha` parameter controls the distribution between the $\ell{_1}$ (LASSO) and $\ell{_2}$ (ridge regression) penalties. A value of 1.0 for `alpha` represents LASSO, and an `alpha` value of 0.0 produces ridge reguression.
+  The `alpha` parameter controls the distribution between the $\ell{_1}$ (LASSO) and $\ell{_2}$ (ridge regression) penalties. A value of 1.0 for `alpha` represents LASSO, and an `alpha` value of 0.0 produces ridge regression.
 
 - **Lambda**
 
-> The `lambda` parameter controls the amount of regularization applied. If `lambda` is 0.0, no regularization is applied, and the `alpha` parameter is ignored. The default value for `lambda` is calculated by H2O using a heuristic based on the training data. If you allow H2O to calculate the value for `lambda`, you can see the chosen value in the model output.
+  The `lambda` parameter controls the amount of regularization applied. If `lambda` is 0.0, no regularization is applied, and the `alpha` parameter is ignored. The default value for `lambda` is calculated by H2O using a heuristic based on the training data. If you allow H2O to calculate the value for `lambda`, you can see the chosen value in the model output.
 
-### Lambda Search
+### Lambda search
 
-If the `lambda_search` option is set, GLM will compute models for full regularization path similar to glmnet. (See the [glmnet paper](https://core.ac.uk/download/pdf/6287975.pdf).) Regularization path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
+If the `lambda_search` option is set, GLM will compute models for full regularization path similar to glmnet. (See the [glmnet paper](https://core.ac.uk/download/pdf/6287975.pdf).) Regularization path starts at lambda max (highest lambda values which makes sense—that is, the lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
 
-When looking for a sparse solution (`alpha` \> 0), lambda search can also be used to efficiently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A possible use case for lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value.
+When looking for a sparse solution (`alpha` \> 0), lambda search can also be used to efficiently handle wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A possible use case for lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value.
 
 Lambda search can be configured along with the following arguments:
 
 - `alpha`: Regularization distribution between $\ell_1$ and $\ell_2$.
 - `validation_frame` and/or `nfolds`: Used to select the best lambda based on the cross-validation performance or the validation or training data. If available, cross-validation performance takes precedence. If no validation data is available, the best lambda is selected based on training data performance and is therefore guaranteed to always be the minimal lambda computed since GLM cannot overfit on a training dataset.
 
-> **Note**: If running lambda search with a validation dataset and cross-validation disabled, the chosen lambda value corresponds to the lambda with the lowest validation error. The validation dataset is used to select the model, and the model performance should be evaluated on another independent test dataset.
+  :::note
+  If running lambda search with a validation dataset and cross-validation disabled, the chosen lambda value corresponds to the lambda with the lowest validation error. The validation dataset is used to select the model, and the model performance should be evaluated on another independent test dataset.
+  :::
 
-- `lambda_min_ratio` and `nlambdas`: The sequence of the $\lambda$ values is automatically generated as an exponentially decreasing sequence. It ranges from $\lambda_{max}$ (the smallest $\lambda$ so that the solution is a model with all 0s) to $\lambda_{min} =$ `lambda_min_ratio` $\times$ $\lambda_{max}$.
+- `lambda_min_ratio` and `nlambdas`: The sequence of the $\lambda$ values is automatically generated as an exponentially decreasing sequence. It ranges from $\lambda_{max}$ (the smallest $\lambda$ so that the solution is a model with all zeros) to $\lambda_{min} =$ `lambda_min_ratio` $\times$ $\lambda_{max}$.
 
-> H2O computes $\lambda$ models sequentially and in decreasing order, warm-starting the model (using the previous solutin as the initial prediction) for $\lambda_k$ with the solution for $\lambda_{k-1}$. By warm-starting the models, we get better performance. Typically models for subsequent $\lambda$ values are close to each other, so only a few iterations per $\lambda$ are needed (two or three). This also achieves greater numerical stability because models with a higher penalty are easier to compute. This method starts with an easy problem and then continues to make small adjustments.
->
-> **Note**: `lambda_min_ratio` and `nlambdas` also specify the relative distance of any two lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are "close" to each other. The default value for `lambda_min_ratio` is $1e^{-4}$, and the default value for `nlambdas` is 100. This gives a ratio of 0.912. For best results when using strong rules, keep the ratio close to this default.
+  H2O computes $\lambda$ models sequentially and in decreasing order, warm-starting the model (using the previous solution as the initial prediction) for $\lambda_k$ with the solution for $\lambda_{k-1}$. By warm-starting the models, we get better performance. Typically models for subsequent $\lambda$ values are close to each other, so only a few iterations per $\lambda$ are needed (two or three). This also achieves greater numerical stability because models with a higher penalty are easier to compute. This method starts with an easy problem and then continues to make small adjustments.
+
+  :::note
+  `lambda_min_ratio` and `nlambdas` also specify the relative distance of any two lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are "close" to each other. The default value for `lambda_min_ratio` is $1e^{-4}$, and the default value for `nlambdas` is 100. This gives a ratio of 0.912. For best results when using strong rules, keep the ratio close to this default.
+  :::
 
 - `max_active_predictors`: This limits the number of active predictors. (The actual number of non-zero predictors in the model is going to be slightly lower.) It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
-### Full Regularization Path
+### Full regularization path
 
 It can sometimes be useful to see the coefficients for all lambda values or to override default lambda selection. Full regularization path can be extracted from both R and python clients (currently not from Flow). It returns coefficients (and standardized coefficients) for all computed lambda values and also the explained deviances on both train and validation. Subsequently, the makeGLMModel call can be used to create an H2O GLM model with selected coefficients.
 
@@ -879,7 +885,7 @@ In GLM, you can specify one of the following solvers:
 
 ### IRLSM and L-BFGS
 
-IRLSM (the default) uses a [Gram Matrix](https://en.wikipedia.org/wiki/Gramian_matrix) approach, which is efficient for tall and narrow datasets and when running lambda search via a sparse solution. For wider and dense datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than 500 predictors (or so) in the data, then use the default solver (IRLSM). For larger numbers of predictors, we recommend running IRLSM with a lambda search, and then comparing it to L-BFGS with just one $\ell_2$ penalty. For advanced users, we recommend the following general guidelines:
+IRLSM (the default) uses a [Gram Matrix](https://en.wikipedia.org/wiki/Gramian_matrix) approach, which is efficient for tall and narrow datasets and when running lambda search via a sparse solution. For wider and dense datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than 500 predictors (or so) in the data, use the default solver (IRLSM). For larger numbers of predictors, run IRLSM with a lambda search, then compare it to L-BFGS with just one $\ell_2$ penalty. The following general guidelines apply:
 
 - For a dense solution and a dense dataset, use IRLSM if there are fewer than 500 predictors in the data; otherwise, use L-BFGS. Set `alpha=0` to include $\ell_2$ regularization in the elastic net penalty term to avoid inducing sparsity in the model.
 - For a dense solution with a sparse dataset, use IRLSM if there are fewer than 2000 predictors in the data; otherwise, use L-BFGS. Set `alpha=0`.
@@ -888,7 +894,7 @@ IRLSM (the default) uses a [Gram Matrix](https://en.wikipedia.org/wiki/Gramian_m
 
 If you are unsure whether the solution should be sparse or dense, try both along with a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively, based on the performance in cross-validation when not enough data is available to have a separate validation dataset).
 
-### Coordinate Descent
+### Coordinate descent
 
 In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coordinate Descent. Cyclical Coordinate Descent is able to handle large datasets well and deals efficiently with sparse features. It can improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way.
 
@@ -899,48 +905,44 @@ In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coord
 
 Both of the above method are explained in the [glmnet paper](https://core.ac.uk/download/pdf/6287975.pdf).
 
-### Gradient Descent
+### Gradient descent
 
 For Ordinal regression problems, H2O provides options for [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent). Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the `solver` parameter will automatically be set to `GRADIENT_DESCENT_LH`. To adjust the model parameters using the loss function, you can set the solver parameter to `GRADIENT_DESCENT_SQERR`.
 
-## Coefficients Table
+## Coefficients table
 
 A Coefficients Table is outputted in a GLM model. This table provides the following information: Column names, Coefficients, Standard Error, z-value, p-value, and Standardized Coefficients.
 
-- Coefficients are the predictor weights (i.e. the weights used in the actual model used for prediction) in a GLM model.
-- Standard error, z-values, and p-values are classical statistical measures of model quality. p-values are essentially hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable (insiginificant) while a low p-value suggest that the coefficient is statistically significant.
-- The standardized coefficients are returned if the `standardize` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes (e.g. to compare relative variable importance). In this case, the "normal" coefficients are obtained from the standardized coefficients by reversing the data standardization process (de-scaled, with the intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e. no standardization prior to scoring). **Note**: These are not the same as coefficients of a model built on non-standardized data.
+- Coefficients are the predictor weights (that is, the weights used in the actual model used for prediction) in a GLM model.
+- Standard error, z-values, and p-values are classical statistical measures of model quality. p-values are essentially hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable (insignificant) while a low p-value suggests that the coefficient is statistically significant.
+- The standardized coefficients are returned if the `standardize` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes (for example, to compare relative variable importance). In this case, the "normal" coefficients are obtained from the standardized coefficients by reversing the data standardization process (de-scaled, with the intercept adjusted by an added offset) so that they can be applied to data in its original form (that is, no standardization prior to scoring). **Note**: These are not the same as coefficients of a model built on non-standardized data.
 
-### Extracting Coefficients Table Information
+### Extracting coefficients table information
 
 You can extract the columns in the Coefficients Table by specifying `names`, `coefficients`, `std_error`, `z_value`, `p_value`, `standardized_coefficients` in a retrieve/print statement. (Refer to the example that follows.) In addition, H2O provides the following built-in methods for retrieving standard and non-standard coefficients:
 
 - `coef()`: Coefficients that can be applied to non-standardized data
 - `coef_norm()`: Coefficients that can be fitted on the standardized data (requires `standardized=TRUE`, which is the default)
 
-For an example, refer [here](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples).
+For an example, refer to the [Examples](#examples) section.
 
-## GLM Likelihood
+## GLM likelihood
 
-### Maximum Likelihood Estimation
+### Maximum likelihood estimation
 
 For an initial rough estimate of the parameters $\hat{\beta}$ you use the estimate to generate fitted values: $\mu_{i}=g^{-1}(\hat{\eta_{i}})$
 
-Let $z$ be a working dependent variable such that $z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}$,
+Let $z$ be a working dependent variable such that $z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}$, where $\frac{d\eta_{i}}{d\mu_{i}}$ is the derivative of the link function evaluated at the trial estimate.
 
-> where $\frac{d\eta_{i}}{d\mu_{i}}$ is the derivative of the link function evaluated at the trial estimate.
-
-Calculate the iterative weights: $w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}$
-
-> where $b^{\prime\prime}$ is the second derivative of $b(\theta_{i})$ evaluated at the trial estimate.
+Calculate the iterative weights: $w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}$, where $b^{\prime\prime}$ is the second derivative of $b(\theta_{i})$ evaluated at the trial estimate.
 
 Assume $a_{i}(\phi)$ is of the form $\frac{\phi}{p_{i}}$. The weight $w_{i}$ is inversely proportional to the variance of the working dependent variable $z_{i}$ for current parameter estimates and proportionality factor $\phi$.
 
-Regress $z_{i}$ on the predictors $x_{i}$ using the weights $w_{i}$ to obtain new estimates of $\beta$.
+Regress $z_{i}$ on the predictors $x_{i}$ using the weights $w_{i}$ to obtain new estimates of $\beta$:
 
-> $\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}$
->
-> where $\mathbf{X}$ is the model matrix, $\mathbf{W}$ is a diagonal matrix of $w_{i}$, and $\mathbf{z}$ is a vector of the working response variable $z_{i}$.
+$$\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}$$
+
+where $\mathbf{X}$ is the model matrix, $\mathbf{W}$ is a diagonal matrix of $w_{i}$, and $\mathbf{z}$ is a vector of the working response variable $z_{i}$.
 
 This process is repeated until the estimates $\hat{\beta}$ change by less than the specified amount.
 
@@ -985,8 +987,8 @@ where
 
 - Otherwise, $l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1- \mu_i \}$ where
 
-  > - $\mu_i$ is the probability of 1
-  > - $y_i$ is the real value of the target variable
+  - $\mu_i$ is the probability of 1
+  - $y_i$ is the real value of the target variable
 
 **Fractional Binomial**:
 
@@ -1048,7 +1050,7 @@ The Tweedie calculation is located in the section [Tweedie Likelihood Calculatio
 For Tweedie family, you need the dispersion parameter estimate. When the parameter `calc_like` is set to `True`, the `dispersion_parameter_method` is set to `"ml"` which provides you with the best log likelihood estimation.
 :::
 
-#### Final AIC Calculation
+#### Final AIC calculation
 
 The final AIC in the output metric is calculated using the standard formula, utilizing the previously computed log likelihood.
 
@@ -1056,18 +1058,18 @@ $$\text{AIC} = -2LL + 2p$$
 
 where
 
-- $p$ is the number of estimated coefficients (i.e. including dispersion etc). When using regularization $p$ is the number of non-zero coefficients.
+- $p$ is the number of estimated coefficients (that is, including dispersion etc). When using regularization $p$ is the number of non-zero coefficients.
 - $LL$ is the log likelihood
 
 To manage computational intensity, `calc_like` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, `calc_like=False`, but you can set it to `True` and the parameter `HGLM` to `False` to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
 
 :::note
-For ridge regression and elastic net, the AIC is approximated without calculating the actual effective degrees of freedom, i.e., the estimate is the same as for LASSO. Therefore, the AIC values for ridge regression and elastic net should be used with caution.
+For ridge regression and elastic net, the AIC is approximated without calculating the actual effective degrees of freedom—that is, the estimate is the same as for LASSO. Therefore, the AIC values for ridge regression and elastic net should be used with caution.
 :::
 
-#### Tweedie Likelihood Calculation
+#### Tweedie likelihood calculation
 
-There are three different estimations you calculate Tweedie likelihood for:
+Three estimations are used to calculate Tweedie likelihood:
 
 - when you fix the variance power and estimate the dispersion parameter;
 - when you fix the dispersion parameter and estimate the variance power; or
@@ -1109,13 +1111,13 @@ Here are the general usages for Tweedie variance power and dispersion parameter 
 
 *Optimization Procedure*
 
-When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power $p>1+10^{-10}$ and dispersion $\phi >10^{-10}$. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the `dispersion_learning_rate`.
+When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (that is, steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power $p>1+10^{-10}$ and dispersion $\phi >10^{-10}$. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the `dispersion_learning_rate`.
 
 :::note
 (Applicable for Gamma, Tweedie, and Negative Binomial families) If you set `dispersion_parameter_method="ml"`, then `solver` must be set to `"IRLSM"`.
 :::
 
-## Variable Inflation Factors
+## Variable inflation factors
 
 The variable inflation factor (VIF) quantifies the inflation of the variable. Variables are inflated due to their correlation with other predictor variables within the model. For each predictor in a multiple regression model, there is a VIF. This process can be calculated with cross validation turned on.
 
@@ -1126,7 +1128,7 @@ The VIF is constructed by:
 - calculating the VIF as $\frac{1.0}{(1.0-R^2)}$ where $R^2$ is taken from the GLM regression model built in the prior step, and
 - repeating this process for all remaining numerical predictors to retrieve their VIF.
 
-### Variable Inflation Factor Example
+### Variable inflation factor example
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -1167,7 +1169,7 @@ from h2o.estimators import H2OGeneralizedLinearEstimator
 training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
 
 # Set the predictors and response:
-predictors = ["abs.C1.","abs.C2.","abs.C3.","abs.C4.","abs.C5.""]
+predictors = ["abs.C1.","abs.C2.","abs.C3.","abs.C4.","abs.C5."]
 response = "resp"
 
 # Build and train the model:
@@ -1189,14 +1191,14 @@ vif_glm.get_variable_inflation_factors()
 
 ## Constrained GLM
 
-We've implemented the algorithm from Bierlaire's *Optimization: Priciples and Algorithms, Chapter 19* \[[8](#ref8)\] where we're basically trying to solve the following optimization problem:
+The algorithm is based on Bierlaire's *Optimization: Principles and Algorithms, Chapter 19* \[[8](#ref8)\] where we're basically trying to solve the following optimization problem:
 
 $$\min_{X\in R^n} f(x), \text{subject to } h(x) = 0, g(x) \leq 0 \quad \text{ equation 1}$$
 
 where:
 
-> - $f: R^n \to R,h: R^n \to R^m,g: R^n \to R^p$
-> - the constraints $h,g$ are linear.
+- $f: R^n \to R,h: R^n \to R^m,g: R^n \to R^p$
+- the constraints $h,g$ are linear.
 
 However, the actual problem we are solving is:
 
@@ -1249,9 +1251,9 @@ bc_h2o <- as.h2o(bc)
 # Build and train your model:
 m_sep <- h2o.glm(x=myX, 
                  y=myY, 
-                 training_frame=h2o.data, 
+                 training_frame=h2o_data, 
                  family='gaussian', 
-                 linear_constraints=constraints, 
+                 linear_constraints=constraints_h2o, 
                  solver="irlsm", 
                  lambda=0.0, 
                  beta_constraints=bc_h2o, 
@@ -1274,8 +1276,8 @@ h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalld
 
 # Set the predictors, response, and enum columns:
 enum_columns = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"]
-ffor cname in enum_columns:
-h2o_data[cname] = h2o_data[cname].asfactor()
+for cname in enum_columns:
+    h2o_data[cname] = h2o_data[cname].asfactor()
 myY = "C21"
 myX = h2o_data.names.remove(myY)
 
@@ -1392,7 +1394,7 @@ $$\min_{X\in R^n} f(x), \text{ subject to } h_a(x) = 0 \quad \text{ equation 4}$
 
 $$L_c(x, \lambda) = f(x) + \lambda^T h_a(x) + \frac{c}{2} \|h_a(x)\|^2 \quad \text{ equation 5}$$
 
-## Modifying or Creating a Custom GLM Model
+## Modifying or creating a custom GLM model
 
 In R and Python, the `makeGLMModel` call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or Python:
 
@@ -1424,7 +1426,7 @@ prostate_glm <- h2o.glm(family = "binomial",
                         y = response, 
                         training_frame = df, 
                         lambda = 0, 
-                        compute_p_values = TRUE
+                        compute_p_values = TRUE,
                         generate_scoring_history = TRUE)
 
 # Coefficients that can be applied to the non-standardized data
@@ -1539,7 +1541,7 @@ negative log likelihood: 205.46143534076492.
 </TabItem>
 </Tabs>
 
-### Calling Model Attributes
+### Calling model attributes
 
 While not all model attributes have their own callable APIs, you can still retrieve their information. Using the previous example, here is how to call a model's attributes:
 
@@ -1585,99 +1587,103 @@ prostate_glm._model_json["output"]['model_summary']['number_of_active_predictors
 
 - **How does the algorithm handle missing values during training?**
 
-> Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is Mean Imputation. Note that unseen categorical levels are replaced by the most frequent level present in training (mod). Optionally, GLM can skip all rows with any missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is Mean Imputation. Note that unseen categorical levels are replaced by the most frequent level present in training (mod). Optionally, GLM can skip all rows with any missing values.
 
 - **How does the algorithm handle missing values during testing?**
 
-> Same as during training. If the missing value handling is set to Skip and we are generating predictions, skipped rows will have Na (missing) prediction.
+  Same as during training. If the missing value handling is set to Skip and we are generating predictions, skipped rows will have Na (missing) prediction.
 
 - **What happens if the response has missing values?**
 
-> The rows with missing responses are ignored during model training and validation.
+  The rows with missing responses are ignored during model training and validation.
 
 - **What happens during prediction if the new sample has categorical levels not seen in training?**
 
-> The value will be filled with either 0 or replaced by the most frequent level present in training (if `missing_value_handling` was set to **MeanImputation**).
+  The value will be filled with either 0 or replaced by the most frequent level present in training (if `missing_value_handling` was set to **MeanImputation**).
 
 - **How are unseen categorical values treated during scoring?**
 
-> Unseen categorical levels are treated based on the missing values handling during training. If your missing value handling was set to Mean Imputation, the unseen levels are replaced by the most frequent level present in training (mod). If your missing value treatment was Skip, the variable is ignored for the given observation.
+  Unseen categorical levels are treated based on the missing values handling during training. If your missing value handling was set to Mean Imputation, the unseen levels are replaced by the most frequent level present in training (mod). If your missing value treatment was Skip, the variable is ignored for the given observation.
 
 - **Does it matter if the data is sorted?**
 
-> No.
+  No.
 
 - **Should data be shuffled before training?**
 
-> No.
+  No.
 
 - **How does the algorithm handle highly imbalanced data in a response column?**
 
-> GLM does not require special handling for imbalanced data.
+  GLM does not require special handling for imbalanced data.
 
 - **What if there are a large number of columns?**
 
-> IRLS will get quadratically slower with the number of columns. Try L-BFGS for datasets with more than 5-10 thousand columns.
+  IRLS will get quadratically slower with the number of columns. Try L-BFGS for datasets with more than 5-10 thousand columns.
 
 - **What if there are a large number of categorical factor levels?**
 
-> GLM internally one-hot encodes the categorical factor levels; the same limitations as with a high column count will apply.
+  GLM internally one-hot encodes the categorical factor levels; the same limitations as with a high column count will apply.
 
 - **When building the model, does GLM use all features or a selection of the best features?**
 
-> Typically, GLM picks the best predictors, especially if lasso is used (`alpha = 1`). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors.
+  Typically, GLM picks the best predictors, especially if lasso is used (`alpha = 1`). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors.
 
 - **When running GLM, is it better to create a cluster that uses many smaller nodes or fewer larger nodes?**
 
-> A rough heuristic would be:
->
-> > $nodes ~=M *N^2/(p * 1e8)$
->
-> where $M$ is the number of observations, $N$ is the number of columns (categorical columns count as a single column in this case), and $p$ is the number of CPU cores per node.
->
-> For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula $250^2 *1000000/(32* 1e8) = 19.5 ~= 20)$.
+  A rough heuristic would be:
+
+  $nodes \approx M \times N^2/(p \times 1e8)$
+
+  where $M$ is the number of observations, $N$ is the number of columns (categorical columns count as a single column in this case), and $p$ is the number of CPU cores per node.
+
+  For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula $250^2 \times 1000000/(32 \times 1e8) = 19.5 \approx 20$).
 
 - **How is variable importance calculated for GLM?**
 
-> For GLM, the variable importance represents the coefficient magnitudes.
+  For GLM, the variable importance represents the coefficient magnitudes.
 
 - **How does GLM define and check for convergence during logistic regression?**
 
-> GLM includes three convergence criteria outside of max iterations:
->
-> > - `beta_epsilon`: beta stops changing. This is used mostly with IRLSM.
-> > - `gradient_epsilon`: gradient is too small. This is used mostly with L-BFGS.
-> > - `objective_epsilon`: relative objective improvement is too small. This is used by all solvers.
->
-> The default values below are based on a heuristic:
->
-> > - The default for `beta_epsilon` is 1e-4.
-> > - The default for `gradient_epsilon` is 1e-6 if there is no regularization (`lambda = 0`) or you are running with `lambda_search`; 1e-4 otherwise.
-> > - The default for `objective_epsilon` is 1e-6 if `lambda = 0`; 1e-4 otherwise.
->
-> The default for `max_iterations` depends on the solver type and whether you run with lambda search:
->
-> > - for IRLSM, the default is 50 if no lambda search; 10\* number of lambdas otherwise
-> > - for LBFGS, the default is number of classes (1 if not classification) \* max(20, number of predictors /4 ) if no lambda search; it is number of classes \* 100 \* n-lambdas with lambda search.
->
-> You will receive a warning if you reach the maximum number of iterations. In some cases, GLM can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
+  GLM includes three convergence criteria outside of max iterations:
 
-- **Why do I receive different results when I run R's glm and H2O's glm?**
+  - `beta_epsilon`: beta stops changing. This is used mostly with IRLSM.
+  - `gradient_epsilon`: gradient is too small. This is used mostly with L-BFGS.
+  - `objective_epsilon`: relative objective improvement is too small. This is used by all solvers.
 
-> H2O's glm and R's glm do not run the same way and, thus, will provide different results. This is mainly due to the fact that H2O’s glm uses H2O math, H2O objects, and H2O distributed computing. Additionally, H2O's glm by default adds regularization, so it is essentially solving a different problem.
+  The default values below are based on a heuristic:
 
-- **How can I get H2O's GLM to match R's \`glm()\` function?**
+  - The default for `beta_epsilon` is 1e-4.
+  - The default for `gradient_epsilon` is 1e-6 if there is no regularization (`lambda = 0`) or you are running with `lambda_search`; 1e-4 otherwise.
+  - The default for `objective_epsilon` is 1e-6 if `lambda = 0`; 1e-4 otherwise.
 
-> There are a few arguments you need to set in order to get H2O's GLM to match R's GLM because by default, they do not function the same way. To match R's GLM, you must set the following in H2O's GLM:
->
->     solver = "IRLSM"
->     lambda = 0
->     remove_collinear_columns = TRUE
->     compute_p_values = TRUE
->
-> **Note:** `beta_constraints` must not be set.
+  The default for `max_iterations` depends on the solver type and whether you run with lambda search:
 
-## GLM Algorithm
+  - for IRLSM, the default is 50 if no lambda search; 10\* number of lambdas otherwise
+  - for LBFGS, the default is number of classes (1 if not classification) \* max(20, number of predictors /4 ) if no lambda search; it is number of classes \* 100 \* n-lambdas with lambda search.
+
+  You will receive a warning if you reach the maximum number of iterations. In some cases, GLM can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
+
+- **Why do I receive different results when I run R’s glm and H2O’s glm?**
+
+  H2O’s glm and R’s glm do not run the same way and, thus, will provide different results. This is mainly due to the fact that H2O’s glm uses H2O math, H2O objects, and H2O distributed computing. H2O’s glm by default adds regularization, so it is essentially solving a different problem.
+
+- **How can I get H2O’s GLM to match R’s `glm()` function?**
+
+  To match R’s GLM, set the following in H2O’s GLM:
+
+  ```
+  solver = "IRLSM"
+  lambda = 0
+  remove_collinear_columns = TRUE
+  compute_p_values = TRUE
+  ```
+
+  :::note
+  `beta_constraints` must not be set.
+  :::
+
+## GLM algorithm
 
 Following the definitive text by P. McCullagh and J.A. Nelder (1989) on the generalization of linear models to non-linear distributions of the response variable Y, H2O fits GLM models based on the maximum likelihood estimation via iteratively reweighed least squares.
 
@@ -1685,17 +1691,17 @@ Let $y_{1},…,y_{n}$ be n observations of the independent, random response vari
 
 Assume that the observations are distributed according to a function from the exponential family and have a probability density function of the form:
 
-> $f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)} + c(y_{i}; \phi)]$ where $\theta$ and $\phi$ are location and scale parameters, and $a_{i}(\phi)$, $b_{i}(\theta{i})$, and $c_{i}(y_{i}; \phi)$ are known functions.
->
-> $a_{i}$ is of the form $a_{i}= \frac{\phi}{p_{i}}$ where $p_{i}$ is a known prior weight.
+$f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)} + c(y_{i}; \phi)]$ where $\theta$ and $\phi$ are location and scale parameters, and $a_{i}(\phi)$, $b_{i}(\theta{i})$, and $c_{i}(y_{i}; \phi)$ are known functions.
+
+$a_{i}$ is of the form $a_{i}= \frac{\phi}{p_{i}}$ where $p_{i}$ is a known prior weight.
 
 When $Y$ has a pdf from the exponential family:
 
-> $E(Y_{i})=\mu_{i}=b^{\prime} var(Y_{i})=\sigma_{i}^2=b^{\prime\prime}(\theta_{i})a_{i}(\phi)$
+$E(Y_{i})=\mu_{i}=b^{\prime} var(Y_{i})=\sigma_{i}^2=b^{\prime\prime}(\theta_{i})a_{i}(\phi)$
 
 Let $g(\mu_{i})=\eta_{i}$ be a monotonic, differentiable transformation of the expected value of $y_{i}$. The function $\eta_{i}$ is the link function and follows a linear model.
 
-> $g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta$
+$g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta$
 
 When inverted: $\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)$
 
@@ -1705,7 +1711,7 @@ H2O can process large data sets because it relies on parallel processes. Large d
 
 In GLM, data are split by rows but not by columns, because the predicted Y values depend on information in each of the predictor variable vectors. If O is a complexity function, N is the number of observations (or rows), and P is the number of predictors (or columns) then
 
-> $Runtime \propto p^3+\frac{(N*p^2)}{CPUs}$
+$Runtime \propto p^3+\frac{(N*p^2)}{CPUs}$
 
 Distribution reduces the time it takes an algorithm to process because it decreases N.
 
@@ -1729,7 +1735,7 @@ Peter K. Dunn, Gordon K. Symth, “Series evaluation of Tweedie exponential disp
 
 [Nelder, John A, and Robert WM Wedderburn. “Generalized Linear Models.” Journal of the Royal Statistical Society. Series A (General) (1972): 370-384.](https://docs.ufpr.br/~taconeli/CE225/Artigo.pdf)
 
-Lee, Y and Nelder, J. A. Hierarchical generalized linear models with discussion. J. R. Statist.Soc. B, 58:619-678, 1996.
+Lee, Y and Nelder, J. A. Hierarchical generalized linear models with discussion. J. R. Statist. Soc. B, 58:619-678, 1996.
 
 Lee, Y and Nelder, J. A. and Y. Pawitan. Generalized linear models with random effects. Chapman & Hall/CRC, 2006.
 

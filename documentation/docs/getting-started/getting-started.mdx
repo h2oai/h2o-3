@@ -13,46 +13,46 @@ To begin, download a copy of H2O-3 from the [Downloads page](https://h2o.ai/reso
 
 1.  Click H2O Open Source Platform or scroll down to the H2O section. Here you have access to the different ways to download H2O-3:
 
-- Latest stable: this version is the most recentl alpha release version of H2O-3.
+- Latest stable: this version is the most recent stable release version of H2O-3.
 - Nightly bleeding edge: this version contains all the latest changes to H2O-3 that haven't been released officially yet.
 - Prior releases: this houses all previously released versions of H2O-3.
 
-For first-time users, we recomment downloading the latest alpha release and the default standalone option (the Download and Run tab) as the installation method. Make sure to install Java if it is not already installed.
+For first-time users, H2O recommends downloading the latest stable release and the default standalone option (the Download and Run tab) as the installation method. Make sure to install Java if it is not already installed.
 
 :::note
-By default, this setup is open. Follow [security guidelines](../security) if you want to secure your installation.
+By default, this setup is open. Follow [security guidelines](../security.mdx) if you want to secure your installation.
 :::
 
 ## Using Flow - H2O-3's web UI
 
-[This section describes our web interface, Flow](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html#using-flow). Flow is similar to IPython notebooks and allows you to create a visual workflow to share with others.
+[This section describes the web interface, Flow](../flow.mdx). Flow is similar to IPython notebooks and allows you to create a visual workflow to share with others.
 
 ### Algorithm support
 
 H2O Flow supports the following H2O-3 algorithms:
 
-- [Aggregator](../data-science/aggregator)
-- [ANOVA GLM](../data-science/anova_glm)
-- [AutoML](../automl)
-- [Cox Proportional Hazards (CoxPH)](../data-science/coxph)
-- [Deep Learning](../data-science/deep-learning)
-- [Distributed Random Forest (DRF)](../data-science/drf)
-- [Distributed Uplift Random Forest (Uplift DRF)](../data-science/upliftdrf)
-- [Extended Isolation Forest](../data-science/eif)
-- [Generalized Linear Model (GLM)](../data-science/glm)
-- [Generalized Low Rank Models (GLRM)](../data-science/glrm)
-- [Gradient Boosting Machine (GBM)](../data-science/gbm)
-- [Information Diagram (Infogram)](../admissible)
-- [Isolation Forest](../data-science/if)
-- [K-Means Clustering](../data-science/k-means)
-- [ModelSelection](../data-science/model_selection)
-- [Naïve Bayes Classifier](../data-science/naive-bayes)
-- [Principal Component Analysis (PCA)](../data-science/pca)
-- [RuleFit](../data-science/rulefit)
-- [Stacked Ensemble](../data-science/stacked-ensembles)
-- [Target Encoding](../data-science/target-encoding)
-- [Word2Vec](../data-science/word2vec)
-- [XGBoost](../data-science/xgboost)
+- [Aggregator](../data-science/aggregator.mdx)
+- [ANOVA GLM](../data-science/anova_glm.mdx)
+- [AutoML](../automl.mdx)
+- [Cox Proportional Hazards (CoxPH)](../data-science/coxph.mdx)
+- [Deep Learning](../data-science/deep-learning.mdx)
+- [Distributed Random Forest (DRF)](../data-science/drf.mdx)
+- [Distributed Uplift Random Forest (Uplift DRF)](../data-science/upliftdrf.mdx)
+- [Extended Isolation Forest](../data-science/eif.mdx)
+- [Generalized Linear Model (GLM)](../data-science/glm.mdx)
+- [Generalized Low Rank Models (GLRM)](../data-science/glrm.mdx)
+- [Gradient Boosting Machine (GBM)](../data-science/gbm.mdx)
+- [Information Diagram (Infogram)](../admissible.mdx)
+- [Isolation Forest](../data-science/if.mdx)
+- [K-Means Clustering](../data-science/k-means.mdx)
+- [ModelSelection](../data-science/model_selection.mdx)
+- [Naïve Bayes Classifier](../data-science/naive-bayes.mdx)
+- [Principal Component Analysis (PCA)](../data-science/pca.mdx)
+- [RuleFit](../data-science/rulefit.mdx)
+- [Stacked Ensemble](../data-science/stacked-ensembles.mdx)
+- [Target Encoding](../data-science/target-encoding.mdx)
+- [Word2Vec](../data-science/word2vec.mdx)
+- [XGBoost](../data-science/xgboost.mdx)
 
 ### Tutorials of Flow
 
@@ -70,7 +70,7 @@ You can configure H2O-3 when you launch it from the command line. For example, y
 
 ## Algorithms
 
-[This section describes the science behind our algorithms](../data-science#data-science) and provides a detailed, per-algorithm view of each model type.
+This section describes the science behind our algorithms and provides a detailed, per-algorithm view of each model type.
 
 ## Use cases
 
@@ -79,7 +79,7 @@ H2O-3 can handle a wide variety of practical use cases due to its robust catalog
 - Determining outliers in housing prices based on number of bedrooms, number of bathrooms, access to waterfront, etc. through [anomaly detection](https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/anomaly-detection).
 - Revealing natural customer [segments](https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/segmentation) in retail data to determine which groups are purchasing which products.
 - Linking multiple records to the same person with [probabilistic matching](https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/probabilistic-matching-engine).
-- Unsampling the minority class for credit card fraud data to handle [imbalanced data](https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/imbalanced-data).
+- Upsampling the minority class for credit card fraud data to handle [imbalanced data](https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/imbalanced-data).
 - [Detecting drift](https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/drift-detection) on avocado sales pre-2018 and 2018+ to determine if a model is still relevant for new data.
 
 See our [best practice tutorials](https://github.com/h2oai/h2o-tutorials/tree/master/best-practices) to further explore the capabilities of H2O-3.
@@ -108,7 +108,7 @@ repos user$ cd h2o-3
 h2o-3 user$
 ```
 
-4.  Run the following command to retrieve sample datasets. These datasets are used throughout the user guide and within the [booklets](../additional-resources#algorithms).
+4.  Run the following command to retrieve sample datasets. These datasets are used throughout the user guide and within the [booklets](../additional-resources.mdx#algorithms).
 
 ``` bash
 h2o-3 user$ ./gradlew syncSmalldata
@@ -121,7 +121,7 @@ At this point, choose whether you want to complete this quickstart in Python or 
 
 ```python
 # By default, this setup is open. 
-# Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+# Follow the security guidelines in this documentation
 # if you want to secure your installation.
 
 # Before starting Python, run the following commands to install dependencies.
@@ -185,7 +185,7 @@ Type 'q()' to quit R.
 >
 
 # By default, this setup is open. 
-# Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+# Follow the security guidelines in this documentation
 # if you want to secure your installation.
 
 # Copy and paste the following commands in R to download dependency packages.

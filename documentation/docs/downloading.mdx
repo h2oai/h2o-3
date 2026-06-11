@@ -2,7 +2,7 @@
 title: "Downloading and installing H2O-3"
 ---
 
-This section describes how to download and install the latest stable version of H2O-3. These instructions are also available on the [H2O-3 Download page](http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html). Please first make sure you meet [the requirements to download and use H2O-3](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#requirements). Java is a prerequisite for H2O-3, even if using it from the R or Python packages.
+This section describes how to download and install the latest stable version of H2O-3. These instructions are also available on the [H2O-3 Download page](http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html). Please first make sure you meet [the requirements to download and use H2O-3](welcome#requirements). Java is a prerequisite for H2O-3, even if using it from the R or Python packages.
 
 :::note
 Check our [Downloads page to download the nightly bleeding edge release](https://h2o-release.s3.amazonaws.com/h2o/master/latest.html).
@@ -10,11 +10,11 @@ Check our [Downloads page to download the nightly bleeding edge release](https:/
 Scroll down to the H2O-3 section and select Nightly Bleeding Edge. Then, choose the type of installation you want to perform (for example, "Install in Python") by clicking on the tab.
 :::
 
-Choose your desired method of use below. Most users will want to use H2O-3 from either [R](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r) or [Python](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-python). However, we also include instructions for using H2O-3's web GUI Flow and Hadoop below.
+Choose your desired method of use below. Most users will want to use H2O-3 from either [R](#install-in-r) or [Python](#install-in-python). However, we also include instructions for using H2O-3's web GUI Flow below.
 
 ## Download and run Flow from the command line
 
-If you plan to exclusively use H2O-3's web GUI, [Flow](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html), this is the method you should use.
+If you plan to exclusively use H2O-3's web GUI, [Flow](flow), this is the method you should use.
 
 1.  Go to our [latest stable release page](http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html).
 2.  Click the `Download H2O` button from the Download and Run tab. This downloads a ZIP file that contains everything you need to get started.
@@ -152,34 +152,3 @@ conda install -c h2oai h2o
 
 After H2O-3 is installed, see the [Starting H2O-3 from Anaconda](starting-h2o#from-anaconda) section for information on how to start H2O-3 and to view a GBM example run in Jupyter Notebook.
 
-## Install on Hadoop
-
-1.  Go to the [Downloads page](http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html). Click on the **Install on Hadoop** tab, and download H2O-3 for your version of Hadoop. This is a ZIP file that contains everything you need to get started.
-2.  Unpack the ZIP file and launch a 6g instance of H2O-3. For example:
-
-> ``` bash
-> unzip h2o-3.42.0.2-*.zip
-> cd h2o-3.42.0.2-*
-> hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
-> ```
-
-3.  Point your browser to H2O-3. (See "Open H2O Flow in your web browser" in the output below.)
-
-> ``` bash
-> Determining driver host interface for mapper->driver callback...
-> [Possible callback IP address: 172.16.2.181]
-> [Possible callback IP address: 127.0.0.1]
-> ...
-> Waiting for H2O cluster to come up...
-> H2O node 172.16.2.188:54321 requested flatfile
-> Sending flatfiles to nodes...
-> [Sending flatfile to node 172.16.2.188:54321]
-> H2O node 172.16.2.188:54321 reports H2O cluster size 1
-> H2O cluster (1 nodes) is up
-> (Note: Use the -disown option to exit the driver after cluster formation)
->
-> Open H2O Flow in your web browser: http://172.16.2.188:54321
->
-> (Press Ctrl-C to kill the cluster)
-> Blocking until the H2O cluster shuts down...
-> ```

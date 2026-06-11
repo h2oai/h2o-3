@@ -2,7 +2,7 @@
 title: "Welcome to H2O-3"
 ---
 
-H2O-3 is an open source, in-memory, distributed, fast, and scalable machine learning and predictive analytics platform. It lets you build machine learning models on big data and provides easy productionalization of those models in an enterprise environment.
+H2O-3 Enterprise is a commercially licensed, in-memory, distributed, fast, and scalable machine learning and predictive analytics platform. It lets you build machine learning models on big data and provides easy productionalization of those models in an enterprise environment.
 
 ## Basic framework
 
@@ -14,11 +14,9 @@ H2O-3's REST API allow access to all the capabilities of H2O-3 from an external 
 
 The speed, quality, ease-of-use, and model-deployment for our various supervised and unsupervised algorithms (such as Deep Learning, GLRM, or our tree ensembles) make H2O-3 a highly sought after API for big data data science.
 
-H2O is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-
 #### Available algorithms
 
-H2O-3 supports the following [algorithms](data-science):
+H2O-3 supports the following algorithms:
 
 - [AdaBoost](data-science/adaboost)
 - [Aggregator](data-science/aggregator)
@@ -59,7 +57,7 @@ At a minimum, we recommend the following for compatibility with H2O-3:
   - Ubuntu 12.04
   - RHEL/CentOS 6 or later
 
-- **Languages**: R and Python are not required to use H2O-3 unless you want to use H2O in those environments, but Java is always required (see [below](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements)).
+- **Languages**: R and Python are not required to use H2O-3 unless you want to use H2O in those environments, but Java is always required (see [Java requirements](#java-requirements)).
 
   - R version 3 or later
   - Python 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x
@@ -71,33 +69,6 @@ At a minimum, we recommend the following for compatibility with H2O-3:
   ```bash
   pip install --force-reinstall 'numpy<2'
   ```
-
-### Java Requirements
-
-H2O-3 runs on Java. To build H2O-3 or run H2O-3 tests, the 64-bit JDK is required. To run the H2O-3 binary using either the command line, R, or Python packages, only 64-bit JRE is required.
-
-H2O-3 supports the following versions of Java:
-
-- Java SE 17, 16, 15, 14, 13, 12, 11, 10, 9, 8
-
-- **Operating systems**:
-
-  > - Windows 7+
-  > - Mac OS 10.9+
-  > - Ubuntu 12.04
-  > - RHEL/CentOS 6+
-
-- **Languages**: R and Python are not required to use H2O-3 (unless you want to use H2O-3 in those environments), but Java is always required (see [Java requirements](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements)).
-
-  > - R version 3+
-  > - Python 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x
-
-- **Browser**: An internet browser is required to use H2O-3's web UI, Flow.
-
-  > - Google Chrome
-  > - Firefox
-  > - Safari
-  > - Microsoft Edge
 
 ### Java requirements
 
@@ -132,23 +103,9 @@ The following code forces an unsupported Java version:
 java -jar -Dsys.ai.h2o.debug.allowJavaVersions=19 h2o.jar
 ```
 
-#### Java support with H2O-3 and Hadoop
-
-Java support is different between H2O-3 and Hadoop. Hadoop only supports [Java 8 and Java 11](https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions). Therefore, when running H2O on Hadoop, we recommend only running H2O-3 on Java 8 or Java 11.
-
 ### Optional requirements
 
 This section outlines requirements for optional ways you can run H2O-3.
-
-#### Optional Hadoop requirements
-
-Hadoop is only required if you want to deploy H2O-3 on a Hadoop cluster. Supported versions are listed on the [Downloads](http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html) page (when you select the Install on Hadoop tab) and include:
-
-- Cloudera CDH 5.4+
-- MapR 4.0+
-- IBM Open Platform 4.2
-
-See the [Hadoop users](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#on-hadoop) section for more details.
 
 #### Optional Conda requirements
 
@@ -160,8 +117,11 @@ Conda is only required if you want to run H2O-3 on the Anaconda cloud:
 
 H2O-3 supports many different types of users.
 
-<div className="toctree" maxdepth="1">
-
-getting-started/getting-started getting-started/flow-users getting-started/python-users getting-started/r-users getting-started/api-users getting-started/java-users getting-started/hadoop-users getting-started/docker-users getting-started/kubernetes-users getting-started/experienced-users
-
-</div>
+- [Getting started](getting-started/getting-started.mdx)
+- [Flow users](getting-started/flow-users)
+- [Python users](getting-started/python-users)
+- [R users](getting-started/r-users)
+- [API users](getting-started/api-users)
+- [Java users](getting-started/java-users)
+- [Docker users](getting-started/docker-users)
+- [Experienced users](getting-started/experienced-users)

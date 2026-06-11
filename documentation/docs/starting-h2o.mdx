@@ -5,7 +5,7 @@ title: "Starting H2O-3"
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-There are a variety of ways to start H2O-3 depending on which client you would like to use. The instructions below assume that you already downloaded and installed H2O-3. If you have not, then please refer to the [Downloading & Installing H2O](downloading) section.
+H2O-3 can be started in several ways depending on which client you would like to use. The instructions below assume that you already downloaded and installed H2O-3. If you have not, then please refer to the [Downloading & Installing H2O](downloading) section.
 
 ## From Python
 
@@ -47,12 +47,13 @@ This function accepts the following options:
 
 - `enable_assertions`: Enable assertions in Java for the new H2O-3 server.
 
-- `max_mem_size`: Maximum memory to use for the new H2O-3 server. Integer input will be evaluated as gigabytes. Other units can be specified by passing in a string (e.g. `"160M"` for 160 megabytes).
+- `max_mem_size`: Maximum memory to use for the new H2O-3 server. Integer input will be evaluated as gigabytes. Other units can be specified by passing in a string (for example, `"160M"` for 160 megabytes).
 
-  > [!NOTE]
-  > If `max_mem_size` is not defined, then the amount of memory that H2O-3 allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+  :::note
+  If `max_mem_size` is not defined, then the amount of memory that H2O-3 allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+  :::
 
-- `min_mem_size`: Minimum memory to use for the new H2O-3 server. Integer input will be evaluated as gigabytes. Other units can be specified by passing in a string (e.g. `"160M"` for 160 megabytes).
+- `min_mem_size`: Minimum memory to use for the new H2O-3 server. Integer input will be evaluated as gigabytes. Other units can be specified by passing in a string (for example, `"160M"` for 160 megabytes).
 
 - `strict_version_check`: If `True`, an error will be raised if the client and server versions don't match.
 
@@ -121,57 +122,39 @@ After you successfully launch Jupyter notebook, enter the following commands to 
 
 1.  Import the H2O-3 and GBM modules.
 
-> <figure>
-> <img src="images/anaconda_import_module.png" alt="images/anaconda_import_module.png" />
-> </figure>
+    ![Import the H2O-3 and GBM modules](images/anaconda_import_module.png)
 
 2.  Initialize H2O-3 using `h2o.init()`.
 
-> <figure>
-> <img src="images/anaconda_init.png" alt="images/anaconda_init.png" />
-> </figure>
+    ![Initialize H2O-3 with h2o.init()](images/anaconda_init.png)
 
 3.  Import the Airlines dataset. This dataset will be used to classify whether a flight will be delayed.
 
-> <figure>
-> <img src="images/anaconda_import_airlines.png" alt="images/anaconda_import_airlines.png" />
-> </figure>
+    ![Import the Airlines dataset](images/anaconda_import_airlines.png)
 
 4.  Convert columns to factors.
 
-> <figure>
-> <img src="images/anaconda_convert_columns.png" alt="images/anaconda_convert_columns.png" />
-> </figure>
+    ![Convert columns to factors](images/anaconda_convert_columns.png)
 
 5.  Set the predictor names and the response column name.
 
-> <figure>
-> <img src="images/anaconda_predictor_response.png" alt="images/anaconda_predictor_response.png" />
-> </figure>
+    ![Set the predictor names and response column](images/anaconda_predictor_response.png)
 
 6.  Split the dataset into training and validation sets.
 
-> <figure>
-> <img src="images/anaconda_split_data.png" alt="images/anaconda_split_data.png" />
-> </figure>
+    ![Split the dataset into training and validation sets](images/anaconda_split_data.png)
 
-7.  Specify the number of bins that will be included in the historgram and then split.
+7.  Specify the number of bins that will be included in the histogram and then split.
 
-> <figure>
-> <img src="images/anaconda_nbins_cats.png" alt="images/anaconda_nbins_cats.png" />
-> </figure>
+    ![Specify the number of histogram bins](images/anaconda_nbins_cats.png)
 
 8.  Train the models.
 
-> <figure>
-> <img src="images/anaconda_train_model.png" alt="images/anaconda_train_model.png" />
-> </figure>
+    ![Train the models](images/anaconda_train_model.png)
 
 9.  Print the AUC scores for the training data and the validation data.
 
-> <figure>
-> <img src="images/anaconda_print_auc.png" alt="images/anaconda_print_auc.png" />
-> </figure>
+    ![Print the AUC scores for training and validation data](images/anaconda_print_auc.png)
 
 #### Troubleshooting
 
@@ -185,7 +168,7 @@ Use the `h2o.init()` method to initialize H2O-3. In most cases, simply using `h2
 
 This method accepts the following options:
 
-- `nthreads`: This launches H2O-3 using all available CPUs and is only applicable if you launch H2O locally using R. If you start H2O-3 locally outside of R or start H2O-3 on Hadoop, the nthreads parameter is not applicable.
+- `nthreads`: This launches H2O-3 using all available CPUs and is only applicable if you launch H2O locally using R. If you start H2O-3 locally outside of R, the nthreads parameter is not applicable.
 
 - `ip`: The IP address of the server where H2O-3 is running.
 
@@ -199,20 +182,21 @@ This method accepts the following options:
 
 - `license`: (Optional) A character string value specifying the full path of the license file.
 
-- `max_log_file_size`: Maximum size of INFO and DEBUG log files. The file is rolled over after the specifized size has been reached. The range for this option is `1MB` to `99999MB`. The value defaults to `3MB`.
+- `max_log_file_size`: Maximum size of INFO and DEBUG log files. The file is rolled over after the specified size has been reached. The range for this option is `1 MB` to `99999 MB`. The value defaults to `3 MB`.
 
-- `max_mem_size`: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O-3. This value must be a multiple of 1024 greater than 2MB. Append the letter `m` or `M` to indicate megabytes, or `g` or `G` to indicate gigabytes.
+- `max_mem_size`: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O-3. This value must be a multiple of 1024 greater than 2 MB. Append the letter `m` or `M` to indicate megabytes, or `g` or `G` to indicate gigabytes.
 
-  > > [!NOTE]
-  > > If `max_mem_size` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+  :::note
+  If `max_mem_size` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+  :::
 
-- `min_mem_size`: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O-3. This value must a multiple of 1024 greater than 2MB. Append the letter `m` or `M` to indicate megabytes, or `g` or `G` to indicate gigabytes.
+- `min_mem_size`: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O-3. This value must a multiple of 1024 greater than 2 MB. Append the letter `m` or `M` to indicate megabytes, or `g` or `G` to indicate gigabytes.
 
 - `ice_root`: (Optional) A directory to handle object spillage. The default varies by OS.
 
 - `strict_version_check`: (Optional) Setting this to `FALSE` is unsupported and should only be done when advised by technical support.
 
-- `ignore_config`: (Optional) This option allows you to specify whether to perform processing of a `.h2oconfig` file. When `h2o.init()` is specified, a call to a config reader method is invoked. This call can result in path issues when there is no "root" (for example, with a Windows network drive) because the config file reader searches up to "root." When there is no "root", the path to search will continue to expand, eventually result in an error. This value defaults to `FALSE`.
+- `ignore_config`: (Optional) This option allows you to specify whether to perform processing of a `.h2oconfig` file. When `h2o.init()` is specified, a call to a config reader method is invoked. This call can result in path issues when there is no "root" (for example, with a Windows network drive) because the config file reader searches up to "root." When there is no "root," the path to search will continue to expand, eventually result in an error. This value defaults to `FALSE`.
 
 - `proxy`: (Optional) A character string specifying the proxy path.
 
@@ -226,7 +210,7 @@ This method accepts the following options:
 
 - `cookies`: (Optional) Vector (or list) of cookies to add to request.
 
-- `context_path`: (Optional) The last part of connection URL. For example, **http://\<ip\>:\<port\>/\<context_path\>**
+- `context_path`: (Optional) The last part of connection URL. For example, `http://<ip>:<port>/<context_path>`
 
 - `use_spnego`: (Optional) Set this to TRUE to connect to an H2O-3 cluster with SPNEGO authentication. This defaults to FALSE and is mutually exclusive with `username` and `password`.
 
@@ -282,18 +266,6 @@ R is connected to the H2O cluster:
 
 ## From the command line
 
-<div className="todo">
-
-create a table of command line options (should you say expression or primary?)
-
-</div>
-
-<div className="todo">
-
-provide examples for most common clusters
-
-</div>
-
 You can use Terminal (Mac) or Command Prompt (Windows) to launch H2O-3.
 
 When you launch from the command line, you can include additional instructions to H2O-3 such as how many nodes to launch, how much memory to allocate for each node, that you can assign names to the nodes in the cluster, and more.
@@ -304,7 +276,7 @@ H2O-3 requires some space in the `/tmp` directory to launch. If you cannot launc
 
 For more detailed instructions on how to build and launch H2O-3 (including how to clone the repository, how to pull from the repository, and how to install required dependencies), see the [developer documentation](https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start).
 
-There are three different argument types:
+The following argument types are available:
 
 - JVM options
 - H2O options
@@ -317,7 +289,7 @@ The arguments use the following format: `java <JVM Options> -jar h2o.jar <H2O Op
 The following are the available JVM options:
 
 - `-version`: Display Java version info.
-- `-Xmx<Heap Size>`: Configure the memory allocation option `-Xmx` to set the total heap size for an H2O-3 node. By default, this option is set to 1GB (`-Xmx1g`). When launching nodes, we recommend allocating a total of four times the memory of your data.
+- `-Xmx<Heap Size>`: Configure the memory allocation option `-Xmx` to set the total heap size for an H2O-3 node. By default, this option is set to 1 GB (`-Xmx1g`). When launching nodes, we recommend allocating a total of four times the memory of your data.
 
 :::note
 Do not try to launch H2O-3 with more memory than you have available. If `-Xmx<Heap Size>` is not defined, then the amount of memory that H2O-3 allocates will be determined by the default memory of the JVM. This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
@@ -335,9 +307,10 @@ The following are the available H2O options:
 
 > - IPv4: `-ip 178.16.2.223`
 > - IPv6: `-ip 2001:db8:1234:0:0:0:0:1` (Short version of IPv6 with `::` is not supported.)
->
-> > [!NOTE]
-> > If you are selecting a link-local address `fe80::/96`, it is necessary to specify the *zone index* (e.g., `%en0` for `fe80::2acf:e9ff:fe15:e0f3%en0`) in order to select the right interface.
+
+  :::note
+  If you are selecting a link-local address `fe80::/96`, it is necessary to specify the *zone index* (for example, `%en0` for `fe80::2acf:e9ff:fe15:e0f3%en0`) in order to select the right interface.
+  :::
 
 - `-port <#>`: Specify a PORT used for REST API. The communication port will be the port with value +1 higher.
 - `-baseport`: Specifies the starting port to find a free port for REST API, the internal communication port will be port with value +1 higher.
@@ -357,8 +330,6 @@ The following are the available H2O options:
 - `-file_deny_glob <GLOB pattern>`: Specify the [glob](https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob) pattern to deny access to certain directories. This parameter is added to remove vulnerabilities CVE-2023-6038, CVE-2023-6569 and CVE-2024-5986. The default is `{/bin/*,/etc/*,/var/*,/usr/*,/proc/*,**/.**}`.
 
 - `-nthreads <#ofThreads>`: Specify the maximum number of threads in the low-priority batch work queue (where `<#ofThreads>` is the number of threads).
-
-- `-client`: Launch H2O-3 node in client mode (this is used mostly for running Sparkling Water).
 
 - `-notify_local <fileSystemPath>`: Specifies a file to write to when the node is up. The file system path contains a single line with the IP and port of the embedded web server. For example, 192.168.1.100:54321.
 
@@ -416,11 +387,11 @@ New H2O-3 nodes join to form a cluster during launch. After a job has started on
 
 *Cluster formation examples*
 
-To start an H2O-3 node with 4GB of memory and a default cluster name: `java -Xmx4g -jar h2o.jar`
+To start an H2O-3 node with 4 GB of memory and a default cluster name: `java -Xmx4g -jar h2o.jar`
 
-To start an H2O-3 node with 6GB of memory and a specific cluster name: `java -Xmx6g -jar h2o.jar -name MyCluster`
+To start an H2O-3 node with 6 GB of memory and a specific cluster name: `java -Xmx6g -jar h2o.jar -name MyCluster`
 
-To start an H2O-3 cluster with three 2GB nodes using the default cluster names: `java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &`
+To start an H2O-3 cluster with three 2 GB nodes using the default cluster names: `java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &`
 
 :::tip
 Wait for the `INFO: Registered: # schemas in: #mS` output before entering the above command again to add another node (the number for `#` will vary).
@@ -445,24 +416,15 @@ See the following [image on scopes for more information](http://www.tcpipguide.c
 
 The flatfile describes a topology of an H2O-3 cluster. The flatfile definition is passed through the `-flatfile` option. It needs to be passed at each node in the cluster, but the definition is not the same at each node. However, transitive closure of all the definitions should contains all nodes.
 
-<div className="hint">
-
-<div className="title">
-
-Hint
-
-</div>
-
+:::tip
 For example, in the following definition the resulting cluster will be formed by nodes A, B, C.
 
-> |          |       |       |       |
-> |----------|-------|-------|-------|
-> | Nodes    | nodeA | nodeB | nodeC |
-> | Flatfile | A,B   | A, B  | B, C  |
+| Nodes    | nodeA | nodeB | nodeC |
+|----------|-------|-------|-------|
+| Flatfile | A,B   | A, B  | B, C  |
 
 The node A transitively sees node C through node B flatfile definition, and vice versa.
-
-</div>
+:::
 
 The flatfile contains a list of nodes in the form `IP:PORT` that are going to compose a resulting cluster (each node is on a separated line and everything prefixed by `#` is ignored). Running H2O-3 on a multi-node cluster lets you use more memory for large-scale tasks (for example, creating models from huge datasets) than would be possible on a single node.
 
@@ -555,4 +517,4 @@ h2o.connect(url=url)
 ## Best practices
 
 - Use `h2o.import_file`/`h2o.importFile` instead of `h2o.upload_file`/`h2o.uploadFile` when possible.
-- Set the correct cluster size for your given dataset size. The rule of thumb is to use at least 4 times the size of your data. For example, if the dataset is 10GB, you should allocate at least 40GB of memory.
+- Set the correct cluster size for your given dataset size. The rule of thumb is to use at least 4 times the size of your data. For example, if the dataset is 10 GB, you should allocate at least 40 GB of memory.

@@ -16,25 +16,17 @@ This section describes how to use H2O-3 on Docker. It walks you through the foll
 
 ## Prerequisites
 
-- Linux kernel verison 3.8+ or Mac OS 10.6+
+- Linux kernel version 3.8+ or Mac OS 10.6+
 - VirtualBox
 - Latest version of Docker installed and configured
 - Docker daemon running (enter all following commands in the Docker daemon window)
 - In `User` directory (not `root`)
 
-<div className="note">
-
-<div className="title">
-
-Note
-
-</div>
-
-- Older Linux kernel versions can cause kernel panics that break Docker. There are ways around it, but attempt these at your own risk. Check the version of your kernel by running `uname -r`.
+:::note
+- Older Linux kernel versions can cause kernel panics that break Docker. Workarounds exist, but attempt them at your own risk. Check the version of your kernel by running `uname -r`.
 - The Dockerfile always pulls the latest H2O-3 release.
 - The Docker image only needs to be built once.
-
-</div>
+:::
 
 ## Walkthrough
 
@@ -53,7 +45,7 @@ Depending on your operating system, select the appropriate installation method:
 - [Other OS installations](https://docs.docker.com/installation/)
 
 :::note
-By default, Docker allocates 2GB of memory for Mac installations. Be sure to increase this value. We suggest 3-4 times the size of the dataset for the amount of memory required.
+By default, Docker allocates 2 GB of memory for Mac installations. Be sure to increase this value. H2O recommends 3–4 times the size of the dataset for the amount of memory required.
 :::
 
 ### Step 2: Create or download Dockerfile
@@ -61,7 +53,7 @@ By default, Docker allocates 2GB of memory for Mac installations. Be sure to inc
 1.  Create a folder on the Host OS to host your Dockerfile:
 
 ``` bash
-mkdir -p /data/h2o-{{branch_name}}
+mkdir -p /data/h2o-<branch_name>
 ```
 
 2.  Download or create a Dockerfile, which is a build recipe that builds the container. Download and use our [Dockerfile template](https://github.com/h2oai/h2o-3/blob/master/Dockerfile):
@@ -83,7 +75,7 @@ This Dockerfile will do the following:
 From the `/data/h2o-<branch_name>` directory, run the following (note that `v5` represents the current version number):
 
 ``` bash
-docker build -t "h2o.ai/{{branch_name}}:v5"
+docker build -t "h2o.ai/<branch_name>:v5" .
 ```
 
 :::note
@@ -95,12 +87,12 @@ This process can take a few minutes because it assembles all the necessary parts
 On a mac, use the argument `-p 54321:54321` to expressly map the port `54321` (this is not necessary on Linux).
 
 ``` bash
-docker run -ti -p 54321:54321 h2o.ai/{{branch_name}}:v5 /bin/bash
+docker run -ti -p 54321:54321 h2o.ai/<branch_name>:v5 /bin/bash
 ```
 
 ### Step 5: Launch H2O-3
 
-Navigate to the `/opt` directory and launch H2O-3. Update the value of `-Xmx` to the amount of memory you want ot allocate to the H2O-3 instance. By default, H2O-3 will launch on port `54321`.
+Navigate to the `/opt` directory and launch H2O-3. Update the value of `-Xmx` to the amount of memory you want to allocate to the H2O-3 instance. By default, H2O-3 will launch on port `54321`.
 
 ``` bash
 cd /opt
@@ -133,20 +125,20 @@ $ boot2docker ip
 
 You can also view the IP address (`192.168.99.100` in the following example) by scrolling to the top of the Docker daemon window:
 
-:
+```
+##         .
+## ## ##        ==
+## ## ## ## ##    ===
+/"""""""""""""""""\___/ ===
+~~~ {~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~
+\______ o           __/
+\    \         __/
+\____\_______/
 
-    ##         .
-    ## ## ##        ==
-    ## ## ## ## ##    ===
-    /"""""""""""""""""\___/ ===
-    ~~~ \{~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~
-    \______ o           __/
-    \    \         __/
-    \____\_______/
 
-
-    docker is configured to use the default machine with IP 192.168.99.100
-    For help getting started, check out the docs at https://docs.docker.com
+docker is configured to use the default machine with IP 192.168.99.100
+For help getting started, check out the docs at https://docs.docker.com
+```
 
 #### Access Flow
 
@@ -197,9 +189,12 @@ This will start H2O in the background and map port 54321 to your local machine.
 
 ### Step 3: Access H2O
 
-After the container starts, you can access
+After the container starts, connect from your Python client:
 
-`>>> import h2o >>> h2o.connect("localhost:54321")` in your python client.
+```python
+import h2o
+h2o.connect(url="http://localhost:54321")
+```
 
 To view the H2O logs:
 

@@ -31,6 +31,7 @@ module.exports = {
         "flow",
         "logs",
         "security",
+        "telemetry",
         "architecture",
         "glossary",
         "additional-resources",

@@ -1,16 +1,16 @@
 ---
-title: "Data Sources"
+title: "Data sources"
 ---
 
 H2O supports data ingest from various data sources. Natively, a local file system, HDFS and S3 are supported. Additional data sources can be accessed through a generic HDFS API, such as Alluxio or OpenStack Swift.
 
-## Default Data Sources
+## Default data sources
 
 - local file system
 - S3
 - HDFS
 
-## HDFS-like Data Sources
+## HDFS-like data sources
 
 Various data sources can be accessed through an HDFS API. In this case, a library providing access to a data source needs to be passed on a command line when H2O is launched (Reminder: Each node in the cluster must be launched in the same way.). The library must be compatible with the HDFS API in order to be registered as a correct HDFS `FileSystem`.
 
@@ -93,7 +93,7 @@ The core-site.xml needs to be configured with Swift Object Store parameters. The
 </configuration>
 ```
 
-### Google Cloud Storage Connector for Hadoop & Spark
+### Google Cloud Storage
 
 **Required Library**
 
@@ -102,12 +102,7 @@ To access the Google Cloud Store Object Store, Google's cloud storage connector,
 **H2O Command Line**
 
 ```
-H2O on Hadoop:
-hadoop jar h2o-driver.jar -libjars /path/to/gcs-connector-latest-hadoop2.jar
-
-Sparkling Water
-export SPARK_CLASSPATH=/home/nick/spark-2.0.2-bin-hadoop2.6/lib_managed/jar/gcs-connector-latest-hadoop2.jar
-sparkling-water-2.0.5/bin/sparkling-shell --conf "spark.executor.memory=10g"
+java -cp /path/to/gcs-connector-latest-hadoop2.jar:h2o.jar water.H2OApp
 ```
 
 **URI Scheme**
