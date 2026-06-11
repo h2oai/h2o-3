@@ -16,8 +16,11 @@ version = "0.0.local"
 with open(os.path.join(here, 'h2o/version.txt'), encoding='utf-8') as f:
     version = f.read()
 
-client = "--client" in sys.argv
-if client:
+# The client variant ships the same sources under the `h2o_client` name.
+# `--client` argv is the legacy path (conda build.sh); H2O_PY_CLIENT is used by
+# the PEP 517 gradle build, which cannot forward custom CLI args to setup.py.
+client = "--client" in sys.argv or os.getenv("H2O_PY_CLIENT", "") != ""
+if "--client" in sys.argv:
     sys.argv.remove("--client")
 
 packages = find_packages(exclude=["tests*"])

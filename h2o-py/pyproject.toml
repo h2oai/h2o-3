@@ -1,0 +1,12 @@
+# PEP 517/518 build configuration.
+#
+# Metadata intentionally stays in setup.py for now: the conda recipes harvest it
+# via load_setup_py_data() (h2o-py/conda/*/meta.yaml) and install through the
+# legacy `setup.py install` path on a deliberately pinned-old toolchain
+# (h2o-py/conda/*/build.sh + Miniconda3-py37 in Dockerfile-release). Moving the
+# metadata to a [project] table must land together with the conda recipe
+# modernization and be validated by a test release — do not add a [project]
+# table here without that.
+[build-system]
+requires = ["setuptools >= 42", "wheel"]
+build-backend = "setuptools.build_meta"

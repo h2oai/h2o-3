@@ -18,6 +18,7 @@ ext {
 task copySrcFiles(type: Copy) {
     from ("${projectDir}") {
         include "setup.py"
+        include "pyproject.toml"
         include "setup.cfg"
         include "h2o_mlflow_flavor/**"
         include "README.rst"
@@ -31,7 +32,8 @@ task buildDist(type: Exec, dependsOn: [copySrcFiles]) {
         file("${buildDir}/tmp").mkdirs()
         standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o_mlflow_flavor_buildDist.out"))
     }
-    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
+    // PEP 517 wheel build; see h2o-py/build.gradle for rationale.
+    commandLine getOsSpecificCommandLine([pythonexe, "-m", "build", "--wheel", "--no-isolation"])
 }
 
 task copyMainDist(type: Copy, dependsOn: [buildDist]) {

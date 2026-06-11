@@ -13,7 +13,7 @@ version_info = {
     "BUILD_TIME_LOCAL": datetime.utcnow(),
     "PROJECT_VERSION": "3.99.0.9",
     "LAST_COMMIT_HASH": "7d606463d8c778614e09c47c953ab65e9967b5af",
-    "WHEEL_FILE_NAME": "h2o-3.99.0.9-py2.py3-none-any.whl"
+    "WHEEL_FILE_NAME": "h2o-3.99.0.9-py3-none-any.whl"
 }
 
 

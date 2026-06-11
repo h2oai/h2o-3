@@ -68,6 +68,7 @@ task copySrcFiles(type: Copy, dependsOn: [copyH2OJar]) {
     from ("${projectDir}") {
         include "setup.py"
         include "setup.cfg"
+        include "pyproject.toml"
         include "h2o/**"
         include "DESCRIPTION.rst"
         include "MANIFEST.in"
@@ -81,6 +82,7 @@ task copyClientSrcFiles(type: Copy, dependsOn: [copyH2OClientJar]) {
     from ("${projectDir}") {
         include "setup.py"
         include "setup.cfg"
+        include "pyproject.toml"
         include "h2o/**"
         include "DESCRIPTION.rst"
         include "MANIFEST.in"
@@ -90,13 +92,16 @@ task copyClientSrcFiles(type: Copy, dependsOn: [copyH2OClientJar]) {
     into "${buildDir}/client"
 }
 
+// PEP 517 wheel builds: direct `setup.py bdist_wheel` invocation is deprecated by
+// setuptools. --no-isolation uses the env's pinned setuptools/wheel instead of
+// pulling unpinned versions from PyPI mid-build.
 task buildDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, copySrcFiles]) {
     workingDir new File(buildDir, "main")
     doFirst {
         file("${buildDir}/main/tmp").mkdirs()
         standardOutput = new FileOutputStream(file("${buildDir}/main/tmp/h2o-py_buildDist.out"))
     }
-    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
+    commandLine getOsSpecificCommandLine([pythonexe, "-m", "build", "--wheel", "--no-isolation"])
 }
 
 task copyMainDist(type: Copy, dependsOn: [buildDist]) {
@@ -112,7 +117,10 @@ task buildClientDist(type: Exec, dependsOn: [verifyDependencies, createVersionFi
         file("${buildDir}/client/tmp").mkdirs()
         standardOutput = new FileOutputStream(file("${buildDir}/client/tmp/h2o-py_buildDist.out"))
     }
-    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel", "--client"])
+    // The client variant is selected via env var: PEP 517 front-ends don't forward
+    // custom CLI args to setup.py (the conda build.sh path still uses `--client`).
+    environment "H2O_PY_CLIENT", "1"
+    commandLine getOsSpecificCommandLine([pythonexe, "-m", "build", "--wheel", "--no-isolation"])
 }
 
 task smokeTest(type: Exec, dependsOn: [verifyTestDependencies]) {
