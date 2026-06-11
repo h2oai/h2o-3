@@ -1,0 +1,21 @@
+node_modules
+tmp
+
+# Lockfile is generated against a local makersaurus checkout (resolves @h2oai/makersaurus
+# to a local path) — ignore until a clean registry-based lockfile can be generated in CI.
+package-lock.json
+
+# Generated files 
+.docusaurus 
+.cach-loader
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

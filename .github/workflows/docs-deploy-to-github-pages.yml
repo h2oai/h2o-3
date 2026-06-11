@@ -1,0 +1,49 @@
+name: Deploy documentation to GitHub Pages
+
+# Builds the Makersaurus docs site in documentation/ and publishes it to the
+# gh-pages branch. Manual trigger only (matches the H2O docs-repo convention).
+#
+# PREREQUISITES before this can succeed:
+#   1. The team CI token must be able to read @h2oai/makersaurus from GitHub
+#      Packages (NODE_AUTH_TOKEN below uses the built-in GITHUB_TOKEN; confirm
+#      the package is visible to this repo).
+#   2. The Algolia facet "h2o-3-enterprise" (searchFilter in makersaurus.config.js)
+#      must be registered in the central dev_docs_omnisearch crawler, or search
+#      will return nothing.
+#   3. The docs.h2o.ai hub must mount the baseUrl path (/h2o-3-enterprise/).
+#
+# NOTE: We use `npm install` (not `npm ci` / --frozen-lockfile) because no
+# package-lock.json is committed yet. Once the registry token is available,
+# commit a lockfile and switch to `npm ci` for reproducible builds.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          always-auth: true
+          registry-url: https://npm.pkg.github.com/
+          node-version: 18
+
+      - name: Install dependencies
+        run: cd documentation && npm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build docs
+        run: cd documentation && npm run build
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./documentation/tmp/build
+          user_name: shaunyogeshwaran
+          user_email: shaun.yogeshwaran@h2o.ai
