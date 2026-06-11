@@ -42,6 +42,14 @@ SOURCE_FIXES = {
     "anova_glm.#defining-an-anova-glm-model": "anova_glm.html#defining-an-anova-glm-model",
     # glm.rst: literal "{th}" typo in prose ("p-th power" intended)
     "-{th} power of the mean": "-th power of the mean",
+    # faq/clusters.rst: bare hostname-less URL in prose (IP placeholder was lost)
+    "http://:54321": "``http://<ip>:54321``",
+    # productionizing.rst includes mojo/pojo quickstart inline; those are
+    # already separate pages, so replace includes with prose links.
+    ".. include:: mojo-quickstart.rst\n\n.. include:: pojo-quickstart.rst": (
+        "See `MOJO Quickstart <mojo-quickstart>`_ and `POJO Quickstart <pojo-quickstart>`_ "
+        "for step-by-step instructions."
+    ),
 }
 
 LANG_LABELS = {
@@ -252,13 +260,26 @@ def render_tabs(body, cwd):
             label = (arg + " " + rest).strip()
             tabs.append(("content", slugify(label), label, "\n".join(content)))
 
+    # Deduplicate tab values: same language with different labels gets a suffix.
+    seen_values: dict = {}
+    deduped = []
+    for kind, value, label, payload in tabs:
+        if value in seen_values:
+            seen_values[value] += 1
+            value = f"{value}-{slugify(label)}"
+        else:
+            seen_values[value] = 1
+        deduped.append((kind, value, label, payload))
+    tabs = deduped
+
     out = ['<Tabs groupId="lang">']
     for idx, (kind, value, label, payload) in enumerate(tabs):
         default = " default" if idx == 0 else ""
         out.append(f'<TabItem value="{value}" label="{label}"{default}>')
         out.append("")
         if kind == "code":
-            out.append(f"```{value.lower()}")
+            lang = re.match(r"[a-zA-Z0-9_+\-]+", value).group(0).lower()
+            out.append(f"```{lang}")
             out.append(payload)
             out.append("```")
         else:
@@ -347,7 +368,7 @@ def convert_indented_code_blocks(md):
     while i < len(lines):
         line = lines[i]
 
-        if re.match(r"^ {0,3}(`{3,}|~{3,})", line):
+        if re.match(r"^ *(`{3,}|~{3,})", line):
             in_fence = not in_fence
             out.append(line)
             i += 1
@@ -435,6 +456,19 @@ def postprocess_md(md):
     md = convert_indented_code_blocks(md)
     # Raw HTML attributes must be JSX-safe in MDX.
     md = md.replace(' class="', ' className="')
+    # React requires style as an object, not a string.
+    # Convert style="width: 22%" → style={{ width: "22%" }}.
+    def _css_to_jsx_style(m):
+        props = []
+        for decl in m.group(1).split(";"):
+            decl = decl.strip()
+            if ":" not in decl:
+                continue
+            k, _, v = decl.partition(":")
+            js_prop = re.sub(r"-([a-z])", lambda x: x.group(1).upper(), k.strip())
+            props.append(f'{js_prop}: "{v.strip()}"')
+        return ("style={{" + ", ".join(props) + "}}") if props else ""
+    md = re.sub(r'style="([^"]*)"', _css_to_jsx_style, md)
     # GFM URL autolinks → markdown links.
     md = re.sub(r"<(https?://[^>\s]+)>", r"[\1](\1)", md)
     # GFM email autolinks → mailto links (MDX fails on @ in JSX tag names).

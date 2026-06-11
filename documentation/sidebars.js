@@ -40,6 +40,43 @@ module.exports = {
       ],
     },
     {
+      "Modeling": [
+        "training-models",
+        "cross-validation",
+        "checkpointing-models",
+        "grid-search",
+        "performance-and-prediction",
+        "variable-importance",
+        "automl",
+        "explain",
+        "admissible",
+      ],
+    },
+    {
+      "Production": [
+        "save-and-load-model",
+        "productionizing",
+        "mojo-quickstart",
+        "mojo-capabilities",
+        "pojo-quickstart",
+      ],
+    },
+    {
+      FAQ: [
+        "faq/general",
+        "faq/algorithms",
+        "faq/clusters",
+        "faq/data",
+        "faq/python",
+        "faq/r",
+        "faq/java",
+        "faq/flow",
+        "faq/building-h2o",
+        "faq/general-troubleshooting",
+        "faq/tunneling",
+      ],
+    },
+    {
       "Data manipulation": [
         "data-munging/uploading-data",
         "data-munging/importing-data",
