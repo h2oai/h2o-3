@@ -163,8 +163,7 @@ Example
 		print(airlines_glm_cv.residual_deviance(xval=True))
 
 		# unrestricted CV deviance (offset preserved during CV scoring)
-		out = airlines_glm_cv._model_json["output"]
-		print(out["cross_validation_metrics_unrestricted_model"]["residual_deviance"])
+		print(airlines_glm_cv.cross_validation_metrics_unrestricted_model["residual_deviance"])
 
 		# derived model presents the full with-offset CV view consistently
 		unrestricted_cv_glm = airlines_glm_cv.make_unrestricted_glm_model()

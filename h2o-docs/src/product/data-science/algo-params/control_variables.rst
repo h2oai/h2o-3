@@ -87,9 +87,9 @@ Example
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm <- h2o.make_unrestricted_glm_model(airlines_glm)
 
-        # get variable importance
-        varimp <- h2o.varimp(airlines_glm)
-        varimp_unrestricted <- h2o.varimp(unrestricted_airlines_glm)
+		# get variable importance
+		varimp <- h2o.varimp(airlines_glm)
+		varimp_unrestricted <- h2o.varimp(unrestricted_airlines_glm)
 
 
    .. code-tab:: python
@@ -131,11 +131,8 @@ Example
 		# print the auc for the validation data
 		print(airlines_glm.auc(valid=True))
 
-		# take a look at the coefficients_table
-		coeff_table = airlines_glm._model_json['output']['coefficients_table']
-
-		# convert table to a pandas dataframe
-		coeff_table.as_data_frame()
+		# take a look at the coefficients
+		print(airlines_glm.coef())
 
 		# take a look at the learning curve
 		airlines_glm.learning_curve_plot()
@@ -143,6 +140,6 @@ Example
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm = airlines_glm.make_unrestricted_glm_model()
 
-        # get variable importance tables
-        varimp = airlines_glm.varimp()
-        varimp_unrestricted = unrestricted_airlines_glm.varimp()
+		# get variable importance tables
+		varimp = airlines_glm.varimp()
+		varimp_unrestricted = unrestricted_airlines_glm.varimp()

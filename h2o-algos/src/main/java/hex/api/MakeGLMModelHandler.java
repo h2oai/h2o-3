@@ -42,10 +42,8 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
-    DataInfo dinfo = model.dinfo();
-    dinfo.setPredictorTransform(TransformType.NONE);
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
-            model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial, 
+            model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
@@ -70,14 +68,19 @@ public class MakeGLMModelHandler extends Handler {
           throw new IllegalArgumentException("Source model is not trained with control variables or remove offset effects.");
       }
       Key generatedKey;
-      if ((args.remove_control_variables_effects || args.remove_offset_effects) &&
-              (model._parms._control_variables == null || !model._parms._remove_offset_effects)) {
-          throw new IllegalArgumentException("You can set remove_control_variables_effects to true or " +
-                  "remove_offset_effects to true only if control_variables and remove_offset_effects are both set.");
-      } else if (args.remove_control_variables_effects && args.remove_offset_effects) {
+      if (args.remove_control_variables_effects && model._parms._control_variables == null) {
+          throw new IllegalArgumentException("remove_control_variables_effects requires the source model " +
+                  "to have been trained with control_variables.");
+      }
+      if (args.remove_offset_effects && !model._parms._remove_offset_effects) {
+          throw new IllegalArgumentException("remove_offset_effects requires the source model " +
+                  "to have been trained with remove_offset_effects=true.");
+      }
+      if (args.remove_control_variables_effects && args.remove_offset_effects) {
           throw new IllegalArgumentException("The remove_control_variables_effects and remove_offset_effects feature " +
                   "cannot be used together. It produces the same model as the main model.");
-      } else if (args.remove_offset_effects) {
+      }
+      if (args.remove_offset_effects) {
           generatedKey = Key.make(model._key.toString() + "_remove_offset_effects");
       } else if (args.remove_control_variables_effects) {
           generatedKey = Key.make(model._key.toString() + "_remove_control_variables_effects");
@@ -110,22 +113,40 @@ public class MakeGLMModelHandler extends Handler {
           m._input_parms._remove_offset_effects = false;
           m._parms._remove_offset_effects = false;
       }
-      DataInfo dinfo = model.dinfo().clone();
-      dinfo.setPredictorTransform(TransformType.NONE);
       m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
               model._output._ordinal, null);
       if (args.remove_control_variables_effects) {
-          m._output._training_metrics = model._output._training_metrics_restricted_model_contr_vals;
-          m._output._validation_metrics = model._output._validation_metrics_restricted_model_contr_vals;
-          m._output._scoring_history = model._output._scoring_history_restricted_model_contr_vals;
+          // _contr_vals slots are only populated when both control_variables + remove_offset_effects are combined;
+          // with control_variables alone the main slots already hold the restricted view.
+          boolean hasBothFeatures = model._parms._remove_offset_effects;
+          m._output._training_metrics = hasBothFeatures
+                  ? model._output._training_metrics_restricted_model_contr_vals
+                  : model._output._training_metrics;
+          m._output._validation_metrics = hasBothFeatures
+                  ? model._output._validation_metrics_restricted_model_contr_vals
+                  : model._output._validation_metrics;
+          m._output._scoring_history = hasBothFeatures
+                  ? model._output._scoring_history_restricted_model_contr_vals
+                  : model._output._scoring_history;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances;
           m._output.setAndMapControlVariablesNames(model._parms._control_variables);
       } else if (args.remove_offset_effects) {
-          m._output._training_metrics = model._output._training_metrics_restricted_model_ro;
-          m._output._validation_metrics = model._output._validation_metrics_restricted_model_ro;
-          m._output._scoring_history = model._output._scoring_history_restricted_model_ro;
+          // _restricted_model_ro slots are only populated when control_variables + remove_offset_effects
+          // are combined; with remove_offset_effects alone the main slots already hold the restricted view.
+          boolean hasBothFeatures = model._parms._control_variables != null;
+          m._output._training_metrics = hasBothFeatures
+                  ? model._output._training_metrics_restricted_model_ro
+                  : model._output._training_metrics;
+          m._output._validation_metrics = hasBothFeatures
+                  ? model._output._validation_metrics_restricted_model_ro
+                  : model._output._validation_metrics;
+          m._output._scoring_history = hasBothFeatures
+                  ? model._output._scoring_history_restricted_model_ro
+                  : model._output._scoring_history;
+          m._output._cross_validation_metrics = model._output._cross_validation_metrics;
+          m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances_unrestricted_model;
       } else {

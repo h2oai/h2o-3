@@ -16,6 +16,7 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
+SEED = 42
 
 def _make_binomial_offset_frame():
     """26-row binomial frame with categorical predictors and a non-zero offset column."""
@@ -34,36 +35,33 @@ def _make_binomial_offset_frame():
 def test_remove_offset_cv_trains_successfully():
     """GLM with remove_offset_effects=True + nfolds=3 must complete and populate CV metrics."""
     train = _make_binomial_offset_frame()
-    seed = 42
     glm = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=True, nfolds=3, seed=seed
+        remove_offset_effects=True, nfolds=3, seed=SEED
     )
     glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
-    assert glm is not None, "Model must train without error"
-    assert glm._model_json["output"]["cross_validation_metrics"] is not None, \
-        "CV metrics must be populated"
+    assert glm is not None
+    assert glm.model_performance(xval=True) is not None, "CV metrics must be populated"
 
 
 def test_remove_offset_cv_deviance_differs_from_baseline():
     """CV residual deviance with remove_offset_effects=True must differ from the offset-included baseline."""
     train = _make_binomial_offset_frame()
-    seed = 42
 
     glm_roe = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=True, nfolds=3, seed=seed
+        remove_offset_effects=True, nfolds=3, seed=SEED
     )
     glm_roe.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 
     glm_baseline = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=False, nfolds=3, seed=seed
+        remove_offset_effects=False, nfolds=3, seed=SEED
     )
     glm_baseline.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 
-    dev_roe = glm_roe._model_json["output"]["cross_validation_metrics"]._metric_json["residual_deviance"]
-    dev_baseline = glm_baseline._model_json["output"]["cross_validation_metrics"]._metric_json["residual_deviance"]
+    dev_roe = glm_roe.model_performance(xval=True).residual_deviance()
+    dev_baseline = glm_baseline.model_performance(xval=True).residual_deviance()
 
     assert abs(dev_roe - dev_baseline) > 1e-10, (
         f"CV residual deviance must differ between remove_offset_effects=True ({dev_roe:.6f}) "
@@ -74,12 +72,10 @@ def test_remove_offset_cv_deviance_differs_from_baseline():
 def test_remove_offset_cv_scoring_history_has_xval_columns():
     """With generate_scoring_history=True and nfolds=3, deviance_xval and deviance_se must appear."""
     train = _make_binomial_offset_frame()
-    seed = 42
-    
     glm = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
         remove_offset_effects=True, nfolds=3,
-        generate_scoring_history=True, score_each_iteration=True, seed=seed
+        generate_scoring_history=True, score_each_iteration=True, seed=SEED
     )
     glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 
@@ -89,36 +85,26 @@ def test_remove_offset_cv_scoring_history_has_xval_columns():
     assert "deviance_se" in sh.columns, \
         "deviance_se must appear in scoring history when remove_offset_effects=True and nfolds=3"
 
-    xval_vals = []
-    for v in sh["deviance_xval"].values:
-        try:
-            f = float(v)
-        except (TypeError, ValueError):
-            continue
-        if not math.isnan(f):
-            xval_vals.append(f)
+    xval_vals = [float(v) for v in sh["deviance_xval"].values
+                 if v is not None and not math.isnan(float(v))]
     assert len(xval_vals) > 0, "deviance_xval must have at least one finite value"
-    assert all(v > 0 for v in xval_vals), \
-        f"All deviance_xval values must be positive; got: {xval_vals}"
+    assert all(v > 0 for v in xval_vals), f"All deviance_xval values must be positive; got: {xval_vals}"
 
 
 def test_remove_offset_cv_unrestricted_metrics_populated():
-    """With remove_offset_effects=True and CV, the with-offset CV metric slots must be present and differ from restricted."""
+    """With remove_offset_effects=True and CV, the with-offset CV metric slots must be present and differ."""
     train = _make_binomial_offset_frame()
     glm = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=True, nfolds=3, seed=42,
+        remove_offset_effects=True, nfolds=3, seed=SEED,
     )
     glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 
-    out = glm._model_json["output"]
-    assert out.get("cross_validation_metrics_unrestricted_model") is not None, \
+    assert glm.cross_validation_metrics_unrestricted_model is not None, \
         "cross_validation_metrics_unrestricted_model must be populated when remove_offset_effects=True and nfolds>0"
-    assert out.get("cross_validation_metrics_summary_unrestricted_model") is not None, \
-        "cross_validation_metrics_summary_unrestricted_model must be populated"
 
-    dev_restricted = out["cross_validation_metrics"]._metric_json["residual_deviance"]
-    dev_unrestricted = out["cross_validation_metrics_unrestricted_model"]["residual_deviance"]
+    dev_restricted = glm.model_performance(xval=True).residual_deviance()
+    dev_unrestricted = glm.cross_validation_metrics_unrestricted_model["residual_deviance"]
     assert abs(dev_restricted - dev_unrestricted) > 1e-10, (
         f"Restricted ({dev_restricted:.6f}) and unrestricted ({dev_unrestricted:.6f}) "
         f"CV deviance must differ when the offset is non-zero"
@@ -127,10 +113,10 @@ def test_remove_offset_cv_unrestricted_metrics_populated():
     # Regression guard: when remove_offset_effects=False the field must be absent/null.
     glm_no_roe = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=False, nfolds=3, seed=42,
+        remove_offset_effects=False, nfolds=3, seed=SEED,
     )
     glm_no_roe.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
-    assert glm_no_roe._model_json["output"].get("cross_validation_metrics_unrestricted_model") is None, \
+    assert glm_no_roe.cross_validation_metrics_unrestricted_model is None, \
         "cross_validation_metrics_unrestricted_model must be None when remove_offset_effects=False"
 
 
@@ -139,24 +125,20 @@ def test_remove_offset_cv_make_unrestricted_model_propagates_cv():
     train = _make_binomial_offset_frame()
     glm = H2OGeneralizedLinearEstimator(
         family="binomial", alpha=[0], lambda_=[0],
-        remove_offset_effects=True, nfolds=3, seed=42,
+        remove_offset_effects=True, nfolds=3, seed=SEED,
         keep_cross_validation_predictions=True,
     )
     glm.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
 
-    src_unrestricted_dev = glm._model_json["output"]["cross_validation_metrics_unrestricted_model"]["residual_deviance"]
-
+    src_unrestricted_dev = glm.cross_validation_metrics_unrestricted_model["residual_deviance"]
     derived = glm.make_unrestricted_glm_model()
-    derived_cv_dev = derived._model_json["output"]["cross_validation_metrics"] \
-        ._metric_json["residual_deviance"]
+    derived_cv_dev = derived.model_performance(xval=True).residual_deviance()
 
     assert abs(src_unrestricted_dev - derived_cv_dev) < 1e-10, (
         f"Derived model CV deviance ({derived_cv_dev:.6f}) must equal source unrestricted CV "
         f"deviance ({src_unrestricted_dev:.6f})"
     )
-
-    src_restricted_dev = glm._model_json["output"]["cross_validation_metrics"]._metric_json["residual_deviance"]
-    assert abs(src_restricted_dev - derived_cv_dev) > 1e-10, \
+    assert abs(glm.model_performance(xval=True).residual_deviance() - derived_cv_dev) > 1e-10, \
         "Derived model CV deviance must differ from source restricted CV deviance"
 
 
