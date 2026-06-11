@@ -5,6 +5,25 @@ module.exports = {
       "Get started": ["get-started/overview", "installation"],
     },
     {
+      Welcome: [
+        "welcome",
+        {
+          "Getting started": [
+            "getting-started/getting-started",
+            "getting-started/python-users",
+            "getting-started/r-users",
+            "getting-started/flow-users",
+            "getting-started/api-users",
+            "getting-started/java-users",
+            "getting-started/docker-users",
+            "getting-started/experienced-users",
+          ],
+        },
+        "api-changes",
+        "quick-start-videos",
+      ],
+    },
+    {
       "Data manipulation": [
         "data-munging/uploading-data",
         "data-munging/importing-data",
