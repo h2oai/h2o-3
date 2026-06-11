@@ -18,11 +18,11 @@ The fastest mode for ModelSelection is `mode = "maxrsweep"` with `build_glm_mode
 
 This model only supports GLM regression families.
 
-### MOJO Support
+### MOJO support
 
 ModelSelection currently does not support [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining a ModelSelection Model
+## Defining a ModelSelection model
 
 Parameters are optional unless specified as *required*. ModelSelection shares many [GLM parameters](glm#shared-glm-family-parameters).
 
@@ -76,7 +76,7 @@ Parameters are optional unless specified as *required*. ModelSelection shares ma
 
 - [nfolds](algo-params/nfolds): Specify the number of folds for cross-validation. The value can be set to `0` (default) to disable or to $\geq$ `2`.
 
-- [offset_column](algo-params/offset_column): Specify a column to use as the offset; the value cannot be the same as the value for the `weights_column`. This wll be added to the combination of columns before applying the link function.
+- [offset_column](algo-params/offset_column): Specify a column to use as the offset; the value cannot be the same as the value for the `weights_column`. This will be added to the combination of columns before applying the link function.
 
   > **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (`y`) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.
 
@@ -113,7 +113,9 @@ Parameters are optional unless specified as *required*. ModelSelection shares ma
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [validation_frame](algo-params/validation_frame): Specify the dataset used to evaluate the accuracy of the model.
 
@@ -144,31 +146,27 @@ The main disadvantage of this mode is the long computation time.
 
 ## Understanding ModelSelection `mode = maxr`
 
-The H2O ModelSelection `mode = maxr` is implemented using the sequential replacement method \[[1](#ref4)\]. This consists of a forward step and a replacement step. The sequential replacement method goes like this (where the predictors are denoted by *A, B, C, ..., Z*):
+The H2O ModelSelection `mode = maxr` is implemented using the sequential replacement method \[[1](#ref4)\]. This consists of a forward step and a replacement step. The sequential replacement method goes like this (where the predictors are denoted by *A, B, C, …, Z*):
 
 1.  Start with the current *subset = \{\}* (empty)
 
 2.  Forward step for 1 predictor subset:
 
-```
-> 1.  add each available predictor (from *A* to *Z*) to the current empty subset and build a GLM model with each predictor subset;
-> 2.  save the model with the highest $R^2$ for all models built with predictor *A, B, ..., Z*;
-> 3.  set the new current *subset = {predictor with highest* $R^2$ *}* (for example, predictor *A*).
-```
+    1.  add each available predictor (from *A* to *Z*) to the current empty subset and build a GLM model with each predictor subset;
+    2.  save the model with the highest $R^2$ for all models built with predictor *A, B, …, Z*;
+    3.  set the new current *subset = \{predictor with highest* $R^2$ *\}* (for example, predictor *A*).
 
 3.  Forward step for 2 predictor subset (starting with current *subset = \{A\}* ):
 
-```
-> 1.  add each available predictor (from B to Z) to the current subset and build a GLM model;
-> 2.  save the model with the highest $R^2$ for all models with predictor subsets *AB, AC, ..., AZ*;
-> 3.  set the new current *subset = {model with highest* $R^2$ *}* and save the best subset (for example, *{AB}*).
-```
+    1.  add each available predictor (from B to Z) to the current subset and build a GLM model;
+    2.  save the model with the highest $R^2$ for all models with predictor subsets *AB, AC, …, AZ*;
+    3.  set the new current *subset = \{model with highest* $R^2$ *\}* and save the best subset (for example, *\{AB\}*).
 
-4.  Replacement for 2 predictor subset from best subset chosen from forward step for 2 predictor subsets (i.e. starting from best *subset \{AB\}* from previous step):
+4.  Replacement for 2 predictor subset from best subset chosen from forward step for 2 predictor subsets (that is, starting from best *subset \{AB\}* from previous step):
 
-> 1.  fixing the second predictor, choose a different predictor for the first predictor from the remaining predictors *C, D, ..., Z* (skipping predictor *A* as it was chosen already by forward step; *B* is taken as the second predictor). Then, build a GLM model for each new subset of (*CB, DB, EB, ..., ZB*). Save the model with the highest $R^2$ (for example, \{*DB*\}) from all models built with predictor subsets (*CB, DB, EB, ..., ZB*);
+> 1.  fixing the second predictor, choose a different predictor for the first predictor from the remaining predictors *C, D, …, Z* (skipping predictor *A* as it was chosen already by forward step; *B* is taken as the second predictor). Then, build a GLM model for each new subset of (*CB, DB, EB, …, ZB*). Save the model with the highest $R^2$ (for example, \{*DB*\}) from all models built with predictor subsets (*CB, DB, EB, …, ZB*);
 > 2.  fixing the first predictor, choose a different second predictor from the remaining predictor subset. Then, build a GLM model for each new subset generated. Save the model with the highest $R^2$ from all models built;
-> 3.  compare the $R^2$ value from the models built with forward step, step 4(a), and step 4(b) and choose the subset with the highest $R^2$. If the best model is built with \{*AB*\}, proceed to step 5 because steps 4(a) and 4(b) generated no improvement. If the best model is built with \{*DB*\}, repeat steps 4(a), 4(b), and 4(c) until no improvement is found. For the two predictor case, the first 4(b) can be skipped since it is already done in the forward step.
+> 3.  compare the $R^2$ value from the models built with forward step, step 4(a), and step 4(b) and choose the subset with the highest $R^2$. If the best model is built with \{*AB*\}, proceed to step 5 because steps 4(a) and 4(b) generated no improvement. If the best model is built with \{*DB*\}, repeat steps 4(a), 4(b), and `4(c)` until no improvement is found. For the two predictor case, the first 4(b) can be skipped since it is already done in the forward step.
 
 5.  Start with the best $n$ predictor subset and forward step for $n$ predictor subsets:
 
@@ -177,9 +175,9 @@ The H2O ModelSelection `mode = maxr` is implemented using the sequential replace
 
 6.  Replacement for $n+1$ predictor subsets:
 
-> 1.  Repeat for predictor in location *0,1,2,...,n*:
+> 1.  Repeat for predictor in location *0,1,2,…,n*:
 >
-> > - keep all predictors fixed except in location *k* (*k* will be from *0,1,2,...,n*) and switch out the predictor at location *k* with one predictor from the available predictors. If there are *m* predictors in the available predictor subset, *m* GLM models will be built and the model with the best $R^2$ value will be saved;
+> > - keep all predictors fixed except in location *k* (*k* will be from *0,1,2,…,n*) and switch out the predictor at location *k* with one predictor from the available predictors. If there are *m* predictors in the available predictor subset, *m* GLM models will be built and the model with the best $R^2$ value will be saved;
 >
 > 2.  from all the *n* best models found from step 6(a), if the best $R^2$ value has improved from the forward step or the previous 6(a), return to 6(a). If no improvement is found, break and just take the best $R^2$ model as the one to save.
 
@@ -195,17 +193,15 @@ Again, the best $R^2$ value, the predictor names, and the `model_id` of the best
 
 4.  steps 2 and 3 are repeated until
 
-```
-> 1.  no predictors are left,
-> 2.  `min_predictor_number - 1` predictors are left, or
-> 3.  `p_values_threshold` condition is satisfied.
-```
+    1.  no predictors are left,
+    2.  `min_predictor_number - 1` predictors are left, or
+    3.  `p_values_threshold` condition is satisfied.
 
 To increase flexibility in the model building process, you can stop the model building process by specifying a `p_values_threshold`. When the `p_values` of all predictors (except `intercept`) are $\leq$ `p_values_threshold`, the model building process will stop as well.
 
-## Interpreting a ModelSelection Model
+## Interpreting a ModelSelection model
 
-### Result Frame
+### Result frame
 
 To help you understand your model, a result frame is generated at the end of the building process. For `maxr` and `allsubsets` modes, the result frame will contain:
 
@@ -222,17 +218,17 @@ For `backward` mode, the result frame will contain:
 - **p_values**: p-values of all coefficients of the GLM model
 - **coefficient_names**: coefficients (including `intercept`) of the GLM model
 
-### Model Coefficients
+### Model coefficients
 
 The coefficients of each model built for each predictor size are available. You can see how to access the coefficients in the [Examples](#examples) section.
 
-### Cross-Validation
+### Cross-validation
 
 ModelSelection supports cross-validation and the use of the validation dataset for `mode = "maxr"` and `mode = "allsubsets"`. Only `family = gaussian` is supported.
 
 For `mode = "backward"`, cross-validation is not supported as the model selection process depends on training z-values and p-values. All GLM families are supported except for `ordinal` and `multinomial`.
 
-### Model Scoring
+### Model scoring
 
 The model IDs of all models built for each predictor subset size are stored in the result frame. These IDs can be used to obtain the original models. They can be used for scoring just like any returned H2O models.
 

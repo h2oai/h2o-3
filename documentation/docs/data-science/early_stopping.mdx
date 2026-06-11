@@ -8,7 +8,7 @@ All of the H2O-3 supervised learning algorithms allow for early stopping during 
 
 The following early stopping parameter is available to all supervised algorithms:
 
-- `` `max_runtime_secs `` \<algo-params/max_runtime_secs#max_runtime_secs\><span className="title-ref">\_\_ (Defaults to </span><span className="title-ref">0</span>\`/disabled.)
+- [`max_runtime_secs`](algo-params/max_runtime_secs) (Defaults to `0`/disabled.)
 
 The `max_runtime_secs` option specifes the maximum runtime in seconds that you want to allot in order to complete the model. If this maximum runtime is exceeded before the model build is completed, then the model will fail. When performing a grid search, this option specifies the maximum runtime in seconds for the entire grid. This option can also be combined with `max_runtime_secs` in the model parameters. If `max_runtime_secs` is not set in the model parameters, then each model build is launched with a limit equal to the remainder of the grid time. On the other hand, if `max_runtime_secs` is set in the model parameters, then each build is launched with a limit equal to the minimum of the model time limit and the remaining time for the grid.
 
@@ -16,35 +16,35 @@ The `max_runtime_secs` option specifes the maximum runtime in seconds that you w
 
 In AutoML, grid search, Deep Learning, DRF, GBM, and XGBoost, the following additional parameters are used for early stopping:
 
-- `` `stopping_rounds `` \<algo-params/stopping_rounds#stopping_rounds\>\`\_\_ - Defaults to:
+- [`stopping_rounds`](algo-params/stopping_rounds) - Defaults to:
 
   > - AutoML: `3`
   > - Deep Learning: `5`
   > - DRF, GBM, XGBoost: `0`/disabled
 
-- `` `stopping_tolerance `` \<algo-params/stopping_tolerance#stopping_tolerance\>\`\_\_ - Defaults to:
+- [`stopping_tolerance`](algo-params/stopping_tolerance) - Defaults to:
 
   > - `0.001`
   > - In AutoML, for datasets with more than 1 million rows, this defaults to a larger valued determined by the size of the dataset and the non-NA-rate.
 
-- `` `stopping_metric `` \<algo-params/stopping_metric#stopping_metric\>\`\_\_ - Defaults to:
+- [`stopping_metric`](algo-params/stopping_metric) - Defaults to:
 
   > - classification models: `"logloss"`
   > - regression models: `"deviance"`
 
 The simplest way to turn on early stopping in these algorithms is to use a number \>=1 in `stopping_rounds`. The default values for the other two parameters will work fairly well, but a `stopping_tolerance` of 0 is a common alternative to the default.
 
-Additionally, you can take `` `score_tree_interval `` \<algo-params/score_tree_interval#score_tree_interval\><span className="title-ref">\_\_ and/or </span>`score_each_iteration` \<algo-params/score_each_iteration#score_each_iteration\>\`\_\_ into account when using these early stopping methods. The stopping rounds applies to the number of scoring iterations H2O-3 has performed, so regular scoring iterations of a small size can help control early stopping the most (though there is a speed tradeoff to scoring more often). The default is to use H2O-3’s assessment of a reasonable ratio of training time to scoring time, which often results in inconsistent scoring gaps.
+Additionally, you can take [`score_tree_interval`](algo-params/score_tree_interval) and/or [`score_each_iteration`](algo-params/score_each_iteration) into account when using these early stopping methods. The stopping rounds applies to the number of scoring iterations H2O-3 has performed, so regular scoring iterations of a small size can help control early stopping the most (though there is a speed tradeoff to scoring more often). The default is to use H2O-3's assessment of a reasonable ratio of training time to scoring time, which often results in inconsistent scoring gaps.
 
 ## Early stopping in GLM and GAM
 
 In GLM and GAM, the following additional parameters are used for early stopping:
 
-- `` `early_stopping `` \<algo-params/early_stopping#early_stopping\><span className="title-ref">\_\_ (Defaults to </span><span className="title-ref">enabled</span>\`.)
-- `` `max_active_predictors `` \<algo-params/max_active_predictors#max_active_predictors\><span className="title-ref">\_\_ (Default varies based on the </span><span className="title-ref">solver</span>\`.)
-- `` `stopping_rounds `` \<algo-params/stopping_rounds#stopping_rounds\><span className="title-ref">\_\_ (Defaults to </span><span className="title-ref">0</span>\` in GLM and GAM.)
-- `` `stopping_tolerance `` \<algo-params/stopping_tolerance#stopping_tolerance\><span className="title-ref">\_\_ (Defaults to </span><span className="title-ref">0.001</span>\` in GLM and GAM.)
-- `` `stopping_metric `` \<algo-params/stopping_metric#stopping_metric\><span className="title-ref">\_\_ (Defaults to </span><span className="title-ref">"logloss"</span><span className="title-ref"> for classification and </span><span className="title-ref">"deviance"</span>\` for regression.)
+- [`early_stopping`](algo-params/early_stopping) (Defaults to enabled.)
+- [`max_active_predictors`](algo-params/max_active_predictors) (Default varies based on the `solver`.)
+- [`stopping_rounds`](algo-params/stopping_rounds) (Defaults to `0` in GLM and GAM.)
+- [`stopping_tolerance`](algo-params/stopping_tolerance) (Defaults to `0.001` in GLM and GAM.)
+- [`stopping_metric`](algo-params/stopping_metric) (Defaults to `"logloss"` for classification and `"deviance"` for regression.)
 
 When `early_stopping` is enabled, GLM and GAM will automatically stop building a model when there is no more relative improvement on the training or validation (if provided) set. This option prevents expensive model building with many predictors when no more improvements are occurring.
 

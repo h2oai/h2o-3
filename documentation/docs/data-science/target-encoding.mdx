@@ -1,5 +1,5 @@
 ---
-title: "Target Encoding"
+title: "Target encoding"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -12,7 +12,7 @@ Target encoding is the process of replacing a categorical value with the mean of
 > - Comparing model performance after removing high cardinality columns
 > - Parameter tuning (specifically tuning `nbins_cats` and `categorical_encoding`)
 
-## Target Encoding Parameters
+## Target encoding parameters
 
 - [training_frame](algo-params/training_frame): (Required) Specify the dataset that you want to use when you are ready to build a Target Encoding model.
 
@@ -40,7 +40,7 @@ Target encoding is the process of replacing a categorical value with the mean of
 
 - [seed](algo-params/seed): The seed for the pseudorandom number generator, mainly used to generate draws from the uniform distribution for random noise. Defaults to -1 (random seed).
 
-## Target Encoding Model Methods
+## Target encoding model methods
 
 ### `transform`
 
@@ -55,7 +55,7 @@ Apply transformation to target encoded columns based on the encoding maps genera
 
 ## Example
 
-In this example, we will be trying to predict `survived` using the popular titanic dataset: [https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv](https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv). One of the predictors is `cabin`, a categorical column with a number of unique values. To perform target encoding on `cabin`, we will calculate the average of `home.dest` and `embarked` per cabin. So instead of using `cabin` as a predictor in our model, we could use the target encoding of `cabin`.
+In this example, we will be trying to predict `survived` using the popular titanic dataset: [https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv](https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv). One of the predictors is `cabin`, a categorical column with a number of unique values. To perform target encoding on `cabin`, we will calculate the average of `home.dest` and `embarked` per cabin. Instead of using `cabin` as a predictor in our model, we could use the target encoding of `cabin`.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -154,7 +154,8 @@ titanic['survived'] = titanic['survived'].asfactor()
 response='survived'
 
 # Split the dataset into train and test
-train, test = titanic.split_frame(ratios = [.8], seed = 1234)
+seed = 1234
+train, test = titanic.split_frame(ratios = [.8], seed = seed)
 
 # Choose which columns to encode
 encoded_columns = ["home.dest", "cabin", "embarked"]

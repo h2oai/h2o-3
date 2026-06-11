@@ -13,11 +13,11 @@ AdaBoost, short for Adaptive Boosting, is a powerful and versatile machine learn
 
 H2O’s implementation of AdaBoost follows the [Rojas, R. (2009), 'AdaBoost and the Super Bowl of Classifiers A Tutorial Introduction to Adaptive Boosting'](https://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=BD98C2F2A8C7EEE8314FA129FBE61984?doi=10.1.1.382.9086&rep=rep1&type=pdf) specification. It can be used to solve binary classification problems only.
 
-### MOJO Support
+### MOJO support
 
 AdaBoost currently does not support [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining an AdaBoost Model
+## Defining an AdaBoost model
 
 ### Algorithm-specific parameters
 
@@ -50,7 +50,9 @@ AdaBoost currently does not support [MOJOs](../save-and-load-model#supported-moj
   >
   > - `DEEP_LEARNING`: Trains a binary classifier with `(epochs=10, hidden=[2])`.
 
-\- **weak_learner_params**: You can specify a dict/list of customized parameters for your specified `weak_learner` algorithm. For example, if you use a `GBM`, you can specify `{'ntrees': 1, 'max_depth': 10}` in Python or `list(ntrees = 1, max_depth = 10)` in R. AdaBoost does not apply defaults from the `weak_learner` at all. The defaults of the algorithm itself will be used instead. Common parameters '''''''''''''''''
+- **weak_learner_params**: You can specify a dict/list of customized parameters for your specified `weak_learner` algorithm. For example, if you use a `GBM`, you can specify `{'ntrees': 1, 'max_depth': 10}` in Python or `list(ntrees = 1, max_depth = 10)` in R. AdaBoost does not apply defaults from the `weak_learner` at all. The defaults of the algorithm itself will be used instead.
+
+### Common parameters
 
 - [categorical_encoding](algo-params/categorical_encoding): Only the ordinal nature of encoding is used for splitting in the case of AdaBoost. Specify one of the following encoding schemes for handling categorical features:
 
@@ -73,7 +75,9 @@ AdaBoost currently does not support [MOJOs](../save-and-load-model#supported-moj
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [weights_column](algo-params/weights_column): Specify a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`. By default the AdaBoost algorithm generates constant column with value `1`
 

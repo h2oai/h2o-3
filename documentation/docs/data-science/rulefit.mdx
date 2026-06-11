@@ -11,11 +11,11 @@ H2O's Rulefit algorithm combines tree ensembles and linear models to take advant
 
 The general algorithm fits a tree ensemble to the data, builds a rule ensemble by traversing each tree, evaluates the rules on the data to build a rule feature set, and fits a sparse linear model (LASSO) to the rule feature set joined with the original feature set.
 
-### MOJO Support
+### MOJO support
 
 RuleFit supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining a RuleFit Model (Beta API)
+## Defining a RuleFit model (beta API)
 
 Parameters are optional unless specified as *required*.
 
@@ -54,7 +54,7 @@ Parameters are optional unless specified as *required*.
   > - `"MACRO_OVO"`
   > - `"WEIGHTED_OVO"`
 
-- [distribution](algo-params/distribution): Specify the distribution (i.e. the loss function). The options are:
+- [distribution](algo-params/distribution): Specify the distribution (that is, the loss function). The options are:
 
   > - `AUTO` (default)
   > - `bernoulli` -- response column must be 2-class categorical
@@ -90,7 +90,7 @@ Parameters are optional unless specified as *required*.
   > - For a regression model, this column must be numeric (**Real** or **Int**).
   > - For a classification model, this column must be categorical (**Enum** or **String**). If the family is **Binomial**, the dataset cannot contain more than two levels.
 
-## Interpreting a RuleFit Model
+## Interpreting a RuleFit model
 
 The output for the RuleFit model includes:
 

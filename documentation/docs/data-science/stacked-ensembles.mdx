@@ -1,5 +1,5 @@
 ---
-title: "Stacked Ensembles"
+title: "Stacked ensembles"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -7,25 +7,25 @@ import TabItem from '@theme/TabItem';
 
 ## Introduction
 
-Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms. Many of the popular modern machine learning algorithms are actually ensembles. For example, [Random Forest](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html) and [Gradient Boosting Machine (GBM)](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html) are both ensemble learners. Both bagging (e.g. Random Forest) and boosting (e.g. GBM) are methods for ensembling that take a collection of weak learners (e.g. decision tree) and form a single, strong learner.
+Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms. Many of the popular modern machine learning algorithms are actually ensembles. For example, [Random Forest](drf) and [Gradient Boosting Machine (GBM)](gbm) are both ensemble learners. Both bagging (for example, Random Forest) and boosting (for example, GBM) are methods for ensembling that take a collection of weak learners (for example, decision tree) and form a single, strong learner.
 
 H2O's Stacked Ensemble method is a supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking. Like all supervised models in H2O, Stacked Ensemeble supports regression, binary classification, and multiclass classification.
 
 Native support for ensembles of H2O algorithms was added into core H2O in version 3.10.3.1. A separate implementation, the **h2oEnsemble** R package, is also still [available](https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble), however for new projects we recommend using the native H2O version, documented below.
 
-### MOJO Support
+### MOJO support
 
 Stacked Ensemble supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
 
 ## Stacking / Super Learning
 
-Stacking, also called Super Learning \[[3]()\] or Stacked Regression \[[2]()\], is a class of algorithms that involves training a second-level "metalearner" to find the optimal combination of the base learners. Unlike bagging and boosting, the goal in stacking is to ensemble strong, diverse sets of learners together.
+Stacking, also called Super Learning \[[3](#3)\] or Stacked Regression \[[2](#2)\], is a class of algorithms that involves training a second-level "metalearner" to find the optimal combination of the base learners. Unlike bagging and boosting, the goal in stacking is to ensemble strong, diverse sets of learners together.
 
-Although the concept of stacking was originally developed in 1992 \[[1]()\], the theoretical guarantees for stacking were not proven until the publication of a paper titled, ["Super Learner"](https://doi.org/10.2202/1544-6115.1309), in 2007 \[[3]()\]. In this paper, it was shown that the Super Learner ensemble represents an asymptotically optimal system for learning.
+Although the concept of stacking was originally developed in 1992 \[[1](#1)\], the theoretical guarantees for stacking were not proven until the publication of a paper titled ["Super Learner,"](https://doi.org/10.2202/1544-6115.1309) in 2007 \[[3](#3)\]. That paper showed that the Super Learner ensemble represents an asymptotically optimal system for learning.
 
-There are some ensemble methods that are broadly labeled as stacking, however, the Super Learner ensemble is distinguished by the use of cross-validation to form what is called the "level-one" data, or the data that the metalearning or "combiner" algorithm is trained on. More detail about the Super Learner algorithm is provided below.
+Not all ensemble methods labeled as stacking are equivalent. The Super Learner ensemble is distinguished by the use of cross-validation to form what is called the "level-one" data, or the data that the metalearning or "combiner" algorithm is trained on. More detail about the Super Learner algorithm is provided below.
 
-### Super Learner Algorithm
+### Super Learner algorithm
 
 The steps below describe the individual tasks involved in training and testing a Super Learner ensemble. H2O automates most of the steps below so that you can quickly and easily build ensembles of H2O models.
 
@@ -41,24 +41,24 @@ The steps below describe the individual tasks involved in training and testing a
     1.  To generate ensemble predictions, first generate predictions from the base learners.
     2.  Feed those predictions into the metalearner to generate the ensemble prediction.
 
-## Training Base Models for the Ensemble
+## Training base models for the ensemble
 
 Before training a stacked ensemble, you will need to train and cross-validate a set of "base models" which will make up the ensemble. In order to stack these models together, a few things are required:
 
-- The models must be cross-validated using the same number of folds (e.g. `nfolds = 5` or use the same `fold_column` across base learners).
-- The cross-validated predictions from all of the models must be preserved by setting `keep_cross_validation_predictions` to True. This is the data which is used to train the metalearner, or "combiner", algorithm in the ensemble.
+- The models must be cross-validated using the same number of folds (for example, `nfolds = 5` or use the same `fold_column` across base learners).
+- The cross-validated predictions from all of the models must be preserved by setting `keep_cross_validation_predictions` to True. This is the data used to train the metalearner, or `"combiner"`, algorithm in the ensemble.
 - You can train these models manually, or you can use a group of models from a grid search.
 - The models must be trained on the same `training_frame`. The rows must be identical, but you can use different sets of predictor columns, `x`, across models if you choose. Using base models trained on different subsets of the feature space will add more randomness/diversity to the set of base models, which in theory can improve ensemble performance. However, using all available predictor columns for each base model will often still yield the best results (the more data, the better the models).
 
 **Note:** You can train a Stacked Ensemble model using only monotonic models by specifying `monotone_constraints` in AutoML and creating at least 2 monotonic models.
 
-## Defining a Stacked Ensemble Model
+## Defining a Stacked Ensemble model
 
 Parameters are optional unless specified as *required*.
 
 ### Algorithm-specific parameters
 
-- [base_models](algo-params/base_models): *Required* Specify a list of models (or model IDs) that can be stacked together. Models must have been cross-validated (i.e. `nfolds`\>1 or `fold_column` was specified), they all must use the same cross-validation folds, and `keep_cross_validation_predictions` must be set to `True`. One way to guarantee identical folds across base models is to set `fold_assignment = "Modulo"` in all the base models. It is also possible to get identical folds by setting `fold_assignment = "Random"` when the same seed is used in all base models.
+- [base_models](algo-params/base_models): *Required* Specify a list of models (or model IDs) that can be stacked together. Models must have been cross-validated (that is, `nfolds`\>1 or `fold_column` was specified), they all must use the same cross-validation folds, and `keep_cross_validation_predictions` must be set to `True`. One way to guarantee identical folds across base models is to set `fold_assignment = "Modulo"` in all the base models. It is also possible to get identical folds by setting `fold_assignment = "Random"` when the same seed is used in all base models.
 
 - [blending_frame](algo-params/blending_frame): Specify a frame to be used for computing the predictions that serve as the training frame for the metalearner. This triggers blending mode if provided.
 
@@ -81,7 +81,7 @@ Parameters are optional unless specified as *required*.
   > - `Modulo`
   > - `Stratified` (which will stratify the folds based on the response variable for classification problems)
 
-- [metalearner_fold_column](algo-params/fold_column): (Cannot be used at the same time as `nfolds`) Specify the name of the column that contains the cross-validation fold assignment per observation for cross-validation of the metalearner. The column can be numeric (e.g. fold index or other integer value) or it can be categorical. The number of folds is equal to the number of unique values in this column.
+- [metalearner_fold_column](algo-params/fold_column): (Cannot be used at the same time as `nfolds`) Specify the name of the column that contains the cross-validation fold assignment per observation for cross-validation of the metalearner. The column can be numeric (for example, a fold index or other integer value) or categorical. The number of folds is equal to the number of unique values in this column.
 
 - [metalearner_nfolds](algo-params/nfolds): Specify the number of folds for cross-validation of the metalearning algorithm. If you want to compare the cross-validated performance of the ensemble model to the cross-validated performance of the base learners or other algorithms, you should make use of this option. This option defaults to `0` (no cross-validation).
 
@@ -377,91 +377,22 @@ pred = ensemble.predict(test)
 ```
 
 </TabItem>
-<TabItem value="scala" label="Scala">
 
-```scala
-import org.apache.spark.h2o._
-import water.Key
-import java.io.File
-
-val h2oContext = H2OContext.getOrCreate(sc)
-import h2oContext._
-import h2oContext.implicits._
-
-// Import data from the local file system as an H2O DataFrame
-val prostateData = new H2OFrame(new File("/Users/jsmith/src/github.com/h2oai/sparkling-water/examples/smalldata/prostate.csv"))
-
-// Build a Deep Learning model
-import _root_.hex.deeplearning.DeepLearning
-import _root_.hex.deeplearning.DeepLearningModel.DeepLearningParameters
-val dlParams = new DeepLearningParameters()
-dlParams._epochs = 100
-dlParams._train = prostateData
-dlParams._response_column = 'CAPSULE
-dlParams._variable_importances = true
-dlParams._nfolds = 5
-dlParams._seed = 1111
-dlParams._keep_cross_validation_predictions = true;
-val dl = new DeepLearning(dlParams, Key.make("dlProstateModel.hex"))
-val dlModel = dl.trainModel.get
-
-// Build a GBM model
-import _root_.hex.tree.gbm.GBM
-import _root_.hex.tree.gbm.GBMModel.GBMParameters
-val gbmParams = new GBMParameters()
-gbmParams._train = prostateData
-gbmParams._response_column = 'CAPSULE
-gbmParams._nfolds = 5
-gbmParams._seed = 1111
-gbmParams._keep_cross_validation_predictions = true;
-val gbm = new GBM(gbmParams,Key.make("gbmRegModel.hex"))
-val gbmModel = gbm.trainModel().get()
-
-// Import required classes for Stacked Ensembles
-import _root_.hex.Model
-import _root_.hex.ensemble.StackedEnsembleModel
-import _root_.hex.ensemble.StackedEnsemble
-
-// Define Stacked Ensemble parameters
-val stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters()
-stackedEnsembleParameters._train = prostateData._key
-stackedEnsembleParameters._response_column = 'CAPSULE
-
-// Pass in the keys for the GBM and Deep Learning using one of the following options
-// Option 1
-stackedEnsembleParameters._base_models = Array(gbmRegModel._key.asInstanceOf[T_MODEL_KEY], dlModel._key.asInstanceOf[T_MODEL_KEY])
-// Option 2
-stackedEnsembleParameters._base_models = Array(gbmRegModel, dlModel).map(model => model._key.asInstanceOf[T_MODEL_KEY])
-
-// Define the Stacked Ensemble job
-val stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters)
-
-// Build the Stacked Ensemble model
-val stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
-
-// Review the Stacked Ensemble model
-stackedEnsembleModel
-
-// Review the parameters (meta learner) from the Stacked Ensemble model
-stackedEnsembleModel._output._metalearner
-```
-
-</TabItem>
 </Tabs>
 
 ## FAQ
 
 - **How do I save ensemble models?**
 
-> H2O now supports saving and loading ensemble models. The steps are the same as those described in the [Saving and Loading a Model](../save-and-load-model) section. For productionizing Stacked Ensemble models, we recommend using [MOJOs](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html).
+> H2O now supports saving and loading ensemble models. The steps are the same as those described in the [Saving and Loading a Model](../save-and-load-model) section. For productionizing Stacked Ensemble models, we recommend using [MOJOs](../productionizing).
 
 - **Will an stacked ensemble always perform better than a single model?**
 
-> Hopefully, but it's not always the case (especially if you have very small data). That's why it always a good idea to check the performance of your stacked ensemble and compare it against the performance of the individual base learners.
+> Not always—ensemble performance depends on the diversity and quality of the base learners and is not guaranteed, especially on small datasets. Always check the performance of your stacked ensemble and compare it against the performance of the individual base learners.
 
 - **How do I improve the performance of an ensemble?**
 
-> If you find that your ensemble is not performing better than the best base learner, then you can try a few different things. First make sure to try the default metalearner ("AUTO") and then try the other options for `metalearner_algorithm`. Additionally, the custom parameters could be passed to `metalearner_params` (e.g., a GBM with `ntrees=1000`, `max_depth=10`, etc.)
+> If you find that your ensemble is not performing better than the best base learner, you can try a few different things. First, try the default metalearner (`"AUTO"`) and then try the other options for `metalearner_algorithm`. You can also pass custom parameters to `metalearner_params` (for example, a GBM with `ntrees=1000`, `max_depth=10`, etc.)
 >
 > Second, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM). If so, remove them from the ensemble and try again.
 >
@@ -487,7 +418,7 @@ stackedEnsembleModel._output._metalearner
 
 > In the base learners, specify `balance_classes`, `class_sampling_factors` and `max_after_balance_size` to control over/under-sampling.
 
-## Additional Information
+## Additional information
 
 - An [Ensemble slidedeck](https://github.com/h2oai/h2o-meetups/blob/master/2017_01_05_H2O_Ensemble_New_Developments/h2o_ensemble_new_developments_jan2017.pdf) from January 2017 provides a summary of the new Stacked Ensemble method in H2O, along with a comparison to the pre-existing [h2oEnsemble R package](https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble).
 - [Python Stacked Ensemble tests](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests/testdir_algos/stackedensemble) are available in the H2O-3 GitHub repository.

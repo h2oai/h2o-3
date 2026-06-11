@@ -24,7 +24,7 @@ Metric `M` can be set by **metric** argument. If set to `AUTO`, `AUC` is used fo
 ## Parameters
 
 - **model**: A trained model for which it will be used to score the dataset.
-- **frame**: The dataset to use, both train and test frame are can be reasonable choices but the interpretation differs (see [Should I Compute Importance on Training or Test Data?](https://christophm.github.io/interpretable-ml-book/feature-importance.html#feature-importance-data) from the Interpretable Machine Learning by Christoph Molnar.).
+- **frame**: The dataset to use, both the train and test frames can be reasonable choices but the interpretation differs (see [Should I Compute Importance on Training or Test Data?](https://christophm.github.io/interpretable-ml-book/feature-importance.html#feature-importance-data) from the Interpretable Machine Learning by Christoph Molnar.).
 - **metric**: The metric to be used to calculate the error measure. One of `AUTO`, `AUC`, `MAE`, `MSE`, `RMSE`, `logloss`, `mean_per_class_error`, `PR_AUC`. Defaults to `AUTO`.
 - **n_samples**: The number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
 - **n_repeats**: The number of repeated evaluations. Defaults to 1.
@@ -33,7 +33,7 @@ Metric `M` can be set by **metric** argument. If set to `AUTO`, `AUC` is used fo
 
 ## Output
 
-When `n_repeats == 1`, the result is similar to the one from `h2o.varimp()`, i.e., it contains the following columns "Relative Importance", "Scaled Importance", and "Percentage".
+When `n_repeats == 1`, the result is similar to the one from `h2o.varimp()`, that is, it contains the following columns `Relative Importance`, `Scaled Importance`, and `Percentage`.
 
 When `n_repeats > 1`, the individual columns correspond to the permutation variable importance values from individual runs which corresponds to the "Relative Importance" and also to the distance between the original prediction error and prediction error using a frame with a given feature permuted.
 

@@ -1,21 +1,23 @@
 ---
-title: "Generalized Additive Models (GAM)"
+title: "Generalized additive models (GAM)"
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-**Note**: GAM models are currently experimental.
+:::note
+GAM models are currently experimental.
+:::
 
 ## Introduction
 
 A Generalized Additive Model (GAM) is a type of Generalized Linear Model (GLM) where the linear predictor has a linear relationship with predictor variables and smooth functions of predictor variables. H2O's GAM implementation is closely based on the approach described in "Generalized Additive Models: An Introduction with R, Texts in Statistical Science \[[1](#ref1)\]" by Simon N. Wood. Another useful resource on GAMs can be found in "Generalized Additive Models" by T.J. Hastie and R.J. Tibshirani \[[2](#ref2)\].
 
-### MOJO Support
+### MOJO support
 
 GAM supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining a GAM Model
+## Defining a GAM model
 
 Parameters are optional unless specified as *required*. GAM shares many [GLM parameters](glm#shared-glm-family-parameters).
 
@@ -150,7 +152,9 @@ Parameters are optional unless specified as *required*. GAM shares many [GLM par
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [validation_frame](algo-params/validation_frame): Specify the dataset used to evaluate the model's accuracy.
 
@@ -167,27 +171,27 @@ Parameters are optional unless specified as *required*. GAM shares many [GLM par
   > - For a regression model, this column must be numeric (**Real** or **Int**).
   > - For a classification model, this column must be categorical (**Enum** or **String**). If the family is `Binomial`, the dataset must contain two levels.
 
-## A Simple Linear Model
+## A simple linear model
 
 For $n$ observations, $x_i$ with response variable $y_i$, where $y_i$ is an observation on random variable $Y_i$. and $u_i ≡ E(Y_i)$. Assuming a linear relationship between the predictor variables and the response, the relationship between $xi$ and $Y_i$ is:
 
 > $Y_i = u_i + \epsilon_i \text{ where } u_i = \beta_i x_i + \beta_0$
 
-and $\beta_i, \beta_0$ are unknown parameters, $\epsilon_i$ are i.i.d zero mean variables with variances $\delta^2$. We can estimate $\beta_i, \beta_0$ using [GLM](glm#generalized-linear-model-glm).
+and $\beta_i, \beta_0$ are unknown parameters, $\epsilon_i$ are i.i.d zero mean variables with variances $\delta^2$. We can estimate $\beta_i, \beta_0$ using [GLM](glm).
 
-## A Simple Linear GAM Model
+## A simple linear GAM model
 
 Using the same observations as in the previous A Simple Linear Model section, a linear GAM model can be:
 
 > $Y_i = f(x_i) + \epsilon_i \text{ where } f(x_i) = {\Sigma_{j=1}^k}b_j(x_i)\beta_j+\beta_0$
 
-Again, $\beta = [\beta_0, \beta_1, \ldots, b_k]$ is an unknown parameter vector that can also be estimated using [GLM](glm#generalized-linear-model-glm). This can be done by using $[b_1(x_i), b_2(x_i), \ldots , b_K(x_i)]$ as the predictor variables instead of $x_i$. We are essentially estimating $f(x_i)$ using a set of basis functions:
+Again, $\beta = [\beta_0, \beta_1, \ldots, b_k]$ is an unknown parameter vector that can also be estimated using [GLM](glm). This can be done by using $[b_1(x_i), b_2(x_i), \ldots , b_K(x_i)]$ as the predictor variables instead of $x_i$. We are essentially estimating $f(x_i)$ using a set of basis functions:
 
 $\{b_1(x_i), b_2(x_i), \ldots, b_K(x_i)\}$
 
 where $k$ is the number of basis functions used. Note that for each predictor variable, we can decide the types and number of basis functions that we want to use to generate best GAM.
 
-## Understanding Simple Piecewise Linear Basis Functions
+## Understanding simple piecewise linear basis functions
 
 To comprehend the role of basis functions, let's take a look at a linear tent function. This will help us understand how piecewise basis functions work.
 
@@ -195,27 +199,21 @@ When working with piecewise basis functions, it's crucial to pay attention to th
 
 For $j=2, \ldots, K - 1$, the basis function $b_j(x)$ defined as:
 
-> <figure>
-> <img src="../images/gam_simple_piecewise1.png" alt="../images/gam_simple_piecewise1.png" />
-> </figure>
->
-> <figure>
-> <img src="../images/gam_simple_piecewise2.png" alt="../images/gam_simple_piecewise2.png" />
-> </figure>
+![Piecewise linear basis function b_j(x) definition](../images/gam_simple_piecewise1.png)
+
+![Piecewise linear basis function b_j(x) boundary conditions](../images/gam_simple_piecewise2.png)
 
 This function helps us understand how the linear pieces join together and interact with each other.
 
-## Using Piecewise Tent Functions to Approximate a Single Predictor Variable
+## Using piecewise tent functions to approximate a single predictor variable
 
 To illustrate how we can use the piecewise tent functions to approximate a predictor variable, let's take an example where the predictor value ranges from 0.0 to 1.0.:
 
-We will use 10 piecewise tent functions, with K = 10. The knots will be located at 0, 1/9, 2/9, 3/9, ..., 8/9, 1. The figure below shows the basis function values, which overlap with their neighbors except for the first and last basis functions.
+We will use 10 piecewise tent functions, with K = 10. The knots will be located at 0, 1/9, 2/9, 3/9, …, 8/9, 1. The figure below shows the basis function values, which overlap with their neighbors except for the first and last basis functions.
 
-<figure>
-<img src="../images/gam_piecewise_tent_basis.png" alt="../images/gam_piecewise_tent_basis.png" />
-</figure>
+![Ten piecewise tent basis functions over [0, 1]](../images/gam_piecewise_tent_basis.png)
 
-For simplicity, assume we have 21 predictor values uniformly distributed between 0 and 1, with values of 0, 0.05, 0.1, 0.15, ..., 1.0. Our goal is to convert each $x_j$ into a set of 10 basis function values. So, for every $x_j$ value, we will obtain 10 values corresponding to each of the basis functions.
+For simplicity, assume we have 21 predictor values uniformly distributed between 0 and 1, with values of 0, 0.05, 0.1, 0.15, …, 1.0. Our goal is to convert each $x_j$ into a set of 10 basis function values. For every $x_j$ value, 10 values correspond to each of the basis functions.
 
 For the predictor value at 0 ($x_j = 0$), the only relevant basis function is the first one. All other basis functions contribute 0 to the predictor value. Thus, for $x_j = 0$ the vector representing all basis functions has these values: \{1, 0, 0, 0, 0, 0, 0, 0, 0, 0\}. This is because the first basis function value is 1 at $x_j = 0$:
 
@@ -257,11 +255,11 @@ We have calculated the expanded basis function vector for all predictor values, 
 | 0.95  | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 0.45  | 0.55     |
 | 1     | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 1        |
 
-## Spline Functions
+## Spline functions
 
 Natural cubic splines are proven to be the smoothest interpolators, as shown in \[[2](#ref2)\]. Given a set of points ${x_i, y_i:i = 1, \ldots, n}$ where $x_i \leq x_{i+1}$, the natural cubic spline, $g(x)$, interpolates these points using sections of cubic polynomial for each $[x_i, x_{i+1}]$. These sections are joined together so that the entire spline is continuous to the second derivative, with $g(x_i) = y_i$ and $g^{''}(x_i) = g^{''}(x_n) = 0$. To ensure a smooth function, a penalty function $J(f) = \int_{x_1}^{x_n} {(f^{''}(x))^2}dx$ can be added to the objective function being optimized. This penalty is based on the idea that a function's second derivative measures gradient change, and a higher second derivative magnitude indicates more wriggling.
 
-### Cubic Regression Splines
+### Cubic regression splines
 
 Implemented based on \[[1](#ref1)\], cubic regression splines are used for a single predictor variable. This approach defines the splines in terms of their values at the knots. A cubic spline function, $f(x)$, with $k$ knots, $x_1, x_2, \ldots, x_k$, is defined using $\beta_j = f(x_j)$ and $\delta_j = f^{''}(x_j) = \frac{d^2f(x_j)}{d^2x}$.
 
@@ -276,9 +274,7 @@ where:
 
 To ensure smooth fitting functions at the knots, the spline must be continuous to the second derivative at $x_j$ and have zero second derivative at $x_1$ and $x_k$. It can be shown that $\beta\delta^- = DB$ (to be added later), where
 
-> <figure>
-> <img src="../images/gam_cubic_regression_spines1.png" alt="../images/gam_cubic_regression_spines1.png" />
-> </figure>
+![Cubic regression spline matrix B and D definition](../images/gam_cubic_regression_spines1.png)
 
 Let $BinvD = B^{-1}D$ and let $F = {\begin{bmatrix}0\\BinvD\\0\end{bmatrix}}$
 
@@ -286,7 +282,7 @@ The spline can be rewritten entirely in terms of $\beta$ as
 
 > $f(x) = a_j^-(x)\beta_j + a_j^+(x)\beta_{j+1} + c_j^-(x)F_j\beta + c_j^+(x)F_{j+1}\beta \text{ for } x_j \leq x \leq x_{j+1}$
 
-which can be expressed as $f(x_i) = \sum_{j=1}^{k}b_j(x_i)\beta_j+\beta_0$ where $b_j(x_i)$ are the basis functions and $\beta_0, \beta_1, \ldots, \beta_k$ are the unknown parameters that can be estimated using [GLM](glm#generalized-linear-model-glm). Additionally, the penalty term added to the final objective function can be derived as:
+which can be expressed as $f(x_i) = \sum_{j=1}^{k}b_j(x_i)\beta_j+\beta_0$ where $b_j(x_i)$ are the basis functions and $\beta_0, \beta_1, \ldots, \beta_k$ are the unknown parameters that can be estimated using [GLM](glm). Additionally, the penalty term added to the final objective function can be derived as:
 
 $$\int_{x_1}^{x_k} (f^{''}(x))^2dx = \beta^T D^T B^{-1} D\beta = \beta^T D^T BinvD\beta = \beta^T S\beta$$
 
@@ -298,19 +294,13 @@ $$\sum_{i=1}^n \bigg( y_i - \big( \sum_{j=1}^k b_j(x_i)\beta_j + \beta_0 \big) \
 
 Note that the user will choose $\lambda$ using grid search. In future releases, cross-validation may be used to automatically select $lambda$.
 
-At this point, [GLM](glm#generalized-linear-model-glm) can be called, but the contribution of the penalty term to the gradient and Hessian calculation still needs to be added.
+At this point, [GLM](glm) can be called, but the contribution of the penalty term to the gradient and Hessian calculation still needs to be added.
 
-### Thin Plate Regression Splines
+### Thin plate regression splines
 
-For documentation on thin plate regression splines, refer here:
+For documentation on thin plate regression splines, refer to [Thin plate regression splines](thin_plate_gam).
 
-<div className="toctree" maxdepth="1">
-
-thin_plate_gam
-
-</div>
-
-### Monotone Splines
+### Monotone splines
 
 We have implemented I-splines, which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. To specify the monotone spline, you need to set `bs = 2` and specify `spline_orders`, which will be equal to the polynomials used to generate the splines. **B-splines:** $Q_{i,k}(t)$
 
@@ -318,7 +308,7 @@ B-splines are generated using a recursive formula over a set of knots $t_0,t_1,\
 
 $$Q_{i,k}(t) = {\frac{(t-t_{i})}{(t_{i+k}-t_{i})}} Q_{i,k-1}(t) + {\frac{(t_{i+k}-t)}{(t_{i+k}-t_{i})}} Q_{i+1,k-1}(t)$$
 
-Using knotes $t_0,t_1,\dots ,t_N$ over the range of inputs of interest from $t_0$ to $t_N$, an order 1 B-spline is defined as \[[4](model_selection)\]:
+Using knotes $t_0,t_1,\dots ,t_N$ over the range of inputs of interest from $t_0$ to $t_N$, an order 1 B-spline is defined as \[[4](#ref4)\]:
 
 $$\begin{aligned}
 Q_{i,1}(t) = \begin{cases}{\frac{1}{(t_{i+1}-t_i)}},t_i \leq t < t_{i+1} \\ 0,t<t_i \text{ or } t \geq t_{i+1} \\\end{cases}
@@ -384,7 +374,7 @@ $$\sum_{i=0}^n \Bigg(y_i- \bigg(\sum_{j=0}^{numBasis-1}I_{j,k}(t_i)\beta_j + \be
 The second derivative of all basis functions is defined as:
 
 $$\begin{aligned}
-I_k^{2ndDeriv} = \begin{bmatrix} {\frac{d^2(I_{0,k}(t))}{d^2t}} \\
+I_k^{secondDeriv} = \begin{bmatrix} {\frac{d^2(I_{0,k}(t))}{d^2t}} \\
 {\frac{d^2(I_{1,k}(t))}{d^2t}} \\ \vdots \\
 {\frac{d^2(I_{numBasis-2,k}(t))}{d^2t}} \\
 {\frac{d^2(I_{numBasis-1,k}(t))}{d^2t}} \\\end{bmatrix}
@@ -392,7 +382,7 @@ I_k^{2ndDeriv} = \begin{bmatrix} {\frac{d^2(I_{0,k}(t))}{d^2t}} \\
 
 where the penalty matrix ($penaltyMat$) for I-spline $I_{j,k}(t)$ is defined as:
 
-$$penaltyMat = \int_{t_0}^{t_N}I_k^{2ndDeriv} \times \text{ transpose of }(I_k^{2ndDeriv})dt$$
+$$penaltyMat = \int_{t_0}^{t_N}I_k^{secondDeriv} \times \text{ transpose of }(I_k^{secondDeriv})dt$$
 
 Element at row $m$ and column $n$ of $penaltyMat$ is
 
@@ -412,13 +402,13 @@ Instead of using the recursive expression, look at the coefficients associated w
 
 ## General GAM
 
-In a generalized additive model (GAM), using the [GLM](glm#generalized-linear-model-glm) jargon, the link function can be constructed using a mixture of predictor variables and smooth functions of predictor variables as follows:
+In a generalized additive model (GAM), using the [GLM](glm) jargon, the link function can be constructed using a mixture of predictor variables and smooth functions of predictor variables as follows:
 
 $$g(u_i) = \beta_0 + \beta_1 x_{1i} + \cdots + \beta_mx_{mi} + \sum_{j=1}^{k_1}b_j^i(x_{li})\beta_{m+j} + \cdots + \sum_{j=1}^{k_q}b_j^q(x_{li})\beta_{m+k_1+\cdots+k_{q-1} + j}$$
 
 This is the GAM we implemented in H2O. However, with multiple predictor variables in any form, we need to resolve the identifiability problems by adding identifiability constraints.
 
-### Identifiability Constraints
+### Identifiability constraints
 
 Consider GAM with multiple predictor smooth functions like the following:
 
@@ -432,7 +422,7 @@ where 1 is a column vector of 1, and $f_p$ is the column vector containing $f_p(
 
 **Note**: this does not apply to monotone splines because the coefficients for these splines must be $\geq 0$.
 
-### Sum-to-zero Constraints Implementation
+### Sum-to-zero constraints implementation
 
 Let $X$ be the model matrix that contain the basis functions of one predictor variable, the sum-to-zero constraints required that
 
@@ -444,7 +434,7 @@ where $\beta$ contains the coefficients relating to the basis functions of that 
 - Let $C=1^TX$, then the QR decomposition of $C^T = U {\begin{bmatrix}P\\0\end{bmatrix}}$ where $C^T$ is of size $k \times 1$, $U$ is of size $k \times k$, $P$ is the size of $1\times1$
 - Substitute everything back to $1^TXZ\beta_z = [P^T \text{ } 0]{\begin{bmatrix}D^T\\Z^T\end{bmatrix}} Z\beta_z = [P^T \text{ } 0]{\begin{bmatrix}D^TZ\beta_z\\Z^TZ\beta_z\end{bmatrix}} = P^TD^TZ\beta_z + 0Z^TZ\beta_z=0$ since $D^TZ=0$
 
-### Generating the Z Matrix
+### Generating the Z matrix
 
 One Householder reflection is used to generate the $Z$ matrix. To create the $Z$ matrix, we need to calculate the QR decomposition of $C^T = X^T1$ Since $C^T$ is of size $k \times 1$, the application of one householder reflection will generate $HC^T = {\begin{bmatrix}R\\0\end{bmatrix}}$ where $R$ is of size $1 \times 1$. This implies that $H = Q^T = Q$, since the householder reflection matrix is symmetrical. Hence, computing $XZ$ is equivalent to computing $XH$ and dropping the first column.
 
@@ -452,7 +442,7 @@ One Householder reflection is used to generate the $Z$ matrix. To create the $Z$
 
 Let $\bar{x} = X^T1$ and $\bar{x}' = {\begin{bmatrix}{\parallel{\bar{x}}\parallel}\\0\end{bmatrix}}$, then $H = (I - \frac{2uu^T}{(u^Tu)})$ and $u = \bar{x} = \bar{x}'$.
 
-### Estimation of GAM Coefficients with Identifiability Constraints
+### Estimation of GAM coefficients with identifiability constraints
 
 The following procedure is used to estimate the GAM coefficients:
 
@@ -571,7 +561,7 @@ pred = h2o_model.predict(test)
 </TabItem>
 </Tabs>
 
-### GAM using Monotone Splines
+### GAM using monotone splines
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -646,7 +636,7 @@ pred = monotone_model.predict(test)
 
 ```r
 # Import the GLM test data set:
-gam_test = h2o.importFile(“https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv”)
+gam_test = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
 
 # Set the factors, predictors, and response:
 gam_test["C1"] <- as.factor(gam_test["C1"])
@@ -664,7 +654,7 @@ test <- splits[[2]]
 mspline_model <- h2o.gam(x = predictors,
                          y = response,
                          training_frame = train,
-                         family = "binomial"
+                         family = "binomial",
                          gam_columns = c("C11", "C12", "C13"),
                          scale = c(0.001, 0.001, 0.001),
                          bs = c(2, 0, 3),

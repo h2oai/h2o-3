@@ -40,8 +40,6 @@ module.exports = {
         "getting-data-into-h2o",
         {
           "Cloud integration": [
-            "aws",
-            "cloud-integration/aws",
             "cloud-integration/ec2-and-s3",
             "cloud-integration/gcs",
             "cloud-integration/google-compute",

@@ -1,5 +1,5 @@
 ---
-title: "Decision Tree"
+title: "Decision tree"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -11,13 +11,13 @@ This implementation only supports numeric features and a binary target variable.
 
 The Decision Tree algorithm is a powerful tool for classification and regression tasks.
 
-## Defining a Decision Tree Model
+## Defining a decision tree model
 
 All parameters are optional unless specified as *required*.
 
 ### Algorithm-specific parameters
 
-- [max_depth](algo-params/max_depth): Specify the maximum depth of the final decision tree. The final depth can be less than the definied `max_depth` if another stopped criteria is met first. This value defaults to `20`.
+- [max_depth](algo-params/max_depth): Specify the maximum depth of the final decision tree. The final depth can be less than the defined `max_depth` if another stopping criterion is met first. This value defaults to `20`.
 - [min_rows](algo-params/min_rows): Specify the minimum number of observations for a leaf. This value defaults to `10`.
 
 ### Common parameters
@@ -43,13 +43,15 @@ All parameters are optional unless specified as *required*.
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [x](algo-params/x): Specify a vector containing the names or indices of the predictor variables to use when building the model. If `x` is missing, then all columns except `y` are used.
 
 - [y](algo-params/y): *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
-## Decision Tree Workflow
+## Decision tree workflow
 
 The Decision Tree algorithm follows a recursive process to build the tree structure. The basic workflow can be summarized as:
 
@@ -63,32 +65,30 @@ The Decision Tree algorithm follows a recursive process to build the tree struct
 
 5.  **Stopping criteria**: The recursive division process stops when specific conditions are met. The employed criteria include:
 
-```
-> 1.  *Maximum tree depth*: The process stops when the tree reaches a predefined maximum depth (set with `max_depth`).
-> 2.  *Minimum number of samples*: The process stops when a node contains a minimum number of samples or instances (set with `min_rows`).
-> 3.  *Limit of entropy improvement*: The process stops when the improvement of entropy between the parent node and the current split reaches a specified minimum threshold (refer to the [Entropy as a Splitting Rule](#entropy-as-a-splitting-rule) section for more information).
-```
+    1.  *Maximum tree depth*: The process stops when the tree reaches a predefined maximum depth (set with `max_depth`).
+    2.  *Minimum number of samples*: The process stops when a node contains a minimum number of samples or instances (set with `min_rows`).
+    3.  *Limit of entropy improvement*: The process stops when the improvement of entropy between the parent node and the current split reaches a specified minimum threshold (refer to the [Entropy as a splitting rule](#entropy-as-a-splitting-rule) section for more information).
 
 6.  **Leaf node labeling**: The leaf nodes are labeled with the majority class or predicted value based on the training samples they contain at the end of the tree construction.
 
-## Binning for Tree Building
+## Binning for tree building
 
-To handle large datasets efficiently, the Decision Tree algorithm utilizes binning as a preprocessing step at each internal node. Binning involves discretizing continuous features into a finitie number of bins. This reduces the computational complexity of finding the best attribute and threshold for each split.
+To handle large datasets efficiently, the Decision Tree algorithm utilizes binning as a preprocessing step at each internal node. Binning involves discretizing continuous features into a finite number of bins. This reduces the computational complexity of finding the best attribute and threshold for each split.
 
 The binning process can be summarized as:
 
 1.  **Input**: Inputting continuous feature values for a particular attribute.
-2.  **Binning algorithm**: Appling a binning algorithm to divide the feature values into a specified number of bins (this technique is equal width binning).
+2.  **Binning algorithm**: Applying a binning algorithm to divide the feature values into a specified number of bins (this technique is equal width binning).
 3.  **Binning result**: Obtaining the bin boundaries for the feature values.
 4.  **Statistic calculation**: Calculating statistics for each bin, such as the count of samples for each class.
 
 The binned features are then used for split point selection during tree construction. This allows for faster computation.
 
-## Entropy as a Splitting Rule
+## Entropy as a splitting rule
 
 The Decision Tree algorithm employs entropy as the splitting rule to determine the best attribute and threshold for each node. Entropy measures the impurity or disorder within a set of samples. The goal is to find splits that minimize the entropy and create homogenous subsets with respect to the target variable.
 
-The entropy of a set $S$ with respect to a binary target variable can be calculated using the following forumla:
+The entropy of a set $S$ with respect to a binary target variable can be calculated using the following formula:
 
 $$\text{Entropy}(S) = -p_1 \times \log2 (p_1) - p_0 \times \log2(p_0)$$
 
@@ -135,7 +135,7 @@ import h2o
 from h2o.estimators import H2ODecisionTreeEstimator
 h2o.init()
 
-# Import the prostatedataset:
+# Import the prostate dataset:
 prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
 # Set the target variable:

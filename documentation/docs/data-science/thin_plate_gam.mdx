@@ -1,5 +1,5 @@
 ---
-title: "GAM Thin Plate Regression Spline"
+title: "GAM thin plate regression spline"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -7,11 +7,11 @@ import TabItem from '@theme/TabItem';
 
 ## Introduction
 
-While we have already implemented GAM using smoothers with only one predictor, thin plate regression splines are used to implement smoothers with one or more predictors. We follow the implementation in \[[1](gam)\] closely here. For more theoretical treatments on the subject, please refer to \[[1](gam)\] and \[[2](gam)\].
+While we have already implemented GAM using smoothers with only one predictor, thin plate regression splines are used to implement smoothers with one or more predictors. We follow the implementation in \[[1](#ref1)\] closely here. For more theoretical treatments on the subject, please refer to \[[1](#ref1)\] and \[[2](#ref2)\].
 
 The following information is on regression. However, the translation to other families is straight-forward. For regression, we aim to approximate the response $Y_i$ with $f(x_i)$. For the binomial family, we aim to approximate the log-odds $p(x_i)$ with $f(x_i)$.
 
-## A Simple Linear GAM Model Built Using Smoothers from Multiple Predictors
+## A simple linear GAM model built using smoothers from multiple predictors
 
 Thin plate splines are used to estimate smooth functions of multiple predictor variables from noisy observations of the function at particular values of those predictors. Consider:
 
@@ -42,17 +42,15 @@ The function $f$ that minimizes Equation 1 has the following form:
 which is subject to the constraint $T^T\delta = 0$ where each element of $T$ is $T_{ij} = \phi_j (x_i)$ and where:
 
 - $M = {\frac{(m+d-1)!}{d!(m-1)!}}$;
-- $\phi_j$ are the polynomial basis functions with order = 0,1,...,m-1;
+- $\phi_j$ are the polynomial basis functions with order = 0,1,…,m-1;
 
-<figure>
-<img src="../images/gam_constraint.png" alt="../images/gam_constraint.png" />
-</figure>
+![Polynomial basis constraint](../images/gam_constraint.png)
 
 - $\Gamma ({\frac{1}{2}}-n) = {\frac{(-4)^nn!}{(2n)!}}{\sqrt \pi}$.
 
 However, Equation 2 cannot be implemented due to the fact that all the rows of the dataset are used in generating the function ${\hat{f}}(x)$.
 
-## Knot-based Approximation of ${\hat{f}}(x)$
+## Knot-based approximation of ${\hat{f}}(x)$
 
 Instead of using all the data points in the training set, only a subset of knots are used in the approximation of ${\hat{f}}(x)$ as follows:
 
@@ -66,37 +64,31 @@ where:
 
 - $\beta^T = (\delta^T , \alpha^2)$;
 
-<figure>
-<img src="../images/gam_chi_matrix.png" alt="../images/gam_chi_matrix.png" />
-</figure>
+![Chi matrix](../images/gam_chi_matrix.png)
 
 - $S$ is a $(k+M)$ by $(k+M)$ matrix with zeros everywhere except in its upper left $k$ by $k$ blocks where $S_{ij} = \eta_{md} ({\parallel{x_i^*-x_j^*}\parallel})$ and $x_i^*,x_j^*$ are knots.
 
-<figure>
-<img src="../images/gam_c_matrix.png" alt="../images/gam_c_matrix.png" />
-</figure>
+![C matrix](../images/gam_c_matrix.png)
 
 ### Generation of $X_{n_{md}}$
 
 The data matrix $X$ consists of two parts: $X = [X_{n_{md}}:T]$. First, we will generate $X_{n_{md}}$, which consists of the distance measure part. $X_{n_{md}}$ is $n$ by $k$ in dimension, and the $ij^{th}$ element is calculated as:
 
-> <figure>
-> <img src="../images/ijth_element.png" alt="../images/ijth_element.png" />
-> </figure>
+![ijth element formula](../images/ijth_element.png)
 
-**Generation of Penalty Matrix** $S$
+**Generation of penalty matrix** $S$
 
 Note that the penalty matrix $S=X_{n_{md}}^*$. It is the distance measure calculated using only the knot points.
 
-### Generation of the Polynomial Basis
+### Generation of the polynomial basis
 
 Let $d$ be the number of predictors included in the thin plate regression smoother, and let $m-1$ be the highest degree of the polynomial basis function used. We can calculate $m$ from $d$ by using the formula $m=floor(\frac{d+1}{2})+1$. The total number of polynomial basis function $M$ is determined by the formula $M={{d+m-1} \choose {d}} = {\frac{(d+m-1)}{d!(m-1)!}}$. We will illustrate how this is done with two examples:
 
-**Polynomial Basis for** $d=2$
+**Polynomial basis for** $d=2$
 
 In this case, $m=floor({\frac{2+1}{2}})+1=2$ and $M={{2+2-1} \choose {2}} = 3$. The size of the polynomial basis is 3, and the polynomial basis consists of polynomials of degrees 0 and 1. When the two predictors are set as $x_1,x_2$, the polynomial basis will consist of $1,x_1,x_2$. $T$ consists of one column of ones, predictor $x_1$, and predictor $x_2$. The size of $T$ is $n$ by $3$.
 
-**Polynomial Basis for** $d=4$
+**Polynomial basis for** $d=4$
 
 In this case, $m=floor({\frac{4+1}{2}})+1=3$ and $M={{4+3-1} \choose {4}}=15$. The size of the polynomial basis is 15, and the polynomial basis consists of polynomials of degrees 0, 1, and 2. The four predictors are $x_1,x_2,x_3,x_4$. $T$ consists of:
 
@@ -108,13 +100,13 @@ The size of $T$ is $n$ by $15$. The size of the polynomial basis grows rapidly a
 
 **Generation of** $T$
 
+
+
 Remember that $T$ is defined as $T_{ij} = \phi_j (x_i)$. Therefore, $T$ is of size $n$ by $M$. However, $T_*$ is only evaluated at the knots chosen by the user. Hence, by using the example of $d=2$ and letting the two predictors be $x_1,x_2$, $T$ contains:
 
-> <figure>
-> <img src="../images/gam_t_matrix.png" alt="../images/gam_t_matrix.png" />
-> </figure>
+![T matrix](../images/gam_t_matrix.png)
 
-### Absolving the Constraint via Matrix Transformation
+### Absolving the constraint via matrix transformation
 
 The constraint $C\beta =0$ is equivalent to $T_*^T\delta =0$ and is $M$ by $k$. The following transformations are applied:
 
@@ -127,21 +119,17 @@ Let's also:
 
 - decompose $X$ into two parts as $X=[X_{n_{md}}:T]$ where $X_{n_{md}}$ is $n$ by $k$ and $T$ is $n$ by $M$;
 
-<figure>
-<img src="../images/gam_decomposition.png" alt="../images/gam_decomposition.png" />
-</figure>
+![X decomposition into parts](../images/gam_decomposition.png)
 
 Let's rewrite the new objective with this decomposition:
 
-> <figure>
-> <img src="../images/gam_decomp_obj.png" alt="../images/gam_decomp_obj.png" />
-> </figure>
+![Decomposed objective function](../images/gam_decomp_obj.png)
 
 Note that $Z_{cs}^TX_{n_{md}}^*Z_{cs}$ is $(k-M)$ by $(k-M)$.
 
-### Sum-to-zero Constraints Implementation
+### Sum-to-zero constraints implementation
 
-This will follow the [Identifiability Constraints](gam#identifiability-constraints) rules for GAM. Let $X$ be the model matrix that contains the basis functions of one predictor variable; the sum-to-zero constraints require that $1^Tf_p=0=1^TX\beta$ where $\beta$ contains the coefficients relating to the basis functions of that particular predictor column. The idea is to create a $k$ by $(k-1)$ matrix $Z$ such that $\beta =Z\beta_z$, then $1^TX\beta =0$ for any $\beta_z$. $Z$ is generated by using the Householder transform. Please refer to \[[3](gam)\] for details. Therefore, we have $\beta_{CS}=Z\beta_Z$. Rewrite the objective function again and we will have
+This will follow the [Identifiability constraints](gam.mdx#identifiability-constraints) rules for GAM. Let $X$ be the model matrix that contains the basis functions of one predictor variable; the sum-to-zero constraints require that $1^Tf_p=0=1^TX\beta$ where $\beta$ contains the coefficients relating to the basis functions of that particular predictor column. The idea is to create a $k$ by $(k-1)$ matrix $Z$ such that $\beta =Z\beta_z$, then $1^TX\beta =0$ for any $\beta_z$. $Z$ is generated by using the Householder transform. Please refer to \[[3](#ref3)\] for details. Therefore, we have $\beta_{CS}=Z\beta_Z$. Rewrite the objective function again and we will have
 
 > $${\parallel{Y-X_{CS}\beta_{CS}}\parallel}^2+\lambda(\beta_{CS})^TS\beta_{CS} = 
 > {\parallel{Y-X_{CS}Z\beta_z}\parallel}^2+$$
@@ -150,9 +138,9 @@ This will follow the [Identifiability Constraints](gam#identifiability-constrain
 
 and we will be solving for $\beta_Z$. Then, we will obtain $\beta_{CS}=Z\beta_z$. Last, we will obtain the original $\beta$ by multiplying the part of the coefficeints not corresponding to the polynomial basis with $Z_{CS}$ like $\beta^T =((Z_{CS}\delta_{CS})^T,\alpha^T)$.
 
-## Specifying GAM Columns
+## Specifying GAM columns
 
-There are two ways to specify GAM columns for thin plate regression. Following the below example, `gam_columns` can be specified as:
+Two ways to specify GAM columns for thin plate regression are available. Following the below example, `gam_columns` can be specified as:
 
 For R:
 
@@ -166,7 +154,7 @@ For Python:
 
 When using a grid search, the GAM columns are specified inside of the `subspaces` hyperparameter. Otherwise, the `gam_column` parameter is entered on its own when building a GAM model.
 
-### Normal GAM
+### Normal GAM model
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -235,7 +223,7 @@ print(h2o_model2.coef())
 </TabItem>
 </Tabs>
 
-### Grid Search
+### Grid search
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -271,7 +259,7 @@ hyper_parameters$subspaces <- list(subspace)
 
 # Build and train the grid:
 gam_grid = h2o.grid("gam", grid_id="GAMModel1", x=xL, y=yR, 
-                    training_frame=trainGaussian, family='binomial', 
+                    training_frame=h2o_data, family='binomial', 
                     hyper_params=hyper_parameters, search_criteria=search_criteria)
 
 # Retrieve the coefficients:
@@ -286,7 +274,7 @@ from h2o.estimators import H2OGeneralizedAdditiveEstimator
 from h2o.grid.grid_search import H2OGridSearch
 
 # Import the train dataset:
-h2o_data <- h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gam_test/synthetic_20Cols_gaussian_20KRows.csv")
+h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gam_test/synthetic_20Cols_gaussian_20KRows.csv")
 
 # Set the factors:
 h2o_data['response'] = h2o_data['response'].asfactor()

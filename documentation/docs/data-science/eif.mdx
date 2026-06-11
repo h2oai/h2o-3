@@ -13,18 +13,18 @@ The cause of the bias is that branching is defined by the similarity to BST. At 
 
 $$(x - p) * n ≤ 0$$
 
-### MOJO Support
+### MOJO support
 
 Extended Isolation Forest supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
 
-## Tutorials and Blogs
+## Tutorials and blogs
 
 The following tutorials are available that describe how to use Extended Isolation Forest:
 
 - [Master's thesis: Anomaly detection using Extended Isolation Forest](https://dspace.cvut.cz/bitstream/handle/10467/87988/F8-DP-2020-Valenta-Adam-thesis.pdf?sequence=-1&isAllowed=y): The thesis deals with anomaly detection algorithms with a focus on the Extended Isolation Forest algorithm and includes the implementation to the H2O-3 open-source Machine Learning platform.
 - [Extended Isolation Forest jupyter notebook created by the authors of the algorithm](https://github.com/sahandha/eif/blob/master/Notebooks/EIF.ipynb): Describes how Extended Isolation Forest behaves compared to Isolation Forest.
 
-## Defining an Extended Isolation Forest Model
+## Defining an Extended Isolation Forest model
 
 Parameters are optional unless specified as *required*.
 
@@ -63,11 +63,13 @@ Parameters are optional unless specified as *required*.
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [x](algo-params/x): A vector containing the character names of the predictors in the model.
 
-## Anomaly Score
+## Anomaly score
 
 The output of Extended Isolation Forest's algorithm is in compliance with this [Extended Isolation Forest](http://dx.doi.org/10.1109/TKDE.2019.2947676) paper. In short, the anomaly score is the average **mean_length** in a forest normalized by the average path of an unsuccessful search in a binary search tree (BST).
 
@@ -98,7 +100,7 @@ In case the point $x$ is not isolated, Formula $c(i)$ is used to estimate the tr
 
 **The anomaly score is interpreted as follows**:
 
-- if instances return an `anomaly_score` very close to 1, then they are definitely anomalies,
+- if instances return an `anomaly_score` close to 1, then they are definitely anomalies,
 - if instances have an `anomaly_score` much smaller than 0.5, then they can be quite safely regarded as normal instances,
 - and if all the instances return an `anomaly_score` around 0.5, then the entire sample does not have any distinct anomalies.
 

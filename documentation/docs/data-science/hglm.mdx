@@ -21,7 +21,7 @@ $$\beta_{0j} = \beta_{00} + u_{0j}, \beta_{mj} = \beta_{m0} + u_{mj} \quad \text
 
 where:
 
-- $j(=[1,2,...,J])$ denotes the cluster (level-2 variable) the measurement is taken from (e.g. the school index);
+- $j(=[1,2,...,J])$ denotes the cluster (level-2 variable) the measurement is taken from (for example, the school index);
 - $i(=1,2,...,n_j)$ denotes the data index taken from within cluster $j$;
 - $\beta_{00}$ is the fixed intercept;
 - $\beta_{0j}$ is the random intercept;
@@ -52,8 +52,9 @@ Parameters are optional unless specified as *required*.
 
 - **initial_random_effects**: An H2OFrame ID that contains the initial values of the random effects coefficient. The row names should be the random coefficient names (defaults to `None`).
 
-  > > [!NOTE]
-  > > If you aren't sure what the random coefficient names are, then build the HGLM model with `max_iterations=0` and check out the model output field `random_coefficient_names`. The number of rows of this frame should be the number of level 2 units. Check out the model output field `group_column_names`. The number of rows should equal the length of the `group_column_names`.
+  :::note
+  If you aren't sure what the random coefficient names are, build the HGLM model with `max_iterations=0` and check the model output field `random_coefficient_names`. The number of rows of this frame should be the number of level 2 units. Check the model output field `group_column_names`. The number of rows should equal the length of `group_column_names`.
+  :::
 
 - **initial_t_matrix**: An H2OFrame ID that contains the initial values of the T matrix. It should be a positive symmetric matrix (defaults to `None`).
 
@@ -61,7 +62,7 @@ Parameters are optional unless specified as *required*.
 
 - [random_columns](algo-params/random_columns): An array of random column names from which random effects coefficients will be generated in the model building process.
 
-- [rand_family](algo-params/rand_family): Specify the distribution of the random effects. Currently only `rand_family="gaussisan"` is supported.
+- [rand_family](algo-params/rand_family): Specify the distribution of the random effects. Currently only `rand_family="gaussian"` is supported.
 
 - **random_intercept**: If enabled, will generate a random intercept as part of the random effects coefficients (defaults to `True`).
 
@@ -87,23 +88,25 @@ Parameters are optional unless specified as *required*.
 
 - [offset_column](algo-params/offset_column): Specify a column to use as the offset; the value cannot be the same as the value for the `weights_column`.
 
-  > > [!NOTE]
-  > > Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (`y`) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.
+  :::note
+  Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (`y`) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.
+  :::
 
 - [score_each_iteration](algo-params/score_each_iteration): Enable this option to score during each iteration of the model training. This option defaults to `False` (disabled).
 
 - [seed](algo-params/seed): Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to `-1` (time-based random number).
 
-- [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+- [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model. **Note**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
 
 - [validation_frame](algo-params/validation_frame): Specify the dataset used to evaluate the accuracy of the model.
 
 - [weights_column](algo-params/weights_column): Specify a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`.
 
   > *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`.
-  >
-  > > [!NOTE]
-  > > Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+
+  :::note
+  Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+  :::
 
 - [x](algo-params/x): Specify a vector containing the names or indices of the predictor variables to use when building the model. If `x` is missing, then all columns except `y` are used.
 
@@ -126,15 +129,17 @@ where:
 
 - $Y_j = \begin{bmatrix} x^T_{j1} \\ x^T_{j2} \\ x^T_{j3} \\ \vdots \\ x^T_{jn_j} \\\end{bmatrix}$ is a known $n_j \text{ by } p$ matrix of level-1 predictors and $x_{ji} = \begin{bmatrix} x^1_{ji} \\ x^2_{ji} \\ \vdots \\ x^{p-1}_{ji} \\ 1 \\\end{bmatrix}$;
 
-  > > [!NOTE]
-  > > In general, you can place the intercept at the beginning or the end of each row of data, but we chose to put it at the end for our implementation.
+  :::note
+  In general, you can place the intercept at the beginning or the end of each row of data, but we chose to put it at the end for our implementation.
+  :::
 
 - $\theta_f \text{ is a } p$ by 1 vector of fixed coefficients;
 
 - $A_{rj}$ is usually denoted by $Z_{rj} \text{ where } Z_{rj} = \begin{bmatrix} z^T_{j1} \\ z^T_{j2} \\ z^T_{j3} \\ \vdots \\ z^T_{jn_j} \\\end{bmatrix}$;
 
-  > > [!NOTE]
-  > > We included a term for the random intercept here. However, there are cases where we do not have a random intercept, and the last element of 1 will not be there for $z_{ji}$.
+  :::note
+  We included a term for the random intercept here. However, there are cases where we do not have a random intercept, and the last element of 1 will not be there for $z_{ji}$.
+  :::
 
 - $\theta_{rj}$ represents the random coefficient and is a $q$ by 1 vector;
 
@@ -194,13 +199,11 @@ The complete EM algorithm is as follows:
 
 2.  Estimation: estimate the CDSS:
 
-```
 $$\begin{aligned}
 E \big( \sum^J_{j=1} A^T_{fj} \theta_{rj} \theta_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} A^T_{fj} A_{rj} \theta^*_{rj} \\ E \big( \sum^J_{j=1} \theta_{rj} \theta^T_{rj} | Y, \theta_f, T_j, \sigma^2 \big) = \sum^J_{j=1} \theta^*_{rj} \theta^{*T}_{rj} + \sigma^2 \sum^J_{j=1} C^{-1}_j & \quad \text{ equation 17} \\ E \big( \sum^J_{j=1} r^T_j r_j \big) = \sum^J_{j=1} r^{*T}_j r^*_j + \sigma^2 \sum^J_{j=1} tr(C^{-1}_j A^T_{rj} A_{rj})
 \end{aligned}$$
 
 where: $r^*_j = Y_j - A_{fj} \theta_f - A_{fj} \theta^*_{rj}, \theta^*_{rj} = C^{-1}_j A^T_{rj} (Y_j - A_{fj} \theta_f), C_j = A^T_{rj} A_{rj} + \sigma^2 T^{-1} \text{ and } \theta_f, \sigma^2, T$ are based on the previous iteration or from initialization;
-```
 
 3.  Substitution: substitute the estimated CDSS from *equation 17* into the M-step forumulas (*equations 8, 9,* and *10*);
 
@@ -208,9 +211,7 @@ where: $r^*_j = Y_j - A_{fj} \theta_f - A_{fj} \theta^*_{rj}, \theta^*_{rj} = C^
 
 5.  Cycling: continue steps 2, 3, and 4 until the following stopping condition is satisfied:
 
-```
-- The largest change in the value of any of the parameters is sufficiently small.
-```
+    - The largest change in the value of any of the parameters is sufficiently small.
 
 ### Log-likelihood for HGLM
 

@@ -1,5 +1,5 @@
 ---
-title: "Generalized Low Rank Models (GLRM)"
+title: "Generalized low rank models (GLRM)"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -9,21 +9,19 @@ import TabItem from '@theme/TabItem';
 
 Generalized Low Rank Models (GLRM) is an algorithm for dimensionality reduction of a dataset. It is a general, parallelized optimization algorithm that applies to a variety of loss and regularization functions. Categorical columns are handled by expansion into 0/1 indicator columns for each level. With this approach, GLRM is useful for reconstructing missing values and identifying important features in heterogeneous data.
 
-### MOJO Support
+### MOJO support
 
 GLRM currently only supports exporting [MOJOs](../save-and-load-model#supported-mojos).
 
-## What is a Low-Rank Model?
+## What is a low-rank model?
 
-Given large collections of data with numeric and categorical values, entries in the table may be noisy or even missing altogether. Low rank models facilitate the understanding of tabular data by producing a condensed vector representation for every row and column in the dataset. Specifically, given a data table A with m rows and n columns, a GLRM consists of a decomposition of A into numeric matrices X and Y. The matrix X has the same number of rows as A, but only a small, user-specified number of columns k. The matrix Y has k rows and d columns, where d is equal to the total dimension of the embedded features in A. For example, if A has 4 numeric columns and 1 categorical column with 3 distinct levels (e.g., red, blue and green), then Y will have 7 columns. When A contains only numeric features, the number of columns in A and Y are identical.
+Given large collections of data with numeric and categorical values, entries in the table may be noisy or even missing altogether. Low rank models facilitate the understanding of tabular data by producing a condensed vector representation for every row and column in the dataset. Specifically, given a data table A with m rows and n columns, a GLRM consists of a decomposition of A into numeric matrices X and Y. The matrix X has the same number of rows as A, but only a small, user-specified number of columns k. The matrix Y has k rows and d columns, where d is equal to the total dimension of the embedded features in A. For example, if A has 4 numeric columns and 1 categorical column with 3 distinct levels (for example, red, blue and green), then Y will have 7 columns. When A contains only numeric features, the number of columns in A and Y are identical.
 
-<figure>
-<img src="../images/glrm_matrix_decomposition.png" alt="../images/glrm_matrix_decomposition.png" />
-</figure>
+![Decomposition of matrix A into X and Y matrices](../images/glrm_matrix_decomposition.png)
 
 Both X and Y have practical interpretations. Each row of Y is an archetypal feature formed from the columns of A, and each row of X corresponds to a row of A projected into this reduced dimension feature space. We can approximately reconstruct A from the matrix product XY, which has rank k. The number k is chosen to be much less than both m and n: a typical value for 1 million rows and 2,000 columns of numeric data is k = 15. The smaller k is, the more compression gained from the low-rank representation.
 
-## Defining a GLRM Model
+## Defining a GLRM model
 
 Parameters are optional unless specified as *required*.
 
@@ -144,7 +142,7 @@ Parameters are optional unless specified as *required*.
 
 - [x](algo-params/x): Specify a vector containing the names or indices of the predictor variables to use when building the model. If `x` is missing, then all columns are used.
 
-## Transforming Data
+## Transforming data
 
 With an initial GLRM model, when you give a dataset (**A**) to GLRM, it builds as:
 

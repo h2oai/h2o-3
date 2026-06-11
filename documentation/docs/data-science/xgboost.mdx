@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem';
 
 XGBoost is a supervised learning algorithm that implements a process called boosting to yield accurate models. Boosting refers to the ensemble learning technique of building many models sequentially, with each new model attempting to correct for the deficiencies in the previous model. In tree boosting, each new model that is added to the ensemble is a decision tree. XGBoost provides parallel tree boosting (also known as GBDT, GBM) that solves many data science problems in a fast and accurate way. For many problems, XGBoost is one of the best gradient boosting machine (GBM) frameworks today.
 
-The H2O XGBoost implementation is based on two separated modules. The first module, [h2o-genmodel-ext-xgboost](https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel-extensions/xgboost), extends module [h2o-genmodel](https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel) and registers an XGBoost-specific MOJO. The module also contains all necessary XGBoost binary libraries. The module can contain multiple libraries for each platform to support different configurations (e.g., with/without GPU/OMP). H2O always tries to load the most powerful one (currently a library with GPU and OMP support). If it fails, then the loader tries the next one in a loader chain. For each platform, H2O provide an XGBoost library with minimal configuration (supports only single CPU) that serves as fallback in case all other libraries could not be loaded.
+The H2O XGBoost implementation is based on two separated modules. The first module, [h2o-genmodel-ext-xgboost](https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel-extensions/xgboost), extends module [h2o-genmodel](https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel) and registers an XGBoost-specific MOJO. The module also contains all necessary XGBoost binary libraries. The module can contain multiple libraries for each platform to support different configurations (for example, with/without GPU/OMP). H2O always tries to load the most powerful one (currently a library with GPU and OMP support). If it fails, then the loader tries the next one in a loader chain. For each platform, H2O provide an XGBoost library with minimal configuration (supports only single CPU) that serves as fallback in case all other libraries could not be loaded.
 
 The second module, [h2o-ext-xgboost](https://github.com/h2oai/h2o-3/tree/master/h2o-extensions/xgboost), contains the actual XGBoost model and model builder code, which communicates with native XGBoost libraries via the JNI API. The module also provides all necessary REST API definitions to expose the XGBoost model builder to clients.
 
@@ -17,11 +17,11 @@ XGBoost in H2O supports multicore, thanks to OpenMP. The multicore implementatio
 
 Refer to the [XGBoost in H2O Machine Learning Platform](https://www.h2o.ai/blog/xgboost-in-h2o-machine-learning-platform/) blog post for an example of how to use XGBoost with the HIGGS dataset.
 
-### MOJO Support
+### MOJO support
 
 XGBoost supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining an XGBoost Model
+## Defining an XGBoost model
 
 Parameters are optional unless specified as *required*.
 
@@ -75,13 +75,13 @@ Parameters are optional unless specified as *required*.
 
 - **scale_pos_weight**: Specify the multiplier that will be used for gradient calculation for observations with positive weights. This is useful for imbalanced problems. A good starting value is: sum(weight of negative observations) / sum(weight of positive observations). This defaults to `1`.
 
-- **score_eval_metric_only**: Disable native H2O scoring and score only the `eval_metric` when enabled. This can make model training faster if scoring is frequent (e.g. each iteration). This option defaults to `False` (disabled).
+- **score_eval_metric_only**: Disable native H2O scoring and score only the `eval_metric` when enabled. This can make model training faster if scoring is frequent (for example, each iteration). This option defaults to `False` (disabled).
 
 - **skip_drop**: When `booster="dart"`, specify a float value from 0 to 1 for the skip drop. This determines the probability of skipping the dropout procedure during a boosting iteration. If a dropout is skipped, new trees are added in the same manner as `"gbtree"`. Note that non-zero `skip_drop` has higher priority than `rate_drop` or `one_drop`. This option defaults to `0.0`.
 
 - **tree_method**: Specify the construction tree method to use. This can be one of the following:
 
-  > - `auto` (default): Allow the algorithm to choose the best method. For small to medium datasets, `exact` will be used. For very large datasets, `approx` will be used.
+  > - `auto` (default): Allow the algorithm to choose the best method. For small to medium datasets, `exact` will be used. For large datasets, `approx` will be used.
   > - `exact`: Use the exact greedy method.
   > - `approx`: Use an approximate greedy method. This generates a new set of bins for each iteration.
   > - `hist`: Use a fast histogram optimized approximate greedy method. In this case, only a subset of possible split values are considered.
@@ -127,7 +127,7 @@ Parameters are optional unless specified as *required*.
 
 - [checkpoint](algo-params/checkpoint): Allows you to specify a model key associated with a previously trained model. This builds a new model as a continuation of a previously generated model. If this is not specified, then a new model will be trained instead of building on a previous model.
 
-- [distribution](algo-params/distribution): Specify the distribution (i.e. the loss function). The options are:
+- [distribution](algo-params/distribution): Specify the distribution (that is, the loss function). The options are:
 
   > - `AUTO` (default)
   > - `bernoulli` -- response column must be 2-class categorical
@@ -207,7 +207,9 @@ Parameters are optional unless specified as *required*.
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [tweedie_power](algo-params/tweedie_power): (Applicable if `distribution="tweedie"` only) Specify the Tweedie power. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). You can tune over this option with values \> 1.0 and \< 2.0. This value defaults to `1.5`.
 
@@ -225,7 +227,7 @@ Parameters are optional unless specified as *required*.
 
 - [y](algo-params/y): *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
-## "LightGBM" Emulation Mode Options
+## "LightGBM" emulation mode options
 
 LightGBM mode builds trees as deep as necessary by repeatedly splitting the one leaf that gives the biggest gain instead of splitting all leaves until a maximum depth is reached. H2O does not integrate [LightGBM](https://github.com/Microsoft/LightGBM). Instead, H2O provides a method for emulating the LightGBM software using a certain set of options within XGBoost. This is done by setting the following options:
 
@@ -239,7 +241,7 @@ When the above are configured, then the following additional "LightGBM" options 
 - `max_bin`
 - `max_leaves`
 
-## XGBoost Only Options
+## XGBoost only options
 
 As opposed to light GBM models, the following options configure a true XGBoost model.
 
@@ -253,7 +255,7 @@ As opposed to light GBM models, the following options configure a true XGBoost m
 - `backend`
 - `gpu_id`
 
-## Dart Booster Options
+## Dart booster options
 
 The following additional parameters can be configured when `booster=dart`:
 
@@ -263,7 +265,7 @@ The following additional parameters can be configured when `booster=dart`:
 - `one_drop`
 - `skip_drop`
 
-## GPU Support
+## GPU support
 
 GPU support is available in H2O's XGBoost if the following requirements are met:
 
@@ -277,7 +279,7 @@ GPU support is available in H2O's XGBoost if the following requirements are met:
 
 ## Limitations
 
-This section provides a list of XGBoost limitations - some of which will be addressed in a future release. In general, if XGBoost cannot be initialized for any reason (e.g., unsupported platform), then the algorithm is not exposed via REST API and is not available for clients. Clients can verify availability of the XGBoost by using the corresponding client API call. For example, in Python:
+This section provides a list of XGBoost limitations - some of which will be addressed in a future release. In general, if XGBoost cannot be initialized for any reason (for example, an unsupported platform), then the algorithm is not exposed via REST API and is not available for clients. Clients can verify availability of the XGBoost by using the corresponding client API call. For example, in Python:
 
 ```
 is_xgboost_available = H2OXGBoostEstimator.available()
@@ -312,14 +314,11 @@ Some environments may required disabling XGBoost. This can be done by setting `-
 ```
 # Disable XGBoost in the regular H2O jar
 java -Xmx10g -Dsys.ai.h2o.ext.core.toggle.XGBoost=False -jar  h2o.jar -name ni  -ip 127.0.0.1 -port 54321
-
-# Disable XGBoost in the Hadoop H2O driver jar
-hadoop jar h2odriver.jar -JJ "-Dsys.ai.h2o.ext.core.toggle.XGBoost=False" -nodes 1  -mapperXmx 3g  -output tmp/a39
 ```
 
 Setting `-Dsys.ai.h2o.ext.core.toggle.XGBoost` to `False` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms.
 
-## XGBoost Feature Interactions
+## XGBoost feature interactions
 
 Ranks of features and feature interactions by various metrics implemented in [XGBFI](https://github.com/Far0n/xgbfi) style.
 
@@ -446,19 +445,21 @@ print(h)
 </TabItem>
 </Tabs>
 
-### Note
+:::note
 
 XGBoost requires its own memory outside the H2O (Java) cluster. When running XGBoost, be sure you allow H2O-3 no more than 2/3 of the total available RAM.
+
+:::
 
 ## FAQs
 
 - **How does the algorithm handle missing values?**
 
-> Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right. XGBoost will automatically learn which is the best direction to go when a value is missing.
+> Missing values are interpreted as containing information (that is, missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right. XGBoost will automatically learn which is the best direction to go when a value is missing.
 
 - **I have a dataset with a large number of missing values (more than 40%), and I'm generating models using XGBoost and H2O Gradient Boosting. Does XGBoost handle variables with missing values differently than H2O's Gradient Boosting?**
 
-> Missing values handling and variable importances are both slightly different between the two methods. Both treat missing values as information (i.e., they learn from them, and don't just impute with a simple constant). The variable importances are computed from the gains of their respective loss functions during tree construction. H2O uses squared error, and XGBoost uses a more complicated one based on gradient and hessian.
+> Missing values handling and variable importances are both slightly different between the two methods. Both treat missing values as information (that is, they learn from them, and don't just impute with a simple constant). The variable importances are computed from the gains of their respective loss functions during tree construction. H2O uses squared error, and XGBoost uses a more complicated one based on gradient and hessian.
 
 - **How does H2O's XGBoost create the d-matrix?**
 
@@ -474,26 +475,20 @@ XGBoost requires its own memory outside the H2O (Java) cluster. When running XGB
 
 - **How are categorical columns handled?**
 
-> By default, XGBoost will create N+1 new cols for categorical features with N levels (i.e., `categorical_encoding="one_hot_internal"`).
-
-- **Why does my H2O cluster on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
-
-> This is why the extramempercent option exists, and we recommend setting this to a high value, such as 120. What happens internally is that when you specify `-node_memory 10G` and `-extramempercent 120`, the h2o driver will ask Hadoop for $10G * (1 + 1.2) = 22G$ of memory. At the same time, the h2o driver will limit the memory used by the container JVM (the h2o node) to 10G, leaving the $10G*120%=12G$ memory "unused." This memory can be then safely used by XGBoost outside of the JVM. Keep in mind that H2O algorithms will only have access to the JVM memory (10GB), while XGBoost will use the native memory for model training. For example:
->
->     hadoop jar h2odriver.jar -nodes 1 -mapperXmx 20g -extramempercent 120
+> By default, XGBoost will create N+1 new cols for categorical features with N levels (that is, `categorical_encoding="one_hot_internal"`).
 
 - **When should I define the evalutation metric instead of letting H2O choose which metrics to calculate?**
 
   While you don't always need to specify a custom `eval_metric`, it is beneficial in two specific cases:
 
-  > 1.  When H2O does not provide a suitable built-in metric (e.g. if you want to calculate classification error for a different threshold than the one automatically determined by H2O, you can do so by specifying `eval_metric="error@<your threshold>"`);
-  > 2.  When you have frequent scoring (e.g. `score_each_iteration=True`, `score_tree_interval < 10`). Using `score_eval_metric_only=True` allows you to keep `score_each_iteration=True` while still reducing training time.
+  > 1.  When H2O does not provide a suitable built-in metric (for example, if you want to calculate classification error for a different threshold than the one automatically determined by H2O, you can do so by specifying `eval_metric="error@<your threshold>"`);
+  > 2.  When you have frequent scoring (for example, `score_each_iteration=True`, `score_tree_interval < 10`). Using `score_eval_metric_only=True` allows you to keep `score_each_iteration=True` while still reducing training time.
 
   Refer to this [demo on utilizing the evalutation metric with early stopping](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/xgboost_eval_metric_demo.ipynb) for more information.
 
 ## References
 
-- Chen, Tianqi and Guestrin, Carlos Guestrin. "XGBoost: A Scalable Tree Boosting System." Version 3 (2016) [http://arxiv.org/abs/1603.02754](http://arxiv.org/abs/1603.02754)
+- Chen, Tianqi and Guestrin, Carlos Guestrin. `XGBoost: A Scalable Tree Boosting System.` Version 3 (2016) [http://arxiv.org/abs/1603.02754](http://arxiv.org/abs/1603.02754)
 - Mitchell R, Frank E. (2017) Accelerating the XGBoost algorithm using GPU computing. PeerJ Preprints 5:e2911v1 [https://doi.org/10.7287/peerj.preprints.2911v1](https://doi.org/10.7287/peerj.preprints.2911v1)
 
-[Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", \*Ann. Appl. Stat.\* \*\*2\*\*:916-954.](http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046)
+[Jerome H. Friedman and Bogdan E. Popescu, 2008, Predictive learning via rule ensembles, \*Ann. Appl. Stat.\* \*\*2\*\*:916-954.](http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046)

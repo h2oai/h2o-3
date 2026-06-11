@@ -16,20 +16,20 @@ The H2O Aggregator method is a clustering-based method for reducing a numerical/
 
 Aggregator maintains outliers as outliers, but lumps together dense clusters into exemplars with an attached count column showing the member points.
 
-The Aggregator method behaves just any other unsupervised model. You can ignore columns, which will then be dropped for distance computation. Training itself creates the aggregated H2O Frame, which also includes the count of members for every row/exemplar. The aggregated frame always includes the full original content of the training frame, even if some columns were ignored for the distance computation. Scoring/prediction is overloaded with a function that returns the members of a given exemplar row index from 0...Nexemplars (this time without a count).
+The Aggregator method behaves just any other unsupervised model. You can ignore columns, which will then be dropped for distance computation. Training itself creates the aggregated H2O Frame, which also includes the count of members for every row/exemplar. The aggregated frame always includes the full original content of the training frame, even if some columns were ignored for the distance computation. Scoring/prediction is overloaded with a function that returns the members of a given exemplar row index from 0…Nexemplars (this time without a count).
 
-### MOJO Support
+### MOJO support
 
 Aggregator currently does not support [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining an Aggregator Model
+## Defining an Aggregator model
 
 Parameters are optional unless specified as *required*.
 
 ### Algorithm-specific parameters
 
 - **num_iteration_without_new_exemplar**: The number of iterations to run before aggregator exits if the number of exemplars collected doesn't change. This option defaults to `500`.
-- **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g. `0.5` is +/- 50 percent). This option defaults to `0.5`.
+- **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (for example, `0.5` is +/- 50 percent). This option defaults to `0.5`.
 - **save_mapping_frame**: When this option is enabled, the mapping of rows in an aggregated frame to the one in the original/raw frame will be created and exported. This option defaults to `False` (disabled).
 - **target_num_exemplars**: Specify a value for the targeted number of exemplars. This option defaults to `5000`.
 
@@ -52,7 +52,9 @@ Parameters are optional unless specified as *required*.
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [transform](algo-params/transform): Specify the transformation method for numeric columns in the training data. One of
 
@@ -62,9 +64,9 @@ Parameters are optional unless specified as *required*.
   > - `"demean"`
   > - `"descale"`
 
-- [x](algo-params/x): Specify a vector contaitning the character names of the predictors in the model.
+- [x](algo-params/x): Specify a vector containing the character names of the predictors in the model.
 
-## Aggregator Output
+## Aggregator output
 
 The output of the aggregation is a new aggregated frame that can be accessed in R and Python.
 
@@ -101,7 +103,7 @@ df
 
 [100 rows x 5 columns]
 
-# Build an aggregated frame using eigan categorical encoding
+# Build an aggregated frame using eigen categorical encoding
 target_num_exemplars <- 1000
 rel_tol_num_exemplars <- 0.5
 encoding <- "Eigen"
@@ -164,7 +166,7 @@ df = h2o.create_frame(
 
 [100 rows x 5 columns]
 
-# Build an aggregated frame using eigan categorical encoding
+# Build an aggregated frame using eigen categorical encoding
 params = {
     "target_num_exemplars": 1000,
     "rel_tol_num_exemplars": 0.5,

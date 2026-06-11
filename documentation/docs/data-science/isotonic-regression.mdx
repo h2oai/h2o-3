@@ -9,13 +9,13 @@ import TabItem from '@theme/TabItem';
 
 An Isotonic Regression is a method of solving univariate regression problems by fitting a free-form line to an ordered sequence of observations such that the fitted line is non-decreasing while minimizing the distance of the fitted line from the observations.
 
-H2O's Isotonic Regression implements a pool adjacent violators algorithm which uses an approach to parallelizing isotonic regression \[[1](gam)\].
+H2O's Isotonic Regression implements a pool adjacent violators algorithm which uses an approach to parallelizing isotonic regression \[[1](#ref1)\].
 
-### MOJO Support
+### MOJO support
 
 Isotonic Regression models can be exported as [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining an Isotonic Regression Model
+## Defining an isotonic regression model
 
 All parameters are optional unless specified as *required*.
 
@@ -50,7 +50,9 @@ All parameters are optional unless specified as *required*.
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [validation_frame](algo-params/validation_frame): Specify the dataset used to evaluate the accuracy of the model.
 
@@ -64,7 +66,7 @@ All parameters are optional unless specified as *required*.
 
 - [y](algo-params/y): *Required* Specify the column to use as the dependent variable.
 
-  > - Isolation Regression will treat any input as a regression problem regardless of the type of dependent variable. For categorical variables, it will train the model on indices of the labels.
+  > - Isotonic Regression treats any input as a regression problem regardless of the type of dependent variable. For categorical variables, it trains the model on indices of the labels.
 
 ## Examples
 
@@ -103,7 +105,7 @@ X = X.reshape(-1)
 
 train = H2OFrame(np.column_stack((y, X)), column_names=["y", "X"])
 h2o_iso_reg = H2OIsotonicRegressionEstimator()
-h2o_iso_reg.train(training_frame=train, x="X", y="y", weights_column="w")
+h2o_iso_reg.train(training_frame=train, x="X", y="y")
 print(h2o_iso_reg)
 ```
 
@@ -112,6 +114,6 @@ print(h2o_iso_reg)
 
 ## References
 
-<a id="ref5"></a>
+<a id="ref1"></a>
 
 1.  Kearsley, A.J., Tapia, R.A., Trosset, M.W. (1996). An Approach to Parallelizing Isotonic Regression. In: Fischer, H., Riedmüller, B., Schäffler, S. (eds) Applied Mathematics and Parallel Computing. Physica-Verlag HD. [https://doi.org/10.1007/978-3-642-99789-1_10](https://doi.org/10.1007/978-3-642-99789-1_10)

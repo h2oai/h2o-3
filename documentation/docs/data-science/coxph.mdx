@@ -21,11 +21,11 @@ This combination of a non-parametric baseline hazard function and a parametric r
 
 [An R demo is available here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.coxph.R). This uses the CoxPH algorithm along with the WA_Fn-UseC\_-Telco-Customer-Churn.csv dataset.
 
-### MOJO Support
+### MOJO support
 
 CoxPH supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining a CoxPH Model
+## Defining a CoxPH model
 
 Parameters are optional unless specified as *required*.
 
@@ -59,7 +59,9 @@ Parameters are optional unless specified as *required*.
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [use_all_factor_levels](algo-params/use_all_factor_levels): Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. This option defaults to `True` (enabled).
 
@@ -69,11 +71,11 @@ Parameters are optional unless specified as *required*.
   >
   > **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
-- [x](algo-params/x): Specify a vector containing the names or indicies of the predictor variables to use when building the model. If `x` is missing, then all columns except `y` are used.
+- [x](algo-params/x): Specify a vector containing the names or indices of the predictor variables to use when building the model. If `x` is missing, then all columns except `y` are used.
 
-- [y](algo-params/y) (Python) / **event_column** (R): *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
+- [y](algo-params/y) (Python API) / **event_column** (R API): *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
-## Cox Proportional Hazards Model Results
+## Cox proportional hazards model results
 
 ### Data
 
@@ -93,7 +95,7 @@ $\tt{se(coef)}$: The standard error of the coefficient estimate.
 
 $\tt{z}$: The z statistic, which is the ratio of the coefficient estimate to its standard error.
 
-### Model Statistics
+### Model statistics
 
 - Cox and Snell Generalized $R^2$
 
@@ -129,7 +131,7 @@ $\tt{z}$: The z statistic, which is the ratio of the coefficient estimate to its
 >
 > $I(\beta) = - H(\beta)$ is the observed information matrix
 
-## Cox Proportional Hazards Model Details
+## Cox proportional hazards model details
 
 A Cox proportional hazards model measures time on a scale defined by the ranking of the $M$ distinct observed event occurrence times, $t_1 < t_2 < \dots < t_M$. When no two events occur at the same time, the partial likelihood for the observations is given by
 
@@ -141,7 +143,7 @@ $PL(\beta) = \prod_{m=1}^M\frac{\exp(\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta)}{(
 
 where $R_m$ is the risk set and $D_m$ is the set of observations of size $d_m$ with an observed event at time $t_m$ respectively. Due to the combinatorial nature of the denominator, this exact partial likelihood becomes prohibitively expensive to calculate, leading to the common use of Efron's and Breslow's approximations.
 
-### Efron's Approximation
+### Efron's approximation
 
 Of the two approximations, Efron's produces results closer to the exact combinatoric solution than Breslow's. Under this approximation, the partial likelihood and log partial likelihood are defined as
 
@@ -149,7 +151,7 @@ $PL(\beta) = \prod_{m=1}^M \frac{\exp(\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta)}{
 
 $pl(\beta) = \sum_{m=1}^M \big[\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta - \frac{\sum_{j \in D_m} w_j}{d_m} \sum_{k=1}^{d_m} \log(\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta) - \frac{k-1}{d_m} \sum_{j \in D_m} w_j \exp(\mathbf{x}_j^T\beta))\big]$
 
-### Breslow's Approximation
+### Breslow's approximation
 
 Under Breslow's approximation, the partial likelihood and log partial likelihood are defined as
 
@@ -157,7 +159,7 @@ $PL(\beta) = \prod_{m=1}^M \frac{\exp(\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta)}{
 
 $pl(\beta) = \sum_{m=1}^M \big[\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta - (\sum_{j \in D_m} w_j)\log(\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta))\big]$
 
-## Cox Proportional Hazards Model Algorithm
+## Cox proportional hazards model algorithm
 
 H2O uses the Newton-Raphson algorithm to maximize the partial log-likelihood, an iterative procedure defined by the steps:
 
@@ -168,20 +170,19 @@ To add numeric stability to the model fitting calculations, the numeric predicto
 3.  Calculate the log partial likelihood, $pl\big(\beta^{(n)}\big)$, at the current coefficient vector estimate.
 4.  Compare $pl\big(\beta^{(n)}\big)$ to $pl\big(\beta^{(n-1)}\big)$.
 
-> 1)  If $pl\big(\beta^{(n)}\big) > pl\big(\beta^{(n-1)}\big)$, then accept the new coefficient vector, $\beta^{(n)}$, as the current best estimate, $\tilde{\beta}$, and set a new candidate coefficient vector to be $\beta^{(n+1)} = \beta^{(n)} - \tt{step}$, where $\tt{step} := H^{-1}(\beta^{(n)}) U(\beta^{(n)})$, which is the product of the inverse of the second derivative of $pl$ times the first derivative of $pl$ based upon the observed data.
-> 2)  If $pl\big(\beta^{(n)}\big) \le pl\big(\beta^{(n-1)}\big)$, then set $\tt{step} := \tt{step} / 2$ and $\beta^{(n+1)} = \tilde{\beta} - \tt{step}$.
+    a. If $pl\big(\beta^{(n)}\big) > pl\big(\beta^{(n-1)}\big)$, then accept the new coefficient vector, $\beta^{(n)}$, as the current best estimate, $\tilde{\beta}$, and set a new candidate coefficient vector to be $\beta^{(n+1)} = \beta^{(n)} - \tt{step}$, where $\tt{step} := H^{-1}(\beta^{(n)}) U(\beta^{(n)})$, which is the product of the inverse of the second derivative of $pl$ times the first derivative of $pl$ based upon the observed data.
+    b. If $pl\big(\beta^{(n)}\big) \le pl\big(\beta^{(n-1)}\big)$, then set $\tt{step} := \tt{step} / 2$ and $\beta^{(n+1)} = \tilde{\beta} - \tt{step}$.
 
 5.  Repeat steps 2 - 4 until either
 
-> 1)  $n = \tt{iter\ max}$ or
->
-> 2)  the log-relative error $LRE\Big(pl\big(\beta^{(n)}\big), pl\big(\beta^{(n+1)}\big)\Big) >= \tt{lre\ min}$,
->
->     where
->
->     $LRE(x, y) = - \log_{10}\big(\frac{\mid x - y \mid}{y}\big)$, if $y \ne 0$
->
->     $LRE(x, y) = - \log_{10}(\mid x \mid)$, if $y = 0$
+    a. $n = \tt{iter\ max}$ or
+    b. the log-relative error $LRE\Big(pl\big(\beta^{(n)}\big), pl\big(\beta^{(n+1)}\big)\Big) >= \tt{lre\ min}$,
+
+       where
+
+       $LRE(x, y) = - \log_{10}\big(\frac{\mid x - y \mid}{y}\big)$, if $y \ne 0$
+
+       $LRE(x, y) = - \log_{10}(\mid x \mid)$, if $y = 0$
 
 ## Examples
 

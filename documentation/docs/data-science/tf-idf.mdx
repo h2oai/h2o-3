@@ -35,7 +35,7 @@ The implementation of IDF used in H2O TF-IDF is as follows:
 
 $$IDF(w,d) = log\frac{|D| + 1}{DF(w) + 1}$$
 
-where natural logarithm is being used (i.e. the logarithm has a base equal to $e$). Based on the equation above, IDF of a word present in all documents from the corpus is equal to 0, and the fewer documents contain the word, the higher its IDF value.
+where natural logarithm is being used (that is, the logarithm has a base equal to $e$). Based on the equation above, IDF of a word present in all documents from the corpus is equal to 0, and the fewer documents contain the word, the higher its IDF value.
 
 TF-IDF is defined as a product of the TF and IDF measures explained above:
 
@@ -55,7 +55,7 @@ Output is a H2OFrame with rows consisting of document ID, word and its correspon
 
 ## Examples
 
-There is a jupyter notebook with Python demo available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tf-idf.ipynb).
+A Jupyter notebook with a Python demo is available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tf-idf.ipynb).
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -67,7 +67,7 @@ h2o.init()
 
 # Construct data
 documents = c(
-    'H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark.',
+    'H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and scales seamlessly across multi-node clusters.',
     'Ice hockey is a contact team sport played on ice, usually in a rink, in which two teams of skaters use their sticks to shoot a vulcanized rubber puck into their opponent\'s net to score goals. The sport is known to be fast-paced and physical.',
     'An antibody (Ab), also known as an immunoglobulin (Ig), is a large, Y-shaped protein produced mainly by plasma cells that is used by the immune system to neutralize pathogens such as pathogenic bacteria and viruses.'
 )
@@ -123,7 +123,7 @@ h2o.init()
 
 # Construct data
 documents = [
-    'H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark.',
+    'H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and scales seamlessly across multi-node clusters.',
     'Ice hockey is a contact team sport played on ice, usually in a rink, in which two teams of skaters use their sticks to shoot a vulcanized rubber puck into their opponent\'s net to score goals. The sport is known to be fast-paced and physical.',
     'An antibody (Ab), also known as an immunoglobulin (Ig), is a large, Y-shaped protein produced mainly by plasma cells that is used by the immune system to neutralize pathogens such as pathogenic bacteria and viruses.'
 ]

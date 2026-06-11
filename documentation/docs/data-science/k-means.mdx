@@ -1,5 +1,5 @@
 ---
-title: "K-Means Clustering"
+title: "K-Means clustering"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -9,17 +9,17 @@ import TabItem from '@theme/TabItem';
 
 K-Means falls in the general category of clustering algorithms. Clustering is a form of unsupervised learning that tries to find structures in the data without using any labels or target values. Clustering partitions a set of observations into separate groupings such that an observation in a given group is more similar to another observation in the same group than to another observation in a different group.
 
-For more information, refer to ["A Fast Clustering Algorithm to Cluster Very Large Categorical Data Sets in Data Mining"](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.134.83&rep=rep1&type=pdf) and ["Extensions to the k-Means Algorithm for Clustering Large Data Sets with Catgorical Values"](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.4028&rep=rep1&type=pdf) by Zhexue Huang.
+For more information, refer to [Huang (1997): fast clustering for large categorical datasets](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.134.83&rep=rep1&type=pdf) and [Huang (1998): k-Means extensions for categorical values](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.4028&rep=rep1&type=pdf).
 
-### MOJO Support
+### MOJO support
 
 K-Means currently only supports exporting [MOJOs](../save-and-load-model#supported-mojos).
 
-## Defining a K-Means Model
+## Defining a K-Means model
 
 Parameters are optional unless specified as *required*.
 
-### Algorithm-specifc parameters
+### Algorithm-specific parameters
 
 - [cluster_size_constraints](algo-params/cluster_size_constraints): An array specifying the minimum number of points that should be in each cluster. The length of the constraints array has to be the same as the number of clusters.
 
@@ -94,13 +94,15 @@ Parameters are optional unless specified as *required*.
 
 - [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
 
-  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::note
+  In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+  :::
 
 - [validation_frame](algo-params/validation_frame): Specify the dataset to calculate validation clustering metrics.
 
 - [x](algo-params/x): Specify a vector containing the names or indices of the predictor variables to use when building the model. If `x` is missing, then all columns are used.
 
-## Interpreting a K-Means Model
+## Interpreting a K-Means model
 
 By default, the following output displays:
 
@@ -114,9 +116,9 @@ By default, the following output displays:
 
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary and should be thought of as a tuning parameter. The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
 
-## Estimating <span className="title-ref">k</span> in K-Means
+## Estimating `k` in K-Means
 
-The steps below describe the method that K-Means uses in order to estimate <span className="title-ref">k</span>.
+The steps below describe the method that K-Means uses in order to estimate `k`.
 
 1.  Beginning with one cluster, run K-Means to compute the centroid.
 2.  Find variable with greatest range and split at the mean.
@@ -161,15 +163,15 @@ If the `nfolds` and `cluster_size_constraints` parameters are set simultaneously
 
 Expected time with various sized data (OS debian 10.0 (x86-64), processor Intel© Core™ i7-7700HQ CPU @ 2.80GHz × 4, RAM 23.1 GiB):
 
-- 10 000 rows, 5 features ~ 0h 9m 21s
-- 20 000 rows, 5 features ~ 0h 39m 27s
-- 30 000 rows, 5 features ~ 1h 26m 43s
-- 40 000 rows, 5 features ~ 2h 13m 31s
-- 50 000 rows, 5 features ~ 4h 4m 18s
+- 10,000 rows, 5 features: ~9 min 21 s
+- 20,000 rows, 5 features: ~39 min 27 s
+- 30,000 rows, 5 features: ~1 hr 26 min 43 s
+- 40,000 rows, 5 features: ~2 hr 13 min 31 s
+- 50,000 rows, 5 features: ~4 hr 4 min 18 s
 
 **The sum of constraints is smaller the time is faster - it uses MCF calculation until all constraints are satisfied then use standard K-means.**
 
-## Constrained K-Means with the Aggregator Model
+## Constrained K-Means with the Aggregator model
 
 To solve Constrained K-means in a shorter time, you can use the [H2O Aggregator algorithm](aggregator) to aggregate data to smaller sizes first and then pass this data to the Constrained K-means algorithm to calculate the final centroids to be used with scoring. The results won't be as accurate as the results of a model with the whole dataset; however, it should help solve the problem of huge datasets.
 
@@ -221,35 +223,29 @@ The number of clusters $K$ is user-defined and is determined a priori.
 
 1.  Choose $K$ initial cluster centers $m_{k}$ according to one of the following:
 
-```
-> - **Random**: Choose $K$ clusters from the set of $N$ observations at random so that each observation has an equal chance of being chosen.
-> - **Furthest** (Default):
->   1.  Choose one center $m_{1}$ at random.
->   2.  Calculate the difference between $m_{1}$ and each of the remaining $N-1$ observations $x_{i}$. $d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2$
->   3.  Choose $m_{2}$ to be the $x_{i}$ that maximizes $d(x_{i}, m_{1})$.
->   4.  Repeat until $K$ centers have been chosen.
-> - **PlusPlus**:
->   1.  Choose one center $m_{1}$ at random.
->   2.  Calculate the difference between $m_{1}$ and each of the remaining $N-1$ observations $x_{i}$. $d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2$
->   3.  Let $P(i)$ be the probability of choosing $x_{i}$ as $m_{2}$. Weight $P(i)$ by $d(x_{i}, m_{1})$ so that those $x_{i}$ furthest from $m_{2}$ have a higher probability of being selected than those $x_{i}$ close to $m_{1}$.
->   4.  Choose the next center $m_{2}$ by drawing at random according to the weighted probability distribution.
->   5.  Repeat until $K$ centers have been chosen.
-> - **User** initialization allows you to specify a file (using the `user_points` parameter) that includes a vector of initial cluster centers.
-```
+    - **Random**: Choose $K$ clusters from the set of $N$ observations at random so that each observation has an equal chance of being chosen.
+    - **Furthest** (Default):
+      1.  Choose one center $m_{1}$ at random.
+      2.  Calculate the difference between $m_{1}$ and each of the remaining $N-1$ observations $x_{i}$. $d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2$
+      3.  Choose $m_{2}$ to be the $x_{i}$ that maximizes $d(x_{i}, m_{1})$.
+      4.  Repeat until $K$ centers have been chosen.
+    - **PlusPlus**:
+      1.  Choose one center $m_{1}$ at random.
+      2.  Calculate the difference between $m_{1}$ and each of the remaining $N-1$ observations $x_{i}$. $d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2$
+      3.  Let $P(i)$ be the probability of choosing $x_{i}$ as $m_{2}$. Weight $P(i)$ by $d(x_{i}, m_{1})$ so that those $x_{i}$ furthest from $m_{2}$ have a higher probability of being selected than those $x_{i}$ close to $m_{1}$.
+      4.  Choose the next center $m_{2}$ by drawing at random according to the weighted probability distribution.
+      5.  Repeat until $K$ centers have been chosen.
+    - **User** initialization allows you to specify a file (using the `user_points` parameter) that includes a vector of initial cluster centers.
 
 2.  Once $K$ initial centers have been chosen calculate the difference between each observation $x_{i}$ and each of the centers $m_{1},...,m_{K}$, where difference is the squared Euclidean distance taken over $p$ parameters.
 
-```
-$$d(x_{i}, m_{k})=\sum_{j=1}^{p}(x_{ij}-m_{k})^2=\|(x_{i}-m_{k})\|^2$$
-```
+    $$d(x_{i}, m_{k})=\sum_{j=1}^{p}(x_{ij}-m_{k})^2=\|(x_{i}-m_{k})\|^2$$
 
 3.  Assign $x_{i}$ to the cluster $k$ defined by $m_{k}$ that minimizes $d(x_{i}, m_{k})$
 
 4.  When all observations $x_{i}$ are assigned to a cluster calculate the mean of the points in the cluster.
 
-```
-$$\bar{x}(k)=\{\bar{x_{i1}},…\bar{x_{ip}}\}$$
-```
+    $$\bar{x}(k)=\{\bar{x_{i1}},…\bar{x_{ip}}\}$$
 
 5.  Set the $\bar{x}(k)$ as the new cluster centers $m_{k}$. Repeat steps 2 through 5 until the specified number of max iterations is reached or cluster assignments of the $x_{i}$ are stable.
 
