@@ -446,6 +446,21 @@ def convert_indented_code_blocks(md):
     return "\n".join(out)
 
 
+def escape_math_pipes_in_tables(md):
+    """GFM treats | as a cell separator even inside $...$  math on table rows.
+    Replace | inside inline math with \\vert, which KaTeX renders identically."""
+    def _replace_pipe(m):
+        return "$" + re.sub(r"(?<!\\)\|", r"\\vert ", m.group(1)) + "$"
+
+    lines = md.split("\n")
+    out = []
+    for line in lines:
+        if re.match(r"^\s*\|", line):
+            line = re.sub(r"\$([^$\n]+?)\$", _replace_pipe, line)
+        out.append(line)
+    return "\n".join(out)
+
+
 def postprocess_md(md):
     # Drop the .html suffix from internal (relative) links so they resolve as
     # Docusaurus routes (e.g. algo-params/foo.html -> algo-params/foo).
@@ -454,6 +469,8 @@ def postprocess_md(md):
     # Pandoc indented code blocks (4-space) confuse MDX's JSX parser — convert
     # to fenced blocks before anything else reads the output.
     md = convert_indented_code_blocks(md)
+    # GFM table cells: | inside $...$ math splits cell boundaries unexpectedly.
+    md = escape_math_pipes_in_tables(md)
     # Raw HTML attributes must be JSX-safe in MDX.
     md = md.replace(' class="', ' className="')
     # React requires style as an object, not a string.

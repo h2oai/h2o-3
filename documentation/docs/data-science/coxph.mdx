@@ -1,0 +1,273 @@
+---
+title: "Cox Proportional Hazards (CoxPH)"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Introduction
+
+Cox proportional hazards models are the most widely used approach for modeling time to event data. As the name suggests, the *hazard function*, which computes the instantaneous rate of an event occurrence and is expressed mathematically as
+
+$h(t) = \lim_{\Delta t \downarrow 0} \frac{Pr[t \le T < t + \Delta t \mid T \ge t]}{\Delta t},$
+
+is assumed to be the product of a *baseline hazard function* and a *risk score*. Consequently, the hazard function for observation $i$ in a Cox proportional hazards model is defined as
+
+$h_i(t) = \lambda(t)\exp(\mathbf{x}_i^T\beta)$
+
+where $\lambda(t)$ is the baseline hazard function shared by all observations and $\exp(\mathbf{x}_i^T\beta)$ is the risk score for observation $i$, which is computed as the exponentiated linear combination of the covariate vector $\mathbf{x}_i^T$ using a coefficient vector $\beta$ common to all observations.
+
+This combination of a non-parametric baseline hazard function and a parametric risk score results in Cox proportional hazards models being described as *semi-parametric*. In addition, a simple rearrangement of terms shows that unlike generalized linear models, an intercept (constant) term in the risk score adds no value to the model fit, due to the inclusion of a baseline hazard function.
+
+[An R demo is available here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.coxph.R). This uses the CoxPH algorithm along with the WA_Fn-UseC\_-Telco-Customer-Churn.csv dataset.
+
+### MOJO Support
+
+CoxPH supports importing and exporting [MOJOs](../save-and-load-model#supported-mojos).
+
+## Defining a CoxPH Model
+
+Parameters are optional unless specified as *required*.
+
+### Algorithm-specific parameters
+
+- [init](algo-params/init2): Initial values for the coefficients in the model. This value defaults to `0`.
+- [interaction_pairs](algo-params/interaction_pairs): (Internal only) When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than `interactions`, which will compute all pairwise combinations of specified columns. This option defaults to `False` (disabled).
+- **interactions_only**: A list of columns that should only be used to create interactions but should not itself participate in model training.
+- [interactions](algo-params/interactions): Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list.
+- [lre_min](algo-params/lre_min): A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. The role this parameter plays in the stopping criteria of the model fitting algorithm is explained in the [Cox Proportional Hazards Model Algorithm](#cox-proportional-hazards-model-algorithm) section below. This value defaults to `9`.
+- [start_column](algo-params/start_column): The name of an integer column in the **source** data set representing the start time. If supplied, the value of the `start_column` must be strictly less than the `stop_column` in each row.
+- [stop_column](algo-params/stop_column): *Required* The name of an integer column in the **source** data set representing the stop time.
+- [stratify_by](algo-params/stratify_by): A list of columns to use for stratification.
+- [ties](algo-params/ties): The approximation method for handling ties in the partial likelihood. This can be either `efron` (default) or `breslow`. See the [Cox Proportional Hazards Model Details](#cox-proportional-hazards-model-details) section below for more information about these options.
+
+### Common parameters
+
+- [export_checkpoints_dir](algo-params/export_checkpoints_dir): Specify a directory to which generated models will automatically be exported.
+
+- [ignored_columns](algo-params/ignored_columns): (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+- [max_iterations](algo-params/max_iterations): A positive integer defining the maximum number of iterations during model training. The role this parameter plays in the stopping criteria of the model-fitting algorithm is explained in the [Cox Proportional Hazards Model Algorithm](#cox-proportional-hazards-model-algorithm) section below. This value defaults to `20`.
+
+- [model_id](algo-params/model_id): Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+- [offset_column](algo-params/offset_column): Specify a column to use as the offset.
+
+  **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (`y`) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.
+
+- [single_node_mode](algo-params/single_node_mode): Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets). This defaults to `False`.
+
+- [training_frame](algo-params/training_frame): *Required* Specify the dataset used to build the model.
+
+  > **NOTE**: In Flow, if you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically.
+
+- [use_all_factor_levels](algo-params/use_all_factor_levels): Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. This option defaults to `True` (enabled).
+
+- [weights_column](algo-params/weights_column): Specify a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`.
+
+  > *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`.
+  >
+  > **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+
+- [x](algo-params/x): Specify a vector containing the names or indicies of the predictor variables to use when building the model. If `x` is missing, then all columns except `y` are used.
+
+- [y](algo-params/y) (Python) / **event_column** (R): *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
+
+## Cox Proportional Hazards Model Results
+
+### Data
+
+- Number of Complete Cases: The number of observations without missing values in any of the input columns.
+- Number of Non Complete Cases: The number of observations with at least one missing value in any of the input columns.
+- Number of Events in Complete Cases: The number of observed events in the complete cases.
+
+### Coefficients
+
+$\tt{name}$: The name given to the coefficient. If the predictor column is numeric, the corresponding coefficient has the same name. If the predictor column is categorical, the corresponding coefficients are a concatenation of the name of the column with the name of the categorical level the coefficient represents.
+
+$\tt{coef}$: The estimated coefficient value.
+
+$\tt{exp(coef)}$: The exponentiated coefficient value estimate.
+
+$\tt{se(coef)}$: The standard error of the coefficient estimate.
+
+$\tt{z}$: The z statistic, which is the ratio of the coefficient estimate to its standard error.
+
+### Model Statistics
+
+- Cox and Snell Generalized $R^2$
+
+> $\tt{R^2} := 1 - \exp\bigg(\frac{2\big(pl(\beta^{(0)}) - pl(\hat{\beta})\big)}{n}\bigg)$
+
+- Maximum Possible Value for Cox and Snell Generalized $R^2$
+
+> $\tt{Max. R^2} := 1 - \exp\big(\frac{2 pl(\beta^{(0)})}{n}\big)$
+
+- Likelihood Ratio Test
+
+> $2\big(pl(\hat{\beta}) - pl(\beta^{(0)})\big)$, which under the null hypothesis of $\hat{beta} = \beta^{(0)}$ follows a chi-square distribution with $p$ degrees of freedom.
+
+- Wald Test
+
+> $\big(\hat{\beta} - \beta^{(0)}\big)^T I\big(\hat{\beta}\big) \big(\hat{\beta} - \beta^{(0)}\big)$, which under the null hypothesis of $\hat{beta} = \beta^{(0)}$ follows a chi-square distribution with $p$ degrees of freedom. When there is a single coefficient in the model, the Wald test statistic value is that coefficient's z statistic.
+
+- Score (Log-Rank) Test
+
+> $U\big(\beta^{(0)}\big)^T \hat{I}\big(\beta^{0}\big)^{-1} U\big(\beta^{(0)}\big)$, which under the null hypothesis of $\hat{beta} = \beta^{(0)}$ follows a chi-square distribution with $p$ degrees of freedom.
+>
+> where
+>
+> $n$ is the number of complete cases
+>
+> $p$ is the number of estimated coefficients
+>
+> $pl(\beta)$ is the log partial likelihood
+>
+> $U(\beta)$ is the derivative of the log partial likelihood
+>
+> $H(\beta)$ is the second derivative of the log partial likelihood
+>
+> $I(\beta) = - H(\beta)$ is the observed information matrix
+
+## Cox Proportional Hazards Model Details
+
+A Cox proportional hazards model measures time on a scale defined by the ranking of the $M$ distinct observed event occurrence times, $t_1 < t_2 < \dots < t_M$. When no two events occur at the same time, the partial likelihood for the observations is given by
+
+$PL(\beta) = \prod_{m=1}^M\frac{\exp(w_m\mathbf{x}_m^T\beta)}{\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta)}$
+
+where $R_m$ is the set of all observations at risk of an event at time $t_m$. In practical terms, $R_m$ contains all the rows where (if supplied) the start time is less than $t_m$ and the stop time is greater than or equal to $t_m$. When two or more events are observed at the same time, the exact partial likelihood is given by
+
+$PL(\beta) = \prod_{m=1}^M\frac{\exp(\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta)}{(\sum_{R^* : \mid R^* \mid = d_m} [\sum_{j \in R^*} w_j \exp(\mathbf{x}_j^T\beta)])^{\sum_{j \in D_m} w_j}}$
+
+where $R_m$ is the risk set and $D_m$ is the set of observations of size $d_m$ with an observed event at time $t_m$ respectively. Due to the combinatorial nature of the denominator, this exact partial likelihood becomes prohibitively expensive to calculate, leading to the common use of Efron's and Breslow's approximations.
+
+### Efron's Approximation
+
+Of the two approximations, Efron's produces results closer to the exact combinatoric solution than Breslow's. Under this approximation, the partial likelihood and log partial likelihood are defined as
+
+$PL(\beta) = \prod_{m=1}^M \frac{\exp(\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta)}{\big[\prod_{k=1}^{d_m}(\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta) - \frac{k-1}{d_m} \sum_{j \in D_m} w_j \exp(\mathbf{x}_j^T\beta))\big]^{(\sum_{j \in D_m} w_j)/d_m}}$
+
+$pl(\beta) = \sum_{m=1}^M \big[\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta - \frac{\sum_{j \in D_m} w_j}{d_m} \sum_{k=1}^{d_m} \log(\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta) - \frac{k-1}{d_m} \sum_{j \in D_m} w_j \exp(\mathbf{x}_j^T\beta))\big]$
+
+### Breslow's Approximation
+
+Under Breslow's approximation, the partial likelihood and log partial likelihood are defined as
+
+$PL(\beta) = \prod_{m=1}^M \frac{\exp(\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta)}{(\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta))^{\sum_{j \in D_m} w_j}}$
+
+$pl(\beta) = \sum_{m=1}^M \big[\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta - (\sum_{j \in D_m} w_j)\log(\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta))\big]$
+
+## Cox Proportional Hazards Model Algorithm
+
+H2O uses the Newton-Raphson algorithm to maximize the partial log-likelihood, an iterative procedure defined by the steps:
+
+To add numeric stability to the model fitting calculations, the numeric predictors and offsets are demeaned during the model fitting process.
+
+1.  Set an initial value, $\beta^{(0)}$, for the coefficient vector and assume an initial log partial likelihood of $- \infty$.
+2.  Increment iteration counter, $n$, by 1.
+3.  Calculate the log partial likelihood, $pl\big(\beta^{(n)}\big)$, at the current coefficient vector estimate.
+4.  Compare $pl\big(\beta^{(n)}\big)$ to $pl\big(\beta^{(n-1)}\big)$.
+
+> 1)  If $pl\big(\beta^{(n)}\big) > pl\big(\beta^{(n-1)}\big)$, then accept the new coefficient vector, $\beta^{(n)}$, as the current best estimate, $\tilde{\beta}$, and set a new candidate coefficient vector to be $\beta^{(n+1)} = \beta^{(n)} - \tt{step}$, where $\tt{step} := H^{-1}(\beta^{(n)}) U(\beta^{(n)})$, which is the product of the inverse of the second derivative of $pl$ times the first derivative of $pl$ based upon the observed data.
+> 2)  If $pl\big(\beta^{(n)}\big) \le pl\big(\beta^{(n-1)}\big)$, then set $\tt{step} := \tt{step} / 2$ and $\beta^{(n+1)} = \tilde{\beta} - \tt{step}$.
+
+5.  Repeat steps 2 - 4 until either
+
+> 1)  $n = \tt{iter\ max}$ or
+>
+> 2)  the log-relative error $LRE\Big(pl\big(\beta^{(n)}\big), pl\big(\beta^{(n+1)}\big)\Big) >= \tt{lre\ min}$,
+>
+>     where
+>
+>     $LRE(x, y) = - \log_{10}\big(\frac{\mid x - y \mid}{y}\big)$, if $y \ne 0$
+>
+>     $LRE(x, y) = - \log_{10}(\mid x \mid)$, if $y = 0$
+
+## Examples
+
+This code provides an example of building a Cox Proportional Hazards (CoxPH) model using H2O-3 in both R and Python, including data import, model training, performance evaluation, and retrieval of baseline hazard, baseline survival, and model concordance.
+
+<Tabs groupId="lang">
+<TabItem value="r" label="R" default>
+
+```r
+library(h2o)
+h2o.init()
+
+# Import the heart dataset into H2O:
+heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+# Split the dataset into a train and test set:
+heart_split <- h2o.splitFrame(data = heart, ratios = 0.8, seed = 1234)
+train <- heart_split[[1]]
+test <- heart_split[[2]]
+
+# Build and train the model:
+heart_coxph <- h2o.coxph(x = "age", 
+                         event_column = "event",
+                         start_column = "start", 
+                         stop_column = "stop", 
+                         ties = "breslow", 
+                         training_frame = train)
+
+# Eval performance:
+perf <- h2o.performance(heart_coxph)
+
+# Generate predictions on a test set (if necessary):
+predict <- h2o.predict(heart_coxph, newdata = test)
+
+# Get baseline hazard:
+baseline_hazard <- heart_coxph$baseline_hazard
+
+# Get baseline survival:
+baseline_survival <- heart_coxph$baseline_survival
+
+# Get model concordance:
+concordance <- perf@metrics$concordance
+```
+
+</TabItem>
+<TabItem value="python" label="Python">
+
+```python
+import h2o
+from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+h2o.init()
+
+# Import the heart dataset into H2O:
+heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+# Split the dataset into a train and test set:
+train, test = heart.split_frame(ratios = [.8], seed = 1234)   
+
+# Build and train the model:
+heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+                                                 stop_column="stop", 
+                                                 ties="breslow")
+heart_coxph.train(x="age", 
+            y="event", 
+            training_frame=train)
+
+# Generate predictions on a test set (if necessary):
+pred = heart_coxph.predict(test)
+
+# Get baseline hazard:
+hazard = heart_coxph.baseline_hazard_frame
+
+# Get baseline survival:
+survival = heart_coxph.baseline_survival_frame
+
+# Get model concordance:
+heart_coxph.model_performance().concordance()
+```
+
+</TabItem>
+</Tabs>
+
+## References
+
+Andersen, P. and Gill, R. (1982). Cox's regression model for counting processes, a large sample study. *Annals of Statistics* **10**, 1100-1120.
+
+Harrell, Jr. F.E., Regression Modeling Strategies: With Applications to Linear Models, Logistic Regression, and Survival Analysis. Springer-Verlag, 2001.
+
+Therneau, T., Grambsch, P., Modeling Survival Data: Extending the Cox Model. Springer-Verlag, 2000.
