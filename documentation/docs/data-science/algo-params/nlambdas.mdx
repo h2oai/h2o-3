@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 
 This option specifies the number of lambdas to use during a lambda search. As such, this option is only available if `lambda_search=TRUE`.
 
-`nlambdas` works in conjunction with `lambda_min_ratio`. The sequence of the $\lambda$ values is automatically generated as an exponentially decreasing sequence. It ranges from $\lambda_{max}$ (the smallest $\lambda$ so that the solution is a model with all 0s) to $\lambda_{min} =$ `lambda_min_ratio` $\times$ $\lambda_{max}$.
+`nlambdas` works in conjunction with `lambda_min_ratio`. The sequence of the $\lambda$ values is automatically generated as an exponentially decreasing sequence. It ranges from $\lambda_{max}$ (the smallest $\lambda$ so that the solution is a model with all zero coefficients) to $\lambda_{min} =$ `lambda_min_ratio` $\times$ $\lambda_{max}$.
 
 H2O computes $\lambda$ models sequentially and in decreasing order, warm-starting the model (using the previous solution as the initial prediction) for $\lambda_k$ with the solution for $\lambda_{k-1}$. By warm-starting the models, we get better performance. Typically models for subsequent $\lambda$ values are close to each other, so only a few iterations per $\lambda$ are needed (two or three). This also achieves greater numerical stability because models with a higher penalty are easier to compute. This method starts with an easy problem and then continues to make small adjustments.
 
@@ -20,9 +20,9 @@ H2O computes $\lambda$ models sequentially and in decreasing order, warm-startin
 
 - `lambda_min_ratio` and `nlambdas` also specify the relative distance of any two lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are "close" to each other.
 - When `alpha` \> 0, the default value for `lambda_min_ratio` is $1e^{-4}$, and the default value for `nlambdas` is 100. This gives a ratio of 0.912. For best results when using strong rules, keep the ratio close to this default.
-- When `alpha=0`, the default value for `nlamdas` is set to 30 because fewer lambdas are needed for ridge regression.
+- When `alpha=0`, the default value for `nlambdas` is set to 30 because fewer lambdas are needed for ridge regression.
 
-## Related Parameters
+## Related parameters
 
 - [alpha](alpha)
 - [lambda](lambda)

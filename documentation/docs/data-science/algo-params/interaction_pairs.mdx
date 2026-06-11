@@ -14,11 +14,11 @@ By default, interactions between predictor columns are expanded and computed on 
 
 Note that adding a list of interactions to a model changes the interpretation of all of the coefficients. For example, a typical predictor has the form ‘response ~ terms’ where ‘response’ is the (numeric) response vector, and ‘terms’ is a series of terms that specify a linear predictor for ‘response’. For ‘binomial’ and ‘quasibinomial’ families in GLM, the response can also be specified as a ‘factor’ (when the first level denotes failure and all other levels denote success) or as a two-column matrix with the columns giving the numbers of successes and failures.
 
-When using this parameter, specify a list of pairwise columns that should interact. When specified, GLM will compute interactions between
+When using this parameter, specify a list of pairwise columns that should interact. When specified, GLM computes interactions only between the specified pairs rather than between all pairwise combinations.
 
 Note that this option is mutually exclusive with `interactions`.
 
-## Related Parameters
+## Related parameters
 
 - [interactions](interactions)
 
@@ -34,7 +34,7 @@ h2o.init()
 df <-  h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
 # specify the columns to include
-XY <- names(df)[c(1, 2, 3, 4, 6, 8, 9, 13, 17, 18, 19, 31)
+XY <- names(df)[c(1, 2, 3, 4, 6, 8, 9, 13, 17, 18, 19, 31)]
 
 # specify the predictor column indices to interact
 interactions <- XY[c(5, 7, 9)]
@@ -66,7 +66,7 @@ m2_coefs <- m2@model$coefficients_table
 <TabItem value="python" label="Python">
 
 ```python
-import(h2o)
+import h2o
 h2o.init()
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 

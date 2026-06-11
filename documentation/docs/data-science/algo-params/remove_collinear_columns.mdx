@@ -10,11 +10,11 @@ import TabItem from '@theme/TabItem';
 
 ## Description
 
-Collinear columns can cause problems during model fitting. The preferred way to deal with collinearity (and the default H2O behavior) is to add regularization. (See the [Regularization](../glm#regularization) topic for more information.) However, if you want a non-regularized solution, you can choose to automatically remove collinear columns by enabling the `remove_collinear_columns` option.
+Collinear columns can cause problems during model fitting. The preferred way to deal with collinearity (and the default H2O behavior) is to add regularization. (See the [Regularization](../glm.mdx#regularization) topic for more information.) However, if you want a non-regularized solution, you can choose to automatically remove collinear columns by enabling the `remove_collinear_columns` option.
 
 This option can only be used when `solver=IRLSM` and with no regularization (`lambda=0`). If enabled, H2O will automatically remove columns when it detects collinearlity. The columns that are removed depend on the order of the columns in the vector of coefficients (intercepts first, then categorical variables ordered by cardinality from largest to smallest, and then numbers).
 
-## Related Parameters
+## Related parameters
 
 - [solver](solver)
 

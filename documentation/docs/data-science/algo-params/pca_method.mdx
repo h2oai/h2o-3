@@ -12,20 +12,20 @@ import TabItem from '@theme/TabItem';
 
 Use the `pca_method` parameter to specify the algorithm to use for computing the principal components. Available options include:
 
-> - **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
-> - **Power**: Computes the SVD using the power iteration method (experimental)
-> - **Randomized**: Uses randomized subspace iteration method
-> - **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
+- **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
+- **Power**: Computes the SVD using the power iteration method (experimental)
+- **Randomized**: Uses randomized subspace iteration method
+- **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
 **Note**: For `pca_method = Randomized`, the algorithm must deal with matrices of size *m* by *k* and *n* by *k*, where
 
-> - *m* is number of rows,
-> - *n* is expanded column size and
-> - *k* is the number of eigenvectors desired.
+- *m* is number of rows,
+- *n* is expanded column size and
+- *k* is the number of eigenvectors desired.
 
 As a result, there is no advantage to be gained by trying to find the eigenvectors of the matrix transpose. In other words, when using PCA with wide datasets, users should not choose Randomize method.
 
-## Related Parameters
+## Related parameters
 
 - None
 
@@ -110,7 +110,7 @@ log.ENN.  0.009517 -0.282830 -0.107461
 <TabItem value="python" label="Python">
 
 ```python
-import(h2o)
+import h2o
 h2o.init()
 from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator
 

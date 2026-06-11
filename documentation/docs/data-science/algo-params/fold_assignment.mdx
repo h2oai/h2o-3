@@ -25,7 +25,7 @@ Keep the following in mind when specifying a fold assignment for your data:
 - Note that all three options are only suitable for datasets that are i.i.d. If the dataset requires custom grouping to perform meaningful cross-validation, then a `fold_column` should be created and provided instead.
 - In general, when comparing multiple models using validation sets, ensure that you use the same validation set for all models. When performing cross-validation, specify a seed for all models, or specify **Modulo** for the `fold_assignment`. This ensures that the cross-validation folds are the same, and eliminates the noise that can come from, for example, the Random fold assignment.
 
-## Related Parameters
+## Related parameters
 
 - [fold_column](fold_column)
 - [nfolds](nfolds)

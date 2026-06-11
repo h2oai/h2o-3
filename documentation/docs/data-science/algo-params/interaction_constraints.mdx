@@ -20,10 +20,10 @@ When the interaction constraints sets overlap, the XGBoost algorithm evaluates t
 
 For example for `interaction_constraints = [["A", "B", "C"], ["C", "D"]]`:
 
-- XGBoost allows branch with decision path "A" -\> "C" -\> "D"
-- GBM does not allow branch with decision path "A" -\> "C" -\> "D", because "D" cannot interact with "A"
+- XGBoost allows branch with decision path `A` -> `C` -> `D`
+- GBM does not allow branch with decision path `A` -> `C` -> `D`, because `D` cannot interact with `A`
 
-## Related Parameters
+## Related parameters
 
 - None
 

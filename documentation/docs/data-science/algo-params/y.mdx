@@ -16,7 +16,7 @@ Use this option to specify a response column (y-axis). The response column is th
 
 Response columns can be numeric or categorical, and they can be binomial or multiomial. If you are specifying a distribution type in DL or GBM, however, then keep in mind the following when defining a response column:
 
-- If the distribution is `bernoulli`, the the response column must be 2-class categorical
+- If the distribution is `bernoulli`, the response column must be 2-class categorical
 - If the distribution is `multinomial`, the response column must be categorical.
 - If the distribution is `poisson`, the response column must be numeric.
 - If the distribution is `laplace`, the response column must be numeric.
@@ -37,14 +37,14 @@ In GLM, you can specify one of the following family options based on the respons
 - `poisson`: The data must be numeric and non-negative (Int).
 - `gamma`: The data must be numeric and continuous and positive (Real or Int).
 - `tweedie`: The data must be numeric and continuous (Real) and non-negative.
-- `ordinal`: Requires a categorical response with at least 3 levels. (For 2-class problems use family="binomial".)
+- `ordinal`: Requires a categorical response with at least 3 levels. For 2-class problems, use `family="binomial"`.
 
 **Notes**:
 
 - The response column cannot be the same as the [fold_column](fold_column).
 - For supervised learning, the response column cannot be the same as the [weights_column](weights_column), and the response column must exist in both the training frame and in the validation frame.
 
-## Related Parameters
+## Related parameters
 
 - [distribution](distribution)
 - [family](family)

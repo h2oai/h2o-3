@@ -12,9 +12,9 @@ import TabItem from '@theme/TabItem';
 
 When building a GBM model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option is mainly used for classification models. It is a pure regularization tuning parameter as it prevents any particular leaf node from making large absolute predictions, but it doesn't directly relate to the actual final prediction (other than that the final value can't be larger than `ntrees * max_abs_leafnode_pred`, by definition).
 
-This option defaults to Double.MAX_VALUE.
+This option defaults to `Double.MAX_VALUE`.
 
-## Related Parameters
+## Related parameters
 
 - [ntrees](ntrees)
 

@@ -10,9 +10,9 @@ import TabItem from '@theme/TabItem';
 
 ## Description
 
-This option specifies the prior probability of class 1 in the response when `family = "binomial"`. The default value is the observation frequency of class 1. This must be a value from (0,1) exclusive range, and defaults to -1 (no prior). This parameter is useful for logistic regression if the data has been sampled and the mean of response does not reflect reality.
+This option specifies the prior probability of class 1 in the response when `family = "binomial"`. This must be a value from the (0,1) exclusive range. The API default is -1, which means no prior is applied and the observation frequency of class 1 is used. This parameter is useful for logistic regression if the data has been sampled and the mean of response does not reflect reality.
 
-## Related Parameters
+## Related parameters
 
 - None
 

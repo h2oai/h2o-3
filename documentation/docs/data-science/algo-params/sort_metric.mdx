@@ -25,7 +25,7 @@ Available options for `sort_metric` include the following:
 - `AUCPR` (area under the Precision-Recall curve)
 - `mean_per_class_error`
 
-For binomial classification choose between `AUC`, `"logloss"`, `"mean_per_class_error"`, `"RMSE"`, `"MSE"`. For multinomial classification choose between `"mean_per_class_error"`, `"logloss"`, `"RMSE"`, `"MSE"`. For regression choose between `"deviance"`, `"RMSE"`, `"MSE"`, `"MAE"`, `"RMLSE"`.
+For binomial classification choose between `AUC`, `"logloss"`, `"mean_per_class_error"`, `"RMSE"`, `"MSE"`. For multinomial classification choose between `"mean_per_class_error"`, `"logloss"`, `"RMSE"`, `"MSE"`. For regression choose between `"deviance"`, `"RMSE"`, `"MSE"`, `"MAE"`, `"RMSLE"`.
 
 ## Example
 
@@ -40,8 +40,8 @@ h2o.init()
 train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
 
 # Identify predictors and response
-x <- setdiff(names(train), y)
 y <- "response"
+x <- setdiff(names(train), y)
 
 # For binary classification, response should be a factor
 train[, y] <- as.factor(train[, y])

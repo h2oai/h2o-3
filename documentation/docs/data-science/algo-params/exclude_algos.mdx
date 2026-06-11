@@ -18,10 +18,10 @@ The algorithms that can be specified include:
 - `GLM`
 - `XGBoost` (XGBoost GBM)
 - `GBM` (H2O GBM)
-- `DeepLearning` (Fully-connected multi-layer artificial neural network)
+- `DeepLearning` (Fully connected multi-layer artificial neural network)
 - `StackedEnsemble`
 
-## Related Parameters
+## Related parameters
 
 - [include_algos](include_algos)
 
@@ -38,8 +38,8 @@ h2o.init()
 train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
 
 # Identify predictors and response
-x <- setdiff(names(train), y)
 y <- "response"
+x <- setdiff(names(train), y)
 
 # For binary classification, response should be a factor
 train[, y] <- as.factor(train[, y])
@@ -99,20 +99,15 @@ aml.train(x = x, y = y, training_frame = train)
 lb = aml.leaderboard
 lb
 
-model_id                                                 auc    logloss    mean_per_class_error      rmse       mse
---------------------------------------------------  --------  ---------  ----------------------  --------  --------
-DRF_1_AutoML_20190321_100107                        0.744882   0.597348                0.360293  0.452093  0.204388
-XRT_1_AutoML_20190321_095341                        0.741603   0.60012                 0.342847  0.453342  0.205519
-XRT_1_AutoML_20190321_100107                        0.740636   0.600695                0.356075  0.453646  0.205795
-DRF_1_AutoML_20190321_095341                        0.740674   0.60294                 0.375423  0.453271  0.205454
-DeepLearning_grid_1_AutoML_20190321_095341_model_1  0.711473   0.620394                0.387857  0.463987  0.215284
-DeepLearning_1_AutoML_20190321_100107               0.703753   0.628472                0.401192  0.467294  0.218363
-GLM_grid_1_AutoML_20190321_095341_model_1           0.682648   0.63852                 0.397234  0.472683  0.223429
-GLM_grid_1_AutoML_20190321_100107_model_1           0.682648   0.63852                 0.397234  0.472683  0.223429
-DeepLearning_1_AutoML_20190321_095341               0.684733   0.639195                0.418683  0.472425  0.223185
-DeepLearning_grid_1_AutoML_20190321_100107_model_1  0.670713   0.643133                0.434458  0.475507  0.226107
+model_id                                                            auc    logloss    mean_per_class_error      rmse       mse
+--------------------------------------------------------------  --------  ---------  ----------------------  --------  --------
+StackedEnsemble_AllModels_AutoML_20190321_095825                0.786697   0.555026                0.330904  0.433853  0.188228
+StackedEnsemble_BestOfFamily_AutoML_20190321_095825             0.784852   0.556946                0.323144  0.434672  0.188940
+XGBoost_1_AutoML_20190321_095825                                0.784667   0.557865                0.332405  0.434966  0.189195
+XGBoost_2_AutoML_20190321_095825                                0.782039   0.558683                0.326981  0.435676  0.189813
+GLM_grid_1_AutoML_20190321_095825_model_1                       0.682648   0.638521                0.397234  0.472683  0.223429
 
-[10 rows x 6 columns]
+[5 rows x 6 columns]
 ```
 
 </TabItem>

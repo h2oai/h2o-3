@@ -14,9 +14,9 @@ Setting `lambda_search` to TRUE enables efficient and automatic search for the o
 
 Note that the algorithm will automatically calculate the minimum lambda value unless a value for `lambda_min_ratio` is specified. In that case, the specified value becomes the minimum lambda value. If you enter one or more values for `lambda`, then the lambda search is performed over only those provided lambdas.
 
-When looking for a sparse solution (`alpha` \> 0), lambda search can also be used to efficiently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A possible use case for lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value.
+When looking for a sparse solution (`alpha` \> 0), lambda search can also be used to efficiently handle wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A possible use case for lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value.
 
-## Related Parameters
+## Related parameters
 
 - [alpha](alpha)
 - [lambda](lambda)

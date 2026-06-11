@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 
 When building a CoxPH model, the `init` option specifies the initial value, $\beta^{(0)}$, for the coefficient vector. This value defaults to 0.
 
-## Related Parameters
+## Related parameters
 
 - None
 
@@ -84,7 +84,7 @@ coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
 coxph.train(x="age", y="event", training_frame=heart)
 
 # view the model details
-coxph.train
+coxph
 Model Details
 =============
 H2OCoxProportionalHazardsEstimator :  Cox Proportional Hazards
@@ -108,7 +108,6 @@ Scoring History:
     2019-10-11 08:59:31  0.001 sec   1             -295.799
     2019-10-11 08:59:31  0.002 sec   2             -295.745
     2019-10-11 08:59:31  0.004 sec   3             -295.745
-<bound method H2OEstimator.train of >
 ```
 
 </TabItem>

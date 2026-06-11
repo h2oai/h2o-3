@@ -12,9 +12,9 @@ import TabItem from '@theme/TabItem';
 
 There may be instances when your dataset includes more information than you want to be included when building a model. Use the `x` parameter to specify a vector containing the names or indices of the predictor variables to use when building the model. If `x` is missing, then all columns except `y` are used.
 
-Note that this is a strict parameter that takes into account the exact string of the column name. So, for example, if your dataset includes one column named **Type** and another column named **Types**, and you specify `x=["type"]`, then the algorithm will only include the **Type** column and will ignore the **Types** column.
+Note that this is a strict parameter that takes into account the exact string of the column name. For example, if your dataset includes one column named **Type** and another column named **Types**, and you specify `x=["type"]`, then the algorithm will only include the **Type** column and will ignore the **Types** column.
 
-## Related Parameters
+## Related parameters
 
 - [ignore_const_cols](ignore_const_cols)
 - [y](y)

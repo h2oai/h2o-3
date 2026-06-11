@@ -23,7 +23,7 @@ The `max_depth` default value varies depending on the algorithm.
 - XGBoost: default is 6.
 - Isolation Forest: default is 8.
 
-## Related Parameters
+## Related parameters
 
 - [min_rows](min_rows)
 - [min_split_improvement](min_split_improvement)
@@ -134,7 +134,7 @@ sorted_grid <- h2o.getGrid("depth_grid", sort_by="auc", decreasing = TRUE)
 sorted_grid
 
 # find the range of max_depth for the top 5 models
-top_depths = sortedGrid@summary_table$max_depth[1:5]                       
+top_depths = sorted_grid@summary_table$max_depth[1:5]                       
 min_depth = min(as.numeric(top_depths))
 max_depth = max(as.numeric(top_depths))
 
@@ -202,7 +202,7 @@ gbm.train(x=predictors, y=response, training_frame=train)
 
 # Get the AUC on the validation set
 perf = gbm.model_performance(valid)
-print perf.auc()
+print(perf.auc())
 # The AUC is over 94%, so this model is highly predictive!
 0.948013524937
 
@@ -258,7 +258,7 @@ grid.train(x=predictors,
 
 # Display the grid search results
 # Sorted by increasing logloss (because this is a classification task)
-print grid
+print(grid)
 
      max_depth            model_ids              logloss
 0           17   depth_grid_model_8  0.20544094075930078

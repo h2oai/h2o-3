@@ -14,9 +14,9 @@ In GLM, negative binomial regression is a generalization of Poisson regression t
 
 The `theta` parameter allows you to specify this dispersion value. This option must be \> 0 and defaults to 1e-10. In addition, this option can only be used when `family=negativebinomial`.
 
-Refer to the [Negative Binomial Models](../glm#negative-binomial-models) topic for more inforamtion on how the `theta` value is used in negative binomial regression problems.
+Refer to the [Negative Binomial Models](../glm.mdx#negative-binomial-models) topic for more information on how the `theta` value is used in negative binomial regression problems.
 
-## Related Parameters
+## Related parameters
 
 - [family](family)
 - [link](link)
@@ -34,7 +34,7 @@ h2o.init()
 h2o_df = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
 
 # Set the predictor names and the response column
-predictors <- c["Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make"]
+predictors <- c("Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make")
 response <- "Claims"
 
 # Train the model

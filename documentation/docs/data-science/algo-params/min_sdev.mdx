@@ -14,7 +14,7 @@ This option specifies the minimum standard deviation to use for observations wit
 
 This option defaults to 0.001 and must be at least 1e-10.
 
-## Related Parameters
+## Related parameters
 
 - [eps_sdev](eps_sdev)
 
@@ -25,7 +25,7 @@ This option defaults to 0.001 and must be at least 1e-10.
 
 ```r
 library(h2o)
-h2o.init
+h2o.init()
 
 # import the cars dataset
 cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")

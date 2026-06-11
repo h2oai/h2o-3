@@ -24,7 +24,7 @@ For each tree, the floor is used to determine the number of columns - in this ex
 
 Row and column sampling (`sample_rate` and `col_sample_rate`) can improve generalization and lead to lower validation and test set errors. Good general values for large datasets are around 0.7 to 0.8 (sampling 70-80 percent of the data) for both parameters. Column sampling per tree (`col_sample_rate_per_tree`) can also be used. Note that `col_sample_rate_per_tree` is multiplicative with `col_sample_rate`, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
-## Related Parameters
+## Related parameters
 
 - [col_sample_rate_per_tree](col_sample_rate_per_tree)
 - [col_sample_rate_change_per_level](col_sample_rate_change_per_level)

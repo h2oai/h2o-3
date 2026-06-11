@@ -22,10 +22,8 @@ H2O's GLM and GAM support the following link functions: Family_Default, Identity
 
 The following table describes the allowed Family/Link combinations.
 
-|                     |                   |          |       |     |         |         |        |
+| Family              | Family_Default    | Identity | Logit | Log | Inverse | Tweedie | Ologit |
 |---------------------|-------------------|----------|-------|-----|---------|---------|--------|
-| **Family**          | **Link Function** |          |       |     |         |         |        |
-|                     | Family_Default    | Identity | Logit | Log | Inverse | Tweedie | Ologit |
 | Binomial            | X                 |          | X     |     |         |         |        |
 | Fractional Binomial | X                 |          | X     |     |         |         |        |
 | Quasibinomial       | X                 |          | X     |     |         |         |        |
@@ -44,9 +42,9 @@ For **AUTO**:
 - X\*\*: the data is `Enum` with cardinality = 2 (family determined as `binomial`)
 - X\*\*\*: the data is `Enum` with cardinality \> 2 (family determined as `multinomial`)
 
-Refer to the [Links](../glm#links) section for more information.
+Refer to the [Links](../glm.mdx#links) section for more information.
 
-## Related Parameters
+## Related parameters
 
 - [family](family)
 

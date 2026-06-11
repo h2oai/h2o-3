@@ -23,9 +23,11 @@ More information about Multinomial AUC/AUCPR metric is on [Performance and predi
 - If the default AUC type is `NONE`, the metric is not calculated and the None value is returned instead.
 - If the default AUC type is `AUTO`, the auto option is `NONE` by default.
 
-**NOTE**: `auc_type` is available ONLY for multinomial distribution and is `NONE` by default.
+:::note
+`auc_type` is available only for multinomial distribution and is `NONE` by default.
+:::
 
-## Related Parameters
+## Related parameters
 
 - [distribution](distribution)
 - [early_stopping](early_stopping)
@@ -50,7 +52,7 @@ response <- "cylinders"
 cars[response] <- h2o.asfactor(cars[response])
 
 # Split into train and validation sets:
-cars_splits <- h2o.splitFrame(data = cars, ratios = 0.8), seed = 1234)
+cars_splits <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 train <- cars_splits[[1]]
 valid <- cars_splits[[2]]
 
@@ -68,9 +70,9 @@ print(h2o.auc(car_gbm, valid = TRUE))
 # Print the AUCPR for your validation data:
 print(h2o.aucpr(car_gbm, valid = TRUE))
 # Print the whole AUC table:
-print(cars_gbm.multinomial_auc_table())
+print(h2o.multinomial_auc_table(car_gbm, valid = TRUE))
 # Print the whole AUCPR table:
-print(cars_gbm.multinomial_aucpr_table())
+print(h2o.multinomial_aucpr_table(car_gbm, valid = TRUE))
 ```
 
 </TabItem>
@@ -86,8 +88,8 @@ h2o.init()
 # the car's displacement, power, weight, and acceleration, and the year it was made)
 cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-# Set the predictor and responsecolumn names:
-predictors - ["displacement","power","weight","acceleration","year"]
+# Set the predictor and response column names:
+predictors = ["displacement","power","weight","acceleration","year"]
 response = "cylinders"
 cars[response] = cars[response].asfactor()
 

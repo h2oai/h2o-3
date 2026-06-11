@@ -30,7 +30,9 @@ Certain cases can exist, however, in which the median starting value for this lo
 - If the distribution is `ordinal`, the response column must be categorical with at least 3 levels.
 - If the distribution is `custom`, the response column must be numeric/binary/categorical depends on type of custom distribution.
 
-**NOTE**: `laplace`, `quantile`, and `huber` are NOT available in XGBoost. `custom` is available ONLY in GBM.
+:::note
+`laplace`, `quantile`, and `huber` are NOT available in XGBoost. `custom` is available ONLY in GBM.
+:::
 
 The following general guidelines apply when selecting a distribution:
 
@@ -53,7 +55,7 @@ When `quasibinomial` is specified, the response must be numeric and binary. The 
 
 When `tweedie` is specified, users must also specify a `tweedie_power` value. Users can tune over this option with values \> 1.0 and \< 2.0. More information is available [here](https://en.wikipedia.org/wiki/Tweedie_distribution).
 
-When `quantile` is specified, then users can also specify a `quantile_alpha` value, which defines the desired quantile when performing quantile regression. For example, if you want to predict the 80th percentile of a column's value, then you can specify `quantile_alpha=0.8`. The `quantile_alpha` value defaults to 0.5 (i.e., the median value, and essentially the same as specifying `distribution=laplace`). Note that this option is not available in XGBoost.
+When `quantile` is specified, then users can also specify a `quantile_alpha` value, which defines the desired quantile when performing quantile regression. For example, to predict the value at the 80 percent quantile of a column, specify `quantile_alpha=0.8`. The `quantile_alpha` value defaults to 0.5 (that is, the median value, and essentially the same as specifying `distribution=laplace`). Note that this option is not available in XGBoost.
 
 When `huber` is specified, then users can also specify a `huber_alpha` value. This indicates the top percentile of error that should be considered as outliers. Note that this option is not available in XGBoost.
 
@@ -65,27 +67,19 @@ Some examples of response distributions are provided below.
 
 **Gaussian Distribution**
 
-<figure>
-<img src="../../images/gaussian.png" alt="../../images/gaussian.png" />
-</figure>
+![Gaussian distribution](../../images/gaussian.png)
 
 **Poisson Distribution**
 
-<figure>
-<img src="../../images/poisson.png" alt="../../images/poisson.png" />
-</figure>
+![Poisson distribution](../../images/poisson.png)
 
 **Laplace Distribution**
 
-<figure>
-<img src="../../images/laplace.png" alt="../../images/laplace.png" />
-</figure>
+![Laplace distribution](../../images/laplace.png)
 
 **Bernoulli Distribution**
 
-<figure>
-<img src="../../images/bernoulli.png" alt="../../images/bernoulli.png" />
-</figure>
+![Bernoulli distribution](../../images/bernoulli.png)
 
 ## Equations
 
@@ -95,141 +89,60 @@ Where:
 - $f$ is a predicted response
 - $w$ is weight
 
-<table>
-<colgroup>
-<col style={{width: "17%"}} />
-<col style={{width: "82%"}} />
-</colgroup>
-<thead>
-<tr className="header">
-<th>Distribution Type</th>
-<th>Equation</th>
-</tr>
-</thead>
-<tbody>
-<tr className="odd">
-<td>Bernoulli</td>
-<td>$- 2 \times  w \times  (y\times log(f)) + (1-y) \times  log (1-f))$</td>
-</tr>
-<tr className="even">
-<td>Quasibinomial</td>
-<td>$f= \begin\{cases\} -2\times w\times y\times\log(f) &amp; \text\{for \} f&gt;1 \\
--2\times w\times(1-y)\times\log(1-f) &amp; \text\{for \} f&lt;0 \\ 0 &amp; \text\{for \} f=y \\
--2\times w\times (y \times\log(f)+(1-y)\times\log(1-f)) &amp; \text\{otherwise\}
-\\\end\{cases\}$</td>
-</tr>
-<tr className="odd">
-<td>Gaussian</td>
-<td><ul>
-<li>Equivalent to wMSE (weighted mean squared error):</li>
-<li>$w \times  (y-f)^{2}$</li>
-</ul></td>
-</tr>
-<tr className="even">
-<td>Poisson</td>
-<td><ul>
-<li>With $f_link = link(f)$</li>
-<li>$- 2 \times  w \times  (y\times f_link-exp(f_link))$</li>
-</ul></td>
-</tr>
-<tr className="odd">
-<td>Gamma</td>
-<td><ul>
-<li>With $f_link = link(f)$</li>
-<li>$2 \times  w \times  (y\times exp(-f_link)+f_link)$</li>
-</ul></td>
-</tr>
-<tr className="even">
-<td>Laplace</td>
-<td>$w  \times   | y - f|$</td>
-</tr>
-<tr className="odd">
-<td>Quantile</td>
-<td>$f= \begin\{cases\}w\times QuantileAlpha \times(y-f) &amp; \text\{for \}y&gt;f \\
-w\times(1-QuantileAlpha)\times(f-y)&amp; \text\{for \} y \leq f \\\end\{cases\}$</td>
-</tr>
-<tr className="even">
-<td>Huber</td>
-<td>$f= \begin\{cases\} w\times(y-f)^2 &amp; \text\{for \} \mid\{y-f\}\mid \leq HuberDelta &amp;
-\text\{(Equivalent to wMSE)\} \\
-w\times(2 \times \mid\{y-f\}\mid - HuberDelta)\times HuberDelta &amp; \text\{for \} y \leq f &amp;
-\text\{(Equivalent to w * (2 * MAE - delta) * delta)\} \\\end\{cases\}$</td>
-</tr>
-<tr className="odd">
-<td>Modified_Huber</td>
-<td>$\text\{With \} z=(2\times y-1)\times f \\
-f= \begin\{cases\}-4\times w\times z &amp; \text\{for \} z\leq 1 \\
-0 &amp; \text\{for \} z&gt;1 \\
-w\times z^2 &amp; \text\{otherwise\} \\\end\{cases\}$</td>
-</tr>
-<tr className="even">
-<td>Tweedie</td>
-<td>with $f = link(f)$, requires $1 > Tweedie_Power < 2$: $2 \times  w \times  y^{(2-Tweedie_Power)/((1-Tweedie_Power)\times (2-Tweedie_Power))} - y \times  exp (f\times (1-Tweedie_Power))/(1-Tweedie_Power) + exp (f\times (2-Tweedie_Power))/(2-Tweedie_Power)$</td>
-</tr>
-</tbody>
-</table>
+**Bernoulli**
 
-<table>
-<colgroup>
-<col style={{width: "20%"}} />
-<col style={{width: "79%"}} />
-</colgroup>
-<thead>
-<tr className="header">
-<th>Link/Inverse Link Functions</th>
-<th>Equation</th>
-</tr>
-</thead>
-<tbody>
-<tr className="odd">
-<td>Identity: Gaussian Huber, Laplace, Quantile</td>
-<td><ul>
-<li>$link(f) = f$</li>
-<li>$linkInversion(f) = f$</li>
-</ul></td>
-</tr>
-<tr className="even">
-<td>Log: Multinomial, Poisson, Gamma, Tweedie</td>
-<td><ul>
-<li>$link(f) = log (f)$</li>
-<li>$linkInversion(f) = exp (f)$</li>
-</ul></td>
-</tr>
-<tr className="odd">
-<td>Logit: Bernoulli, Quasibinomial, Modified_Huber</td>
-<td><ul>
-<li>$link(f) = (f/(f-1))$</li>
-<li>$linkInversion(f) = 1/(1+exp(-f))$</li>
-</ul></td>
-</tr>
-<tr className="even">
-<td>Inversion</td>
-<td>$link(f)= linkInversion(f) = \begin\{cases\}min(-1e-5, f)
-&amp; \text\{for \}f&lt;0 \\ max(-1e-5, f)&amp; \text\{for \}f&gt;0 \\\end\{cases\}$</td>
-</tr>
-<tr className="odd">
-<td>Ologit</td>
-<td><ul>
-<li>$link(f) = log (f/(1-f))$</li>
-<li>$linkInversion(f) = 1/(1+exp(-f))$</li>
-</ul></td>
-</tr>
-<tr className="even">
-<td>Ologlog</td>
-<td><ul>
-<li>$link(f) = log (-1\times log(1-f))$</li>
-<li>$linkInversion(f) = 1 - exp (-1\times exp(f))$</li>
-</ul></td>
-</tr>
-<tr className="odd">
-<td>Oprobit</td>
-<td><ul>
-<li>$link(f) = normalDistribution.inverseCumulativeProbability(f)$</li>
-<li>$linkInversion(f) = normalDistribution.cumulativeProbability(f)$</li>
-</ul></td>
-</tr>
-</tbody>
-</table>
+$$- 2 \times w \times (y\times \log(f) + (1-y) \times \log(1-f))$$
+
+**Quasibinomial**
+
+$$f= \begin{cases} -2\times w\times y\times\log(f) & \text{for } f>1 \\ -2\times w\times(1-y)\times\log(1-f) & \text{for } f<0 \\ 0 & \text{for } f=y \\ -2\times w\times (y \times\log(f)+(1-y)\times\log(1-f)) & \text{otherwise} \end{cases}$$
+
+**Gaussian:** Equivalent to wMSE (weighted mean squared error):
+
+$$w \times (y-f)^{2}$$
+
+**Poisson:** With $f_{link} = link(f)$:
+
+$$- 2 \times w \times (y\times f_{link}-\exp(f_{link}))$$
+
+**Gamma:** With $f_{link} = link(f)$:
+
+$$2 \times w \times (y\times \exp(-f_{link})+f_{link})$$
+
+**Laplace**
+
+$$w \times |y - f|$$
+
+**Quantile**
+
+$$f= \begin{cases} w\times QuantileAlpha \times(y-f) & \text{for } y>f \\ w\times(1-QuantileAlpha)\times(f-y) & \text{for } y \leq f \end{cases}$$
+
+**Huber**
+
+$$f= \begin{cases} w\times(y-f)^2 & \text{for } |y-f| \leq HuberDelta \quad \text{(Equivalent to wMSE)} \\ w\times(2 \times |y-f| - HuberDelta)\times HuberDelta & \text{for } y \leq f \quad \text{(Equivalent to w * (2 * MAE - delta) * delta)} \end{cases}$$
+
+**Modified\_Huber:** With $z=(2\times y-1)\times f$:
+
+$$f= \begin{cases} -4\times w\times z & \text{for } z\leq 1 \\ 0 & \text{for } z>1 \\ w\times z^2 & \text{otherwise} \end{cases}$$
+
+**Tweedie:** With $f = link(f)$, requires $1 < Tweedie\_Power < 2$:
+
+$$2 \times w \times y^{(2-Tweedie\_Power)/((1-Tweedie\_Power)\times (2-Tweedie\_Power))} - y \times \exp(f\times (1-Tweedie\_Power))/(1-Tweedie\_Power) + \exp(f\times (2-Tweedie\_Power))/(2-Tweedie\_Power)$$
+
+**Link/Inverse Link Functions**
+
+| Link/Inverse Link | Equations |
+|---|---|
+| Identity: Gaussian, Huber, Laplace, Quantile | $link(f) = f$; $linkInversion(f) = f$ |
+| Log: Multinomial, Poisson, Gamma, Tweedie | $link(f) = \log(f)$; $linkInversion(f) = \exp(f)$ |
+| Logit: Bernoulli, Quasibinomial, Modified\_Huber | $link(f) = (f/(f-1))$; $linkInversion(f) = 1/(1+\exp(-f))$ |
+| Ologit | $link(f) = \log(f/(1-f))$; $linkInversion(f) = 1/(1+\exp(-f))$ |
+| Ologlog | $link(f) = \log(-1\times \log(1-f))$; $linkInversion(f) = 1 - \exp(-1\times \exp(f))$ |
+| Oprobit | $link(f) = normalDistribution.inverseCumulativeProbability(f)$; $linkInversion(f) = normalDistribution.cumulativeProbability(f)$ |
+
+**Inversion**
+
+$$link(f) = linkInversion(f) = \begin{cases} \min(-1e\text{-}5, f) & \text{for } f<0 \\ \max(1e\text{-}5, f) & \text{for } f>0 \end{cases}$$
 
 **Note**: Inversion, Ologit, Ologlog, and Oprobit are not associated with concrete distributions but can be used with a custom distribution.
 
@@ -239,176 +152,18 @@ AutoML supports distribution parameter by passing the `distribution` to the indi
 
 **Available distributions in AutoML:**
 
-<table style={{width: "89%"}}>
-<colgroup>
-<col style={{width: "29%"}} />
-<col style={{width: "20%"}} />
-<col style={{width: "8%"}} />
-<col style={{width: "8%"}} />
-<col style={{width: "8%"}} />
-<col style={{width: "13%"}} />
-</colgroup>
-<thead>
-<tr className="header">
-<th></th>
-<th>DeepLearning</th>
-<th>DRF</th>
-<th>GBM</th>
-<th>GLM</th>
-<th>XGBoost</th>
-</tr>
-</thead>
-<tbody>
-<tr className="odd">
-<td>Bernoulli/Binomial</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-</tr>
-<tr className="even">
-<td>Multinomial</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-</tr>
-<tr className="odd">
-<td>Gaussian</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-</tr>
-<tr className="even">
-<td>Poisson</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-</tr>
-<tr className="odd">
-<td>NegativeBinomial</td>
-<td></td>
-<td></td>
-<td></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-</tr>
-<tr className="even">
-<td>Gamma</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-</tr>
-<tr className="odd">
-<td>Laplace</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td></td>
-</tr>
-<tr className="even">
-<td>Quantile</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td></td>
-</tr>
-<tr className="odd">
-<td>Huber</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td></td>
-</tr>
-<tr className="even">
-<td>Tweedie</td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-<td><blockquote>
-<p>X</p>
-</blockquote></td>
-</tr>
-</tbody>
-</table>
+| | DeepLearning | DRF | GBM | GLM | XGBoost |
+|---|---|---|---|---|---|
+| Bernoulli/Binomial | X | X | X | X | X |
+| Multinomial | X | X | X | X | X |
+| Gaussian | X | X | X | X | X |
+| Poisson | X | | X | X | X |
+| NegativeBinomial | | | | X | |
+| Gamma | X | | X | X | X |
+| Laplace | X | | X | | |
+| Quantile | X | | X | | |
+| Huber | X | | X | | |
+| Tweedie | X | | X | X | X |
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -497,7 +252,7 @@ print(aml_tweedie2.leaderboard)
 </TabItem>
 </Tabs>
 
-## Related Parameters
+## Related parameters
 
 - [huber_alpha](huber_alpha)
 - [offset_column](offset_column)

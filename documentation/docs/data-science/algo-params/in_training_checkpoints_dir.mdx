@@ -12,9 +12,9 @@ import TabItem from '@theme/TabItem';
 
 This option is used to automatically checkpoint an unfinished model into a defined directory while the training process is still running. This checkpoint allows you to manually restart training in case the cluster shuts down.
 
-The checkpoints are not considered fully trained models and should not be used as fully trained models (e.g., a checkpoint containing four trees can have a different prediction than a fully trained model containing four trees). However, a fully trained model without any training interruptions will always be the same as the model trained from the checkpoint if you provide the same data and hyperparameters.
+The checkpoints are not considered fully trained models and should not be used as fully trained models (for example, a checkpoint containing four trees can have a different prediction than a fully trained model containing four trees). However, a fully trained model without any training interruptions will always be the same as the model trained from the checkpoint if you provide the same data and hyperparameters.
 
-## Related Parameters
+## Related parameters
 
 - [in_training_checkpoints_tree_interval](in_training_checkpoints_tree_interval)
 

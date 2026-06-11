@@ -21,7 +21,7 @@ This option specifies the initialization mode used in K-Means and GLRM. The opti
 - **PlusPlus**:
   1.  Choose one center $m_{1}$ at random.
   2.  Calculate the difference between $m_{1}$ and each of the remaining $N-1$ observations $x_{i}$. $d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2$
-  3.  Let $P(i)$ be the probability of choosing $x_{i}$ as $m_{2}$. Weight $P(i)$ by $d(x_{i}, m_{1})$ so that those $x_{i}$ furthest from $m_{2}$ have a higher probability of being selected than those $x_{i}$ close to $m_{1}$.
+  3.  Let $P(i)$ be the probability of choosing $x_{i}$ as $m_{2}$. Weight $P(i)$ by $d(x_{i}, m_{1})$ so that those $x_{i}$ furthest from $m_{1}$ have a higher probability of being selected than those $x_{i}$ close to $m_{1}$.
   4.  Choose the next center $m_{2}$ by drawing at random according to the weighted probability distribution.
   5.  Repeat until $K$ centers have been chosen.
 - **User** initialization allows you to specify a file (using the `user_points` parameter) that includes a vector of initial cluster centers.
@@ -32,7 +32,7 @@ This option specifies the initialization mode used in K-Means and GLRM. The opti
 - This option is ignored when `estimate_k` is enabled. In this case, the algorithm is deterministic.
 - If this option is not specified but a user-points file is specified, then this value will default to `user`.
 
-## Related Parameters
+## Related parameters
 
 - [estimate_k](estimate_k)
 - [user_points](user_points)

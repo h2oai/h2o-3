@@ -10,9 +10,9 @@ import TabItem from '@theme/TabItem';
 
 ## Description
 
-This option allows you to specify whether to use all factor levels in the possible set of predictors. This option is disabled by default, so the first factor level is skipped. If you enable this option, then the model ignores the first factor level of each categorical column when expanding into indicator columns. Note also that if you enable this option, then sufficient regularization is required.
+This option allows you to specify whether to use all factor levels in the possible set of predictors. This option is disabled by default, so the first factor level is skipped. If you enable this option, the model uses every factor level when expanding categorical columns into indicator columns; when disabled (default), the first factor level is skipped. Note also that if you enable this option, then sufficient regularization is required.
 
-## Related Parameters
+## Related parameters
 
 - None
 
@@ -95,7 +95,7 @@ log.ENN.  -0.355681 -0.554631  0.002802
 <TabItem value="python" label="Python">
 
 ```python
-import(h2o)
+import h2o
 h2o.init()
 from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator
 

@@ -24,7 +24,7 @@ The parameters `func_name` and `func_file` must be unique for each uploaded cust
 
 **Note**: In Deeplearning, custom metric is not supported for Auto-encoder option.
 
-## Related Parameters
+## Related parameters
 
 - [custom_metric_func](custom_metric_func)
 
@@ -77,18 +77,18 @@ airlines_gbm.auc(valid=True)
 # Create a custom RMSE Model metric and save as mm_rmse.py
 # Note that this references a java class java.lang.Math
 class CustomRmseFunc:
-def map(self, pred, act, w, o, model):
-    idx = int(act[0])
-    err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
-    return [err * err, 1]
+    def map(self, pred, act, w, o, model):
+        idx = int(act[0])
+        err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
+        return [err * err, 1]
 
-def reduce(self, l, r):
-    return [l[0] + r[0], l[1] + r[1]]
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
 
-def metric(self, l):
-    # Use Java API directly
-    import java.lang.Math as math
-    return math.sqrt(l[0] / l[1])
+    def metric(self, l):
+        # Use Java API directly
+        import java.lang.Math as math
+        return math.sqrt(l[0] / l[1])
 
 # Upload the custom metric
 custom_mm_func = h2o.upload_custom_metric(CustomRmseFunc, 

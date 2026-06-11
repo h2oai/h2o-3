@@ -18,7 +18,7 @@ To define AUUC, binned predictions are sorted from largest to the smallest value
 
 The default value is -1, which means 1000 bins are used. The value should be higher than zero and less than number of data rows.
 
-## Related Parameters
+## Related parameters
 
 - [treatment_column](treatment_column)
 - [response_column](y)
@@ -35,7 +35,7 @@ library(h2o)
 h2o.init()
 
 # Import the uplift dataset into H2O:
-data <- h2o.importFile(locate("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv"))
+data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
 
 # Set the predictors, response, and treatment column:
 # set the predictors

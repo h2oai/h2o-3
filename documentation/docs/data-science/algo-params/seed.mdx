@@ -16,7 +16,7 @@ The seed is consistent for each H2O instance so that you can create models with 
 
 Note that in Naïve-Bayes, this option is only used for cross-validation and when `fold_assignment="Random"` or `"AUTO"`.
 
-## Related Parameters
+## Related parameters
 
 - None
 
@@ -120,7 +120,7 @@ gbm_w_seed_2.train(x = predictors, y = response, training_frame = train, validat
 
 # print the auc for the validation data for model with a seed
 print('auc for the 1st model built with a seed:', gbm_w_seed_1.auc(valid=True))
-print('auc for the 2nd model built with a seed:', gbm_w_seed_1.auc(valid=True))
+print('auc for the 2nd model built with a seed:', gbm_w_seed_2.auc(valid=True))
 
 # run the same model but without a seed: 
 # run this model twice to see if the results are different (they will be different)

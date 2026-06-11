@@ -12,9 +12,9 @@ import TabItem from '@theme/TabItem';
 
 In a CoxPH model, stratification is useful as a diagnostic for checking the proportional hazards assumption, as it allows for as many different hazard functions as there are strata. For example, when attempting to predict X, you can include a secondary categorical predictor, Z, that can be adjusted for when making inferences about X’s relationship to the time-to-event endpoint.
 
-Use the `` `stratify_by `` parameter to specify a list of columns to use for stratification when building a CoxPH model. The stratification column must be present in the `x` list in the `<model_name>.train()` call (e.g. if `x=["PhoneService", "MultipleLines", "InternetService", "Contract"]`, then `stratify_by` must equal one of those columns).
+Use the `stratify_by` parameter to specify a list of columns to use for stratification when building a CoxPH model. The stratification column must be present in the `x` list in the `<model_name>.train()` call (for example, if `x=["PhoneService", "MultipleLines", "InternetService", "Contract"]`, then `stratify_by` must equal one of those columns).
 
-## Related Parameters
+## Related parameters
 
 - None
 

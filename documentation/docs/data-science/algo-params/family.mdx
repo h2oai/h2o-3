@@ -42,18 +42,18 @@ You can specify one of the following `family` options based on the response colu
 
 - `AUTO`: The family can fall into three cases based on the response:
 
-  > - If the data is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
-  > - If the data is **Enum** with cardinality \> 2, then the family is automatically determined as **multinomial**.
-  > - If the data is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
+  - If the data is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
+  - If the data is **Enum** with cardinality \> 2, then the family is automatically determined as **multinomial**.
+  - If the data is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
-Refer to the [Families](../glm#families) section for detailed information about each family option.
+Refer to the [Families](../glm.mdx#families) section for detailed information about each family option.
 
 **Note**: If your response column is binomial, then you must convert that column to a categorical (`.asfactor()` in Python and `as.factor()` in R) and set `family = binomial`. The following configurations can lead to unexpected results.
 
-> - If you DO convert the response column to categorical and DO NOT to set `family=binomial`, then you will receive an error message.
-> - If you DO NOT convert response column to categorical and DO NOT set the family, then the algorithm will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
+- If you DO convert the response column to categorical and DO NOT to set `family=binomial`, then you will receive an error message.
+- If you DO NOT convert response column to categorical and DO NOT set the family, then the algorithm assumes the values 0 and 1 are numbers and provides a Gaussian solution to a regression problem.
 
-## Related Parameters
+## Related parameters
 
 - [link](link)
 

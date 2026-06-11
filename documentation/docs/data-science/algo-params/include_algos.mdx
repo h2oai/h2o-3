@@ -18,10 +18,10 @@ The algorithms that can be specified include:
 - `GLM`
 - `XGBoost` (XGBoost GBM)
 - `GBM` (H2O GBM)
-- `DeepLearning` (Fully-connected multi-layer artificial neural network)
+- `DeepLearning` (Fully connected multi-layer artificial neural network)
 - `StackedEnsemble`
 
-## Related Parameters
+## Related parameters
 
 - [exclude_algos](exclude_algos)
 
@@ -38,8 +38,8 @@ h2o.init()
 train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/higgs/higgs_train_10k.csv")
 
 # Identify predictors and response
-x <- setdiff(names(train), y)
 y <- "response"
+x <- setdiff(names(train), y)
 
 # For binary classification, response should be a factor
 train[, y] <- as.factor(train[, y])

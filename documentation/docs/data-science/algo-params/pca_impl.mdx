@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 ## Description
 
-The `pca_impl` parameter allows you to specify PCA implementations for Singular-Value Decomposition (SVD) or Eigenvalue Decomposition (EVD), using either the Matrix Toolkit Java ([MTJ](https://github.com/fommil/matrix-toolkits-java/)) libary or the Java Matrix ([JAMA](http://math.nist.gov/javanumerics/jama/)) library.
+The `pca_impl` parameter allows you to specify PCA implementations for Singular-Value Decomposition (SVD) or Eigenvalue Decomposition (EVD), using either the Matrix Toolkit Java ([MTJ](https://github.com/fommil/matrix-toolkits-java/)) library or the Java Matrix ([JAMA](http://math.nist.gov/javanumerics/jama/)) library.
 
 Available options include:
 
@@ -19,7 +19,7 @@ Available options include:
 - **mtj_svd_densematrix**: Singular-value decompositions for dense matrix using MTJ
 - **jama**: Eigenvalue decompositions for dense matrix using JAMA
 
-## Related Parameters
+## Related parameters
 
 - None
 
@@ -60,7 +60,7 @@ Rape     -0.109637  0.127257  0.983471 -0.067603
 <TabItem value="python" label="Python">
 
 ```python
-import(h2o)
+import h2o
 h2o.init()
 from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator as H2OPCA
 

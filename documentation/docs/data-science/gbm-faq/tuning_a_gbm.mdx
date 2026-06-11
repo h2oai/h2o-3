@@ -2,9 +2,11 @@
 title: "Tuning a GBM"
 ---
 
-## When fitting a random number between 0 and 1 as a single feature, the training ROC curve is consistent with “random” for low tree numbers and overfits as the number of trees is increased, as expected. However, when a random number is included as part of a set of hundreds of features, as the number of trees increases, the random number increases in feature importance.
+## Why does a random feature gain importance as the number of trees increases?
 
-You can now use `min_split_improvement` to prevent overfitting on noise. However, if you are using a verion of H2O that does not include this parameter, then this is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there’s no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature.
+When fitting a random number between 0 and 1 as a single feature, the training ROC curve is consistent with “random” for low tree numbers and overfits as the number of trees is increased, as expected. However, when a random number is included as part of a set of hundreds of features, as the number of trees increases, the random number increases in feature importance.
+
+You can now use `min_split_improvement` to prevent overfitting on noise. However, if you are using a version of H2O that does not include this parameter, then this is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there’s no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature.
 
 The boruta algorithm is popular for feature selection and it makes use of random variables to select those features which consistently outperform random permutations of the original data. GBM is somewhat robust to random features since it is an iterative algorithm and will rescore the same data points over and over, particularly when used with row sampling. Future iterations can counteract a poor split decision. The behavior or random variables has been observed to avoid bad splits on other features.
 
@@ -41,7 +43,7 @@ For each tree, the floor is used to determine the number - in this example, (0.7
 
 ## How can I perform grid search with GBM?
 
-GBM tuning tutorials for R, Python, and Flow are avialable [here](https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm).
+GBM tuning tutorials for R, Python, and Flow are available [on the H2O-3 GitHub repository](https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm).
 
 ## Which parameters are used for early stopping?
 

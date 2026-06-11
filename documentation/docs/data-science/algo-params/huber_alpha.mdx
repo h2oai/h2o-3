@@ -10,11 +10,11 @@ import TabItem from '@theme/TabItem';
 
 ## Description
 
-The Huber loss function is a combination of the squared-error loss function and absolute-error loss function. It applies the squared-error loss for small deviations from the actual response value and the absolute-error loss for large deviations from the actual respone value. To activate this parameter you must set `distribution=huber` and specify the `huber_alpha` parameter, which dictates the threshold between quadratic and linear loss (i.e. the top percentile of error that should be considered as outliers). This value must be between 0 and 1 and defaults to 0.9.
+The Huber loss function is a combination of the squared-error loss function and absolute-error loss function. It applies the squared-error loss for small deviations from the actual response value and the absolute-error loss for large deviations from the actual response value. To activate this parameter you must set `distribution=huber` and specify the `huber_alpha` parameter, which dictates the threshold between quadratic and linear loss (that is, the top percentile of error that should be considered as outliers). This value must be between 0 and 1 and defaults to 0.9.
 
 More information about the Huber loss function is available [here](https://en.wikipedia.org/wiki/Huber_loss).
 
-## Related Parameters
+## Related parameters
 
 - [distribution](distribution)
 

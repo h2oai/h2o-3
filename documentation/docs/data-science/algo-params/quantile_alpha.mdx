@@ -10,9 +10,9 @@ import TabItem from '@theme/TabItem';
 
 ## Description
 
-The `quantile_alpha` parameter value defines the desired quantile when performing quantile regression. Used in combination with `distribution = quantile`, `quantile_alpha` activates the quantile loss function. For example, if you want to predict the 80th percentile of the response column’s value, then you can specify `quantile_alpha=0.8`. The `quantile_alpha` value defaults to 0.5 (i.e., the median value, essentially the same as specifying `distribution=laplace`).
+The `quantile_alpha` parameter value defines the desired quantile when performing quantile regression. Used in combination with `distribution = quantile`, `quantile_alpha` activates the quantile loss function. For example, if you want to predict the 0.8 quantile of the response column’s value, then you can specify `quantile_alpha=0.8`. The `quantile_alpha` value defaults to 0.5 (that is, the median value, essentially the same as specifying `distribution=laplace`).
 
-## Related Parameters
+## Related parameters
 
 - [distribution](distribution)
 
