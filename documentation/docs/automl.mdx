@@ -5,11 +5,7 @@ title: "AutoML interface"
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-<figure>
-<img src="images/h2o-automl-logo.png" className="align-center" alt="images/h2o-automl-logo.png" />
-</figure>
-
-H2O AutoML: Automatic machine learning ==================================
+![H2O AutoML logo](images/h2o-automl-logo.png)
 
 In recent years, the demand for machine learning experts has outpaced supply, despite a surge of people entering the field. To address this gap, significant progress has been made in developing user-friendly machine learning software that non-experts can use. The initial steps toward simplifying machine learning involved creating simple, unified interfaces for a variety of machine learning algorithms, such as H2O.
 
@@ -17,7 +13,7 @@ Although H2O has made it easier for non-experts to experiment with machine learn
 
 H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.
 
-H2O offers a number of [model explainability](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html) methods that apply to AutoML objects (groups of models), as well as individual models (e.g. leader model). Explanations can be generated automatically with a single function call, providing a simple interface to exploring and explaining the AutoML models.
+H2O offers a number of [model explainability](explain) methods that apply to AutoML objects (groups of models), as well as individual models (for example, the leader model). Explanations can be generated automatically with a single function call, providing a simple interface to exploring and explaining the AutoML models.
 
 
 The H2O AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column, and optionally specify a time constraint or limit on the number of total models trained. Below are the parameters that can be set by the user in the R and Python interfaces. See the [Web UI via H2O Wave](#web-ui-via-h2o-wave) section below for information on how to use the H2O Wave web interface for AutoML.
@@ -51,7 +47,7 @@ One of the following stopping strategies (time or number-of-model based) must be
 
 ### Optional miscellaneous parameters
 
-- [nfolds](data-science/algo-params/nfolds): Specify a value \>= 2 for the number of folds for k-fold cross-validation of the models in the AutoML run or specify "-1" to let AutoML choose if k-fold cross-validation or blending mode should be used. Blending mode will use part of `training_frame` (if no `blending_frame` is provided) to train Stacked Ensembles. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance). This value defaults to "-1".
+- [nfolds](data-science/algo-params/nfolds): Specify a value \>= 2 for the number of folds for k-fold cross-validation of the models in the AutoML run or specify `"-1"` to let AutoML choose if k-fold cross-validation or blending mode should be used. Blending mode will use part of `training_frame` (if no `blending_frame` is provided) to train Stacked Ensembles. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance). This value defaults to `"-1"`.
 
 - [balance_classes](data-science/algo-params/balance_classes): Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size calculated using the `max_after_balance_size parameter`, then the majority classes will be undersampled to satisfy the size limit.
 
@@ -63,35 +59,35 @@ One of the following stopping strategies (time or number-of-model based) must be
 
 - [stopping_metric](data-science/algo-params/stopping_metric): Specify the metric to use for early stopping. Defaults to `AUTO`. The available options are:
 
-  > - `AUTO`: This defaults to `logloss` for classification and `deviance` for regression.
-  > - `deviance` (mean residual deviance)
-  > - `logloss`
-  > - `MSE`
-  > - `RMSE`
-  > - `MAE`
-  > - `RMSLE`
-  > - `AUC` (area under the ROC curve)
-  > - `AUCPR` (area under the Precision-Recall curve)
-  > - `lift_top_group`
-  > - `misclassification`
-  > - `mean_per_class_error`
+  - `AUTO`: This defaults to `logloss` for classification and `deviance` for regression.
+  - `deviance` (mean residual deviance)
+  - `logloss`
+  - `MSE`
+  - `RMSE`
+  - `MAE`
+  - `RMSLE`
+  - `AUC` (area under the ROC curve)
+  - `AUCPR` (area under the Precision-Recall curve)
+  - `lift_top_group`
+  - `misclassification`
+  - `mean_per_class_error`
 
 - [stopping_tolerance](data-science/algo-params/stopping_tolerance): This option specifies the relative tolerance for the metric-based stopping criterion to stop a grid search and the training of individual models within the AutoML run. This value defaults to 0.001 if the dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate. In that case, the value is computed as 1/sqrt(nrows \* non-NA-rate).
 
-- [stopping_rounds](data-science/algo-params/stopping_rounds): This argument is used to stop model training when the stopping metric (e.g. AUC) doesn’t improve for this specified number of training rounds, based on a simple moving average. In the context of AutoML, this controls early stopping both within the random grid searches as well as the individual models. Defaults to 3 and must be an non-negative integer. To disable early stopping altogether, set this to 0.
+- [stopping_rounds](data-science/algo-params/stopping_rounds): This argument is used to stop model training when the stopping metric (for example, AUC) doesn’t improve for this specified number of training rounds, based on a simple moving average. In the context of AutoML, this controls early stopping both within the random grid searches as well as the individual models. Defaults to 3 and must be an non-negative integer. To disable early stopping altogether, set this to 0.
 
 - [sort_metric](data-science/algo-params/sort_metric): Specifies the metric used to sort the Leaderboard by at the end of an AutoML run. Available options include:
 
-  > - `AUTO`: This defaults to `AUC` for binary classification, `mean_per_class_error` for multinomial classification, and `deviance` for regression.
-  > - `deviance` (mean residual deviance)
-  > - `logloss`
-  > - `MSE`
-  > - `RMSE`
-  > - `MAE`
-  > - `RMSLE`
-  > - `AUC` (area under the ROC curve)
-  > - `AUCPR` (area under the Precision-Recall curve)
-  > - `mean_per_class_error`
+  - `AUTO`: This defaults to `AUC` for binary classification, `mean_per_class_error` for multinomial classification, and `deviance` for regression.
+  - `deviance` (mean residual deviance)
+  - `logloss`
+  - `MSE`
+  - `RMSE`
+  - `MAE`
+  - `RMSLE`
+  - `AUC` (area under the ROC curve)
+  - `AUCPR` (area under the Precision-Recall curve)
+  - `mean_per_class_error`
 
 - [seed](data-science/algo-params/seed): Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility under certain conditions. H2O Deep Learning models are not reproducible by default for performance reasons, so if the user requires reproducibility, then `exclude_algos` must contain `"DeepLearning"`. In addition `max_models` must be used because `max_runtime_secs` is resource limited, meaning that if the available compute resources are not the same between runs, AutoML may be able to train more models on one run vs another. Defaults to `NULL/None`.
 
@@ -101,16 +97,16 @@ One of the following stopping strategies (time or number-of-model based) must be
 
 - [include_algos](data-science/algo-params/include_algos): A list/vector of character strings naming the algorithms to include during the model-building phase. An example use is `include_algos = ["GLM", "DeepLearning", "DRF"]` in Python or `include_algos = c("GLM", "DeepLearning", "DRF")` in R. Defaults to `None/NULL`, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if no algorithms are specified in `exclude_algos`. This option is mutually exclusive with `exclude_algos`. The available algorithms are:
 
-  > - `DRF` (This includes both the Distributed Random Forest (DRF) and Extremely Randomized Trees (XRT) models. Refer to the [Extremely Randomized Trees](data-science/drf#extremely-randomized-trees) section in the DRF chapter and the [histogram_type](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html) parameter description for more information.)
-  > - `GLM` (Generalized Linear Model with regularization)
-  > - `XGBoost` (XGBoost GBM)
-  > - `GBM` (H2O GBM)
-  > - `DeepLearning` (Fully-connected multi-layer artificial neural network)
-  > - `StackedEnsemble` (Stacked Ensembles, includes an ensemble of all the base models and ensembles using subsets of the base models)
+  - `DRF` (This includes both the Distributed Random Forest (DRF) and Extremely Randomized Trees (XRT) models. Refer to the [Extremely Randomized Trees](data-science/drf#extremely-randomized-trees) section in the DRF chapter and the [histogram_type](data-science/algo-params/histogram_type) parameter description for more information.)
+  - `GLM` (Generalized Linear Model with regularization)
+  - `XGBoost` (XGBoost GBM)
+  - `GBM` (H2O GBM)
+  - `DeepLearning` (Fully connected multi-layer artificial neural network)
+  - `StackedEnsemble` (Stacked Ensembles, includes an ensemble of all the base models and ensembles using subsets of the base models)
 
 - **modeling_plan**: The list of modeling steps to be used by the AutoML engine. (They may not all get executed, depending on other constraints.)
 
-- **preprocessing**: The list of preprocessing steps to run. Only `["target_encoding"]` is currently supported. There is more information about how Target Encoding is automatically applied [here](https://github.com/h2oai/h2o-3/issues/7862). Experimental.
+- **preprocessing**: The list of preprocessing steps to run. Only `["target_encoding"]` is currently supported. See [this issue](https://github.com/h2oai/h2o-3/issues/7862) for more information about how Target Encoding is automatically applied. Experimental.
 
 - **exploitation_ratio**: Specify the budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration. Experimental.
 
@@ -130,7 +126,7 @@ One of the following stopping strategies (time or number-of-model based) must be
 
 ### Validation options
 
-If the user turns off cross-validation by setting `nfolds == 0`, then cross-validation metrics will not be available to populate the leaderboard. In this case, we need to make sure there is a holdout frame (i.e. the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard. Without cross-validation, we will also require a validation frame to be used for early stopping on the models. Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data. If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
+If the user turns off cross-validation by setting `nfolds == 0`, then cross-validation metrics will not be available to populate the leaderboard. In this case, we need to make sure there is a holdout frame (that is, the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard. Without cross-validation, we will also require a validation frame to be used for early stopping on the models. Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data. If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
 
 ### XGBoost memory requirements
 
@@ -142,13 +138,13 @@ XGBoost, which is included in H2O as a third party library, requires its own mem
 
 # Explainability
 
-AutoML objects are fully supported though the [H2O Model Explainability](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html) interface. A large number of multi-model comparison and single model (AutoML leader) plots can be generated automatically with a single call to `h2o.explain()`. We invite you to learn more at page linked above.
+AutoML objects are fully supported though the [H2O Model Explainability](explain) interface. A large number of multi-model comparison and single model (AutoML leader) plots can be generated automatically with a single call to `h2o.explain()`. We invite you to learn more at page linked above.
 
 # Code examples
 
 ## Training
 
-Here’s an example showing basic usage of the `h2o.automl()` function in *R* and the `H2OAutoML` class in *Python*. For demonstration purposes only, we explicitly specify the `x` argument, even though on this dataset, that's not required. With this dataset, the set of predictors is all columns other than the response. Like other H2O algorithms, the default value of `x` is "all columns, excluding `y`", so that will produce the same result.
+Here’s an example showing basic usage of the `h2o.automl()` function in *R* and the `H2OAutoML` class in *Python*. For demonstration purposes only, we explicitly specify the `x` argument, even though on this dataset, that's not required. With this dataset, the set of predictors is all columns other than the response. Like other H2O algorithms, the default value of `x` is `"all columns, excluding y"`, so that will produce the same result.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -352,9 +348,7 @@ lb
 
 Here is an example of a leaderboard (with all columns) for a binary classification task. Click the image to enlarge.
 
-<figure>
-<img src="images/h2o-automl-leaderboard.png" className="align-center" alt="images/h2o-automl-leaderboard.png" />
-</figure>
+![H2O AutoML leaderboard example](images/h2o-automl-leaderboard.png)
 
 To create a leaderboard with metrics from a new `leaderboard_frame` [h2o.make_leaderboard](performance-and-prediction#leaderboard) can be used.
 
@@ -455,7 +449,7 @@ xgb.params['ntrees']
 When using Python or R clients, you can also access meta information with the following AutoML object properties:
 
 - **event_log**: an `H2OFrame` with selected AutoML backend events generated during training.
-- **training_info**: a dictionary exposing data that could be useful for post-analysis (e.g. various timings). If you want training and prediction times for each model, it's easier to explore that data in the extended leaderboard using the `h2o.get_leaderboard()` function.
+- **training_info**: a dictionary exposing data that could be useful for post-analysis (for example, various timings). If you want training and prediction times for each model, it's easier to explore that data in the extended leaderboard using the `h2o.get_leaderboard()` function.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -482,25 +476,17 @@ info = aml.training_info
 </TabItem>
 </Tabs>
 
-# Web UI via H2O Wave
+## Web UI via H2O Wave
 
 In addition to the R and Python APIs and the Flow Web UI, H2O AutoML also has a [modern web interface](https://github.com/h2oai/wave-h2o-automl) built using H2O.ai's open source Python [Wave platform](https://wave.h2o.ai/). Wave can be run locally on your machine or in the cloud. To run Wave locally, you can follow the instructions to install Wave [here](https://wave.h2o.ai/docs/installation) and then follow the instructions in the H2O AutoML Wave [README](https://github.com/h2oai/wave-h2o-automl#readme) to start the app. The app features a simple interface to upload your data and run AutoML, and then explore the results using several interactive visualizations built on the H2O Model Explainability suite. Below are a few screenhots of the app, though more visualizations are available than what is shown below.
 
-<figure>
-<img src="images/h2o-automl-wave-1.png" className="align-center" alt="images/h2o-automl-wave-1.png" />
-</figure>
+![H2O AutoML Wave app - data upload and run screen](images/h2o-automl-wave-1.png)
 
-<figure>
-<img src="images/h2o-automl-wave-2.png" className="align-center" alt="images/h2o-automl-wave-2.png" />
-</figure>
+![H2O AutoML Wave app - leaderboard view](images/h2o-automl-wave-2.png)
 
-<figure>
-<img src="images/h2o-automl-wave-3.png" className="align-center" alt="images/h2o-automl-wave-3.png" />
-</figure>
+![H2O AutoML Wave app - model explainability view](images/h2o-automl-wave-3.png)
 
-<figure>
-<img src="images/h2o-automl-wave-4.png" className="align-center" alt="images/h2o-automl-wave-4.png" />
-</figure>
+![H2O AutoML Wave app - variable importance plot](images/h2o-automl-wave-4.png)
 
 # Experimental features
 
@@ -512,72 +498,62 @@ As of H2O 3.32.0.1, AutoML now has a `preprocessing` option with [minimal suppor
 
 - **Which models are trained in the AutoML process?**
 
-> The current version of AutoML trains and cross-validates the following algorithms: three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets. In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard. In other cases, the grids will stop early, and if there's time left, the top two random grids will be restarted to train more models. AutoML trains multiple Stacked Ensemble models throughout the process (more info about the ensembles below).
->
-> Particular algorithms (or groups of algorithms) can be switched off using the `exclude_algos` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a first step you could leave all the algorithms on, and examine their performance characteristics (e.g. prediction speed) to get a sense of what might be practically useful in your specific use-case, and then turn off algorithms that are not interesting or useful to you. We recommend using the [H2O Model Explainability](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html) interface to explore and further evaluate your AutoML models, which can inform your choice of model (if you have other goals beyond simply maximizing model accuracy).
->
-> A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below. More [details](https://github.com/h2oai/h2o-3/issues/12851) about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
->
-> AutoML trains several Stacked Ensemble models during the run (unless ensembles are turned off using `exclude_algos`). We have subdivided the model training in AutoML into "model groups" with different priority levels. After each group is completed, and at the very end of the AutoML process, we train (at most) two additional Stacked Ensembles with the existing models. There are currently two types of Stacked Ensembles: one which includes all the base models ("All Models"), and one comprised only of the best model from each algorithm family ("Best of Family"). The Best of Family ensembles are more optimized for production use since it only contains six (or fewer) base models. It should be relatively fast to use in production (to generate predictions on new data) without much degradation in model performance when compared to the final "All Models" ensemble, for example. This may be useful if you want the model performance boost from ensembling without the added time or complexity of a large ensemble. You can also inspect some of the earlier "All Models" Stacked Ensembles that have fewer models as an alternative to the Best of Family ensembles. The metalearner used in all ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles. The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.
->
-> For information about how previous versions of AutoML were different than the current one, there's a brief description [here](https://github.com/h2oai/sparkling-water/pull/2585#issuecomment-916114162).
+The current version of AutoML trains and cross-validates the following algorithms: three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets. In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard. In other cases, the grids will stop early, and if there's time left, the top two random grids will be restarted to train more models. AutoML trains multiple Stacked Ensemble models throughout the process (more info about the ensembles below).
+
+Particular algorithms (or groups of algorithms) can be switched off using the `exclude_algos` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a first step you could leave all the algorithms on, and examine their performance characteristics (for example, prediction speed) to get a sense of what might be practically useful in your specific use-case, and then turn off algorithms that are not interesting or useful to you. We recommend using the [H2O Model Explainability](explain) interface to explore and further evaluate your AutoML models, which can inform your choice of model (if you have other goals beyond simply maximizing model accuracy).
+
+A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below. More [details](https://github.com/h2oai/h2o-3/issues/12851) about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
+
+AutoML trains several Stacked Ensemble models during the run (unless ensembles are turned off using `exclude_algos`). We have subdivided the model training in AutoML into "model groups" with different priority levels. After each group is completed, and at the end of the AutoML process, we train (at most) two additional Stacked Ensembles with the existing models. Two types of Stacked Ensembles are available: one which includes all the base models ("All Models"), and one comprised only of the best model from each algorithm family ("Best of Family"). The Best of Family ensembles are more optimized for production use since it only contains six (or fewer) base models. It should be relatively fast to use in production (to generate predictions on new data) without much degradation in model performance when compared to the final "All Models" ensemble, for example. This may be useful if you want the model performance boost from ensembling without the added time or complexity of a large ensemble. You can also inspect some of the earlier "All Models" Stacked Ensembles that have fewer models as an alternative to the Best of Family ensembles. The metalearner used in all ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles. The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.
+
+
 
 - **How do I save AutoML runs?**
 
-> Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually. A utility for saving all of the models at once, along with a way to save the AutoML object (with leaderboard), will be added in a future release.
+Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually. A utility for saving all of the models at once, along with a way to save the AutoML object (with leaderboard), will be added in a future release.
 
 - **Can we make use of GPUs with AutoML?**
 
-> XGBoost models in AutoML can make use of GPUs. Keep in mind that the following requirements must be met:
->
-> - NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
-> - CUDA 8
->
-> You can monitor your GPU utilization via the `nvidia-smi` command. Refer to [https://developer.nvidia.com/nvidia-system-management-interface](https://developer.nvidia.com/nvidia-system-management-interface) for more information.
+XGBoost models in AutoML can make use of GPUs. Keep in mind that the following requirements must be met:
+
+  - NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
+  - CUDA 8
+
+You can monitor your GPU utilization via the `nvidia-smi` command. Refer to [https://developer.nvidia.com/nvidia-system-management-interface](https://developer.nvidia.com/nvidia-system-management-interface) for more information.
 
 - **Why don't I see XGBoost models?**
 
-> AutoML includes [XGBoost](data-science/xgboost) GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
->
-> - XGBoost is not currently available on Windows machines, or on OS X with the new Apple M1 chip. Please check the tickets for [Windows](https://github.com/h2oai/h2o-3/issues/7139) and [Apple M1](https://github.com/h2oai/h2o-3/issues/7180) for updates.
-> - XGBoost is used only if it is available globally and if it hasn't been explicitly [disabled](data-science/xgboost#disabling-xgboost). You can check if XGBoost is available by using the `h2o.xgboost.available()` in R or `h2o.estimators.xgboost.H2OXGBoostEstimator.available()` in Python.
+AutoML includes [XGBoost](data-science/xgboost) GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
+
+  - XGBoost is not currently available on Windows machines, or on OS X with the new Apple M1 chip. Please check the tickets for [Windows](https://github.com/h2oai/h2o-3/issues/7139) and [Apple M1](https://github.com/h2oai/h2o-3/issues/7180) for updates.
+  - XGBoost is used only if it is available globally and if it hasn't been explicitly [disabled](data-science/xgboost#disabling-xgboost). You can check if XGBoost is available by using the `h2o.xgboost.available()` in R or `h2o.estimators.xgboost.H2OXGBoostEstimator.available()` in Python.
 
 - **Why doesn't AutoML use all the time that it's given?**
 
-> If you're using 3.34.0.1 or later, AutoML should use all the time that it's given using `max_runtime_secs`. However, if you're using an earlier version, then early stopping was enabled by default and you can stop early. With early stopping, AutoML will stop once there's no longer "enough" incremental improvement. The user can tweak the early stopping paramters to be more or less sensitive. Set `stopping_rounds` higher if you want to slow down early stopping and let AutoML train more models before it stops.
+If you're using 3.34.0.1 or later, AutoML should use all the time that it's given using `max_runtime_secs`. However, if you're using an earlier version, then early stopping was enabled by default and you can stop early. With early stopping, AutoML will stop once there's no longer "enough" incremental improvement. The user can tweak the early stopping paramters to be more or less sensitive. Set `stopping_rounds` higher if you want to slow down early stopping and let AutoML train more models before it stops.
 
 - **Does AutoML support MOJOs?**
 
-> AutoML will always produce a model which has a [MOJO](save-and-load-model#supported-mojos). Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
-
-- **Why doesn't AutoML use all the time that it's given?**
-
-> If you're using 3.34.0.1 or later, AutoML should use all the time that it's given using `max_runtime_secs`. However, if you're using an earlier version, then early stopping was enabled by default and you can stop early. With early stopping, AutoML will stop once there's no longer "enough" incremental improvement. The user can tweak the early stopping paramters to be more or less sensitive. Set `stopping_rounds` higher if you want to slow down early stopping and let AutoML train more models before it stops.
-
-- **Does AutoML support MOJOs?**
-
-> AutoML will always produce a model which has a [MOJO](save-and-load-model#supported-mojos). Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
+AutoML will always produce a model which has a [MOJO](save-and-load-model#supported-mojos). Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
 
 - **What is the history of H2O AutoML?**
 
-> The H2O AutoML algorithm was first released in [H2O 3.12.0.1](https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017) on June 6, 2017 by Erin LeDell, and is based on research from her [PhD thesis](https://github.com/ledell/phd-thesis). New features and performance improvements have been made in every major version of H2O since the initial release.
+The H2O AutoML algorithm was first released in [H2O 3.12.0.1](https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017) on June 6, 2017 by Erin LeDell, and is based on research from her [PhD thesis](https://github.com/ledell/phd-thesis). New features and performance improvements have been made in every major version of H2O since the initial release.
 
 # Resources
 
 - [AutoML Tutorial](https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl) (R and Python notebooks)
 - Intro to AutoML + Hands-on Lab [(1 hour video)](https://www.youtube.com/watch?v=42Oo8TOl85I) [(slides)](https://www.slideshare.net/0xdata/intro-to-automl-handson-lab-erin-ledell-machine-learning-scientist-h2oai)
 - Scalable Automatic Machine Learning in H2O [(1 hour video)](https://www.youtube.com/watch?v=j6rqrEYQNdo) [(slides)](https://www.slideshare.net/0xdata/scalable-automatic-machine-learning-in-h2o-89130971)
-- There are many slidedecks in the [H2O Meetups repo](hhttps://github.com/h2oai/h2o-meetups) that cover AutoML, as well as many videos on [YouTube](https://www.youtube.com/results?search_query=h2o+automl+erin+ledell) that cover it as well.
+- The [H2O Meetups repo](https://github.com/h2oai/h2o-meetups) contains many slidedecks covering AutoML, and [YouTube](https://www.youtube.com/results?search_query=h2o+automl+erin+ledell) has many videos on the topic as well.
 
-# Citation
+## Citation
 
-If you're citing the H2O AutoML algorithm in a paper, please cite our paper from the [7th ICML Workshop on Automated Machine Learning (AutoML)](https://sites.google.com/view/automl2020/home). A formatted version of the citation would look like this:
+If you're citing the H2O AutoML algorithm in a paper, please cite our paper from the [Seventh ICML Workshop on Automated Machine Learning (AutoML)](https://sites.google.com/view/automl2020/home). A formatted version of the citation would look like this:
 
-Erin LeDell and Sebastien Poirier. *H2O AutoML: Scalable Automatic Machine Learning*. 7th ICML Workshop on Automated Machine Learning (AutoML), July 2020. URL [https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf](https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf).
+Erin LeDell and Sebastien Poirier. *H2O AutoML: Scalable Automatic Machine Learning*. Seventh ICML Workshop on Automated Machine Learning (AutoML), July 2020. URL [https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf](https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf).
 
 If you are using Bibtex:
-
-:
 
 ```
 @article{H2OAutoML20,
@@ -591,8 +567,6 @@ If you are using Bibtex:
 ```
 
 If you need to cite a particular version of the H2O AutoML algorithm, you can use an additional citation (using the appropriate version replaced below) as follows:
-
-:
 
 ```
 @Manual{H2OAutoML_33212,
@@ -642,7 +616,7 @@ This table shows the XGBoost values that are searched over when performing AutoM
 
 ## GBM hyperparameters
 
-This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GBMStepsProvider.java).
+This table shows the GBM values that are searched over when performing AutoML grid search. Additional information is available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GBMStepsProvider.java).
 
 | Parameter                  | Searchable Values                                        |
 |----------------------------|----------------------------------------------------------|
@@ -685,23 +659,19 @@ This table shows the Deep Learning values that are searched over when performing
 </tr>
 <tr className="even">
 <td><code>hidden</code></td>
-<td><blockquote>
-<ul>
+<td><ul>
 <li>Grid search 1: <code>\{20\}, \{50\}, \{100\}</code></li>
 <li>Grid search 2: <code>\{20, 20\}, \{50, 50\}, \{100, 100\}</code></li>
 <li>Grid search 3: <code>\{20, 20, 20\}, \{50, 50, 50\}, \{100, 100, 100\}</code></li>
-</ul>
-</blockquote></td>
+</ul></td>
 </tr>
 <tr className="odd">
 <td><code>hidden_dropout_ratios</code></td>
-<td><blockquote>
-<ul>
+<td><ul>
 <li>Grid search 1: <code>\{0.1\}, \{0.2\}, \{0.3\}, \{0.4\}, \{0.5\}</code></li>
 <li>Grid search 2: <code>\{0.1, 0.1\}, \{0.2, 0.2\}, \{0.3, 0.3\}, \{0.4, 0.4\}, \{0.5, 0.5\}</code></li>
 <li>Grid search 3: <code>\{0.1, 0.1, 0.1\}, \{0.2, 0.2, 0.2\} \{0.3, 0.3, 0.3\}, \{0.4, 0.4, 0.4\}, \{0.5, 0.5, 0.5\}</code></li>
-</ul>
-</blockquote></td>
+</ul></td>
 </tr>
 <tr className="even">
 <td><code>input_dropout_ratio</code></td>

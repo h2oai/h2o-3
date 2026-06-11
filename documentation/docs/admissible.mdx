@@ -9,7 +9,7 @@ We have developed new tools to aid in the design of *admissible learning algorit
 
 Admissible ML introduces two methodological tools:
 
-- **Infogram**, an "information diagram", is a new graphical feature-exploration method that facilitates the development of admissible machine learning methods.
+- **Infogram**, an `information diagram`, is a new graphical feature-exploration method that facilitates the development of admissible machine learning methods.
 - **L-features**, which mitigate unfairness, offer ways to systematically discover the hidden problematic proxy features from a dataset. L-features are inadmissible features.
 
 The Infogram and Admissible Machine Learning bring a new research direction to machine learning interpretability. You can find the theoretical foundations and several real-life examples of its utility in the [Admissible ML](https://arxiv.org/abs/2108.07380) paper. Below we introduce the concepts at a high level and provide an example using the H2O Infogram implementation.
@@ -22,13 +22,13 @@ When protected variables such as race or gender are present in the data, the adm
 
 ### Core Infogram
 
-The infogram is an information-theoretic graphical tool which allows the user to quickly spot the "core" decision-making variables that are driving the response. Identifying the Core Set is a much more difficult undertaking than merely selecting the most predictive features. One of the main advantages of this method is that it works even in the presence of correlated features. There are additional benefits as well: machine learning models based on "core" features show improved stability, especially when there exists considerable correlation among the features.
+The infogram is an information-theoretic graphical tool which allows the user to quickly spot the "core" decision-making variables that are driving the response. Identifying the Core Set is a much more difficult undertaking than merely selecting the most predictive features. One of the main advantages of this method is that it works even in the presence of correlated features. Additional benefits apply: machine learning models based on `core` features show improved stability, especially when there is considerable correlation among the features.
 
 The Core Infogram plots all the variables as points on a two-dimensional grid of **total vs net information**. The x-axis is **total information**, a measure of how much the variable drives the response (the more predictive, the higher the total information). The y-axis is **net information**, a measure of how unique the variable is. The top right quadrant of the infogram plot is the **admissible section**; the variables located in this quadrant are the **admissible features**. In the Core Infogram, the admissible features are the strongest, unique drivers of the response.
 
 ### Fair Infogram: A Diagnostic Tool for Fairness
 
-To improve fairness, you must remove any variables that are of a protected class. It is bad practice, yet common, that modelers remove the protected variables alone. With potentially correlated features (e.g. zip code, income, etc.) still present in the training data, unfair models can be trained, unbeknownst to the data scientist. This is called "fairness through unawareness." The proxy attributes (e.g. zip code, income, etc.) share some degree of correlation (information-sharing) with race, gender, or age, so they must be systematically identified and also removed from the set of training features.
+To improve fairness, you must remove any variables that are of a protected class. It is bad practice, yet common, that modelers remove the protected variables alone. With potentially correlated features (for example, zip code, income, etc.) still present in the training data, unfair models can be trained, unbeknownst to the data scientist. This is called "fairness through unawareness." The proxy attributes (for example, zip code, income, etc.) share some degree of correlation (information-sharing) with race, gender, or age, so they must be systematically identified and also removed from the set of training features.
 
 In the Fair Infogram, a non-protected predictor variable will be deemed "inadmissible" if it is found to possess little or no informational value beyond its use as a dummy for protected attributes when checked. The Fair Infogram plots all the features as points on a two-dimensional grid of **relevance vs safety**. The x-axis is the **relevance index**, a measure of how much the variable drives the response (the more predictive, the higher the relevance). The y-axis is the **safety index**, a measure of how much extra information the variable has that is not acquired through the protected variables. The **admissible features** are the strongest, safest drivers of the response.
 
@@ -78,7 +78,7 @@ The infogram function follows the standard modeling interface in H2O, where the 
 > - `"xgboost"` (if available, XGBoost with default parameters)
 
 - **algorithm_params**: With `algorithm`, you can also specify a list of customized parameters for that algorithm. For example if we use a GBM, we can specify `list(max_depth = 10)` in R and `{'max_depth': 10}` in Python.
-- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if applicable. These features (e.g. race, gender, etc.) should not drive the prediction of the response.
+- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if applicable. These features (for example, race, gender, etc.) should not drive the prediction of the response.
 - **net_information_threshold**: A number between 0 and 1 representing a threshold for net information, defaulting to 0.1. For a specific feature, if the net information is higher than this threshold, and the corresponding total information is also higher than the `total_information_threshold`, that feature will be considered admissible. The net information is the y-axis of the Core Infogram.
 - **total_information_threshold**: A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific feature, if the total information is higher than this threshold, and the corresponding net information is also higher than the threshold `net_information_threshold`, that feature will be considered admissible. The total information is the x-axis of the Core Infogram.
 - **safety_index_threshold**: A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1. This is only used when `protected_columns` is set by the user. For a specific feature, if the safety index value is higher than this threshold, and the corresponding relevance index is also higher than the `relevance_index_threshold`, that feature will be considered admissible. The safety index is the y-axis of the Fair Infogram.
@@ -92,9 +92,7 @@ The infogram function follows the standard modeling interface in H2O, where the 
 
 The infogram function produces a visual guide to admissibility of the features. The visualization engine used in the R interface is the [ggplot2](https://ggplot2.tidyverse.org/) package and in Python, we use [matplotlib](https://matplotlib.org/). Here's an example of the Core Infogram for the Iris dataset.
 
-<figure>
-<img src="images/infogram_core_iris.png" className="align-center" alt="images/infogram_core_iris.png" />
-</figure>
+![Core Infogram for the Iris dataset](images/infogram_core_iris.png)
 
 **L-Features.** The highlighted L-shaped area contains features that are either irrelevant or redundant (or both). Features in the L can be categorized as follows:
 
@@ -217,11 +215,9 @@ asf
 
 Here's the infogram which shows that `PAY_0` and `PAY_2` are the only admissible attributes, given the default thresholds. Most of the bill or payment features either have low predictive value, or low predicted value and are unsafe.
 
-<figure>
-<img src="images/infogram_fair_credit.png" className="align-center" alt="images/infogram_fair_credit.png" />
-</figure>
+![Fair Infogram for the UCI Credit dataset](images/infogram_fair_credit.png)
 
-Notice the position of `PAY_0` in the plot. This indicates that this is a highly relevant and safe variable to use in the model. The `PAY_2` variable is also reasonably safe to use, but it's not as predictive of the response. The remaining variables are neither highly predictive of the response nor very safe to use in the model. So, you may consider building a model using just the two admissible variables. To increase accuracy, you could add in some non-admissible, relevant variables; however, since this will be at a cost to safety, this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
+Notice the position of `PAY_0` in the plot. This indicates that this is a highly relevant and safe variable to use in the model. The `PAY_2` variable is also reasonably safe to use, but it's not as predictive of the response. The remaining variables are neither highly predictive of the response nor safe to use in the model. You may consider building a model using just the two admissible variables. To increase accuracy, you could add in some non-admissible, relevant variables; however, since this will be at a cost to safety, this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
 
 #### Infogram Example: HMDA
 
@@ -329,11 +325,9 @@ asf
 
 Here's the infogram which shows that `loan_to_value_ratio` , `property_value` and `loan_amount` are the only admissible attributes, given the default thresholds. The three features, `loan_term`, `intro_rate_perio`, `income` and `debt_to_income_ratio` either have low predictive value, or low predicted value and are unsafe.
 
-<figure>
-<img src="images/infogram_fair_hmda.png" className="align-center" alt="images/infogram_fair_hmda.png" />
-</figure>
+![Fair Infogram for the HMDA dataset](images/infogram_fair_hmda.png)
 
-Notice the position of `loan_to_value_ratio` in the plot. This indicates that this is a highly relevant and safe variable to use in the model. The `property_value` and `loan_amount` variables are less safe to use and are somewhat predictive of the response and are also admissible under these settings. The remaining variables are neither highly predictive of the response nor very safe to use in the model. In the next two sections below, we will build models comparing admissible machine learning with models trained using inadmissible, un-safe features.
+Notice the position of `loan_to_value_ratio` in the plot. This indicates that this is a highly relevant and safe variable to use in the model. The `property_value` and `loan_amount` variables are less safe to use and are somewhat predictive of the response and are also admissible under these settings. The remaining variables are neither highly predictive of the response nor safe to use in the model. The next two sections compare admissible machine learning with models trained using inadmissible features.
 
 ### Admissible ML
 
@@ -712,7 +706,7 @@ gbm1.fairness_metrics(test, protected_columns, reference, favorable_class)
 
 Ensuring fairness of any particular model is hard and time consuming process as a start you can use the `inspect_model_fairness`. This will produce a similar output as H2O's model explainability but focused on model fairness.
 
-First part of the output is related to different metrics for individual intersections (determined using the `protected_columns`). The metrics are model performance metrics (`AUC`, `AUCPR`, `F1`, ...), size of the intersection relative (`selectedRatio`) and absolute (`total`), model performance metrics related to the reference group (`AIR_AUC`, `AIR_AUCPR`, ...), and `p-value` which is obtained by using Fisher’s exact test or G-test (depending on the size of the intersections) to test that being selected (positive response) is independent to being in the reference group or a particular protected group.
+First part of the output is related to different metrics for individual intersections (determined using the `protected_columns`). The metrics are model performance metrics (`AUC`, `AUCPR`, `F1`, …), size of the intersection relative (`selectedRatio`) and absolute (`total`), model performance metrics related to the reference group (`AIR_AUC`, `AIR_AUCPR`, …), and `p-value` which is obtained by using Fisher’s exact test or G-test (depending on the size of the intersections) to test that being selected (positive response) is independent to being in the reference group or a particular protected group.
 
 Then it produces bar plots that visualize those aforementioned metrics.
 
@@ -720,25 +714,17 @@ Then ROC and Precision-Recall Curve plots are produced. These plots can be produ
 
 After that permutation variable importance is calculated to get some ordering of the features that are subsequently used in PDP and for tree-based models SHAP plots.
 
-<figure>
-<img src="images/infogram_fair_roc.png" className="align-center" alt="images/infogram_fair_roc.png" />
-</figure>
+![ROC curve from the fair model inspection output](images/infogram_fair_roc.png)
 
-<figure>
-<img src="images/infogram_fair_prc.png" className="align-center" alt="images/infogram_fair_prc.png" />
-</figure>
+![Precision-recall curve from the fair model inspection output](images/infogram_fair_prc.png)
 
 The PDP plots show one curve per intersection. Ideally, the lines should be overlapping as those intersections are created just based of the protected columns. This kind of PDP plot can be created using `model.fair_pd_plot`/`h2o.fair_pd_plot`.
 
-<figure>
-<img src="images/infogram_fair_pdp.png" className="align-center" alt="images/infogram_fair_pdp.png" />
-</figure>
+![Partial dependence plot per protected-column intersection](images/infogram_fair_pdp.png)
 
 The SHAP plots show one row per intersection. Each dot in SHAP plot represents one observation (row). This kind of SHAP plot can be obtained using `model.fair_shap_plot`/`h2o.fair_shap_plot`.
 
-<figure>
-<img src="images/infogram_fair_shap.png" className="align-center" alt="images/infogram_fair_shap.png" />
-</figure>
+![SHAP plot per protected-column intersection](images/infogram_fair_shap.png)
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -810,17 +796,16 @@ gbm1.inspect_model_fairness(test, protected_columns, reference, favorable_class)
 </TabItem>
 </Tabs>
 
-Here you can see the output from [Python](admissibleml-code-examples/Train-model-subsets-Python) ([.ipynb](admissibleml-code-examples/Train-model-subsets-Python.ipynb)) and [R](admissibleml-code-examples/Train-model-subsets-R) ([.Rmd](admissibleml-code-examples/Train-model-subsets-R.Rmd)).
 
 ## Glossary
 
-- **Admissible Features**: These variables have two key characteristics: they are highly predictive and at the same time safe to use in the sense that they share very little predictive information with any protected attributes (e.g. age, gender, race).
+- **Admissible Features**: These variables have two key characteristics: they are highly predictive and at the same time safe to use in the sense that they share little predictive information with any protected attributes (for example, age, gender, race).
 - **Admissible Machine Learning**: Admissible machine learning is a new information-theoretic learning framework which aims to create models that can balance fairness, interpretability, and accuracy.
 - **Conditional Mutual Information (CMI)**: CMI measures the expected value of the mutual information of two random variables, given the value of a third. In the case of the Core Infogram, the CMI measures the net predictive information, and in the Fair context, we refer to this as the relevance index. CMI captures multivariate non-linear conditional dependencies between the variables in a completely non-parametric manner. The y-axis of the infogram is Normalized CMI.
 - **Core Features or Core Set**: In the Core Infogram, these are key features that are driving the response, without redundancy. High relevance, low redundancy.
 - **Inadmissible Features (L-Features)**: The highlighted L-shaped area in the Infogram contains features that are either irrelevant or redundant. In the case of the Fair Infogram, these features process little or no informational value beyond their use as a dummy for protected characteristics.
 - **Irrelevant Features**: In the Core Infogram, these are the features on the vertical side of the L, which have low total information (relevance to the response).
-- **Protected Features**: User-defined features that are sensitive and need to be protected (legally, or otherwise). These features (e.g. race, gender, etc.) should not drive the prediction of the response.
+- **Protected Features**: User-defined features that are sensitive and need to be protected (legally, or otherwise). These features (for example, race, gender, etc.) should not drive the prediction of the response.
 - **Redundant Features**: In the Core Infogram, these are the features on the bottom side of the L, which have a low amount of net (unique) information to offer.
 - **Relevance**: Relevance of the feature to the response variable. Higher is more relevant, more predictive, of the response. For Core Infograms, we refer to this as Total Information Index and for Fair Infograms, it's referred to as the Relevance Index. This is the x-axis of the infogram.
 - **Relevance Index**: A normalized measure of the relevance of the feature to the response variable. Higher is more relevant, more predictive, of the response.

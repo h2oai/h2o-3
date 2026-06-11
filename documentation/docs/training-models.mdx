@@ -17,11 +17,11 @@ In classification problems, the output or "response" variable is a categorical v
 
 In regression problems, the output or "response" variable is a numeric value. An example would be predicting someone's age or the sale price of a house.
 
-**Classification vs Regression in H2O models**: The way that you tell H2O whether you want to do classification versus regression for a particular supervised algorithm is by encoding the response column as either a categorical/factor type (classification) or a numeric type (regression). If your column is represented as strings ("yes", "no"), then H2O will automatically encode that column as an categorical/factor (aka. "enum") type when you import your dataset. However if you have a column with integers that represents a class in a classification problem (0, 1), you will have to [change the column type](data-munging/change-column-type#change-the-column-type) from numeric to categorical/factor (aka. "enum") type. The reason that H2O requires the response column to be encoded as the "correct" type for a particular task is to maximze efficiency of the algorithm.
+**Classification vs Regression in H2O models**: The way that you tell H2O whether you want to do classification versus regression for a particular supervised algorithm is by encoding the response column as either a categorical/factor type (classification) or a numeric type (regression). If your column is represented as strings (`"yes"`, `"no"`), then H2O will automatically encode that column as an categorical/factor (aka. `"enum"`) type when you import your dataset. However if you have a column with integers that represents a class in a classification problem (0, 1), you will have to [change the column type](data-munging/change-column-type) from numeric to categorical/factor (aka. `"enum"`) type. The reason that H2O requires the response column to be encoded as the `"correct"` type for a particular task is to maximze efficiency of the algorithm.
 
 #### Classification Example
 
-This example uses the Prostate dataset and [H2O's GLM algorithm](data-science/glm#generalized-linear-model-glm) to predict the likelihood of a patient being diagnosed with prostate cancer. The dataset includes the following columns:
+This example uses the Prostate dataset and [H2O's GLM algorithm](data-science/glm) to predict the likelihood of a patient being diagnosed with prostate cancer. The dataset includes the following columns:
 
 - **ID**: A row identifier. This can be dropped from the list of predictors.
 - **CAPSULE**: Whether the tumor penetrated the prostatic capsule
@@ -139,7 +139,7 @@ predict.head()
 
 #### Regression Example
 
-This example uses the Boston Housing data and [H2O's GLM algorithm](data-science/glm#generalized-linear-model-glm) to predict the median home price using all available features. The dataset includes the following columns:
+This example uses the Boston Housing data and [H2O's GLM algorithm](data-science/glm) to predict the median home price using all available features. The dataset includes the following columns:
 
 - **crim**: The per capita crime rate by town
 - **zn**: The proportion of residential land zoned for lots over 25,000 sq.ft
@@ -274,7 +274,7 @@ Unsupervised learning algorithms include clustering and anomaly detection method
 
 ### Clustering Example
 
-The example below uses the [K-Means](data-science/k-means#k-means-clustering) algorithm to build a simple clustering model of the Iris dataset.
+The example below uses the [K-Means](data-science/k-means) algorithm to build a simple clustering model of the Iris dataset.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -372,7 +372,7 @@ Centroid Statistics:
 
 ### Anomaly Detection Example
 
-This example uses the [Isolation Forest](data-science/if#isolation-forest) algorithm to detect anomalies in the Electrocardiograms (ECG) dataset.
+This example uses the [Isolation Forest](data-science/if) algorithm to detect anomalies in the Electrocardiograms (ECG) dataset.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -453,7 +453,7 @@ pred
 
 ### Dimensionality Reduction Example
 
-This code demonstrates how to apply the [GLRM](data-science/glrm#generalized-low-rank-models-glrm) algorithm for dimensionality reduction on the USArrests dataset using H2O-3. It includes examples in both R and Python for importing data, splitting it into training and validation sets, training the GLRM model, evaluating its performance, and reconstructing the dataset when predict is called. The purpose of this example is to show how GLRM can reduce data dimensionality while preserving essential information, making it useful for feature extraction and data preprocessing.
+This code demonstrates how to apply the [GLRM](data-science/glrm) algorithm for dimensionality reduction on the USArrests dataset using H2O-3. It includes examples in both R and Python for importing data, splitting it into training and validation sets, training the GLRM model, evaluating its performance, and reconstructing the dataset when predict is called. The purpose of this example is to show how GLRM can reduce data dimensionality while preserving essential information, making it useful for feature extraction and data preprocessing.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -600,7 +600,7 @@ The `train_segments()` function accepts the following parameters:
 - **weights_column**: The name or index of the column in the `training_frame` that holds the per-row weights.
 - **validation_frame**: The H2OFrame with validation data to be scored on while training.
 - **max_runtime_secs**: Maximum allowed runtime in seconds for each model training. Use 0 to disable. Please note that regardless of how this parameter is set, a model will be built for each input segment. This parameter only affects individual model training.
-- **segments** (Python)/**segment_columns** (R): A list of columns to segment by. H2O will group the training (and validation) dataset by the segment-by columns and train a separate model for each segment (group of rows). As an alternative to providing a list of columns, users can also supply an explicit enumeration of segments to build the models for. This enumeration needs to be represented as H2OFrame.
+- **segments** (Python) / **segment_columns** (R only): A list of columns to segment by. H2O will group the training (and validation) dataset by the segment-by columns and train a separate model for each segment (group of rows). As an alternative to providing a list of columns, users can also supply an explicit enumeration of segments to build the models for. This enumeration needs to be represented as H2OFrame.
 - **segment_models_id**: Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
 - **parallelism**: Level of parallelism of the bulk segment models building. This is the maximum number of models each H2O node will be building in parallel.
 - **verbose**: Enable to print additional information during model building. Defaults to False.

@@ -9,11 +9,11 @@ This section describes how to save, load, download, and upload binary and [MOJO 
 
 ## Binary Models
 
-When saving an H2O binary model with `h2o.saveModel` (R), `h2o.save_model` (Python), or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a [POJO/MOJO](productionizing#about-pojos-and-mojos). These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
+When saving an H2O binary model with `h2o.saveModel` in R, `h2o.save_model` in Python, or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a [POJO/MOJO](productionizing#about-pojos-and-mojos). These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
 
 ### In R and Python
 
-In R and Python, you can save a model locally or to HDFS using the `h2o.saveModel` (R) or `h2o.save_model` (Python) function . This function accepts the model object and the file path. If no path is specified, then the model will be saved to the current working directory. After the model is saved, you can load it using the `h2o.loadModel` (R) or `h2o.load_model` (Python) function. You can also upload a model from a local path to your H2O cluster.
+In R and Python, you can save a model locally or to HDFS using `h2o.saveModel` in R or `h2o.save_model` in Python. This function accepts the model object and the file path. If no path is specified, then the model will be saved to the current working directory. After the model is saved, you can load it using `h2o.loadModel` in R or `h2o.load_model` in Python. You can also upload a model from a local path to your H2O cluster.
 
 **Notes**:
 
@@ -111,35 +111,35 @@ The steps for saving and loading models in Flow are described in the **Using Flo
 
 ### Introduction
 
-The MOJO import functionality provides a means to use external, pre-trained models in H2O - mainly for the purpose of scoring. Depending on each external model, metrics and other model information might be obtained as well. Currently, only selected H2O MOJOs are supported. (See the [MOJO Quick Start](mojo-quickstart#mojo-quick-start) section for information about creating MOJOs.)
+The MOJO import functionality provides a means to use external, pre-trained models in H2O - mainly for the purpose of scoring. Depending on each external model, metrics and other model information might be obtained as well. Currently, only selected H2O MOJOs are supported. (See the [Building a MOJO](mojo-quickstart.mdx#building-a-mojo) section for information about creating MOJOs.)
 
 ### Supported MOJOs
 
-| Algorithm                 | Exportable                                                         | Importable                                                         |
-|---------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------|
-| AutoML\*\*                | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| GAM                       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| GBM                       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| GLM                       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| Isotonic Regression       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| ModelSelection            | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| XGBoost                   | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| DRF                       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| Uplift DRF                | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| Deep Learning             | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| Stacked Ensemble          | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| CoxPH                     | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| RuleFit                   | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| Naïve Bayes Classifier    | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| SVM                       | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| K-Means                   | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| Isolation Forest          | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| Extended Isolation Forest | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| Aggregator                | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| GLRM                      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| PCA                       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| Decision Tree             | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| AdaBoost                  | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
+| Algorithm                 | Exportable | Importable |
+|---------------------------|------------|------------|
+| AutoML\*\*                | Yes        | Yes        |
+| GAM                       | Yes        | Yes        |
+| GBM                       | Yes        | Yes        |
+| GLM                       | Yes        | Yes        |
+| Isotonic Regression       | Yes        | No         |
+| ModelSelection            | No         | No         |
+| XGBoost                   | Yes        | Yes        |
+| DRF                       | Yes        | Yes        |
+| Uplift DRF                | Yes        | Yes        |
+| Deep Learning             | Yes        | Yes        |
+| Stacked Ensemble          | Yes        | Yes        |
+| CoxPH                     | Yes        | Yes        |
+| RuleFit                   | Yes        | Yes        |
+| Naïve Bayes Classifier    | No         | No         |
+| SVM                       | No         | No         |
+| K-Means                   | Yes        | No         |
+| Isolation Forest          | Yes        | Yes        |
+| Extended Isolation Forest | Yes        | Yes        |
+| Aggregator                | No         | No         |
+| GLRM                      | Yes        | No         |
+| PCA                       | Yes        | No         |
+| Decision Tree             | No         | No         |
+| AdaBoost                  | No         | No         |
 
 **Note**: AutoML will always produce a model which has a MOJO. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
 
@@ -247,7 +247,7 @@ It is also possible to import a MOJO from already uploaded MOJO bytes using Gene
 
 The following options can be specified when using a Generic model:
 
-- [model_id](algo-params/model_id): Specify a custom name for the model to use as a reference.
+- [model_id](data-science/algo-params/model_id): Specify a custom name for the model to use as a reference.
 - **model_key**: Specify a key for the self-contained model archive.
 - **path**: Specify a path to the file with the self-contained model archive.
 

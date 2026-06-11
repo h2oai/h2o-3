@@ -1,5 +1,5 @@
 ---
-title: "Grid (Hyperparameter) Search"
+title: "Grid (hyperparameter) search"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -11,17 +11,16 @@ In random grid search, the user specifies the hyperparameter space in the exact 
 
 Once the grid search is complete, the user can query the grid object and sort the models by a particular performance metric (for example, "AUC"). All models are stored in the H2O cluster and are accessible by model id.
 
-Examples of how to perform cartesian and random grid search in all of H2O's APIs follow below. There are also longer grid search tutorials available for [R](https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R) and [Python](https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb).
+Examples of how to perform cartesian and random grid search in all of H2O's APIs follow below. Longer grid search tutorials are also available for [R](https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R) and [Python](https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb).
 
 ## Quick Links
 
-- [Grid Search in R](#grid-search-in-r)
-- [Grid Search in Python](#grid-search-in-python)
+- [Grid Search in R and Python](#grid-search-in-r-and-python)
 - [Java API](#grid-search-java-api)
 - [REST API](#rest-api)
 - [Supported Grid Search Hyperparameters](#supported-grid-search-hyperparameters)
 - [Grid Testing](#grid-testing)
-- [Caveats/In Progress](#caveats-in-progress)
+- [Caveats/In Progress](#caveatsin-progress)
 - [Additional Documentation](#additional-documentation)
 
 ## Grid Search in R and Python
@@ -34,15 +33,15 @@ Grid search in R provides the following capabilities:
 - `H2OGrid class`: Represents the results of the grid search
 - `h2o.getGrid(<grid_id>, sort_by, decreasing)`: Displays the specified grid
 - `h2o.grid()`: Starts a new grid search parameterized by
-  - model builder name (e.g., `gbm`)
-  - model parameters (e.g., `ntrees = 100`)
-  - `hyper_parameters` attribute for passing a list of hyper parameters (e.g., `list(ntrees = c(1,100), learn_rate = c(0.1, 0.001))`)
+  - model builder name (for example, `gbm`)
+  - model parameters (for example, `ntrees = 100`)
+  - `hyper_parameters` attribute for passing a list of hyper parameters (for example, `list(ntrees = c(1,100), learn_rate = c(0.1, 0.001))`)
   - `search_criteria` optional attribute for specifying a more advanced search strategy
   - `parallelism` The number of models to build in parallel. Parallelism allows the leader node to search the hyperspace and build models in a parallel way, which ultimately speeds up grid search on small data. A value of 1 (default) specifies sequential building. Specify 0 for adaptive parallelism, which is decided by H2O. Any number \>1 sets the exact number of models built in parallel.
 
 More about `search_criteria`:
 
-This is a named list of control parameters for smarter hyperparameter search. The list can include values for: `strategy`, `max_models`, `max_runtime_secs`, `stopping_metric`, `stopping_tolerance`, `stopping_rounds` and `seed`. The default value for `strategy`, "Cartesian", covers the entire space of hyperparameter combinations. If you want to use cartesian grid search, you can leave the `search_criteria` argument unspecified. Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, `max_models` and/or `max_runtime_secs`. You can also use "Sequential", which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. "Sequential" strategy exposes `early_stopping` parameter (defaults to TRUE) that can be used to disable early stopping while still obeying the `max_models` and `max_runtime_secs`. Some examples below:
+This is a named list of control parameters for smarter hyperparameter search. The list can include values for: `strategy`, `max_models`, `max_runtime_secs`, `stopping_metric`, `stopping_tolerance`, `stopping_rounds` and `seed`. The default value for `strategy` is `Cartesian`, which covers the entire space of hyperparameter combinations. If you want to use cartesian grid search, you can leave the `search_criteria` argument unspecified. Specify the `RandomDiscrete` strategy to perform a random search of all the combinations of your hyperparameters. `RandomDiscrete` should be usually combined with at least one early stopping criterion, `max_models` and/or `max_runtime_secs`. You can also use `Sequential`, which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. The `Sequential` strategy exposes the `early_stopping` parameter (defaults to TRUE) that can be used to disable early stopping while still obeying the `max_models` and `max_runtime_secs`. Some examples below:
 
 ``` r
 list(strategy = "RandomDiscrete", max_models = 10, seed = 1)
@@ -65,13 +64,13 @@ list(strategy = "Sequential", early_stopping = FALSE, max_models = 42, max_runti
 - `<grid_name>.show()`: Display a list of models (including model IDs, hyperparameters, and MSE) explored by grid search (where `<grid_name>` is an instance of an `H2OGridSearch` class)
 - `grid_search = H2OGridSearch(<model_type), hyper_params=hyper_parameters)`: Start a new grid search parameterized by:
   - `model_type` is the type of H2O estimator model with its unchanged parameters
-  - `hyper_params` in Python is a dictionary of string parameters (keys) and a list of values to be explored by grid search (values) (e.g., `{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}`
+  - `hyper_params` in Python is a dictionary of string parameters (keys) and a list of values to be explored by grid search (values) (for example, `{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}`
   - `search_criteria` is the optional dictionary for specifying more a advanced search strategy
   - `parallelism` The number of models to build in parallel. Parallelism allows the leaer node to search the hyperspace and build models in a parallel way, which ultimately speeds up grid search on small data. A value of 1 (default) specifies sequential building. Specify 0 for adaptive parallelism, which is decided by H2O. Any number \>1 sets the exact number of models built in parallel.
 
 More about `search_criteria`:
 
-This is a dictionary of control parameters for smarter hyperparameter search. The dictionary can include values for: `strategy`, `max_models`, `max_runtime_secs`, `stopping_metric`, `stopping_tolerance`, `stopping_rounds` and `seed`. The default value for `strategy`, "Cartesian", covers the entire space of hyperparameter combinations. If you want to use cartesian grid search, you can leave the `search_criteria` argument unspecified. Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, `max_models` and/or `max_runtime_secs`. You can also use "Sequential", which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. "Sequential" strategy exposes `early_stopping` parameter (defaults to True) that can be used to disable early stopping while still obeying the `max_models` and `max_runtime_secs`. Some examples below:
+This is a dictionary of control parameters for smarter hyperparameter search. The dictionary can include values for: `strategy`, `max_models`, `max_runtime_secs`, `stopping_metric`, `stopping_tolerance`, `stopping_rounds` and `seed`. The default value for `strategy` is `Cartesian`, which covers the entire space of hyperparameter combinations. If you want to use cartesian grid search, you can leave the `search_criteria` argument unspecified. Specify the `RandomDiscrete` strategy to perform a random search of all the combinations of your hyperparameters. `RandomDiscrete` should be usually combined with at least one early stopping criterion, `max_models` and/or `max_runtime_secs`. You can also use `Sequential`, which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. The `Sequential` strategy exposes the `early_stopping` parameter (defaults to True) that can be used to disable early stopping while still obeying the `max_models` and `max_runtime_secs`. Some examples below:
 
 ``` python
 {'strategy': "RandomDiscrete", 'max_models': 10, 'seed': 1}
@@ -256,10 +255,9 @@ h2o.auc(best_gbm_perf2)
 
 # Look at the hyperparameters for the best model
 print(best_gbm2@model[["model_summary"]])
-
-
-For more information, refer to the `R grid search tutorial [https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R](https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R)`__, `R grid search code [https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R)`__, and `runit\_GBMGrid\_airlines.R [https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R)`__.
 ```
+
+For more information, refer to the [R grid search tutorial](https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R), [R grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R), and the [GBM grid airlines test](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R).
 
 </TabItem>
 <TabItem value="python" label="Python">
@@ -311,7 +309,7 @@ For more information, refer to the [Python grid search tutorial](https://github.
 
 H2O supports saving and loading grids even after a cluster wipe or complete cluster restart. The `save_grid` function will export a grid and its models into a given folder while the `load_grid` function loads a previously saved grid and all its models from the given folder.
 
-There are two modes to save a grid (in both R and Python):
+Two modes are available to save a grid (in both R and Python):
 
 - Use auto-checkpointing and supply the `export_checkpoints_dir` parameter
 - Call the function `h2o.save_grid` for manual export
@@ -470,13 +468,13 @@ gbm_grid <- h2o.grid(
     "gbm", x=1:4, y=5, 
     grid_id="gbm_grid", training_frame=iris, 
     hyper_params=hyper_parameters,
-    recovery_dir="hdfs://nameNode/user/john/gbm_grid_recovery"
+    recovery_dir="s3://my-bucket/gbm_grid_recovery"
 )
 
 # on a new cluster recover grid
 # this will load the training frame and any other objects required for training
 h2o.loadGrid(
-    "hdfs://nameNode/user/john/gbm_grid_recovery/gbm_grid", # append grid ID to the recovery_dir 
+    "s3://my-bucket/gbm_grid_recovery/gbm_grid", # append grid ID to the recovery_dir 
     load_params_references=TRUE
 )
 iris <- h2o.getFrame("iris") # get reference to re-loaded training frame
@@ -506,14 +504,14 @@ gbm_grid = H2OGridSearch(
     model=H2OGradientBoostingEstimator,
     grid_id='gbm_grid', 
     hyper_params=hyper_parameters,
-    recovery_dir="hdfs://nameNode/user/john/gbm_grid_recovery"
+    recovery_dir="s3://my-bucket/gbm_grid_recovery"
 )
 gbm_grid.train(x=list(range(4)), y=4, training_frame=iris)
 
 # on a new cluster recover grid
 # this will load the training frame and any other objects required for training
 grid = h2o.load_grid(
-    "hdfs://nameNode/user/john/gbm_grid_recovery/gbm_grid",  # append grid ID to the recovery_dir 
+    "s3://my-bucket/gbm_grid_recovery/gbm_grid",  # append grid ID to the recovery_dir 
     load_params_references=True
 )
 train = h2o.get_frame("iris") # get reference to re-loaded training frame
@@ -529,7 +527,7 @@ grid.train(x=list(range(4)), y=4, training_frame=train)
 
 Each parameter exposed by the schema can specify if it is supported by grid search by including the attribute `gridable=true` in the schema @API annotation. In any case, the Java API does not restrict the parameters supported by grid search.
 
-There are two core entities: `Grid` and `GridSearch`. `GridSeach` is a job-building `Grid` object and is defined by the user's model factory and the [hyperspace walk strategy](https://en.wikipedia.org/wiki/Hyperparameter_optimization). The model factory must be defined for each supported model type (DRF, GBM, DL, and K-means). The hyperspace walk strategy specifies how the user-defined space of hyperparameters is traversed. The space definition is not limited. For each point in hyperspace, model parameters of the specified type are produced.
+The two core entities are `Grid` and `GridSearch`. `GridSeach` is a job-building `Grid` object and is defined by the user's model factory and the [hyperspace walk strategy](https://en.wikipedia.org/wiki/Hyperparameter_optimization). The model factory must be defined for each supported model type (DRF, GBM, DL, and K-means). The hyperspace walk strategy specifies how the user-defined space of hyperparameters is traversed. The space definition is not limited. For each point in hyperspace, model parameters of the specified type are produced.
 
 The implementation supports a simple cartesian grid search as well as random search with several different stopping criteria. Grid build triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, the resulting model is ignored; however, it can still be tracked in the job list, and errors are returned in the grid build result.
 
@@ -543,7 +541,7 @@ Launch the grid search by specifying:
 - the search hyperparameters (a map `<parameterName, listOfValues>` that defines the parameter spaces to traverse)
 - optionally, search criteria (an instance of `HyperSpaceSearchCriteria`)
 
-The Java API can grid search any parameters defined in the model parameter's class (e.g., `GBMParameters`). Paramters that are appropriate for gridding are marked by the @API parameter, but this is not enforced by the framework.
+The Java API can grid search any parameters defined in the model parameter's class (for example, `GBMParameters`). Paramters that are appropriate for gridding are marked by the @API parameter, but this is not enforced by the framework.
 
 Additional methods are available in the model builder to support creation of model parameters and configuration. This eliminates the requirement of the previous implementation where each gridable value was represented as a `double`. This also allows users to specify different building strategies for model parameters. For example, the REST layer uses a builder that validates parameters against the model parameter's schema, where the Java API uses a simple reflective builder. Additional reflections support is provided by PojoUtils (methods `setField`, `getFieldValue`).
 
@@ -656,7 +654,7 @@ The current implementation of the grid search REST API exposes the following end
 - `POST /<version>/Grids/<algo_name>`: Start a new grid search
   - `<algo_name>`: Supported algorithm values are `{glm, gbm, drf, kmeans, deeplearning}`
 
-Endpoints accept model-specific parameters (e.g., [GBMParametersV3](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java)) and an additional parameter called `hyper_parameters`, which contains a dictionary of the hyperparameters that will be searched. In this dictionary, an array of values is specified for each searched hyperparameter.
+Endpoints accept model-specific parameters (for example, [GBMParametersV3](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java)) and an additional parameter called `hyper_parameters`, which contains a dictionary of the hyperparameters that will be searched. In this dictionary, an array of values is specified for each searched hyperparameter.
 
 ``` java
 {
@@ -665,7 +663,7 @@ Endpoints accept model-specific parameters (e.g., [GBMParametersV3](https://gith
 }
 ```
 
-An optional `search_criteria` dictionary specifies options for controlling more advanced search strategies. Currently, full `Cartesian` is the default. `RandomDiscrete` allows a random search over the hyperparameter space with three ways of specifying when to stop the search: max number of models, max time, and metric-based early stopping (e.g., stop if MSE hasn't improved by 0.0001 over the 5 best models). An example is:
+An optional `search_criteria` dictionary specifies options for controlling more advanced search strategies. Currently, full `Cartesian` is the default. `RandomDiscrete` allows a random search over the hyperparameter space with three ways of specifying when to stop the search: max number of models, max time, and metric-based early stopping (for example, stop if MSE hasn't improved by 0.0001 over the 5 best models). An example is:
 
 ``` java
 {
@@ -935,28 +933,28 @@ No available hyperparameters.
 
 ### Shared Tree Hyperparameters
 
-| Shared Tree Hyperparameters        | GBM                                                                | DRF                                                                | XGBoost                                                            | Isolation Forest                                                   | Extended Isolation Forest                                          | Uplift DRF                                                         |
-|------------------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------|
-| `col_sample_rate`                  | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| `col_sample_rate_change_per_level` | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `col_sample_rate_per_tree`         | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `histogram_type`                   | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `learn_rate`                       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| `max_abs_leafnode_pred`            | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| `max_depth`                        | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `min_rows`                         | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `min_split_improvement`            | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `mtries`                           | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `nbins`                            | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `nbins_cats`                       | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `nbins_top_level`                  | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `ntrees`                           | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `sample_rate`                      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `sample_rate_per_class`            | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `sample_size`                      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| `seed`                             | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> |
-| `learn_rate_annealing`             | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
-| `pred_noise_bandwidth`             | <img src="/images/checkmark.png" className="align-middle" alt="yes" /> | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      | <img src="/images/xmark.png" className="align-middle" alt="no" />      |
+| Shared Tree Hyperparameters        | GBM | DRF | XGBoost | Isolation Forest | Extended Isolation Forest | Uplift DRF |
+|------------------------------------|-----|-----|---------|------------------|---------------------------|------------|
+| `col_sample_rate`                  | Yes | No  | Yes     | No               | No                        | No         |
+| `col_sample_rate_change_per_level` | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `col_sample_rate_per_tree`         | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `histogram_type`                   | Yes | Yes | Yes     | Yes              | No                        | Yes        |
+| `learn_rate`                       | Yes | No  | Yes     | No               | No                        | No         |
+| `max_abs_leafnode_pred`            | Yes | No  | Yes     | No               | No                        | No         |
+| `max_depth`                        | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `min_rows`                         | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `min_split_improvement`            | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `mtries`                           | No  | Yes | No      | Yes              | No                        | Yes        |
+| `nbins`                            | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `nbins_cats`                       | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `nbins_top_level`                  | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `ntrees`                           | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `sample_rate`                      | Yes | Yes | Yes     | Yes              | No                        | Yes        |
+| `sample_rate_per_class`            | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `sample_size`                      | No  | No  | No      | Yes              | Yes                       | No         |
+| `seed`                             | Yes | Yes | Yes     | Yes              | Yes                       | Yes        |
+| `learn_rate_annealing`             | Yes | No  | No      | No               | No                        | No         |
+| `pred_noise_bandwidth`             | Yes | No  | No      | No               | No                        | No         |
 
 ## Grid Testing
 
@@ -973,18 +971,16 @@ The current test infrastructure includes:
 - Basic tests verifying consistency of the results for DRF, GBM, and KMeans
 - JUnit test assertions for grid results
 
-There are tests for the `RandomDiscrete` search criteria in [runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R) and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py).
+Tests for the `RandomDiscrete` search criteria are in the [GBM grid airlines test](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R) and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py).
 
 ## Caveats/In Progress
 
 - Currently, the schema system requires specific classes instead of parameterized classes. For example, the schema definition `Grid<GBMParameters>` is not supported unless your define the class `GBMGrid extends Grid<GBMParameters>`.
 - Grid Job scheduler is sequential only; schedulers for concurrent builds are under development. Note that in cases of true big data sequential scheduling will yield the highest performance. It is only with a large cluster and small data that concurrent scheduling will improve performance.
 - The model builder job and grid jobs are not associated.
-- There is no way to list the hyper space parameters that caused a model builder job failure.
-- The `h2o.get_grid()` (Python) or `h2o.getGrid()` (R) function can be called to retrieve a grid search instance. If neither cross-validation nor a validation frame is used in the grid search, then the training metrics will display in the "get grid" output. If a validation frame is passed to the grid, and `nfolds = 0`, then the validation metrics will display. However, if `nfolds` \> 1, then cross-validation metrics will display even if a validation frame is provided.
+- No mechanism exists to list the hyperspace parameters that caused a model builder job failure.
+- Call `h2o.get_grid()` in Python or `h2o.getGrid()` in R to retrieve a grid search instance. If neither cross-validation nor a validation frame is used in the grid search, then the training metrics will display in the `get grid` output. If a validation frame is passed to the grid, and `nfolds = 0`, then the validation metrics will display. However, if `nfolds` \> 1, then cross-validation metrics will display even if a validation frame is provided.
 
 ## Additional Documentation
 
-- [H2O Core Java Developer Documentation](../h2o-core/javadoc/index): The definitive Java API guide for the core components of H2O.
-- [H2O Algos Java Developer Documentation](../h2o-algos/javadoc/index): The definitive Java API guide for the algorithms used by H2O.
 - [Hyperparameter Optimization in H2O](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/random%20hyperparmeter%20search%20and%20roadmap.md): A guide to Grid Search and Random Search in H2O.

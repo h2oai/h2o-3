@@ -1,5 +1,5 @@
 ---
-title: "Tunneling between Servers with H2O"
+title: "Tunneling between servers with H2O"
 ---
 
 To tunnel between servers (for example, due to firewalls):
@@ -39,7 +39,7 @@ irene@mr-0x3:~/target$ java -jar h2o.jar -port 55599
 3.  Log into the remote machine where the running instance of H2O will be forwarded using a command similar to the following. (Your specified port numbers and IP address will be different.)
 
 ```
-`ssh -L 55577:localhost:55599 irene@192.168.1.173`
+ssh -L 55577:localhost:55599 irene@192.168.1.173
 ```
 
 4.  Check the cluster status.

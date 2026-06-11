@@ -1,5 +1,5 @@
 ---
-title: "POJO Quick Start"
+title: "POJO quick start"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -27,35 +27,31 @@ The example code below shows how to start H2O Flow, compile and run an example F
 
 1.  Start H2O in terminal window \#1:
 
-```
-> `$ java -jar h2o.jar`
-```
+    ```bash
+    $ java -jar h2o.jar
+    ```
 
 2.  Build a model using your web browser:
 
-```
-1.  Go to [http://localhost:54321](http://localhost:54321)
-2.  Click **View Example Flows** near the right edge of the screen. Here is a screenshot of what to look for:
+    1.  Go to [http://localhost:54321](http://localhost:54321)
+    2.  Click **View Example Flows** near the right edge of the screen. Here is a screenshot of what to look for:
 
-> <figure>
-> <img src="howto/images/view_example_flows.png" width="272" height="237" alt="howto/images/view_example_flows.png" />
-> </figure>
+        ![View example Flows button in H2O Flow](howto/images/view_example_flows.png)
 
-3.  Click `GBM_Airlines_Classification.flow`
-4.  If a confirmation prompt appears asking you to "Load Notebook", click it.
-5.  From the "Flow" menu choose the "Run all cells" option
-6.  Scroll down and find the "Model" cell in the notebook. Click on the **Download POJO** button as shown in the following screenshot:
+    3.  Click `GBM_Airlines_Classification.flow`
+    4.  If a confirmation prompt appears asking you to `Load Notebook`, click it.
+    5.  From the **Flow** menu choose the **Run all cells** option.
+    6.  Scroll down and find the **Model** cell in the notebook. Click the **Download POJO** button as shown in the following screenshot:
 
-> <figure>
-> <img src="howto/images/download_pojo.png" alt="howto/images/download_pojo.png" />
-> </figure>
->
-> **Note**: The instructions below assume that the POJO model was downloaded to the "Downloads" folder.
-```
+        ![Download POJO button in the Model cell](howto/images/download_pojo.png)
+
+    :::note
+    The instructions below assume that the POJO model was downloaded to the "Downloads" folder.
+    :::
 
 3.  Download model pieces in a *new* terminal window. Note that H2O must still be running in terminal window \#1:
 
-    ```
+    ```bash
     $ mkdir experiment
     $ cd experiment
     $ mv ~/Downloads/gbm_pojo_test.java .
@@ -64,7 +60,7 @@ The example code below shows how to start H2O Flow, compile and run an example F
 
 4.  Create your main program in terminal window \#2 by creating a new file called main.java (`vim main.java`) with the following contents:
 
-    ```
+    ```java
     import java.io.*;
     import hex.genmodel.easy.RowData;
     import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -104,7 +100,7 @@ The example code below shows how to start H2O Flow, compile and run an example F
 
 5.  Compile the POJO in terminal window 2:
 
-    ```
+    ```bash
     $ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m gbm_pojo_test.java main.java
     ```
 
@@ -119,11 +115,11 @@ The example code below shows how to start H2O Flow, compile and run an example F
 >     Label (aka prediction) is flight departure delayed: YES
 >     Class probabilities: 0.4319916897116479,0.5680083102883521
 
-## Extracting Models from H2O
+## Extracting models from H2O
 
 Generated models can be extracted from H2O in the following ways:
 
-### From the H2O Flow Web UI
+### From the H2O Flow web UI
 
 When viewing a model, click the **Download POJO** button at the top of the model cell, as shown in the example in the Quick start section. You can also preview the POJO inside Flow, but it will only show the first thousand lines or so in the web browser, truncating large models.
 
@@ -167,20 +163,12 @@ h2o.download_pojo(model)
 </TabItem>
 </Tabs>
 
-<!---
-&#10;**From Java:**
-&#10;TODO: provide pointer of doing this directly from Java
-From Sparkling Water:
-TODO: provide pointer of doing this from Sparkling Water
-&#10;-->
-
-## Use Cases
+## Use cases
 
 The following use cases are demonstrated with code examples:
 
 - **Reading new data from a CSV file and predicting on it**: The PredictCsv class is used by the H2O test harness to make predictions on new data points.
 - **Getting a new observation from a JSON request and returning a prediction**
-- **Calling a user-defined function directly from hive**: See the [H2O-3 training github repository](https://github.com/h2oai/h2o-world-2015-training/tree/master/tutorials/hive_udf_template).
 
 ## FAQ
 
@@ -198,17 +186,13 @@ The following use cases are demonstrated with code examples:
 
 - **How should I format my data before calling the POJO?**
 
-> Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the [Javadoc](http://h2o-release.s3.amazonaws.com/h2o/%7B%7Bbranch_name%7D%7D/%7B%7Bbuild_number%7D%7D/docs-website/h2o-genmodel/javadoc/index.html)).
+> Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the [Javadoc](http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html)).
 >
 > > - Input columns must only contain categorical levels that were seen during training
 > > - Any additional input columns not used for training are ignored
 > > - If no input column is specified, it will be treated as an `NA`
-> > - Some models do not handle NAs well (e.g., GLM)
+> > - Some models do not handle NAs well (for example, GLM)
 > > - Any transformations applied to data before model training must also be applied before calling the POJO predict method
-
-- **How do I run a POJO on a Spark Cluster?**
-
-> The POJO provides just the math logic to do predictions, so you won’t find any Spark (or even H2O) specific code there. If you want to use the POJO to make predictions on a dataset in Spark, create a map to call the POJO for each row and save the result to a new column, row-by-row.
 
 - **How do I communicate with a remote cluster using the REST API?**
 

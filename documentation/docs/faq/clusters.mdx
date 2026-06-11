@@ -13,7 +13,7 @@ To specify an IP address, launch H2O using the following command:
 If this does not resolve the issue, try the following additional troubleshooting tips:
 
 - Confirm your internet connection is active.
-- Test connectivity using curl: First, log in to the first node and enter curl `http://<ip>:54321` (where is the IP address of the second node. Then, log in to the second node and enter curl `http://<ip>:54321` (where is the IP address of the first node). Look for output from H2O.
+- Test connectivity using curl: First, log in to the first node and run `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node). Then, log in to the second node and run `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O.
 - Confirm ports 54321 and 54322 are available for TCP.
 - Confirm your firewall is not preventing the nodes from locating each other.
 - Confirm the nodes are not using different versions of H2O.
@@ -195,7 +195,7 @@ More information is available here: [https://docs.oracle.com/javase/8/docs/techn
 
 ------------------------------------------------------------------------
 
-## Why do I receive the error "ice_root not a read/writable directory"?
+## Why do I receive the error `ice_root not a read/writable directory`?
 
 The `ice_root` folder is where H2O will store temporary files, and by default it would be in the `/tmp` (on Linux) or `/var` (on Mac). Check that the user launching H2O has write access to the folder.
 

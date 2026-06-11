@@ -39,7 +39,7 @@ Checkpoint restart suggestions:
 
 1.  For multi-node only: Leave `train_samples_per_iteration=-2` and increase `target_ratio_comm_to_comp` from 0.05 to 0.25 or 0.5 (more communication). This should lead to a better model when using multiple nodes. **Note**: This has no effect on single-node performance at all because there is no actual communication needed.
 2.  For both single and multi-node (bagging-like): Explicitly set `train_samples_per_iteration=N`, where $N$ is the number of training samples for the whole cluster to train with for one iteration. Each of the $n$ nodes will then train on $N/n$ randomly chosen rows for each iteration. Obviously, a good choice for $N$ depends on the dataset size and the model complexity. Refer to the logs to see what values of $N$ are used in option 1 (when auto-tuning is enabled). Typically, option 1 is sufficient.
-3.  For both single and multi-node: Change regularization parameters such as `l1`, `l2`, `max_w2`, `input_dropout_ratio`, `hidden_dropout_ratios`. For best results, build the first model with `RectifierWithDropout` and `input_dropout_ratio=0` and `hidden_dropout_ratios` with a list of all 0s, just to be able to enable dropout regularization later. Hidden dropout is often used for initial models because it often improves generalization. Input dropout is especially useful if there is some noise in the input.
+3.  For both single and multi-node: Change regularization parameters such as `l1`, `l2`, `max_w2`, `input_dropout_ratio`, `hidden_dropout_ratios`. For best results, build the first model with `RectifierWithDropout` and `input_dropout_ratio=0` and `hidden_dropout_ratios` with a list of all zeros, just to be able to enable dropout regularization later. Hidden dropout is often used for initial models because it often improves generalization. Input dropout is especially useful if there is some noise in the input.
 
 Options 1 and 3 should result in a good model. Of course, grid search can be used with checkpoint restarts to scan a broad range of good continuation models.
 
@@ -678,7 +678,7 @@ In XGBoost, checkpoint can be used to continue training on a previously generate
 - sample_rate
 - tree_method
 
-The following example demonstrates how to build a gradient boosting model that will later be used for checkpointing. This checkpoint example shows how to continue training on an existing model. We do not recommend using GBM to train on new data. This example uses the cars dataset, which classifies whether or not a car is economical based on the car's displacement, power, weight, and acceleration, and the year it was made.
+The following example demonstrates how to build an XGBoost model that will later be used for checkpointing. This example uses the iris dataset, which classifies flowers into three species.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>

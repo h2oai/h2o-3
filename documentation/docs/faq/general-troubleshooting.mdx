@@ -1,5 +1,5 @@
 ---
-title: "General Troubleshooting Tips"
+title: "General troubleshooting tips"
 ---
 
 - Confirm your internet connection is active.
@@ -27,15 +27,15 @@ title: "General Troubleshooting Tips"
 
 - Confirm that the nodes are not on different networks by confirming that the IP addresses of the nodes are the same in the output:
 
-  >     INFO: Listening for HTTP and REST traffic on  IP_Address/ 06-18 10:54:21.586 192.168.1.70:54323    25638  main       INFO: H2O cloud name: 'H2O_User' on IP_Address, discovery address /Discovery_Address INFO: Cloud of size 1 formed [IP_Address]
+  ```
+  INFO: Listening for HTTP and REST traffic on  IP_Address/
+  06-18 10:54:21.586 192.168.1.70:54323    25638  main       INFO: H2O cloud name: 'H2O_User' on IP_Address, discovery address /Discovery_Address
+  INFO: Cloud of size 1 formed [IP_Address]
+  ```
 
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`). To use a network range, use a comma to separate the IP addresses (for example, `-network 123.45.67.0/22,123.45.68.0/24`).
 
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
-
-- (Hadoop only) Try launching H2O with a longer timeout: `hadoop jar h2odriver.jar -timeout 1800`
-
-- (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster.
 
 - (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
 
@@ -63,13 +63,13 @@ Exception in thread "main" java.lang.UnsupportedClassVersionError: water/H2OApp
 Could not find the main class: water.H2OApp. Program will exit.
 ```
 
-This error output indicates that your Java version is not supported. Make sure to check and upgrade to the [supported Java versions](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements) and H2O should launch successfully.
+This error output indicates that your Java version is not supported. Make sure to check and upgrade to the [supported Java versions](../welcome#java-requirements) and H2O should launch successfully.
 
 ------------------------------------------------------------------------
 
-## I am not launching on Hadoop. How can I increase the amount of time that H2O allows for expected nodes to connect?
+## How can I increase the amount of time that H2O allows for expected nodes to connect?
 
-For cluster startup, if you are not launching on Hadoop, then you will not need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to <span className="title-ref">"Locking cloud to new members, because \<reason\>..."</span>.
+For cluster startup, you don't need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to `Locking cloud to new members, because <reason>...`.
 
 ------------------------------------------------------------------------
 
@@ -140,7 +140,7 @@ my for loop {
 }
 ```
 
-Note that the `h2o.garbageCollct()` function works as follows:
+Note that the `.h2o.garbageCollect()` function works as follows:
 
 ```
 # Trigger an explicit garbage collection across all nodes in the H2O cluster.

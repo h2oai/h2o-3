@@ -126,7 +126,7 @@ if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils")
 Finally, install the latest stable version of the H2O package for R:
 
 ```
-install.packages("h2o", type = "source", repos = (c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R)))
+install.packages("h2o", type = "source", repos = c("https://h2o-release.s3.amazonaws.com/h2o/latest_stable_R"))
 library(h2o)
 h2o.init()
 ```
@@ -215,7 +215,7 @@ Yes, make sure to install `libcurl`, which allows H2O to communicate with R. We 
 
 ## How do I change variable/header names on an H2O frame in R?
 
-There are two ways to change header names. To specify the headers during parsing, import the headers in R and then specify the header as the column name when the actual data frame is imported:
+Header names can be changed in two ways. To specify the headers during parsing, import the headers in R and then specify the header as the column name when the actual data frame is imported:
 
 ```
 header <- h2o.importFile(path = pathToHeader)

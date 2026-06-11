@@ -26,9 +26,7 @@ To generate p-values, do one of the following:
 
 The p-values are listed in the coefficients table (as shown in the following example screenshot):
 
-<figure>
-<img src="../images/Flow_Pvalues.png" alt="../images/Flow_Pvalues.png" />
-</figure>
+![Coefficients table showing p-values in Flow](../images/Flow_Pvalues.png)
 
 ------------------------------------------------------------------------
 
@@ -78,7 +76,7 @@ Different results may be generated because of the way H2O computes the initial M
 
 ## How does your Deep Learning Autoencoder work? Is it deep or shallow?
 
-H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer. The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers. We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R).
+H2O's DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer. The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don't achieve convergence, then try using the *Tanh* activation and fewer layers. We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R).
 
 ------------------------------------------------------------------------
 
@@ -88,11 +86,6 @@ Use Word2Vec Skip-gram model + GBM for classifying job titles:
 
 - [Python](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/word2vec_craigslistjobtitles.ipynb)
 - [R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R)
-- [Scala](https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslistJobTitles.script.scala)
-
-Use TF-IDF weighting scheme for classifying text messages:
-
-- [Scala](https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/hamOrSpam.script.scala)
 
 ------------------------------------------------------------------------
 
@@ -107,7 +100,7 @@ Here is an example of how the prediction process works in H2O:
 
 The behavior for unseen categorical levels depends on the algorithm and how it handles missing levels (NA values):
 
-- For DRF and GBM, missing values are interpreted as containing information (i.e., missing for a reason) rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
+- For DRF and GBM, missing values are interpreted as containing information (that is, missing for a reason) rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 - Deep Learning creates an extra input neuron for missing and unseen categorical levels, which can remain untrained if there were no missing or unseen categorical levels in the training data, resulting in a random contribution to the next layer during testing.
 - GLM skips unseen levels in the beta\*x dot product.
 
@@ -115,7 +108,7 @@ The behavior for unseen categorical levels depends on the algorithm and how it h
 
 ## How are quantiles computed?
 
-The quantile results in Flow are computed lazily on-demand and cached.It is a fast approximation (max - min / 1024) that is very accurate for most use cases. If the distribution is skewed, the quantile results may not be as accurate as the results obtained using `h2o.quantile` in R or `H2OFrame.quantile` in Python.
+The quantile results in Flow are computed lazily on-demand and cached. This is a fast approximation (max - min / 1024) that is accurate for most use cases. If the distribution is skewed, the quantile results may not be as accurate as the results obtained using `h2o.quantile` in R or `H2OFrame.quantile` in Python.
 
 ------------------------------------------------------------------------
 
@@ -127,17 +120,13 @@ To convert the response column:
 
 - Before parsing, click the drop-down menu to the right of the column name or number and select `Enum`
 
-<figure>
-<img src="../images/Flow_Parse_ConvertEnum.png" alt="../images/Flow_Parse_ConvertEnum.png" />
-</figure>
+![Parse setup screen showing the Enum column type option in Flow](../images/Flow_Parse_ConvertEnum.png)
 
 or
 
 - Click on the .hex link for the data frame (or use the `getFrameSummary "<frame_name>.hex"` command, where `<frame_name>` is the name of the frame), then click the **Convert to enum** link to the right of the column name or number
 
-<figure>
-<img src="../images/Flow_Summary_ConvertToEnum.png" alt="../images/Flow_Summary_ConvertToEnum.png" />
-</figure>
+![Frame summary screen showing the Convert to enum link in Flow](../images/Flow_Summary_ConvertToEnum.png)
 
 ## How to correctly interpret split values and predictions of tree-based POJOs?
 

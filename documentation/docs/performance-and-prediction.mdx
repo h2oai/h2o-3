@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 ## Model Performance
 
-Given a trained H2O model, the `h2o.performance()` (R)/`model_performance()` (Python) function computes a model's performance on a given dataset.
+Given a trained H2O model, the `h2o.performance()` function in R and `model_performance()` function in Python computes a model's performance on a given dataset.
 
 **Notes**:
 
@@ -340,7 +340,7 @@ H2O-3 calculates regression metrics for classification problems. The following a
 - [Gini Coefficient](#gini-coefficient)
 - [Absolute MCC (Matthews Correlation Coefficient)](#absolute-mcc-matthews-correlation-coefficient)
 - [F1](#f1)
-- [F0.5](#f0.5)
+- [F0.5](#f05)
 - [F2](#f2)
 - [Accuracy](#accuracy)
 - [Logloss](#logloss)
@@ -440,13 +440,11 @@ The Gini index is a well-established method to quantify the inequality among val
 
 The Gini index is based on the Lorenz curve. The Lorenz curve plots the true positive rate (y-axis) as a function of percentiles of the population (x-axis).
 
-The Lorenz curve represents a collective of models represented by the classifier. The location on the curve is given by the probability threshold of a particular model. (i.e., Lower probability thresholds for classification typically lead to more true positives, but also to more false positives.)
+The Lorenz curve represents a collective of models represented by the classifier. The location on the curve is given by the probability threshold of a particular model. (that is, lower probability thresholds for classification typically lead to a higher number of true positives, but also to a higher number of false positives.)
 
 The Gini index itself is independent of the model and only depends on the Lorenz curve determined by the distribution of the scores (or probabilities) obtained from the classifier.
 
-<figure>
-<img src="images/lorenz_curve.png" alt="images/lorenz_curve.png" />
-</figure>
+![Lorenz curve for the Gini coefficient](images/lorenz_curve.png)
 
 **Example**
 
@@ -533,7 +531,7 @@ airlines_gbm.mcc(train=True, valid=True, xval=False)
 
 ##### F1
 
-The F1 score provides a measure for how well a binary classifier can classify positive cases (given a threshold value). The F1 score is calculated from the harmonic mean of the precision and recall. An F1 score of 1 means both precision and recall are perfect and the model correctly identified all the positive cases and didn't mark a negative case as a positive case. If either precision or recall are very low it will be reflected with a F1 score closer to 0.
+The F1 score provides a measure for how well a binary classifier can classify positive cases (given a threshold value). The F1 score is calculated from the harmonic mean of the precision and recall. An F1 score of 1 means both precision and recall are perfect and the model correctly identified all the positive cases and didn't mark a negative case as a positive case. If either precision or recall are low it will be reflected with a F1 score closer to 0.
 
 $$F1 = 2 \;\Big(\; \frac{(precision) \; (recall)}{precision + recall}\; \Big)$$
 
@@ -587,7 +585,7 @@ airlines_gbm.F1(train=True, valid=True, xval=False)
 
 ##### F0.5
 
-The F0.5 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F0.5 score gives more weight to precision than to recall. More weight should be given to precision for cases where False Positives are considered worse than False Negatives. For example, if your use case is to predict which products you will run out of, you may consider False Positives worse than False Negatives. In this case, you want your predictions to be very precise and only capture the products that will definitely run out. If you predict a product will need to be restocked when it actually doesn't, you incur cost by having purchased more inventory than you actually need.
+The F0.5 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F0.5 score gives more weight to precision than to recall. More weight should be given to precision for cases where False Positives are considered worse than False Negatives. For example, if your use case is to predict which products you will run out of, you may consider False Positives worse than False Negatives. In this case, you want your predictions to be precise and only capture the products that will definitely run out. If you predict a product will need to be restocked when it actually doesn't, you incur cost by having purchased more inventory than you actually need.
 
 F0.5 equation:
 
@@ -1008,7 +1006,7 @@ print(h2o_default_auc)
 </TabItem>
 </Tabs>
 
-**Notes** - Calculation of this metric can be very expensive on time and memory when the domain is big. So it is disabled by default. - To enable it setup system property `sys.ai.h2o.auc.maxClasses` to a number.
+**Notes** - Calculation of this metric can be expensive on time and memory when the domain is big. It is disabled by default. - To enable it, set the system property `sys.ai.h2o.auc.maxClasses` to a number.
 
 ##### Multinomial AUCPR (Area Under the Precision-Recall Curve)
 
@@ -1142,7 +1140,7 @@ print(h2o_default_aucpr)
 </TabItem>
 </Tabs>
 
-**Notes** - Calculation of this metric can be very expensive on time and memory when the domain is big. So it is disabled by default. - To enable it setup system property `sys.ai.h2o.auc.maxClasses` to a number of maximum allowed classes.
+**Notes** - Calculation of this metric can be expensive on time and memory when the domain is big. It is disabled by default. - To enable it, set the system property `sys.ai.h2o.auc.maxClasses` to a number of maximum allowed classes.
 
 ##### Kolmogorov-Smirnov (KS) Metric
 
@@ -1280,15 +1278,13 @@ When deciding which metric to use in a regression problem, some main questions t
 
 ##### Sensitive to Outliers
 
-Certain metrics are more sensitive to outliers. When a metric is sensitive to outliers, it means that it is important that the model predictions are never "very" wrong. For example, let's say we have an experiment predicting number of days until an event. The graph below shows the absolute error in our predictions.
+Certain metrics are more sensitive to outliers. When a metric is sensitive to outliers, it means that model predictions should never be badly wrong. For example, let's say we have an experiment predicting number of days until an event. The graph below shows the absolute error in our predictions.
 
-<figure>
-<img src="images/absolute_error.png" alt="images/absolute_error.png" />
-</figure>
+![Bar chart of absolute prediction errors showing one outlier at 30 days](images/absolute_error.png)
 
-Usually our model is very good. We have an absolute error less than 1 day about 70% of the time. There is one instance, however, where our model did very poorly. We have one prediction that was 30 days off.
+The model performs well most of the time—absolute error is less than 1 day about 70% of the time. One prediction, however, was 30 days off.
 
-Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have a very accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: `MAE` and `RMSE`.
+Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have an accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: `MAE` and `RMSE`.
 
 |            | MAE  | RMSE |
 |------------|------|------|
@@ -1338,7 +1334,7 @@ If your use case requires a class assigned to each record, you will want to sele
 
 ##### Is the Metric Robust to Imbalanced Data?
 
-For certain use cases, positive classes may be very rare. In these instances, some metrics can be misleading. For example, if you have a use case where 99% of the records have `Class = No`, then a model that always predicts `No` will have 99% accuracy.
+For certain use cases, positive classes may be rare. In these instances, some metrics can be misleading. For example, if you have a use case where 99% of the records have `Class = No`, then a model that always predicts `No` will have 99% accuracy.
 
 For these use cases, it is best to select a metric that does not include True Negatives or considers relative size of the True Negatives like AUCPR or MCC.
 
@@ -1662,13 +1658,11 @@ In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can al
 
 A confusion matrix is a table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. In H2O, the actual results display in the rows and the predictions display in the columns; correct predictions are highlighted in yellow. In the example below, `0` was predicted correctly 902 times, while `8` was predicted correctly 822 times and `0` was predicted as `4` once.
 
-<figure>
-<img src="images/Flow_ConfusionMatrix.png" alt="images/Flow_ConfusionMatrix.png" />
-</figure>
+![Confusion matrix in H2O Flow showing true/false positives and negatives](images/Flow_ConfusionMatrix.png)
 
 The class labels calculations vary based on whether this is a binary or multiclass classification problem.
 
-- **Binary Classification**: All predicted probabilities greater than or equal to the F1 Max threshold are labeled with the positive class (e.g., 1, True, or the second label in lexicographical order). The F1 Max threshold is selected to maximize the F1 score calculated from confusion matrix values (true positives, true negatives, false positives, and false negatives).
+- **Binary Classification**: All predicted probabilities greater than or equal to the F1 Max threshold are labeled with the positive class (for example, 1, True, or the second label in lexicographical order). The F1 Max threshold is selected to maximize the F1 score calculated from confusion matrix values (true positives, true negatives, false positives, and false negatives).
 - **Multiclass Classification**: Prediction class labels are based on the class with the highest predicted probability.
 
 Examples:
@@ -1737,11 +1731,9 @@ Because we use an online version of the algorithm to calculate the histogram of 
 
 #### Variable Importances
 
-Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm. More information is available in the [Variable Importance](variable-importance#variable-importance) section.
+Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm. More information is available in the [Variable Importance](variable-importance) section.
 
-<figure>
-<img src="images/Flow_VariableImportances.png" alt="images/Flow_VariableImportances.png" />
-</figure>
+![Variable importances chart in H2O Flow](images/Flow_VariableImportances.png)
 
 Examples:
 
@@ -1823,9 +1815,7 @@ A [ROC Curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) i
 
 The lower-left side of the graph represents less tolerance for false positives while the upper-right represents more tolerance for false positives. Ideally, a highly accurate ROC resembles the following example.
 
-<figure>
-<img src="images/Flow_ROC.png" alt="images/Flow_ROC.png" />
-</figure>
+![ROC curve example in H2O Flow](images/Flow_ROC.png)
 
 Examples:
 
@@ -1897,9 +1887,7 @@ perf.plot(type = "roc")
 
 The area under the precision-recall curve graph represents how well a binary classification model is able to distinguish between precision recall pairs or points. The AUCPR does not care about True Negatives and is much more sensitive to True Positives, False Positives, and False Negatives than AUC.
 
-<figure>
-<img src="images/aucpr_curve.png" alt="images/aucpr_curve.png" />
-</figure>
+![Area under the precision-recall curve](images/aucpr_curve.png)
 
 Examples:
 
@@ -1978,9 +1966,7 @@ perf.plot(type = "pr")
 
 The hit ratio is a table representing the number of times that the prediction was correct out of the total number of predictions.
 
-<figure>
-<img src="images/HitRatioTable.png" alt="images/HitRatioTable.png" />
-</figure>
+![Hit ratio table showing prediction accuracy by rank](images/HitRatioTable.png)
 
 Examples:
 
@@ -2049,9 +2035,7 @@ gbm_hit.show()
 
 This chart represents the relationship of a specific feature to the response variable. Coefficients can be positive (orange) or negative (blue). A positive coefficient indicates a positive relationship between the feature and the response, where an increase in the feature corresponds with an increase in the response, while a negative coefficient represents a negative relationship between the feature and the response where an increase in the feature corresponds with a decrease in the response (or vice versa).
 
-<figure>
-<img src="images/SCM.png" alt="images/SCM.png" />
-</figure>
+![Standardized coefficient magnitudes chart](images/SCM.png)
 
 Examples:
 
@@ -2121,7 +2105,7 @@ glm.std_coef_plot()
 
 #### Gains/Lift
 
-Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The Gains/Lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model.
+Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The Gains/Lift chart shows the effectiveness of one or more current models compared to a baseline, allowing users to quickly identify the most useful model.
 
 The accuracy of the baseline is evaluated when no model is used. For instance, if there are $x\%$ positive responses in the dataset, when you grab $10\%$ of the dataset, you can assume that there are $10\%$ of the $x\%$ positive responses in the $10\%$ of the dataset that you chose. If $x=10$ and there are $10\%$ positive responses in the dataset, when you choose $10\%$ of a dataset, you can expect there to be $1\%$ of the positive responses in the $10\%$ of the dataset you chose.
 
@@ -2181,9 +2165,7 @@ model.gains_lift_plot()
 </TabItem>
 </Tabs>
 
-<figure>
-<img src="images/gainslift_plot.png" alt="images/gainslift_plot.png" />
-</figure>
+![Gains/Lift plot](images/gainslift_plot.png)
 
 In addition to the chart, a **Gains/Lift table** is also available. This table reports the following for each group:
 
@@ -2241,13 +2223,11 @@ print(model.gains_lift())
 </TabItem>
 </Tabs>
 
-<figure>
-<img src="images/gainslift_table.png" alt="images/gainslift_table.png" />
-</figure>
+![Gains/Lift table](images/gainslift_table.png)
 
 #### Partial Dependence Plots
 
-Use `partialPlot` (R)/`partial_plot` (Python) to create a partial dependece plot. This plot provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). Note that this is only available for models that include only numerical values.
+Use `partialPlot` in R or `partial_plot` in Python to create a partial dependence plot. This plot provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). Note that this is only available for models that include only numerical values.
 
 The partial dependence of a given feature $X_j$ is the average of the response function $g$, where all the components of $X_j$ are set to $x_j$ $(X_j = {[x{^{(0)}_j},...,x{^{(N-1)}_j}]}^T)$
 
@@ -2262,9 +2242,7 @@ $${PD}(X_j, g) = {E}_{X_{(-j)}} \big{[}g(X_j, X_{(-j)})\big{]} = \frac{1}{N}\sum
 - Instead of `cols`, you can use the `col_pairs_2dpdp` option along with a list containing pairs of column names to generate 2D partial dependence plots.
 - Multiclass problems require an additional `targets` parameter. A [Python demo](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/pdp_multiclass.ipynb) is available showing how to retrieve PDPs for multiclass problems.
 
-<figure>
-<img src="images/pdp_summary.png" width="355" height="483" alt="images/pdp_summary.png" />
-</figure>
+![Partial dependence plot summary](images/pdp_summary.png)
 
 ##### Defining a Partial Dependence Plot
 
@@ -2272,8 +2250,8 @@ The following can be specified when building a partial dependence plot.
 
 - `object`: (Required, R only) An H2OModel object.
 - `data`: (Required) An H2OFrame object used for scoring and constructing the plot.
-- `cols`: The feature(s) for which partial dependence will be calculated. One of either `col_pairs_2dpdp` or `cols` must be specified.
-- `col_pairs_2dpdp`: A two-level nested list like this: col_pairs_2dpdp = list(c("col1_name", "col2_name"), c("col1_name","col3_name"), ...,) where a 2D partial plots will be generated for col1_name, col2_name pair, for col1_name, col3_name pair and whatever other pairs that are specified in the nested list. One of either `col_pairs_2dpdp` or `cols` must be specified.
+- `cols`: The one or more features for which partial dependence will be calculated. One of either `col_pairs_2dpdp` or `cols` must be specified.
+- `col_pairs_2dpdp`: A two-level nested list like this: col_pairs_2dpdp = list(c(`col1_name`, `col2_name`), c(`col1_name`, `col3_name`), …,) where a 2D partial plots will be generated for col1_name, col2_name pair, for col1_name, col3_name pair and whatever other pairs that are specified in the nested list. One of either `col_pairs_2dpdp` or `cols` must be specified.
 - `destination_key`: A key reference to the created partial dependence tables in H2O.
 - `nbins`: The number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable `include_na`, then the returned length will be nbins+1.
 - `weight_column`: A string denoting which column of data should be used as the weight column.
@@ -2283,7 +2261,7 @@ The following can be specified when building a partial dependence plot.
 - `server`: Specify whether to activate matplotlib “server” mode. In this case, the plots are saved to a file instead of being rendered.
 - `include_na`: A boolean specifying whether missing value should be included in the Feature values.
 - `user_splits`: A two-level nested list containing user-defined split points for pdp plots for each column. If there are two columns using user-defined split points, there should be two lists in the nested list. Inside each list, the first element is the column name followed by values defined by the user.
-- `save_to` (R)/`save_to_file` (Python): Specify a fully qualified name to an image file that the resulting plot should be saved to, e.g. **/home/user/pdpplot.png**. The **png** postfix can be omitted. If the file already exists, it will be overridden. Note that you must also specify `plot = True` in order to save plots to a file.
+- `save_to` in R or `save_to_file` in Python: Specify a fully qualified name to an image file that the resulting plot should be saved to, for example **/home/user/pdpplot.png**. The **png** postfix can be omitted. If the file already exists, it will be overridden. Note that you must also specify `plot = True` in order to save plots to a file.
 - `row_index`: The row for which partial dependence will be calculated instead of the whole input frame.
 - `targets`: (Required, multiclass only) Specify an array of one or more target classes when building PDPs for multiclass models. If you specify more than one class, then all classes are plot in one graph. (Note that in Flow, only one target can be specified.)
 
@@ -2354,13 +2332,9 @@ pdp2dOnly = pros_gbm.partial_plot(data = pros,
 </TabItem>
 </Tabs>
 
-<figure>
-<img src="images/pdp_ageVmean.png" alt="images/pdp_ageVmean.png" />
-</figure>
+![2D partial dependence plot of AGE vs mean response](images/pdp_ageVmean.png)
 
-<figure>
-<img src="images/pdp_raceVmean.png" alt="images/pdp_raceVmean.png" />
-</figure>
+![2D partial dependence plot of RACE vs mean response](images/pdp_raceVmean.png)
 
 ##### Multinomial Examples
 
@@ -2434,9 +2408,7 @@ pdp_petal_len_se
 </TabItem>
 </Tabs>
 
-<figure>
-<img src="images/pdp_multinomial.png" alt="images/pdp_multinomial.png" />
-</figure>
+![Partial dependence plot for a multinomial model](images/pdp_multinomial.png)
 
 ### Leaderboard
 
@@ -2807,7 +2779,9 @@ shap.summary_plot(shap_values, X, plot_type="bar")
 
 **Supported Algos:** DeepLearning \[[1](#ref9), [2](#ref10)\], DRF \[[3](#ref11)\], GBM \[[3](#ref11)\], GLM, StackedEnsemble \[[2](#ref10)\], XGBoost \[[3](#ref11)\]
 
-**NOTE:** DeepLearning and StackedEnsemble support only approximate SHAP values using DeepSHAP \[[1](#ref9), [2](#ref10)\] with multiple baselines, and G-DeepSHAP \[[2](#ref10)\] respectively.
+:::note
+DeepLearning and StackedEnsemble support only approximate SHAP values using DeepSHAP [[1](#ref9), [2](#ref10)] with multiple baselines, and G-DeepSHAP [[2](#ref10)] respectively.
+:::
 
 This method of SHAP calculation requires a background dataset and is now often called marginal SHAP to avoid confusion with causal approaches to calculate Shapley values (this method assumes a flat causal graph) \[[4](#ref12)\]. Marginal SHAP is calculated as an average baseline SHAP using each row from the background dataset as a baseline.
 
@@ -2848,7 +2822,7 @@ The sum of contributions equals to the difference between a reference point and 
 
 $$h(x^{(e)}) - h(x^{(b)}) = \sum_{i \in \text{feature}} \phi_i(h, x^{(e)}, x^{(b)}))$$
 
-In the path dependent TreeSHAP, there is another column called <span className="title-ref">BiasTerm</span> that is added to the sum of the contributions to get the prediction $h(x) = \text{BiasTerm} + \sum_{i=1}^d \phi_i$, in the baseline SHAP. This <span className="title-ref">BiasTerm</span> is equal to $h(x^{(b)})$.
+In the path dependent TreeSHAP, there is another column called `BiasTerm` that is added to the sum of the contributions to get the prediction $h(x) = \text{BiasTerm} + \sum_{i=1}^d \phi_i$, in the baseline SHAP. This `BiasTerm` is equal to $h(x^{(b)})$.
 
 As the baseline SHAP can be memory intensive, the computation is optimized in order to parallelize over the bigger frame in order to decrease the communication cost.
 
@@ -2919,7 +2893,7 @@ where $D$ is the background dataset.
 
 Using the marginal SHAP enables you to look for contributions against different baselines (for example, different subpopulations).
 
-As the marginal SHAP can be memory intensive, the computation is optimized in order to parallelize over the background set since it needs to compute an average over baseline SHAPs where every single point from the background set is used as a reference. There is one exception: when there is plenty of free memory, it will parallelize over the bigger frame.
+As the marginal SHAP can be memory intensive, the computation is optimized in order to parallelize over the background set since it needs to compute an average over baseline SHAPs where every single point from the background set is used as a reference. One exception applies: when plenty of free memory is available, the computation parallelizes over the larger frame.
 
 <Tabs groupId="lang">
 <TabItem value="r" label="R" default>
@@ -2995,23 +2969,23 @@ model.shap_explain_row_plot(prostate_test,
 
 <a id="ref9"></a>
 
-1.  19. Lundberg and S.-I. Lee, “A Unified Approach to Interpreting Model Predictions.” arXiv, Nov. 24, 2017. doi: 10.48550/arXiv.1705.07874.
+1. S. M. Lundberg and S.-I. Lee, “A Unified Approach to Interpreting Model Predictions.” arXiv, Nov. 24, 2017. doi: 10.48550/arXiv.1705.07874.
 
 <a id="ref10"></a>
 
-2.  8.  Chen, S. M. Lundberg, and S.-I. Lee, “Explaining a series of models by propagating Shapley values,” Nat Commun, vol. 13, no. 1, Art. no. 1, Aug. 2022, doi: 10.1038/s41467-022-31384-3.
+2. H. Chen, S. M. Lundberg, and S.-I. Lee, “Explaining a series of models by propagating Shapley values,” Nat Commun, vol. 13, no. 1, Art. no. 1, Aug. 2022, doi: 10.1038/s41467-022-31384-3.
 
 <a id="ref11"></a>
 
-3.  7.  Laberge and Y. Pequignot, “Understanding Interventional TreeSHAP: How and Why it Works.” arXiv, Dec. 05, 2022. doi: 10.48550/arXiv.2209.15123.
+3. G. Laberge and Y. Pequignot, “Understanding Interventional TreeSHAP: How and Why it Works.” arXiv, Dec. 05, 2022. doi: 10.48550/arXiv.2209.15123.
 
 <a id="ref12"></a>
 
-4.  8.  Chen, I. C. Covert, S. M. Lundberg, and S.-I. Lee, “Algorithms to estimate Shapley value feature attributions.” arXiv, Jul. 15, 2022. Accessed: Jul. 18, 2022. \[Online\]. Available: [http://arxiv.org/abs/2207.07605](http://arxiv.org/abs/2207.07605)
+4. H. Chen, I. C. Covert, S. M. Lundberg, and S.-I. Lee, “Algorithms to estimate Shapley value feature attributions.” arXiv, Jul. 15, 2022. Accessed: Jul. 18, 2022. \[Online\]. Available: [http://arxiv.org/abs/2207.07605](http://arxiv.org/abs/2207.07605)
 
 <a id="ref13"></a>
 
-5.  13. Sundararajan and A. Najmi, “The many Shapley values for model explanation.” arXiv, Feb. 07, 2020. doi: 10.48550/arXiv.1908.08474.
+5. M. Sundararajan and A. Najmi, “The many Shapley values for model explanation.” arXiv, Feb. 07, 2020. doi: 10.48550/arXiv.1908.08474.
 
 ### Predict Stage Probabilities
 
@@ -3275,8 +3249,8 @@ feature_frequencies
 
 ### Predict using MOJOs
 
-An end-to-end example from building a model through predictions using MOJOs is available in the [MOJO Quick Start](mojo-quickstart#mojo-quick-start) topic.
+An end-to-end example from building a model through predictions using MOJOs is available in the [MOJO Quick Start](mojo-quickstart) topic.
 
 ### Predict using POJOs
 
-An end-to-end example from building a model through predictions using POJOs is available in the [POJO Quick Start](pojo-quickstart#pojo-quick-start) topic.
+An end-to-end example from building a model through predictions using POJOs is available in the [POJO Quick Start](pojo-quickstart) topic.
