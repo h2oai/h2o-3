@@ -940,7 +940,10 @@ private void invokeStageUsingDefinition(final stageDef, final pipelineContext) {
 private void invokeStage(final pipelineContext, final body) {
 
   final String DEFAULT_JAVA = '8'
-  final String DEFAULT_PYTHON = '3.7'
+  // Single source of truth: the env baked into the jdk/r images matches
+  // DEFAULT_PYTHON_VERSION, so a locally hardcoded default here would send
+  // stages hunting for a Python env their image does not contain.
+  final String DEFAULT_PYTHON = pipelineContext.getBuildConfig().DEFAULT_PYTHON_VERSION
   final String DEFAULT_R = '3.5.3'
   final int DEFAULT_TIMEOUT = 60
   final String DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'
