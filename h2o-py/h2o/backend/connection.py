@@ -817,8 +817,10 @@ class H2OConnection(h2o_meta()):
                 dirname, filename = os.path.split(os.path.abspath(save_to))
             fullname = os.path.join(dirname, filename)
             try:
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
+                # exist_ok: parallel clients saving into the same directory race between
+                # an exists-check and makedirs (seen with concurrent download_mojo calls
+                # from parallel test processes sharing one results dir).
+                os.makedirs(dirname, exist_ok=True)
                 with open(fullname, "wb") as f:
                     for chunk in response.iter_content(chunk_size=65536):
                         if chunk:  # Empty chunks may occasionally happen
