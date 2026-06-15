@@ -55,7 +55,6 @@ Imports: graphics,
          tools,
          utils,
          RCurl,
-         curl,
          jsonlite
 Suggests: ggplot2 (>= 3.3.0),
           mlbench,
@@ -71,4 +70,5 @@ Suggests: ggplot2 (>= 3.3.0),
           htmltools,
           plotly,
           repr,
+          curl,
           scales
