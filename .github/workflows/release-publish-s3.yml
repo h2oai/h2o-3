@@ -79,7 +79,7 @@ jobs:
   publish:
     name: Publish to S3
     runs-on: ubuntu-latest-16-cores
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     outputs:
       previous_latest_build: ${{ steps.previous.outputs.build_number }}
