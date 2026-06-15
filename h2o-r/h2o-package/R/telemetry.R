@@ -1,13 +1,11 @@
 #'
 #' Anonymous usage telemetry for h2o-r.
 #'
-#' Sends fire-and-forget HTTPS POSTs to the telemetry endpoint describing
-#' client activity. Primary delivery path is system `curl` invoked with
-#' `wait = FALSE` — the child process runs detached, R returns
-#' immediately, and an unreachable server is invisible to the caller.
-#' Fallback path (when system `curl` is missing): synchronous `RCurl`
-#' with tight `connecttimeout`/`timeout` limits, fully wrapped in
-#' tryCatch.
+#' Sends best-effort HTTPS POSTs to the telemetry endpoint describing client
+#' activity. Delivery uses the `curl` package (the same HTTP library as the
+#' rest of the R client, see communication.R): a synchronous POST with tight
+#' `connecttimeout`/`timeout` limits, fully wrapped in tryCatch, so an
+#' unreachable server costs at most a couple of seconds and never raises.
 #'
 #' Honors two opt-out environment variables (first match wins):
 #'     H2O_DISABLE_TELEMETRY -- H2O-specific kill switch
