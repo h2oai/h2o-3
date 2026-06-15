@@ -29,7 +29,6 @@
 # across function calls without leaking package globals.
 .h2o.telemetry.state <- new.env(parent = emptyenv())
 .h2o.telemetry.state$session_id        <- NULL
-.h2o.telemetry.state$curl_path         <- NULL  # cached lookup of system curl
 .h2o.telemetry.state$java_info         <- NULL  # cached `java -version` parse
 .h2o.telemetry.state$disabled_by_kwarg <- FALSE # programmatic opt-out via h2o.init(telemetry = FALSE)
 
@@ -472,46 +471,15 @@ bucketize_leaderboard_size <- function(n) {
   payload
 }
 
-# -- Delivery: prefer detached system curl; fall back to synchronous RCurl --
+# -- Delivery: a short, best-effort POST via the `curl` package — the same HTTP
+# -- library the rest of the R client uses (see communication.R). Synchronous
+# -- like every other h2o REST call, but with tight connect/timeout limits and
+# -- wrapped in tryCatch, so an unreachable receiver costs at most ~1-2s and
+# -- never raises into the caller.
 
-.h2o.telemetry.find_curl <- function() {
-  cp <- .h2o.telemetry.state$curl_path
-  if (!is.null(cp)) return(cp)
-  cp <- tryCatch(Sys.which("curl"), error = function(e) "")
-  if (length(cp) == 0L || is.na(cp[[1]]) || !nzchar(cp[[1]])) {
-    cp <- ""
-  } else {
-    cp <- as.character(cp[[1]])
-  }
-  .h2o.telemetry.state$curl_path <- cp
-  cp
-}
-
-.h2o.telemetry.post_async_curl <- function(body, url) {
-  # Write body to a tempfile (curl's --data-binary @file is the safest way
-  # to ship arbitrary JSON without shell escaping). The tempfile is
-  # intentionally leaked — curl reads it after R returns, and tempdir() is
-  # OS-cleaned on session exit.
-  tf <- tempfile(pattern = "h2o-tel-", fileext = ".json")
-  writeLines(body, tf, useBytes = TRUE)
-  curl_bin <- .h2o.telemetry.find_curl()
-  tryCatch({
-    system2(
-      curl_bin,
-      args = c("-s", "-o", if (.Platform$OS.type == "windows") "NUL" else "/dev/null",
-               "-m", as.character(.h2o.telemetry.timeout_secs),
-               "--connect-timeout", "1",
-               "-H", "Content-Type: application/json",
-               "--data-binary", paste0("@", tf),
-               "-X", "POST",
-               url),
-      wait = FALSE, stdout = FALSE, stderr = FALSE
-    )
-  }, error = function(e) invisible(NULL))
-  invisible(NULL)
-}
-
-.h2o.telemetry.post_sync_curl <- function(body, url) {
+.h2o.telemetry.post <- function(payload) {
+  body <- jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null")
+  url  <- .h2o.telemetry.resolve_url()
   tryCatch({
     h <- curl::new_handle()
     curl::handle_setheaders(h, "Content-Type" = "application/json")
@@ -519,42 +487,6 @@ bucketize_leaderboard_size <- function(n) {
                         connecttimeout = 1L, timeout = .h2o.telemetry.timeout_secs)
     curl::curl_fetch_memory(url, handle = h)
   }, error = function(e) invisible(NULL))
-  invisible(NULL)
-}
-
-.h2o.telemetry.post_sync_rcurl <- function(body, url) {
-  tryCatch({
-    h <- RCurl::basicHeaderGatherer()
-    t <- RCurl::basicTextGatherer()
-    RCurl::curlPerform(
-      url            = url,
-      postfields     = body,
-      writefunction  = t$update,
-      headerfunction = h$update,
-      httpheader     = c("Content-Type" = "application/json"),
-      customrequest  = "POST",
-      connecttimeout = 1L,
-      timeout        = .h2o.telemetry.timeout_secs,
-      verbose        = FALSE
-    )
-  }, error = function(e) invisible(NULL))
-  invisible(NULL)
-}
-
-.h2o.telemetry.post <- function(payload) {
-  body <- jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null")
-  url  <- .h2o.telemetry.resolve_url()
-  # A detached `curl` process is the only true non-blocking ("fire-and-forget")
-  # transport in single-threaded R. When no curl binary is present we fall back
-  # to a synchronous request (blocks only for the short timeout), preferring the
-  # modern `curl` package over legacy RCurl.
-  if (nzchar(.h2o.telemetry.find_curl())) {
-    .h2o.telemetry.post_async_curl(body, url)
-  } else if (requireNamespace("curl", quietly = TRUE)) {
-    .h2o.telemetry.post_sync_curl(body, url)
-  } else {
-    .h2o.telemetry.post_sync_rcurl(body, url)
-  }
   invisible(NULL)
 }
 
