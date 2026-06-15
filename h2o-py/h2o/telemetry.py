@@ -937,12 +937,8 @@ def derive_frame_shape(frame):
         out["cols_bucket"] = bucketize_cols(int(frame.ncol or 0))
     except Exception:
         pass
-    try:
-        b = int(getattr(frame, "byte_size", 0) or 0)
-        if b > 0:
-            out["frame_memory_gb_bucket"] = bucketize_frame_memory_gb(b / (1024 ** 3))
-    except Exception:
-        pass
+    # frame_memory_gb_bucket is intentionally omitted: the H2OFrame client object
+    # does not expose an in-memory byte size, and this field is nullable on the wire.
     return out
 
 
@@ -951,8 +947,8 @@ def derive_frame_dims(frame):
 
     Used by the ``frame_parsed`` call sites, which need raw counts (not
     buckets) and REQUIRE rows + cols. Returns ``None`` when rows/cols can't
-    be determined so the caller skips the event. ``frame_memory_gb`` is None
-    when ``byte_size`` is unavailable (that field is nullable on the wire).
+    be determined so the caller skips the event. ``frame_memory_gb`` is always
+    None: the client object does not expose a byte size (nullable on the wire).
     """
     if frame is None:
         return None
@@ -961,11 +957,4 @@ def derive_frame_dims(frame):
         n_cols = int(frame.ncol or 0)
     except Exception:
         return None
-    frame_memory_gb = None
-    try:
-        b = int(getattr(frame, "byte_size", 0) or 0)
-        if b > 0:
-            frame_memory_gb = b / (1024 ** 3)
-    except Exception:
-        frame_memory_gb = None
-    return (n_rows, n_cols, frame_memory_gb)
+    return (n_rows, n_cols, None)
