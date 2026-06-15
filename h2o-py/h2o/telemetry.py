@@ -535,7 +535,6 @@ def _envelope(h2o_version):
         "h2o_version": str(h2o_version) if h2o_version is not None else "",
         "os": _normalize_os(platform.system()),
         "os_version": platform.release() or "",
-        "jvm_version": _java_version_safe() or "",
         "session_id": _current_session_id(),
         "ts": int(time.time()),
         # build-flavor attribution (OSS vs Enterprise), on every event.

@@ -445,7 +445,6 @@ bucketize_leaderboard_size <- function(n) {
     h2o_version     = .h2o.telemetry.str(h2o_version),
     os              = .h2o.telemetry.os(),
     os_version      = .h2o.telemetry.str(Sys.info()[["release"]]),
-    jvm_version     = .h2o.telemetry.str(.h2o.telemetry.java_version() %||% ""),
     session_id      = .h2o.telemetry.current_session_id(),
     ts              = as.integer(Sys.time()),
     # build-flavor attribution (OSS vs Enterprise), on every event.
