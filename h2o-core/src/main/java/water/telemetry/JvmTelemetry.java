@@ -14,8 +14,9 @@ import java.util.UUID;
 /**
  * Fire-and-forget JVM-side telemetry.
  *
- * Emits a single {@code init} event (with {@code client="jvm"}) once the cluster
- * has formed (Paxos common knowledge) and its node count has settled. This makes
+ * Emits a single {@code cluster_started} event (with {@code client="jvm"}) once
+ * the cluster has formed (Paxos common knowledge) and its node count has settled.
+ * This is the server-side counterpart to the clients' {@code init} event. It makes
  * standalone {@code java -jar h2o.jar} and {@code hadoop jar h2odriver.jar}
  * clusters — which no Python/R client ever attaches to — visible to telemetry.
  *
@@ -50,7 +51,7 @@ public class JvmTelemetry {
 
   /**
    * Spawn a daemon thread that waits for cloud formation and then emits one
-   * {@code init} event from the leader. No-op when telemetry is opted out.
+   * {@code cluster_started} event from the leader. No-op when telemetry is opted out.
    * Safe to call from any startup path; only the leader actually emits.
    */
   public static void scheduleInitEmit() {
@@ -90,7 +91,7 @@ public class JvmTelemetry {
     String os = normalizeOs(System.getProperty("os.name"));
     if (os == null) return;
 
-    post(buildInit(os, H2O.CLOUD.size()));
+    post(buildClusterStarted(os, H2O.CLOUD.size()));
   }
 
   // -- opt-out -----------------------------------------------------------------
@@ -118,7 +119,7 @@ public class JvmTelemetry {
 
   // -- payload -----------------------------------------------------------------
 
-  private static String buildInit(String os, int size) {
+  private static String buildClusterStarted(String os, int size) {
     String hadoopVer  = (H2O.ARGS != null) ? H2O.ARGS.ga_hadoop_ver : null;
     String javaVer    = cap(System.getProperty("java.version"));
     String javaVendor = cap(System.getProperty("java.vendor"));
@@ -130,7 +131,7 @@ public class JvmTelemetry {
 
     StringBuilder sb = new StringBuilder(512);
     sb.append('{');
-    sb.append("\"event\":\"init\",");
+    sb.append("\"event\":\"cluster_started\",");
     sb.append("\"payload_version\":").append(PAYLOAD_VERSION).append(',');
     sb.append("\"client\":\"jvm\",");
     sb.append("\"h2o_version\":").append(jsonStr(h2oVer)).append(',');
