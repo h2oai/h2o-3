@@ -28,6 +28,7 @@ Honors two opt-out environment variables (first match wins):
 
 URL override: H2O_TELEMETRY_URL.
 """
+import functools
 import json
 import os
 import platform
@@ -570,8 +571,15 @@ _worker_lock = threading.Lock()
 
 def _telemetry_worker_loop():
     while True:
-        url, payload = _telemetry_queue.get()
+        url, payload, enrich = _telemetry_queue.get()
         try:
+            # Any expensive field-gathering (e.g. the `java -version` subprocess)
+            # is deferred to here so it runs off the caller's thread.
+            if enrich is not None:
+                try:
+                    enrich(payload)
+                except Exception:
+                    pass
             req = urllib.request.Request(
                 url,
                 data=json.dumps(payload).encode("utf-8"),
@@ -598,14 +606,20 @@ def _ensure_worker():
             _telemetry_worker.start()
 
 
-def _post_async(payload):
+def _post_async(payload, enrich=None):
+    """Enqueue a payload for the background worker. Returns immediately.
+
+    ``enrich`` is an optional callable run on the worker thread to add fields
+    that are too expensive to compute on the caller's thread (e.g. probing the
+    Java runtime). It must never raise into the worker (it is wrapped there too).
+    """
     if _telemetry_disabled():
         return
     url = _resolve_url()
     _ensure_worker()
     try:
         # Never block the caller; drop the event if the backlog is saturated.
-        _telemetry_queue.put_nowait((url, payload))
+        _telemetry_queue.put_nowait((url, payload, enrich))
     except queue.Full:
         pass
 
@@ -615,8 +629,39 @@ def _strip_none(d):
     return {k: v for k, v in d.items() if v is not None}
 
 
+def _never_raises(fn):
+    """Wrap a public emitter so a telemetry bug can never surface in a user call.
+
+    Belt-and-suspenders alongside the try/except at every call site: telemetry
+    must never break, slow, or fail the h2o-py call it is attached to.
+    """
+    @functools.wraps(fn)
+    def _wrapped(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception:
+            return None
+    return _wrapped
+
+
+def _enrich_with_java(payload):
+    """Add ``java_version`` / ``java_vendor`` to a session-start payload.
+
+    Runs on the telemetry worker thread (via the ``enrich`` hook) so the
+    ``java -version`` subprocess never blocks ``h2o.init()`` / ``h2o.connect()``.
+    Best-effort and cached after the first probe.
+    """
+    jv = _java_version_safe()
+    if jv is not None:
+        payload["java_version"] = jv
+    jd = _java_vendor_safe()
+    if jd is not None:
+        payload["java_vendor"] = jd
+
+
 # -- Public emitters ----------------------------------------------------------
 
+@_never_raises
 def send_init_telemetry(h2o_version, *, cluster_shape=None, attributes=None):
     """Fire one `event=init` POST (local-server-spawn branch).
 
@@ -629,17 +674,17 @@ def send_init_telemetry(h2o_version, *, cluster_shape=None, attributes=None):
     payload = {**_envelope(h2o_version), "event": "init"}
     payload.update(_strip_none({
         "python_version": _python_version_safe(),
-        "java_version":   _java_version_safe(),
-        "java_vendor":    _java_vendor_safe(),
         "cpu_arch":            _CPU_ARCH,
         "python_distribution": _PYTHON_DIST,
     }))
     if cluster_shape:
         payload.update(_strip_none(cluster_shape))
     _attach_extras(payload, _attributes_with_distribution(attributes))
-    _post_async(payload)
+    # java_version / java_vendor require a subprocess — gathered on the worker.
+    _post_async(payload, enrich=_enrich_with_java)
 
 
+@_never_raises
 def send_cluster_connect_telemetry(h2o_version, *, cluster_shape=None, attributes=None):
     """Fire one `event=cluster_connect` POST (connect-only branch — no local server spawned).
 
@@ -652,17 +697,17 @@ def send_cluster_connect_telemetry(h2o_version, *, cluster_shape=None, attribute
     payload = {**_envelope(h2o_version), "event": "cluster_connect"}
     payload.update(_strip_none({
         "python_version": _python_version_safe(),
-        "java_version":   _java_version_safe(),
-        "java_vendor":    _java_vendor_safe(),
         "cpu_arch":            _CPU_ARCH,
         "python_distribution": _PYTHON_DIST,
     }))
     if cluster_shape:
         payload.update(_strip_none(cluster_shape))
     _attach_extras(payload, _attributes_with_distribution(attributes))
-    _post_async(payload)
+    # java_version / java_vendor require a subprocess — gathered on the worker.
+    _post_async(payload, enrich=_enrich_with_java)
 
 
+@_never_raises
 def send_algo_train(h2o_version, algo, family, outcome,
                     duration_ms, n_rows, n_cols, n_models=None, attributes=None):
     if _telemetry_disabled():
@@ -682,6 +727,7 @@ def send_algo_train(h2o_version, algo, family, outcome,
     _post_async(payload)
 
 
+@_never_raises
 def send_algo_score(h2o_version, algo, family, outcome, duration_ms, n_rows, attributes=None):
     if _telemetry_disabled():
         return
@@ -698,6 +744,7 @@ def send_algo_score(h2o_version, algo, family, outcome, duration_ms, n_rows, att
     _post_async(payload)
 
 
+@_never_raises
 def send_mojo_download(h2o_version, algo, family, outcome, compressed_size_bytes, attributes=None):
     if _telemetry_disabled():
         return
@@ -713,6 +760,7 @@ def send_mojo_download(h2o_version, algo, family, outcome, compressed_size_bytes
     _post_async(payload)
 
 
+@_never_raises
 def send_upload(h2o_version, file_format, compressed_size_bytes, outcome,
                 *, frame_shape=None, attributes=None):
     """Fire one `event=upload` POST.
@@ -739,6 +787,7 @@ def send_upload(h2o_version, file_format, compressed_size_bytes, outcome,
     _post_async(payload)
 
 
+@_never_raises
 def send_import(h2o_version, source_scheme, file_format, outcome,
                 *, compressed_size_bytes=None, frame_shape=None, attributes=None):
     """Fire one `event=import` POST.
@@ -768,6 +817,7 @@ def send_import(h2o_version, source_scheme, file_format, outcome,
     _post_async(payload)
 
 
+@_never_raises
 def send_automl_run(h2o_version, algo, family, outcome,
                     max_models, max_runtime_secs, sort_metric, leaderboard_size,
                     attributes=None):
@@ -795,6 +845,7 @@ def send_automl_run(h2o_version, algo, family, outcome,
     _post_async(payload)
 
 
+@_never_raises
 def send_model_save(h2o_version, algo, family, outcome, fmt, compressed_size_bytes, attributes=None):
     """Fire one `event=model_save` per h2o.save_model() / .download_mojo()-via-save call.
 
@@ -816,6 +867,7 @@ def send_model_save(h2o_version, algo, family, outcome, fmt, compressed_size_byt
     _post_async(payload)
 
 
+@_never_raises
 def send_model_load(h2o_version, algo, family, outcome, fmt, compressed_size_bytes, attributes=None):
     """Fire one `event=model_load` per h2o.load_model() / load_mojo / load_grid call."""
     if _telemetry_disabled():
@@ -834,6 +886,7 @@ def send_model_load(h2o_version, algo, family, outcome, fmt, compressed_size_byt
     _post_async(payload)
 
 
+@_never_raises
 def send_model_download(h2o_version, algo, family, outcome, fmt, compressed_size_bytes, attributes=None):
     """Fire one `event=model_download` POST (non-MOJO downloads).
 
@@ -856,6 +909,7 @@ def send_model_download(h2o_version, algo, family, outcome, fmt, compressed_size
     _post_async(payload)
 
 
+@_never_raises
 def send_frame_parsed(h2o_version, file_format, outcome, duration_ms, n_rows, n_cols,
                       frame_memory_gb=None, attributes=None):
     """Fire one `event=frame_parsed` POST (fires alongside upload / import).

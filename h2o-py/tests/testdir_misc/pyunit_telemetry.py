@@ -18,7 +18,7 @@ def _capture_payloads():
     """Swap the transport for an in-memory sink; returns (captured_list, restore_fn)."""
     captured = []
     orig = t._post_async
-    t._post_async = lambda payload: captured.append(payload)
+    t._post_async = lambda payload, enrich=None: captured.append(payload)
     t.set_disabled(False)
     return captured, (lambda: setattr(t, "_post_async", orig))
 
@@ -48,8 +48,12 @@ def telemetry_wire_contract():
     assert imp["outcome"] == "ok"
     assert imp["data_size_bucket"] == "10MB-100MB", imp["data_size_bucket"]
     assert imp["rows_bucket"] == "1K-10K"
-    assert "50" not in json.dumps({k: v for k, v in imp.items() if k != "ts"}), \
-        "raw byte size leaked into payload"
+    # The raw (un-bucketed) byte count must never appear anywhere in the payload.
+    # Exclude non-deterministic fields (ts, session_id) so the check is stable —
+    # a random session_id UUID can otherwise contain the substring by chance.
+    _raw = str(50 * 1024 * 1024)
+    _scrubbed = json.dumps({k: v for k, v in imp.items() if k not in ("ts", "session_id")})
+    assert _raw not in _scrubbed, "raw byte size leaked into payload"
 
     # init carries the build-flavor distribution attribute (h2o vs h2o_client).
     assert by_event["init"].get("attributes", {}).get("distribution"), \
@@ -75,7 +79,7 @@ def telemetry_bucket_boundaries():
 def telemetry_disabled_emits_nothing():
     captured = []
     orig = t._post_async
-    t._post_async = lambda payload: captured.append(payload)
+    t._post_async = lambda payload, enrich=None: captured.append(payload)
     try:
         t.set_disabled(True)
         t.send_import(VERSION, "s3", "parquet", "ok")
