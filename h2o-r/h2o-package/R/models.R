@@ -126,9 +126,9 @@ NULL
 
   t_start <- proc.time()[[3]]
   tf <- params$training_frame
-  n_rows <- tryCatch(if (!is.null(tf)) as.integer(nrow(tf)) else 0L, error = function(e) 0L)
+  n_rows <- tryCatch(if (!is.null(tf)) as.numeric(nrow(tf)) else 0, error = function(e) 0)  # numeric: rows can exceed 2^31
   n_cols <- tryCatch(if (!is.null(tf)) as.integer(ncol(tf)) else 0L, error = function(e) 0L)
-  if (is.na(n_rows)) n_rows <- 0L
+  if (is.na(n_rows)) n_rows <- 0
   if (is.na(n_cols)) n_cols <- 0L
   outcome <- "ok"
   result <- tryCatch({
@@ -715,8 +715,8 @@ h2o.predict.H2OModel <- function(object, newdata, ...) {
   }
 
   t_start <- proc.time()[[3]]
-  n_rows <- tryCatch(as.integer(nrow(newdata)), error = function(e) 0L)
-  if (is.na(n_rows)) n_rows <- 0L
+  n_rows <- tryCatch(as.numeric(nrow(newdata)), error = function(e) 0)  # numeric: rows can exceed 2^31
+  if (is.na(n_rows)) n_rows <- 0
   outcome <- "ok"
   result <- tryCatch({
     # Send keys to create predictions

@@ -2,10 +2,14 @@
 #' Anonymous usage telemetry for h2o-r.
 #'
 #' Sends best-effort HTTPS POSTs to the telemetry endpoint describing client
-#' activity. Delivery uses the `curl` package (the same HTTP library as the
-#' rest of the R client, see communication.R): a synchronous POST with tight
-#' `connecttimeout`/`timeout` limits, fully wrapped in tryCatch, so an
-#' unreachable server costs at most a couple of seconds and never raises.
+#' activity. Delivery is fire-and-forget and fully non-blocking: events are
+#' scheduled onto a single shared libcurl async "multi" pool (the curl package,
+#' already used by communication.R) and never awaited. This is the R analogue of
+#' the Python client's one-background-worker-draining-a-bounded-queue, so a tight
+#' predict/import loop neither blocks the caller nor spawns a process per event.
+#' An unreachable server is invisible. The `java -version` probe likewise runs
+#' detached (see warm_java); nothing on a telemetry path ever waits on a
+#' subprocess or socket.
 #'
 #' Honors two opt-out environment variables (first match wins):
 #'     H2O_DISABLE_TELEMETRY -- H2O-specific kill switch
@@ -18,6 +22,10 @@
 .h2o.telemetry.payload_version <- 1L
 .h2o.telemetry.timeout_secs <- 2L
 .h2o.telemetry.max_version_len <- 64L
+# Cap on concurrently in-flight POSTs; new events are dropped past this so a
+# slow/unreachable receiver can't make the pool grow without bound (the R
+# analogue of the Python worker queue's maxsize).
+.h2o.telemetry.max_inflight <- 64L
 
 # Build-flavor attribution (OSS vs Enterprise), hardcoded per repo at build
 # time. This is the OSS repo. Mirrors h2o-py/h2o/_product.py.
@@ -29,6 +37,7 @@
 .h2o.telemetry.state$session_id        <- NULL
 .h2o.telemetry.state$java_info         <- NULL  # cached `java -version` parse
 .h2o.telemetry.state$disabled_by_kwarg <- FALSE # programmatic opt-out via h2o.init(telemetry = FALSE)
+.h2o.telemetry.state$pool              <- NULL  # libcurl async multi pool (the delivery queue)
 
 #' Programmatic opt-out, set by `h2o.init(telemetry = FALSE)`.
 #'
@@ -332,23 +341,53 @@ bucketize_leaderboard_size <- function(n) {
   java_bin
 }
 
+# Per-session file the detached `java -version` probe writes to, and that
+# detect_java() later reads. One fixed name per R session (tempdir() is private
+# to this session), so warm_java is naturally idempotent via file.exists.
+.h2o.telemetry.java_cache_file <- function() {
+  file.path(tempdir(), "h2o_telemetry_java.txt")
+}
+
+#' Kick off a *detached* `java -version` probe whose output detect_java() parses
+#' later. Non-blocking: system2(wait = FALSE) returns immediately, and the child
+#' runs concurrently with the (slow) connect / JVM-start so its result is
+#' usually ready by the time the session-start event fires. Called early in
+#' h2o.init() / h2o.connect(). Never blocks, never raises.
+#' @keywords internal
+.h2o.telemetry.warm_java <- function() {
+  if (!is.null(.h2o.telemetry.state$java_info)) return(invisible(NULL))
+  cache <- .h2o.telemetry.java_cache_file()
+  if (file.exists(cache)) return(invisible(NULL))  # already probed / in flight
+  java_bin <- tryCatch(.h2o.telemetry.resolve_java(), error = function(e) NULL)
+  if (is.null(java_bin) || !nzchar(java_bin)) return(invisible(NULL))
+  # `java -version` and -XshowSettings both write to stderr; capture it to the
+  # cache file. wait = FALSE => the user's session does not block on the probe.
+  tryCatch(
+    system2(java_bin, args = c("-XshowSettings:properties", "-version"),
+            stdout = FALSE, stderr = cache, wait = FALSE),
+    error = function(e) invisible(NULL))
+  invisible(NULL)
+}
+
+# Read + parse the warm_java cache file. Pure file I/O — never spawns or waits
+# on a subprocess, so it is safe on any telemetry path. If the probe hasn't been
+# started or hasn't finished writing, returns empty info (java fields omitted on
+# this event) and is re-attempted on the next event; only memoizes once a
+# version was actually parsed (i.e. the file is complete).
 .h2o.telemetry.detect_java <- function() {
   if (!is.null(.h2o.telemetry.state$java_info)) {
     return(.h2o.telemetry.state$java_info)
   }
   info <- list(version = NULL, vendor = NULL)
-  java_bin <- .h2o.telemetry.resolve_java()
-  if (is.null(java_bin)) {
-    .h2o.telemetry.state$java_info <- info
+  cache <- .h2o.telemetry.java_cache_file()
+  if (!file.exists(cache)) {
+    # Probe never started (e.g. an event fired before init's warm-up) — start
+    # it now for next time, but never wait on it.
+    .h2o.telemetry.warm_java()
     return(info)
   }
   tryCatch({
-    out <- suppressWarnings(system2(
-      java_bin,
-      args = c("-XshowSettings:properties", "-version"),
-      stdout = TRUE, stderr = TRUE, timeout = 2
-    ))
-    text <- paste(out, collapse = "\n")
+    text <- paste(readLines(cache, warn = FALSE), collapse = "\n")
     m_ver <- regmatches(text, regexpr("java\\.version\\s*=\\s*[^\n]+", text))
     if (length(m_ver) == 1L && nzchar(m_ver)) {
       info$version <- trimws(sub("^java\\.version\\s*=\\s*", "", m_ver))
@@ -364,7 +403,9 @@ bucketize_leaderboard_size <- function(n) {
       info$vendor <- trimws(sub("^java\\.vendor\\s*=\\s*", "", m_vend))
     }
   }, error = function(e) invisible(NULL))
-  .h2o.telemetry.state$java_info <- info
+  # Only memoize once the file is complete (version parsed); otherwise let a
+  # later event re-read it after the detached probe has finished writing.
+  if (!is.null(info$version)) .h2o.telemetry.state$java_info <- info
   info
 }
 
@@ -446,7 +487,10 @@ bucketize_leaderboard_size <- function(n) {
     os              = .h2o.telemetry.os(),
     os_version      = .h2o.telemetry.str(Sys.info()[["release"]]),
     session_id      = .h2o.telemetry.current_session_id(),
-    ts              = as.integer(Sys.time()),
+    # floor(as.numeric(...)) not as.integer(...): epoch seconds overflow R's
+    # 32-bit integer in 2038 (as.integer would yield NA), and jsonlite emits the
+    # whole-valued double without a decimal point — matching the other clients.
+    ts              = floor(as.numeric(Sys.time())),
     # build-flavor attribution (OSS vs Enterprise), on every event.
     product         = .h2o.telemetry.product
   )
@@ -468,21 +512,48 @@ bucketize_leaderboard_size <- function(n) {
   payload
 }
 
-# -- Delivery: a short, best-effort POST via the `curl` package — the same HTTP
-# -- library the rest of the R client uses (see communication.R). Synchronous
-# -- like every other h2o REST call, but with tight connect/timeout limits and
-# -- wrapped in tryCatch, so an unreachable receiver costs at most ~1-2s and
-# -- never raises into the caller.
+# -- Delivery: a single, shared, non-blocking queue built on libcurl's async
+# -- "multi" interface (the curl package, already used by communication.R). This
+# -- is the R analogue of the Python client's single worker thread draining a
+# -- bounded queue: one pool holds the in-flight requests, each POST is only
+# -- *scheduled* (never awaited), and the pool is pumped without blocking on
+# -- every event — so a tight predict/import loop neither blocks the caller nor
+# -- spawns a process per event. In-flight requests advance as subsequent events
+# -- arrive. Like the Python daemon worker, delivery is best-effort: an event
+# -- still in flight at process exit may be dropped. We deliberately do NOT drain
+# -- from an R exit handler — running libcurl during R shutdown can segfault the
+# -- session, and crashing a user's R on quit is far worse than losing one ping.
+
+# Lazily create the shared multi pool; it persists in the package-private state
+# env for the life of the session.
+.h2o.telemetry.ensure_pool <- function() {
+  if (is.null(.h2o.telemetry.state$pool)) {
+    .h2o.telemetry.state$pool <- curl::new_pool()
+  }
+  .h2o.telemetry.state$pool
+}
 
 .h2o.telemetry.post <- function(payload) {
-  body <- jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null")
+  if (!requireNamespace("curl", quietly = TRUE)) return(invisible(NULL))
+  body <- as.character(jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null"))
   url  <- .h2o.telemetry.resolve_url()
   tryCatch({
+    pool <- .h2o.telemetry.ensure_pool()
+    # Bounded queue: drop the event rather than let in-flight requests pile up
+    # against a slow/unreachable receiver. multi_list() is the live in-flight
+    # gauge (completed/failed requests leave the pool), so no manual counter.
+    if (length(curl::multi_list(pool)) >= .h2o.telemetry.max_inflight) return(invisible(NULL))
     h <- curl::new_handle()
     curl::handle_setheaders(h, "Content-Type" = "application/json")
     curl::handle_setopt(h, post = TRUE, postfields = body,
                         connecttimeout = 1L, timeout = .h2o.telemetry.timeout_secs)
-    curl::curl_fetch_memory(url, handle = h)
+    # Schedule (never await) the request, then pump the pool non-blockingly
+    # (timeout = 0) so in-flight transfers progress as subsequent events arrive.
+    curl::curl_fetch_multi(url, handle = h,
+                           done = function(res) invisible(NULL),
+                           fail = function(err) invisible(NULL),
+                           pool = pool)
+    curl::multi_run(timeout = 0, pool = pool)
   }, error = function(e) invisible(NULL))
   invisible(NULL)
 }

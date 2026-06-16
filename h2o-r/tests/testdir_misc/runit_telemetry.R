@@ -2,9 +2,10 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 # Telemetry needs no cluster: we stub the transport and assert the payloads the
-# public emitters build (envelope + bucket label strings). The real detached-curl
-# transport is covered by the Python/Java HTTP smoke tests; R has no lightweight
-# in-process HTTP server, so we don't duplicate a delivery test here.
+# public emitters build (envelope + bucket label strings). The real non-blocking
+# transport (a libcurl async multi pool) is covered by the Python/Java HTTP smoke
+# tests; R has no lightweight in-process HTTP server, so we don't duplicate a
+# delivery test here.
 
 test.telemetry <- function() {
   check <- function(cond, msg) if (!isTRUE(cond)) stop("FAIL: ", msg)

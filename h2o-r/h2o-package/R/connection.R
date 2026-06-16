@@ -78,6 +78,12 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     tryCatch(.h2o.telemetry.set_disabled(!isTRUE(telemetry)),
              error = function(e) invisible(NULL))
 
+    # Kick off a detached, non-blocking `java -version` probe now (unless opted
+    # out) so its result is cached and ready by the time the session-start
+    # telemetry event fires at the end of init — without ever blocking init().
+    tryCatch(if (!.h2o.telemetry.disabled()) .h2o.telemetry.warm_java(),
+             error = function(e) invisible(NULL))
+
     if(!(ignore_config)){
       # Check for .h2oconfig file
       # Find .h2oconfig file starting from currenting directory and going
