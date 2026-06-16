@@ -113,7 +113,7 @@ public class JvmTelemetryTest {
     try {
       int port = server.getAddress().getPort();
       String url = "http://127.0.0.1:" + port + "/v1/event";
-      String body = "{\"event\":\"init\",\"client\":\"jvm\"}";
+      String body = "{\"event\":\"cluster_started\",\"client\":\"jvm\"}";
 
       JvmTelemetry.post(body, url);
 
