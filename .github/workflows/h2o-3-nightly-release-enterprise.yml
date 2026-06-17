@@ -760,10 +760,12 @@ jobs:
             BUILD_MODE="On-Demand"
           fi
 
+          # Public docs are published to s3://h2o-release/h2o-e/ (public bucket)
+          # The private enterprise bucket is not publicly accessible
           if [[ "${S3_ROOT}" == *"h2o-release-test"* ]]; then
-            S3_URL="https://h2o-release-test.s3.amazonaws.com/h2o-e/${BRANCH}/${BUILD_NUMBER}/index.html"
+            S3_URL="https://h2o-release-test.s3.amazonaws.com/h2o-e/${BRANCH}/${BUILD_NUMBER}/h2o-docs/index.html"
           else
-            S3_URL="https://h2o-release.s3.amazonaws.com/h2o-e/${BRANCH}/${BUILD_NUMBER}/index.html"
+            S3_URL="https://h2o-release.s3.amazonaws.com/h2o-e/${BRANCH}/${BUILD_NUMBER}/h2o-docs/index.html"
           fi
 
           if [ -z "${VERSION}" ]; then
