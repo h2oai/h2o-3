@@ -49,8 +49,8 @@ on:
         type: boolean
         default: true
 
-      s3_role:
-        description: 'IAM role for S3 access'
+      s3_role_name:
+        description: 'OIDC role identifier: oss | shared-services-prod | shared-services-dev'
         required: true
         type: string
 
@@ -70,7 +70,10 @@ on:
 # ==============================================================================
 env:
   AWS_REGION: us-east-1
-  # s3_role is now required — no default fallback
+  S3_ROLE: >-
+    ${{ inputs.s3_role_name == 'oss' && secrets.GH_OIDC_ROLE_OSS ||
+        inputs.s3_role_name == 'shared-services-dev' && secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV ||
+        secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
 
 # ==============================================================================
 # JOB
@@ -93,7 +96,7 @@ jobs:
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
-          role-to-assume: ${{ inputs.s3_role }}
+          role-to-assume: ${{ env.S3_ROLE }}
           role-session-name: h2oai-h2o-3-release-s3-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com

@@ -237,7 +237,6 @@ jobs:
       is_release_branch: ${{ steps.config.outputs.is_release_branch }}
       is_nightly: ${{ steps.config.outputs.is_nightly }}
       s3_root: ${{ steps.config.outputs.s3_root }}
-      s3_role: ${{ steps.config.outputs.s3_role }}
       upload_nexus: ${{ steps.config.outputs.upload_nexus }}
       build_hadoop: ${{ steps.config.outputs.build_hadoop }}
       build_pypi: ${{ steps.config.outputs.build_pypi }}
@@ -302,7 +301,6 @@ jobs:
           S3_ROLE="${{ env.S3_ROLE }}"
 
           echo "s3_root=${S3_ROOT}" >> $GITHUB_OUTPUT
-          echo "s3_role=${S3_ROLE}" >> $GITHUB_OUTPUT
 
           # ================================================================
           # STEP 3: Determine publishing options
@@ -454,7 +452,7 @@ jobs:
       s3_root: ${{ needs.init.outputs.s3_root }}
       update_latest: ${{ needs.init.outputs.update_latest == 'true' }}
       update_latest_branch: ${{ needs.init.outputs.update_latest_branch == 'true' }}
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role_name: 'oss'
     secrets: inherit
 
   # ============================================================================
@@ -523,7 +521,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_pypi: ${{ needs.init.outputs.upload_pypi == 'true' }}
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role_name: 'oss'
     secrets: inherit
 
   # ============================================================================
@@ -542,7 +540,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_conda: ${{ needs.init.outputs.upload_conda == 'true' }}
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role_name: 'oss'
     secrets: inherit
 
   # ============================================================================
@@ -558,7 +556,7 @@ jobs:
     with:
       branch: ${{ needs.init.outputs.branch }}
       project_version: ${{ needs.build.outputs.project_version }}
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role_name: 'oss'
       test_release: false
       is_nightly: ${{ needs.init.outputs.is_nightly == 'true' }}
     secrets: inherit
@@ -593,7 +591,7 @@ jobs:
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
-          role-to-assume: ${{ needs.init.outputs.s3_role }}
+          role-to-assume: ${{ env.S3_ROLE }}
           role-session-name: h2oai-h2o-3-release-rollback-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com

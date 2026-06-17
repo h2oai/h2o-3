@@ -218,7 +218,7 @@ jobs:
       s3_root: ${{ needs.init.outputs.s3_root }}
       update_latest: false
       update_latest_branch: true
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role_name: 'shared-services-dev'
     secrets: inherit
 
   # ============================================================================
@@ -235,7 +235,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
       upload_conda: false
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role_name: 'shared-services-dev'
     secrets: inherit
 
   # ============================================================================
@@ -251,7 +251,7 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
       test_release: true
       is_nightly: false
-      s3_role: ${{ needs.init.outputs.s3_role }}
+      s3_role_name: 'shared-services-dev'
       repository: h2oai/h2o-3
     secrets: inherit
 
