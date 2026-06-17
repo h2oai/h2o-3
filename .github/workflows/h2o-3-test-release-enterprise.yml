@@ -298,6 +298,7 @@ jobs:
     with:
       branch: ${{ needs.init.outputs.branch }}
       project_version: ${{ needs.build.outputs.project_version }}
+      s3_role: ${{ needs.init.outputs.s3_role }}
       test_release: true
       is_nightly: false
     secrets: inherit
