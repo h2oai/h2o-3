@@ -115,13 +115,8 @@ jobs:
       branch: ${{ steps.config.outputs.branch }}
       build_number: ${{ steps.config.outputs.build_number }}
       s3_root: ${{ steps.config.outputs.s3_root }}
-      s3_role: ${{ steps.roles.outputs.s3_role }}
 
     steps:
-      - name: Export S3 Role
-        id: roles
-        run: echo "s3_role=$TEST_S3_ROLE" >> "$GITHUB_OUTPUT"
-
       - name: Determine Configuration
         id: config
         run: |
