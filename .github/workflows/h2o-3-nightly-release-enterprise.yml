@@ -814,7 +814,7 @@ jobs:
                 ]
               }'
           else
-            LINKS_COLUMN="*Links:*\n• <${S3_URL}|S3 Release Page>\n• <${RUN_URL}|Workflow Run>\n• <${GIT_TAG_URL}|Git Tag>"
+            LINKS_COLUMN="*Links:*\n• <${S3_URL}|S3 Docs Page>\n• <${RUN_URL}|Workflow Run>\n• <${GIT_TAG_URL}|Git Tag>"
             FOOTER_BLOCKS='{
                 "type": "context",
                 "elements": [
