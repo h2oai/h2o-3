@@ -45,8 +45,8 @@ on:
         default: false
 
       s3_role:
-        description: 'IAM role for S3 access (optional, uses default if not provided)'
-        required: false
+        description: 'IAM role for S3 access'
+        required: true
         type: string
 
       repository:
@@ -60,7 +60,7 @@ on:
 # ==============================================================================
 env:
   AWS_REGION: us-east-1
-  DEFAULT_S3_ROLE: ${{ secrets.GH_OIDC_ROLE_OSS }}
+  # s3_role is now required — no default fallback
 
 # ==============================================================================
 # JOB
@@ -125,7 +125,7 @@ jobs:
       - name: Configure AWS for S3
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
-          role-to-assume: ${{ inputs.s3_role || env.DEFAULT_S3_ROLE }}
+          role-to-assume: ${{ inputs.s3_role }}
           role-session-name: h2oai-h2o-3-enterprise-helm-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
