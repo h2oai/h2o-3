@@ -761,9 +761,9 @@ jobs:
           fi
 
           if [[ "${S3_ROOT}" == *"h2o-release-test"* ]]; then
-            S3_URL="https://h2o-release-test.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
+            S3_URL="https://h2o-release-test.s3.amazonaws.com/h2o-e/${BRANCH}/${BUILD_NUMBER}/index.html"
           else
-            S3_URL="https://h2o-3-enterprise-release.s3.amazonaws.com/h2o/${BRANCH}/${BUILD_NUMBER}/index.html"
+            S3_URL="https://h2o-release.s3.amazonaws.com/h2o-e/${BRANCH}/${BUILD_NUMBER}/index.html"
           fi
 
           if [ -z "${VERSION}" ]; then
