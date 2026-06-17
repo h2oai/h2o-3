@@ -467,6 +467,7 @@ jobs:
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
+      s3_role_name: 'shared-services-prod'
       update_latest: ${{ needs.init.outputs.update_latest == 'true' }}
       update_latest_branch: ${{ needs.init.outputs.update_latest_branch == 'true' }}
     secrets: inherit
@@ -486,6 +487,7 @@ jobs:
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
+      s3_role_name: 'shared-services-prod'
       upload_pypi: ${{ needs.init.outputs.upload_pypi == 'true' }}
     secrets: inherit
 
@@ -504,6 +506,7 @@ jobs:
       build_number: ${{ needs.init.outputs.build_number }}
       project_version: ${{ needs.build.outputs.project_version }}
       s3_root: ${{ needs.init.outputs.s3_root }}
+      s3_role_name: 'shared-services-prod'
       upload_conda: ${{ needs.init.outputs.upload_conda == 'true' }}
     secrets: inherit
 
@@ -520,6 +523,7 @@ jobs:
     with:
       branch: ${{ needs.init.outputs.branch }}
       project_version: ${{ needs.build.outputs.project_version }}
+      s3_role_name: 'shared-services-prod'
       test_release: false
       is_nightly: ${{ needs.init.outputs.is_nightly == 'true' }}
     secrets: inherit
