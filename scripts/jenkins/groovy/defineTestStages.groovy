@@ -490,7 +490,10 @@ def call(final pipelineContext) {
   ]
 
   // Stages executed in addition to NIGHTLY_REPEATED_STAGES, executed once a night.
-  // Should contain all Java versions and also the minimum supported Python version.
+  // Should contain all Java versions. Every supported Python version gets at least
+  // a single-node pyunit run nightly (generated below the list) so version-sensitive
+  // client code is exercised on each interpreter; 3.7 and 3.11 keep the richer set
+  // of dedicated stages here (fault tolerance, AutoML, medium-large, explain).
   def NIGHTLY_STAGES = [
     [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 40,
@@ -572,6 +575,20 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
+
+  // Cover the full Python matrix nightly: a single-node pyunit stage per supported
+  // version so version-sensitive client code (astfun bytecode handling, numpy/pandas
+  // compatibility) runs on every interpreter. 3.7 and 3.11 already have dedicated
+  // single-node stages above, so skip them to avoid duplicate runs.
+  for (pyver in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+    if (pyver in ['3.7', '3.11']) {
+      continue
+    }
+    NIGHTLY_STAGES += [[
+      stageName: "Py${pyver} Single Node", target: 'test-pyunit-single-node', pythonVersion: pyver,
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ]]
+  }
 
   def supportedHadoopDists = pipelineContext.getBuildConfig().getSupportedHadoopDistributions()
   def HADOOP_STAGES = []

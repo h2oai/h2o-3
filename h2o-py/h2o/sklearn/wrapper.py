@@ -632,6 +632,11 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
                     est_type = "regressor"
             except AttributeError:
                 pass
+        # target_tags.required is only set once est_type has resolved to classifier
+        # or regressor, i.e. for supervised estimators (y is genuinely required).
+        # Unsupervised wrappers (kmeans, pca, glrm, isolation forest) have no
+        # `distribution` attribute, so _is_regressor_distribution() is False and
+        # est_type stays None for them -- they never reach these branches.
         if est_type == "classifier":
             tags.estimator_type = "classifier"
             try:

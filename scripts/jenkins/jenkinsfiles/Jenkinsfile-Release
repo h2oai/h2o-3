@@ -461,7 +461,9 @@ EOF
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
                         final def artifacts = ['main', 'client']
-                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS
+                        // Restricted to the versions the release image's conda-build toolchain
+                        // supports (see BuildConfig.CONDA_PYTHON_VERSIONS); 3.12+ ship as PyPI wheels only.
+                        final def pyVersions = pipelineContext.getBuildConfig().CONDA_PYTHON_VERSIONS
 
                         // build for all Python versions
                         for (artifact in artifacts) {
