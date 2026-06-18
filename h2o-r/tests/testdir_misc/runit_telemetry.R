@@ -11,7 +11,6 @@ test.telemetry <- function() {
   check <- function(cond, msg) if (!isTRUE(cond)) stop("FAIL: ", msg)
 
   # Make sure telemetry is enabled for the duration of the test.
-  Sys.unsetenv("H2O_DISABLE_TELEMETRY")
   Sys.unsetenv("DO_NOT_TRACK")
   h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
 

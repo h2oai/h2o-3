@@ -86,7 +86,7 @@ def connect(server=None, url=None, ip=None, port=None,
     :param config: Connection configuration object encapsulating connection parameters.
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param telemetry: Set to False to disable all anonymous usage telemetry for this process. Equivalent to setting
-                      the ``H2O_DISABLE_TELEMETRY`` environment variable.
+                      the ``DO_NOT_TRACK`` environment variable.
     :returns: the new :class:`H2OConnection` object.
 
     :examples:
@@ -118,8 +118,8 @@ def connect(server=None, url=None, ip=None, port=None,
             h2oconn.cluster.show_status()
     # Fire-and-forget telemetry; never blocks, never raises. h2o.connect()
     # by definition attaches to an existing cluster (no local JVM spawn),
-    # so we always emit `cluster_connect`. Honors H2O_DISABLE_TELEMETRY /
-    # DO_NOT_TRACK env vars internally.
+    # so we always emit `cluster_connect`. Honors the DO_NOT_TRACK env var
+    # internally.
     try:
         _cluster_shape = _telemetry.derive_cluster_shape(h2oconn)
     except Exception:
@@ -213,7 +213,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
     :param verbose: Set to False to disable printing connection status and info messages.
     :param telemetry: Set to False to disable all anonymous usage telemetry for this process. Equivalent to setting the
-        ``H2O_DISABLE_TELEMETRY=1`` or ``DO_NOT_TRACK=1`` environment variable. Default ``True``. See the
+        ``DO_NOT_TRACK=1`` environment variable. Default ``True``. See the
         "Privacy & Telemetry" section of the project README for what is collected and how to opt out persistently.
 
 
@@ -334,8 +334,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     h2oconn.cluster.timezone = "UTC"
     if verbose:
         h2oconn.cluster.show_status()
-    # Fire-and-forget telemetry; never blocks, never raises. Honors
-    # H2O_DISABLE_TELEMETRY / DO_NOT_TRACK env vars internally.
+    # Fire-and-forget telemetry; never blocks, never raises. Honors the
+    # DO_NOT_TRACK env var internally.
     # Pick the event type based on whether we actually spawned a local JVM:
     # init for fresh-cluster path, cluster_connect for attach-to-existing path.
     try:

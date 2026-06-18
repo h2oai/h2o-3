@@ -11,9 +11,8 @@
 #' detached (see warm_java); nothing on a telemetry path ever waits on a
 #' subprocess or socket.
 #'
-#' Honors two opt-out environment variables (first match wins):
-#'     H2O_DISABLE_TELEMETRY -- H2O-specific kill switch
-#'     DO_NOT_TRACK          -- industry-standard opt-out
+#' Honors the DO_NOT_TRACK opt-out environment variable (consoledonottrack.com),
+#' which always wins. Reacts to 1/0/true/false; 0/false/empty do not opt out.
 #'
 #' URL override: H2O_TELEMETRY_URL.
 
@@ -42,8 +41,8 @@
 #' Programmatic opt-out, set by `h2o.init(telemetry = FALSE)`.
 #'
 #' Once disabled, every subsequent `.h2o.send_*` call is a no-op until the
-#' next R session. Independent of and additive to the env-var opt-outs
-#' (`H2O_DISABLE_TELEMETRY` / `DO_NOT_TRACK`).
+#' next R session. Independent of the `DO_NOT_TRACK` env-var opt-out, which
+#' always wins.
 #' @keywords internal
 .h2o.telemetry.set_disabled <- function(disabled) {
   .h2o.telemetry.state$disabled_by_kwarg <- isTRUE(disabled)
@@ -56,10 +55,17 @@
   .h2o.telemetry.url
 }
 
+# TRUE iff env var `name` is set to a truthy value. Reacts to 1/0/true/false;
+# 0/false/no/off/empty/unset all read as FALSE (so DO_NOT_TRACK=0 does NOT opt out).
+.h2o.telemetry.env_truthy <- function(name) {
+  v <- tolower(trimws(Sys.getenv(name)))
+  nzchar(v) && !(v %in% c("0", "false", "no", "off"))
+}
+
 .h2o.telemetry.disabled <- function() {
-  if (isTRUE(.h2o.telemetry.state$disabled_by_kwarg)) return(TRUE)
-  nzchar(Sys.getenv("H2O_DISABLE_TELEMETRY")) ||
-    nzchar(Sys.getenv("DO_NOT_TRACK"))
+  # DO_NOT_TRACK (cross-tool standard) is the hard opt-out and always wins.
+  if (.h2o.telemetry.env_truthy("DO_NOT_TRACK")) return(TRUE)
+  isTRUE(.h2o.telemetry.state$disabled_by_kwarg)
 }
 
 # Generate a random UUIDv4 from 16 bytes — avoids depending on the uuid package.
@@ -605,7 +611,7 @@ bucketize_leaderboard_size <- function(n) {
   "H2O-3 collects anonymous usage telemetry (H2O version, OS, algorithm names, and",
   "coarse usage buckets) to help prioritize features and platforms. It never sends",
   "your code, data, file paths, or any identifiers.",
-  "To opt out: set H2O_DISABLE_TELEMETRY=1 (or DO_NOT_TRACK=1), or pass",
+  "To opt out: set DO_NOT_TRACK=1, or pass",
   "telemetry = FALSE to h2o.init() / h2o.connect().",
   "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html",
   "(This notice is shown only once.)",

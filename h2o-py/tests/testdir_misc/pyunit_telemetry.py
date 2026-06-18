@@ -164,10 +164,32 @@ def telemetry_first_run_notice():
     print("OK telemetry_first_run_notice: shown once, suppressed when disabled")
 
 
+def telemetry_do_not_track_truthiness():
+    # DO_NOT_TRACK reacts to 1/0/true/false; only truthy values opt out, and it
+    # always wins over the programmatic flag.
+    old = os.environ.get("DO_NOT_TRACK")
+    try:
+        t.set_disabled(False)
+        for val, disabled in [("1", True), ("true", True), ("on", True),
+                              ("0", False), ("false", False), ("", False)]:
+            os.environ["DO_NOT_TRACK"] = val
+            assert t._telemetry_disabled() is disabled, \
+                "DO_NOT_TRACK=%r -> disabled=%r" % (val, t._telemetry_disabled())
+        os.environ.pop("DO_NOT_TRACK", None)
+        assert t._telemetry_disabled() is False, "unset DO_NOT_TRACK must not opt out"
+    finally:
+        if old is None:
+            os.environ.pop("DO_NOT_TRACK", None)
+        else:
+            os.environ["DO_NOT_TRACK"] = old
+    print("OK telemetry_do_not_track_truthiness: 1/true opt out, 0/false/empty do not")
+
+
 if __name__ == "__main__":
     telemetry_wire_contract()
     telemetry_bucket_boundaries()
     telemetry_disabled_emits_nothing()
+    telemetry_do_not_track_truthiness()
     telemetry_first_run_notice()
     telemetry_http_delivery_smoke()
     print("\nALL TELEMETRY TESTS PASSED")
@@ -175,5 +197,6 @@ else:
     telemetry_wire_contract()
     telemetry_bucket_boundaries()
     telemetry_disabled_emits_nothing()
+    telemetry_do_not_track_truthiness()
     telemetry_first_run_notice()
     telemetry_http_delivery_smoke()

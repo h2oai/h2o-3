@@ -32,8 +32,8 @@ import java.util.UUID;
  *   <li><b>Never blocks or throws:</b> runs on a daemon thread, swallows every
  *       exception, hard-caps every wait. Startup and shutdown are never delayed.</li>
  *   <li><b>Java 8 compatible:</b> plain {@link HttpURLConnection}, no Java 11+ API.</li>
- *   <li><b>Opt-out by default-on:</b> honored via {@code H2O_DISABLE_TELEMETRY}
- *       / {@code DO_NOT_TRACK} env vars or {@code -Dsys.ai.h2o.telemetry.disabled=true}.</li>
+ *   <li><b>Opt-out by default-on:</b> honored via the {@code DO_NOT_TRACK} env var
+ *       (reacts to 1/0/true/false; always wins) or {@code -Dsys.ai.h2o.telemetry.disabled=true}.</li>
  *   <li><b>No double-count:</b> a Python/R-spawned local server sets
  *       {@code -Dsys.ai.h2o.telemetry.clientLaunched=true}; the calling client
  *       already reports that session, so the spawned JVM stays silent.</li>
@@ -101,7 +101,7 @@ public class JvmTelemetry {
       "H2O-3 collects anonymous usage telemetry (H2O version, OS, and coarse cluster\n" +
       "buckets) to help prioritize features and platforms. It never sends your code,\n" +
       "data, file paths, or any identifiers.\n" +
-      "To opt out: set H2O_DISABLE_TELEMETRY=1 (or DO_NOT_TRACK=1), or pass\n" +
+      "To opt out: set DO_NOT_TRACK=1, or pass\n" +
       "-Dsys.ai.h2o.telemetry.disabled=true.\n" +
       "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html\n" +
       "(This notice is shown only once.)";
@@ -132,8 +132,7 @@ public class JvmTelemetry {
     // so its presence on the classpath reliably marks a test/CI run (covers the
     // H2OStarter-based test node-starters and gradle-spawned multinode tests).
     if (runningUnderJUnit()) return true;
-    if (notEmpty(System.getenv("H2O_DISABLE_TELEMETRY"))) return true;   // H2O kill switch
-    if (notEmpty(System.getenv("DO_NOT_TRACK"))) return true;            // industry standard
+    if (envTruthy("DO_NOT_TRACK")) return true;   // cross-tool standard opt-out; always wins
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "telemetry.disabled")) return true;
     // Spawned by a Python/R client that already reports the session.
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "telemetry.clientLaunched")) return true;
@@ -143,6 +142,19 @@ public class JvmTelemetry {
   private static boolean runningUnderJUnit() {
     try { Class.forName("org.junit.Test"); return true; }
     catch (Throwable t) { return false; }
+  }
+
+  /** Whether telemetry would currently emit on this JVM — the inverse of {@link #disabled()}.
+   *  Surfaced on {@code CloudV3.telemetry_enabled} so clients can show the server's state. */
+  public static boolean isEnabled() { return !disabled(); }
+
+  /** True iff env var {@code name} is set to a truthy value (1/true/yes/on, case-insensitive);
+   *  0/false/no/off/empty/unset all read as false. */
+  private static boolean envTruthy(String name) {
+    String v = System.getenv(name);
+    if (v == null) return false;
+    v = v.trim().toLowerCase();
+    return !(v.isEmpty() || v.equals("0") || v.equals("false") || v.equals("no") || v.equals("off"));
   }
 
   // -- payload -----------------------------------------------------------------

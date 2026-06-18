@@ -22,9 +22,8 @@ Supported event types:
     model_save       one per h2o.save_model()
     model_load       one per h2o.load_model()
 
-Honors two opt-out environment variables (first match wins):
-    H2O_DISABLE_TELEMETRY   -- H2O-specific kill switch
-    DO_NOT_TRACK            -- industry-standard opt-out
+Honors the DO_NOT_TRACK opt-out environment variable (consoledonottrack.com),
+which always wins. Reacts to 1/0/true/false; 0/false/empty do not opt out.
 
 URL override: H2O_TELEMETRY_URL.
 """
@@ -96,17 +95,31 @@ def set_disabled(disabled):
     """Programmatic opt-out, set by ``h2o.init(telemetry=False)``.
 
     Once disabled, every subsequent ``send_*`` call is a no-op until the
-    next process restart. Independent of and additive to the env-var
-    opt-outs (``H2O_DISABLE_TELEMETRY`` / ``DO_NOT_TRACK``).
+    next process restart. Independent of the ``DO_NOT_TRACK`` env-var opt-out,
+    which always wins.
     """
     global _disabled_by_kwarg
     _disabled_by_kwarg = bool(disabled)
 
 
+def _env_truthy(name):
+    """True iff env var ``name`` is set to a truthy value.
+
+    Reacts to 1/0/true/false/yes/no/on/off (case-insensitive). ``0`` / ``false``
+    / empty / unset all read as False, so e.g. ``DO_NOT_TRACK=0`` does NOT opt out.
+    """
+    v = os.environ.get(name)
+    if v is None:
+        return False
+    return v.strip().lower() not in ("", "0", "false", "no", "off")
+
+
 def _telemetry_disabled():
-    if _disabled_by_kwarg:
+    # DO_NOT_TRACK (cross-tool standard — consoledonottrack.com) is the hard
+    # opt-out and always wins, including over a programmatic telemetry=True.
+    if _env_truthy("DO_NOT_TRACK"):
         return True
-    return bool(os.environ.get("H2O_DISABLE_TELEMETRY")) or bool(os.environ.get("DO_NOT_TRACK"))
+    return _disabled_by_kwarg
 
 
 def _new_session_id():
@@ -666,7 +679,7 @@ _NOTICE_TEXT = (
     "H2O-3 collects anonymous usage telemetry (H2O version, OS, algorithm names, and\n"
     "coarse usage buckets) to help prioritize features and platforms. It never sends\n"
     "your code, data, file paths, or any identifiers.\n"
-    "To opt out: set H2O_DISABLE_TELEMETRY=1 (or DO_NOT_TRACK=1), or pass\n"
+    "To opt out: set DO_NOT_TRACK=1, or pass\n"
     "telemetry=False to h2o.init() / h2o.connect().\n"
     "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html\n"
     "(This notice is shown only once.)"
