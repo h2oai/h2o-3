@@ -104,6 +104,9 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
   @API(help="Hadoop version string when the cluster was launched via h2odriver, null otherwise.", direction=API.Direction.OUTPUT)
   public String hadoop_version;
 
+  @API(help="Whether this server emits anonymous usage telemetry.", direction=API.Direction.OUTPUT)
+  public boolean telemetry_enabled;
+
   @API(help="nodes", direction=API.Direction.OUTPUT)
   public NodeV3[] nodes;
 

@@ -281,6 +281,10 @@ class H2OCluster(H2OSchema):
             status += ", healthy"
         else:
             status += ", %d nodes are not healthy" % unhealthy_nodes
+        _srv = self._props.get("telemetry_enabled")
+        _server_telemetry = "unknown" if _srv is None else ("enabled" if _srv else "disabled")
+        from h2o import telemetry as _tel
+        _client_telemetry = "disabled" if _tel._telemetry_disabled() else "enabled"
         values = [get_human_readable_time(self.cloud_uptime_millis),
                   self.cloud_internal_timezone,
                   self.datafile_parser_timezone,
@@ -295,14 +299,17 @@ class H2OCluster(H2OSchema):
                   h2o.connection().base_url,
                   json.dumps(h2o.connection().proxy),
                   self.internal_security_enabled,
-                  "%d.%d.%d %s" % tuple(sys.version_info[:4])]
+                  "%d.%d.%d %s" % tuple(sys.version_info[:4]),
+                  _server_telemetry,
+                  _client_telemetry]
         return values
 
 
 _cluster_status_info_keys = ["H2O_cluster_uptime", "H2O_cluster_timezone", "H2O_data_parsing_timezone",
             "H2O_cluster_version", "H2O_cluster_version_age", "H2O_cluster_name", "H2O_cluster_total_nodes",
             "H2O_cluster_free_memory", "H2O_cluster_total_cores", "H2O_cluster_allowed_cores", "H2O_cluster_status",
-            "H2O_connection_url", "H2O_connection_proxy", "H2O_internal_security", "Python_version"]
+            "H2O_connection_url", "H2O_connection_proxy", "H2O_internal_security", "Python_version",
+            "H2O_telemetry_server", "H2O_telemetry_client"]
     
 _cluster_status_detailed_info_keys = ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size",
                                       "free_mem", "pojo_mem", "swap_mem", "free_disk", "max_disk", "pid", "num_keys",

@@ -967,6 +967,8 @@ h2o.clusterInfo <- function() {
   cat("    H2O Connection port:       ", port, "\n")
   cat("    H2O Connection proxy:      ", proxy, "\n")
   cat("    H2O Internal Security:     ", res$internal_security_enabled, "\n")
+  cat("    H2O telemetry (server):    ", if (is.null(res$telemetry_enabled)) "unknown" else if (isTRUE(res$telemetry_enabled)) "enabled" else "disabled", "\n")
+  cat("    H2O telemetry (client):    ", if (isTRUE(tryCatch(.h2o.telemetry.disabled(), error = function(e) TRUE))) "disabled" else "enabled", "\n")
   cat("    R Version:                 ", R.version.string, "\n")
 
   cpusLimited <- sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)

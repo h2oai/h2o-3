@@ -38,6 +38,7 @@ class CloudHandler extends Handler {
     // we surface it on the wire under its semantic name so clients can derive
     // cluster_topology=multi_node_hadoop on cluster_connect telemetry.
     cloud.hadoop_version = H2O.ARGS.ga_hadoop_ver;
+    cloud.telemetry_enabled = water.telemetry.JvmTelemetry.isEnabled();
     cloud.cloud_size = H2O.CLOUD.size();
     cloud.cloud_uptime_millis = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
     cloud.cloud_internal_timezone = DateTimeZone.getDefault().toString();
