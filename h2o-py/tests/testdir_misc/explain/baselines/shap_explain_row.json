@@ -1,0 +1,76 @@
+{
+  "axes": [
+    {
+      "bars": [
+        {
+          "h": 0.8,
+          "w": -3.9035,
+          "x": 0.0,
+          "y": -0.4
+        },
+        {
+          "h": 0.8,
+          "w": -0.5992,
+          "x": 0.0,
+          "y": 0.6
+        },
+        {
+          "h": 0.8,
+          "w": -0.5664,
+          "x": 0.0,
+          "y": 1.6
+        },
+        {
+          "h": 0.8,
+          "w": -0.2641,
+          "x": 0.0,
+          "y": 2.6
+        },
+        {
+          "h": 0.8,
+          "w": -0.0165,
+          "x": 0.0,
+          "y": 3.6
+        },
+        {
+          "h": 0.8,
+          "w": 0.3231,
+          "x": 0.0,
+          "y": 4.6
+        }
+      ],
+      "grids": [],
+      "legend": [],
+      "lines": [
+        {
+          "data": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "label": "_child6"
+        }
+      ],
+      "scatter": [],
+      "title": "SHAP explanation for \"gbm_explain_cmp\" on row 0\nprediction: 10.786432960834947",
+      "xlabel": "SHAP value",
+      "xticklabels": [],
+      "ylabel": "Feature",
+      "yticklabels": [
+        "PSA=1.4",
+        "GLEASON=6.0",
+        "AGE=65.0",
+        "RACE=1",
+        "DPROS=2.0",
+        "DCAPS=1.0"
+      ]
+    }
+  ],
+  "n_axes": 1,
+  "suptitle": null
+}

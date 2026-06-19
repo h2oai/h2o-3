@@ -4588,6 +4588,307 @@ def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
     os.remove(path2)
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Plot comparison against committed baselines.
+#
+# We deliberately compare the *data and labels* that H2O hands to matplotlib, not the rendered pixels/SVG. All of the
+# numbers in an H2O explanation plot (partial-dependence values, variable importances, residuals, SHAP contributions)
+# are computed server-side in the JVM, so they are identical across the whole Python / numpy / matplotlib version
+# matrix; only matplotlib's rendering of them varies between versions. A snapshot restricted to that server-derived
+# content can therefore be compared against a single baseline on every matrix entry without version-driven flakiness.
+# Rendering-chosen cosmetics (auto tick locations, axis limits, colors, fonts) are intentionally excluded for the same
+# reason.
+# ----------------------------------------------------------------------------------------------------------------------
+
+def _figure_of(plot_or_fig):
+    """Accept a matplotlib Figure or an H2O decorated plot result and return the underlying Figure."""
+    fig = plot_or_fig.figure() if hasattr(plot_or_fig, "figure") and callable(plot_or_fig.figure) else plot_or_fig
+    assert isinstance(fig, matplotlib.figure.Figure), \
+        "Expected a matplotlib Figure (or a plot result wrapping one), got %r" % type(fig)
+    return fig
+
+
+def _round(arr, ndigits):
+    a = np.asarray(arr, dtype=float)
+    return np.round(a, ndigits).tolist()
+
+
+def _ticklabel_texts(ticklabels):
+    return [t.get_text() for t in ticklabels if t.get_text()]
+
+
+def _is_numeric_label(s):
+    # treat purely numeric tick text (incl. matplotlib's unicode minus) as a volatile, version-dependent auto-tick
+    t = s.strip().replace("−", "-").replace(",", "")
+    if t == "":
+        return True
+    try:
+        float(t)
+        return True
+    except ValueError:
+        return False
+
+
+def figure_snapshot(plot_or_fig, ndigits=4, sort_scatter=True):
+    """Extract a canonical, matplotlib-version-independent representation of a figure's content.
+
+    :param plot_or_fig: a matplotlib Figure or an H2O decorated plot result (anything with ``.figure()``).
+    :param ndigits: number of decimals to round numeric data to before comparison.
+    :param sort_scatter: sort scatter (collection) offsets so point ordering does not affect the comparison.
+    :returns: a JSON-serializable dict capturing per-axis title/labels, line data, bar geometry, heatmap arrays,
+              scatter offsets and legend text.
+    """
+    import matplotlib.figure  # noqa: F401  (ensures matplotlib.figure is importable here)
+    import matplotlib.patches  # noqa: F401
+    import matplotlib.collections  # noqa: F401
+    fig = _figure_of(plot_or_fig)
+    axes = []
+    for ax in fig.axes:
+        lines = [dict(label=str(ln.get_label()), data=_round(ln.get_xydata(), ndigits))
+                 for ln in ax.get_lines()]
+        # bar charts (e.g. varimp) are drawn as Rectangle patches
+        bars = []
+        for p in ax.patches:
+            if isinstance(p, matplotlib.patches.Rectangle):
+                bars.append(dict(x=round(float(p.get_x()), ndigits),
+                                 y=round(float(p.get_y()), ndigits),
+                                 w=round(float(p.get_width()), ndigits),
+                                 h=round(float(p.get_height()), ndigits)))
+        # heatmaps are QuadMesh collections (or AxesImage) -> capture the data array; scatter plots (incl. the SHAP
+        # summary beeswarm) are PathCollections -> capture the point offsets. A scatter coloured by value also carries
+        # an array, so we must branch on the collection type rather than on get_array(), otherwise the meaningful
+        # x positions (e.g. SHAP contributions) would be dropped in favour of the colour values.
+        grids, scatter = [], []
+        for c in ax.collections:
+            if isinstance(c, matplotlib.collections.QuadMesh):
+                data = c.get_array()
+                if data is not None:
+                    grids.append(_round(np.ma.filled(np.asarray(data, dtype=float), np.nan), ndigits))
+                continue
+            offs = np.asarray(c.get_offsets(), dtype=float)
+            if offs.size:
+                if sort_scatter:
+                    offs = offs[np.lexsort(offs.T[::-1])]
+                scatter.append(_round(offs, ndigits))
+        for im in ax.images:
+            grids.append(_round(np.asarray(im.get_array(), dtype=float), ndigits))
+        legend = ax.get_legend()
+        axes.append(dict(
+            title=ax.get_title(),
+            xlabel=ax.get_xlabel(),
+            ylabel=ax.get_ylabel(),
+            # categorical tick labels (feature names, model ids) are set by H2O and version-stable; numeric auto-ticks
+            # are chosen by matplotlib and vary across versions, so keep only the non-numeric tick labels.
+            xticklabels=[s for s in _ticklabel_texts(ax.get_xticklabels()) if not _is_numeric_label(s)],
+            yticklabels=[s for s in _ticklabel_texts(ax.get_yticklabels()) if not _is_numeric_label(s)],
+            lines=lines,
+            bars=bars,
+            grids=grids,
+            scatter=scatter,
+            legend=[t.get_text() for t in legend.get_texts()] if legend is not None else [],
+        ))
+    # the suptitle (overall plot title set by H2O) is on the figure, not an axis
+    suptitle = fig._suptitle.get_text() if getattr(fig, "_suptitle", None) is not None else None
+    return dict(n_axes=len(fig.axes), suptitle=suptitle, axes=axes)
+
+
+def _collect_snapshot_diffs(actual, expected, rtol, atol, path=""):
+    """Recursively compare two snapshots and return a list of human-readable difference descriptions.
+
+    Strings/structure must match exactly; numeric arrays and scalars are compared within (rtol, atol) tolerance.
+    Returns an empty list when the snapshots match.
+    """
+    diffs = []
+    if isinstance(expected, dict):
+        if not isinstance(actual, dict):
+            return ["%s: expected an object but got %s" % (path, type(actual).__name__)]
+        if set(actual) != set(expected):
+            diffs.append("%s: field mismatch (only in actual: %s; only in baseline: %s)" % (
+                path, sorted(set(actual) - set(expected)), sorted(set(expected) - set(actual))))
+        for k in set(actual) & set(expected):
+            diffs += _collect_snapshot_diffs(actual[k], expected[k], rtol, atol, "%s.%s" % (path, k))
+    elif isinstance(expected, list) and expected and isinstance(expected[0], (int, float)):
+        a, e = np.asarray(actual, dtype=float), np.asarray(expected, dtype=float)
+        if a.shape != e.shape:
+            diffs.append("%s: array shape changed (actual %s, baseline %s)" % (path, a.shape, e.shape))
+        elif not np.allclose(a, e, rtol=rtol, atol=atol, equal_nan=True):
+            diffs.append("%s: array values differ beyond tolerance (max abs diff %g)" % (
+                path, float(np.nanmax(np.abs(a - e))) if a.size else 0.0))
+    elif isinstance(expected, list):
+        if not isinstance(actual, list) or len(actual) != len(expected):
+            diffs.append("%s: length changed (actual %s, baseline %s)" % (
+                path, len(actual) if isinstance(actual, list) else "n/a", len(expected)))
+        else:
+            for i, (av, ev) in enumerate(zip(actual, expected)):
+                diffs += _collect_snapshot_diffs(av, ev, rtol, atol, "%s[%d]" % (path, i))
+    elif isinstance(expected, bool):
+        if actual != expected:
+            diffs.append("%s: actual=%r baseline=%r" % (path, actual, expected))
+    elif isinstance(expected, numbers.Number):
+        # scalar numerics (e.g. bar geometry) get the same tolerance as numeric arrays
+        if not (isinstance(actual, numbers.Number) and not isinstance(actual, bool)
+                and math.isclose(float(actual), float(expected), rel_tol=rtol, abs_tol=atol)):
+            diffs.append("%s: actual=%r baseline=%r (beyond tolerance)" % (path, actual, expected))
+    else:
+        if actual != expected:
+            diffs.append("%s: actual=%r baseline=%r" % (path, actual, expected))
+    return diffs
+
+
+def _baseline_png_path(baseline_path):
+    return os.path.splitext(baseline_path)[0] + ".png"
+
+
+def _render_png_b64(fig, dpi=110):
+    import base64
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def _file_png_b64(path):
+    import base64
+    if path and os.path.isfile(path):
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode("ascii")
+    return None
+
+
+def _img_tag(b64, caption):
+    if b64 is None:
+        return "<div class='imgcol'><div class='cap'>%s</div><p class='small'>(not available)</p></div>" % caption
+    return "<div class='imgcol'><div class='cap'>%s</div><img src='data:image/png;base64,%s'></div>" % (caption, b64)
+
+
+_PLOT_REPORT_CSS = """body{font:14px -apple-system,Segoe UI,Roboto,sans-serif;background:#0f1115;color:#e6e8ec;margin:0;padding:24px}
+h1{font-size:20px}h2{font-size:15px;margin:6px 0}section{border:1px solid #2a2f3a;border-radius:10px;padding:14px 16px;margin:16px 0;background:#171a21}
+code{background:#0b0d11;border:1px solid #2a2f3a;border-radius:4px;padding:1px 5px;font-size:12.5px}
+ul{line-height:1.6;margin:6px 0}img{max-width:100%;border:1px solid #2a2f3a;border-radius:8px;background:#fff}
+.badge{display:inline-block;border-radius:999px;padding:1px 10px;font-size:11px;font-weight:700;margin-left:8px}
+.pass{background:#22c55e;color:#06210f}.fail{background:#ef4444;color:#fff}.small{color:#9aa3af;font-size:12.5px}
+.imgrow{display:flex;gap:14px;flex-wrap:wrap}.imgcol{flex:1 1 360px;min-width:320px}.cap{font-size:12px;color:#9aa3af;margin-bottom:4px;font-weight:700}"""
+
+
+def _write_plots_report_html(results, report_name):
+    """Write one self-contained HTML report rendering every checked plot (pass and fail), with diffs for failures.
+
+    ``results`` is a list of dicts: {label, baseline_path, fig, diffs}. Written to ``$H2O_PLOT_FAILURE_DIR`` if set,
+    else the current working directory (collected by the test harness). Returns the path, or None on error.
+    """
+    try:
+        out_dir = os.environ.get("H2O_PLOT_FAILURE_DIR", os.getcwd())
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, "%s.plot-report.html" % report_name)
+        n_fail = sum(1 for r in results if r["diffs"])
+        sections = []
+        for r in results:
+            failed = bool(r["diffs"])
+            badge = '<span class="badge fail">MISMATCH</span>' if failed else '<span class="badge pass">match</span>'
+            try:
+                actual_b64 = _render_png_b64(r["fig"]) if isinstance(r["fig"], matplotlib.figure.Figure) else None
+            except Exception as e:
+                actual_b64 = None
+                print("WARNING: could not render actual figure for %s: %r" % (r["label"], e))
+            baseline_b64 = _file_png_b64(_baseline_png_path(r["baseline_path"]))
+            # show baseline and actual side by side so a mismatch is visually obvious
+            imgs = "<div class='imgrow'>%s%s</div>" % (
+                _img_tag(baseline_b64, "baseline (committed)"), _img_tag(actual_b64, "actual (this run)"))
+            diff_html = ("<h2>Differences (%d)</h2><ul>%s</ul>" % (
+                len(r["diffs"]), "".join("<li><code>%s</code></li>" % d for d in r["diffs"]))) if failed else ""
+            sections.append(
+                "<section><h2><span class='name'>{label}</span> {badge}</h2>"
+                "<p class='small'>Baseline: <code>{bl}</code></p>{diffs}{imgs}</section>".format(
+                    label=r["label"], badge=badge, bl=r["baseline_path"], diffs=diff_html, imgs=imgs))
+        html = ("<!DOCTYPE html><html><head><meta charset='utf-8'><title>Explain plot report: {name}</title>"
+                "<style>{css}</style></head><body>"
+                "<h1>Explain plot comparison &mdash; {name}</h1>"
+                "<p class='small'>{nf} of {nt} plot(s) differ from baseline. Images are the <strong>actual</strong> "
+                "figures from this run; baselines store data only. Regenerate intended changes with "
+                "<code>H2O_REGEN_PLOT_BASELINES=1</code>.</p>{body}</body></html>").format(
+            name=report_name, css=_PLOT_REPORT_CSS, nf=n_fail, nt=len(results), body="".join(sections))
+        with open(out_path, "w") as f:
+            f.write(html)
+        return out_path
+    except Exception as e:  # never let artifact generation mask the real assertion failure
+        print("WARNING: could not write plot report artifact: %r" % e)
+        return None
+
+
+class PlotComparator(object):
+    """Accumulate plot-vs-baseline comparisons and emit a single combined HTML report.
+
+    Usage::
+
+        cmp = pyunit_utils.PlotComparator()
+        cmp.check(model.pd_plot(fr, "X"), baseline_path)
+        cmp.check(model.varimp_plot(server=True), other_baseline_path)
+        cmp.assert_all_match("explain_plots")   # renders ALL plots into one report; fails if any differ
+
+    With ``H2O_REGEN_PLOT_BASELINES=1`` every ``check`` (re)writes its baseline and ``assert_all_match`` is a no-op.
+    Unlike calling :func:`assert_plot_matches_baseline` per plot (which aborts at the first mismatch), this checks
+    every plot first, so the report shows the full set of figures in one place.
+    """
+
+    def __init__(self, ndigits=4, rtol=1e-3, atol=1e-4):
+        self.ndigits, self.rtol, self.atol = ndigits, rtol, atol
+        self.regen = bool(os.environ.get("H2O_REGEN_PLOT_BASELINES"))
+        self.results = []
+
+    def check(self, plot_or_fig, baseline_path, label=None):
+        label = label or os.path.splitext(os.path.basename(baseline_path))[0]
+        snapshot = figure_snapshot(plot_or_fig, ndigits=self.ndigits)
+        if self.regen:
+            os.makedirs(os.path.dirname(os.path.abspath(baseline_path)), exist_ok=True)
+            with open(baseline_path, "w") as f:
+                json.dump(snapshot, f, indent=2, sort_keys=True)
+            # also save a reference PNG so a future mismatch report can show the baseline image alongside the actual
+            try:
+                _figure_of(plot_or_fig).savefig(_baseline_png_path(baseline_path), dpi=110, bbox_inches="tight")
+            except Exception as e:
+                print("WARNING: could not save baseline image for %s: %r" % (baseline_path, e))
+            print("Wrote plot baseline: %s" % baseline_path)
+            return
+        if not os.path.isfile(baseline_path):
+            diffs = ["missing baseline %s (run once with H2O_REGEN_PLOT_BASELINES=1)" % baseline_path]
+        else:
+            with open(baseline_path) as f:
+                expected = json.load(f)
+            diffs = _collect_snapshot_diffs(snapshot, expected, self.rtol, self.atol, path=label)
+        self.results.append(dict(label=label, baseline_path=baseline_path,
+                                 fig=_figure_of(plot_or_fig), diffs=diffs))
+
+    def assert_all_match(self, report_name="explain_plots"):
+        if self.regen:
+            return
+        failures = [r for r in self.results if r["diffs"]]
+        report = _write_plots_report_html(self.results, report_name) if failures else None
+        try:
+            for r in self.results:
+                if isinstance(r["fig"], matplotlib.figure.Figure):
+                    matplotlib.pyplot.close(r["fig"])
+        except Exception:
+            pass
+        if failures:
+            lines = ["%d of %d plot(s) differ from baseline:" % (len(failures), len(self.results))]
+            lines += ["  - %s: %s" % (r["label"], r["diffs"][0]) for r in failures]
+            if report:
+                lines.append("  Combined report (all plots rendered): %s" % report)
+            raise AssertionError("\n".join(lines))
+
+
+def assert_plot_matches_baseline(plot_or_fig, baseline_path, ndigits=4, rtol=1e-3, atol=1e-4):
+    """Compare a single figure's canonical snapshot against a committed JSON baseline.
+
+    Set ``H2O_REGEN_PLOT_BASELINES=1`` to (re)write the baseline instead of asserting. On mismatch a combined HTML
+    report (the actual figure rendered as a PNG plus the field-level diffs) is written next to the test (or to
+    ``$H2O_PLOT_FAILURE_DIR``) before the assertion is raised. For checking several plots and seeing them all in one
+    report, prefer :class:`PlotComparator`.
+    """
+    cmp = PlotComparator(ndigits=ndigits, rtol=rtol, atol=atol)
+    cmp.check(plot_or_fig, baseline_path)
+    cmp.assert_all_match(os.path.splitext(os.path.basename(baseline_path))[0])
+
+
 def set_forbidden_paths(paths):
     forbidden = "'" + "','".join(paths) + "'" if paths else ""
     h2o.rapids("(testing.setreadforbidden [" + forbidden + "])")
