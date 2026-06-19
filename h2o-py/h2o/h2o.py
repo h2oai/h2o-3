@@ -64,7 +64,7 @@ def _h2o_version_safe():
 def connect(server=None, url=None, ip=None, port=None,
             https=None, verify_ssl_certificates=None, cacert=None,
             auth=None, proxy=None, cookies=None, verbose=True, config=None, strict_version_check=False,
-            telemetry=True):
+            telemetry=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -85,8 +85,9 @@ def connect(server=None, url=None, ip=None, port=None,
     :param verbose: Set to False to disable printing connection status messages.
     :param config: Connection configuration object encapsulating connection parameters.
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
-    :param telemetry: Set to False to disable all anonymous usage telemetry for this process. Equivalent to setting
-                      the ``DO_NOT_TRACK`` environment variable.
+    :param telemetry: ``True``/``False`` explicitly enables/disables all anonymous usage telemetry for this process
+                      (``False`` is equivalent to the ``DO_NOT_TRACK`` environment variable). The default ``None``
+                      leaves the current state unchanged, so an earlier ``telemetry=False`` is not silently re-enabled.
     :returns: the new :class:`H2OConnection` object.
 
     :examples:
@@ -101,8 +102,11 @@ def connect(server=None, url=None, ip=None, port=None,
 
     """
     global h2oconn
-    # Programmatic telemetry opt-out — set before any event can fire.
-    _telemetry.set_disabled(not telemetry)
+    # Programmatic telemetry opt-out — set before any event can fire. None means
+    # "leave the current state" so a later bare connect() can't re-enable an
+    # earlier telemetry=False.
+    if telemetry is not None:
+        _telemetry.set_disabled(not telemetry)
     svc = _strict_version_check(strict_version_check, config=config)
     if config:
         if "connect_params" in config:
@@ -168,7 +172,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None,
          ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, verbose = True,
-         telemetry=True, **kwargs):
+         telemetry=None, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -212,8 +216,10 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
     :param verbose: Set to False to disable printing connection status and info messages.
-    :param telemetry: Set to False to disable all anonymous usage telemetry for this process. Equivalent to setting the
-        ``DO_NOT_TRACK=1`` environment variable. Default ``True``. See the
+    :param telemetry: ``True``/``False`` explicitly enables/disables all anonymous usage telemetry for this process;
+        ``False`` is equivalent to setting the ``DO_NOT_TRACK=1`` environment variable. The default ``None`` leaves the
+        current state unchanged, so an earlier ``telemetry=False`` is not silently re-enabled by a later bare
+        ``h2o.init()``. On a fresh process the state is the package default (currently enabled). See the
         "Privacy & Telemetry" section of the project README for what is collected and how to opt out persistently.
 
 
@@ -225,8 +231,11 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     """
     global h2oconn
     # Programmatic telemetry opt-out — set early so even an exception during
-    # init() doesn't leak a single ping before this line runs.
-    _telemetry.set_disabled(not telemetry)
+    # init() doesn't leak a single ping before this line runs. None means "leave
+    # the current state", so a later bare init() can't silently re-enable an
+    # earlier telemetry=False.
+    if telemetry is not None:
+        _telemetry.set_disabled(not telemetry)
     assert_is_type(url, str, None)
     assert_is_type(ip, str, None)
     assert_is_type(port, int, str, None)

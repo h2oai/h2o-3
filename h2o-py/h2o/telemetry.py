@@ -73,6 +73,11 @@ _session_id = None  # type: str | None
 # Programmatic opt-out set by h2o.init(telemetry=False). Independent of and
 # additive to the env-var opt-outs. Persists for the lifetime of the process
 # (or until set_disabled(False) is called).
+#
+# Its initial value is the client-wide default when the user never passes the
+# telemetry kwarg: False = telemetry on (opt-out model). Flip this one line to
+# True to make the whole client opt-in (a bare h2o.init()/h2o.connect() then
+# stays off until the user passes telemetry=True).
 _disabled_by_kwarg = False
 
 # Cached Java runtime info (avoid re-parsing `java -version` on every send).

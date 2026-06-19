@@ -291,11 +291,14 @@ class H2OLocalServer(object):
                 assert type(arg) is str
                 cmd += [arg]
 
-        # Suppress the spawned server's own JVM telemetry: this local server was
-        # launched by the Python client, which already reports the session via its
-        # own init event. The JVM emitter treats this flag as opt-out, so a single
-        # h2o.init() that spawns a local server is counted once, not twice.
+        # The Python client already reports this session via its own init event, so
+        # the spawned server skips its redundant cluster_started (dedup, not opt-out).
         cmd += ["-Dsys.ai.h2o.telemetry.clientLaunched=true"]
+        # Propagate a client-side opt-out (telemetry=False or DO_NOT_TRACK) to the
+        # spawned server so it stays opted out of any server-side telemetry too.
+        from h2o import telemetry as _telemetry
+        if _telemetry._telemetry_disabled():
+            cmd += ["-Dsys.ai.h2o.telemetry.disabled=true"]
 
         # This should be the last JVM option
         if self._extra_classpath is None:

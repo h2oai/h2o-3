@@ -32,10 +32,15 @@
 
 # Per-process shared session_id + caches in a private env so they persist
 # across function calls without leaking package globals.
+#
+# disabled_by_kwarg starts at the client-wide default when the user never passes
+# the telemetry arg: FALSE = telemetry on (opt-out model). Flip this one line to
+# TRUE to make the whole client opt-in (a bare h2o.init() then stays off until
+# the user passes telemetry = TRUE).
 .h2o.telemetry.state <- new.env(parent = emptyenv())
 .h2o.telemetry.state$session_id        <- NULL
 .h2o.telemetry.state$java_info         <- NULL  # cached `java -version` parse
-.h2o.telemetry.state$disabled_by_kwarg <- FALSE # programmatic opt-out via h2o.init(telemetry = FALSE)
+.h2o.telemetry.state$disabled_by_kwarg <- FALSE # programmatic opt-out via h2o.init(telemetry = FALSE); FALSE = default-on
 .h2o.telemetry.state$pool              <- NULL  # libcurl async multi pool (the delivery queue)
 
 #' Programmatic opt-out, set by `h2o.init(telemetry = FALSE)`.

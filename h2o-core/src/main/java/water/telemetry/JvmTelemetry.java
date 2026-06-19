@@ -33,10 +33,12 @@ import java.util.UUID;
  *       exception, hard-caps every wait. Startup and shutdown are never delayed.</li>
  *   <li><b>Java 8 compatible:</b> plain {@link HttpURLConnection}, no Java 11+ API.</li>
  *   <li><b>Opt-out by default-on:</b> honored via the {@code DO_NOT_TRACK} env var
- *       (reacts to 1/0/true/false; always wins) or {@code -Dsys.ai.h2o.telemetry.disabled=true}.</li>
+ *       (reacts to 1/0/true/false; always wins) or {@code -Dsys.ai.h2o.telemetry.disabled=true}.
+ *       These are the only switches that flip {@link #isEnabled()} / the status row.</li>
  *   <li><b>No double-count:</b> a Python/R-spawned local server sets
  *       {@code -Dsys.ai.h2o.telemetry.clientLaunched=true}; the calling client
- *       already reports that session, so the spawned JVM stays silent.</li>
+ *       already reports that session, so the spawned JVM skips its {@code cluster_started}.
+ *       This is dedup, not an opt-out — telemetry stays {@link #isEnabled() enabled}.</li>
  * </ul>
  *
  * Wire shape mirrors the Python/R clients byte-for-byte (buckets, field names).
@@ -58,6 +60,7 @@ public class JvmTelemetry {
    */
   public static void scheduleInitEmit() {
     if (disabled()) return;
+    if (clientLaunched()) return;
     Thread t = new Thread(new Runnable() {
       @Override public void run() {
         try { waitAndEmit(); } catch (Throwable ignore) { /* never propagate */ }
@@ -134,9 +137,14 @@ public class JvmTelemetry {
     if (runningUnderJUnit()) return true;
     if (envTruthy("DO_NOT_TRACK")) return true;   // cross-tool standard opt-out; always wins
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "telemetry.disabled")) return true;
-    // Spawned by a Python/R client that already reports the session.
-    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "telemetry.clientLaunched")) return true;
     return false;
+  }
+
+  // Dedup, not an opt-out: a client-spawned local server skips its own cluster_started
+  // because the calling client already reports the session. Kept out of disabled() so it
+  // doesn't flip isEnabled() / the status row.
+  private static boolean clientLaunched() {
+    return Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "telemetry.clientLaunched");
   }
 
   private static boolean runningUnderJUnit() {
