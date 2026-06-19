@@ -4773,10 +4773,12 @@ def _write_plots_report_html(results, report_name):
     """Write one self-contained HTML report rendering every checked plot (pass and fail), with diffs for failures.
 
     ``results`` is a list of dicts: {label, baseline_path, fig, diffs}. Written to ``$H2O_PLOT_FAILURE_DIR`` if set,
-    else the current working directory (collected by the test harness). Returns the path, or None on error.
+    else next to the baselines (the test's own folder) so the artifact stays with the test rather than in the repo
+    root / harness working directory. Returns the path, or None on error.
     """
     try:
-        out_dir = os.environ.get("H2O_PLOT_FAILURE_DIR", os.getcwd())
+        default_dir = os.path.dirname(os.path.dirname(results[0]["baseline_path"])) if results else os.getcwd()
+        out_dir = os.environ.get("H2O_PLOT_FAILURE_DIR", default_dir)
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, "%s.plot-report.html" % report_name)
         n_fail = sum(1 for r in results if r["diffs"])
