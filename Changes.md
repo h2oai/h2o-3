@@ -12,7 +12,7 @@
 
 #### Breaking change
 - [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OKFold` / `H2OStratifiedKFold` iterators now yield `(numpy int array, numpy int array)` instead of `(H2OFrame mask, H2OFrame mask)` (required for scikit-learn ≥ 1.6 interop). A one-shot `FutureWarning` is emitted on first materialization, plus a `UserWarning` for frames over 1M rows. The legacy mask-yielding iterator is available for one release as `H2OKFold.iter_legacy()` / `H2OStratifiedKFold.iter_legacy()` with a `DeprecationWarning`. For cluster-scale CV use `H2OKFold.iter_h2oframes()` or H2O's native `nfolds=` parameter.
-- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` no longer treats `"NA"`/`"NULL"`/`"NaN"`/`"None"`/`"N/A"`/`"#N/A"` strings as NaN by default — only empty CSV fields. Pass `na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]` to restore the prior behavior.
+- [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – `H2OFrame.as_data_frame()` (and `h2o.as_list()`, which shares the same default) no longer treats `"NA"`/`"NULL"`/`"NaN"`/`"None"`/`"N/A"`/`"#N/A"` strings as NaN by default — only empty CSV fields. Pass `na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]` to restore the prior behavior.
 - [[#16147]](https://github.com/h2oai/h2o-3/issues/16147) – Lambdas passed to `H2OFrame.apply()` that call a free function with arguments (e.g. `lambda x: some_func(x, 2)`) now raise a `ValueError` instead of silently dropping the arguments and returning the bare function name. Use a method on the frame instead (e.g. `lambda x: x.some_method(...)`).
 
 ### 3.46.0.11 - 5/21/2026

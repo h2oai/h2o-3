@@ -38,6 +38,18 @@ def test_bare_int_ndarray_selects_rows():
     assert sub_cols.ncol == 2 and sub_cols.nrow == 5, (sub_cols.ncol, sub_cols.nrow)
 
 
+def test_bare_numpy_scalar_selects_column():
+    # A bare numpy scalar indexes like its Python equivalent: fr[np.int64(1)]
+    # behaves as fr[1] (column selection). Without the np.generic unwrap in
+    # __getitem__ this raised "Unexpected __getitem__ selector". Backs the
+    # numpy-2.x scalar-indexing claim in the release docs.
+    fr = _make_frame()
+    sub = fr[np.int64(1)]
+    assert sub.ncol == 1 and sub.nrow == 5, (sub.ncol, sub.nrow)
+    assert sub.columns == ["b"], sub.columns
+    assert sub.columns == fr[1].columns, "numpy scalar must match the Python int selector"
+
+
 def test_bool_ndarray_selects_rows():
     fr = _make_frame()
     mask = np.array([True, False, True, False, True])
@@ -80,6 +92,7 @@ def test_float_ndarray_raises_type_error():
 
 def frame_numpy_indexing_suite():
     test_bare_int_ndarray_selects_rows()
+    test_bare_numpy_scalar_selects_column()
     test_bool_ndarray_selects_rows()
     test_ndarray_in_tuple_rows_and_cols()
     test_ndarray_rows_with_ellipsis_cols()

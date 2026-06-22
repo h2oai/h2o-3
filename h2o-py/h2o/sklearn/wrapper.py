@@ -577,6 +577,10 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
             # `leader` is a property that round-trips to the server (h2o.get_model), and
             # sklearn >= 1.6 reads `classes_` on every score call — resolve it once per
             # fitted estimator (refits replace self._estimator, invalidating the cache).
+            # The leader is held by a strong ref on purpose: its lifetime is bounded by
+            # this wrapper (which already strong-refs `model` as self._estimator), and a
+            # weakref could be collected between score calls, reintroducing the very
+            # round-trip this cache avoids.
             if self._leader_cache is None or self._leader_cache[0] is not model:
                 self._leader_cache = (model, getattr(model, "leader", None) or model)
             model = self._leader_cache[1]
@@ -600,6 +604,15 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         if not hasattr(sup, "__sklearn_tags__"):
             raise AttributeError("__sklearn_tags__")
         tags = sup.__sklearn_tags__()
+        est_type = self._resolve_estimator_type(tags)
+        # Only supervised estimators (classifier / regressor) get typed tags and
+        # target_tags.required. Unsupervised wrappers (kmeans, pca, glrm, isolation
+        # forest) resolve to None and are left untouched.
+        if est_type in ("classifier", "regressor"):
+            self._populate_typed_tags(tags, est_type)
+        return tags
+
+    def _resolve_estimator_type(self, tags):
         # Dispatch on resolved estimator type, not on Mixin isinstance: generic
         # wrappers built via make_estimator(cls, estimator_type='classifier') do
         # NOT inherit ClassifierMixin (see h2o.sklearn._order_estimator_mixins
@@ -632,32 +645,29 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
                     est_type = "regressor"
             except AttributeError:
                 pass
-        # target_tags.required is only set once est_type has resolved to classifier
-        # or regressor, i.e. for supervised estimators (y is genuinely required).
-        # Unsupervised wrappers (kmeans, pca, glrm, isolation forest) have no
-        # `distribution` attribute, so _is_regressor_distribution() is False and
-        # est_type stays None for them -- they never reach these branches.
-        if est_type == "classifier":
-            tags.estimator_type = "classifier"
-            try:
+        return est_type
+
+    @staticmethod
+    def _populate_typed_tags(tags, est_type):
+        # est_type is "classifier" or "regressor": set estimator_type, the matching
+        # sklearn tag dataclass, and mark y as required (supervised estimators).
+        tags.estimator_type = est_type
+        try:
+            if est_type == "classifier":
                 from sklearn.utils._tags import ClassifierTags
                 tags.classifier_tags = ClassifierTags()
-            except ImportError:
-                pass
-            target_tags = getattr(tags, "target_tags", None)
-            if target_tags is not None and hasattr(target_tags, "required"):
-                target_tags.required = True
-        elif est_type == "regressor":
-            tags.estimator_type = "regressor"
-            try:
+            else:
                 from sklearn.utils._tags import RegressorTags
                 tags.regressor_tags = RegressorTags()
-            except ImportError:
-                pass
-            target_tags = getattr(tags, "target_tags", None)
-            if target_tags is not None and hasattr(target_tags, "required"):
-                target_tags.required = True
-        return tags
+        except Exception:
+            # sklearn <1.6 has no tag dataclasses (ImportError); on 1.6/1.7 the
+            # dataclasses may require constructor args (TypeError). The sub-tag is
+            # best-effort enrichment — degrade gracefully rather than let
+            # is_classifier()/check_estimator() raise on those versions.
+            pass
+        target_tags = getattr(tags, "target_tags", None)
+        if target_tags is not None and hasattr(target_tags, "required"):
+            target_tags.required = True
 
     def set_params(self, **params):
         """Set the parameters of this estimator.

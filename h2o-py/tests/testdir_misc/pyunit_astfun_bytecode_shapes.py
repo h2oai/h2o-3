@@ -113,6 +113,46 @@ def test_kwnames_tuple_argval_is_strings_not_indices():
     )
 
 
+# ---------- C1b : CALL_FUNCTION_EX *args / **kwargs (all versions) -----------
+
+def test_call_function_ex_star_args_kwargs_binding():
+    """lambda_to_expr must bind *args / **kwargs correctly via CALL_FUNCTION_EX.
+
+    This is the fast (server-free) guard for ``astfun._call_func_ex_bc``. On
+    Py3.14 CALL_FUNCTION_EX lost its explicit ``flags`` arg, so astfun infers it
+    from a preceding PUSH_NULL — the most speculative new bytecode logic. This
+    test runs on every Python version (no skip): on <3.14 it exercises the
+    explicit-flags path, on 3.14+ the inference path, so a regression in either
+    is caught. Free vars (args/kwargs) are resolved by astfun._load_outer_scope
+    from this frame's locals, so no H2O server is needed.
+
+    Distinct True/False values ensure a positional swap or dropped kwarg is caught;
+    children layout mirrors test_call_kw_lambda_to_expr_binding (child[0] is the
+    frame, child[1]=center, child[2]=scale for H2OFrame.scale).
+    """
+    # *args only  -> scale(True, False)  (flags=0 on Py3.14: PUSH_NULL inference)
+    args = (True, False)
+    expr = _body_of(lambda x: x.scale(*args))
+    assert expr._op == "scale", "op=%r" % (expr._op,)
+    assert expr._children[1] is True and expr._children[2] is False, \
+        "*args misbound (flags inference?): children=%r" % (expr._children,)
+
+    # **kwargs only -> scale(center=True, scale=False)  (flags=1)
+    kwargs = dict(center=True, scale=False)
+    expr = _body_of(lambda x: x.scale(**kwargs))
+    assert expr._op == "scale", "op=%r" % (expr._op,)
+    assert expr._children[1] is True and expr._children[2] is False, \
+        "**kwargs misbound: children=%r" % (expr._children,)
+
+    # *args + **kwargs -> scale(center=True, scale=False)
+    pos = (True,)
+    kw = dict(scale=False)
+    expr = _body_of(lambda x: x.scale(*pos, **kw))
+    assert expr._op == "scale", "op=%r" % (expr._op,)
+    assert expr._children[1] is True and expr._children[2] is False, \
+        "*args+**kwargs misbound: children=%r" % (expr._children,)
+
+
 # ---------- C2 : BINARY_OP NB_SUBSCR=26 (Py 3.14+) --------------------------
 
 # CPython's NB_SUBSCR slot. Defined here to make a future renumbering loud

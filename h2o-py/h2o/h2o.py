@@ -1960,10 +1960,10 @@ def as_list(data, use_pandas=True, header=True, na_values=None):
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
     assert_is_type(header, bool)
-    # Default to [""] (the 3.46.0.12 as_data_frame default) so the one-shot
-    # FutureWarning is reserved for direct as_data_frame() callers, who can act on it.
-    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header,
-                                  na_values=[""] if na_values is None else na_values)
+    # Forward na_values verbatim (None included) so a direct user as_list() call sees
+    # the same NA-default semantics AND the one-shot FutureWarning as as_data_frame().
+    # H2O-internal callers that must not surface the warning pass na_values=[""].
+    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header, na_values=na_values)
 
 
 def demo(funcname, interactive=True, echo=True, test=False):

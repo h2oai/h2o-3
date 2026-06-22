@@ -29,10 +29,12 @@ from h2o.cross_validation import (
 )
 
 
-def _reset_module_latches():
-    """Reset the process-wide warning latches so each test gets a clean slate."""
-    _cv._CONTRACT_WARN_FIRED = False
-    _cv._LARGE_FRAME_WARN_FIRED = False
+def _reset_cv_warning_state():
+    """Clear cross_validation's warning registry so each test re-observes the
+    one-shot warnings. The module now relies on the warnings module's own
+    per-(message, category, lineno) dedup instead of hand-rolled module latches,
+    so isolation means dropping the module's __warningregistry__."""
+    _cv.__dict__.pop("__warningregistry__", None)
 
 
 class _FakeFoldColumn(object):
@@ -131,7 +133,7 @@ def test_materialize_fold_column_does_not_emit_future_warning():
 
 def test_h2okfold_emits_future_warning_not_deprecation():
     """The contract-change warning must be a FutureWarning, not a DeprecationWarning."""
-    _reset_module_latches()
+    _reset_cv_warning_state()
     fr = _FakeH2OFrame(n=6)
     kf = H2OKFold(fr, n_folds=3, seed=42)
     with warnings.catch_warnings(record=True) as caught:
@@ -146,7 +148,7 @@ def test_h2okfold_emits_future_warning_not_deprecation():
 
 
 def test_h2ostratifiedkfold_emits_future_warning():
-    _reset_module_latches()
+    _reset_cv_warning_state()
     fr = _FakeH2OFrame(n=6)
     kf = H2OStratifiedKFold(fr, n_folds=3, seed=42)
     with warnings.catch_warnings(record=True) as caught:
@@ -159,14 +161,17 @@ def test_h2ostratifiedkfold_emits_future_warning():
 def test_contract_change_warning_is_one_shot_across_iterators():
     """Process-wide dedup: the FutureWarning fires once per process, not once per iterator.
 
-    Previously the latch was per-iterator, so GridSearchCV over N hyperparameter
-    sets emitted N identical warnings. The 3.46.0.12 latch is module-scoped.
+    GridSearchCV over N hyperparameter sets constructs N iterators; each calls
+    warnings.warn() on its first materialization. The warnings module's default
+    filter coalesces them to a single emission per (message, category, lineno).
+    Uses simplefilter("default") (the real dedup path) rather than "always",
+    which would deliberately defeat the registry and re-fire every time.
     """
-    _reset_module_latches()
+    _reset_cv_warning_state()
     fr = _FakeH2OFrame(n=6)
     kfs = [H2OKFold(fr, n_folds=3, seed=42) for _ in range(3)]
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
+        warnings.simplefilter("default")
         for kf in kfs:
             list(iter(kf))
             list(iter(kf))
@@ -183,7 +188,7 @@ def test_stratified_iter_h2oframes_raises_without_feature_frame():
     the documented sklearn-compat migration path. New behavior: raise loudly unless
     the caller passed fr= at construction time.
     """
-    _reset_module_latches()
+    _reset_cv_warning_state()
     y = _FakeH2OFrame(n=6)
     skf = H2OStratifiedKFold(y, n_folds=3, seed=42)
     skf._fold_column = _FakeFoldColumn()
@@ -198,7 +203,7 @@ def test_stratified_iter_h2oframes_raises_without_feature_frame():
 
 def test_stratified_iter_h2oframes_works_with_feature_frame():
     """When fr= is passed, iter_h2oframes() yields slices of the feature frame."""
-    _reset_module_latches()
+    _reset_cv_warning_state()
     y = _FakeH2OFrame(n=6)
     fr = _FakeH2OFrame(n=6)
     skf = H2OStratifiedKFold(y, n_folds=3, seed=42, fr=fr)
@@ -213,7 +218,7 @@ def test_stratified_iter_h2oframes_works_with_feature_frame():
 
 def test_iter_legacy_yields_masks_with_deprecation_warning():
     """iter_legacy() preserves the pre-3.46.0.12 mask-yielding contract for one release."""
-    _reset_module_latches()
+    _reset_cv_warning_state()
     fr = _FakeH2OFrame(n=6)
     kf = H2OKFold(fr, n_folds=3, seed=42)
     kf._fold_column = _FakeFoldColumn()
@@ -237,7 +242,7 @@ def test_stratified_iter_legacy_works_without_feature_frame():
     NotImplementedError without fr= — crashing the shim for exactly the legacy
     callers it exists for. Masks only need the fold column, not the feature frame.
     """
-    _reset_module_latches()
+    _reset_cv_warning_state()
     y = _FakeH2OFrame(n=6)
     skf = H2OStratifiedKFold(y, n_folds=3, seed=42)
     skf._fold_column = _FakeFoldColumn()
@@ -256,7 +261,7 @@ def test_stratified_iter_legacy_works_without_feature_frame():
 
 def test_fold_assignments_property_deprecation_alias():
     """Old `kf.fold_assignments` attribute is preserved for one release as a deprecation."""
-    _reset_module_latches()
+    _reset_cv_warning_state()
     fr = _FakeH2OFrame(n=6)
     kf = H2OKFold(fr, n_folds=3, seed=42)
     fake = _FakeFoldColumn()

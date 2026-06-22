@@ -14,13 +14,6 @@ import warnings
 # magnitude where a 5-fold split starts pushing > 100MB rapids payloads.
 _LARGE_FRAME_THRESHOLD = 1_000_000
 
-# Process-wide latch for the contract-change FutureWarning. Without this, a
-# GridSearchCV that constructs N iterators emits the same warning N times.
-_CONTRACT_WARN_FIRED = False
-
-# Process-wide latch for the large-frame UserWarning (same rationale).
-_LARGE_FRAME_WARN_FIRED = False
-
 
 class H2OPartitionIterator(object):
     """Base class for cross-validation iterators that emit ``(train_idx, test_idx)``
@@ -111,11 +104,12 @@ class H2OPartitionIterator(object):
         materializes it once. Subclasses normally only need to override
         :meth:`_compute_fold_column` and :meth:`_fold_h2oframe`.
         """
-        global _CONTRACT_WARN_FIRED
         if self._fold_assignment_array is None:
-            if not _CONTRACT_WARN_FIRED:
-                warnings.warn(_CONTRACT_CHANGE_MSG, category=FutureWarning, stacklevel=2)
-                _CONTRACT_WARN_FIRED = True
+            # Fire once per process via the warnings module's own dedup (the default
+            # filter coalesces by message+category+lineno), so a GridSearchCV building
+            # N iterators does not emit N copies. Unlike a module-global latch this
+            # still honors warnings.catch_warnings()/simplefilter() in user code.
+            warnings.warn(_CONTRACT_CHANGE_MSG, category=FutureWarning, stacklevel=2)
             _maybe_warn_large_frame(self.n, n_folds=len(self))
             self._fold_assignment_array = _materialize_fold_column(self._compute_fold_column())
         return self._fold_assignment_array
@@ -179,10 +173,10 @@ def _maybe_warn_large_frame(n, n_folds=5):
     train slice across all folds. Reported as max-per-iteration to keep the
     user-visible number conservative.
     """
-    global _LARGE_FRAME_WARN_FIRED
-    if n > _LARGE_FRAME_THRESHOLD and not _LARGE_FRAME_WARN_FIRED:
+    if n > _LARGE_FRAME_THRESHOLD:
         # Estimate max rapids payload for a single (train, test) yield:
         #   ~10 bytes per int × (n_folds - 1)/n_folds × n bytes
+        # The warnings module dedups identical messages per process (default filter).
         approx_mb = (n_folds - 1) * n * 10 / n_folds / (1024 * 1024)
         warnings.warn(
             "H2OKFold materializing %d-row fold column to driver; expect up to ~%.0fMB "
@@ -192,7 +186,6 @@ def _maybe_warn_large_frame(n, n_folds=5):
             category=UserWarning,
             stacklevel=3,
         )
-        _LARGE_FRAME_WARN_FIRED = True
 
 
 class H2OKFold(H2OPartitionIterator):

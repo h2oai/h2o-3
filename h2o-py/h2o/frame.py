@@ -2160,6 +2160,12 @@ class H2OFrame(Keyed, H2ODisplay):
                 # Bare ndarray means row selection; a 1-D Python list already
                 # means column selection in H2OFrame so we can't fold that path.
                 item = (_np_index_to_list(item), slice(None))
+            elif isinstance(item, _NP_GENERIC):
+                # A bare numpy scalar selects like its Python equivalent, so
+                # fr[np.int64(2)] behaves as fr[2] (column selection). Without this
+                # numpy scalars match no branch below and hit the "Unexpected
+                # __getitem__ selector" ValueError.
+                item = item.item()
             elif isinstance(item, tuple) and len(item) == 2:
                 rows, cols = item
                 if isinstance(rows, _nd):
@@ -5201,6 +5207,7 @@ class H2OFrame(Keyed, H2ODisplay):
 try:
     import numpy as _np_module
     _NP_NDARRAY = _np_module.ndarray
+    _NP_GENERIC = _np_module.generic
 except ImportError:
     # Sentinel type that never matches isinstance; lets callers gate on
     # can_use_numpy() without an extra import in the hot path.
@@ -5208,6 +5215,7 @@ except ImportError:
         pass
     _np_module = None
     _NP_NDARRAY = _NoNumpy
+    _NP_GENERIC = _NoNumpy
 
 
 def _np_index_to_list(arr):

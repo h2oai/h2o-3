@@ -23,8 +23,11 @@ from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
 from h2o.expr_optimizer import optimize
 
-# Resolve numpy once at module load: _to_python_scalar runs for every Rapids
-# argument (per element for list args), so a per-call import is measurable.
+# Resolve numpy's scalar base type once at module load: _to_python_scalar runs for
+# every Rapids argument (per element for list args), so a per-call import is
+# measurable. We cache the `np.generic` *type object* (for the isinstance check)
+# rather than gate on can_use_numpy() — that helper only returns a bool, so using it
+# here would still require importing numpy and reaching `np.generic` on the hot path.
 try:
     import numpy as _np_module
     _NP_GENERIC = _np_module.generic
