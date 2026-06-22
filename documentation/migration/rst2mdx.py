@@ -50,6 +50,13 @@ SOURCE_FIXES = {
         "See `MOJO Quickstart <mojo-quickstart>`_ and `POJO Quickstart <pojo-quickstart>`_ "
         "for step-by-step instructions."
     ),
+    # ec2-and-s3.rst: closing tag typo in XML example
+    "<value>[AWS SESSION TOKEN]<value>": "<value>[AWS SESSION TOKEN]</value>",
+    # google-compute.rst: bare URL with square-bracket placeholder — pandoc
+    # URL-encodes the brackets which confuses Docusaurus's link resolver.
+    "go to https://[External_IP]:54321 to start Flow.": (
+        "go to ``https://[External_IP]:54321`` to start Flow."
+    ),
 }
 
 LANG_LABELS = {
@@ -379,21 +386,30 @@ def convert_indented_code_blocks(md):
             i += 1
             continue
 
-        prev_blank = not out or out[-1].strip() == ""
+        # Treat bare blockquote markers (>, > >, "  >") as blank — they act as
+        # blank-line separators in pandoc's blockquote+indented code output.
+        prev_blank = (
+            not out
+            or out[-1].strip() == ""
+            or re.match(r"^ *(?:> ?)+\s*$", out[-1])
+        )
 
         # Blockquote + indented code: ">     code" — pandoc output for RST ::
-        # blocks inside list items. Convert to fenced block inside blockquote.
-        bq_m = re.match(r"^(> ?)( {4,})(.+)$", line)
+        # blocks inside list items.  Also handles nested blockquotes
+        # ("> >     code") and list-indented variants ("  >     code").
+        bq_m = re.match(r"^( *(?:> ?)+)( {4,})(.+)$", line)
         if prev_blank and bq_m:
             bq = bq_m.group(1)
+            base_indent = len(bq_m.group(2))
             content_lines = [bq_m.group(3)]
             i += 1
             while i < len(lines):
                 l = lines[i]
                 m2 = re.match(r"^" + re.escape(bq) + r"( {4,})(.+)$", l)
-                blank_bq = re.match(r"^" + re.escape(bq) + r"\s*$", l)
+                blank_bq = re.match(r"^" + re.escape(bq.rstrip()) + r"\s*$", l)
                 if m2:
-                    content_lines.append(m2.group(2))
+                    # Preserve relative indentation beyond the base indent
+                    content_lines.append(m2.group(1)[base_indent:] + m2.group(2))
                     i += 1
                 elif blank_bq and i + 1 < len(lines) and re.match(r"^" + re.escape(bq) + r" {4,}", lines[i + 1]):
                     content_lines.append("")
@@ -446,6 +462,21 @@ def convert_indented_code_blocks(md):
     return "\n".join(out)
 
 
+def escape_math_pipes_in_tables(md):
+    """GFM treats | as a cell separator even inside $...$  math on table rows.
+    Replace | inside inline math with \\vert, which KaTeX renders identically."""
+    def _replace_pipe(m):
+        return "$" + re.sub(r"(?<!\\)\|", r"\\vert ", m.group(1)) + "$"
+
+    lines = md.split("\n")
+    out = []
+    for line in lines:
+        if re.match(r"^\s*\|", line):
+            line = re.sub(r"\$([^$\n]+?)\$", _replace_pipe, line)
+        out.append(line)
+    return "\n".join(out)
+
+
 def postprocess_md(md):
     # Drop the .html suffix from internal (relative) links so they resolve as
     # Docusaurus routes (e.g. algo-params/foo.html -> algo-params/foo).
@@ -454,6 +485,8 @@ def postprocess_md(md):
     # Pandoc indented code blocks (4-space) confuse MDX's JSX parser — convert
     # to fenced blocks before anything else reads the output.
     md = convert_indented_code_blocks(md)
+    # GFM table cells: | inside $...$ math splits cell boundaries unexpectedly.
+    md = escape_math_pipes_in_tables(md)
     # Raw HTML attributes must be JSX-safe in MDX.
     md = md.replace(' class="', ' className="')
     # React requires style as an object, not a string.
