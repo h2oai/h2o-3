@@ -9,6 +9,6 @@
     "deploy": "makersaurus deploy"
   },
   "dependencies": {
-    "@h2oai/makersaurus": "0.12.0-beta.4"
+    "@h2oai/makersaurus": "0.12.0"
   }
 }
