@@ -8,7 +8,8 @@ End-to-end tests for the 3.46.0.12 ``H2OFrame.as_data_frame()`` NA-handling chan
   * passing the legacy list restores the pre-3.46.0.12 coercion;
   * the single-thread pandas path and the multi-thread polars path agree on
     NA recognition;
-  * the FutureWarning fires exactly once per process and only for default calls.
+  * the FutureWarning is deduped per call site and only fires for default calls,
+    while still honoring warnings.simplefilter().
 """
 import sys
 
@@ -16,9 +17,6 @@ sys.path.insert(1, "../../")
 import warnings
 
 import h2o
-# note: `h2o.frame` the attribute is the h2o.frame() function (shadows the module),
-# so grab the module's warning latch directly — it's a mutable list, shared by reference.
-from h2o.frame import _AS_DATA_FRAME_NA_DEFAULT_WARNED
 from h2o.utils.shared_utils import can_use_polars, can_use_pyarrow
 from tests import pyunit_utils
 
@@ -38,10 +36,6 @@ def _make_frame():
     return fr
 
 
-def _reset_warning_latch():
-    _AS_DATA_FRAME_NA_DEFAULT_WARNED[0] = False
-
-
 def test_default_preserves_literal_na_levels():
     fr = _make_frame()
     df = fr.as_data_frame(na_values=[""])
@@ -57,7 +51,6 @@ def test_default_preserves_literal_na_levels():
 
 def test_default_value_of_na_values_matches_explicit_empty():
     fr = _make_frame()
-    _reset_warning_latch()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         df_default = fr.as_data_frame()
@@ -93,19 +86,34 @@ def test_polars_path_agrees_on_na_recognition():
         "paths disagree on NA masks for the legacy na_values list"
 
 
-def test_future_warning_fires_once_for_default_calls_only():
+def _na_future_warnings(caught):
+    return [w for w in caught
+            if issubclass(w.category, FutureWarning) and "NA-handling" in str(w.message)]
+
+
+def test_future_warning_deduped_for_default_calls_only():
     fr = _make_frame()
-    _reset_warning_latch()
+    # The "default" action dedups by (message, category, lineno) via the warnings
+    # registry, so repeated default calls from the same call site warn once.
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        fr.as_data_frame()           # default -> should warn (first time)
-        fr.as_data_frame()           # default -> latched, no second warning
+        warnings.simplefilter("default")
+        for _ in range(3):
+            fr.as_data_frame()           # default -> deduped to a single warning
         fr.as_data_frame(na_values=[""])  # explicit -> never warns
-    future = [w for w in caught
-              if issubclass(w.category, FutureWarning) and "NA-handling" in str(w.message)]
+    future = _na_future_warnings(caught)
     assert len(future) == 1, \
         "expected exactly one NA-handling FutureWarning; got %d: %r" \
         % (len(future), [str(w.message) for w in future])
+
+
+def test_future_warning_is_suppressible_via_filter():
+    fr = _make_frame()
+    # Unlike a module-global latch, the warning honors warnings.simplefilter().
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("ignore")
+        fr.as_data_frame()
+    assert _na_future_warnings(caught) == [], \
+        "simplefilter('ignore') must suppress the NA-handling FutureWarning"
 
 
 def as_data_frame_na_values_suite():
@@ -113,7 +121,8 @@ def as_data_frame_na_values_suite():
     test_default_value_of_na_values_matches_explicit_empty()
     test_legacy_na_values_restore_old_coercion()
     test_polars_path_agrees_on_na_recognition()
-    test_future_warning_fires_once_for_default_calls_only()
+    test_future_warning_deduped_for_default_calls_only()
+    test_future_warning_is_suppressible_via_filter()
 
 
 if __name__ == "__main__":

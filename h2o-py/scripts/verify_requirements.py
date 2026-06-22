@@ -177,7 +177,10 @@ def test_module(mod, min_version, installed_modules):
             % (mod, mod, min_version)
         )
 
-    v = max(m.version for m in matching_modules)
+    # Pick the highest installed version numerically (string max would rank
+    # "9.0" above "10.0"); reuse the component parser used for the comparison below.
+    v = max((m.version for m in matching_modules),
+            key=lambda ver: tuple(_component_to_int(x) for x in ver.split(".")))
     for i, vp in enumerate(v.split(".")):
         if i >= len(minv):
             break

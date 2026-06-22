@@ -5241,17 +5241,17 @@ def _np_index_to_list(arr):
 
 
 # Module-load lock for the one-shot as_data_frame() default-NA-handling warning.
-_AS_DATA_FRAME_NA_DEFAULT_WARNED = [False]
-
-
 def _warn_as_data_frame_na_default():
-    """Emit a one-shot FutureWarning the first time as_data_frame() relies on the
-    new default NA semantics. Visible by default (FutureWarning, not DeprecationWarning)
-    so users notice the silent break before observing wrong numbers downstream.
+    """Emit a FutureWarning when as_data_frame() relies on the new default NA
+    semantics. Visible by default (FutureWarning, not DeprecationWarning) so users
+    notice the silent break before observing wrong numbers downstream.
+
+    Deduped per call site by the warnings module's own registry (the default filter
+    coalesces by message+category+lineno), so a loop calling as_data_frame() does not
+    emit N copies. Unlike a module-global latch this still honors
+    warnings.catch_warnings()/simplefilter() in user code -- matching the contract-change
+    warning in cross_validation.py.
     """
-    if _AS_DATA_FRAME_NA_DEFAULT_WARNED[0]:
-        return
-    _AS_DATA_FRAME_NA_DEFAULT_WARNED[0] = True
     warnings.warn(
         "H2OFrame.as_data_frame() NA-handling default changed in 3.46.0.12: "
         "literal strings 'NA', 'NULL', 'NaN', 'None', 'N/A', '#N/A' are no longer "

@@ -131,6 +131,10 @@ Install on Anaconda Cloud
 
 This section describes how to set up and run H2O-3 in an Anaconda Cloud environment. See `which H2O-3 versions are available on Anaconda <https://anaconda.org/h2oai/h2o/files>`__ for the supported Python versions and channel layout.
 
+.. note::
+
+	The conda packages currently target Python 3.7–3.11. If you are running Python 3.12 or newer, install H2O-3 with ``pip`` instead (see the previous section).
+
 Open a terminal window and run the following command to install H2O-3 on the Anaconda Cloud. The H2O-3 version in this command should match the version that you want to download. If you leave the H2O-3 version blank and specify just ``h2o``, then the latest version will be installed. For example: 
       
   .. substitution-code-block:: bash

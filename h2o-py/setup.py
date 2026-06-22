@@ -28,7 +28,7 @@ if _client_via_argv:
 # would otherwise silently build a client wheel from a normal build) is visible.
 if client:
     print("Building CLIENT variant (h2o_client): --client=%s, H2O_PY_CLIENT=%r"
-          % (_client_via_argv, os.getenv("H2O_PY_CLIENT")))
+          % (_client_via_argv, os.getenv("H2O_PY_CLIENT")), file=sys.stderr)
 
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)

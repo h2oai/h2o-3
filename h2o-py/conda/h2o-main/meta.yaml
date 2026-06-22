@@ -12,7 +12,6 @@ requirements:
     - python
     - pip >=9.0.1
     - setuptools
-    - build >=1.2
     - tabulate >=0.7.5
     - requests >=2.10
 
