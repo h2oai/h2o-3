@@ -1,0 +1,46 @@
+---
+title: Telemetry
+---
+
+# Telemetry
+
+H2O-3 Enterprise sends a lightweight usage ping so that H2O can understand which
+components are used and support the product. Telemetry is **enabled by default**.
+This page describes exactly what is sent and how to turn it off.
+
+{/* REVIEW BEFORE PUBLISH: The exact disable mechanism (environment variable
+    and/or launch flag name), the telemetry endpoint hostname, and the precise
+    query parameters must be confirmed with engineering. The telemetry feature
+    is not yet present in this repository, so the names and request shape below
+    are placeholders drawn from the technical plan and must be verified. */}
+
+## What is collected
+
+Each ping is a single HTTP request that records:
+
+- **When**: the time the event occurred.
+- **Who**: the IP address of the host running H2O-3.
+- **What**: the action performed and the component used.
+
+The ping does not include your data, model contents, or dataset values.
+
+A ping looks similar to the following request:
+
+```bash
+wget "telemetry.h2o.ai/h2o-3?ip=<ip-address>&action=<action>&component=<component>"
+```
+
+## How to disable telemetry
+
+You can turn telemetry off in either of the following ways:
+
+- Set the telemetry environment variable before starting H2O-3.
+- Pass the telemetry product flag when you launch H2O-3.
+
+{/* REVIEW BEFORE PUBLISH: replace the two bullets above with the concrete
+    environment-variable name and launch-flag syntax once engineering confirms
+    them, for example:
+    export H2O_TELEMETRY=disabled
+    java -jar h2o.jar -disable_telemetry */}
+
+Once disabled, H2O-3 Enterprise sends no usage pings for that session.

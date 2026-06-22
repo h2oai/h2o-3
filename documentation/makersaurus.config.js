@@ -7,6 +7,7 @@ module.exports = {
   feedbackAssignee: "shaunyogeshwaran", // GitHub username that receives doc-feedback issues
   searchFilter: "h2o-3-enterprise", // Algolia facet — requires registration in the central dev_docs_omnisearch crawler
   onBrokenLinks: "warn", // migration-in-progress: pages cross-link to not-yet-migrated targets; revert to "throw" when complete
+  markdown: { math: true }, // KaTeX for algorithm/math pages — requires makersaurus with h2oai/makersaurus#296
   dependencies: {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
