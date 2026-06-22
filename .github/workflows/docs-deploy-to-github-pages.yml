@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22   # makersaurus 0.12 / Docusaurus 3.10 require Node >= 20
 
       - name: Install dependencies
         run: cd documentation && npm install
