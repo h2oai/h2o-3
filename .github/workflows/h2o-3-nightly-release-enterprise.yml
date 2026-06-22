@@ -481,10 +481,13 @@ jobs:
           node-version: 22
 
       - name: Build Makersaurus Docs
+        env:
+          BRANCH: ${{ needs.init.outputs.branch }}
+          BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
         run: |
+          BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
           cd documentation
-          npm install
-          npm run build
+          BASE_URL="/h2o-e/${BRANCH_SAFE}/${BUILD_NUMBER}/docs/" npm install && npm run build
 
       - name: Configure AWS (Shared Services Prod)
         uses: aws-actions/configure-aws-credentials@v4.0.2

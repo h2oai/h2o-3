@@ -2,7 +2,7 @@ module.exports = {
   title: "H2O-3 Enterprise",
   tagline: "Distributed, scalable machine learning for the enterprise",
   url: "https://docs.h2o.ai",
-  baseUrl: "/h2o-3-enterprise/", // docs.h2o.ai mount path — placeholder, confirm with docs.h2o.ai owners
+  baseUrl: process.env.BASE_URL || "/h2o-3-enterprise/",
   projectName: "h2o-3-enterprise", // GitHub repo name (docs live in documentation/ of this repo)
   feedbackAssignee: "shaunyogeshwaran", // GitHub username that receives doc-feedback issues
   searchFilter: "h2o-3-enterprise", // Algolia facet — requires registration in the central dev_docs_omnisearch crawler
