@@ -462,6 +462,36 @@ def convert_indented_code_blocks(md):
     return "\n".join(out)
 
 
+def convert_html_math_spans(md):
+    """Pandoc emits <span class="math inline">...</span> inside HTML tables.
+    Content may be (a) already $...$ LaTeX or (b) HTML-italic markup like
+    <em>f</em>_<em>link</em>.  Convert both to $...$ for KaTeX, stripping
+    <em>/<sup> so that _ between JSX tags can't start MDX emphasis."""
+    def _to_katex(m):
+        raw = m.group(1)
+        # Case (a): already wrapped in $...$
+        latex_m = re.match(r"^\s*\$(.+)\$\s*$", raw, re.DOTALL)
+        if latex_m:
+            inner = latex_m.group(1).strip()
+            return f"${inner}$"
+        # Case (b): HTML markup — strip <em>, convert <sup>, decode entities
+        text = re.sub(r"<sup>([^<]*)</sup>", r"^{\1}", raw)
+        text = re.sub(r"</?em>", "", text)
+        text = re.sub(r"<[^>]+>", "", text)
+        text = (text.replace("&amp;", "&").replace("&lt;", "<")
+                    .replace("&gt;", ">").replace("&times;", r"\times ")
+                    .replace("×", r"\times ").replace("−", "-")
+                    .replace("∣", "|").replace(" ", " ").strip())
+        return f"${text}$" if text else ""
+
+    return re.sub(
+        r'<span class(?:Name)?="math inline">(.*?)</span>',
+        _to_katex,
+        md,
+        flags=re.DOTALL,
+    )
+
+
 def escape_math_pipes_in_tables(md):
     """GFM treats | as a cell separator even inside $...$  math on table rows.
     Replace | inside inline math with \\vert, which KaTeX renders identically."""
@@ -487,6 +517,9 @@ def postprocess_md(md):
     md = convert_indented_code_blocks(md)
     # GFM table cells: | inside $...$ math splits cell boundaries unexpectedly.
     md = escape_math_pipes_in_tables(md)
+    # Pandoc emits <span class="math inline"> inside HTML tables — convert to
+    # $...$ before class → className so the regex still matches class=.
+    md = convert_html_math_spans(md)
     # Raw HTML attributes must be JSX-safe in MDX.
     md = md.replace(' class="', ' className="')
     # React requires style as an object, not a string.
