@@ -12,6 +12,7 @@ from io import StringIO
 import itertools
 import os
 import re
+import sys
 import tempfile
 from types import FunctionType
 import warnings
@@ -5240,18 +5241,34 @@ def _np_index_to_list(arr):
     return arr.tolist()
 
 
-# Module-load lock for the one-shot as_data_frame() default-NA-handling warning.
+# Call sites that have already been warned about the as_data_frame() default NA change.
+_as_data_frame_na_warned_sites = set()
+
+
 def _warn_as_data_frame_na_default():
     """Emit a FutureWarning when as_data_frame() relies on the new default NA
     semantics. Visible by default (FutureWarning, not DeprecationWarning) so users
     notice the silent break before observing wrong numbers downstream.
 
-    Deduped per call site by the warnings module's own registry (the default filter
-    coalesces by message+category+lineno), so a loop calling as_data_frame() does not
-    emit N copies. Unlike a module-global latch this still honors
-    warnings.catch_warnings()/simplefilter() in user code -- matching the contract-change
-    warning in cross_validation.py.
+    We dedup per call site ourselves rather than relying on the warnings module's
+    registry: as_data_frame() calls pandas.read_csv() right afterwards, and pandas
+    enters warnings.catch_warnings() internally, which bumps the global filter version
+    and clears that registry -- so the registry-based dedup re-fires on every call in a
+    loop. Routing through warnings.warn() still honors warnings.catch_warnings()/
+    simplefilter() in user code, matching the contract-change warning in
+    cross_validation.py.
     """
+    # Attribute the dedup (and the displayed warning, via stacklevel=3) to the user's
+    # as_data_frame() call site: frame 0 is here, frame 1 is as_data_frame, frame 2 the caller.
+    try:
+        caller = sys._getframe(2)
+        site = (caller.f_code.co_filename, caller.f_lineno)
+    except ValueError:
+        site = None
+    if site is not None:
+        if site in _as_data_frame_na_warned_sites:
+            return
+        _as_data_frame_na_warned_sites.add(site)
     warnings.warn(
         "H2OFrame.as_data_frame() NA-handling default changed in 3.46.0.12: "
         "literal strings 'NA', 'NULL', 'NaN', 'None', 'N/A', '#N/A' are no longer "
