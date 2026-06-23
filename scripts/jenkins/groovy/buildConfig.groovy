@@ -57,10 +57,9 @@ class BuildConfig {
   // sync with docker/jenkins-images/Dockerfile-r-base and docker/scripts/build-h2o-3.
   public static final String DEFAULT_PYTHON_VERSION = '3.14'
   public static final List PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
-  // PR builds smoke only oldest, midpoint, and newest supported Python versions
-  // (full PYTHON_VERSIONS x 13 stages otherwise yields ~100 parallel PR stages).
-  // Nightly runs cover the full matrix (a single-node pyunit stage per version).
-  public static final List PR_PYTHON_VERSIONS = ['3.7', '3.11', '3.14']
+  // PR builds smoke every supported Python version (same as the full
+  // PYTHON_VERSIONS matrix). Nightly also covers the full matrix.
+  public static final List PR_PYTHON_VERSIONS = PYTHON_VERSIONS
   // Conda packages are still built with the legacy conda-build 3.21.9 toolchain
   // baked into docker/jenkins-images/Dockerfile-release (Miniconda3-py37). That
   // toolchain predates Python 3.12 and cannot build packages for 3.12+, so conda

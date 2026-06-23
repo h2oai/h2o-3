@@ -1,8 +1,8 @@
 // Needs to be a separate method to prevent the Jenkins Groovy CPS "method too large" error.
 def getPrStages(final pipelineContext){
   // Stages executed after each push to PR branch. The per-Python block is
-  // generated for every version in BuildConfig.PR_PYTHON_VERSIONS (a subset of
-  // PYTHON_VERSIONS) to keep PR turnaround tractable; nightly covers the rest.
+  // generated for every version in BuildConfig.PR_PYTHON_VERSIONS, which now
+  // covers all supported Python versions (the full PYTHON_VERSIONS matrix).
   def buildConfig = pipelineContext.getBuildConfig()
 
   def stages = []
