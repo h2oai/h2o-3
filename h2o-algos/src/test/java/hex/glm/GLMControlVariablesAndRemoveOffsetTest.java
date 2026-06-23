@@ -3480,14 +3480,14 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
 
             double constantProb = derivedProb.at(0);
             assertTrue("Intercept-only derived model must predict a positive probability", constantProb > 0);
-            for (int i = 1; i < predDerived.numRows(); i++) {
+            for (long i = 1; i < predDerived.numRows(); i++) {
                 assertEquals("Derived model with zeroed predictors must predict constant probability",
                         constantProb, derivedProb.at(i), 1e-10);
             }
 
             boolean sourceVaries = false;
             double firstSrcProb = srcProb.at(0);
-            for (int i = 1; i < predSource.numRows(); i++) {
+            for (long i = 1; i < predSource.numRows(); i++) {
                 if (Math.abs(srcProb.at(i) - firstSrcProb) > 1e-10) { sourceVaries = true; break; }
             }
             assertTrue("Source model with fitted numeric predictors must predict varying probabilities", sourceVaries);
