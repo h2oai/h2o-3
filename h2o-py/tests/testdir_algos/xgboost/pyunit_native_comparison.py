@@ -33,50 +33,29 @@ def arlines_test():
 
     assert len(h2o_prediction['p0']) == 5
 
-    # Cross-check against native xgboost when its initialization defaults still
-    # match H2O's bundled xgboost4j 1.6. On Py3.7-3.10 we pin xgboost==1.7.6
-    # (compatible defaults). On Py3.11+ the pinned version is 3.2.0, whose
-    # auto-mean base_score and other tweaks diverge from 1.6.
+    # Cross-check H2O's predictions against native xgboost. We do NOT hand-roll a raw
+    # native param dict (the old approach), because native xgboost 2.0+ auto-computes
+    # base_score from the label mean and tweaks other init defaults, so a hand-built
+    # dict diverges from H2O's bundled xgboost4j 1.6 and forced an xgboost>=2 skip.
     #
-    # TODO(GH-16147): install xgboost 1.7.6 alongside 3.2.0 in the Py3.11+
-    # test images so this cross-check survives the upgrade -- right now Py3.11+
-    # is reduced to an H2O-only determinism sanity check, which is what the
-    # original PR landed.
-    #
-    # Policy note: the pyunit_H2OXGBoost_native_* comparison tests DO run on
-    # xgboost >= 2 — they build native params via
-    # convert_H2OXGBoostParams_2_XGBoostParams, which pins the divergent
-    # defaults (base_score=0.5, resolved tree_method). This test hand-rolls a
-    # raw native param dict instead, so it would have to replicate that pinning
-    # by hand to stay meaningful; skipping until 1.7.6 is co-installed is the
-    # deliberate alternative.
+    # Instead use the documented bridge that the pyunit_PUBDEV_5777 / pyunit_H2OXGBoost_native_*
+    # comparison tests use: convert_H2OXGBoostParams_2_XGBoostParams() reads H2O's resolved
+    # native_parameters and pins base_score=0.5 to reproduce xgboost4j 1.6 behavior, and
+    # convert_H2OFrame_2_DMatrix() reproduces H2O's categorical encoding. This keeps the
+    # value comparison meaningful on every supported xgboost version (1.x and 2.x/3.x), so
+    # no version skip and no co-installed xgboost 1.7.6 are needed.
     import xgboost as xgb
-    xgb_major = int(xgb.__version__.split(".", 1)[0])
-    if xgb_major >= 2:
-        # Native xgboost 2.x changed `base_score` default to auto-compute from the
-        # label mean and tweaked other initialization defaults; predictions no
-        # longer match H2O's bundled xgboost4j 1.6 bit-for-bit. Skipping is the
-        # honest signal — a "train twice and compare" determinism check would
-        # pass even if H2O's xgboost4j broke catastrophically. Re-enable when
-        # xgboost 1.7.6 is installed alongside 3.x in the Py3.11+ test images.
-        print("SKIPPED: native xgboost %s defaults diverge from bundled xgboost4j 1.6"
-              " (see TODO above); install xgboost 1.7.6 to re-enable the cross-check"
-              % xgb.__version__)
-        return
-
-    data = train_frame[['wealthy']].values
-    label = train_frame[['ownsTesla']].values
-    dtrain = xgb.DMatrix(data=data, label=label)
-    watchlist = [(dtrain, 'train')]
-    param = {'eta': 0.7, 'silent': 1, 'objective': 'binary:logistic', 'booster': 'gbtree',
-             'max_depth': 2, 'seed': 1, 'max_delta_step': 0, 'alpha': 0, 'nround': 5}
-    bst = xgb.train(params=param, dtrain=dtrain, num_boost_round=2, evals=watchlist)
-    native_prediction = bst.predict(data=dtrain)
+    native_params, num_boost_round = h2o_model.convert_H2OXGBoostParams_2_XGBoostParams()
+    dmatrix = frame.convert_H2OFrame_2_DMatrix(['ownsTesla'], 'wealthy', h2o_model)
+    bst = xgb.train(params=native_params, dtrain=dmatrix, num_boost_round=num_boost_round)
+    native_prediction = bst.predict(data=dmatrix, iteration_range=(0, num_boost_round))
     print(native_prediction)
     assert len(native_prediction) == 5
 
+    # Native binary:logistic returns P(positive class); with y='wealthy' (factor domain
+    # ["0", "1"]) that is the probability of level "1", i.e. H2O's p1 column.
     for i in range(5):
-        assert round(h2o_prediction['p0'][i, 0], 5) == round(native_prediction[i].item(), 5)
+        assert round(h2o_prediction['p1'][i, 0], 5) == round(native_prediction[i].item(), 5)
 
 
 if __name__ == "__main__":
