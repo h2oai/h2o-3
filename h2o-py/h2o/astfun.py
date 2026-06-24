@@ -437,12 +437,19 @@ def _call_func_var_kw_bc(nargs, idx, ops, keys):
 
 def _call_func_ex_bc(flags, idx, ops, keys):
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_EX
-    # Py3.14 removed the explicit flags arg (i.argval is None on 3.14+);
-    # infer from the stack pattern: PUSH_NULL immediately before CALL_FUNCTION_EX
-    # means no kwargs (flags=0), otherwise the preceding op is the kwargs
-    # construction (flags=1). Anchored to an explicit version check so a future
-    # Python that yields None for a different reason fails loudly instead of
-    # silently taking this branch.
+    # Py3.14 removed the explicit flags arg (i.argval is None on 3.14+), so infer
+    # it from the op immediately preceding CALL_FUNCTION_EX. CALL_FUNCTION_EX has
+    # keyword args (flags & 1) iff a keyword *mapping* was just built on the stack:
+    # BUILD_MAP / BUILD_CONST_KEY_MAP (explicit kwargs alongside a `*` unpack) or
+    # DICT_MERGE / DICT_UPDATE (a `**mapping`). For an args-only call the kwargs
+    # slot is a NULL that may appear either as a standalone PUSH_NULL *or* folded
+    # into the preceding value-load (e.g. LOAD_GLOBAL for a module-global iterable,
+    # which emits no separate PUSH_NULL). Keying on the positive kwargs-map signal
+    # — rather than on a preceding PUSH_NULL — classifies both forms correctly;
+    # a preceding-PUSH_NULL test would mis-flag the LOAD_GLOBAL form as having
+    # kwargs and read the args tuple as **kwargs (GH-16147). Anchored to an
+    # explicit version check so a future Python that yields None for a different
+    # reason fails loudly instead of silently taking this branch.
     if flags is None:
         if sys.version_info < (3, 14):
             raise RuntimeError(
@@ -455,24 +462,22 @@ def _call_func_ex_bc(flags, idx, ops, keys):
                 "cannot infer flags from a preceding op. ops=%r" % (ops,)
             )
         prev_instr, _ = _get_instr(ops, idx)
-        flags = 0 if prev_instr == _PUSH_NULL else 1
+        has_kwargs_map = (
+            prev_instr in ("DICT_MERGE", "DICT_UPDATE")
+            or (prev_instr.startswith("BUILD_") and prev_instr.endswith("MAP"))
+        )
+        flags = 1 if has_kwargs_map else 0
     if flags & 1:
         instr, nargs = _get_instr(ops, idx)
-        if is_builder(instr):  # first instr can be a map builder if we have to unpack kwargs, followed by normal keywords args
-            idx -= 1
-            # load **kwargs
+        if is_builder(instr):
+            # Explicit keyword args alongside a ``*`` unpack (e.g. ``f(*args, k=v)``)
+            # build the kwargs dict directly with BUILD_MAP holding the key/value
+            # pairs. Reading at the builder index dispatches to _build_kwargs, which
+            # consumes the whole map; the old code skipped the builder first and
+            # then read a single value, mis-binding the kwargs (GH-16147).
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
-            # load other keywords args
-            nargs -= 1
-            if nargs > 0:
-                instr, nargs = _get_instr(ops, idx)
-                if is_builder(instr):  # BUILD_MAP identifies the start of explicit keyword args
-                    idx -= 1
-                    while nargs > 0:
-                        val, idx = _opcode_read_arg(idx, ops, keys)
-                        key, idx = _opcode_read_arg(idx, ops, keys)
-                        kwargs[key] = val
-                        nargs -= 1
+            if not isinstance(kwargs, dict):  # defensive: unexpected builder shape
+                kwargs = {}
         elif is_dictionary_merge(instr):
             idx -= 1
             kwargs = dict()
@@ -500,14 +505,36 @@ def _call_func_ex_bc(flags, idx, ops, keys):
     while is_list_to_tuple(instr):
         idx = idx - 1
         instr, nargs = _get_instr(ops, idx)
-    if is_builder(instr) or is_list_extend(instr):
+    if is_list_extend(instr):
+        # Multiple `*` unpacks (e.g. ``f(*a, *b)``) or a `*`-unpack mixed with
+        # explicit positionals are assembled as:
+        #   BUILD_LIST <k explicit>, (LOAD src, LIST_EXTEND)+, [LIST_TO_TUPLE]
+        # Walk the chain right-to-left: splice each source iterable's elements in
+        # source order, then prepend the k explicit leading positionals held by
+        # the base BUILD_LIST. (The old single-loop code read a LIST_EXTEND op as
+        # an arg and raised TypeError — GH-16147.)
+        args = []
+        while is_list_extend(instr):
+            idx -= 1  # skip the LIST_EXTEND op
+            src, idx = _opcode_read_arg(idx, ops, keys)
+            args[0:0] = list(src)
+            instr, nargs = _get_instr(ops, idx)
+        if is_builder(instr):  # base list with any explicit leading positionals
+            idx -= 1
+            while nargs > 0:
+                new_arg, idx = _opcode_read_arg(idx, ops, keys)
+                args.insert(0, new_arg)
+                nargs -= 1
+    elif is_builder(instr):
+        # Inline list/tuple literal in unpack position (e.g. ``f(*[a, b])`` /
+        # ``f(*(a, b))``): BUILD_LIST/BUILD_TUPLE with n elements read one by one.
+        # The old ``insert(0, *new_args)`` spread a scalar element and raised
+        # TypeError (GH-16147).
         idx -= 1
         args = []
-        if is_list_extend(instr):
-            nargs += 1
         while nargs > 0:
-            new_args, idx = _opcode_read_arg(idx, ops, keys)
-            args.insert(0, *new_args)
+            new_arg, idx = _opcode_read_arg(idx, ops, keys)
+            args.insert(0, new_arg)
             nargs -= 1
     else:
         args, idx = _opcode_read_arg(idx, ops, keys)

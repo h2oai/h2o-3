@@ -48,6 +48,28 @@ def _body_of(lam):
     return nodes[3]
 
 
+def _assert_scale_true_false(expr, label):
+    """All matrix cases below call ``x.scale(center=True, scale=False)`` in some
+    syntactic form, so the produced Rapids node must always be the same:
+    ``(scale x True False)`` (child[0] is the frame, [1]=center, [2]=scale)."""
+    assert expr._op == "scale", "%s: op=%r" % (label, expr._op)
+    assert expr._children[1] is True and expr._children[2] is False, \
+        "%s: *args/**kwargs misbound — children=%r" % (label, expr._children)
+
+
+# Module-level (global-scope) iterables. Referenced inside a lambda these load
+# via ``LOAD_GLOBAL`` which, on Py3.14, *folds* the CALL_FUNCTION_EX kwargs-NULL
+# slot into the instruction (no standalone ``PUSH_NULL`` op). That is exactly the
+# shape that breaks a naive "PUSH_NULL precedes CALL_FUNCTION_EX ⇒ no kwargs"
+# heuristic (see C1c). Local/free vars do NOT fold the NULL, so the global path
+# must be tested explicitly — the pre-existing tests only used locals.
+_EX_GLOBAL_ARGS = (True, False)               # -> scale(True, False)
+_EX_GLOBAL_KW = dict(center=True, scale=False)
+_EX_GLOBAL_POS = (True,)                       # center=True positionally
+_EX_GLOBAL_KWREST = dict(scale=False)          # scale=False via **kwargs
+_EX_GLOBAL_REST = (False,)                     # scale=False positionally
+
+
 # ---------- C1 : CALL_KW (Py 3.13+) -----------------------------------------
 
 def test_call_kw_opcode_present_on_py313_plus():
@@ -151,6 +173,160 @@ def test_call_function_ex_star_args_kwargs_binding():
     assert expr._op == "scale", "op=%r" % (expr._op,)
     assert expr._children[1] is True and expr._children[2] is False, \
         "*args+**kwargs misbound: children=%r" % (expr._children,)
+
+
+# ---------- C1c : CALL_FUNCTION_EX with module-GLOBAL unpack (Py3.14 regression) ----
+
+def test_call_function_ex_global_args_null_fold_shape_py314():
+    """Anchor the Py3.14 bytecode shape that defeats the naive flags heuristic.
+
+    On Py3.14 ``CALL_FUNCTION_EX`` lost its explicit ``flags`` operand, so astfun
+    infers it. For ``*GLOBAL_ITERABLE`` the iterable loads via ``LOAD_GLOBAL``,
+    which *itself* pushes the kwargs-NULL slot — there is NO standalone
+    ``PUSH_NULL`` before ``CALL_FUNCTION_EX``. A heuristic keyed on a preceding
+    ``PUSH_NULL`` therefore wrongly concludes "has kwargs" (flags=1). This test
+    pins that shape so a future CPython change is caught loudly.
+    """
+    if sys.version_info < (3, 14):
+        print("SKIP: CALL_FUNCTION_EX kept an explicit flags arg before Py3.14; running on %s"
+              % (sys.version,))
+        return
+    ops = _opnames(lambda x: x.scale(*_EX_GLOBAL_ARGS))
+    i = ops.index("CALL_FUNCTION_EX")
+    assert ops[i - 1] == "LOAD_GLOBAL", (
+        "Expected the global args load (LOAD_GLOBAL, kwargs-NULL folded in) "
+        "immediately before CALL_FUNCTION_EX on Py3.14; got %r (ops=%r)"
+        % (ops[i - 1], ops))
+    assert ops[i - 1] != "PUSH_NULL", (
+        "If the global-args path ever grows a standalone PUSH_NULL the naive "
+        "heuristic would start working by accident; ops=%r" % (ops,))
+    flags_arg = [arg for op, _argval, arg in _instructions_with_arg(lambda x: x.scale(*_EX_GLOBAL_ARGS))
+                 if op == "CALL_FUNCTION_EX"][0]
+    assert flags_arg is None, \
+        "CALL_FUNCTION_EX should carry no flags arg on Py3.14; got %r" % (flags_arg,)
+
+
+def test_call_function_ex_global_star_args():
+    """REGRESSION (GH-16147): ``lambda x: x.scale(*GLOBAL_TUPLE)`` must bind on Py3.14.
+
+    Crashed with ``TypeError: argument after ** must be a mapping`` on Py3.14
+    only: the kwargs-NULL folded into LOAD_GLOBAL made the flags-inference set
+    flags=1, so the args tuple was read as ``**kwargs``. Passed on 3.7-3.13
+    (explicit flags). Server-free.
+    """
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*_EX_GLOBAL_ARGS)), "*GLOBAL_ARGS")
+
+
+def test_call_function_ex_global_star_kwargs():
+    """``**GLOBAL_DICT`` (kwargs-only, global) must bind. prev op is DICT_MERGE
+    on Py3.14 — flags must be inferred as 1."""
+    _assert_scale_true_false(_body_of(lambda x: x.scale(**_EX_GLOBAL_KW)), "**GLOBAL_KW")
+
+
+def test_call_function_ex_global_args_and_kwargs():
+    """Mixed ``*GLOBAL_POS, **GLOBAL_KWREST`` must bind (flags=1, both global)."""
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(*_EX_GLOBAL_POS, **_EX_GLOBAL_KWREST)),
+        "*GLOBAL_POS,**GLOBAL_KWREST")
+
+
+def test_call_function_ex_local_unpack_still_binds():
+    """Control: the local/free-var unpack path (standalone PUSH_NULL) keeps
+    working — the fix must not regress it."""
+    l_args = (True, False)
+    l_kw = dict(center=True, scale=False)
+    l_pos = (True,)
+    l_kwrest = dict(scale=False)
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*l_args)), "*local_args")
+    _assert_scale_true_false(_body_of(lambda x: x.scale(**l_kw)), "**local_kw")
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*l_pos, **l_kwrest)), "*local_pos,**local_kw")
+
+
+def test_call_function_ex_local_global_parity():
+    """The Rapids expression must be byte-identical whether the unpacked iterable
+    is a local/free var or a module global — the asymmetry the NULL-fold caused
+    on Py3.14. This is the cross-scope regression guard."""
+    l_args = (True, False)
+    l_kw = dict(center=True, scale=False)
+    l_pos = (True,)
+    l_kwrest = dict(scale=False)
+    pairs = [
+        (lambda x: x.scale(*l_args),               lambda x: x.scale(*_EX_GLOBAL_ARGS)),
+        (lambda x: x.scale(**l_kw),                lambda x: x.scale(**_EX_GLOBAL_KW)),
+        (lambda x: x.scale(*l_pos, **l_kwrest),    lambda x: x.scale(*_EX_GLOBAL_POS, **_EX_GLOBAL_KWREST)),
+    ]
+    for loc_lam, glob_lam in pairs:
+        loc = _body_of(loc_lam)._get_ast_str()
+        glob = _body_of(glob_lam)._get_ast_str()
+        assert loc == glob, \
+            "local vs global unpack diverged: local=%r global=%r" % (loc, glob)
+
+
+# ---------- C1d : *args + explicit kwarg, and inline-iterable unpack --------
+# These CALL_FUNCTION_EX shapes failed on EVERY supported Python (3.9-3.14) until
+# GH-16147: the consumption logic mis-read an explicit-kwarg BUILD_MAP as a bare
+# scalar, and spread a BUILD_LIST element with ``insert(0, *elem)``. They are
+# independent of the Py3.14 flags-inference (they reproduced under the explicit-
+# flags path too), so they run on all versions with no skip.
+
+def test_call_function_ex_star_args_with_explicit_kwarg_global():
+    """``x.scale(*GLOBAL_POS, scale=False)`` — ``*`` unpack + an explicit kwarg.
+
+    The kwarg compiles to a BUILD_MAP on top of the stack; the old code skipped
+    the builder and read a single value, so ``**kwargs`` received a scalar and
+    raised ``TypeError: argument after ** must be a mapping``.
+    """
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(*_EX_GLOBAL_POS, scale=False)),
+        "*GLOBAL_POS,scale=False")
+
+
+def test_call_function_ex_star_args_with_explicit_kwarg_local():
+    """Same shape with a local/free-var iterable (control for the global case)."""
+    l_pos = (True,)
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(*l_pos, scale=False)),
+        "*local_pos,scale=False")
+
+
+def test_call_function_ex_inline_list_unpack():
+    """``x.scale(*[True, False])`` — inline list literal in unpack position.
+
+    The args iterable is a BUILD_LIST; the old ``args.insert(0, *new_args)``
+    spread a scalar element and raised ``TypeError: ... must be an iterable``.
+    """
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*[True, False])), "*[True,False]")
+
+
+def test_call_function_ex_inline_tuple_unpack():
+    """``x.scale(*(True, False))`` (const tuple) and ``*(a, b)`` (BUILD_TUPLE)."""
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*(True, False))), "*(True,False)")
+    a, b = True, False
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*(a, b))), "*(a,b)")
+
+
+def test_call_function_ex_double_star_unpack():
+    """Two ``*`` unpacks (``x.scale(*a, *b)``) — assembled via BUILD_LIST + chained
+    LIST_EXTEND + LIST_TO_TUPLE. The old code read a LIST_EXTEND op as an argument
+    and raised TypeError; now each source iterable's elements are spliced in order.
+    Covers local/free vars, module globals, and a global + inline-literal mix.
+    """
+    p1, p2 = (True,), (False,)
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*p1, *p2)), "*p1,*p2 (local)")
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*_EX_GLOBAL_POS, *(False,))),
+                             "*GLOBAL_POS,*(False,)")
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*_EX_GLOBAL_POS, *[False])),
+                             "*GLOBAL_POS,*[False]")
+
+
+def test_call_function_ex_explicit_positional_with_star():
+    """Explicit leading positional plus a ``*`` unpack (``x.scale(True, *rest)``).
+    The leading positional lives in the base BUILD_LIST that the LIST_EXTEND chain
+    bottoms out on, and must be prepended ahead of the spliced elements."""
+    rest = (False,)
+    _assert_scale_true_false(_body_of(lambda x: x.scale(True, *rest)), "True,*rest (local)")
+    _assert_scale_true_false(_body_of(lambda x: x.scale(True, *_EX_GLOBAL_REST)),
+                             "True,*GLOBAL_REST")
 
 
 # ---------- C2 : BINARY_OP NB_SUBSCR=26 (Py 3.14+) --------------------------
