@@ -103,7 +103,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null ;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -141,7 +141,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -179,7 +179,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -217,7 +217,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;

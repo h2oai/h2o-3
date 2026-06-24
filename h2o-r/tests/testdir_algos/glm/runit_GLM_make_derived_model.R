@@ -58,7 +58,15 @@ glm_make_derived_model_test <- function() {
                               control_variables = c("PSA"))
 
     assertError(h2o.make_derived_glm_model(prostate_glm_2, remove_offset_effects=TRUE))
-    assertError(h2o.make_derived_glm_model(prostate_glm_2, remove_control_variables_effects=TRUE))
+
+    prostate_glm_3 <- h2o.glm(family = "binomial",
+                              y = response,
+                              training_frame = df,
+                              generate_scoring_history = T,
+                              score_each_iteration = T,
+                              offset_column = "AGE")
+    
+    assertError(h2o.make_derived_glm_model(prostate_glm_3, remove_control_variables_effects=TRUE))
 }
 
 doTest("GLM: Test make derived model", glm_make_derived_model_test)
