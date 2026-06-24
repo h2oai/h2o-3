@@ -87,6 +87,26 @@ def test_classes_array_mixed_int_and_non_int_falls_back_to_strings():
     assert list(arr) == ["1", "x"]
 
 
+def test_classes_array_int_overflow_falls_back_to_strings():
+    # INT64_MAX+1 (2**63) is a *canonical* Python int (it round-trips through
+    # ``int()``), so _is_canonical_int accepts it — but it overflows np.int64.
+    # _classes_array must fall back to a string array rather than crash or
+    # silently wrap the value.
+    big = "9223372036854775808"  # 2**63
+    assert _is_canonical_int(big) is True
+    arr = _classes_array([big, "1"])
+    assert arr.dtype.kind == "U", \
+        "out-of-int64-range labels must stay strings; got dtype %r" % (arr.dtype,)
+    assert list(arr) == [big, "1"]
+
+
+def test_classes_array_int64_max_stays_int():
+    # The exact INT64_MAX boundary still fits and must remain integer-typed.
+    arr = _classes_array(["0", "9223372036854775807"])  # 2**63 - 1
+    assert arr.dtype == np.int64
+    assert list(arr) == [0, 9223372036854775807]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
