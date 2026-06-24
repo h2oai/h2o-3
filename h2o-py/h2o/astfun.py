@@ -165,6 +165,15 @@ def is_build_map(instr):
 def is_builder(instr):
     return instr.startswith('BUILD_')
 
+def is_seq_unpack(instr):  # Py <= 3.8: f(*a, *b) / f(pos, *a) build the args tuple here
+    # Operands are *iterables* to concatenate (explicit positionals are pre-bundled
+    # into a const tuple operand). Replaced by BUILD_LIST + LIST_EXTEND on Py >= 3.9.
+    return instr in ("BUILD_TUPLE_UNPACK_WITH_CALL", "BUILD_TUPLE_UNPACK", "BUILD_LIST_UNPACK")
+
+def is_map_unpack(instr):  # Py <= 3.8: f(**d, k=v) / f(**a, **b) build the kwargs map here
+    # Replaced by BUILD_MAP + DICT_MERGE on Py >= 3.9.
+    return instr in ("BUILD_MAP_UNPACK_WITH_CALL", "BUILD_MAP_UNPACK")
+
 def is_load_fast(instr):
     return "LOAD_FAST" == instr
 
@@ -469,15 +478,31 @@ def _call_func_ex_bc(flags, idx, ops, keys):
         flags = 1 if has_kwargs_map else 0
     if flags & 1:
         instr, nargs = _get_instr(ops, idx)
-        if is_builder(instr):
-            # Explicit keyword args alongside a ``*`` unpack (e.g. ``f(*args, k=v)``)
-            # build the kwargs dict directly with BUILD_MAP holding the key/value
-            # pairs. Reading at the builder index dispatches to _build_kwargs, which
-            # consumes the whole map; the old code skipped the builder first and
-            # then read a single value, mis-binding the kwargs (GH-16147).
+        if is_build_map(instr):
+            # Plain BUILD_MAP holds explicit keyword args alongside a ``*`` unpack
+            # (e.g. ``f(*args, k=v)``). Reading at the builder index dispatches to
+            # _build_kwargs, which consumes the whole map; the old code skipped the
+            # builder first and read a single value, mis-binding kwargs (GH-16147).
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
             if not isinstance(kwargs, dict):  # defensive: unexpected builder shape
                 kwargs = {}
+        elif is_map_unpack(instr):
+            # Py <= 3.8: ``f(**mapping, k=v)`` / ``f(**a, **b)`` build the kwargs via
+            # BUILD_MAP_UNPACK_WITH_CALL — the **mapping is the first (top) operand,
+            # optionally followed by an explicit-keyword BUILD_MAP. (Py >= 3.9 uses
+            # the DICT_MERGE branch below; this branch must stay for 3.7/3.8.)
+            idx -= 1
+            kwargs, idx = _opcode_read_arg(idx, ops, keys)
+            nargs -= 1
+            if nargs > 0:
+                instr, nargs = _get_instr(ops, idx)
+                if is_builder(instr):  # explicit keyword args (BUILD_MAP)
+                    idx -= 1
+                    while nargs > 0:
+                        val, idx = _opcode_read_arg(idx, ops, keys)
+                        key, idx = _opcode_read_arg(idx, ops, keys)
+                        kwargs[key] = val
+                        nargs -= 1
         elif is_dictionary_merge(instr):
             idx -= 1
             kwargs = dict()
@@ -486,7 +511,7 @@ def _call_func_ex_bc(flags, idx, ops, keys):
                 kwargs.update(new_kwargs)
                 nargs -= 1
         else:
-            # load **kwargs
+            # bare **mapping loaded directly (e.g. ``f(**d)``)
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
     else:
         kwargs = {}
@@ -525,6 +550,18 @@ def _call_func_ex_bc(flags, idx, ops, keys):
                 new_arg, idx = _opcode_read_arg(idx, ops, keys)
                 args.insert(0, new_arg)
                 nargs -= 1
+    elif is_seq_unpack(instr):
+        # Py <= 3.8: ``f(*a, *b)`` / ``f(pos, *rest)`` assemble the args tuple via
+        # BUILD_TUPLE_UNPACK_WITH_CALL. Each operand is an *iterable* to concatenate
+        # (explicit leading positionals are pre-bundled into a const-tuple operand),
+        # so spread each operand's elements. (Py >= 3.9 uses LIST_EXTEND above; this
+        # branch must stay for 3.7/3.8, where the previous spread logic lived.)
+        idx -= 1
+        args = []
+        while nargs > 0:
+            src, idx = _opcode_read_arg(idx, ops, keys)
+            args[0:0] = list(src)
+            nargs -= 1
     elif is_builder(instr):
         # Inline list/tuple literal in unpack position (e.g. ``f(*[a, b])`` /
         # ``f(*(a, b))``): BUILD_LIST/BUILD_TUPLE with n elements read one by one.
