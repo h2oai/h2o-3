@@ -8,6 +8,13 @@ module.exports = {
   searchFilter: "h2o-3-enterprise", // Algolia facet — requires registration in the central dev_docs_omnisearch crawler
   onBrokenLinks: "warn", // migration-in-progress: pages cross-link to not-yet-migrated targets; revert to "throw" when complete
   markdown: { math: true }, // KaTeX for algorithm/math pages — requires makersaurus with h2oai/makersaurus#296
+  // Versioning: the live site serves the latest released version only; the
+  // in-progress `docs/` (current) is hidden until cut into a release snapshot.
+  includeCurrentVersion: false,
+  lastVersion: "v3.47.0", // default version served at the site root
+  versions: {
+    "v3.47.0": { label: "v3.47.0", path: "/" },
+  },
   dependencies: {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
