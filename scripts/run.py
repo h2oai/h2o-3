@@ -821,6 +821,11 @@ class Test(object):
             os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
         print("Running test %s against server %s:%s" % (self.test_name, self.ip, self.port))
+        # Flush immediately so the line reaches the console (e.g. Jenkins, where stdout is a
+        # block-buffered pipe) as soon as the test starts. Otherwise a hanging test never
+        # completes, its result line (the only other flush point) never runs, and this line
+        # stays stuck in the buffer -- leaving no record of which test got stuck.
+        sys.stdout.flush()
         self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
         self.pid = self.child.pid
 
