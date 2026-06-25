@@ -23,18 +23,23 @@ from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
 from h2o.expr_optimizer import optimize
 
-# Resolve numpy's scalar base type once at module load: _to_python_scalar runs for
-# every Rapids argument (per element for list args), so a per-call import is
-# measurable. We cache the `np.generic` *type object* (for the isinstance check)
-# rather than gate on can_use_numpy() — that helper only returns a bool, so using it
-# here would still require importing numpy and reaching `np.generic` on the hot path.
+# Resolve numpy's scalar/ndarray base types once at module load: _to_python_scalar
+# runs for every Rapids argument (per element for list args), so a per-call import is
+# measurable. We cache the numpy *type objects* (for isinstance checks) rather than
+# gate on can_use_numpy() — that helper only returns a bool, so using it here would
+# still require importing numpy and reaching the types on the hot path. frame.py
+# imports these names from here (single source of truth) for its numpy-array indexing
+# helpers, so keep _np_module / _NP_GENERIC / _NP_NDARRAY defined in both branches.
 try:
     import numpy as _np_module
     _NP_GENERIC = _np_module.generic
+    _NP_NDARRAY = _np_module.ndarray
 except ImportError:
-    class _NoNumpyGeneric(object):
+    class _NoNumpy(object):
         """Sentinel type that never matches isinstance when numpy is absent."""
-    _NP_GENERIC = _NoNumpyGeneric
+    _np_module = None
+    _NP_GENERIC = _NoNumpy
+    _NP_NDARRAY = _NoNumpy
 
 
 class ExprNode(object):

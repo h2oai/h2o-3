@@ -68,7 +68,9 @@ setup(
 
     keywords='ML Flow, H2O-3',
 
-    python_requires='>=3.8,<3.15',
+    # No upper bound (see h2o-py/setup.py): a hard ceiling would block install on the
+    # next Python release; untested-but-newer versions warn at import time instead.
+    python_requires='>=3.8',
 
     packages=packages,
 

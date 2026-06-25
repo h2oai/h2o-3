@@ -75,7 +75,9 @@ setup(
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
 
-    python_requires='>=3.7,<3.15',
+    # No upper bound (see h2o-py/setup.py): a hard ceiling would block install on the
+    # next Python release; untested-but-newer versions warn at import time instead.
+    python_requires='>=3.7',
 
     packages=packages,
     package_data={"h2o": [

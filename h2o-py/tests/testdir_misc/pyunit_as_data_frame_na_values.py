@@ -116,6 +116,20 @@ def test_future_warning_is_suppressible_via_filter():
         "simplefilter('ignore') must suppress the NA-handling FutureWarning"
 
 
+def test_future_warning_fires_every_call_under_always_filter():
+    fr = _make_frame()
+    # simplefilter("always") means "every time": the per-call-site dedup must NOT
+    # swallow repeated warnings from the same line, or the warnings contract is broken.
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        for _ in range(3):
+            fr.as_data_frame()           # same call site each iteration
+    future = _na_future_warnings(caught)
+    assert len(future) == 3, \
+        "simplefilter('always') must fire on every as_data_frame() call; got %d: %r" \
+        % (len(future), [str(w.message) for w in future])
+
+
 def as_data_frame_na_values_suite():
     test_default_preserves_literal_na_levels()
     test_default_value_of_na_values_matches_explicit_empty()
@@ -123,6 +137,7 @@ def as_data_frame_na_values_suite():
     test_polars_path_agrees_on_na_recognition()
     test_future_warning_deduped_for_default_calls_only()
     test_future_warning_is_suppressible_via_filter()
+    test_future_warning_fires_every_call_under_always_filter()
 
 
 if __name__ == "__main__":

@@ -217,13 +217,16 @@ public class XMLTestReporter extends RunListener {
     // boot test hex.AAA_PreCloudLock, which every node in a multi-node cluster runs)
     // do not race on the same report file and produce a malformed XML that Jenkins
     // refuses to parse with "Content is not allowed in trailing section".
-    FileWriter fw = new FileWriter(
+    // try-with-resources so a TransformerException does not leak the FileWriter and,
+    // worse, leave a half-written report on disk -- the malformed-XML symptom the PID
+    // suffix above is meant to avoid.
+    try (FileWriter fw = new FileWriter(
             reportsDir + File.separator + "TEST-" + currentTestSuiteName + "-" + jvmPid() + ".xml"
-    );
-    StreamResult sr = new StreamResult(fw);
-    DOMSource source = new DOMSource(document);
-    trans.transform(source, sr);
-    fw.close();
+    )) {
+      StreamResult sr = new StreamResult(fw);
+      DOMSource source = new DOMSource(document);
+      trans.transform(source, sr);
+    }
   }
 
   private void startTestCase(Description description) {

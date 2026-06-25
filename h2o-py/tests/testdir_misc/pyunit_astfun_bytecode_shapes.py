@@ -67,6 +67,7 @@ _EX_GLOBAL_ARGS = (True, False)               # -> scale(True, False)
 _EX_GLOBAL_KW = dict(center=True, scale=False)
 _EX_GLOBAL_POS = (True,)                       # center=True positionally
 _EX_GLOBAL_KWREST = dict(scale=False)          # scale=False via **kwargs
+_EX_GLOBAL_KWCENTER = dict(center=True)        # center=True via **kwargs
 _EX_GLOBAL_REST = (False,)                     # scale=False positionally
 
 
@@ -327,6 +328,85 @@ def test_call_function_ex_explicit_positional_with_star():
     _assert_scale_true_false(_body_of(lambda x: x.scale(True, *rest)), "True,*rest (local)")
     _assert_scale_true_false(_body_of(lambda x: x.scale(True, *_EX_GLOBAL_REST)),
                              "True,*GLOBAL_REST")
+
+
+def test_call_function_ex_explicit_positional_after_star():
+    """Explicit *trailing* positional after a ``*`` unpack (``x.scale(*first, False)``).
+
+    On Py 3.9+ the trailing positional is emitted as ``LIST_APPEND`` (one element),
+    distinct from ``LIST_EXTEND`` (spliced iterable). The old code matched neither
+    branch, read the LIST_APPEND op's oparg as an argument, and raised TypeError
+    (GH-16147). The element must be appended after the spliced elements, in order."""
+    first = (True,)
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*first, False)), "*first,False (local)")
+    _assert_scale_true_false(_body_of(lambda x: x.scale(*[True], False)), "*[True],False (inline)")
+    # leading explicit + star + trailing explicit, all in one call
+    mid = ()
+    expr = _body_of(lambda x: x.scale(True, *mid, False))
+    _assert_scale_true_false(expr, "True,*mid,False")
+
+
+# ---------- C1e : multi-source **kwargs merge (BUILD_MAP + DICT_MERGE chain) -
+# On Py 3.9+ multiple ``**`` unpacks (and ``**`` mixed with explicit kwargs) build
+# the kwargs map as a base BUILD_MAP followed by one DICT_MERGE per source. The
+# old consumption loop assumed a *single* DICT_MERGE (``while nargs + 1 > 0``) and
+# fed a DICT_MERGE oparg into ``dict.update`` on any 2-source merge, raising
+# ``TypeError: 'int' object is not iterable``. Two-plus explicit kwargs alongside a
+# ``*`` unpack additionally use BUILD_CONST_KEY_MAP, which the old code never
+# handled (it read the oparg as a bare ``**`` mapping). All reproduce on every
+# Python 3.9-3.14, so no version skip (GH-16147).
+
+def test_call_function_ex_double_kwargs_unpack():
+    """Two ``**`` unpacks (``x.scale(**a, **b)``) — two DICT_MERGE ops. The old
+    fixed-count merge loop crashed here with ``'int' object is not iterable``."""
+    l_center = dict(center=True)
+    l_rest = dict(scale=False)
+    _assert_scale_true_false(_body_of(lambda x: x.scale(**l_center, **l_rest)),
+                             "**local_center,**local_rest")
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(**_EX_GLOBAL_KWCENTER, **_EX_GLOBAL_KWREST)),
+        "**GLOBAL_center,**GLOBAL_rest")
+
+
+def test_call_function_ex_kwargs_unpack_with_explicit_kwarg():
+    """``**`` unpack mixed with a single explicit kwarg, in both orders
+    (``x.scale(**a, k=v)`` and ``x.scale(k=v, **a)``). The explicit kwarg is its
+    own BUILD_MAP that is DICT_MERGEd onto the base — a second merge op."""
+    l_center = dict(center=True)
+    l_rest = dict(scale=False)
+    _assert_scale_true_false(_body_of(lambda x: x.scale(**l_center, scale=False)),
+                             "**local_center,scale=False")
+    _assert_scale_true_false(_body_of(lambda x: x.scale(center=True, **l_rest)),
+                             "center=True,**local_rest")
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(**_EX_GLOBAL_KWCENTER, scale=False)),
+        "**GLOBAL_center,scale=False")
+
+
+def test_call_function_ex_star_args_with_two_explicit_kwargs():
+    """``*`` unpack with 2+ explicit kwargs (``x.scale(*p, center=True, scale=False)``)
+    builds the kwargs via BUILD_CONST_KEY_MAP (not BUILD_MAP). The old code read the
+    BUILD_CONST_KEY_MAP oparg as a bare ``**`` mapping and raised TypeError."""
+    empty = ()
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(*empty, center=True, scale=False)),
+        "*empty,center=True,scale=False")
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(*_EX_GLOBAL_POS, scale=False, center=True)),
+        "*GLOBAL_POS,scale=False,center=True")
+
+
+def test_call_function_ex_kwargs_unpack_with_two_explicit_kwargs():
+    """``**`` unpack with 2+ explicit kwargs (``x.scale(**a, center=True, scale=False)``
+    and the reverse order). The explicit pair is a BUILD_CONST_KEY_MAP merged onto
+    the base map — exercises BUILD_CONST_KEY_MAP inside the DICT_MERGE chain."""
+    l_empty = dict()
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(**l_empty, center=True, scale=False)),
+        "**empty,center=True,scale=False")
+    _assert_scale_true_false(
+        _body_of(lambda x: x.scale(center=True, scale=False, **l_empty)),
+        "center=True,scale=False,**empty")
 
 
 # ---------- C2 : BINARY_OP NB_SUBSCR=26 (Py 3.14+) --------------------------

@@ -90,7 +90,10 @@ setup(
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
 
-    python_requires='>=3.7,<3.15',
+    # No upper bound: a hard ceiling makes already-published wheels uninstallable on
+    # the next Python release until we cut a new one. Untested-but-newer interpreters
+    # are handled at import time by the suppressible UserWarning in h2o/__init__.py.
+    python_requires='>=3.7',
 
     packages=packages,
     package_data={"h2o": [

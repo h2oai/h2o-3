@@ -153,6 +153,9 @@ def is_dictionary_merge(instr): # Py >= 3.9
 def is_list_extend(instr): # Py >= 3.9
     return "LIST_EXTEND" == instr
 
+def is_list_append(instr):  # Py >= 3.9: explicit positional after a `*` unpack, e.g. f(*a, b)
+    return "LIST_APPEND" == instr
+
 def is_list_to_tuple(instr): # Py >= 3.9
     return "LIST_TO_TUPLE" == instr
 
@@ -161,6 +164,9 @@ def is_build_list(instr):
 
 def is_build_map(instr):
     return "BUILD_MAP" == instr
+
+def is_const_key_map(instr):  # Py >= 3.6: explicit kwargs map with 2+ keys, e.g. f(*a, k1=v1, k2=v2)
+    return "BUILD_CONST_KEY_MAP" == instr
 
 def is_builder(instr):
     return instr.startswith('BUILD_')
@@ -342,6 +348,8 @@ def _opcode_read_arg(start_index, ops, keys):
         return _build_args(start_index, ops, keys)
     elif is_build_map(instr):
         return _build_kwargs(start_index, ops, keys)
+    elif is_const_key_map(instr):
+        return _build_const_key_map(start_index, ops, keys)
     return op, return_idx
 
 
@@ -377,6 +385,22 @@ def _build_kwargs(idx, ops, keys):
         kwargs[key] = val
         nargs -= 1
     return kwargs, idx
+
+
+def _build_const_key_map(idx, ops, keys):
+    # BUILD_CONST_KEY_MAP n: a keys-tuple on top of n values, used for explicit
+    # kwargs with 2+ keys (a single kwarg uses BUILD_MAP). The keys-tuple is read
+    # first (top of stack), then the n values are read top-down — i.e. in reverse
+    # key order, so walk the key names in reverse to pair them up.
+    instr, _ = _get_instr(ops, idx)
+    idx -= 1
+    keynames, idx = _opcode_read_arg(idx, ops, keys)  # LOAD_CONST keys-tuple
+    kwargs = dict()
+    for key in reversed(keynames):
+        val, idx = _opcode_read_arg(idx, ops, keys)
+        kwargs[key] = val
+    return kwargs, idx
+
 
 def _call_func_bc(nargs, idx, ops, keys):
     """
@@ -459,6 +483,11 @@ def _call_func_ex_bc(flags, idx, ops, keys):
     # kwargs and read the args tuple as **kwargs (GH-16147). Anchored to an
     # explicit version check so a future Python that yields None for a different
     # reason fails loudly instead of silently taking this branch.
+    #
+    # Known limitation: positionally unpacking a *dict literal* (``f(*{'a': 1})``)
+    # also ends in BUILD_MAP with real flags=0, so this heuristic would misread it
+    # as **kwargs. That form passes dict *keys* as positional args and is never
+    # produced by real H2OFrame lambdas, so it is left unsupported on Py3.14+.
     if flags is None:
         if sys.version_info < (3, 14):
             raise RuntimeError(
@@ -478,11 +507,13 @@ def _call_func_ex_bc(flags, idx, ops, keys):
         flags = 1 if has_kwargs_map else 0
     if flags & 1:
         instr, nargs = _get_instr(ops, idx)
-        if is_build_map(instr):
-            # Plain BUILD_MAP holds explicit keyword args alongside a ``*`` unpack
-            # (e.g. ``f(*args, k=v)``). Reading at the builder index dispatches to
-            # _build_kwargs, which consumes the whole map; the old code skipped the
-            # builder first and read a single value, mis-binding kwargs (GH-16147).
+        if is_build_map(instr) or is_const_key_map(instr):
+            # Explicit keyword args alongside a ``*`` unpack are built as BUILD_MAP
+            # (a single kwarg, e.g. ``f(*args, k=v)``) or BUILD_CONST_KEY_MAP (2+
+            # kwargs, e.g. ``f(*args, k1=v1, k2=v2)``). Reading at the builder index
+            # consumes the whole map; the old code skipped the builder first and read
+            # a single value, mis-binding kwargs (GH-16147), and never handled
+            # BUILD_CONST_KEY_MAP at all (it read the oparg as a bare ** mapping).
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
             if not isinstance(kwargs, dict):  # defensive: unexpected builder shape
                 kwargs = {}
@@ -504,12 +535,36 @@ def _call_func_ex_bc(flags, idx, ops, keys):
                         kwargs[key] = val
                         nargs -= 1
         elif is_dictionary_merge(instr):
-            idx -= 1
+            # Py >= 3.9: ``**`` unpacks (and explicit kwargs sitting alongside them)
+            # are folded onto a base BUILD_MAP via a chain of DICT_MERGE ops, one per
+            # source:
+            #   BUILD_MAP <k explicit>, (LOAD src | BUILD_MAP <k=v>, DICT_MERGE)+
+            # e.g. ``f(**a, **b)`` emits two DICT_MERGE; in ``f(**a, k=v)`` the ``k=v``
+            # group is its own BUILD_MAP that is then DICT_MERGEd. Walk the chain
+            # right-to-left, reading one source dict per DICT_MERGE, then consume the
+            # base BUILD_MAP (which may itself hold explicit leading kwargs as in
+            # ``f(k=v, **a)``). The old fixed-count ``while nargs + 1 > 0`` loop
+            # assumed a single merge and fed a DICT_MERGE oparg into update() on
+            # ``f(**a, **b)`` / ``f(**a, k=v)`` (GH-16147).
+            sources = []
+            while idx >= 0 and is_dictionary_merge(instr):
+                idx -= 1  # skip the DICT_MERGE op
+                src, idx = _opcode_read_arg(idx, ops, keys)
+                sources.append(src)
+                if idx < 0:
+                    break
+                instr, _ = _get_instr(ops, idx)
             kwargs = dict()
-            while nargs + 1 > 0:
-                new_kwargs, idx = _opcode_read_arg(idx, ops, keys)
-                kwargs.update(new_kwargs)
-                nargs -= 1
+            base_instr = _get_instr(ops, idx)[0] if idx >= 0 else None
+            if base_instr is not None and (is_build_map(base_instr) or is_const_key_map(base_instr)):
+                base, idx = _opcode_read_arg(idx, ops, keys)
+                if isinstance(base, dict):
+                    kwargs = base
+            # Sources were collected last-to-first; replay left-to-right so kwarg
+            # insertion order matches the call site.
+            for src in reversed(sources):
+                if isinstance(src, dict):
+                    kwargs.update(src)
         else:
             # bare **mapping loaded directly (e.g. ``f(**d)``)
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
@@ -530,19 +585,21 @@ def _call_func_ex_bc(flags, idx, ops, keys):
     while is_list_to_tuple(instr):
         idx = idx - 1
         instr, nargs = _get_instr(ops, idx)
-    if is_list_extend(instr):
+    if is_list_extend(instr) or is_list_append(instr):
         # Multiple `*` unpacks (e.g. ``f(*a, *b)``) or a `*`-unpack mixed with
         # explicit positionals are assembled as:
-        #   BUILD_LIST <k explicit>, (LOAD src, LIST_EXTEND)+, [LIST_TO_TUPLE]
-        # Walk the chain right-to-left: splice each source iterable's elements in
-        # source order, then prepend the k explicit leading positionals held by
-        # the base BUILD_LIST. (The old single-loop code read a LIST_EXTEND op as
-        # an arg and raised TypeError — GH-16147.)
+        #   BUILD_LIST <k explicit>, (LOAD src, LIST_EXTEND)*, (LOAD x, LIST_APPEND)*, [LIST_TO_TUPLE]
+        # LIST_EXTEND splices an iterable's elements; LIST_APPEND adds one explicit
+        # trailing positional (e.g. ``f(*a, b)``). Walk the chain right-to-left,
+        # then prepend the k explicit leading positionals held by the base
+        # BUILD_LIST. (The old single-loop code read a LIST_EXTEND/LIST_APPEND op
+        # as an arg and raised TypeError — GH-16147.)
         args = []
-        while is_list_extend(instr):
-            idx -= 1  # skip the LIST_EXTEND op
+        while is_list_extend(instr) or is_list_append(instr):
+            appended = is_list_append(instr)
+            idx -= 1  # skip the LIST_EXTEND / LIST_APPEND op
             src, idx = _opcode_read_arg(idx, ops, keys)
-            args[0:0] = list(src)
+            args[0:0] = [src] if appended else list(src)
             instr, nargs = _get_instr(ops, idx)
         if is_builder(instr):  # base list with any explicit leading positionals
             idx -= 1

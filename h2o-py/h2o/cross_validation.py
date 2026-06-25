@@ -16,72 +16,71 @@ _LARGE_FRAME_THRESHOLD = 1_000_000
 
 
 class H2OPartitionIterator(object):
-    """Base class for cross-validation iterators that emit ``(train_idx, test_idx)``
-    as 1-D numpy integer arrays.
+    """Base class for H2O cross-validation iterators.
+
+    Iterating the object directly (``for train, test in kf``) yields the
+    historical ``(train_mask_frame, test_mask_frame)`` H2OFrame boolean masks.
+
+    For scikit-learn use the standard splitter interface :meth:`split` /
+    :meth:`get_n_splits`, which yields ``(train_idx, test_idx)`` as 1-D numpy
+    integer arrays: scikit-learn >= 1.6's ``_safe_indexing`` strict-converts CV
+    splits via ``xp.asarray`` and refuses H2OFrame masks, so the integer-index
+    path is required there. :meth:`split` materializes fold assignments to the
+    Python driver once per iterator instance; for cluster-scale cross-validation
+    prefer H2O's native ``nfolds=`` model parameter (server-side, no driver
+    round-trip) or :meth:`iter_h2oframes`, which yields ``(train_fr, test_fr)``
+    slices without materializing fold indices on the driver.
 
     .. versionchanged:: 3.46.0.12
 
-        Yield contract changed from ``(H2OFrame mask, H2OFrame mask)`` to
-        ``(numpy int array, numpy int array)`` so iterators interoperate with
-        scikit-learn >= 1.6, whose ``_safe_indexing`` strict-converts CV splits
-        via ``xp.asarray`` and refuses H2OFrame masks. Fold assignments are
-        materialized to the Python driver ONCE per iterator instance; for
-        cluster-scale cross-validation prefer H2O's native ``nfolds=`` model
-        parameter (server-side, no driver round-trip) or call
-        :meth:`iter_h2oframes` on this iterator to get the equivalent split as
-        ``(train_h2oframe, test_h2oframe)`` without materializing fold indices
-        on the driver. A one-shot :class:`FutureWarning` is emitted from the
-        first materialization of fold indices so callers that relied on the old
-        H2OFrame yield contract see a clear signal. The legacy mask-yielding
-        iteration is preserved for one release as :meth:`iter_legacy` with a
-        :class:`DeprecationWarning`.
+        Added the scikit-learn splitter interface (:meth:`split`,
+        :meth:`get_n_splits`) and :meth:`iter_h2oframes` so the iterator
+        interoperates with scikit-learn >= 1.6 *without* changing the historical
+        ``__iter__`` H2OFrame-mask contract.
     """
 
     def __init__(self, n):
         if abs(n - int(n)) >= 1e-15: raise ValueError("n must be an integer")
         self.n = int(n)
+        self.masks = None
         self._fold_assignment_array = None
 
     def __iter__(self):
-        """Yield ``(train_indices, test_indices)`` as 1-D numpy integer arrays.
+        """Yield ``(train_mask_frame, test_mask_frame)`` H2OFrame boolean masks.
 
-        See class docstring for the 3.46.0.12 contract change.
+        This is the historical contract (slice the source H2OFrame with the
+        masks). For scikit-learn integer-index splits use :meth:`split`.
+        """
+        for test_mask in self._test_masks():
+            yield 1 - test_mask, test_mask
+
+    def split(self, X=None, y=None, groups=None):
+        """scikit-learn splitter API: yield ``(train_idx, test_idx)`` as 1-D numpy
+        integer arrays.
+
+        ``X``/``y``/``groups`` are accepted for scikit-learn signature
+        compatibility and ignored — fold assignment is computed server-side from
+        the frame/response bound at construction. Fold assignments are
+        materialized to the driver once per iterator instance; for cluster-scale
+        cross-validation prefer H2O's native ``nfolds=`` or :meth:`iter_h2oframes`.
         """
         import numpy as np
         fold_arr = self._fold_assignment_numpy()
         all_idx = np.arange(self.n)
-        for fold_index in range(len(self)):
+        for fold_index in range(self.get_n_splits()):
             test_mask = fold_arr == fold_index
             yield all_idx[~test_mask], all_idx[test_mask]
 
-    def iter_legacy(self):
-        """Yield the pre-3.46.0.12 ``(train_mask_frame, test_mask_frame)`` contract.
-
-        Emits a :class:`DeprecationWarning` on the first call. Provided as a
-        one-release transition shim for callers that indexed back into the
-        source H2OFrame with the yielded masks. Will be removed in a future
-        release; migrate to :meth:`__iter__` (integer indices) or
-        :meth:`iter_h2oframes` (server-side frame splits).
-        """
-        warnings.warn(
-            "H2OKFold.iter_legacy() is a transition shim and will be removed in a future release. "
-            "Use the default iteration (yields numpy int arrays) or iter_h2oframes() instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        fold_col = self._fold_assignment_column()
-        col = fold_col.columns[0]
-        for fold_index in range(len(self)):
-            test_mask = fold_col[col] == fold_index
-            train_mask = fold_col[col] != fold_index
-            yield train_mask, test_mask
+    def get_n_splits(self, X=None, y=None, groups=None):
+        """scikit-learn splitter API: the number of folds. Arguments are ignored."""
+        return len(self)
 
     def iter_h2oframes(self):
         """Yield ``(train_h2oframe, test_h2oframe)`` for each fold, server-side.
 
-        Unlike :meth:`__iter__` (which materializes integer indices to the
-        Python driver to satisfy scikit-learn >= 1.6's strict-indexing contract),
-        this method keeps the fold split inside the H2O cluster. Use it for
+        Unlike :meth:`split` (which materializes integer indices to the Python
+        driver to satisfy scikit-learn >= 1.6's strict-indexing contract), this
+        method keeps the fold split inside the H2O cluster. Use it for
         cluster-scale cross-validation where the driver-materialized integer
         index lists would post multi-GB rapids payloads.
 
@@ -96,6 +95,14 @@ class H2OPartitionIterator(object):
             train = target[fold_col[col] != fold_index, :]
             yield train, test
 
+    def _test_masks(self):
+        """Compute (and cache) the per-fold test masks as H2OFrame boolean columns."""
+        if self.masks is None:
+            fold_col = self._compute_fold_column()
+            col = fold_col.columns[0]
+            self.masks = [fold_col[col] == i for i in range(len(self))]
+        return self.masks
+
     def _fold_assignment_numpy(self):
         """Materialize the fold-assignment column once and cache as a numpy int array.
 
@@ -105,11 +112,6 @@ class H2OPartitionIterator(object):
         :meth:`_compute_fold_column` and :meth:`_fold_h2oframe`.
         """
         if self._fold_assignment_array is None:
-            # Fire once per process via the warnings module's own dedup (the default
-            # filter coalesces by message+category+lineno), so a GridSearchCV building
-            # N iterators does not emit N copies. Unlike a module-global latch this
-            # still honors warnings.catch_warnings()/simplefilter() in user code.
-            warnings.warn(_CONTRACT_CHANGE_MSG, category=FutureWarning, stacklevel=2)
             _maybe_warn_large_frame(self.n, n_folds=len(self))
             self._fold_assignment_array = _materialize_fold_column(self._compute_fold_column())
         return self._fold_assignment_array
@@ -117,9 +119,8 @@ class H2OPartitionIterator(object):
     def _fold_assignment_column(self):
         """Return the (server-side) fold-assignment H2OFrame column.
 
-        Used by :meth:`iter_h2oframes` and :meth:`iter_legacy` to keep splits
-        server-side. Default implementation defers to the subclass-provided
-        :meth:`_compute_fold_column`.
+        Used by :meth:`iter_h2oframes`. Default implementation defers to the
+        subclass-provided :meth:`_compute_fold_column`.
         """
         return self._compute_fold_column()
 
@@ -135,15 +136,6 @@ class H2OPartitionIterator(object):
         raise NotImplementedError()
 
 
-_CONTRACT_CHANGE_MSG = (
-    "H2OKFold/H2OStratifiedKFold yield contract changed in 3.46.0.12: iterators now "
-    "emit (numpy int array, numpy int array) instead of (H2OFrame mask, H2OFrame mask). "
-    "If you indexed back into the H2OFrame with the yielded masks, switch to integer "
-    "indexing, use the new iter_h2oframes() method for server-side splits, or call "
-    "iter_legacy() for a one-release transition shim that yields the old mask contract."
-)
-
-
 def _materialize_fold_column(fold_col):
     """Pull a single H2OFrame column to the driver as a compact numpy integer array.
 
@@ -154,8 +146,8 @@ def _materialize_fold_column(fold_col):
     import numpy as np
     import pandas
     col_name = fold_col.columns[0]
-    # Pass na_values=[""] explicitly so the new as_data_frame NA-default warning
-    # does not fire on every CV iteration. The fold column is integer-typed by
+    # Pass na_values=[""] explicitly so the as_data_frame NA-default warning does
+    # not fire on every CV iteration. The fold column is integer-typed by
     # construction, so the literal "NA"/"NULL"/etc. string warning is noise.
     arr = fold_col.as_data_frame(na_values=[""])[col_name].values
     if pandas.isna(arr).any():
@@ -213,18 +205,7 @@ class H2OKFold(H2OPartitionIterator):
 
     @property
     def fold_assignments(self):
-        """Pre-3.46.0.12 attribute: the fold-assignment H2OFrame column.
-
-        Preserved for one release as a property alias of :meth:`_fold_assignment_column`.
-        New code should call :meth:`__iter__` (yields numpy int arrays) or
-        :meth:`iter_h2oframes` (yields server-side frame splits).
-        """
-        warnings.warn(
-            "H2OKFold.fold_assignments is preserved for one release. "
-            "Use _fold_assignment_column(), iter_h2oframes(), or H2O's native nfolds= parameter instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
+        """The fold-assignment H2OFrame column (computed lazily on the cluster)."""
         return self._compute_fold_column()
 
 
@@ -242,6 +223,13 @@ class H2OStratifiedKFold(H2OPartitionIterator):
     """
     def __init__(self, y, n_folds=3, seed=-1, fr=None):
         H2OPartitionIterator.__init__(self, len(y))
+        # The fold column is built from y but the integer indices / server-side
+        # splits are applied to fr (the feature frame). They must share row count
+        # and order, otherwise iter_h2oframes()/split() silently misalign folds.
+        if fr is not None and len(fr) != len(y):
+            raise ValueError(
+                "H2OStratifiedKFold: fr (%d rows) and y (%d rows) must have the same "
+                "number of rows." % (len(fr), len(y)))
         self.n_folds = n_folds
         self.y = y
         self.fr = fr
@@ -268,11 +256,5 @@ class H2OStratifiedKFold(H2OPartitionIterator):
 
     @property
     def fold_assignments(self):
-        """Pre-3.46.0.12 attribute: the fold-assignment H2OFrame column. See :class:`H2OKFold.fold_assignments`."""
-        warnings.warn(
-            "H2OStratifiedKFold.fold_assignments is preserved for one release. "
-            "Use _fold_assignment_column(), iter_h2oframes(), or H2O's native nfolds= parameter instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
+        """The fold-assignment H2OFrame column (computed lazily on the cluster)."""
         return self._compute_fold_column()

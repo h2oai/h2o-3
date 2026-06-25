@@ -21,9 +21,12 @@ Everything else is checked against it:
   * ``h2o-docs/.../flow/SiteIntro.md``  -- "3.7.x through 3.14.x" support line
 
 Floors are allowed to differ per package (h2o-py-mlflow-flavor intentionally
-requires >=3.8), so sibling packages are only required to share the *ceiling*
-and to be contiguous up to it; the primary h2o-py package must match the
-canonical floor exactly.
+requires >=3.8), so sibling packages are only required to share the classifier
+*ceiling* and to be contiguous up to it; the primary h2o-py package must match the
+canonical floor exactly. ``python_requires`` intentionally carries no upper bound
+(a hard ceiling would make published wheels uninstallable on the next Python until
+re-release; untested-but-newer versions warn at import time via h2o/__init__.py), so
+the ceiling check is only enforced when a package still declares one.
 
 These tests do not require an H2O server connection. They need the full source
 checkout (build config, packaging files, docs); when run from a packaged/stripped
@@ -179,14 +182,17 @@ def test_setup_files_match_canonical():
         pyreq = _PYREQ_RE.search(text)
         assert pyreq, "%s has no python_requires" % pkg
         floor = _PYREQ_FLOOR_RE.search(pyreq.group(1))
-        ceil = _PYREQ_CEIL_RE.search(pyreq.group(1))
         assert floor, "%s python_requires %r has no '>=3.x' floor" % (pkg, pyreq.group(1))
-        assert ceil, "%s python_requires %r has no '<3.x' ceiling" % (pkg, pyreq.group(1))
         assert int(floor.group(1)) == min(cls), \
             "%s python_requires floor >=3.%s != lowest classifier 3.%d" % (pkg, floor.group(1), min(cls))
-        assert int(ceil.group(1)) == hi + 1, \
-            "%s python_requires ceiling <3.%s should be <3.%d (canonical ceiling 3.%d + 1)" \
-            % (pkg, ceil.group(1), hi + 1, hi)
+        # python_requires intentionally has no upper bound (so wheels stay installable
+        # on future Pythons; untested versions warn at import). If a package still
+        # declares one, it must equal the canonical ceiling + 1.
+        ceil = _PYREQ_CEIL_RE.search(pyreq.group(1))
+        if ceil:
+            assert int(ceil.group(1)) == hi + 1, \
+                "%s python_requires ceiling <3.%s should be <3.%d (canonical ceiling 3.%d + 1)" \
+                % (pkg, ceil.group(1), hi + 1, hi)
 
 
 def test_docs_match_canonical():
