@@ -1,0 +1,131 @@
+---
+title: "Downloading logs"
+---
+
+This section describes how to access and download logs.
+
+### Without current jobs
+
+If there are no jobs running:
+
+- In Terminal, enter `cd /tmp/h2o-<UserName>/h2ologs` (where `<UserName>` is your computer user name), then enter `ls -l` to view a list of the log files.
+
+  The `httpd` log contains the request/response status of all REST API transactions. The rest of the logs use the format `h2o_<IPaddress>_<Port>-<LogLevel>-<LogLevelName>.log`, where:
+
+  - `<IPaddress>` is the bind address of the H2O instance
+  - `<Port>` is the port number
+  - `<LogLevel>` is the numerical log level (1-6, with 6 as the highest severity level)
+  - `<LogLevelName>` is the name of the log level (trace, debug, info, warn, error, or fatal).
+
+------------------------------------------------------------------------
+
+### With current jobs
+
+If your job is still running:
+
+- Go to the H2O web UI and select **Admin** \> **Inspect Log** or go to [http://localhost:54321/LogView.html](http://localhost:54321/LogView.html).
+
+  To download the logs, click the **Download Logs** button.
+
+  When you view the log, the output displays the location of log directory after `Log dir:` (as shown in the last line in the following example):
+
+>     05-06 17:12:15.610 172.16.2.179:54321    26336  main      INFO: ----- H2O started  -----
+>     05-06 17:12:15.731 172.16.2.179:54321    26336  main      INFO: Build git branch: master
+>     05-06 17:12:15.731 172.16.2.179:54321    26336  main      INFO: Build git hash: 41d039196088df081ad77610d3e2d6550868f11b
+>     05-06 17:12:15.731 172.16.2.179:54321    26336  main      INFO: Build git describe: jenkins-master-1187
+>     05-06 17:12:15.732 172.16.2.179:54321    26336  main      INFO: Build project version: 0.3.0.1187
+>     05-06 17:12:15.732 172.16.2.179:54321    26336  main      INFO: Built by: 'jenkins'
+>     05-06 17:12:15.732 172.16.2.179:54321    26336  main      INFO: Built on: '2015-05-05 23:31:12'
+>     05-06 17:12:15.732 172.16.2.179:54321    26336  main      INFO: Java availableProcessors: 8
+>     05-06 17:12:15.732 172.16.2.179:54321    26336  main      INFO: Java heap totalMemory: 982.0 MB
+>     05-06 17:12:15.732 172.16.2.179:54321    26336  main      INFO: Java heap maxMemory: 982.0 MB
+>     05-06 17:12:15.732 172.16.2.179:54321    26336  main      INFO: Java version: Java 1.7.0_80 (from Oracle Corporation)
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: OS   version: Linux 3.13.0-51-generic (amd64)
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: Machine physical memory: 31.30 GB
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: X-h2o-cluster-id: 1430957535344
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: Possible IP Address: virbr0 (virbr0), 192.168.122.1
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: Possible IP Address: br0 (br0), 172.16.2.179
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: Possible IP Address: lo (lo), 127.0.0.1
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: Multiple local IPs detected:
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO:   /192.168.122.1  /172.16.2.179
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: Attempting to determine correct address...
+>     05-06 17:12:15.733 172.16.2.179:54321    26336  main      INFO: Using /172.16.2.179
+>     05-06 17:12:15.734 172.16.2.179:54321    26336  main      INFO: Internal communication uses port: 54322
+>     05-06 17:12:15.734 172.16.2.179:54321    26336  main      INFO: Listening for HTTP and REST traffic on  http://172.16.2.179:54321/
+>     05-06 17:12:15.744 172.16.2.179:54321    26336  main      INFO: H2O cloud name: 'H2O_29570' on /172.16.2.179:54321, discovery address /237.61.246.13:60733
+>     05-06 17:12:15.979 172.16.2.179:54321    26336  main      INFO: Log dir: '/tmp/h2o-jessica/h2ologs'
+
+------------------------------------------------------------------------
+
+### Logging in R
+
+To view the REST API logs from R:
+
+> 1.  In R, enter `h2o.startLogging()`. The output displays the location of the REST API logs:
+>
+> >     > h2o.startLogging()
+> >     Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
+>
+> 2.  Copy the displayed file path. In Terminal, enter `less` and paste the file path.
+> 3.  Press Enter. A time-stamped log of all REST API transactions displays.
+>
+> >     ------------------------------------------------------------
+> >
+> >     Time:     2015-01-06 15:46:11.083
+> >
+> >     GET       http://172.16.2.20:54321/3/Cloud.json
+> >     postBody: 
+> >
+> >     curlError:         FALSE
+> >     curlErrorMessage:  
+> >     httpStatusCode:    200
+> >     httpStatusMessage: OK
+> >     millis:            3
+> >
+> >     \{"__meta":\{"schema_version":    1,"schema_name":"CloudV1","schema_type":"Iced"\},"version":"0.1.17.1009","cloud_name":...[truncated]\}
+> >     -------------------------------------------------------------
+
+To download the logs using R:
+
+> In R, enter the command `h2o.downloadAllLogs(filename = "logs.zip")`, where `filename` is the specified filename for the logs. Note that you must include the .zip extension.
+
+### Logging in Python
+
+To download the logs using Python:
+
+> In Python, enter the command `h2o.download_all_logs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')`, where `autoh2o_log.zip` will download to a folder that is one down from where you are currently working into a directory called `your_directory_name`. Please note that `your_directory_name` should be replaced with the name of a directory that you've created and that already exists.
+
+------------------------------------------------------------------------
+
+## Log file structure
+
+After you unzip the logs, you will see a number of log files (example below), of different severity levels. The different levels log different types of events as follows:
+
+1.  trace: fine grained information about the running processes
+2.  debug: information that's helpful for debugging
+3.  info: general information about the jobs run H2O cluster (data, modeling, etc.)
+4.  warn: indications of potential issues in your code
+5.  error: errors while running H2O jobs -- these should be addressed in your code
+6.  fatal: only used if the H2O cluster crashes -- you will need to restart H2O
+
+The various log files are separated into different pieces (for example, file suffix .1, .2, .3) by their age. `.log` is the current log being written into, while `log.1` is the one before, `log.2` is older still, and so on. Each time `.log` reaches a certain size, it is renamed to `log.1`, and `log.1` is renamed to `log.2`, etc.
+
+>     -rw-r--r-- 1 ledell ledell    0 Feb  2 09:42 h2o_127.0.0.1_16537-6-fatal.log
+>     -rw-r--r-- 1 ledell ledell    0 Feb  2 09:42 h2o_127.0.0.1_16537-5-error.log
+>     -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:23  h2o_127.0.0.1_16537-3-info.log.3
+>     -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:23 h2o_127.0.0.1_16537-2-debug.log.3
+>     -rw-r--r-- 1 ledell ledell 1.1M Feb  2 10:30 h2o_127.0.0.1_16537-httpd.log.3
+>     -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:35 h2o_127.0.0.1_16537-3-info.log.2
+>     -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:35 h2o_127.0.0.1_16537-2-debug.log.2
+>     -rw-r--r-- 1 ledell ledell 1.1M Feb  2 10:41 h2o_127.0.0.1_16537-1-trace.log.3
+>     -rw-r--r-- 1 ledell ledell 1.1M Feb  2 10:54 h2o_127.0.0.1_16537-httpd.log.2
+>     -rw-r--r-- 1 ledell ledell 1.1M Feb  2 11:18 h2o_127.0.0.1_16537-1-trace.log.2
+>     -rw-r--r-- 1 ledell ledell 1.1M Feb  2 11:50 h2o_127.0.0.1_16537-httpd.log.1
+>     -rw-r--r-- 1 ledell ledell 3.1M Feb  2 12:33 h2o_127.0.0.1_16537-3-info.log.1
+>     -rw-r--r-- 1 ledell ledell 3.1M Feb  2 12:33 h2o_127.0.0.1_16537-2-debug.log.1
+>     -rw-r--r-- 1 ledell ledell 1.1M Feb  2 12:33 h2o_127.0.0.1_16537-1-trace.log.1
+>     -rw-r--r-- 1 ledell ledell 903K Feb  2 12:39 h2o_127.0.0.1_16537-httpd.log
+>     -rw-r--r-- 1 ledell ledell  39K Feb  2 12:39 h2o_127.0.0.1_16537-4-warn.log
+>     -rw-r--r-- 1 ledell ledell 286K Feb  2 12:39 h2o_127.0.0.1_16537-3-info.log
+>     -rw-r--r-- 1 ledell ledell 286K Feb  2 12:39 h2o_127.0.0.1_16537-2-debug.log
+>     -rw-r--r-- 1 ledell ledell 285K Feb  2 12:39 h2o_127.0.0.1_16537-1-trace.log
