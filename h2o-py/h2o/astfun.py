@@ -518,22 +518,25 @@ def _call_func_ex_bc(flags, idx, ops, keys):
             if not isinstance(kwargs, dict):  # defensive: unexpected builder shape
                 kwargs = {}
         elif is_map_unpack(instr):
-            # Py <= 3.8: ``f(**mapping, k=v)`` / ``f(**a, **b)`` build the kwargs via
-            # BUILD_MAP_UNPACK_WITH_CALL — the **mapping is the first (top) operand,
-            # optionally followed by an explicit-keyword BUILD_MAP. (Py >= 3.9 uses
-            # the DICT_MERGE branch below; this branch must stay for 3.7/3.8.)
-            idx -= 1
-            kwargs, idx = _opcode_read_arg(idx, ops, keys)
-            nargs -= 1
-            if nargs > 0:
-                instr, nargs = _get_instr(ops, idx)
-                if is_builder(instr):  # explicit keyword args (BUILD_MAP)
-                    idx -= 1
-                    while nargs > 0:
-                        val, idx = _opcode_read_arg(idx, ops, keys)
-                        key, idx = _opcode_read_arg(idx, ops, keys)
-                        kwargs[key] = val
-                        nargs -= 1
+            # Py <= 3.8: ``f(**a, **b)`` / ``f(**mapping, k=v)`` build the kwargs via
+            # BUILD_MAP_UNPACK_WITH_CALL n, which pops and merges n mappings. Each
+            # operand is itself a mapping — a loaded ``**mapping`` (LOAD ...), an
+            # explicit-kwarg BUILD_MAP, or a BUILD_CONST_KEY_MAP — so read all n and
+            # merge them. The old code read only the top operand plus an optional
+            # trailing builder, silently dropping a second ``**`` unpack on 3.7/3.8
+            # (the analogue of the DICT_MERGE bug fixed below for Py >= 3.9, GH-16147).
+            idx -= 1  # skip the BUILD_MAP_UNPACK_WITH_CALL op
+            sources = []
+            while nargs > 0:
+                src, idx = _opcode_read_arg(idx, ops, keys)
+                sources.append(src)
+                nargs -= 1
+            kwargs = dict()
+            # Operands were read last-to-first; replay left-to-right so kwarg
+            # insertion order matches the call site.
+            for src in reversed(sources):
+                if isinstance(src, dict):
+                    kwargs.update(src)
         elif is_dictionary_merge(instr):
             # Py >= 3.9: ``**`` unpacks (and explicit kwargs sitting alongside them)
             # are folded onto a base BUILD_MAP via a chain of DICT_MERGE ops, one per
