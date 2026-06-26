@@ -1,5 +1,11 @@
 ARG FROM_VERSION
-FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.14:${FROM_VERSION}
+# This image is the base for the release/build chain (dev-r-base -> dev-r-4.5.2 ->
+# dev-build-base -> dev-build-hadoop), which builds the docs via make-dist.sh ->
+# sphinx-build. The pinned sphinx==3.0.4 cannot run on Python >=3.13 (epub3 builder
+# imports imghdr, removed from the stdlib in 3.13), so this single bundled env must be
+# the newest Python that still has imghdr. Keep in sync with Jenkinsfile-Release's
+# env.PYTHON_VERSION. Bump back to 3.14 once docs-requirements.txt is modernized.
+FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.12:${FROM_VERSION}
 
 # Prepare packages to be able to build R from sources
 RUN \
