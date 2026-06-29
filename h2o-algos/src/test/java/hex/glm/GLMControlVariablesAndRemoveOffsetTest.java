@@ -2908,6 +2908,19 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertNotNull(unrestrictedHp);
             Scope.track(unrestrictedHp);
 
+            // Per-fold unrestricted predictions: non-null array of length nfolds, each key points to an existing frame.
+            Key<Frame>[] perFoldUnrestricted = glm._output._cross_validation_predictions_unrestricted_model;
+            assertNotNull("Per-fold unrestricted CV predictions must be non-null when keep_cross_validation_predictions=true",
+                    perFoldUnrestricted);
+            assertEquals("Per-fold unrestricted predictions array length must equal nfolds",
+                    3, perFoldUnrestricted.length);
+            for (int i = 0; i < perFoldUnrestricted.length; i++) {
+                assertNotNull("Per-fold unrestricted key[" + i + "] must not be null", perFoldUnrestricted[i]);
+                Frame foldFrame = DKV.getGet(perFoldUnrestricted[i]);
+                assertNotNull("Per-fold unrestricted frame[" + i + "] must exist in DKV", foldFrame);
+                Scope.track(foldFrame);
+            }
+
             // Schema round-trip: Weaver auto-mapping bridges impl `_field` to schema `field`.
             GLMModelV3 schema = new GLMModelV3();
             schema.fillFromImpl(glm);
@@ -2916,8 +2929,12 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertNotNull(schema.output.cross_validation_metrics_summary_unrestricted_model);
             assertNotNull(schema.output.cross_validation_holdout_predictions_frame_id_unrestricted_model);
             assertTrue(schema.output.cross_validation_metrics_unrestricted_model instanceof ModelMetricsBaseV3);
+            assertNotNull("Schema must expose per-fold unrestricted predictions",
+                    schema.output.cross_validation_predictions_unrestricted_model);
+            assertEquals("Schema per-fold unrestricted predictions length must equal nfolds",
+                    3, schema.output.cross_validation_predictions_unrestricted_model.length);
 
-            // Regression guard: remove_offset_effects=false → all three new fields null.
+            // Regression guard: remove_offset_effects=false → all unrestricted fields null.
             trainNoROE = makeBinomialOffsetFrame("test04_unrestricted_cv_metrics_no_roe");
             GLMModel.GLMParameters paramsNoROE = new GLMModel.GLMParameters();
             paramsNoROE._train = trainNoROE._key;
@@ -2938,6 +2955,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertNull(glmNoROE._output._cross_validation_metrics_unrestricted_model);
             assertNull(glmNoROE._output._cross_validation_metrics_summary_unrestricted_model);
             assertNull(glmNoROE._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            assertNull("Per-fold unrestricted predictions must be null when remove_offset_effects=false",
+                    glmNoROE._output._cross_validation_predictions_unrestricted_model);
         } finally {
             if (train != null) train.remove();
             if (trainNoROE != null) trainNoROE.remove();
@@ -2995,6 +3014,10 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             double unrestrictedMean = ((Number) unrestrictedSummary.get(unrestrictedRow, 0)).doubleValue();
             assertNotEquals("Restricted and unrestricted summary means must differ when offset is non-zero",
                     restrictedMean, unrestrictedMean, 1e-10);
+
+            // Per-fold unrestricted predictions must be null when keep_cross_validation_predictions is not set.
+            assertNull("Per-fold unrestricted predictions must be null when keep_cross_validation_predictions=false",
+                    glm._output._cross_validation_predictions_unrestricted_model);
         } finally {
             if (train != null) train.remove();
             Scope.exit();

@@ -95,6 +95,10 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
          direction=API.Direction.OUTPUT, level=API.Level.expert)
     public KeyV3.FrameKeyV3 cross_validation_holdout_predictions_frame_id_unrestricted_model;
 
+    @API(help="Per-fold CV predictions (offset preserved), one per CV model; populated when remove_offset_effects=true and keep_cross_validation_predictions=true.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public KeyV3.FrameKeyV3[] cross_validation_predictions_unrestricted_model;
+
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet
