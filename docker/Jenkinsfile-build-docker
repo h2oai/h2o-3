@@ -38,7 +38,7 @@ def unstashDockerImage(image) {
 
 def stashDockerImages(target){
 	if (!params.publish) {  // when publish this is noop since we can retrieve the image from registry
-		toPersist = ["dev-base", "dev-jdk-8-base", "dev-jdk-others-base", "dev-python-3.14", "dev-r-4.5.2",
+		toPersist = ["dev-base", "dev-jdk-8-base", "dev-jdk-others-base", "dev-python-3.12", "dev-r-4.5.2",
 					 "dev-build-base", "dev-build-hadoop", "dev-python-base", "dev-r-base"]
 		if (toPersist.contains(target)) {
 			stashDockerImage(target)
@@ -58,7 +58,7 @@ def unstashDockerImages(target){
 				break
 			case 'dev-r-base':
 			case 'dev-mojocompat':
-				unstashDockerImage("dev-python-3.14")
+				unstashDockerImage("dev-python-3.12")
 				break
 			case 'dev-build-base':
 				unstashDockerImage("dev-r-4.5.2")
