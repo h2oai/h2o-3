@@ -17,13 +17,7 @@ try {
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
-                // Docs are built here via make-dist.sh -> sphinx-build. The pinned
-                // sphinx==3.0.4 cannot run on Python >=3.13 (its epub3 builder imports
-                // imghdr, removed from the stdlib in 3.13). The release wheel is
-                // py3-none-any so the build interpreter is irrelevant to the artifact;
-                // pin to the newest Python that still has imghdr until docs-requirements
-                // is modernized. Conda packaging is capped separately (CONDA_PYTHON_VERSIONS).
-                env.PYTHON_VERSION = '3.12'
+                env.PYTHON_VERSION = '3.14'
                 env.R_VERSION = '3.4.1'
 
                 sh 'printenv | sort'
