@@ -1720,6 +1720,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public ModelMetrics _cross_validation_metrics_unrestricted_model;
     public TwoDimTable _cross_validation_metrics_summary_unrestricted_model;
     public Key<Frame> _cross_validation_holdout_predictions_frame_id_unrestricted_model;
+    // Per-fold unrestricted holdout predictions; non-null only when keep_cross_validation_predictions=true.
+    public Key<Frame>[] _cross_validation_predictions_unrestricted_model;
 
     // Other two restricted models is produced when control variables and remove offset features are used together
     // Output for restricted model where control variables feature is enabled
@@ -2564,6 +2566,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public void deleteCrossValidationPreds() {
       super.deleteCrossValidationPreds();
       GLMOutput out = (GLMOutput) _output;
+      // Per-fold unrestricted predictions — non-null only when keep_cross_validation_predictions=true.
+      if (out._cross_validation_predictions_unrestricted_model != null) {
+          int count = Model.deleteAll(out._cross_validation_predictions_unrestricted_model);
+          if (count > 0) Log.info(count + " per-fold unrestricted CV predictions were removed");
+      }
       Keyed.remove(out._cross_validation_holdout_predictions_frame_id_unrestricted_model);
       if (out._cross_validation_metrics_unrestricted_model != null)
           Keyed.remove(out._cross_validation_metrics_unrestricted_model._key);

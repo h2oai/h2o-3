@@ -523,8 +523,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     GLMModel mainModel = _result.get();
 
-    // Combine per-fold unrestricted preds into one frame, then drop the per-fold sources
-    // (intermediates; not user-facing).
+    // Combine per-fold unrestricted preds into one frame; keep per-fold frames when
+    // keep_cross_validation_predictions=true (mirrors super), otherwise drop them.
     Frame unrestrictedHoldoutPreds = null;
     if (_parms._keep_cross_validation_predictions
         || nclasses() == 2
@@ -542,8 +542,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Key<Frame>[] nonNullArr = nonNull.toArray(new Key[0]);
         unrestrictedHoldoutPreds = combineHoldoutPredictions(nonNullArr, cvhpUn);
       }
-      int removed = Model.deleteAll(_cv_predKeys_unrestricted);
-      if (removed > 0) Log.info(removed + " per-fold unrestricted CV predictions were removed");
+      if (_parms._keep_cross_validation_predictions) {
+        // Mirror super: store per-fold unrestricted keys in output and untrack frames from scope.
+        mainModel._output._cross_validation_predictions_unrestricted_model = _cv_predKeys_unrestricted;
+        for (Key<Frame> k : _cv_predKeys_unrestricted) {
+          if (k != null) {
+            Frame fr = DKV.getGet(k);
+            if (fr != null) Scope.untrack(fr);
+          }
+        }
+      } else {
+        int removed = Model.deleteAll(_cv_predKeys_unrestricted);
+        if (removed > 0) Log.info(removed + " per-fold unrestricted CV predictions were removed");
+      }
     }
 
     // Order matters: cv_makeAggregateModelMetrics reduces [1..N-1] into [0] in place and is
