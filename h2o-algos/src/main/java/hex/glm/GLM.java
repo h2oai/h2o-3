@@ -560,10 +560,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     // Order matters: cv_makeAggregateModelMetrics reduces [1..N-1] into [0] in place and is
     // NOT idempotent; it must run before makeModelMetrics consumes [0].
     cv_makeAggregateModelMetrics(_cv_mbs_unrestricted);
-    mainModel._output._cross_validation_metrics_unrestricted_model =
+    ModelMetrics unrestrictedCvMM =
         _cv_mbs_unrestricted[0].makeModelMetrics(mainModel, _parms.train(), null, unrestrictedHoldoutPreds);
-    mainModel._output._cross_validation_metrics_unrestricted_model._description =
+    // makeModelMetrics auto-stored unrestrictedCvMM at the same DKV key as the restricted CV metrics
+    // (same model + frame → same ModelMetrics.buildKey result), overwriting restricted in DKV.
+    // Fix: move unrestricted to a unique key so restricted stays at the natural lookup key.
+    Key<ModelMetrics> collisionKey = unrestrictedCvMM._key;
+    unrestrictedCvMM._key = Key.make(collisionKey + "_unrestricted");
+    mainModel.addModelMetrics(unrestrictedCvMM);        // stores at new key, registers in _model_metrics
+    DKV.put(collisionKey, mainModel._output._cross_validation_metrics); // restore restricted at natural key
+    unrestrictedCvMM._description =
         N + "-fold cross-validation on training data (with offset preserved; unrestricted view)";
+    mainModel._output._cross_validation_metrics_unrestricted_model = unrestrictedCvMM;
 
     if (unrestrictedHoldoutPreds != null) {
       if (_parms._keep_cross_validation_predictions) {
