@@ -996,7 +996,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (fr != null) Scope.untrack(fr);
       }
     } else {
-      int count = Model.deleteAll(predKeys);
+      int count = Keyed.removeAll(predKeys);
       Log.info(count+" CV predictions were removed");
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
@@ -1035,7 +1035,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (!_parms._keep_cross_validation_models) {
-      int count = Model.deleteAll(cvModKeys);
+      int count = Keyed.removeAll(cvModKeys);
       Log.info(count+" CV models were removed");
     }
 
