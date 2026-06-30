@@ -2568,7 +2568,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       GLMOutput out = (GLMOutput) _output;
       // Per-fold unrestricted predictions — non-null only when keep_cross_validation_predictions=true.
       if (out._cross_validation_predictions_unrestricted_model != null) {
-          int count = Model.deleteAll(out._cross_validation_predictions_unrestricted_model);
+          int count = Keyed.removeAll(out._cross_validation_predictions_unrestricted_model);
           if (count > 0) Log.info(count + " per-fold unrestricted CV predictions were removed");
       }
       Keyed.remove(out._cross_validation_holdout_predictions_frame_id_unrestricted_model);

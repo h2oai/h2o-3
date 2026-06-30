@@ -552,7 +552,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
       } else {
-        int removed = Model.deleteAll(_cv_predKeys_unrestricted);
+        int removed = Keyed.removeAll(_cv_predKeys_unrestricted);
         if (removed > 0) Log.info(removed + " per-fold unrestricted CV predictions were removed");
       }
     }
