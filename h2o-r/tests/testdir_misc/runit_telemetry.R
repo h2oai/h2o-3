@@ -78,6 +78,31 @@ test.telemetry <- function() {
   check(any(grepl("anonymous usage telemetry", first)), "notice printed on first run")
   check(length(second) == 0L, "notice not repeated on second run (marker honored)")
 
+  # Persistent opt-out: h2o.set_telemetry writes ~/.h2oai/telemetry (kept in sync with Python).
+  pref <- file.path(tmp_home, ".h2oai", "telemetry")
+  check(isTRUE(h2o::h2o.set_telemetry(FALSE)), "set_telemetry(FALSE) persisted to disk")
+  check(identical(readLines(pref, warn = FALSE), "0"), "pref file written as 0")
+  check(identical(h2o::h2o.telemetry_enabled(), FALSE), "telemetry_enabled() FALSE after opt-out")
+  check(isTRUE(h2o::h2o.set_telemetry(TRUE)), "set_telemetry(TRUE) persisted to disk")
+  check(isTRUE(h2o::h2o.telemetry_enabled()), "telemetry_enabled() TRUE after opt-in")
+
+  # ~/.h2oconfig (home) opt-out; any opt-out wins (union). Tested in isolation.
+  file.remove(pref)
+  cfg <- file.path(tmp_home, ".h2oconfig")
+  reload <- function() {
+    h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
+    h2o:::.h2o.telemetry.load_persisted_pref()
+    h2o:::.h2o.telemetry.disabled()
+  }
+  writeLines(c("[general]", "telemetry = false"), cfg)
+  check(isTRUE(reload()), ".h2oconfig telemetry=false opts out")
+  writeLines("general.telemetry = true", cfg)
+  check(identical(reload(), FALSE), ".h2oconfig general.telemetry=true opts in")
+  writeLines("1", pref); writeLines(c("[general]", "telemetry = off"), cfg)
+  check(isTRUE(reload()), "config opt-out wins over ~/.h2oai file (union off)")
+  file.remove(pref); file.remove(cfg)
+  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
+
   # Disabled telemetry emits nothing.
   h2o:::.h2o.telemetry.state$disabled_by_kwarg <- TRUE
   before <- length(captured$events)

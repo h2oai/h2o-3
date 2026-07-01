@@ -356,6 +356,25 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     else:
         _telemetry.send_cluster_connect_telemetry(_h2o_version_safe(), cluster_shape=_cluster_shape)
 
+
+def set_telemetry(enabled):
+    """Enable or disable anonymous client telemetry and persist the choice.
+
+    Applies immediately and is remembered across sessions (stored under
+    ``~/.h2oai``). The ``DO_NOT_TRACK`` environment variable still overrides it.
+    Best-effort and silent: never raises, never prints.
+
+    :param enabled: ``True`` to enable telemetry, ``False`` to opt out.
+    :returns: ``True`` if the preference was saved to disk, else ``False``.
+    """
+    return _telemetry.set_telemetry(enabled)
+
+
+def telemetry_enabled():
+    """Return ``True`` if anonymous client telemetry is currently enabled."""
+    return _telemetry.telemetry_enabled()
+
+
 def resume(recovery_dir=None):
     """
     Triggers auto-recovery resume - this will look into configured recovery dir and resume and

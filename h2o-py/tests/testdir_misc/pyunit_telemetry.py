@@ -149,10 +149,10 @@ def telemetry_first_run_notice():
         first, second = run(), run()
         assert "anonymous usage telemetry" in first, "notice not printed on first run"
         assert second == "", "notice repeated on second run (marker not honored)"
-        assert os.path.exists(os.path.join(tmp, ".h2o", ".telemetry_notice_python"))
+        assert os.path.exists(os.path.join(tmp, ".h2oai", ".telemetry_notice_python"))
 
         # Disabled telemetry never prints, even with no marker.
-        os.remove(os.path.join(tmp, ".h2o", ".telemetry_notice_python"))
+        os.remove(os.path.join(tmp, ".h2oai", ".telemetry_notice_python"))
         t.set_disabled(True)
         assert run() == "", "notice printed while telemetry disabled"
     finally:
@@ -185,6 +185,84 @@ def telemetry_do_not_track_truthiness():
     print("OK telemetry_do_not_track_truthiness: 1/true opt out, 0/false/empty do not")
 
 
+def telemetry_set_persisted_pref():
+    # set_telemetry persists the choice under ~/.h2oai and is reloaded next process.
+    old_home = os.environ.get("HOME")
+    old_dnt = os.environ.get("DO_NOT_TRACK")
+    tmp = tempfile.mkdtemp()
+    os.environ["HOME"] = tmp
+    os.environ.pop("DO_NOT_TRACK", None)
+    pref = os.path.join(tmp, ".h2oai", "telemetry")
+    try:
+        assert t.set_telemetry(False) is True, "set_telemetry(False) did not persist"
+        assert os.path.exists(pref), "preference file not written"
+        with open(pref) as f:
+            assert f.read().strip() == "0"
+        assert t.telemetry_enabled() is False
+
+        assert t.set_telemetry(True) is True
+        with open(pref) as f:
+            assert f.read().strip() == "1"
+        assert t.telemetry_enabled() is True
+
+        # A fresh process reloads the saved choice at import.
+        t.set_disabled(False)
+        with open(pref, "w") as f:
+            f.write("0")
+        t._load_persisted_pref()
+        assert t._telemetry_disabled() is True, "persisted opt-out not reloaded"
+    finally:
+        t.set_disabled(False)
+        if old_home is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = old_home
+        if old_dnt is not None:
+            os.environ["DO_NOT_TRACK"] = old_dnt
+    print("OK telemetry_set_persisted_pref: set_telemetry writes ~/.h2oai and reloads")
+
+
+def telemetry_config_file_opt_out():
+    # ~/.h2oconfig (home) can switch telemetry off; any opt-out wins (union).
+    old_home = os.environ.get("HOME")
+    old_dnt = os.environ.get("DO_NOT_TRACK")
+    tmp = tempfile.mkdtemp()
+    os.environ["HOME"] = tmp
+    os.environ.pop("DO_NOT_TRACK", None)
+    cfg = os.path.join(tmp, ".h2oconfig")
+    try:
+        with open(cfg, "w") as f:
+            f.write("[general]\ntelemetry = false\n")
+        t.set_disabled(False)
+        t._load_persisted_pref()
+        assert t._telemetry_disabled() is True, "config telemetry=false did not opt out"
+
+        with open(cfg, "w") as f:
+            f.write("general.telemetry = true\n")
+        t.set_disabled(True)
+        t._load_persisted_pref()
+        assert t._telemetry_disabled() is False, "config telemetry=true did not opt in"
+
+        # An opt-out wins even if ~/.h2oai/telemetry says on.
+        os.makedirs(os.path.join(tmp, ".h2oai"), exist_ok=True)
+        with open(os.path.join(tmp, ".h2oai", "telemetry"), "w") as f:
+            f.write("1")
+        with open(cfg, "w") as f:
+            f.write("[general]\ntelemetry = off\n")
+        t.set_disabled(False)
+        t._load_persisted_pref()
+        assert t._telemetry_disabled() is True, "config opt-out should win (union off)"
+    finally:
+        t.set_disabled(False)
+        if old_home is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = old_home
+        if old_dnt is not None:
+            os.environ["DO_NOT_TRACK"] = old_dnt
+    print("OK telemetry_config_file_opt_out: ~/.h2oconfig telemetry key honored (home-only, union-off)")
+
+
 if __name__ == "__main__":
     telemetry_wire_contract()
     telemetry_bucket_boundaries()
@@ -192,6 +270,8 @@ if __name__ == "__main__":
     telemetry_do_not_track_truthiness()
     telemetry_first_run_notice()
     telemetry_http_delivery_smoke()
+    telemetry_set_persisted_pref()
+    telemetry_config_file_opt_out()
     print("\nALL TELEMETRY TESTS PASSED")
 else:
     telemetry_wire_contract()
@@ -200,3 +280,5 @@ else:
     telemetry_do_not_track_truthiness()
     telemetry_first_run_notice()
     telemetry_http_delivery_smoke()
+    telemetry_set_persisted_pref()
+    telemetry_config_file_opt_out()

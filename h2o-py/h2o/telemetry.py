@@ -80,6 +80,12 @@ _session_id = None  # type: str | None
 # stays off until the user passes telemetry=True).
 _disabled_by_kwarg = False
 
+# Client state persisted under the user's home config dir. The full path is
+# resolved per call (see _config_dir) so a changed HOME / test sandbox is honored.
+_TELEMETRY_PREF_FILE = "telemetry"                 # contents: "1" = on, "0" = off
+_NOTICE_MARKER_FILE = ".telemetry_notice_python"   # contents: notice version last seen
+_NOTICE_VERSION = 1                                # bump ONLY when the notice/policy changes
+
 # Cached Java runtime info (avoid re-parsing `java -version` on every send).
 _java_info_cache = None  # type: dict | None
 _java_info_lock = threading.Lock()
@@ -125,6 +131,105 @@ def _telemetry_disabled():
     if _env_truthy("DO_NOT_TRACK"):
         return True
     return _disabled_by_kwarg
+
+
+def _config_dir():
+    """User-level H2O client config dir (``~/.h2oai``). Resolved per call so a
+    changed HOME (e.g. a test sandbox) is always honored."""
+    return os.path.join(os.path.expanduser("~"), ".h2oai")
+
+
+def telemetry_enabled():
+    """Return whether anonymous client telemetry is currently enabled."""
+    return not _telemetry_disabled()
+
+
+def set_telemetry(enabled):
+    """Enable/disable client telemetry and remember the choice across sessions.
+
+    Applies immediately for this process and is persisted under ``~/.h2oai`` so
+    later sessions honor it. ``DO_NOT_TRACK`` still overrides it. Best-effort and
+    silent: never raises, never prints.
+
+    :returns: ``True`` if the preference was written to disk, else ``False``.
+    """
+    set_disabled(not enabled)
+    try:
+        d = _config_dir()
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, _TELEMETRY_PREF_FILE), "w") as f:
+            f.write("1" if enabled else "0")
+        return True
+    except Exception:
+        return False
+
+
+def _parse_bool(s):
+    """Parse a persisted/config flag: True, False, or None if unrecognized."""
+    s = (s or "").strip().lower()
+    if s in ("1", "true", "yes", "on"):
+        return True
+    if s in ("0", "false", "no", "off"):
+        return False
+    return None
+
+
+def _file_telemetry_pref():
+    """On/off from ``~/.h2oai/telemetry`` (written by set_telemetry). None if unset."""
+    try:
+        with open(os.path.join(_config_dir(), _TELEMETRY_PREF_FILE)) as f:
+            return _parse_bool(f.read())
+    except Exception:
+        return None
+
+
+def _config_telemetry_pref():
+    """On/off from ``~/.h2oconfig`` (home only). None if unset/unreadable.
+
+    Recognizes ``telemetry = <bool>`` under a ``[general]`` section (or no
+    section), or ``general.telemetry = <bool>``. Home-only by design: a privacy
+    opt-out must not depend on the working directory (unlike the connection keys
+    that H2OConfigReader walks up from cwd)."""
+    try:
+        section = None
+        found = None
+        with open(os.path.join(os.path.expanduser("~"), ".h2oconfig")) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("[") and line.endswith("]"):
+                    section = line[1:-1].strip().lower()
+                    continue
+                if "=" not in line:
+                    continue
+                key, _, raw = line.partition("=")
+                key = key.strip().lower()
+                if ":" in key:                       # strip a py:/r: language prefix
+                    prefix, _, key = key.partition(":")
+                    if prefix not in ("py", "python"):
+                        continue
+                if key == "general.telemetry" or (key == "telemetry" and section in (None, "general")):
+                    found = _parse_bool(raw)
+        return found
+    except Exception:
+        return None
+
+
+def _load_persisted_pref():
+    """Seed the initial opt-out state at import from the static opt-out surfaces:
+    ``~/.h2oconfig`` (home) and ``~/.h2oai/telemetry``. Any explicit opt-out wins
+    (union — consistent with DO_NOT_TRACK); otherwise an explicit opt-in applies;
+    otherwise the default is kept. All best-effort."""
+    global _disabled_by_kwarg
+    prefs = [_config_telemetry_pref(), _file_telemetry_pref()]
+    if any(p is False for p in prefs):
+        _disabled_by_kwarg = True
+    elif any(p is True for p in prefs):
+        _disabled_by_kwarg = False
+
+
+_load_persisted_pref()
 
 
 def _new_session_id():
@@ -684,8 +789,8 @@ _NOTICE_TEXT = (
     "H2O-3 collects anonymous usage telemetry (H2O version, OS, algorithm names, and\n"
     "coarse usage buckets) to help prioritize features and platforms. It never sends\n"
     "your code, data, file paths, or any identifiers.\n"
-    "To opt out: set DO_NOT_TRACK=1, or pass\n"
-    "telemetry=False to h2o.init() / h2o.connect().\n"
+    "To opt out: set DO_NOT_TRACK=1, call h2o.set_telemetry(False) (persistent),\n"
+    "or pass telemetry=False to h2o.init() / h2o.connect().\n"
     "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html\n"
     "(This notice is shown only once.)"
 )
@@ -695,20 +800,28 @@ def _maybe_print_notice():
     """Print the disclosure notice once per environment, then never again.
 
     Gated on telemetry being enabled (no point notifying an opted-out user) and
-    on a per-client marker file under ``~/.h2o``. Entirely best-effort: any
+    on a per-client marker under ``~/.h2oai`` that records the notice version, so
+    the notice reappears only if the disclosure changes (a ``_NOTICE_VERSION``
+    bump) — never merely because H2O was upgraded. Entirely best-effort: any
     failure (no home dir, read-only fs) is swallowed and never blocks startup.
     """
     if _telemetry_disabled():
         return
     try:
-        marker = os.path.join(os.path.expanduser("~"), ".h2o", ".telemetry_notice_python")
-        if os.path.exists(marker):
+        marker = os.path.join(_config_dir(), _NOTICE_MARKER_FILE)
+        seen = -1
+        try:
+            with open(marker) as f:
+                seen = int(f.read().strip() or "-1")
+        except Exception:
+            seen = -1
+        if seen >= _NOTICE_VERSION:
             return
         sys.stderr.write("\n" + _NOTICE_TEXT + "\n\n")
         sys.stderr.flush()
         os.makedirs(os.path.dirname(marker), exist_ok=True)
         with open(marker, "w") as f:
-            f.write("1\n")
+            f.write(str(_NOTICE_VERSION) + "\n")
     except Exception:
         pass
 

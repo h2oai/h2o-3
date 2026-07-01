@@ -109,12 +109,12 @@ public class JvmTelemetry {
       "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html\n" +
       "(This notice is shown only once.)";
 
-  /** Print the disclosure notice once per environment (per-client marker under ~/.h2o). */
+  /** Print the disclosure notice once per environment (per-client marker under ~/.h2oai). */
   private static void maybePrintNotice() {
     try {
       String home = System.getProperty("user.home");
       if (home == null || home.isEmpty()) return;
-      File marker = new File(new File(home, ".h2o"), ".telemetry_notice_jvm");
+      File marker = new File(new File(home, ".h2oai"), ".telemetry_notice_jvm");
       if (marker.exists()) return;
       System.out.println("\n" + NOTICE_TEXT + "\n");
       marker.getParentFile().mkdirs();

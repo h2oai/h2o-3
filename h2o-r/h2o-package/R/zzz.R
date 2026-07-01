@@ -54,6 +54,9 @@
   
   # H2OFrame
   .s3_register("stats", "median", "H2OFrame")
+
+  # Seed telemetry opt-out from the persisted preference / ~/.h2oconfig (best-effort).
+  .h2o.telemetry.load_persisted_pref()
   
   invisible()
 }

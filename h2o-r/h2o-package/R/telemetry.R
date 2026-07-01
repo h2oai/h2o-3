@@ -73,6 +73,118 @@
   isTRUE(.h2o.telemetry.state$disabled_by_kwarg)
 }
 
+# --- Persistent opt-out & preference sources (kept consistent with the Python client) ---
+
+# Resolve the user home dir the SAME way Python (os.path.expanduser) and the JVM
+# (user.home) do -- USERPROFILE on Windows -- so R agrees with them. R's own
+# path.expand("~") points at Documents on Windows, which would diverge.
+.h2o.telemetry.home_dir <- function() {
+  if (.Platform$OS.type == "windows") {
+    up <- Sys.getenv("USERPROFILE"); if (nzchar(up)) return(up)
+    hd <- Sys.getenv("HOMEDRIVE"); hp <- Sys.getenv("HOMEPATH")
+    if (nzchar(hd) && nzchar(hp)) return(paste0(hd, hp))
+  }
+  h <- Sys.getenv("HOME"); if (nzchar(h)) return(h)
+  path.expand("~")
+}
+
+.h2o.telemetry.config_dir <- function() file.path(.h2o.telemetry.home_dir(), ".h2oai")
+.h2o.telemetry.pref_file  <- function() file.path(.h2o.telemetry.config_dir(), "telemetry")
+
+# Parse a persisted/config flag: TRUE, FALSE, or NULL if unrecognized.
+.h2o.telemetry.parse_bool <- function(s) {
+  if (length(s) == 0L || is.na(s[1L])) return(NULL)
+  s <- tolower(trimws(s[1L]))
+  if (s %in% c("1", "true", "yes", "on")) return(TRUE)
+  if (s %in% c("0", "false", "no", "off")) return(FALSE)
+  NULL
+}
+
+# On/off from ~/.h2oai/telemetry (written by h2o.set_telemetry). NULL if unset.
+.h2o.telemetry.file_pref <- function() {
+  tryCatch({
+    f <- .h2o.telemetry.pref_file()
+    if (!file.exists(f)) return(NULL)
+    .h2o.telemetry.parse_bool(readLines(f, n = 1, warn = FALSE))
+  }, error = function(e) NULL)
+}
+
+# On/off from ~/.h2oconfig (home only). NULL if unset/unreadable. Recognizes
+# `telemetry = <bool>` under [general] (or no section) or `general.telemetry`.
+# Home-only by design: a privacy opt-out must not depend on the working dir
+# (unlike the connection keys the config reader walks up from cwd).
+.h2o.telemetry.config_pref <- function() {
+  tryCatch({
+    path <- file.path(.h2o.telemetry.home_dir(), ".h2oconfig")
+    if (!file.exists(path)) return(NULL)
+    section <- ""; found <- NULL
+    for (line in readLines(path, warn = FALSE)) {
+      line <- trimws(line)
+      if (!nzchar(line) || substring(line, 1L, 1L) == "#") next
+      if (grepl("^\\[.*\\]$", line)) {
+        section <- tolower(trimws(sub("^\\[(.*)\\]$", "\\1", line))); next
+      }
+      pos <- regexpr("=", line, fixed = TRUE)
+      if (pos < 1L) next
+      key <- tolower(trimws(substr(line, 1L, pos - 1L)))
+      raw <- trimws(substr(line, pos + 1L, nchar(line)))
+      if (grepl(":", key, fixed = TRUE)) {          # strip a py:/r: language prefix
+        parts <- strsplit(key, ":", fixed = TRUE)[[1L]]
+        if (!identical(parts[1L], "r")) next          # r: applies to the R client
+        key <- parts[2L]
+      }
+      if (identical(key, "general.telemetry") ||
+          (identical(key, "telemetry") && section %in% c("", "general"))) {
+        found <- .h2o.telemetry.parse_bool(raw)
+      }
+    }
+    found
+  }, error = function(e) NULL)
+}
+
+# Seed the initial opt-out state (called from .onLoad) from the static opt-out
+# surfaces: ~/.h2oconfig (home) and ~/.h2oai/telemetry. Any opt-out wins (union,
+# matching DO_NOT_TRACK); else an opt-in applies; else the default is kept.
+.h2o.telemetry.load_persisted_pref <- function() {
+  tryCatch({
+    prefs <- list(.h2o.telemetry.config_pref(), .h2o.telemetry.file_pref())
+    if (any(vapply(prefs, function(p) identical(p, FALSE), logical(1L)))) {
+      .h2o.telemetry.state$disabled_by_kwarg <- TRUE
+    } else if (any(vapply(prefs, function(p) identical(p, TRUE), logical(1L)))) {
+      .h2o.telemetry.state$disabled_by_kwarg <- FALSE
+    }
+  }, error = function(e) invisible(NULL))
+  invisible(NULL)
+}
+
+#' Enable or disable anonymous client telemetry and persist the choice.
+#'
+#' Applies immediately for this R session and is remembered across sessions
+#' (stored under \code{~/.h2oai}). The \code{DO_NOT_TRACK} environment variable
+#' still overrides it. Best-effort and silent: never errors, never prints.
+#'
+#' @param enabled \code{TRUE} to enable telemetry, \code{FALSE} to opt out.
+#' @return (invisibly) \code{TRUE} if the preference was written to disk, else \code{FALSE}.
+#' @export
+h2o.set_telemetry <- function(enabled) {
+  .h2o.telemetry.set_disabled(!isTRUE(enabled))
+  ok <- tryCatch({
+    d <- .h2o.telemetry.config_dir()
+    dir.create(d, showWarnings = FALSE, recursive = TRUE)
+    writeLines(if (isTRUE(enabled)) "1" else "0", file.path(d, "telemetry"))
+    TRUE
+  }, error = function(e) FALSE)
+  invisible(ok)
+}
+
+#' Report whether anonymous client telemetry is currently enabled.
+#'
+#' @return \code{TRUE} if telemetry is enabled, otherwise \code{FALSE}.
+#' @export
+h2o.telemetry_enabled <- function() {
+  !.h2o.telemetry.disabled()
+}
+
 # Generate a random UUIDv4 from 16 bytes — avoids depending on the uuid package.
 # Save and restore .Random.seed so telemetry never perturbs the user's RNG
 # stream (otherwise enabling/disabling telemetry would change reproducible results).
@@ -611,13 +723,16 @@ bucketize_leaderboard_size <- function(n) {
 }
 
 # First-run disclosure notice: shown once per environment, then never again.
-# Gated on a per-client marker under ~/.h2o; entirely best-effort.
+# Gated on a per-client marker under ~/.h2oai that records the notice version, so
+# it reappears only if the disclosure changes -- never merely on an H2O upgrade.
+.h2o.telemetry.notice_version <- 1L  # bump ONLY when the notice text / policy changes
+
 .h2o.telemetry.notice_text <- function() paste(
   "H2O-3 collects anonymous usage telemetry (H2O version, OS, algorithm names, and",
   "coarse usage buckets) to help prioritize features and platforms. It never sends",
   "your code, data, file paths, or any identifiers.",
-  "To opt out: set DO_NOT_TRACK=1, or pass",
-  "telemetry = FALSE to h2o.init() / h2o.connect().",
+  "To opt out: set DO_NOT_TRACK=1, call h2o.set_telemetry(FALSE) (persistent),",
+  "or pass telemetry = FALSE to h2o.init() / h2o.connect().",
   "Docs: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/telemetry.html",
   "(This notice is shown only once.)",
   sep = "\n")
@@ -625,11 +740,13 @@ bucketize_leaderboard_size <- function(n) {
 .h2o.telemetry.maybe_print_notice <- function() {
   if (.h2o.telemetry.disabled()) return(invisible(NULL))
   tryCatch({
-    marker <- file.path(path.expand("~"), ".h2o", ".telemetry_notice_r")
-    if (file.exists(marker)) return(invisible(NULL))
+    marker <- file.path(.h2o.telemetry.config_dir(), ".telemetry_notice_r")
+    seen <- tryCatch(suppressWarnings(as.integer(readLines(marker, n = 1, warn = FALSE)[1L])),
+                     error = function(e) NA_integer_)
+    if (!is.na(seen) && seen >= .h2o.telemetry.notice_version) return(invisible(NULL))
     message("\n", .h2o.telemetry.notice_text(), "\n")
     dir.create(dirname(marker), showWarnings = FALSE, recursive = TRUE)
-    writeLines("1", marker)
+    writeLines(as.character(.h2o.telemetry.notice_version), marker)
   }, error = function(e) invisible(NULL))
   invisible(NULL)
 }

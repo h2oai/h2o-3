@@ -42,7 +42,7 @@ class H2OConfigReader(object):
     _allowed_config_keys = {
         "init.check_version", "init.proxy", "init.url", "init.verify_ssl_certificates",
         "init.cookies", "init.username", "init.password",
-        "general.allow_breaking_changes"
+        "general.allow_breaking_changes", "general.telemetry"
     }
 
     def __init__(self, root=""):
