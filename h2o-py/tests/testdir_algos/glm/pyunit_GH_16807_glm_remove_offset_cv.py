@@ -85,8 +85,8 @@ def test_remove_offset_cv_scoring_history_has_xval_columns():
     assert "deviance_se" in sh.columns, \
         "deviance_se must appear in scoring history when remove_offset_effects=True and nfolds=3"
 
-    xval_vals = [float(v) for v in sh["deviance_xval"].values
-                 if v is not None and not math.isnan(float(v))]
+    xval_vals = [v for v in sh["deviance_xval"].values
+                 if isinstance(v, float) and not math.isnan(v)]
     assert len(xval_vals) > 0, "deviance_xval must have at least one finite value"
     assert all(v > 0 for v in xval_vals), f"All deviance_xval values must be positive; got: {xval_vals}"
 
