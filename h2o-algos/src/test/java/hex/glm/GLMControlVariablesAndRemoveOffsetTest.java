@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
+import water.Keyed;
 import water.Scope;
 import water.TestUtil;
 import water.api.schemas3.KeyV3;
@@ -49,6 +50,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             Scope.enter();
             train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
             GLMModel.GLMParameters.Family family = GLMModel.GLMParameters.Family.binomial;
+            
             String responseColumn = "C21";
 
             // set cat columns
@@ -3073,9 +3075,9 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertEquals(glm._output._cross_validation_metrics_unrestricted_model._key,
                     derived._output._cross_validation_metrics._key);
 
-            // Holdout-pred frame Key is shared with source (matches existing restricted pattern).
-            assertEquals(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model,
-                    derived._output._cross_validation_holdout_predictions_frame_id);
+            // Holdout-pred frame ownership was transferred to derived; source field is now null.
+            assertNull(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            assertNotNull(derived._output._cross_validation_holdout_predictions_frame_id);
 
             // Summary has the same shape.
             assertNotNull(derived._output._cross_validation_metrics_summary);
@@ -3280,11 +3282,74 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertEquals("CV summary row count unchanged after parent deletion",
                     expectedSummaryRows, derivedAfter._output._cross_validation_metrics_summary.getRowDim());
 
+            // Holdout frame was transferred to derived at creation time; must still be in DKV after parent deletion.
+            assertNotNull("CV holdout predictions frame must survive parent deletion",
+                    derivedAfter._output._cross_validation_holdout_predictions_frame_id);
+            assertNotNull("CV holdout predictions frame must be retrievable from DKV after parent deletion",
+                    DKV.getGet(derivedAfter._output._cross_validation_holdout_predictions_frame_id));
+
             Scope.track_generic(derivedAfter);
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
             if (derived != null) derived.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Once a derived unrestricted model is created and then manually removed from DKV, calling
+     * make_unrestricted_model again on the same source must throw.  The holdout-predictions frame
+     * ownership was already transferred (source field is null); recreating would produce a broken
+     * derived model with a null holdout frame reference.
+     */
+    @Test
+    public void testMakeUnrestrictedModelThrowsAfterDerivedDeleted() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_rederive_guard");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._keep_cross_validation_predictions = true;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            MakeUnrestrictedGLMModelV3 args = new MakeUnrestrictedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "test_rederive_guard_derived";
+            new MakeGLMModelHandler().make_unrestricted_model(3, args);
+            GLMModel derived = DKV.getGet(Key.make("test_rederive_guard_derived"));
+            assertNotNull(derived);
+
+            // Ownership was transferred — source field must now be null.
+            assertNull(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+
+            // Manually remove the derived model from DKV (simulates user calling h2o.rm).
+            Keyed.remove(derived._key);
+            assertNull(DKV.getGet(derived._key));
+
+            // Second call with the same source must throw because ownership is already consumed.
+            try {
+                new MakeGLMModelHandler().make_unrestricted_model(3, args);
+                fail("Expected IllegalArgumentException when re-deriving after derived was deleted.");
+            } catch (IllegalArgumentException e) {
+                assertTrue(e.getMessage().contains("already been transferred"));
+            }
+        } finally {
+            if (train != null) train.remove();
             Scope.exit();
         }
     }
@@ -3587,20 +3652,20 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             glm = new GLM(params).trainModel().get();
 
             GLMModel.GLMOutput out = (GLMModel.GLMOutput) glm._output;
-            assertNotNull("Training unrestricted metrics must be populated", out._training_metrics_unrestricted_model);
-            assertNotNull("Validation unrestricted metrics must be populated", out._validation_metrics_unrestricted_model);
+            assertNotNull("Training unrestricted metrics must be populated.", out._training_metrics_unrestricted_model);
+            assertNotNull("Validation unrestricted metrics must be populated.", out._validation_metrics_unrestricted_model);
 
             Key trainUnrestrKey = out._training_metrics_unrestricted_model._key;
             Key validUnrestrKey = out._validation_metrics_unrestricted_model._key;
 
-            assertNotNull("Training unrestricted metrics must be in DKV before removal", DKV.get(trainUnrestrKey));
-            assertNotNull("Validation unrestricted metrics must be in DKV before removal", DKV.get(validUnrestrKey));
+            assertNotNull("Training unrestricted metrics must be in DKV before removal.", DKV.get(trainUnrestrKey));
+            assertNotNull("Validation unrestricted metrics must be in DKV before removal.", DKV.get(validUnrestrKey));
 
             glm.remove();
             glm = null;
 
-            assertNull("Training unrestricted metrics must be removed from DKV after model.remove()", DKV.get(trainUnrestrKey));
-            assertNull("Validation unrestricted metrics must be removed from DKV after model.remove()", DKV.get(validUnrestrKey));
+            assertNull("Training unrestricted metrics must be removed from DKV after model.remove().", DKV.get(trainUnrestrKey));
+            assertNull("Validation unrestricted metrics must be removed from DKV after model.remove().", DKV.get(validUnrestrKey));
         } finally {
             if (train != null) train.remove();
             if (valid != null) valid.remove();
