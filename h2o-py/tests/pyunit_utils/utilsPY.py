@@ -4707,7 +4707,7 @@ def _collect_snapshot_diffs(actual, expected, rtol, atol, path=""):
                 path, sorted(set(actual) - set(expected)), sorted(set(expected) - set(actual))))
         for k in set(actual) & set(expected):
             diffs += _collect_snapshot_diffs(actual[k], expected[k], rtol, atol, "%s.%s" % (path, k))
-    elif isinstance(expected, list) and expected and isinstance(expected[0], (int, float)):
+    elif isinstance(expected, list) and expected and isinstance(expected[0], (int, float)) and not isinstance(expected[0], bool):
         a, e = np.asarray(actual, dtype=float), np.asarray(expected, dtype=float)
         if a.shape != e.shape:
             diffs.append("%s: array shape changed (actual %s, baseline %s)" % (path, a.shape, e.shape))

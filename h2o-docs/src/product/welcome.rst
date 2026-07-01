@@ -164,7 +164,7 @@ Optional Conda requirements
 
 Conda is only required if you want to run H2O-3 on the Anaconda cloud:
 
-- Conda 3.6+ repository
+- Conda packages target Python 3.7 - 3.11. For Python 3.12+, install H2O-3 with ``pip``.
 
 
 User support
