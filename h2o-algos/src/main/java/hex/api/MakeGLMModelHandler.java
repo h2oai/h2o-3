@@ -90,7 +90,9 @@ public class MakeGLMModelHandler extends Handler {
       Key key = args.dest != null ? Key.make(args.dest) : generatedKey;
       GLMModel modelUnrestricted = DKV.getGet(key);
       if (modelUnrestricted != null) {
-          throw new IllegalArgumentException("Model with "+key+" already exists.");
+          GLMModelV3 existing = new GLMModelV3();
+          existing.fillFromImpl(modelUnrestricted);
+          return existing;
       }
       GLMModel.GLMParameters parms = (GLMModel.GLMParameters) model._parms.clone();
       GLMModel.GLMParameters inputParms = (GLMModel.GLMParameters) model._input_parms.clone();
@@ -150,6 +152,20 @@ public class MakeGLMModelHandler extends Handler {
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances_unrestricted_model;
       } else {
+          // Guard: the holdout-predictions frame can be transferred to a derived model only once.
+          // If the source was trained with remove_offset_effects + CV + keep_cross_validation_predictions
+          // it must have produced a non-null unrestricted holdout frame.  A null value here means the
+          // frame was already consumed by an earlier make_derived_model call whose derived model was
+          // subsequently deleted from DKV — we cannot recreate a valid derived model in this state.
+          boolean expectedHoldoutFrame = model._parms._remove_offset_effects
+                  && (model._parms._nfolds > 1 || model._parms._fold_column != null)
+                  && model._parms._keep_cross_validation_predictions;
+          if (expectedHoldoutFrame
+                  && model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model == null) {
+              throw new IllegalArgumentException(
+                      "Cannot create unrestricted derived model: the CV holdout predictions frame has already been "
+                      + "transferred to a previously derived model.  Retrain the source model to create a new derived model.");
+          }
           m._output._training_metrics = model._output._training_metrics_unrestricted_model;
           m._output._validation_metrics = model._output._validation_metrics_unrestricted_model;
           m._output._scoring_history = model._output._scoring_history_unrestricted_model;
@@ -168,6 +184,17 @@ public class MakeGLMModelHandler extends Handler {
       m._useRemoveOffsetEffects = args.remove_offset_effects;
 
       DKV.put(key, m);
+
+      // Transfer holdout-predictions frame ownership to the derived model so that deleting
+      // the source model does not invalidate the derived model's frame reference.
+      // Only applies to the unrestricted path where a Frame key was shared.
+      if (m._output._cross_validation_holdout_predictions_frame_id != null
+              && m._output._cross_validation_holdout_predictions_frame_id
+                  .equals(model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model)) {
+          model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model = null;
+          DKV.put(model._key, model);
+      }
+
       GLMModelV3 res = new GLMModelV3();
       res.fillFromImpl(m);
       return res;

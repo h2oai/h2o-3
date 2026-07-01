@@ -3161,7 +3161,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public void deleteCrossValidationModels() {
     if (_output._cross_validation_models != null) {
       Log.info("Cleaning up CV Models for " + _key);
-      int count = deleteAll(_output._cross_validation_models);
+      int count = Keyed.removeAll(_output._cross_validation_models);
       Log.info(count+" CV models were removed");
     }
   }
@@ -3172,7 +3172,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public void deleteCrossValidationPreds() {
     if (_output._cross_validation_predictions != null) {
       Log.info("Cleaning up CV Predictions for " + _key);
-      int count = deleteAll(_output._cross_validation_predictions);
+      int count = Keyed.removeAll(_output._cross_validation_predictions);
       Log.info(count+" CV predictions were removed");
     }
     Keyed.remove(_output._cross_validation_holdout_predictions_frame_id);
