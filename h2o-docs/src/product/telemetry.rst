@@ -14,30 +14,44 @@ What is never sent
 
 Code, file paths, dataset or model names, column names, parameter values, hostnames, usernames, email addresses, or any user-generated content.
 
-First-run notice
-----------------
-
-So that telemetry is never silent, the first time it is active in an environment H2O-3 prints a short one-time notice and then never repeats it. The notice reads approximately:
-
-.. code-block:: text
-
-   H2O-3 collects anonymous usage telemetry (H2O version, OS, algorithm names, and
-   coarse usage buckets) to help prioritize features and platforms. It never sends
-   your code, data, file paths, or any identifiers.
-
-   To opt out: set H2O_DISABLE_TELEMETRY=1 (or DO_NOT_TRACK=1), or pass
-   telemetry=False to h2o.init() / h2o.connect(). See the Telemetry docs for details.
-
-   This notice is shown only once.
-
 Opting out
 ----------
 
-Any one of the following disables telemetry completely:
+Telemetry is on by default. Any one of the following disables it — if **any** opt-out is in effect, nothing is sent, and ``DO_NOT_TRACK`` always takes precedence over the other settings.
 
-- Set an environment variable: ``H2O_DISABLE_TELEMETRY=1`` or ``DO_NOT_TRACK=1``.
+**Per session** (applies to the current process only):
+
 - Pass ``telemetry=False`` (Python) or ``telemetry = FALSE`` (R) to ``h2o.init()`` or ``h2o.connect()``.
-- For a cluster started directly on the JVM, add ``-Dsys.ai.h2o.telemetry.disabled=true``.
+
+**Persistent** (remembered across sessions):
+
+- **Environment variable** — set ``DO_NOT_TRACK=1`` (the cross-tool standard from `consoledonottrack.com <https://consoledonottrack.com>`__). It always wins, and is honored by the Python client, the R client, and the JVM server.
+- **Programmatic switch** — use the setter ``h2o.set_telemetry()`` to change telemetry and the getter ``h2o.telemetry_enabled()`` to read the current state. Both are available in the Python and R clients; the setting applies immediately and is saved under ``~/.h2oai/telemetry`` so later sessions honor it.
+
+  Python:
+
+  .. code-block:: python
+
+     h2o.set_telemetry(False)    # opt out (persisted across sessions)
+     h2o.set_telemetry(True)     # opt back in
+     h2o.telemetry_enabled()     # -> True or False
+
+  R:
+
+  .. code-block:: r
+
+     h2o.set_telemetry(FALSE)    # opt out (persisted across sessions)
+     h2o.set_telemetry(TRUE)     # opt back in
+     h2o.telemetry_enabled()     # -> TRUE or FALSE
+
+- **Config file** — add a ``general.telemetry`` key to ``~/.h2oconfig`` in your home directory:
+
+  .. code-block:: ini
+
+     [general]
+     telemetry = false
+
+For a cluster started directly on the JVM (``java -jar h2o.jar`` / ``hadoop jar h2odriver.jar``), add ``-Dsys.ai.h2o.telemetry.disabled=true`` or set ``DO_NOT_TRACK=1`` in its environment.
 
 The receiver also honors the standard ``DNT: 1`` (Do Not Track) and ``Sec-GPC: 1``
 (Global Privacy Control) request headers: any event arriving with either header set

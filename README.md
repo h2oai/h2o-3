@@ -672,13 +672,12 @@ H2O-3 sends anonymous usage telemetry to help us prioritize features and platfor
 - **Standalone & Hadoop clusters too.** A cluster started directly with `java -jar h2o.jar` or `hadoop jar h2odriver.jar` — even with no Python/R client attached — sends one ping when the cluster forms. Same fields, same opt-outs.
 - **What's sent:** version strings, OS, an ephemeral session UUID regenerated on every `h2o.init()`, a Unix timestamp, the algorithm name, and coarse bucket labels for counts (rows, columns, durations, sizes) — reported as ranges, not raw integers. One exception: a small cluster's exact node count (1–16) is sent, since 1-node vs 4-node is operationally meaningful; larger clusters are bucketed.
 - **What's never sent:** code, file paths, dataset names, model names, column names, hyperparameter values, hostnames, usernames, email addresses, or any user-generated content.
-- **One-time notice.** The first time telemetry is active in an environment, H2O-3 prints a short notice (what's collected and how to opt out) and never repeats it, so collection is never silent.
-- **Opt out anytime.** Either set an environment variable:
-  ```bash
-  export H2O_DISABLE_TELEMETRY=1   # or
-  export DO_NOT_TRACK=1
-  ```
-  Or pass `telemetry=False` (Python) / `telemetry = FALSE` (R) to `h2o.init()` or `h2o.connect()`. For a cluster launched directly on the JVM, the same environment variables work, or pass `-Dsys.ai.h2o.telemetry.disabled=true`.
+- **Opt out anytime** — any of the following disables telemetry (any opt-out wins; `DO_NOT_TRACK` always takes precedence):
+  - **Environment variable:** `export DO_NOT_TRACK=1` (the cross-tool standard).
+  - **Programmatic, persistent:** call the setter `h2o.set_telemetry(False)` to opt out (or `True` to opt back in) and the getter `h2o.telemetry_enabled()` to read the current state. Both are available in the Python and R clients (`h2o.set_telemetry(FALSE)` in R), apply immediately, and are saved under `~/.h2oai` so later sessions honor the choice.
+  - **This session only:** pass `telemetry=False` (Python) / `telemetry = FALSE` (R) to `h2o.init()` or `h2o.connect()`.
+  - **Config file:** add `general.telemetry = false` under `[general]` in `~/.h2oconfig`.
+  - **JVM cluster:** set `DO_NOT_TRACK=1` in its environment, or pass `-Dsys.ai.h2o.telemetry.disabled=true`.
 - **Fire-and-forget.** Every call runs on a background task with a 2-second timeout. If the receiver is unreachable, your code returns exactly as if telemetry never happened — never blocks, never raises, never retries.
 
 
