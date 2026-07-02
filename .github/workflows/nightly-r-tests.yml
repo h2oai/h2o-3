@@ -200,6 +200,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Init Java 8
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-init
           test_package: r
           r: "3.5.3"
@@ -226,6 +227,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Small
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-small
           test_package: r
           r: "3.5.3"
@@ -250,6 +252,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 AutoML
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-automl
           test_package: r
           r: "3.5.3"
@@ -274,6 +277,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 CMD Check as CRAN
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-cmd-check-as-cran
           test_package: r
           r: "3.5.3"
@@ -298,6 +302,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R4.0 Small
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-small
           test_package: r
           r: "4.0.2"
@@ -322,6 +327,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R4.0 CMD Check as CRAN
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-cmd-check-as-cran
           test_package: r
           r: "4.0.2"
@@ -346,6 +352,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Booklets
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-booklets
           test_package: r
           r: "3.5.3"
@@ -370,6 +377,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Demos Small
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-demos-small
           test_package: r
           r: "3.5.3"
@@ -394,6 +402,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Medium-large
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-medium-large
           test_package: r
           r: "3.5.3"
@@ -418,6 +427,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Demos Medium-large
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-demos-medium-large
           test_package: r
           r: "3.5.3"
@@ -442,6 +452,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Generate Docs
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: r-generate-docs-jenkins
           test_package: r
           r: "3.5.3"
@@ -467,6 +478,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Datatable
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-datatable
           test_package: r
           r: "3.5.3"
@@ -492,6 +504,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Init Java 11
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-init
           test_package: r
           r: "3.5.3"
@@ -518,6 +531,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.4 Medium-large
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-medium-large
           test_package: r
           r: "3.4.1"
@@ -542,6 +556,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.4 Small
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-small
           test_package: r
           r: "3.4.1"
@@ -566,6 +581,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.4 AutoML
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-automl
           test_package: r
           r: "3.4.1"
@@ -591,6 +607,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R4.0 Explain
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-explain
           test_package: r
           r: "4.0.2"
@@ -615,6 +632,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R4.4 Explain
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-explain
           test_package: r
           r: "4.4.0"

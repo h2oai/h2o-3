@@ -108,6 +108,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: XGB on CentOS 7.3 Minimal
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-xgb-smoke-minimal-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -131,6 +132,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: XGB on CentOS 7.3 OMP
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-xgb-smoke-omp-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -154,6 +156,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: XGB on Ubuntu 16.04 Minimal
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-xgb-smoke-minimal-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -177,6 +180,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: XGB on Ubuntu 16.04 OMP
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-xgb-smoke-omp-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -200,6 +204,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: XGB on Ubuntu 18.04 Minimal
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-xgb-smoke-minimal-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -223,6 +228,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: XGB on Ubuntu 18.04 OMP
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-xgb-smoke-omp-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}

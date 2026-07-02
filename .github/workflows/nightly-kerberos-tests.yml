@@ -234,6 +234,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - STANDALONE (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -259,6 +260,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - STANDALONE KEYTAB (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -284,6 +286,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - DRIVER KEYTAB (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -309,6 +312,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - HADOOP (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -334,6 +338,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - HADOOP WITH SPNEGO (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -359,6 +364,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - HDFS TOKEN REFRESH (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -384,6 +390,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - STEAM DRIVER (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -409,6 +416,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - STEAM MAPPER (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -434,6 +442,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - SPARKLING (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -459,6 +468,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 5.10 - STEAM SPARKLING (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-2
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -487,6 +497,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - STANDALONE (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -512,6 +523,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - STANDALONE KEYTAB (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -537,6 +549,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - DRIVER KEYTAB (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -562,6 +575,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - HADOOP (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -587,6 +601,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - HADOOP WITH SPNEGO (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -612,6 +627,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - HDFS TOKEN REFRESH (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -637,6 +653,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - STEAM DRIVER (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -662,6 +679,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - STEAM MAPPER (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -687,6 +705,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - SPARKLING (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -712,6 +731,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: CDH 6.1 - STEAM SPARKLING (Kerberos)
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-kerberos-hadoop-3
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
