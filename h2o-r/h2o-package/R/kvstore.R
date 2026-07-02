@@ -461,6 +461,9 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
   #Get model id
   model_id <- model@model_id
 
+  #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with POJO URL
+  java <- .h2o.doSafeGET(urlSuffix = paste0(.h2o.__MODELS, ".java/", model_id))
+
   # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
   # TODO: clients should extract Java class name from header.
   pojoname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
@@ -468,49 +471,30 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
   #Path to save POJO, if `path` is provided
   file_path <- file.path(path, paste0(pojoname, ".java"))
 
-  outcome <- "ok"
-  result <- tryCatch({
-    #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with POJO URL
-    java <- .h2o.doSafeGET(urlSuffix = paste0(.h2o.__MODELS, ".java/", model_id))
-    if( is.null(path) ){
-      cat(java) #Pretty print POJO
-      NULL
-    } else {
-      write(java, file=file_path) #Write POJO to specified path
-      # getjar is now deprecated and the new arg name is get_jar
-      if (!is.null(getjar)) {
-        warning("The `getjar` argument is DEPRECATED; use `get_jar` instead as `getjar` will eventually be removed")
-        get_jar = getjar
-        getjar = NULL
-      }
-      if (get_jar) {
-        urlSuffix = "h2o-genmodel.jar"
-        #Build genmodel.jar file path
-        if(jar_name==""){
-          jar.path <- file.path(path, "h2o-genmodel.jar")
-        }else{
-          jar.path <- file.path(path, jar_name)
-        }
-        #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
-        #and write to jar.path.
-        writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), jar.path, useBytes = TRUE)
-      }
-      paste0(pojoname,".java")
+  if( is.null(path) ){
+    cat(java) #Pretty print POJO
+  } else {
+    write(java, file=file_path) #Write POJO to specified path
+  # getjar is now deprecated and the new arg name is get_jar
+  if (!is.null(getjar)) {
+    warning("The `getjar` argument is DEPRECATED; use `get_jar` instead as `getjar` will eventually be removed")
+    get_jar = getjar
+    getjar = NULL
+  }
+  if (get_jar) {
+    urlSuffix = "h2o-genmodel.jar"
+    #Build genmodel.jar file path
+    if(jar_name==""){
+      jar.path <- file.path(path, "h2o-genmodel.jar")
+    }else{
+      jar.path <- file.path(path, jar_name)
     }
-  }, error = function(e) { outcome <<- "error"; stop(e) })
-
-  # Fire-and-forget model_download telemetry (format=pojo); never raises.
-  tryCatch({
-    size <- if (!is.null(path) && file.exists(file_path)) file.info(file_path)$size else NULL
-    .h2o.send_model_download(.h2o.r_version_safe(),
-                             algo = tryCatch(model@algorithm, error = function(e) ""),
-                             family = NULL,
-                             outcome = outcome,
-                             fmt = "pojo",
-                             compressed_size_bytes = size)
-  }, error = function(e) invisible(NULL))
-
-  if (is.null(result)) invisible(result) else result
+    #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
+    #and write to jar.path.
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), jar.path, useBytes = TRUE)
+  }
+  return(paste0(pojoname,".java"))
+  }
 }
 
 #'
@@ -577,11 +561,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
   #Build MOJO file path and download MOJO file & perform a safe (i.e. error-checked)
   #HTTP GET request to an H2O cluster with MOJO URL
   mojo.path <- file.path(path, filename)
-  outcome <- "ok"
-  tryCatch(
-    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), mojo.path, useBytes = TRUE),
-    error = function(e) { outcome <<- "error"; stop(e) }
-  )
+  writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), mojo.path, useBytes = TRUE)
 
   if (get_genmodel_jar) {
     urlSuffix = "h2o-genmodel.jar"
@@ -595,14 +575,6 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     #and write to jar.path.
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), jar.path, useBytes = TRUE)
   }
-  tryCatch({
-    size <- if (file.exists(mojo.path)) file.info(mojo.path)$size else 0
-    .h2o.send_mojo_download(.h2o.r_version_safe(),
-                            algo = tryCatch(model@algorithm, error = function(e) ""),
-                            family = NULL,
-                            outcome = outcome,
-                            compressed_size_bytes = size)
-  }, error = function(e) invisible(NULL))
   return(filename)
 }
 
@@ -650,27 +622,12 @@ h2o.download_model <- function(model, path=NULL, export_cross_validation_predict
 
     #prepare suffix to get the right endpoint
     urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model@model_id)
-
+    
     #Path to save model, if `path` is provided
     file_path <- file.path(path, filename)
     parms <- list(export_cross_validation_predictions=export_cross_validation_predictions)
-    outcome <- "ok"
-    tryCatch(
-      writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE, parms = parms), file_path, useBytes = TRUE),
-      error = function(e) { outcome <<- "error"; stop(e) }
-    )
-
-    # Fire-and-forget model_download telemetry (format=binary); never raises.
-    tryCatch({
-      size <- if (file.exists(file_path)) file.info(file_path)$size else NULL
-      .h2o.send_model_download(.h2o.r_version_safe(),
-                               algo = tryCatch(model@algorithm, error = function(e) ""),
-                               family = NULL,
-                               outcome = outcome,
-                               fmt = "binary",
-                               compressed_size_bytes = size)
-    }, error = function(e) invisible(NULL))
-
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE, parms = parms), file_path, useBytes = TRUE)
+    
     return(file_path)
 }
 

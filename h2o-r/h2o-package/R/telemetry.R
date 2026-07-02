@@ -1,15 +1,22 @@
 #'
 #' Anonymous usage telemetry for h2o-r.
 #'
-#' Sends best-effort HTTPS POSTs to the telemetry endpoint describing client
-#' activity. Delivery is fire-and-forget and fully non-blocking: events are
-#' scheduled onto a single shared libcurl async "multi" pool (the curl package,
-#' already used by communication.R) and never awaited. This is the R analogue of
-#' the Python client's one-background-worker-draining-a-bounded-queue, so a tight
-#' predict/import loop neither blocks the caller nor spawns a process per event.
-#' An unreachable server is invisible. The `java -version` probe likewise runs
-#' detached (see warm_java); nothing on a telemetry path ever waits on a
-#' subprocess or socket.
+#' Sends a single best-effort HTTPS POST at session start -- h2o.init() (local
+#' server spawn) or h2o.connect() / attach -- describing the client: H2O and
+#' runtime versions, OS, CPU arch, Java version/vendor, and coarse cluster-shape
+#' buckets. Nothing is sent for per-operation activity (train / score / import /
+#' download / save / ...); R telemetry is limited to the two session-start
+#' events. R is single-threaded with no reliable background pump, so a
+#' fire-and-forget scheme drops exactly the session-start events that matter
+#' most; restricting to init/connect lets us deliver them reliably instead.
+#'
+#' Delivery is therefore a synchronous, bounded curl POST (the same HTTP library
+#' communication.R uses). Because it only fires on the already-slow connect /
+#' JVM-start path, the short timeout is invisible to the user, yet -- unlike a
+#' fire-and-forget pass -- the event actually gets delivered. An unreachable
+#' receiver never blocks, raises, or delays the caller beyond the timeout. The
+#' `java -version` probe likewise runs detached (see warm_java); nothing on a
+#' telemetry path ever waits on a subprocess or socket beyond that timeout.
 #'
 #' Honors the DO_NOT_TRACK opt-out environment variable (consoledonottrack.com),
 #' which always wins. Reacts to 1/0/true/false; 0/false/empty do not opt out.
@@ -21,10 +28,6 @@
 .h2o.telemetry.payload_version <- 1L
 .h2o.telemetry.timeout_secs <- 2L
 .h2o.telemetry.max_version_len <- 64L
-# Cap on concurrently in-flight POSTs; new events are dropped past this so a
-# slow/unreachable receiver can't make the pool grow without bound (the R
-# analogue of the Python worker queue's maxsize).
-.h2o.telemetry.max_inflight <- 64L
 
 # Build-flavor attribution (OSS vs Enterprise), hardcoded per repo at build
 # time. This is the OSS repo. Mirrors h2o-py/h2o/_product.py.
@@ -41,7 +44,6 @@
 .h2o.telemetry.state$session_id        <- NULL
 .h2o.telemetry.state$java_info         <- NULL  # cached `java -version` parse
 .h2o.telemetry.state$disabled_by_kwarg <- FALSE # programmatic opt-out via h2o.init(telemetry = FALSE); FALSE = default-on
-.h2o.telemetry.state$pool              <- NULL  # libcurl async multi pool (the delivery queue)
 
 #' Programmatic opt-out, set by `h2o.init(telemetry = FALSE)`.
 #'
@@ -248,101 +250,10 @@ h2o.telemetry_enabled <- function() {
   if (nchar(s) > max_len) substr(s, 1L, max_len) else s
 }
 
-# -- Bucketize helpers. The label strings must stay byte-identical across the
-# -- Python / R / JVM clients. Mirrors h2o-py/h2o/telemetry.py.
-
-bucketize_duration_ms <- function(ms) {
-  # Sub-second values floor to "<5s" — no sub-second resolution.
-  seconds <- ms / 1000
-  if (seconds < 5)      return("<5s")
-  if (seconds < 15)     return("5s-15s")
-  if (seconds < 30)     return("15s-30s")
-  if (seconds < 60)     return("30s-1m")
-  if (seconds < 120)    return("1m-2m")
-  if (seconds < 300)    return("2m-5m")
-  if (seconds < 600)    return("5m-10m")
-  if (seconds < 900)    return("10m-15m")
-  if (seconds < 1800)   return("15m-30m")
-  if (seconds < 3600)   return("30m-1h")
-  if (seconds < 7200)   return("1h-2h")
-  if (seconds < 14400)  return("2h-4h")
-  if (seconds < 21600)  return("4h-6h")
-  ">6h"
-}
-
-bucketize_rows <- function(n) {
-  if (n < 1000)      return("<1k")
-  if (n < 3000)      return("1k-3k")
-  if (n < 10000)     return("3k-10k")
-  if (n < 30000)     return("10k-30k")
-  if (n < 100000)    return("30k-100k")
-  if (n < 300000)    return("100k-300k")
-  if (n < 1000000)   return("300k-1M")
-  if (n < 3000000)   return("1M-3M")
-  if (n < 10000000)  return("3M-10M")
-  if (n < 30000000)  return("10M-30M")
-  if (n < 100000000) return("30M-100M")
-  ">100M"
-}
-
-bucketize_cols <- function(n) {
-  if (n < 10)      return("<10")
-  if (n < 30)      return("10-30")
-  if (n < 100)     return("30-100")
-  if (n < 300)     return("100-300")
-  if (n < 1000)    return("300-1k")
-  if (n < 3000)    return("1k-3k")
-  if (n < 10000)   return("3k-10k")
-  if (n < 30000)   return("10k-30k")
-  if (n < 100000)  return("30k-100k")
-  if (n < 300000)  return("100k-300k")
-  if (n < 1000000) return("300k-1M")
-  ">1M"
-}
-
-# Three range-tuned size scales (MOJO, model artifact, dataset). All use MiB (1048576).
-
-bucketize_mojo_size <- function(b) {
-  mb <- b / 1048576
-  if (mb < 0.1) return("<100KB")
-  if (mb < 1)   return("100KB-1MB")
-  if (mb < 5)   return("1MB-5MB")
-  if (mb < 10)  return("5MB-10MB")
-  if (mb < 50)  return("10MB-50MB")
-  if (mb < 100) return("50MB-100MB")
-  ">100MB"
-}
-
-bucketize_artifact_size <- function(b) {
-  mb <- b / 1048576
-  if (mb < 0.1)  return("<100KB")
-  if (mb < 1)    return("100KB-1MB")
-  if (mb < 10)   return("1MB-10MB")
-  if (mb < 100)  return("10MB-100MB")
-  if (mb < 1024) return("100MB-1GB")
-  ">1GB"
-}
-
-bucketize_data_size <- function(b) {
-  mb <- b / 1048576
-  gb <- mb / 1024
-  if (mb < 10)   return("<10MB")
-  if (mb < 100)  return("10MB-100MB")
-  if (mb < 500)  return("100MB-500MB")
-  if (mb < 1024) return("500MB-1GB")
-  if (gb < 5)    return("1GB-5GB")
-  if (gb < 10)   return("5GB-10GB")
-  if (gb < 50)   return("10GB-50GB")
-  if (gb < 100)  return("50GB-100GB")
-  if (gb < 250)  return("100GB-250GB")
-  if (gb < 500)  return("250GB-500GB")
-  if (gb < 1024) return("500GB-1TB")
-  if (gb < 1536) return("1TB-1.5TB")
-  if (gb < 2048) return("1.5TB-2TB")
-  ">2TB"
-}
-
-# -- cluster-shape bucket helpers --
+# -- cluster-shape bucket helpers. The label strings must stay byte-identical
+# -- across the Python / R / JVM clients. Mirrors h2o-py/h2o/telemetry.py.
+# -- Only the two session-start events (init / cluster_connect) emit, so just
+# -- the cluster-shape buckets remain; per-operation buckets are unused in R.
 
 bucketize_cluster_nodes <- function(n) {
   # Capture fine, display coarse: exact node count for n <= 16, buckets above.
@@ -372,47 +283,6 @@ bucketize_cluster_memory_gb <- function(gb) {
   if (gb < 2048) return("1024-2048")
   if (gb < 4096) return("2048-4096")
   ">4096"
-}
-
-# frame_memory_gb_bucket shares boundaries with cluster_memory_gb_bucket.
-bucketize_frame_memory_gb <- bucketize_cluster_memory_gb
-
-bucketize_max_models <- function(n) {
-  if (n < 10)  return("<10")
-  if (n < 50)  return("10-50")
-  if (n < 200) return("50-200")
-  ">200"
-}
-
-bucketize_max_runtime_secs <- function(secs) {
-  if (secs < 60)   return("<60s")
-  if (secs < 600)  return("60s-10m")
-  if (secs < 3600) return("10m-1h")
-  ">1h"
-}
-
-bucketize_leaderboard_size <- function(n) {
-  if (n < 10)  return("<10")
-  if (n < 50)  return("10-50")
-  if (n < 100) return("50-100")
-  ">100"
-}
-
-# sort_metric must be one of this fixed lowercase set, and is required. H2O
-# AutoML's own metric names map onto it case-insensitively, so we lowercase;
-# anything unrecognized falls back to "auto" (AutoML's default) so an odd
-# metric can never drop the event.
-.h2o.telemetry.allowed_sort_metrics <- c(
-  "auto", "deviance", "logloss", "rmse", "mse", "mae",
-  "rmsle", "auc", "aucpr", "mean_per_class_error"
-)
-
-.h2o.telemetry.normalize_sort_metric <- function(metric) {
-  if (!is.null(metric) && length(metric) > 0L && !is.na(metric)) {
-    s <- tolower(trimws(as.character(metric)[[1L]]))
-    if (s %in% .h2o.telemetry.allowed_sort_metrics) return(s)
-  }
-  "auto"
 }
 
 # -- Runtime version detection --
@@ -635,48 +505,23 @@ bucketize_leaderboard_size <- function(n) {
   payload
 }
 
-# -- Delivery: a single, shared, non-blocking queue built on libcurl's async
-# -- "multi" interface (the curl package, already used by communication.R). This
-# -- is the R analogue of the Python client's single worker thread draining a
-# -- bounded queue: one pool holds the in-flight requests, each POST is only
-# -- *scheduled* (never awaited), and the pool is pumped without blocking on
-# -- every event — so a tight predict/import loop neither blocks the caller nor
-# -- spawns a process per event. In-flight requests advance as subsequent events
-# -- arrive. Like the Python daemon worker, delivery is best-effort: an event
-# -- still in flight at process exit may be dropped. We deliberately do NOT drain
-# -- from an R exit handler — running libcurl during R shutdown can segfault the
-# -- session, and crashing a user's R on quit is far worse than losing one ping.
-
-# Lazily create the shared multi pool; it persists in the package-private state
-# env for the life of the session.
-.h2o.telemetry.ensure_pool <- function() {
-  if (is.null(.h2o.telemetry.state$pool)) {
-    .h2o.telemetry.state$pool <- curl::new_pool()
-  }
-  .h2o.telemetry.state$pool
-}
-
+# -- Delivery: one synchronous, bounded HTTPS POST via the curl package (the
+# -- same HTTP library communication.R uses). Only the two session-start events
+# -- (init / cluster_connect) reach this, and those already block on the
+# -- connect / JVM-start path, so a short bounded POST is invisible to the user
+# -- yet -- unlike a fire-and-forget pass on single-threaded R -- actually
+# -- delivers the event. connecttimeout/timeout bound the wait; the whole call
+# -- is wrapped so an unreachable receiver never blocks, raises, or delays the
+# -- caller beyond the timeout.
 .h2o.telemetry.post <- function(payload) {
   if (!requireNamespace("curl", quietly = TRUE)) return(invisible(NULL))
-  body <- as.character(jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null"))
-  url  <- .h2o.telemetry.resolve_url()
   tryCatch({
-    pool <- .h2o.telemetry.ensure_pool()
-    # Bounded queue: drop the event rather than let in-flight requests pile up
-    # against a slow/unreachable receiver. multi_list() is the live in-flight
-    # gauge (completed/failed requests leave the pool), so no manual counter.
-    if (length(curl::multi_list(pool)) >= .h2o.telemetry.max_inflight) return(invisible(NULL))
+    body <- as.character(jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null"))
     h <- curl::new_handle()
     curl::handle_setheaders(h, "Content-Type" = "application/json")
     curl::handle_setopt(h, post = TRUE, postfields = body,
                         connecttimeout = 1L, timeout = .h2o.telemetry.timeout_secs)
-    # Schedule (never await) the request, then pump the pool non-blockingly
-    # (timeout = 0) so in-flight transfers progress as subsequent events arrive.
-    curl::curl_fetch_multi(url, handle = h,
-                           done = function(res) invisible(NULL),
-                           fail = function(err) invisible(NULL),
-                           pool = pool)
-    curl::multi_run(timeout = 0, pool = pool)
+    curl::curl_fetch_memory(.h2o.telemetry.resolve_url(), handle = h)
   }, error = function(e) invisible(NULL))
   invisible(NULL)
 }
@@ -779,321 +624,4 @@ bucketize_leaderboard_size <- function(n) {
   }, error = function(e) NULL)
   if (is.null(payload)) return(invisible(NULL))
   .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_algo_train <- function(h2o_version, algo, family, outcome,
-                                 duration_ms, n_rows, n_cols, n_models = NULL,
-                                 attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "algo_train"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        algo               = algo,
-        family             = if (is.null(family) || is.na(family)) NULL else family,
-        outcome            = outcome,
-        duration_ms_bucket = bucketize_duration_ms(duration_ms),
-        rows_bucket        = bucketize_rows(n_rows),
-        cols_bucket        = bucketize_cols(n_cols),
-        n_models           = if (is.null(n_models) || is.na(n_models)) NULL else as.integer(n_models)
-      )
-    )
-    .h2o.telemetry.with_extras(base, attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_algo_score <- function(h2o_version, algo, family, outcome,
-                                 duration_ms, n_rows, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "algo_score"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        algo               = algo,
-        family             = if (is.null(family) || is.na(family)) NULL else family,
-        outcome            = outcome,
-        rows_bucket        = bucketize_rows(n_rows),
-        duration_ms_bucket = bucketize_duration_ms(duration_ms)
-      )
-    )
-    .h2o.telemetry.with_extras(base, attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_mojo_download <- function(h2o_version, algo, family, outcome,
-                                    compressed_size_bytes, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "mojo_download"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        algo             = algo,
-        family           = if (is.null(family) || is.na(family)) NULL else family,
-        outcome          = outcome,
-        mojo_size_bucket = bucketize_mojo_size(compressed_size_bytes)
-      )
-    )
-    .h2o.telemetry.with_extras(base, attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_upload <- function(h2o_version, file_format, compressed_size_bytes, outcome,
-                             frame_shape = NULL, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "upload"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        file_format      = file_format,
-        # data_size_bucket is REQUIRED on upload (client always knows the size).
-        data_size_bucket = bucketize_data_size(compressed_size_bytes),
-        outcome          = outcome
-      )
-    )
-    .h2o.telemetry.with_extras(base,
-      extras     = .h2o.telemetry.strip_null(frame_shape %||% list()),
-      attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_import <- function(h2o_version, source_scheme, file_format, outcome,
-                             compressed_size_bytes = NULL,
-                             frame_shape = NULL, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "import"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        source_scheme = source_scheme,
-        file_format   = file_format,
-        outcome       = outcome
-      )
-    )
-    extras <- .h2o.telemetry.strip_null(c(
-      # data_size_bucket is nullable on import (remote sources may not expose
-      # the size cheaply) — omit when unknown.
-      if (!is.null(compressed_size_bytes))
-        list(data_size_bucket = bucketize_data_size(compressed_size_bytes))
-      else NULL,
-      frame_shape %||% list()
-    ))
-    .h2o.telemetry.with_extras(base, extras = extras, attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_automl_run <- function(h2o_version, algo, family, outcome,
-                                 max_models = NULL, max_runtime_secs = NULL,
-                                 sort_metric = NULL, leaderboard_size = NULL,
-                                 attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "automl_run"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        algo                     = algo,
-        family                   = if (is.null(family) || is.na(family)) NULL else family,
-        outcome                  = outcome,
-        max_models_bucket        = if (!is.null(max_models))       bucketize_max_models(as.integer(max_models)) else NULL,
-        max_runtime_secs_bucket  = if (!is.null(max_runtime_secs)) bucketize_max_runtime_secs(as.numeric(max_runtime_secs)) else NULL,
-        sort_metric              = .h2o.telemetry.normalize_sort_metric(sort_metric),
-        leaderboard_size_bucket  = if (!is.null(leaderboard_size)) bucketize_leaderboard_size(as.integer(leaderboard_size)) else NULL
-      )
-    )
-    .h2o.telemetry.with_extras(.h2o.telemetry.strip_null(base), attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_model_save <- function(h2o_version, algo, family, outcome, fmt,
-                                 compressed_size_bytes = NULL, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "model_save"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        algo                 = algo,
-        family               = if (is.null(family) || is.na(family)) NULL else family,
-        outcome              = outcome,
-        format               = fmt,
-        artifact_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_artifact_size(compressed_size_bytes) else NULL
-      )
-    )
-    .h2o.telemetry.with_extras(.h2o.telemetry.strip_null(base), attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_model_load <- function(h2o_version, algo, family, outcome, fmt,
-                                 compressed_size_bytes = NULL, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "model_load"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        algo                 = algo,
-        family               = if (is.null(family) || is.na(family)) NULL else family,
-        outcome              = outcome,
-        format               = fmt,
-        artifact_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_artifact_size(compressed_size_bytes) else NULL
-      )
-    )
-    .h2o.telemetry.with_extras(.h2o.telemetry.strip_null(base), attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_model_download <- function(h2o_version, algo, family, outcome, fmt,
-                                     compressed_size_bytes = NULL, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    base <- c(
-      list(event = "model_download"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        algo                 = algo,
-        family               = if (is.null(family) || is.na(family)) NULL else family,
-        outcome              = outcome,
-        format               = fmt,  # "binary" or "pojo" — never "mojo"
-        artifact_size_bucket = if (!is.null(compressed_size_bytes)) bucketize_artifact_size(compressed_size_bytes) else NULL
-      )
-    )
-    .h2o.telemetry.with_extras(.h2o.telemetry.strip_null(base), attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.send_frame_parsed <- function(h2o_version, file_format, outcome, duration_ms,
-                                   n_rows, n_cols, frame_memory_gb = NULL, attributes = NULL) {
-  if (.h2o.telemetry.disabled()) return(invisible(NULL))
-  payload <- tryCatch({
-    # rows / cols / duration are REQUIRED on frame_parsed — never stripped.
-    base <- c(
-      list(event = "frame_parsed"),
-      .h2o.telemetry.envelope(h2o_version),
-      list(
-        file_format        = file_format,
-        outcome            = outcome,
-        rows_bucket        = bucketize_rows(n_rows),
-        cols_bucket        = bucketize_cols(n_cols),
-        duration_ms_bucket = bucketize_duration_ms(duration_ms)
-      )
-    )
-    if (!is.null(frame_memory_gb)) {
-      base$frame_memory_gb_bucket <- bucketize_frame_memory_gb(frame_memory_gb)
-    }
-    .h2o.telemetry.with_extras(base, attributes = attributes)
-  }, error = function(e) NULL)
-  if (is.null(payload)) return(invisible(NULL))
-  .h2o.telemetry.send(payload)
-}
-
-#' @keywords internal
-.h2o.r_version_safe <- function() {
-  tryCatch(as.character(utils::packageVersion("h2o")),
-           error = function(e) "")
-}
-
-# -- Derivation helpers for call-site wiring --
-
-.h2o.telemetry.source_scheme_map <- list(
-  s3 = "s3", s3a = "s3", s3n = "s3",
-  hdfs = "hdfs",
-  gs = "gcs", gcs = "gcs",
-  http = "http", https = "http",
-  file = "local"
-)
-
-#' Map a URL/path to one of: s3 / hdfs / gcs / http / local / other.
-#' @keywords internal
-.h2o.derive_source_scheme <- function(path) {
-  if (is.null(path) || !nzchar(path)) return("local")
-  s <- tolower(trimws(as.character(path)))
-  if (grepl("://", s, fixed = TRUE)) {
-    scheme <- sub("://.*$", "", s)
-    mapped <- .h2o.telemetry.source_scheme_map[[scheme]]
-    if (is.null(mapped)) return("other")
-    return(mapped)
-  }
-  "local"
-}
-
-.h2o.telemetry.file_format_table <- list(
-  c(".parquet", "parquet"),
-  c(".orc",     "orc"),
-  c(".arff",    "arff"),
-  c(".csv",     "csv"),
-  c(".tsv",     "csv"),
-  c(".gz",      "other"),
-  c(".zip",     "other")
-)
-
-#' Map a filename/extension to one of: csv / parquet / orc / arff / other.
-#' @keywords internal
-.h2o.derive_file_format <- function(path_or_name) {
-  if (is.null(path_or_name) || !nzchar(path_or_name)) return("other")
-  s <- tolower(trimws(as.character(path_or_name)))
-  for (row in .h2o.telemetry.file_format_table) {
-    if (endsWith(s, row[[1]])) return(row[[2]])
-  }
-  "other"
-}
-
-#' Return bucket fields for a parsed H2OFrame, or empty list on failure.
-#' @keywords internal
-.h2o.derive_frame_shape <- function(frame) {
-  if (is.null(frame)) return(list())
-  out <- list()
-  nr <- tryCatch(as.numeric(nrow(frame)), error = function(e) NA_real_)  # numeric: rows can exceed 2^31
-  nc <- tryCatch(as.numeric(ncol(frame)), error = function(e) NA_real_)
-  if (!is.na(nr) && nr >= 0L) out$rows_bucket <- bucketize_rows(nr)
-  if (!is.na(nc) && nc >= 0L) out$cols_bucket <- bucketize_cols(nc)
-  # frame_memory_gb_bucket is intentionally omitted: the R client does not expose
-  # a frame's in-memory byte size, and this field is nullable on the wire.
-  out
-}
-
-#' Return list(n_rows, n_cols, frame_memory_gb) for a parsed H2OFrame, used by
-#' the frame_parsed call sites (which need raw counts and REQUIRE rows + cols).
-#' Returns NULL when rows/cols can't be determined so the caller skips the event.
-#' @keywords internal
-.h2o.derive_frame_dims <- function(frame) {
-  if (is.null(frame)) return(NULL)
-  nr <- tryCatch(as.numeric(nrow(frame)), error = function(e) NA_real_)  # numeric: rows can exceed 2^31
-  nc <- tryCatch(as.numeric(ncol(frame)), error = function(e) NA_real_)
-  if (is.na(nr) || is.na(nc)) return(NULL)
-  # frame_memory_gb is left NULL: the R client does not expose a frame's
-  # in-memory byte size, and this field is nullable on the wire.
-  list(n_rows = nr, n_cols = nc, frame_memory_gb = NULL)
 }

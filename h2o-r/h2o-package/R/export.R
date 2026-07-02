@@ -263,20 +263,9 @@ h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_
   if(filename == "")
     filename <- object@model_id
   path <- file.path(path, filename)
-  outcome <- "ok"
-  saved <- tryCatch({
-    res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,
-                             force=force,export_cross_validation_predictions=export_cross_validation_predictions,h2oRestApiVersion=99)
-    res$dir
-  }, error = function(e) { outcome <<- "error"; stop(e) })
-  tryCatch({
-    size <- if (!is.null(saved) && file.exists(saved)) file.info(saved)$size else NULL
-    .h2o.send_model_save(.h2o.r_version_safe(),
-                         algo = tryCatch(object@algorithm, error = function(e) ""),
-                         family = NULL, outcome = outcome, fmt = "binary",
-                         compressed_size_bytes = size)
-  }, error = function(e) invisible(NULL))
-  saved
+  res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,
+                           force=force,export_cross_validation_predictions=export_cross_validation_predictions,h2oRestApiVersion=99)
+  res$dir
 }
 
 #' Deprecated - use h2o.save_mojo instead. Save an H2O Model Object as Mojo to Disk

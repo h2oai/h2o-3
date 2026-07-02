@@ -86,41 +86,9 @@
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
                            col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL, force_col_types=FALSE,
                            custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="") {
-  outcome <- "ok"
-  first_path <- if (length(path) > 1L) path[[1]] else path
-  tel_t0 <- Sys.time()
-  res <- tryCatch(
-    h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                     na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns, force_col_types,
-                     custom_non_data_line_markers=custom_non_data_line_markers, partition_by, quotechar, escapechar),
-    error = function(e) { outcome <<- "error"; stop(e) }
-  )
-  tryCatch({
-    # Best-effort size for local paths; remote paths leave it null.
-    csize <- NULL
-    if (is.character(first_path) && length(first_path) == 1L && file.exists(first_path)) {
-      csize <- file.info(first_path)$size  # numeric (double): avoids 2GB integer overflow
-    }
-    fmt <- .h2o.derive_file_format(first_path)
-    shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(res) else list()
-    .h2o.send_import(.h2o.r_version_safe(),
-                     .h2o.derive_source_scheme(first_path),
-                     fmt,
-                     outcome,
-                     compressed_size_bytes = csize,
-                     frame_shape = shape)
-    # frame_parsed only when an actual parse ran and produced a frame with
-    # known rows/cols (both REQUIRED on that event).
-    if (outcome == "ok" && isTRUE(parse)) {
-      dims <- .h2o.derive_frame_dims(res)
-      if (!is.null(dims)) {
-        dur_ms <- as.numeric(difftime(Sys.time(), tel_t0, units = "secs")) * 1000
-        .h2o.send_frame_parsed(.h2o.r_version_safe(), fmt, outcome, dur_ms,
-                               dims$n_rows, dims$n_cols, frame_memory_gb = dims$frame_memory_gb)
-      }
-    }
-  }, error = function(e) invisible(NULL))
-  res
+  h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
+                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns, force_col_types,
+                   custom_non_data_line_markers=custom_non_data_line_markers, partition_by, quotechar, escapechar)
 }
 
 
@@ -211,50 +179,28 @@ h2o.uploadFile <- function(path, destination_frame = "",
 
   .h2o.gc()  # Clear out H2O to make space for new file
   path <- normalizePath(path, winslash = "/")
-  outcome <- "ok"
-  tel_t0 <- Sys.time()
-  result <- tryCatch({
-    srcKey <- .key.make( path )
-    urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
-    verbose <- getOption("h2o.verbose", FALSE)
+  srcKey <- .key.make( path )
+  urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
+  fileUploadInfo <- fileUpload(path)
+  .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
+  if (verbose) cat(sprintf("uploading file using 'fileUpload' and '.h2o.doSafePOST' took %.2fs\n", proc.time()[[3]]-pt))
+  if (verbose) pt <- proc.time()[[3]]
+  rawData <- .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
+  if (verbose) cat(sprintf("loading data using '.newH2OFrame' took %.2fs\n", proc.time()[[3]]-pt))
+  destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
+  if (parse) {
     if (verbose) pt <- proc.time()[[3]]
-    fileUploadInfo <- fileUpload(path)
-    .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
-    if (verbose) cat(sprintf("uploading file using 'fileUpload' and '.h2o.doSafePOST' took %.2fs\n", proc.time()[[3]]-pt))
-    if (verbose) pt <- proc.time()[[3]]
-    rawData <- .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
-    if (verbose) cat(sprintf("loading data using '.newH2OFrame' took %.2fs\n", proc.time()[[3]]-pt))
-    destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
-    if (parse) {
-      if (verbose) pt <- proc.time()[[3]]
-      ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
-                          col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
-                          decrypt_tool = decrypt_tool, skipped_columns = skipped_columns, force_col_types=force_col_types,
-                          quotechar=quotechar, escapechar=escapechar)
-      if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
-      ans
-    } else {
-      rawData
-    }
-  }, error = function(e) { outcome <<- "error"; stop(e) })
-  tryCatch({
-    size <- if (file.exists(path)) file.info(path)$size else 0
-    fmt <- .h2o.derive_file_format(path)
-    shape <- if (outcome == "ok" && isTRUE(parse)) .h2o.derive_frame_shape(result) else list()
-    .h2o.send_upload(.h2o.r_version_safe(), fmt, size, outcome,
-                     frame_shape = shape)
-    # frame_parsed captures the parse itself; only on a completed parse with
-    # known rows/cols (both REQUIRED on that event).
-    if (outcome == "ok" && isTRUE(parse)) {
-      dims <- .h2o.derive_frame_dims(result)
-      if (!is.null(dims)) {
-        dur_ms <- as.numeric(difftime(Sys.time(), tel_t0, units = "secs")) * 1000
-        .h2o.send_frame_parsed(.h2o.r_version_safe(), fmt, outcome, dur_ms,
-                               dims$n_rows, dims$n_cols, frame_memory_gb = dims$frame_memory_gb)
-      }
-    }
-  }, error = function(e) invisible(NULL))
-  result
+    ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
+                        col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
+                        decrypt_tool = decrypt_tool, skipped_columns = skipped_columns, force_col_types=force_col_types, 
+                        quotechar=quotechar, escapechar=escapechar)
+    if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
+    ans
+  } else {
+    rawData
+  }
 }
 
 #'
@@ -444,19 +390,9 @@ h2o.loadModel <- function(path) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
 
-  outcome <- "ok"
-  loaded_model <- tryCatch({
-    res <- .h2o.__remoteSend(.h2o.__LOAD_MODEL, h2oRestApiVersion = 99, dir = path, method = "POST")$models[[1L]]
-    h2o.getModel(res$model_id$name)
-  }, error = function(e) { outcome <<- "error"; stop(e) })
-  tryCatch({
-    size <- if (file.exists(path)) file.info(path)$size else NULL
-    algo <- tryCatch(loaded_model@algorithm, error = function(e) "")
-    .h2o.send_model_load(.h2o.r_version_safe(),
-                         algo = algo, family = NULL, outcome = outcome, fmt = "binary",
-                         compressed_size_bytes = size)
-  }, error = function(e) invisible(NULL))
-  loaded_model
+  res <- .h2o.__remoteSend(.h2o.__LOAD_MODEL, h2oRestApiVersion = 99, dir = path, method = "POST")$models[[1L]]
+  res
+  h2o.getModel(res$model_id$name)
 }
 
 
