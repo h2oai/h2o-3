@@ -154,6 +154,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: GBM Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -178,6 +179,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: GBM Benchmark noscoring-graalvm
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           java: "17"
@@ -204,6 +206,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: GBM Benchmark noscoring-java8
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -228,6 +231,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: GLM Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -252,6 +256,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: GAM Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -276,6 +281,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: H2O XGB Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           python: "3.7"
@@ -301,6 +307,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Vanilla XGB Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark-xgb-vanilla
           test_package: benchmark
           python: "3.7"
@@ -326,6 +333,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: DMLC XGB Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark-dmlc-r-xgboost
           test_package: benchmark
           python: "3.7"
@@ -351,6 +359,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: MERGE Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -375,6 +384,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: SORT Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -399,6 +409,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Rulefit Benchmark
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"

@@ -63,6 +63,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: h2o-algos Coverage
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: coverage-junit-algos
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}

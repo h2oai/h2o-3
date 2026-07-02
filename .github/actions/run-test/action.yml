@@ -84,9 +84,8 @@ inputs:
     default: '353750902984.dkr.ecr.us-east-1.amazonaws.com'
 
   ecr_role:
-    description: 'IAM role for ECR access'
-    required: false
-    default: 'arn:aws:iam::353750902984:role/GitHub-OIDC-Role'
+    description: 'IAM role for ECR access (pass from secrets.GH_OIDC_ROLE_H2O_ECR)'
+    required: true
 
   aws_region:
     description: 'AWS region'

@@ -81,6 +81,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Flow Headless
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-flow-headless
           test_package: js
           python: "3.7"
@@ -105,6 +106,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Flow Headless Small
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-flow-headless-small
           test_package: js
           python: "3.7"
@@ -129,6 +131,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Flow Headless Medium
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-flow-headless-medium
           test_package: js
           python: "3.7"

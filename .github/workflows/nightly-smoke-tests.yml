@@ -139,6 +139,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Py3.7 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-py-smoke
           test_package: py
           python: "3.7"
@@ -163,6 +164,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Py3.11 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-py-smoke
           test_package: py
           python: "3.11"
@@ -188,6 +190,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R3.5 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-smoke
           test_package: r
           r: "3.5.3"
@@ -212,6 +215,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: R4.0 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-r-smoke
           test_package: r
           r: "4.0.2"
@@ -237,6 +241,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Flow Headless Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-flow-headless-smoke
           test_package: js
           python: "3.7"
@@ -262,6 +267,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: INFO Check
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-info
           test_package: r
           r: "3.5.3"
@@ -287,6 +293,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 8 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-smoke-jenkins
           test_package: java
           java: "8"
@@ -311,6 +318,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-smoke-jenkins
           test_package: java
           java: "11"
@@ -335,6 +343,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 17 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-17-smoke-jenkins
           test_package: java
           java: "17"

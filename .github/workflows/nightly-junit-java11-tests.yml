@@ -63,6 +63,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Smoke
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-smoke-jenkins
           test_package: java
           java: "11"
@@ -108,6 +109,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos GLM
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-glm-jenkins
           test_package: java
           java: "11"
@@ -153,6 +155,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos GBM
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-gbm-jenkins
           test_package: java
           java: "11"
@@ -198,6 +201,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos DRF
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-drf-jenkins
           test_package: java
           java: "11"
@@ -243,6 +247,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos DeepLearning
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-deeplearning-jenkins
           test_package: java
           java: "11"
@@ -288,6 +293,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos GAM
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-gam-jenkins
           test_package: java
           java: "11"
@@ -333,6 +339,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos Tree+IsoFor+DT+Uplift
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-tree-generic-jenkins
           test_package: java
           java: "11"
@@ -378,6 +385,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos Ensemble
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-ensemble-jenkins
           test_package: java
           java: "11"
@@ -423,6 +431,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos KMeans
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-kmeans-jenkins
           test_package: java
           java: "11"
@@ -468,6 +477,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos RuleFit
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-rulefit-jenkins
           test_package: java
           java: "11"
@@ -513,6 +523,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos PCA
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-pca-jenkins
           test_package: java
           java: "11"
@@ -558,6 +569,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos GLRM
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-glrm-jenkins
           test_package: java
           java: "11"
@@ -603,6 +615,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos AdaBoost
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-adaboost-jenkins
           test_package: java
           java: "11"
@@ -648,6 +661,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos ModelSelection
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-modelselection-jenkins
           test_package: java
           java: "11"
@@ -693,6 +707,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos Generic
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-generic-jenkins
           test_package: java
           java: "11"
@@ -738,6 +753,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos Grid
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-grid-jenkins
           test_package: java
           java: "11"
@@ -783,6 +799,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 Algos Misc
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-algos-misc-jenkins
           test_package: java
           java: "11"
@@ -829,6 +846,7 @@ jobs:
       - uses: ./.github/actions/run-test
         with:
           name: Java 11 JUnit Other
+          ecr_role: ${{ env.ECR_ROLE }}
           make_target: test-junit-11-other-jenkins
           test_package: java
           java: "11"
