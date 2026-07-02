@@ -203,6 +203,7 @@ function() {
             ".h2o.telemetry.envelope", ".h2o.telemetry.runtime_fields",
             ".h2o.telemetry.attributes_with_distribution", ".h2o.telemetry.disabled",
             ".h2o.telemetry.load_persisted_pref", ".h2o.telemetry.maybe_print_notice",
+            ".h2o.telemetry.notice_text",
             "bucketize_cluster_nodes", "bucketize_cluster_memory_gb"
          )
          

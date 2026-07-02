@@ -61,12 +61,20 @@ test.telemetry <- function() {
   }, add = TRUE)
   Sys.unsetenv("DO_NOT_TRACK")
 
-  # --- First-run disclosure notice: shown once per environment, then suppressed. ---
-  h2o.set_telemetry(TRUE)  # enabled, so the notice is eligible to print
-  first  <- capture.output(.h2o.telemetry.maybe_print_notice(), type = "message")
-  second <- capture.output(.h2o.telemetry.maybe_print_notice(), type = "message")
-  expect_true(any(grepl("anonymous usage telemetry", first)))
-  expect_equal(length(second), 0L)
+  # --- First-run disclosure notice: correct text, shown once per environment.
+  #     Asserted via the version-stamped marker (the actual once-only mechanism)
+  #     rather than by capturing message() output -- the runit harness already
+  #     holds a sink on the message stream, so capture.output(type="message")
+  #     would grab nothing. ---
+  expect_true(any(grepl("anonymous usage telemetry", .h2o.telemetry.notice_text())))
+  marker <- file.path(tmp_home, ".h2oai", ".telemetry_notice_r")
+  if (file.exists(marker)) file.remove(marker)
+  h2o.set_telemetry(TRUE)               # enabled, so the notice is eligible
+  .h2o.telemetry.maybe_print_notice()   # first run: prints + records the marker
+  expect_true(file.exists(marker))
+  writeLines("999", marker)             # sentinel above the notice version
+  .h2o.telemetry.maybe_print_notice()   # second run: marker >= version -> no-op
+  expect_equal(readLines(marker, warn = FALSE), "999")
 
   # --- Persistent opt-out: h2o.set_telemetry writes ~/.h2oai/telemetry and the
   #     getter reflects it (kept in sync with the Python client). ---
