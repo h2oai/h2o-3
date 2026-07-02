@@ -437,8 +437,15 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
-    if (_ex!=null)
-      throw new RuntimeException((Throwable)AutoBuffer.javaSerializeReadPojo(_ex));
+    if (_ex!=null) {
+      // Deliver the failure consistently with the barrier.join() path above, which rethrows
+      // the original exception - otherwise callers see a different exception type depending
+      // on whether the job failed before or after get() was called (GH-16717).
+      Throwable ex = (Throwable) AutoBuffer.javaSerializeReadPojo(_ex);
+      if (ex instanceof RuntimeException)
+        throw (RuntimeException) ex;
+      throw new RuntimeException(ex);
+    }
     // Maybe null return, if the started fjtask does not actually produce a result at this Key
     return _result==null ? null : _result.get(); 
   }
