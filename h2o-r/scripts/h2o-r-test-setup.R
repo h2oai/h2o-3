@@ -197,7 +197,13 @@ function() {
             ".getExpanded", ".str.list", "is.H2OFrame", ".get.session.property", ".set.session.property",
             ".h2o.maximizing_metrics", ".h2o.doSafeGET", ".parse.h2oconfig", ".h2o.check_java_version",
             "cut.H2OFrame", "as.data.frame.H2OFrame", ".h2o.perfect_auc", ".newExpr", ".h2o.doSafeREST",
-            ".h2o.fromJSON", ".shorten_model_ids", ".calculate_pareto_front", ".h2o.__IMPORT"
+            ".h2o.fromJSON", ".shorten_model_ids", ".calculate_pareto_front", ".h2o.__IMPORT",
+            # telemetry internals exercised by runit_telemetry.R (session-start events only)
+            ".h2o.send_init_telemetry", ".h2o.send_cluster_connect_telemetry",
+            ".h2o.telemetry.envelope", ".h2o.telemetry.runtime_fields",
+            ".h2o.telemetry.attributes_with_distribution", ".h2o.telemetry.disabled",
+            ".h2o.telemetry.load_persisted_pref", ".h2o.telemetry.maybe_print_notice",
+            "bucketize_cluster_nodes", "bucketize_cluster_memory_gb"
          )
          
         for (fn in additional_imports)

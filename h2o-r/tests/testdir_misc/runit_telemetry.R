@@ -1,114 +1,115 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd(normalizePath(dirname(
+  R.utils::commandArgs(asValues = TRUE)$"f"
+)))
 source("../../scripts/h2o-r-test-setup.R")
 
-# Telemetry needs no cluster: we stub the transport and assert the payloads the
-# public emitters build (envelope + bucket label strings). The real non-blocking
-# transport (a libcurl async multi pool) is covered by the Python/Java HTTP smoke
-# tests; R has no lightweight in-process HTTP server, so we don't duplicate a
-# delivery test here.
+# R telemetry is limited to the two session-start events (init / cluster_connect),
+# delivered by one synchronous, bounded curl POST. No cluster is needed: we test
+# the payload-builder helpers the emitters assemble (envelope, runtime fields,
+# distribution attribute), the shared cluster-shape bucket boundaries, the
+# opt-out / persistence logic, the one-time notice, and that the emitters are
+# exception-safe (never raise). Internal functions are exposed unqualified via
+# `additional_imports` in h2o-r-test-setup.R (never via the ::: operator, which
+# is unavailable when the package source is sourced rather than installed).
 
 test.telemetry <- function() {
-  check <- function(cond, msg) if (!isTRUE(cond)) stop("FAIL: ", msg)
-
-  # Make sure telemetry is enabled for the duration of the test.
-  Sys.unsetenv("DO_NOT_TRACK")
-  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
-
-  # Intercept the transport: capture each payload instead of POSTing it.
-  captured <- new.env()
-  captured$events <- list()
-  orig_post <- h2o:::.h2o.telemetry.post
-  assignInNamespace(".h2o.telemetry.post",
-                    function(payload) {
-                      captured$events[[length(captured$events) + 1L]] <- payload
-                      invisible(NULL)
-                    },
-                    ns = "h2o")
-  on.exit(assignInNamespace(".h2o.telemetry.post", orig_post, ns = "h2o"), add = TRUE)
-
   ver <- "3.46.0.12"
-  h2o:::.h2o.send_import(ver, "hdfs", "csv", "ok",
-                         compressed_size_bytes = 50 * 1024 * 1024,
-                         frame_shape = list(rows_bucket = "1K-10K", cols_bucket = "1-10"))
-  h2o:::.h2o.send_init_telemetry(ver)
 
-  by_event <- list()
-  for (e in captured$events) by_event[[e$event]] <- e
+  # --- Envelope: the fields every event carries. ---
+  env <- .h2o.telemetry.envelope(ver)
+  for (k in c("payload_version", "client", "h2o_version", "os", "session_id", "ts", "product"))
+    expect_true(!is.null(env[[k]]))
+  expect_equal(env$client, "r")
+  expect_equal(env$h2o_version, ver)
+  expect_equal(env$payload_version, 1L)
+  expect_equal(env$product, "h2o-3-oss")
+  expect_true(env$os %in% c("macos", "windows", "linux") || nzchar(env$os))
 
-  check(!is.null(by_event[["import"]]), "import event emitted")
-  check(!is.null(by_event[["init"]]),   "init event emitted")
+  # --- Runtime fields on init / cluster_connect: r_version + cpu_arch always
+  #     present; python_* never present on the R client. ---
+  rf <- .h2o.telemetry.runtime_fields()
+  expect_true("r_version" %in% names(rf))
+  expect_true("cpu_arch" %in% names(rf))
+  expect_false("python_version" %in% names(rf))
+  expect_false("python_distribution" %in% names(rf))
 
-  imp <- by_event[["import"]]
-  for (k in c("payload_version", "client", "h2o_version", "session_id", "ts", "product"))
-    check(!is.null(imp[[k]]), paste("envelope key present:", k))
-  check(identical(imp$client, "r"),                "client = r")
-  check(identical(imp$source_scheme, "hdfs"),      "source_scheme = hdfs")
-  check(identical(imp$file_format, "csv"),         "file_format = csv")
-  check(identical(imp$outcome, "ok"),              "outcome = ok")
-  check(identical(imp$data_size_bucket, "10MB-100MB"),
-        paste("data_size_bucket bucketed, got:", imp$data_size_bucket))
-  check(identical(imp$rows_bucket, "1K-10K"),      "rows_bucket carried through")
+  # --- Build-flavor distribution attribute (h2o vs h2o_client; falls back to
+  #     "h2o" for a source/dev load with no baked marker). ---
+  attrs <- .h2o.telemetry.attributes_with_distribution(NULL)
+  expect_true(attrs$distribution %in% c("h2o", "h2o_client"))
 
-  # init carries the runtime fields (r_version always) and the build-flavor
-  # distribution attribute (h2o vs h2o_client; falls back to "h2o" for a
-  # source/dev install with no baked marker).
-  check(!is.null(by_event[["init"]]$r_version), "init event carries r_version")
-  dist <- by_event[["init"]]$attributes$distribution
-  check(!is.null(dist) && dist %in% c("h2o", "h2o_client"),
-        paste("init event has attributes.distribution, got:", dist))
+  # --- Cluster-shape bucket boundaries (shared wire contract across clients). ---
+  expect_equal(bucketize_cluster_nodes(1),   "1")     # exact count for n <= 16
+  expect_equal(bucketize_cluster_nodes(16),  "16")
+  expect_equal(bucketize_cluster_nodes(17),  "17-20")
+  expect_equal(bucketize_cluster_nodes(256), "129-256")
+  expect_equal(bucketize_cluster_nodes(257), ">256")
+  expect_equal(bucketize_cluster_memory_gb(3),    "<4")
+  expect_equal(bucketize_cluster_memory_gb(4),    "4-8")
+  expect_equal(bucketize_cluster_memory_gb(16),   "16-32")
+  expect_equal(bucketize_cluster_memory_gb(5000), ">4096")  # large value does not overflow
 
-  # Bucket boundaries are byte-exact (shared wire contract across clients).
-  check(identical(h2o:::bucketize_data_size(9 * 1024 * 1024),  "<10MB"),      "data_size <10MB boundary")
-  check(identical(h2o:::bucketize_data_size(10 * 1024 * 1024), "10MB-100MB"), "data_size 10MB boundary")
-  check(identical(h2o:::bucketize_data_size(5 * 1024^3),       "5GB-10GB"),   "data_size 5GB boundary")
-
-  # A >2GB file must not overflow to NA (the as.integer bug) — it buckets cleanly.
-  check(identical(h2o:::bucketize_data_size(3 * 1024^3), "1GB-5GB"),
-        "files larger than 2GB bucket correctly")
-
-  # First-run disclosure notice: shown once per environment, then suppressed.
-  # Use a throwaway HOME so the marker doesn't touch the real one.
+  # Use a throwaway HOME so persistence / notice markers never touch the real one.
   old_home <- Sys.getenv("HOME")
   tmp_home <- tempfile("h2o_home"); dir.create(tmp_home)
   Sys.setenv(HOME = tmp_home)
-  on.exit(Sys.setenv(HOME = old_home), add = TRUE)
-  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
-  first  <- capture.output(h2o:::.h2o.telemetry.maybe_print_notice(), type = "message")
-  second <- capture.output(h2o:::.h2o.telemetry.maybe_print_notice(), type = "message")
-  check(any(grepl("anonymous usage telemetry", first)), "notice printed on first run")
-  check(length(second) == 0L, "notice not repeated on second run (marker honored)")
+  old_url <- Sys.getenv("H2O_TELEMETRY_URL")
+  on.exit({
+    Sys.setenv(HOME = old_home)
+    if (nzchar(old_url)) Sys.setenv(H2O_TELEMETRY_URL = old_url) else Sys.unsetenv("H2O_TELEMETRY_URL")
+    Sys.unsetenv("DO_NOT_TRACK")
+  }, add = TRUE)
+  Sys.unsetenv("DO_NOT_TRACK")
 
-  # Persistent opt-out: h2o.set_telemetry writes ~/.h2oai/telemetry (kept in sync with Python).
+  # --- First-run disclosure notice: shown once per environment, then suppressed. ---
+  h2o.set_telemetry(TRUE)  # enabled, so the notice is eligible to print
+  first  <- capture.output(.h2o.telemetry.maybe_print_notice(), type = "message")
+  second <- capture.output(.h2o.telemetry.maybe_print_notice(), type = "message")
+  expect_true(any(grepl("anonymous usage telemetry", first)))
+  expect_equal(length(second), 0L)
+
+  # --- Persistent opt-out: h2o.set_telemetry writes ~/.h2oai/telemetry and the
+  #     getter reflects it (kept in sync with the Python client). ---
   pref <- file.path(tmp_home, ".h2oai", "telemetry")
-  check(isTRUE(h2o::h2o.set_telemetry(FALSE)), "set_telemetry(FALSE) persisted to disk")
-  check(identical(readLines(pref, warn = FALSE), "0"), "pref file written as 0")
-  check(identical(h2o::h2o.telemetry_enabled(), FALSE), "telemetry_enabled() FALSE after opt-out")
-  check(isTRUE(h2o::h2o.set_telemetry(TRUE)), "set_telemetry(TRUE) persisted to disk")
-  check(isTRUE(h2o::h2o.telemetry_enabled()), "telemetry_enabled() TRUE after opt-in")
+  expect_true(h2o.set_telemetry(FALSE))
+  expect_equal(readLines(pref, warn = FALSE), "0")
+  expect_false(h2o.telemetry_enabled())
+  expect_true(h2o.set_telemetry(TRUE))
+  expect_equal(readLines(pref, warn = FALSE), "1")
+  expect_true(h2o.telemetry_enabled())
 
-  # ~/.h2oconfig (home) opt-out; any opt-out wins (union). Tested in isolation.
+  # --- ~/.h2oconfig (home) opt-out; any opt-out wins (union). ---
   file.remove(pref)
   cfg <- file.path(tmp_home, ".h2oconfig")
-  reload <- function() {
-    h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
-    h2o:::.h2o.telemetry.load_persisted_pref()
-    h2o:::.h2o.telemetry.disabled()
-  }
-  writeLines(c("[general]", "telemetry = false"), cfg)
-  check(isTRUE(reload()), ".h2oconfig telemetry=false opts out")
-  writeLines("general.telemetry = true", cfg)
-  check(identical(reload(), FALSE), ".h2oconfig general.telemetry=true opts in")
-  writeLines("1", pref); writeLines(c("[general]", "telemetry = off"), cfg)
-  check(isTRUE(reload()), "config opt-out wins over ~/.h2oai file (union off)")
-  file.remove(pref); file.remove(cfg)
-  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
+  disabled_after <- function() { .h2o.telemetry.load_persisted_pref(); !h2o.telemetry_enabled() }
 
-  # Disabled telemetry emits nothing.
-  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- TRUE
-  before <- length(captured$events)
-  h2o:::.h2o.send_import(ver, "s3", "parquet", "ok")
-  check(length(captured$events) == before, "no events emitted while telemetry disabled")
-  h2o:::.h2o.telemetry.state$disabled_by_kwarg <- FALSE
+  writeLines(c("[general]", "telemetry = false"), cfg)
+  expect_true(disabled_after())                 # config opt-out disables
+
+  writeLines("general.telemetry = true", cfg)
+  expect_false(disabled_after())                # config opt-in enables
+
+  writeLines("1", pref); writeLines(c("[general]", "telemetry = off"), cfg)
+  expect_true(disabled_after())                 # config off wins over ~/.h2oai file on (union off)
+  file.remove(pref); file.remove(cfg)
+
+  # --- DO_NOT_TRACK always wins. ---
+  h2o.set_telemetry(TRUE)
+  Sys.setenv(DO_NOT_TRACK = "1")
+  expect_true(.h2o.telemetry.disabled())
+  Sys.unsetenv("DO_NOT_TRACK")
+  expect_false(.h2o.telemetry.disabled())
+
+  # --- Emitters are exception-safe: bounded synchronous POST to an unreachable
+  #     endpoint never raises, whether telemetry is on or off. ---
+  Sys.setenv(H2O_TELEMETRY_URL = "http://127.0.0.1:1/v1/event")  # refused fast; bounded by connecttimeout
+  h2o.set_telemetry(TRUE)
+  expect_error(.h2o.send_init_telemetry(ver), NA)
+  expect_error(.h2o.send_cluster_connect_telemetry(ver), NA)
+  h2o.set_telemetry(FALSE)  # disabled -> no-op, no network
+  expect_error(.h2o.send_init_telemetry(ver), NA)
+  h2o.set_telemetry(TRUE)   # restore default-on for the session
 }
 
-doTest("Telemetry: wire contract + bucket boundaries (no cluster needed)", test.telemetry)
+doTest("Telemetry: session-start payload, buckets, opt-out (no cluster needed)",
+       test.telemetry)
