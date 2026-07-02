@@ -49,15 +49,18 @@ test.telemetry <- function() {
   expect_equal(bucketize_cluster_memory_gb(16),   "16-32")
   expect_equal(bucketize_cluster_memory_gb(5000), ">4096")  # large value does not overflow
 
-  # Use a throwaway HOME so persistence / notice markers never touch the real one.
+  # Use a throwaway HOME so persistence / notice markers never touch the real
+  # one -- and so the test does not depend on a real (or writable) home existing
+  # on CI (tempdir() is always present). DO_NOT_TRACK is unset for the duration
+  # (some CI set it) and restored on exit.
   old_home <- Sys.getenv("HOME")
+  old_url <- Sys.getenv("H2O_TELEMETRY_URL"); old_dnt <- Sys.getenv("DO_NOT_TRACK")
   tmp_home <- tempfile("h2o_home"); dir.create(tmp_home)
   Sys.setenv(HOME = tmp_home)
-  old_url <- Sys.getenv("H2O_TELEMETRY_URL")
   on.exit({
     Sys.setenv(HOME = old_home)
     if (nzchar(old_url)) Sys.setenv(H2O_TELEMETRY_URL = old_url) else Sys.unsetenv("H2O_TELEMETRY_URL")
-    Sys.unsetenv("DO_NOT_TRACK")
+    if (nzchar(old_dnt)) Sys.setenv(DO_NOT_TRACK = old_dnt) else Sys.unsetenv("DO_NOT_TRACK")
   }, add = TRUE)
   Sys.unsetenv("DO_NOT_TRACK")
 
