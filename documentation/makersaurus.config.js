@@ -4,12 +4,13 @@
 // every published docs build states exactly which H2O-3 Enterprise release it
 // documents. Unset for local/dev builds, which then show no version banner.
 const projectVersion = process.env.H2O_PROJECT_VERSION;
+const baseUrl = process.env.BASE_URL || "/h2o-3-enterprise/";
 
 module.exports = {
   title: "H2O-3 Enterprise",
   tagline: "Distributed, scalable machine learning for the enterprise",
   url: "https://docs.h2o.ai",
-  baseUrl: process.env.BASE_URL || "/h2o-3-enterprise/",
+  baseUrl,
   projectName: "h2o-3-enterprise", // GitHub repo name (docs live in documentation/ of this repo)
   feedbackAssignee: "shaunyogeshwaran", // GitHub username that receives doc-feedback issues
   searchFilter: "h2o-3-enterprise", // Algolia facet — requires registration in the central dev_docs_omnisearch crawler
@@ -20,7 +21,7 @@ module.exports = {
     // even for users who dismissed the previous one.
     announcementBar: {
       id: `h2o-3-enterprise-${projectVersion}`,
-      content: `This documentation is for H2O-3 Enterprise <b>${projectVersion}</b> — see the <a href="release-notes">release notes</a>.`,
+      content: `This documentation is for H2O-3 Enterprise <b>${projectVersion}</b> — see the <a href="${baseUrl}release-notes">release notes</a>.`,
       backgroundColor: "#fec925",
       isCloseable: true,
     },
