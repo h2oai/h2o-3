@@ -2285,17 +2285,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               gradientInfo = ls._ginfoOriginal;
             }
 
-            // check for stopping conditions which also updates the variables in state.
-            // stopping condition is to stop us getting stuck in improvements that are too insignificant.
-            // However, we will only exit the while loop when the gradMagSquare is still too high.  There is no hope
-            // for improvement here anymore since the beta values and gradient values are not changing much anymore.
+            // Only exit on hard stop conditions. The progress() check must not short-circuit the outer loop
+            // because λ and c_k are only updated there. Exiting early would prevent constraints from being enforced.
             done = stop_requested() || (_state._iter >= _parms._max_iterations) || _earlyStop;  // time to go
-            if ((!progress(betaCnd, gradientInfo) && !gradSmallEnough) || done) {
+            if (done) {
               checkKKTConditions(betaCnd, gradientInfo, iterCnt);
               if (_betaConstraintsOn)
                 bc.applyAllBounds(_state.beta());
               return;
             }
+            progress(betaCnd, gradientInfo); // update state only, not used as exit condition
 
             Log.info(LogMsg("computed in " + (System.currentTimeMillis() - t1)  + "ms, step = " + iterCnt +
                     ((_lslvr != null) ? ", l1solver " + _lslvr : "")));

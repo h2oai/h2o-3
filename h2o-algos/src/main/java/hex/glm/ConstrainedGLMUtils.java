@@ -375,8 +375,8 @@ public class ConstrainedGLMUtils {
                 coefNameList, "Linear equality constraint: ", constraintConditions, cSatisfied, cValues,
                 cConditions, constraintStrings) && constraintsSatisfied;
 
-      if (state._lessThanEqualToConstraints != null)
-        constraintsSatisfied = evaluateConstraint(state, state._lessThanEqualToConstraints, false, beta, 
+      if (state._lessThanEqualToConstraintsLinear != null)
+        constraintsSatisfied = evaluateConstraint(state, state._lessThanEqualToConstraintsLinear, false, beta, 
                 coefNameList, "Linear inequality constraint: ", constraintConditions, cSatisfied, cValues,
                 cConditions, constraintStrings) && constraintsSatisfied;
 
@@ -608,8 +608,8 @@ public class ConstrainedGLMUtils {
       }
     }
     
-    if (state._lessThanEqualToConstraints != null && constIndexWOffset < state._lessThanEqualToConstraints.length) {
-      return state._lessThanEqualToConstraints[constIndexWOffset];
+    if (state._lessThanEqualToConstraintsLinear != null && constIndexWOffset < state._lessThanEqualToConstraintsLinear.length) {
+      return state._lessThanEqualToConstraintsLinear[constIndexWOffset];
     }
     return null;
   }
@@ -847,9 +847,9 @@ public class ConstrainedGLMUtils {
     int numConst = 0;
     // check constraints from beta constrains
     numConst += state._equalityConstraintsBeta == null ? 0 : state._equalityConstraintsBeta.length;
-    numConst += state._lessThanEqualToConstraintsBeta == null ? 0 : state._lessThanEqualToConstraintsBeta.length/2;
+    numConst += state._lessThanEqualToConstraintsBeta == null ? 0 : state._lessThanEqualToConstraintsBeta.length;
     numConst += state._equalityConstraintsLinear == null ? 0 : state._equalityConstraintsLinear.length;
-    numConst += state._lessThanEqualToConstraints == null ? 0 : state._lessThanEqualToConstraints.length;
+    numConst += state._lessThanEqualToConstraintsLinear == null ? 0 : state._lessThanEqualToConstraintsLinear.length;
     return numConst;
   }
   
