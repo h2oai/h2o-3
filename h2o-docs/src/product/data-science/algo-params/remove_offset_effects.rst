@@ -27,7 +27,7 @@ Calling ``make_unrestricted_glm_model()`` on a model trained with CV propagates 
 
 If you set up ``remove_offset_effects`` together with ``control_variables``, model metrics and scoring history are calculated with both features enabled (that is, with both offset and control-variable effects removed during scoring).
 If you need to get a model with only one feature enabled, you can get it using ``glm.make_derived_glm_model(remove_control_variables_effects=True)`` or ``glm.make_derived_glm_model(remove_offset_effects=True)``.
-If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation. 
+If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
 Cross-validation is not supported in the combination of these two features yet.
 
 **Notes**:

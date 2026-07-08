@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.GLMMetrics;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
@@ -50,7 +51,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             Scope.enter();
             train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
             GLMModel.GLMParameters.Family family = GLMModel.GLMParameters.Family.binomial;
-            
+
             String responseColumn = "C21";
 
             // set cat columns
@@ -2078,6 +2079,14 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
     // GH-16676: Additional tests for control_variables and remove_offset_effects
     // =========================================================================
 
+    /** Returns the index of the first row whose header equals {@code name}, or -1 if not found. */
+    private static int findRowIndex(TwoDimTable table, String name) {
+        String[] rowHeaders = table.getRowHeaders();
+        for (int i = 0; i < rowHeaders.length; i++)
+            if (name.equals(rowHeaders[i])) return i;
+        return -1;
+    }
+
     /** Creates a small binomial frame with categorical predictors, offset, and response. */
     private static Frame makeBinomialOffsetFrame(String key) {
         Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0}, new String[]{"0","1"}, Vec.newKey());
@@ -2101,6 +2110,28 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
         Vec resp = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"}, Vec.newKey());
         Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1","x2","offset","y"}, new Vec[]{x1,x2,offset,resp});
+        DKV.put(f);
+        return f;
+    }
+
+    /** Creates a small Poisson frame with a numeric predictor, a non-zero log-offset, and count response. */
+    private static Frame makePoissonOffsetFrame(String key) {
+        Vec x1 = Vec.makeVec(new double[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26}, Vec.newKey());
+        Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0.3,0.2,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0.2,0.3,0.5,0.1,0.2,0.3,0.1,0.2,0.1,0.3}, Vec.newKey());
+        Vec y = Vec.makeVec(new double[]{1,2,0,3,1,0,2,4,1,0,2,3,1,5,2,0,1,0,3,2,1,0,4,1,0,2}, Vec.newKey());
+        Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1", "offset", "y"}, new Vec[]{x1, offset, y});
+        DKV.put(f);
+        return f;
+    }
+
+    /** Creates makeBinomialOffsetFrame's data with an explicit fold column instead of relying on nfolds-driven splitting. */
+    private static Frame makeBinomialOffsetFoldColumnFrame(String key) {
+        Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0}, new String[]{"0","1"}, Vec.newKey());
+        Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0}, new String[]{"0","1"}, Vec.newKey());
+        Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
+        Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"}, Vec.newKey());
+        Vec fold = Vec.makeVec(new long[]{0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1}, new String[]{"0","1","2"}, Vec.newKey());
+        Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1", "x2", "offset", "y", "fold"}, new Vec[]{cat1, cat2, offset, res, fold});
         DKV.put(f);
         return f;
     }
@@ -2864,6 +2895,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             params._lambda = new double[]{0};
             params._intercept = false;
             params._nfolds = 3;
+            params._seed = 1234;
             params._distribution = DistributionFamily.bernoulli;
             params._link = GLMModel.GLMParameters.Link.logit;
             params._keep_cross_validation_predictions = true;
@@ -2896,8 +2928,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             // residual_deviance mean differs between restricted and unrestricted summaries.
             TwoDimTable restrictedSummary = glm._output._cross_validation_metrics_summary;
             assertNotNull(restrictedSummary);
-            int restrictedRow = restrictedSummary.findRowIndex("residual_deviance");
-            int unrestrictedRow = unrestrictedSummary.findRowIndex("residual_deviance");
+            int restrictedRow = findRowIndex(restrictedSummary, "residual_deviance");
+            int unrestrictedRow = findRowIndex(unrestrictedSummary, "residual_deviance");
             assertTrue(restrictedRow >= 0);
             assertTrue(unrestrictedRow >= 0);
             double restrictedMean = ((Number) restrictedSummary.get(restrictedRow, 0)).doubleValue();
@@ -2946,6 +2978,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             paramsNoROE._lambda = new double[]{0};
             paramsNoROE._intercept = false;
             paramsNoROE._nfolds = 3;
+            paramsNoROE._seed = 1234;
             paramsNoROE._distribution = DistributionFamily.bernoulli;
             paramsNoROE._link = GLMModel.GLMParameters.Link.logit;
             paramsNoROE._keep_cross_validation_predictions = true;
@@ -2959,9 +2992,113 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertNull(glmNoROE._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
             assertNull("Per-fold unrestricted predictions must be null when remove_offset_effects=false",
                     glmNoROE._output._cross_validation_predictions_unrestricted_model);
+
+            // Strong invariant: with the same seed/folds and identical data, the with-offset (unrestricted)
+            // CV view of the remove_offset_effects=true model must reproduce exactly what a plain
+            // remove_offset_effects=false model computes for its main CV metrics.
+            unrestrictedResDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics_unrestricted_model).residual_deviance();
+            double baselineResDev = ((ModelMetricsBinomialGLM) glmNoROE._output._cross_validation_metrics).residual_deviance();
+            assertEquals("Unrestricted CV residual_deviance must match the same-seed remove_offset_effects=false baseline",
+                    baselineResDev, unrestrictedResDev, 1e-8);
         } finally {
             if (train != null) train.remove();
             if (trainNoROE != null) trainNoROE.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Regression guard for the _description-set-after-DKV.put ordering bug: addModelMetrics()
+     * DKV.puts the metric immediately, so setting _description afterward only updates the in-memory
+     * object — a fresh DKV fetch of the same key would see a null description. The fix sets
+     * _description before addModelMetrics() runs.
+     */
+    @Test
+    public void testUnrestrictedCvMetricDescriptionPersistedToDkv() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_unrestricted_cv_metric_description");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            ModelMetrics unrestrictedCvMM = glm._output._cross_validation_metrics_unrestricted_model;
+            assertNotNull(unrestrictedCvMM);
+            assertNotNull("In-memory unrestricted CV metric must have a description",
+                    unrestrictedCvMM._description);
+
+            // Force a fresh deserialization from DKV bytes, bypassing the in-memory object that
+            // would show the correct value regardless of when _description was set relative to the put.
+            ModelMetrics fromDkv = DKV.getGet(unrestrictedCvMM._key);
+            assertNotNull("Unrestricted CV metric must be retrievable from DKV", fromDkv);
+            assertNotNull("Unrestricted CV metric's description must be persisted to DKV, not just set "
+                    + "on the in-memory object after it was already put", fromDkv._description);
+            assertEquals(unrestrictedCvMM._description, fromDkv._description);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Regression guard for deleteCrossValidationPreds deleting a CV metric during a
+     * predictions-only cleanup: the method is called standalone (e.g. by StackedEnsemble on a base
+     * learner, or directly by callers wanting to free per-fold prediction memory) while the model
+     * stays alive and usable. It must free per-fold/holdout prediction frames but must NOT delete
+     * _cross_validation_metrics_unrestricted_model — that metric is already tracked in
+     * _model_metrics and is cleaned up by remove_impl only when the model itself is deleted.
+     */
+    @Test
+    public void testDeleteCrossValidationPredsKeepsUnrestrictedMetric() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_delete_cv_preds_keeps_metric");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._keep_cross_validation_predictions = true;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            Key<ModelMetrics> unrestrictedMetricKey = glm._output._cross_validation_metrics_unrestricted_model._key;
+            Key<Frame> unrestrictedHoldoutKey = glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model;
+            assertNotNull(DKV.getGet(unrestrictedMetricKey));
+            assertNotNull(DKV.getGet(unrestrictedHoldoutKey));
+
+            glm.deleteCrossValidationPreds();
+
+            assertNotNull("deleteCrossValidationPreds must not remove the unrestricted CV metric "
+                    + "while the model is still alive", DKV.getGet(unrestrictedMetricKey));
+            assertNull("deleteCrossValidationPreds must still free the unrestricted holdout-pred frame",
+                    DKV.getGet(unrestrictedHoldoutKey));
+        } finally {
+            if (train != null) train.remove();
             Scope.exit();
         }
     }
@@ -3008,8 +3145,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             // residual_deviance row is present and differs between restricted and unrestricted.
             TwoDimTable restrictedSummary = glm._output._cross_validation_metrics_summary;
             assertNotNull(restrictedSummary);
-            int restrictedRow = restrictedSummary.findRowIndex("residual_deviance");
-            int unrestrictedRow = unrestrictedSummary.findRowIndex("residual_deviance");
+            int restrictedRow = findRowIndex(restrictedSummary, "residual_deviance");
+            int unrestrictedRow = findRowIndex(unrestrictedSummary, "residual_deviance");
             assertTrue("residual_deviance row missing from restricted summary", restrictedRow >= 0);
             assertTrue("residual_deviance row missing from unrestricted summary", unrestrictedRow >= 0);
             double restrictedMean = ((Number) restrictedSummary.get(restrictedRow, 0)).doubleValue();
@@ -3020,6 +3157,120 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             // Per-fold unrestricted predictions must be null when keep_cross_validation_predictions is not set.
             assertNull("Per-fold unrestricted predictions must be null when keep_cross_validation_predictions=false",
                     glm._output._cross_validation_predictions_unrestricted_model);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Poisson family, remove_offset_effects=true, nfolds>0, keep_cross_validation_predictions unset:
+     * exercises the regression branch of cv_additionalScoringPerFold (cvModel.scoreMetrics(adaptFr),
+     * i.e. Model.BigScore) rather than cv_scoreFold, since nclasses()==1 here. Prior to the
+     * GLMMetricBuilder fix, BigScore fed the raw frame offset into null_deviance regardless of
+     * _useRemoveOffsetEffects, so the restricted CV null_deviance silently matched the unrestricted
+     * (with-offset) one instead of being computed with the offset zeroed out.
+     */
+    @Test
+    public void testRemoveOffsetCvPoissonRegressionScoringPath() {
+        Frame train = null;
+        Frame trainNoROE = null;
+        GLMModel glm = null;
+        GLMModel glmNoROE = null;
+        try {
+            Scope.enter();
+            train = makePoissonOffsetFrame("test_poisson_offset_cv");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._family = GLMModel.GLMParameters.Family.poisson;
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._nfolds = 3;
+            params._seed = 1234;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            assertNotNull(glm._output._cross_validation_metrics);
+            assertNotNull(glm._output._cross_validation_metrics_unrestricted_model);
+            GLMMetrics restricted = (GLMMetrics) glm._output._cross_validation_metrics;
+            GLMMetrics unrestricted = (GLMMetrics) glm._output._cross_validation_metrics_unrestricted_model;
+
+            // residual_deviance must differ: offset-removed predictions vs with-offset predictions.
+            assertNotEquals("Restricted and unrestricted CV residual_deviance must differ when offset is non-zero",
+                    restricted.residual_deviance(), unrestricted.residual_deviance(), 1e-8);
+            // null_deviance must also differ: this is the regression guard for the BigScore offset-zeroing fix.
+            assertNotEquals("Restricted and unrestricted CV null_deviance must differ when offset is non-zero",
+                    restricted.null_deviance(), unrestricted.null_deviance(), 1e-8);
+
+            // Same-seed baseline without remove_offset_effects must reproduce the unrestricted view exactly.
+            trainNoROE = makePoissonOffsetFrame("test_poisson_offset_cv_no_roe");
+            GLMModel.GLMParameters paramsNoROE = new GLMModel.GLMParameters();
+            paramsNoROE._train = trainNoROE._key;
+            paramsNoROE._response_column = "y";
+            paramsNoROE._offset_column = "offset";
+            paramsNoROE._family = GLMModel.GLMParameters.Family.poisson;
+            paramsNoROE._alpha = new double[]{0};
+            paramsNoROE._lambda = new double[]{0};
+            paramsNoROE._nfolds = 3;
+            paramsNoROE._seed = 1234;
+            paramsNoROE._remove_offset_effects = false;
+
+            glmNoROE = new GLM(paramsNoROE).trainModel().get();
+            Scope.track_generic(glmNoROE);
+            GLMMetrics baseline = (GLMMetrics) glmNoROE._output._cross_validation_metrics;
+
+            assertEquals("Unrestricted CV residual_deviance must match the same-seed remove_offset_effects=false baseline",
+                    baseline.residual_deviance(), unrestricted.residual_deviance(), 1e-8);
+            assertEquals("Unrestricted CV null_deviance must match the same-seed remove_offset_effects=false baseline",
+                    baseline.null_deviance(), unrestricted.null_deviance(), 1e-8);
+        } finally {
+            if (train != null) train.remove();
+            if (trainNoROE != null) trainNoROE.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * remove_offset_effects=true with an explicit fold_column (instead of nfolds) must populate the
+     * unrestricted CV parity slots the same way the nfolds-driven path does.
+     */
+    @Test
+    public void testRemoveOffsetCvUnrestrictedMetricsWithFoldColumn() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFoldColumnFrame("test_remove_offset_fold_column");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._fold_column = "fold";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._remove_offset_effects = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            assertNotNull("Unrestricted CV metrics must populate via the fold_column path",
+                    glm._output._cross_validation_metrics_unrestricted_model);
+            assertNotNull("Unrestricted CV summary must populate via the fold_column path",
+                    glm._output._cross_validation_metrics_summary_unrestricted_model);
+
+            GLMMetrics restricted = (GLMMetrics) glm._output._cross_validation_metrics;
+            GLMMetrics unrestricted = (GLMMetrics) glm._output._cross_validation_metrics_unrestricted_model;
+            assertNotEquals("Restricted and unrestricted CV residual_deviance must differ when offset is non-zero",
+                    restricted.residual_deviance(), unrestricted.residual_deviance(), 1e-10);
         } finally {
             if (train != null) train.remove();
             Scope.exit();
@@ -3075,9 +3326,22 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertEquals(glm._output._cross_validation_metrics_unrestricted_model._key,
                     derived._output._cross_validation_metrics._key);
 
-            // Holdout-pred frame ownership was transferred to derived; source field is now null.
-            assertNull(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            // Holdout-pred frame is deep-copied into the derived model, not transferred: the source
+            // keeps its own reference, and the derived model gets an independent copy under a new key.
+            assertNotNull("Source must keep its own holdout-pred frame reference",
+                    glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
             assertNotNull(derived._output._cross_validation_holdout_predictions_frame_id);
+            assertNotEquals("Derived model's holdout-pred frame must be a distinct copy, not the source's key",
+                    glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model,
+                    derived._output._cross_validation_holdout_predictions_frame_id);
+            Frame sourceHoldout = DKV.getGet(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            Frame derivedHoldout = DKV.getGet(derived._output._cross_validation_holdout_predictions_frame_id);
+            assertNotNull(sourceHoldout);
+            assertNotNull(derivedHoldout);
+            Scope.track(sourceHoldout);
+            Scope.track(derivedHoldout);
+            assertEquals("Deep-copied holdout frame must have the same shape as the source's",
+                    sourceHoldout.numRows(), derivedHoldout.numRows());
 
             // Summary has the same shape.
             assertNotNull(derived._output._cross_validation_metrics_summary);
@@ -3282,7 +3546,8 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertEquals("CV summary row count unchanged after parent deletion",
                     expectedSummaryRows, derivedAfter._output._cross_validation_metrics_summary.getRowDim());
 
-            // Holdout frame was transferred to derived at creation time; must still be in DKV after parent deletion.
+            // Holdout frame was deep-copied into the derived model at creation time (independent of the
+            // source's own copy); must still be in DKV after parent deletion.
             assertNotNull("CV holdout predictions frame must survive parent deletion",
                     derivedAfter._output._cross_validation_holdout_predictions_frame_id);
             assertNotNull("CV holdout predictions frame must be retrievable from DKV after parent deletion",
@@ -3299,14 +3564,15 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
 
     /**
      * Once a derived unrestricted model is created and then manually removed from DKV, calling
-     * make_unrestricted_model again on the same source must throw.  The holdout-predictions frame
-     * ownership was already transferred (source field is null); recreating would produce a broken
-     * derived model with a null holdout frame reference.
+     * make_unrestricted_model again on the same source must succeed and produce a fresh, valid
+     * derived model. The holdout-predictions frame is deep-copied at derive time (never transferred
+     * away from the source), so the source's own reference stays intact and re-deriving is repeatable.
      */
     @Test
-    public void testMakeUnrestrictedModelThrowsAfterDerivedDeleted() {
+    public void testMakeUnrestrictedModelCanBeRederivedAfterDerivedDeleted() {
         Frame train = null;
         GLMModel glm = null;
+        GLMModel secondDerived = null;
         try {
             Scope.enter();
             train = makeBinomialOffsetFrame("test_rederive_guard");
@@ -3327,6 +3593,9 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             glm = new GLM(params).trainModel().get();
             Scope.track_generic(glm);
 
+            Key<Frame> sourceHoldoutKey = glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model;
+            assertNotNull(sourceHoldoutKey);
+
             MakeUnrestrictedGLMModelV3 args = new MakeUnrestrictedGLMModelV3();
             args.model = new KeyV3.ModelKeyV3(glm._key);
             args.dest = "test_rederive_guard_derived";
@@ -3334,22 +3603,96 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             GLMModel derived = DKV.getGet(Key.make("test_rederive_guard_derived"));
             assertNotNull(derived);
 
-            // Ownership was transferred — source field must now be null.
-            assertNull(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            // Source keeps its own holdout-pred frame reference — it was deep-copied, not transferred.
+            assertEquals("Source's holdout-pred frame key must be unchanged after deriving",
+                    sourceHoldoutKey, glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            assertNotNull("Source's holdout-pred frame must still be retrievable from DKV",
+                    DKV.getGet(sourceHoldoutKey));
 
-            // Manually remove the derived model from DKV (simulates user calling h2o.rm).
+            // Manually remove the derived model from DKV (simulates user calling h2o.rm); this also
+            // removes the derived model's own (deep-copied) holdout-pred frame, but not the source's.
             Keyed.remove(derived._key);
             assertNull(DKV.getGet(derived._key));
+            assertNotNull("Source's holdout-pred frame must survive the derived model's removal",
+                    DKV.getGet(sourceHoldoutKey));
 
-            // Second call with the same source must throw because ownership is already consumed.
+            // Re-deriving with the same source and the same dest key must now succeed (the dest key
+            // is free again) and produce a fresh, independently-owned derived model.
+            new MakeGLMModelHandler().make_unrestricted_model(3, args);
+            secondDerived = DKV.getGet(Key.make("test_rederive_guard_derived"));
+            Scope.track_generic(secondDerived);
+            assertNotNull("Re-deriving after the first derived model was deleted must succeed", secondDerived);
+            assertNotNull(secondDerived._output._cross_validation_holdout_predictions_frame_id);
+            assertNotEquals("Re-derived model must get its own fresh holdout-pred frame copy, not the source's key",
+                    sourceHoldoutKey, secondDerived._output._cross_validation_holdout_predictions_frame_id);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * make_derived_model at an already-occupied dest key: re-deriving the same view from the same
+     * source is idempotent (returns the existing model instead of erroring or creating a duplicate),
+     * but a colliding key that does not carry matching provenance must be rejected instead of being
+     * silently returned or blindly cast.
+     */
+    @Test
+    public void testMakeDerivedModelProvenanceGuard() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        Frame collidingFrame = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_derive_provenance");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._intercept = false;
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            MakeUnrestrictedGLMModelV3 args = new MakeUnrestrictedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "test_derive_provenance_derived";
+            new MakeGLMModelHandler().make_unrestricted_model(3, args);
+            derived = DKV.getGet(Key.make("test_derive_provenance_derived"));
+            assertNotNull(derived);
+            Scope.track_generic(derived);
+
+            // Re-deriving the same view from the same source at the same dest is idempotent: the
+            // existing model is returned as-is, not recreated or rejected.
+            GLMModelV3 repeat = new MakeGLMModelHandler().make_unrestricted_model(3, args);
+            assertEquals("Idempotent re-derive must return the same model key",
+                    derived._key.toString(), repeat.model_id.name);
+
+            // A key that already holds something other than a matching-provenance GLM model must be
+            // rejected rather than silently returned or blindly cast.
+            collidingFrame = new Frame(Key.<Frame>make("test_derive_provenance_colliding"), new String[]{"c"},
+                    new Vec[]{Vec.makeVec(new double[]{1, 2, 3}, Vec.newKey())});
+            DKV.put(collidingFrame);
+            MakeUnrestrictedGLMModelV3 collidingArgs = new MakeUnrestrictedGLMModelV3();
+            collidingArgs.model = new KeyV3.ModelKeyV3(glm._key);
+            collidingArgs.dest = "test_derive_provenance_colliding";
             try {
-                new MakeGLMModelHandler().make_unrestricted_model(3, args);
-                fail("Expected IllegalArgumentException when re-deriving after derived was deleted.");
+                new MakeGLMModelHandler().make_unrestricted_model(3, collidingArgs);
+                fail("Expected IllegalArgumentException when dest key holds a non-GLMModel object.");
             } catch (IllegalArgumentException e) {
-                assertTrue(e.getMessage().contains("already been transferred"));
+                assertTrue("Exception must call out the wrong-type collision, not a ClassCastException",
+                        e.getMessage().contains("does not refer to a GLM model"));
             }
         } finally {
             if (train != null) train.remove();
+            if (collidingFrame != null) collidingFrame.remove();
             Scope.exit();
         }
     }
@@ -3585,6 +3928,69 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             if (derived != null) derived.remove();
             if (predSource != null) predSource.remove();
             if (predDerived != null) predDerived.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Regression guard for a raw-beta-denormalization bug in make_derived_model/
+     * make_unrestricted_model: dropping setPredictorTransform(NONE) entirely (to avoid mutating the
+     * source's shared DataInfo via the old dinfo.setPredictorTransform(NONE) call on the *uncloned*
+     * source dinfo) left the derived model's DataInfo reporting the source's STANDARDIZE transform
+     * even though the beta stored on it is raw/denormalized. Two consequences must both be fixed:
+     * 1. isStandardized() must report false (the stored beta genuinely isn't standardized).
+     * 2. beta(lambda) — which denormalizes via DataInfo.denormalizeBeta() whenever
+     *    isStandardized() is true — must NOT rescale the already-raw beta using the source's
+     *    _normMul/_normSub (real, non-trivial values here since x1 has a 100-1050 numeric scale);
+     *    it must return the same values as the plain beta() accessor.
+     * (coefficients(true)/coef_norm() itself is unaffected either way here: GLMOutput.getNormBeta()
+     * only recovers genuine standardized coefficients when the DataInfo's post-hoc standardization
+     * stats are available, which requires a live _adaptedFrame — and a trained model's own retained
+     * DataInfo always has _adaptedFrame nulled out (GLMModel's GLMOutput(GLM) constructor), whether
+     * or not this fix is applied.)
+     */
+    @Test
+    public void testMakeUnrestrictedModelDoesNotCorruptRawBetaViaDenormalize() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derived = null;
+        try {
+            Scope.enter();
+            train = makeNumericBinomialOffsetFrame("mu_denorm_train");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._standardize = true;
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+            assertNotNull("Sanity check: source dinfo must carry real, non-trivial normalization stats",
+                    glm.dinfo()._normMul);
+
+            MakeUnrestrictedGLMModelV3 args = new MakeUnrestrictedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "mu_denorm_derived";
+            new MakeGLMModelHandler().make_unrestricted_model(3, args);
+            derived = DKV.getGet(Key.make("mu_denorm_derived"));
+            assertNotNull(derived);
+            Scope.track_generic(derived);
+
+            assertFalse("Derived model's DataInfo must not report STANDARDIZE over a raw beta",
+                    derived._output.isStandardized());
+            assertArrayEquals("beta(lambda) must equal the raw beta() accessor, not a spuriously "
+                    + "denormalized value computed from the inherited STANDARDIZE transform",
+                    derived.beta(), derived.beta(0.0), 1e-8);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (derived != null) derived.remove();
             Scope.exit();
         }
     }
