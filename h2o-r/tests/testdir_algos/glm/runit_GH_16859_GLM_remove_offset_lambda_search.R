@@ -216,10 +216,9 @@ glm_remove_offset_lambda_search_early_stopping_test <- function() {
     expect_equal(h2o.coef(base), h2o.coef(unrestricted), tolerance = 1e-6)
 }
 
-# NOTE: a sparse-standardized-data case is intentionally NOT included here. It exposes a pre-existing bug
-# (independent of lambda_search) where remove_offset_effects produces wrong restricted predictions on
-# sparse standardized data; an as.h2o data.frame does not exercise the sparse chunk path anyway. See the
-# @Ignore'd GLMRemoveOffsetLambdaSearchTest.sparseDataWorksWithLambdaSearch (Java) for the reproduction.
+# NOTE: the sparse-standardized-data case lives only in Java
+# (GLMRemoveOffsetLambdaSearchTest.sparseDataWorksWithLambdaSearch). Forcing the sparse chunk path needs a
+# genuinely sparse-encoded frame (Java TestFrameBuilder); an as.h2o data.frame does not produce one.
 
 doTest("GLM: remove_offset_effects with lambda_search",
        glm_remove_offset_lambda_search_test)

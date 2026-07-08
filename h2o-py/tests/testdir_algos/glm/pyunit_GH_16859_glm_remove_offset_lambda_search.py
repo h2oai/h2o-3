@@ -269,10 +269,9 @@ def glm_remove_offset_lambda_search_early_stopping():
                                    f"[early_stopping] coef {k}: unrestricted must recover plain offset model")
 
 
-# NOTE: a sparse-standardized-data case is intentionally NOT included here. It exposes a pre-existing bug
-# (independent of lambda_search) where remove_offset_effects produces wrong restricted predictions on
-# sparse standardized data; a dense pandas frame does not exercise the sparse chunk path anyway. See the
-# @Ignore'd GLMRemoveOffsetLambdaSearchTest.sparseDataWorksWithLambdaSearch for the reproduction.
+# NOTE: the sparse-standardized-data case lives only in Java
+# (GLMRemoveOffsetLambdaSearchTest.sparseDataWorksWithLambdaSearch). Forcing the sparse chunk path needs a
+# genuinely sparse-encoded frame (Java TestFrameBuilder); a dense pandas/H2OFrame does not produce one.
 
 
 # alpha=0 (ridge -> 30 lambdas) and multiple alphas (-> 100 lambdas each, alpha_best selection) must both

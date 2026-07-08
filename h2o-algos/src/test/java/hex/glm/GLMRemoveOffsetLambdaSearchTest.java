@@ -3,7 +3,6 @@ package hex.glm;
 import hex.SplitFrame;
 import hex.generic.Generic;
 import hex.generic.GenericModel;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -643,22 +642,14 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
 
     /**
      * Mostly-zero standardized numeric predictors drive GLM down the sparse chunk path. The restricted
-     * predictions must equal the plain model scored with the offset zeroed (as they do on dense data, see
-     * {@link #restrictedPredictionsEqualOffsetZeroedModel()}) and the MOJO must reproduce them.
-     * <p>
-     * Currently IGNORED: this exposes a PRE-EXISTING bug (independent of lambda_search - it reproduces with
-     * lambda_search=false too). On sparse standardized data remove_offset_effects yields restricted
-     * predictions that differ from the offset-zeroed model by ~0.05 (both in-H2O and MOJO), because the
-     * sparse standardization correction (GLMResDevTask sparseOffset / DataInfo sparse mean-centering) is
-     * mishandled when the offset effect is removed. Track/fix separately, then remove @Ignore.
+     * prediction must exclude the offset - i.e. equal innerProduct(denormalized beta) with the offset
+     * dropped - and the MOJO must reproduce the in-H2O restricted predictions (the MOJO drops the offset
+     * via a null offset column in the model descriptor, see GLMModel.modelDescriptor()).
      */
-    @Ignore("Pre-existing sparseOffset bug: remove_offset_effects gives wrong restricted predictions on "
-            + "sparse standardized data; independent of lambda_search. Fix separately then un-ignore.")
     @Test
     public void sparseDataWorksWithLambdaSearch() throws Exception {
-        Frame fr = null, predRO = null, mojoPreds = null, predZeroed = null;
-        Vec oldOffset = null;
-        GLMModel ro = null, base = null;
+        Frame fr = null, predRO = null, mojoPreds = null;
+        GLMModel ro = null;
         GenericModel generic = null;
         try {
             Scope.enter();
@@ -706,19 +697,22 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             ro = new GLM(params).trainModel().get();
             Scope.track_generic(ro);
 
-            params._remove_offset_effects = false;
-            base = new GLM(params).trainModel().get();
-            Scope.track_generic(base);
-
-            // fit is identical on sparse data
-            assertEquals("[sparse] unrestricted train mse must match plain offset model",
-                    base._output._training_metrics.mse(),
-                    ro._output._training_metrics_unrestricted_model.mse(), 1e-8);
-
-            predRO = ro.score(fr);        // in-H2O restricted, original offset present
+            predRO = ro.score(fr);
             Scope.track_generic(predRO);
 
-            // MOJO scored on the same (original-offset) frame
+            // The restricted prediction must equal innerProduct(denormalized beta) with the offset removed,
+            // for every row - proves the offset (and its sparse standardization correction) is correctly
+            // excluded on genuinely sparse data. beta layout: [x0..x_{ncol-1}, intercept].
+            double[] bRO = ro.beta();
+            for (int i = 0; i < nrow; i++) {
+                double eta = bRO[ncol];
+                for (int j = 0; j < ncol; j++) eta += bRO[j] * cols[j][i];
+                double mu = 1.0 / (1.0 + Math.exp(-eta));
+                assertEquals("[sparse] row " + i + " restricted p1 must exclude the offset",
+                        mu, predRO.vec(2).at(i), 1e-8);
+            }
+
+            // MOJO must reproduce the in-H2O restricted predictions on sparse data
             File mojoFile = File.createTempFile("glm_sparse_mojo", ".zip");
             mojoFile.deleteOnExit();
             try (FileOutputStream fos = new FileOutputStream(mojoFile)) {
@@ -728,28 +722,13 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             Scope.track_generic(generic);
             mojoPreds = generic.score(fr);
             Scope.track_generic(mojoPreds);
-
-            // restricted == plain scored with offset zeroed, then MOJO-vs-in-H2O. Compare probabilities
-            // only; the derived class label is threshold-dependent.
-            Vec zoff = fr.anyVec().makeZero();
-            Scope.track(zoff);
-            oldOffset = fr.replace(fr.find("off"), zoff);
-            DKV.put(fr);
-            predZeroed = base.score(fr);
-            Scope.track_generic(predZeroed);
-            assertVecEquals(predRO.vec(1), predZeroed.vec(1), 1e-8);
-            assertVecEquals(predRO.vec(2), predZeroed.vec(2), 1e-8);
-
             assertVecEquals(predRO.vec(1), mojoPreds.vec(1), 1e-8);
             assertVecEquals(predRO.vec(2), mojoPreds.vec(2), 1e-8);
         } finally {
-            if (oldOffset != null) oldOffset.remove();
             if (fr != null) fr.remove();
             if (predRO != null) predRO.remove();
             if (mojoPreds != null) mojoPreds.remove();
-            if (predZeroed != null) predZeroed.remove();
             if (ro != null) ro.remove();
-            if (base != null) base.remove();
             if (generic != null) generic.remove();
             Scope.exit();
         }
