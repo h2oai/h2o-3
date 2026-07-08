@@ -321,10 +321,10 @@ def class_extensions():
         """
         Cross-validation metrics for the with-offset (unrestricted) view.
 
-        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns an
-        ``H2OModelMetrics`` object (key-accessible as ``metrics["residual_deviance"]``,
-        ``metrics["MSE"]``, etc.), or ``None`` when the model was not trained with both
-        ``remove_offset_effects=True`` and cross-validation.
+        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns a ``dict``
+        (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.), or
+        ``None`` when the model was not trained with both ``remove_offset_effects=True`` and
+        cross-validation.
 
         :examples:
 
@@ -340,6 +340,27 @@ def class_extensions():
         >>> unrestricted_dev = m.cross_validation_metrics_unrestricted_model["residual_deviance"]
         """
         return self._model_json.get("output", {}).get("cross_validation_metrics_unrestricted_model")
+
+    @property
+    def cross_validation_metrics_summary_unrestricted_model(self):
+        """
+        Cross-validation metrics summary table for the with-offset (unrestricted) view.
+
+        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns an
+        ``H2OTwoDimTable``, or ``None`` when the model was not trained with both
+        ``remove_offset_effects=True`` and cross-validation.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   nfolds=3, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> m.cross_validation_metrics_summary_unrestricted_model
+        """
+        return self._model_json.get("output", {}).get("cross_validation_metrics_summary_unrestricted_model")
 
     def make_unrestricted_glm_model(self, dest=None):
         """
@@ -405,7 +426,7 @@ def class_extensions():
         >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
         ...                                   control_variables=["PSA"])
-        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "GLEASON"], y="CAPSULE",
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "PSA", "GLEASON"], y="CAPSULE",
         ...         training_frame=d, offset_column="VOL")
         >>> # Unrestricted (with-offset) view — same as make_unrestricted_glm_model()
         >>> m_unrestricted = m.make_derived_glm_model()

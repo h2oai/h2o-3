@@ -507,12 +507,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                                   ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
     // Build unrestricted summary before super runs, because super deletes CV models from DKV
     // when keep_cross_validation_models=false, making DKV.getGet return null for all fold models.
+    TwoDimTable unrestrictedSummary = null;
     if (_parms._remove_offset_effects) {
       Key[] cvModKeys = new Key[N];
       for (int i = 0; i < N; i++) cvModKeys[i] = cvModelBuilders[i].dest();
-      GLMModel mainModel = _result.get();
-      mainModel._output._cross_validation_metrics_summary_unrestricted_model =
-          makeCrossValidationSummaryTable(cvModKeys,
+      unrestrictedSummary = makeCrossValidationSummaryTable(cvModKeys,
               m -> ((GLMModel) m)._output._validation_metrics_unrestricted_model);
     }
 
@@ -521,7 +520,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     if (!_parms._remove_offset_effects) return;  // stash arrays were never allocated
 
+    // Assign onto the post-super instance (super's own cv_mainModelScores may have re-fetched or
+    // re-put the model), not the pre-super reference the summary table was built against.
     GLMModel mainModel = _result.get();
+    mainModel._output._cross_validation_metrics_summary_unrestricted_model = unrestrictedSummary;
 
     // Combine per-fold unrestricted preds into one frame; keep per-fold frames when
     // keep_cross_validation_predictions=true (mirrors super), otherwise drop them.
@@ -567,10 +569,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     // Fix: move unrestricted to a unique key so restricted stays at the natural lookup key.
     Key<ModelMetrics> collisionKey = unrestrictedCvMM._key;
     unrestrictedCvMM._key = Key.make(collisionKey + "_unrestricted");
-    mainModel.addModelMetrics(unrestrictedCvMM);        // stores at new key, registers in _model_metrics
-    DKV.put(collisionKey, mainModel._output._cross_validation_metrics); // restore restricted at natural key
     unrestrictedCvMM._description =
         N + "-fold cross-validation on training data (with offset preserved; unrestricted view)";
+    mainModel.addModelMetrics(unrestrictedCvMM);        // stores at new key, registers in _model_metrics
+    DKV.put(collisionKey, mainModel._output._cross_validation_metrics); // restore restricted at natural key
     mainModel._output._cross_validation_metrics_unrestricted_model = unrestrictedCvMM;
 
     if (unrestrictedHoldoutPreds != null) {

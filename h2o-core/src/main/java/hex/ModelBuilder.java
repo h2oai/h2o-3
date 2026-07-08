@@ -660,7 +660,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         buildMainModel(time_allocated_to_main_model);
         // Ensure the main model is visible in DKV before cv_mainModelScores calls _result.get().
         // Under memory pressure the local POJO cache can be evicted, causing a cache miss.
-        DKV.put(_result.get());
+        M m = _result.get();
+        if (m != null) DKV.put(m);
       }
 
       // Step 7: Combine cross-validation scores; compute main model x-val

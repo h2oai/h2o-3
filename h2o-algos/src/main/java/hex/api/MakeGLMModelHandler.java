@@ -8,6 +8,7 @@ import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
 import hex.schemas.*;
 import water.DKV;
+import water.Iced;
 import water.Key;
 import water.MRTask;
 import water.api.Handler;
@@ -42,6 +43,11 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
+    // KNOWN BUG: beta above is in the raw (denormalized) coefficient space, but model.dinfo() is
+    // reused as-is (including the source's STANDARDIZE transform, if any) instead of a NONE-transform
+    // clone. That makes isStandardized() report true for a model whose beta isn't actually
+    // standardized, so downstream consumers gated on it (e.g. beta(lambda) -> DataInfo.denormalizeBeta())
+    // will spuriously rescale already-raw values using the source's _normMul/_normSub.
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
@@ -88,11 +94,23 @@ public class MakeGLMModelHandler extends Handler {
           generatedKey = Key.make(model._key.toString()+"_unrestricted_model");
       }
       Key key = args.dest != null ? Key.make(args.dest) : generatedKey;
-      GLMModel modelUnrestricted = DKV.getGet(key);
-      if (modelUnrestricted != null) {
-          GLMModelV3 existing = new GLMModelV3();
-          existing.fillFromImpl(modelUnrestricted);
-          return existing;
+      Iced existingAtKey = DKV.getGet(key);
+      if (existingAtKey != null) {
+          if (!(existingAtKey instanceof GLMModel)) {
+              throw new IllegalArgumentException("Key " + key + " already exists and does not refer to a GLM model.");
+          }
+          GLMModel existingModel = (GLMModel) existingAtKey;
+          // Idempotent re-derive: only trust a model at this key if it was produced by a previous
+          // make_derived_model call from this same source model with the same view requested.
+          boolean sameProvenance = model._key.equals(existingModel._derivedFromModelId)
+                  && existingModel._useControlVariables == args.remove_control_variables_effects
+                  && existingModel._useRemoveOffsetEffects == args.remove_offset_effects;
+          if (sameProvenance) {
+              GLMModelV3 existing = new GLMModelV3();
+              existing.fillFromImpl(existingModel);
+              return existing;
+          }
+          throw new IllegalArgumentException("Model with key " + key + " already exists.");
       }
       GLMModel.GLMParameters parms = (GLMModel.GLMParameters) model._parms.clone();
       GLMModel.GLMParameters inputParms = (GLMModel.GLMParameters) model._input_parms.clone();
@@ -115,7 +133,11 @@ public class MakeGLMModelHandler extends Handler {
           m._input_parms._remove_offset_effects = false;
           m._parms._remove_offset_effects = false;
       }
-      m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+      // beta() is in the raw (denormalized) coefficient space, so the derived model's DataInfo must
+      // not carry the source's STANDARDIZE transform, or coef_norm() will re-standardize raw values.
+      DataInfo dinfo = model.dinfo().clone();
+      dinfo.setPredictorTransform(TransformType.NONE);
+      m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
               model._output._ordinal, null);
       if (args.remove_control_variables_effects) {
@@ -152,20 +174,6 @@ public class MakeGLMModelHandler extends Handler {
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances_unrestricted_model;
       } else {
-          // Guard: the holdout-predictions frame can be transferred to a derived model only once.
-          // If the source was trained with remove_offset_effects + CV + keep_cross_validation_predictions
-          // it must have produced a non-null unrestricted holdout frame.  A null value here means the
-          // frame was already consumed by an earlier make_derived_model call whose derived model was
-          // subsequently deleted from DKV — we cannot recreate a valid derived model in this state.
-          boolean expectedHoldoutFrame = model._parms._remove_offset_effects
-                  && (model._parms._nfolds > 1 || model._parms._fold_column != null)
-                  && model._parms._keep_cross_validation_predictions;
-          if (expectedHoldoutFrame
-                  && model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model == null) {
-              throw new IllegalArgumentException(
-                      "Cannot create unrestricted derived model: the CV holdout predictions frame has already been "
-                      + "transferred to a previously derived model.  Retrain the source model to create a new derived model.");
-          }
           m._output._training_metrics = model._output._training_metrics_unrestricted_model;
           m._output._validation_metrics = model._output._validation_metrics_unrestricted_model;
           m._output._scoring_history = model._output._scoring_history_unrestricted_model;
@@ -175,25 +183,27 @@ public class MakeGLMModelHandler extends Handler {
           // _remove_offset_effects=false or nfolds=0.
           m._output._cross_validation_metrics = model._output._cross_validation_metrics_unrestricted_model;
           m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary_unrestricted_model;
-          m._output._cross_validation_holdout_predictions_frame_id = model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model;
+          // Deep-copy the holdout-predictions frame into a derived-owned key rather than transferring
+          // the source's pointer: the source model keeps its own reference (repeated derive calls stay
+          // possible, and deleting either model does not invalidate the other's frame).
+          Key<Frame> sourceHoldout = model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model;
+          if (sourceHoldout != null) {
+              Frame sourceHoldoutFrame = sourceHoldout.get();
+              if (sourceHoldoutFrame != null) {
+                  Frame holdoutCopy = sourceHoldoutFrame.deepCopy(key.toString() + "_cv_holdout_preds");
+                  DKV.put(holdoutCopy);
+                  m._output._cross_validation_holdout_predictions_frame_id = holdoutCopy._key;
+              }
+          }
       }
       m._output._model_summary = model._output._model_summary;
       m._key = key;
       // setting these flags is important for right scoring
       m._useControlVariables = args.remove_control_variables_effects;
       m._useRemoveOffsetEffects = args.remove_offset_effects;
+      m._derivedFromModelId = model._key;
 
       DKV.put(key, m);
-
-      // Transfer holdout-predictions frame ownership to the derived model so that deleting
-      // the source model does not invalidate the derived model's frame reference.
-      // Only applies to the unrestricted path where a Frame key was shared.
-      if (m._output._cross_validation_holdout_predictions_frame_id != null
-              && m._output._cross_validation_holdout_predictions_frame_id
-                  .equals(model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model)) {
-          model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model = null;
-          DKV.put(model._key, model);
-      }
 
       GLMModelV3 res = new GLMModelV3();
       res.fillFromImpl(m);

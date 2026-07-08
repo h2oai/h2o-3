@@ -1629,6 +1629,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
   public boolean _useRemoveOffsetEffects = false;
+  // Provenance for a make_derived_model() output: the source model this was derived from, plus the
+  // view it exposes. Lets a repeated derive call at the same dest key verify it is re-deriving the
+  // same view from the same source (idempotent) rather than silently returning an unrelated model.
+  public Key<GLMModel> _derivedFromModelId = null;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -2572,8 +2576,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if (count > 0) Log.info(count + " per-fold unrestricted CV predictions were removed");
       }
       Keyed.remove(out._cross_validation_holdout_predictions_frame_id_unrestricted_model);
-      if (out._cross_validation_metrics_unrestricted_model != null)
-          Keyed.remove(out._cross_validation_metrics_unrestricted_model._key);
   }
 
   @Override

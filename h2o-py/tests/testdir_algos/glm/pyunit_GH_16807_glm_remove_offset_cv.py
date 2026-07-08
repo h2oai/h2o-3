@@ -102,6 +102,8 @@ def test_remove_offset_cv_unrestricted_metrics_populated():
 
     assert glm.cross_validation_metrics_unrestricted_model is not None, \
         "cross_validation_metrics_unrestricted_model must be populated when remove_offset_effects=True and nfolds>0"
+    assert glm.cross_validation_metrics_summary_unrestricted_model is not None, \
+        "cross_validation_metrics_summary_unrestricted_model must be populated when remove_offset_effects=True and nfolds>0"
 
     dev_restricted = glm.model_performance(xval=True).residual_deviance()
     dev_unrestricted = glm.cross_validation_metrics_unrestricted_model["residual_deviance"]
@@ -118,6 +120,8 @@ def test_remove_offset_cv_unrestricted_metrics_populated():
     glm_no_roe.train(x=["x1", "x2"], y="y", training_frame=train, offset_column="offset")
     assert glm_no_roe.cross_validation_metrics_unrestricted_model is None, \
         "cross_validation_metrics_unrestricted_model must be None when remove_offset_effects=False"
+    assert glm_no_roe.cross_validation_metrics_summary_unrestricted_model is None, \
+        "cross_validation_metrics_summary_unrestricted_model must be None when remove_offset_effects=False"
 
 
 def test_remove_offset_cv_make_unrestricted_model_propagates_cv():
