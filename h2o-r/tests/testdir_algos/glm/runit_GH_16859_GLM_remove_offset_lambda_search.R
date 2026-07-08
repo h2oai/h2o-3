@@ -99,17 +99,6 @@ glm_remove_offset_lambda_search_scoring_history_test <- function() {
     expect_true(is.null(glm_offset@model$scoring_history_unrestricted_model))
 }
 
-# remove_offset_effects + lambda_search + cross-validation must train and populate CV metrics.
-glm_remove_offset_lambda_search_cv_test <- function() {
-    df <- prostate_frame()
-
-    glm_cv <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df,
-                      offset_column = "AGE", remove_offset_effects = TRUE,
-                      lambda_search = TRUE, nfolds = 3, seed = 0xC0FFEE)
-
-    expect_false(is.null(h2o.performance(glm_cv, xval = TRUE)))
-}
-
 # The MOJO must reproduce the in-H2O (restricted) predictions of a remove_offset_effects +
 # lambda_search model.
 glm_remove_offset_lambda_search_mojo_test <- function() {
@@ -133,7 +122,5 @@ doTest("GLM: remove_offset_effects with lambda_search offset zeroed",
        glm_remove_offset_lambda_search_offset_zeroed_test)
 doTest("GLM: remove_offset_effects with lambda_search scoring history",
        glm_remove_offset_lambda_search_scoring_history_test)
-doTest("GLM: remove_offset_effects with lambda_search cross-validation",
-       glm_remove_offset_lambda_search_cv_test)
 doTest("GLM: remove_offset_effects with lambda_search mojo",
        glm_remove_offset_lambda_search_mojo_test)

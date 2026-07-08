@@ -118,18 +118,6 @@ def glm_remove_offset_lambda_search_scoring_history():
         "Plain offset model should not have an unrestricted scoring history"
 
 
-# remove_offset_effects + lambda_search + cross-validation must train and populate CV metrics.
-def glm_remove_offset_lambda_search_cv():
-    cars, x, y, offset_col = _cars_with_offset()
-
-    glm_cv = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True,
-                                           remove_offset_effects=True, nfolds=3, seed=0xC0FFEE)
-    glm_cv.train(x=x, y=y, training_frame=cars, offset_column=offset_col)
-
-    assert glm_cv.model_performance(xval=True) is not None, \
-        "remove_offset_effects + lambda_search + nfolds must populate cross-validation metrics"
-
-
 # The MOJO must reproduce the in-H2O (restricted) predictions of a remove_offset_effects +
 # lambda_search model.
 def glm_remove_offset_lambda_search_mojo():
@@ -147,15 +135,89 @@ def glm_remove_offset_lambda_search_mojo():
     pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, prob=1, tol=1e-8)
 
 
+def _prostate_with_offset():
+    df = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
+    df["off"] = df["AGE"] / 100.0
+    return df
+
+
+# The restricted deviance recompute (GLMResDevTask) is family-specific, so it must be exercised beyond
+# binomial. For each family the unrestricted model must recover the plain offset model and the restricted
+# predictions must differ.
+def glm_remove_offset_lambda_search_families():
+    df = _prostate_with_offset()
+    # (family, response, predictors)
+    cases = [
+        ("gaussian", "VOL", ["RACE", "DPROS", "PSA", "GLEASON"]),
+        ("poisson", "GLEASON", ["RACE", "DPROS", "PSA", "VOL"]),
+    ]
+    for family, y, x in cases:
+        base = H2OGeneralizedLinearEstimator(family=family, lambda_search=True, seed=0xC0FFEE)
+        base.train(x=x, y=y, training_frame=df, offset_column="off")
+        ro = H2OGeneralizedLinearEstimator(family=family, lambda_search=True,
+                                           remove_offset_effects=True, seed=0xC0FFEE)
+        ro.train(x=x, y=y, training_frame=df, offset_column="off")
+
+        unrestricted = ro.make_unrestricted_glm_model()
+        for k in base.coef().keys():
+            pyunit_utils.assert_equals(base.coef()[k], unrestricted.coef().get(k, float("nan")),
+                                       f"[{family}] coef {k}: unrestricted model must recover plain offset model")
+
+        pb = base.predict(df).as_data_frame()["predict"]
+        pr = ro.predict(df).as_data_frame()["predict"]
+        assert (pb - pr).abs().max() > 1e-6, f"[{family}] restricted predictions should differ from plain offset model"
+
+
+# alpha=0 (ridge -> 30 lambdas) and multiple alphas (-> 100 lambdas each, alpha_best selection) must both
+# work: same selected lambda and the unrestricted model recovers the plain offset model.
+def glm_remove_offset_lambda_search_alpha():
+    df = _prostate_with_offset()
+    df["CAPSULE"] = df["CAPSULE"].asfactor()
+    x, y = ["RACE", "DPROS", "PSA", "VOL", "GLEASON"], "CAPSULE"
+    for alpha in ([0.0], [0.1, 0.5, 0.9]):
+        base = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, alpha=alpha, seed=0xC0FFEE)
+        base.train(x=x, y=y, training_frame=df, offset_column="off")
+        ro = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, alpha=alpha,
+                                           remove_offset_effects=True, seed=0xC0FFEE)
+        ro.train(x=x, y=y, training_frame=df, offset_column="off")
+
+        pyunit_utils.assert_equals(H2OGeneralizedLinearEstimator.getLambdaBest(base),
+                                   H2OGeneralizedLinearEstimator.getLambdaBest(ro),
+                                   f"[alpha={alpha}] lambda_best must match plain offset model")
+        unrestricted = ro.make_unrestricted_glm_model()
+        for k in base.coef().keys():
+            pyunit_utils.assert_equals(base.coef()[k], unrestricted.coef().get(k, float("nan")),
+                                       f"[alpha={alpha}] coef {k}: unrestricted model must recover plain offset model")
+
+
+# learning_curve_plot is the advertised UX surface for this feature; it must render without error on a
+# remove_offset + lambda_search model (headless via save_plot_path).
+def glm_remove_offset_lambda_search_plot():
+    import os
+    df = _prostate_with_offset()
+    df["CAPSULE"] = df["CAPSULE"].asfactor()
+    ro = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, remove_offset_effects=True,
+                                       generate_scoring_history=True, seed=0xC0FFEE)
+    ro.train(x=["RACE", "DPROS", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=df, offset_column="off")
+
+    out = os.path.join(tempfile.mkdtemp(), "learning_curve.png")
+    ro.learning_curve_plot(save_plot_path=out)
+    assert os.path.exists(out), "learning_curve_plot must produce output for a remove_offset+lambda_search model"
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_offset_zeroed)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_scoring_history)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_cv)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_mojo)
+    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_families)
+    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_alpha)
+    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_plot)
 else:
     glm_remove_offset_lambda_search()
     glm_remove_offset_lambda_search_offset_zeroed()
     glm_remove_offset_lambda_search_scoring_history()
-    glm_remove_offset_lambda_search_cv()
     glm_remove_offset_lambda_search_mojo()
+    glm_remove_offset_lambda_search_families()
+    glm_remove_offset_lambda_search_alpha()
+    glm_remove_offset_lambda_search_plot()

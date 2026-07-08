@@ -15,6 +15,7 @@ import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -262,11 +263,13 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
     }
 
     /**
-     * remove_offset_effects + lambda_search + cross-validation must train without error and populate
-     * cross-validation metrics (the CV second pass is the historically fragile intersection).
+     * remove_offset_effects + lambda_search + generate_scoring_history + score_each_iteration + a
+     * validation frame. Mid-lambda scoring events append rows to the unrestricted lambda history that
+     * the restricted one must also receive; the model must train (no crash in the finalization combine)
+     * and the restricted scoring history must actually differ from the unrestricted one.
      */
     @Test
-    public void worksWithCrossValidationAndLambdaSearch() {
+    public void scoringHistoryWithScoreEachIterationAndValidation() {
         Frame train = null;
         GLMModel glm = null;
         try {
@@ -275,15 +278,33 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             Scope.track_generic(train);
 
             GLMModel.GLMParameters params = baseParams(train);
-            params._nfolds = 3;
-            params._seed = 0xC0FFEE;
+            params._valid = train._key;
+            params._generate_scoring_history = true;
+            params._score_each_iteration = true;
             params._remove_offset_effects = true;
             glm = new GLM(params).trainModel().get();
             Scope.track_generic(glm);
 
-            assertNotNull("cross-validation metrics must be populated", glm._output._cross_validation_metrics);
-            assertNotNull("unrestricted training metrics must be populated with CV",
-                    glm._output._training_metrics_unrestricted_model);
+            TwoDimTable restricted = glm._output._scoring_history;
+            TwoDimTable unrestricted = glm._output._scoring_history_unrestricted_model;
+            assertNotNull("restricted scoring history must be present", restricted);
+            assertTrue(restricted.getRowDim() > 0);
+            assertNotNull("unrestricted scoring history must be present", unrestricted);
+            assertTrue(unrestricted.getRowDim() > 0);
+
+            // the restricted (offset-removed) deviances must actually differ from the unrestricted ones,
+            // otherwise the offset removal did nothing in the reported scoring history
+            int devCol = Arrays.asList(restricted.getColHeaders()).indexOf("deviance_train");
+            int devColU = Arrays.asList(unrestricted.getColHeaders()).indexOf("deviance_train");
+            assertTrue("scoring histories must expose deviance_train", devCol >= 0 && devColU >= 0);
+            boolean anyDiffer = false;
+            int rows = Math.min(restricted.getRowDim(), unrestricted.getRowDim());
+            for (int i = 0; i < rows && !anyDiffer; i++) {
+                double r = ((Number) restricted.get(i, devCol)).doubleValue();
+                double u = ((Number) unrestricted.get(i, devColU)).doubleValue();
+                if (Math.abs(r - u) > 1e-8) anyDiffer = true;
+            }
+            assertTrue("restricted deviance_train must differ from unrestricted", anyDiffer);
         } finally {
             if (train != null) train.remove();
             if (glm != null) glm.remove();

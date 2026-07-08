@@ -39,7 +39,6 @@ Cross-validation is not supported in the combination of these two features yet.
 
 - This option is experimental.
 - This option is not supported for multinomial, ordinal, or custom distributions.
-- This option is not available when Lambda search is enabled.
 - This option is not available when interactions are enabled.
 
 Related Parameters

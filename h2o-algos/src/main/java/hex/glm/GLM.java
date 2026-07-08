@@ -956,6 +956,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient ScoringHistory _scoringHistoryRemoveOffsetEnabled;
   private transient ScoringHistory _scoringHistoryControlValEnabled;
   private transient LambdaSearchScoringHistory _lambdaSearchScoringHistory;
+  private transient LambdaSearchScoringHistory _lambdaSearchScoringHistoryRestricted;
 
   long _t0 = System.currentTimeMillis();
 
@@ -1142,7 +1143,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_search  &&_parms._nlambdas == -1)
           _parms._nlambdas = _parms._alpha[0] == 0?30:100; // fewer lambdas needed for ridge
       _lambdaSearchScoringHistory = new LambdaSearchScoringHistory(_parms._valid != null,_parms._nfolds > 1);
-      _scoringHistory = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1, 
+      if (_parms._remove_offset_effects)
+        _lambdaSearchScoringHistoryRestricted = new LambdaSearchScoringHistory(_parms._valid != null, _parms._nfolds > 1);
+      _scoringHistory = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1,
               _parms._generate_scoring_history);
       _scoringHistoryUnrestrictedModel = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1,
               _parms._generate_scoring_history);
@@ -3607,7 +3610,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   m -> _model._output._validation_metrics = m,
                   _scoringHistory, _model._useControlVariables);
           _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);
-          _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH, _xval_sd_generate_SH) : null;
+          // Under lambda_search, scorePostProcessing already assigns the restricted lambda table as the main
+          // scoring history; don't let this iterative-path table overwrite it.
+          if (!_parms._lambda_search)
+            _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH, _xval_sd_generate_SH) : null;
 
           if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
               // CV-only
@@ -3670,7 +3676,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             storeValid.accept(mvalid);
         }
 
-        if (sh != null && _parms._generate_scoring_history && mtrain != null) {
+        // Under lambda_search the iteration-format history built here is discarded (scorePostProcessing
+        // assigns the restricted lambda-format table as _scoring_history instead), so skip the
+        // full-frame GLMResDevTask recompute it would otherwise trigger per scoring event.
+        if (sh != null && _parms._generate_scoring_history && mtrain != null && !_parms._lambda_search) {
             double likelihood, objective, deviance;
             if (useControlVarBeta) {
                 double[] beta = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
@@ -3745,8 +3754,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if ((mtrain != null) && (_valid != null)) {
           if (_parms._lambda_search) {
             double trainDev = _state.deviance() / mtrain._nobs;
-            double validDev = ((GLMMetrics) _model._output._validation_metrics).residual_deviance() /
-                    _model._output._validation_metrics._nobs;
+            // With remove_offset_effects/control_variables, _validation_metrics is null (only the unrestricted
+            // metrics are populated). Use the unrestricted metrics for the (unrestricted) lambda history.
+            ModelMetrics vmm = (_model._parms._remove_offset_effects || _model._parms._control_variables != null)
+                    ? _model._output._validation_metrics_unrestricted_model : _model._output._validation_metrics;
+            double validDev = ((GLMMetrics) vmm).residual_deviance() / vmm._nobs;
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                     _state.lambda(), trainDev, validDev, xval_deviance, xval_se, _state.alpha());
           } else if(_model._parms._control_variables != null || _model._parms._remove_offset_effects){
@@ -3774,7 +3786,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
       }
-      if (_parms._lambda_search) {
+      if (_parms._lambda_search && _model._parms._remove_offset_effects) {
+        // The unrestricted (offset-included) lambda history becomes the *_unrestricted_model table; the
+        // restricted (offset-removed) lambda history becomes the main scoring history the user sees.
+        _model._output._scoring_history_unrestricted_model = _lambdaSearchScoringHistory.to2dTable();
+        _model._output._scoring_history = _lambdaSearchScoringHistoryRestricted.to2dTable();
+      } else if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
       } else if (_model._parms._control_variables != null || _model._parms._remove_offset_effects){
         _model._output._scoring_history_unrestricted_model = _scoringHistoryUnrestrictedModel.to2dTable(_parms,
@@ -3885,6 +3902,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_parms._lambda_search)
           _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                   _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
+        // Build a restricted (offset-removed) per-lambda history in parallel with the unrestricted one above.
+        // remove_offset_effects only changes deviance/scoring (GLMResDevTask), not the fit, so we recompute
+        // the deviance with the offset removed and feed it into a separate lambda-format history.
+        if (_parms._lambda_search && _parms._remove_offset_effects) {
+          // Mirror the unrestricted deviance computation above, but with the offset effect removed.
+          // Train uses the standardized (expanded) beta on the standardized training DataInfo (as in
+          // scorePostProcessingRestricted); validation uses the denormalized beta on the raw validation
+          // DataInfo (as in the unrestricted validDev above).
+          double trainDevRestricted = _state.deviance(new GLMResDevTask(_job._key, _dinfo, _parms,
+                  _state.expandBeta(_state.beta()), true).doAll(_dinfo._adaptedFrame)._likelihood) / _nobs;
+          double validDevRestricted = Double.NaN;
+          if (_validDinfo != null)
+            validDevRestricted = new GLMResDevTask(_job._key, _validDinfo, _parms,
+                    _dinfo.denormalizeBeta(_state.beta()), true).doAll(_validDinfo._adaptedFrame).avgDev();
+          // xvalDev/xvalDevSE are the unrestricted (offset-included) cross-validation deviances; that is
+          // harmless while remove_offset_effects + cross-validation stays disallowed (they are always -1 here).
+          _lambdaSearchScoringHistoryRestricted.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
+                  _state.lambda(), trainDevRestricted, validDevRestricted, xvalDev, xvalDevSE, _state.alpha());
+        }
         _model.updateSubmodel(i, sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
                 trainDev, validDev, _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated()));
 
@@ -4099,14 +4135,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // create combination of scoring history with control variables or remove offset effect enabled and disabled 
           // keep unrestricted model scoring history in _model._output._scoring_history_unrestricted_model
           
+          // Merge the (restricted) main and unrestricted scoring histories with the ScoringInfo early-stop
+          // tables. scoringHistoryEarlyStop holds the restricted (offset-removed) metrics; the "...Restricted"
+          // variable holds the unrestricted (offset-included) metrics (legacy naming).
           TwoDimTable scoringHistoryEarlyStop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
           TwoDimTable scoringHistoryEarlyStopRestricted = ScoringInfo.createScoringHistoryTable(_model.getUnrestrictedModelScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
-          ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ? 
-                  ScoreKeeper.StoppingMetric.logloss : ScoreKeeper.StoppingMetric.deviance : _model._parms._stopping_metric;
-          _model._output._scoring_history = combineScoringHistoryRestricted(_model._output._scoring_history, _model._output._scoring_history_unrestricted_model,
-                  scoringHistoryEarlyStop, scoringHistoryEarlyStopRestricted, sm, null != _parms._valid);
+          if (_parms._lambda_search) {
+            // The lambda-format restricted and unrestricted histories are populated at different sites
+            // (the unrestricted one also gets mid-lambda scoring rows), so the two-table combine that
+            // assumes lock-step row alignment would go out of bounds. Combine each independently with its
+            // own early-stop table (as the plain-offset model's else branch does under lambda_search).
+            _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history, scoringHistoryEarlyStop);
+          } else {
+            ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ?
+                    ScoreKeeper.StoppingMetric.logloss : ScoreKeeper.StoppingMetric.deviance : _model._parms._stopping_metric;
+            _model._output._scoring_history = combineScoringHistoryRestricted(_model._output._scoring_history, _model._output._scoring_history_unrestricted_model,
+                    scoringHistoryEarlyStop, scoringHistoryEarlyStopRestricted, sm, null != _parms._valid);
+          }
           _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopRestricted);
           _model._output._scoring_history_unrestricted_model.setTableHeader(_model._output._scoring_history_unrestricted_model.getTableHeader()+" unrestricted model");
           // set control variables and remove offset effects flag to true for scoring after training

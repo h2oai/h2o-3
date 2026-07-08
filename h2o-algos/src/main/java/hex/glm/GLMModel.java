@@ -849,9 +849,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if (_interactions != null || _interaction_pairs != null) {
               glm.error("_remove_offset_effects", "Remove offset effects option is not supported with interactions.");
           }
-          if (_lambda_search) {
-              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
-          }
         }
     }
     
