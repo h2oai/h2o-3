@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.GLMMetrics;
 import hex.SplitFrame;
 import hex.generic.Generic;
 import hex.generic.GenericModel;
@@ -730,6 +731,103 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             if (mojoPreds != null) mojoPreds.remove();
             if (ro != null) ro.remove();
             if (generic != null) generic.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * The restricted (offset-removed) deviance reported in the scoring history is computed by GLMResDevTask,
+     * which zeroes its sparse standardization correction (sparseOffset) when remove_offset_effects is on.
+     * On genuinely sparse standardized data that biases the reported deviance. Assert the scoring-history
+     * restricted deviance_train at the selected lambda equals the restricted model's residual deviance per
+     * observation - the latter is computed from the scored (score0) predictions, which are correct on sparse.
+     */
+    @Test
+    public void sparseRestrictedScoringHistoryDevianceMatchesModel() {
+        Frame fr = null;
+        GLMModel ro = null;
+        try {
+            Scope.enter();
+            int nrow = 800, ncol = 8;
+            Random rng = new Random(1234);
+            double[] beta = new double[ncol];
+            for (int j = 0; j < ncol; j++) beta[j] = rng.nextDouble() - 0.5;
+            double[][] cols = new double[ncol][nrow];
+            double[] off = new double[nrow];
+            String[] y = new String[nrow];
+            for (int i = 0; i < nrow; i++) {
+                double eta = 0;
+                for (int j = 0; j < ncol; j++) {  // ~10% non-zero -> sparse representation
+                    double v = (rng.nextDouble() < 0.1) ? rng.nextDouble() : 0.0;
+                    cols[j][i] = v;
+                    eta += v * beta[j];
+                }
+                off[i] = rng.nextDouble() - 0.5;
+                eta += off[i];
+                y[i] = (rng.nextDouble() < 1.0 / (1.0 + Math.exp(-eta))) ? "1" : "0";
+            }
+            String[] names = new String[ncol + 2];
+            byte[] types = new byte[ncol + 2];
+            for (int j = 0; j < ncol; j++) {
+                names[j] = "x" + j;
+                types[j] = Vec.T_NUM;
+            }
+            names[ncol] = "off";
+            types[ncol] = Vec.T_NUM;
+            names[ncol + 1] = "y";
+            types[ncol + 1] = Vec.T_CAT;
+            TestFrameBuilder b = new TestFrameBuilder().withName("sparseDevFrame").withColNames(names).withVecTypes(types);
+            for (int j = 0; j < ncol; j++) b.withDataForCol(j, cols[j]);
+            b.withDataForCol(ncol, off);
+            b.withDataForCol(ncol + 1, y);
+            fr = b.build();
+            Scope.track(fr);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
+            params._response_column = "y";
+            params._train = fr._key;
+            params._offset_column = "off";
+            params._lambda_search = true;
+            params._generate_scoring_history = true;
+            params._remove_offset_effects = true;
+            ro = new GLM(params).trainModel().get();
+            Scope.track_generic(ro);
+
+            // correct restricted avg deviance, from the scored (score0) restricted training metrics
+            double nobs = ro._output._training_metrics._nobs;
+            double correctAvgDev = ((GLMMetrics) ro._output._training_metrics).residual_deviance() / nobs;
+
+            // reported restricted deviance_train from the scoring history at the selected lambda
+            TwoDimTable sh = ro._output._scoring_history;
+            int lamCol = Arrays.asList(sh.getColHeaders()).indexOf("lambda");
+            int devCol = Arrays.asList(sh.getColHeaders()).indexOf("deviance_train");
+            assertTrue("scoring history must expose lambda and deviance_train", lamCol >= 0 && devCol >= 0);
+            // lambda is stored as a formatted string in the lambda-format history; parse it and pick the row
+            // closest to lambda_best (the grid is ~10% apart, so the nearest is unambiguously the best row).
+            double lamBest = ro._output.lambda_best();
+            double reportedAvgDev = Double.NaN, bestDiff = Double.MAX_VALUE;
+            for (int i = 0; i < sh.getRowDim(); i++) {
+                Object dev = sh.get(i, devCol);
+                if (!(dev instanceof Number)) continue;  // early-stop-only rows have empty cells
+                double lam;
+                try {
+                    lam = Double.parseDouble(sh.get(i, lamCol).toString());
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                if (Math.abs(lam - lamBest) < bestDiff) {
+                    bestDiff = Math.abs(lam - lamBest);
+                    reportedAvgDev = ((Number) dev).doubleValue();
+                }
+            }
+            assertFalse("no numeric scoring-history row found", Double.isNaN(reportedAvgDev));
+
+            assertEquals("[sparse] restricted scoring-history deviance_train must match the restricted model's "
+                            + "residual deviance per observation",
+                    correctAvgDev, reportedAvgDev, 1e-6 * Math.max(1.0, correctAvgDev));
+        } finally {
+            if (fr != null) fr.remove();
+            if (ro != null) ro.remove();
             Scope.exit();
         }
     }
