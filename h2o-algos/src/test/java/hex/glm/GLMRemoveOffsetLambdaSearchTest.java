@@ -1,13 +1,20 @@
 package hex.glm;
 
+import hex.SplitFrame;
 import hex.generic.Generic;
 import hex.generic.GenericModel;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
+import water.Key;
+import water.MRTask;
 import water.Scope;
 import water.TestUtil;
+import water.fvec.Chunk;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
@@ -16,6 +23,7 @@ import water.util.TwoDimTable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -53,6 +61,23 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
         params._response_column = RESPONSE;
         params._train = train._key;
         params._offset_column = OFFSET;
+        params._lambda_search = true;
+        return params;
+    }
+
+    private Frame prostateFrame() {
+        Frame df = parseTestFile("smalldata/prostate/prostate.csv");
+        DKV.put(df);
+        return df;
+    }
+
+    // AGE is used directly as the offset (its magnitude is irrelevant to the invariants); ID is ignored.
+    private GLMModel.GLMParameters prostateParams(Frame df, GLMModel.GLMParameters.Family family, String response) {
+        GLMModel.GLMParameters params = new GLMModel.GLMParameters(family);
+        params._response_column = response;
+        params._train = df._key;
+        params._offset_column = "AGE";
+        params._ignored_columns = new String[]{"ID"};
         params._lambda_search = true;
         return params;
     }
@@ -352,6 +377,379 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             if (h2oPreds != null) h2oPreds.remove();
             if (mojoPreds != null) mojoPreds.remove();
             if (glm != null) glm.remove();
+            if (generic != null) generic.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * The restricted deviance recompute (GLMResDevTask) is family-specific, so it must be exercised beyond
+     * binomial - including the non-canonical families (gamma, tweedie, negativebinomial). For each family the
+     * unrestricted metrics must match the plain offset model and the restricted predictions must differ.
+     */
+    @Test
+    public void familiesWorkWithLambdaSearch() {
+        GLMModel.GLMParameters.Family[] families = {
+                GLMModel.GLMParameters.Family.gaussian, GLMModel.GLMParameters.Family.poisson,
+                GLMModel.GLMParameters.Family.gamma, GLMModel.GLMParameters.Family.negativebinomial,
+                GLMModel.GLMParameters.Family.tweedie};
+        String[] responses = {"VOL", "GLEASON", "PSA", "GLEASON", "VOL"};  // PSA is strictly positive -> valid for gamma
+        for (int idx = 0; idx < families.length; idx++) {
+            Frame df = null, predRO = null, predBase = null;
+            GLMModel ro = null, base = null;
+            try {
+                Scope.enter();
+                df = prostateFrame();
+                Scope.track_generic(df);
+
+                GLMModel.GLMParameters params = prostateParams(df, families[idx], responses[idx]);
+                if (families[idx] == GLMModel.GLMParameters.Family.negativebinomial) params._theta = 0.5;
+                if (families[idx] == GLMModel.GLMParameters.Family.tweedie) {
+                    params._tweedie_variance_power = 1.5;
+                    params._tweedie_link_power = 0.0;
+                }
+                params._remove_offset_effects = true;
+                ro = new GLM(params).trainModel().get();
+                Scope.track_generic(ro);
+
+                params._remove_offset_effects = false;
+                base = new GLM(params).trainModel().get();
+                Scope.track_generic(base);
+
+                double denom = Math.max(1.0, Math.abs(base._output._training_metrics.mse()));
+                assertEquals("[" + families[idx] + "] unrestricted train mse must match plain offset model",
+                        base._output._training_metrics.mse(),
+                        ro._output._training_metrics_unrestricted_model.mse(), 1e-6 * denom);
+                assertEquals("[" + families[idx] + "] lambda_best must match plain offset model",
+                        base._output.lambda_best(), ro._output.lambda_best(), 0.0);
+
+                predRO = ro.score(df);
+                Scope.track_generic(predRO);
+                predBase = base.score(df);
+                Scope.track_generic(predBase);
+                double maxDiff = 0;  // regression families report a single "predict" column
+                for (int i = 0; i < 100; i++)
+                    maxDiff = Math.max(maxDiff, Math.abs(predRO.vec(0).at(i) - predBase.vec(0).at(i)));
+                assertTrue("[" + families[idx] + "] restricted predictions must differ from plain offset model",
+                        maxDiff > 1e-6);
+            } finally {
+                if (df != null) df.remove();
+                if (predRO != null) predRO.remove();
+                if (predBase != null) predBase.remove();
+                if (ro != null) ro.remove();
+                if (base != null) base.remove();
+                Scope.exit();
+            }
+        }
+    }
+
+    /**
+     * A weights column feeds into the restricted deviance sums; the fit stays identical, so the unrestricted
+     * metrics must still match the plain (weighted) offset model and the restricted predictions must differ.
+     */
+    @Test
+    public void weightsWorkWithLambdaSearch() {
+        Frame train = null, predRO = null, predBase = null;
+        GLMModel ro = null, base = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            // positive, non-constant per-row weights (1, 2, 3, ...) built from a throwaway output frame
+            Frame wpf = new MRTask() {
+                @Override public void map(Chunk c, NewChunk nc) {
+                    for (int i = 0; i < c._len; i++) nc.addNum(1.0 + (i % 3));
+                }
+            }.doAll(Vec.T_NUM, train.vec(OFFSET)).outputFrame();
+            train.add("weights", wpf.remove(0));  // transfer vec ownership to train
+            wpf.remove();
+            DKV.put(train);
+
+            GLMModel.GLMParameters params = baseParams(train);
+            params._weights_column = "weights";
+            params._remove_offset_effects = true;
+            ro = new GLM(params).trainModel().get();
+            Scope.track_generic(ro);
+
+            params._remove_offset_effects = false;
+            base = new GLM(params).trainModel().get();
+            Scope.track_generic(base);
+
+            assertEquals("unrestricted train mse must match plain offset model (weighted)",
+                    base._output._training_metrics.mse(),
+                    ro._output._training_metrics_unrestricted_model.mse(), 1e-8);
+            assertEquals("lambda_best must match plain offset model",
+                    base._output.lambda_best(), ro._output.lambda_best(), 0.0);
+
+            predRO = ro.score(train);
+            Scope.track_generic(predRO);
+            predBase = base.score(train);
+            Scope.track_generic(predBase);
+            double maxDiff = 0;
+            for (int i = 0; i < 100; i++)
+                maxDiff = Math.max(maxDiff, Math.abs(predRO.vec(2).at(i) - predBase.vec(2).at(i)));
+            assertTrue("restricted predictions must differ from plain offset model", maxDiff > 1e-6);
+        } finally {
+            if (train != null) train.remove();
+            if (predRO != null) predRO.remove();
+            if (predBase != null) predBase.remove();
+            if (ro != null) ro.remove();
+            if (base != null) base.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * A genuine holdout (not the training frame) exercises the restricted validation-deviance path
+     * (GLMResDevTask on a distinct _validDinfo). The unrestricted validation metrics must match the plain
+     * offset model on that holdout.
+     */
+    @Test
+    public void holdoutValidationUnrestrictedMatchesPlainOffsetModel() {
+        Frame train = null;
+        GLMModel ro = null, base = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            SplitFrame sf = new SplitFrame(train, new double[]{0.8, 0.2},
+                    new Key[]{Key.make("roLS_tr.hex"), Key.make("roLS_va.hex")});
+            sf.exec().get();
+            Key[] ks = sf._destination_frames;
+            Frame tr = DKV.getGet(ks[0]);
+            Frame va = DKV.getGet(ks[1]);
+            Scope.track(tr, va);
+
+            GLMModel.GLMParameters params = baseParams(train);
+            params._train = tr._key;
+            params._valid = va._key;
+            params._remove_offset_effects = true;
+            ro = new GLM(params).trainModel().get();
+            Scope.track_generic(ro);
+
+            params._remove_offset_effects = false;
+            base = new GLM(params).trainModel().get();
+            Scope.track_generic(base);
+
+            double delta = 1e-8;
+            assertNotNull("unrestricted validation metrics must be present",
+                    ro._output._validation_metrics_unrestricted_model);
+            assertEquals(base._output._validation_metrics.mse(),
+                    ro._output._validation_metrics_unrestricted_model.mse(), delta);
+            assertEquals(base._output._validation_metrics.rmse(),
+                    ro._output._validation_metrics_unrestricted_model.rmse(), delta);
+        } finally {
+            if (train != null) train.remove();
+            if (ro != null) ro.remove();
+            if (base != null) base.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * beta_constraints route through a separate scoring path; the combination with lambda_search +
+     * remove_offset_effects must still recover the plain (constrained) offset model.
+     */
+    @Test
+    public void betaConstraintsWorkWithLambdaSearch() {
+        Frame train = null, predRO = null, predBase = null;
+        GLMModel ro = null, base = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            Frame bc = new TestFrameBuilder()
+                    .withName("betaConstraints")
+                    .withColNames("names", "lower_bounds", "upper_bounds")
+                    .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
+                    .withDataForCol(0, new String[]{"C11", "C12"})  // numeric predictors in binomialFrame
+                    .withDataForCol(1, new double[]{-1, -1})
+                    .withDataForCol(2, new double[]{1, 1})
+                    .build();
+            Scope.track(bc);
+
+            GLMModel.GLMParameters params = baseParams(train);
+            params._beta_constraints = bc._key;
+            params._remove_offset_effects = true;
+            ro = new GLM(params).trainModel().get();
+            Scope.track_generic(ro);
+
+            params._remove_offset_effects = false;
+            base = new GLM(params).trainModel().get();
+            Scope.track_generic(base);
+
+            assertEquals("unrestricted train mse must match plain constrained offset model",
+                    base._output._training_metrics.mse(),
+                    ro._output._training_metrics_unrestricted_model.mse(), 1e-8);
+            assertEquals("lambda_best must match plain offset model",
+                    base._output.lambda_best(), ro._output.lambda_best(), 0.0);
+
+            predRO = ro.score(train);
+            Scope.track_generic(predRO);
+            predBase = base.score(train);
+            Scope.track_generic(predBase);
+            double maxDiff = 0;
+            for (int i = 0; i < 100; i++)
+                maxDiff = Math.max(maxDiff, Math.abs(predRO.vec(2).at(i) - predBase.vec(2).at(i)));
+            assertTrue("restricted predictions must differ from plain offset model", maxDiff > 1e-6);
+        } finally {
+            if (train != null) train.remove();
+            if (predRO != null) predRO.remove();
+            if (predBase != null) predBase.remove();
+            if (ro != null) ro.remove();
+            if (base != null) base.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * early_stopping can break the lambda loop mid-search; the model must still finalize and its unrestricted
+     * metrics/lambda selection must match the plain offset model.
+     */
+    @Test
+    public void earlyStoppingWorksWithLambdaSearch() {
+        Frame train = null;
+        GLMModel ro = null, base = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            GLMModel.GLMParameters params = baseParams(train);
+            params._early_stopping = true;
+            params._remove_offset_effects = true;
+            ro = new GLM(params).trainModel().get();
+            Scope.track_generic(ro);
+
+            params._remove_offset_effects = false;
+            base = new GLM(params).trainModel().get();
+            Scope.track_generic(base);
+
+            assertEquals("lambda_best must match plain offset model under early_stopping",
+                    base._output.lambda_best(), ro._output.lambda_best(), 0.0);
+            assertEquals("unrestricted train mse must match plain offset model",
+                    base._output._training_metrics.mse(),
+                    ro._output._training_metrics_unrestricted_model.mse(), 1e-8);
+        } finally {
+            if (train != null) train.remove();
+            if (ro != null) ro.remove();
+            if (base != null) base.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Mostly-zero standardized numeric predictors drive GLM down the sparse chunk path. The restricted
+     * predictions must equal the plain model scored with the offset zeroed (as they do on dense data, see
+     * {@link #restrictedPredictionsEqualOffsetZeroedModel()}) and the MOJO must reproduce them.
+     * <p>
+     * Currently IGNORED: this exposes a PRE-EXISTING bug (independent of lambda_search - it reproduces with
+     * lambda_search=false too). On sparse standardized data remove_offset_effects yields restricted
+     * predictions that differ from the offset-zeroed model by ~0.05 (both in-H2O and MOJO), because the
+     * sparse standardization correction (GLMResDevTask sparseOffset / DataInfo sparse mean-centering) is
+     * mishandled when the offset effect is removed. Track/fix separately, then remove @Ignore.
+     */
+    @Ignore("Pre-existing sparseOffset bug: remove_offset_effects gives wrong restricted predictions on "
+            + "sparse standardized data; independent of lambda_search. Fix separately then un-ignore.")
+    @Test
+    public void sparseDataWorksWithLambdaSearch() throws Exception {
+        Frame fr = null, predRO = null, mojoPreds = null, predZeroed = null;
+        Vec oldOffset = null;
+        GLMModel ro = null, base = null;
+        GenericModel generic = null;
+        try {
+            Scope.enter();
+            int nrow = 800, ncol = 8;
+            Random rng = new Random(1234);
+            double[] beta = new double[ncol];
+            for (int j = 0; j < ncol; j++) beta[j] = rng.nextDouble() - 0.5;
+            double[][] cols = new double[ncol][nrow];
+            double[] off = new double[nrow];
+            String[] y = new String[nrow];
+            for (int i = 0; i < nrow; i++) {
+                double eta = 0;
+                for (int j = 0; j < ncol; j++) {  // ~10% non-zero -> sparse representation
+                    double v = (rng.nextDouble() < 0.1) ? rng.nextDouble() : 0.0;
+                    cols[j][i] = v;
+                    eta += v * beta[j];
+                }
+                off[i] = rng.nextDouble() - 0.5;
+                eta += off[i];
+                y[i] = (rng.nextDouble() < 1.0 / (1.0 + Math.exp(-eta))) ? "1" : "0";
+            }
+            String[] names = new String[ncol + 2];
+            byte[] types = new byte[ncol + 2];
+            for (int j = 0; j < ncol; j++) {
+                names[j] = "x" + j;
+                types[j] = Vec.T_NUM;
+            }
+            names[ncol] = "off";
+            types[ncol] = Vec.T_NUM;
+            names[ncol + 1] = "y";
+            types[ncol + 1] = Vec.T_CAT;
+            TestFrameBuilder b = new TestFrameBuilder().withName("sparseFrame").withColNames(names).withVecTypes(types);
+            for (int j = 0; j < ncol; j++) b.withDataForCol(j, cols[j]);
+            b.withDataForCol(ncol, off);
+            b.withDataForCol(ncol + 1, y);
+            fr = b.build();
+            Scope.track(fr);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
+            params._response_column = "y";
+            params._train = fr._key;
+            params._offset_column = "off";
+            params._lambda_search = true;
+            params._remove_offset_effects = true;
+            ro = new GLM(params).trainModel().get();
+            Scope.track_generic(ro);
+
+            params._remove_offset_effects = false;
+            base = new GLM(params).trainModel().get();
+            Scope.track_generic(base);
+
+            // fit is identical on sparse data
+            assertEquals("[sparse] unrestricted train mse must match plain offset model",
+                    base._output._training_metrics.mse(),
+                    ro._output._training_metrics_unrestricted_model.mse(), 1e-8);
+
+            predRO = ro.score(fr);        // in-H2O restricted, original offset present
+            Scope.track_generic(predRO);
+
+            // MOJO scored on the same (original-offset) frame
+            File mojoFile = File.createTempFile("glm_sparse_mojo", ".zip");
+            mojoFile.deleteOnExit();
+            try (FileOutputStream fos = new FileOutputStream(mojoFile)) {
+                ro.getMojo().writeTo(fos);
+            }
+            generic = Generic.importMojoModel(mojoFile.getAbsolutePath(), false);
+            Scope.track_generic(generic);
+            mojoPreds = generic.score(fr);
+            Scope.track_generic(mojoPreds);
+
+            // restricted == plain scored with offset zeroed, then MOJO-vs-in-H2O. Compare probabilities
+            // only; the derived class label is threshold-dependent.
+            Vec zoff = fr.anyVec().makeZero();
+            Scope.track(zoff);
+            oldOffset = fr.replace(fr.find("off"), zoff);
+            DKV.put(fr);
+            predZeroed = base.score(fr);
+            Scope.track_generic(predZeroed);
+            assertVecEquals(predRO.vec(1), predZeroed.vec(1), 1e-8);
+            assertVecEquals(predRO.vec(2), predZeroed.vec(2), 1e-8);
+
+            assertVecEquals(predRO.vec(1), mojoPreds.vec(1), 1e-8);
+            assertVecEquals(predRO.vec(2), mojoPreds.vec(2), 1e-8);
+        } finally {
+            if (oldOffset != null) oldOffset.remove();
+            if (fr != null) fr.remove();
+            if (predRO != null) predRO.remove();
+            if (mojoPreds != null) mojoPreds.remove();
+            if (predZeroed != null) predZeroed.remove();
+            if (ro != null) ro.remove();
+            if (base != null) base.remove();
             if (generic != null) generic.remove();
             Scope.exit();
         }

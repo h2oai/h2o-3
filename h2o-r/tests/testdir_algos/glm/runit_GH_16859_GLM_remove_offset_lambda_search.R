@@ -116,6 +116,111 @@ glm_remove_offset_lambda_search_mojo_test <- function() {
     compareFrames(pred_h2o, pred_mojo, prob = 1, tolerance = 1e-8)
 }
 
+# The restricted deviance recompute (GLMResDevTask) is family-specific, so it must be exercised beyond
+# binomial - including the non-canonical families (gamma, tweedie, negativebinomial). For each family the
+# unrestricted model must recover the plain offset model and the restricted predictions must differ.
+glm_remove_offset_lambda_search_families_test <- function() {
+    df <- prostate_frame()
+    cases <- list(
+        list(family = "gaussian", y = "VOL", x = c("RACE", "DPROS", "PSA", "GLEASON"), extra = list()),
+        list(family = "poisson", y = "GLEASON", x = c("RACE", "DPROS", "PSA", "VOL"), extra = list()),
+        list(family = "gamma", y = "PSA", x = c("RACE", "DPROS", "VOL", "GLEASON"), extra = list()),  # PSA > 0
+        list(family = "negativebinomial", y = "GLEASON", x = c("RACE", "DPROS", "PSA", "VOL"),
+             extra = list(theta = 0.5)),
+        list(family = "tweedie", y = "VOL", x = c("RACE", "DPROS", "PSA", "GLEASON"),
+             extra = list(tweedie_variance_power = 1.5, tweedie_link_power = 0.0))
+    )
+    for (cfg in cases) {
+        base <- do.call(h2o.glm, c(list(family = cfg$family, x = cfg$x, y = cfg$y, training_frame = df,
+                                        offset_column = "AGE", lambda_search = TRUE, seed = 0xC0FFEE), cfg$extra))
+        ro <- do.call(h2o.glm, c(list(family = cfg$family, x = cfg$x, y = cfg$y, training_frame = df,
+                                      offset_column = "AGE", remove_offset_effects = TRUE,
+                                      lambda_search = TRUE, seed = 0xC0FFEE), cfg$extra))
+
+        unrestricted <- h2o.make_unrestricted_glm_model(ro)
+        expect_equal(h2o.coef(base), h2o.coef(unrestricted), tolerance = 1e-6)
+
+        pb <- as.data.frame(h2o.predict(base, df))$predict
+        pr <- as.data.frame(h2o.predict(ro, df))$predict
+        expect_gt(max(abs(pb - pr)), 1e-6)
+    }
+}
+
+# A weights column feeds the restricted deviance sums; the fit stays identical.
+glm_remove_offset_lambda_search_weights_test <- function() {
+    df <- prostate_frame()
+    df$w <- df$VOL + 1  # positive, non-constant weights
+
+    base <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                    weights_column = "w", lambda_search = TRUE, seed = 0xC0FFEE)
+    ro <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                  weights_column = "w", remove_offset_effects = TRUE, lambda_search = TRUE, seed = 0xC0FFEE)
+
+    unrestricted <- h2o.make_unrestricted_glm_model(ro)
+    expect_equal(h2o.coef(base), h2o.coef(unrestricted), tolerance = 1e-6)
+    preds_offset <- as.data.frame(h2o.predict(base, df))$p1
+    preds_ro <- as.data.frame(h2o.predict(ro, df))$p1
+    expect_gt(max(abs(preds_offset - preds_ro)), 1e-6)
+}
+
+# A genuine holdout (not the training frame) exercises the restricted validation-deviance path. The
+# unrestricted model's validation metrics must match the plain offset model on that holdout.
+glm_remove_offset_lambda_search_validation_test <- function() {
+    df <- prostate_frame()
+    splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1234)
+    train <- splits[[1]]
+    valid <- splits[[2]]
+
+    base <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = train, validation_frame = valid,
+                    offset_column = "AGE", lambda_search = TRUE, seed = 0xC0FFEE)
+    ro <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = train, validation_frame = valid,
+                  offset_column = "AGE", remove_offset_effects = TRUE, lambda_search = TRUE, seed = 0xC0FFEE)
+
+    unrestricted <- h2o.make_unrestricted_glm_model(ro)
+    perf_base <- h2o.performance(base, valid)
+    perf_unr <- h2o.performance(unrestricted, valid)
+    expect_equal(h2o.rmse(perf_base), h2o.rmse(perf_unr), tolerance = 1e-6)
+    expect_equal(h2o.mse(perf_base), h2o.mse(perf_unr), tolerance = 1e-6)
+}
+
+# beta_constraints route through a separate scoring path; the combination must still recover the plain
+# (constrained) offset model.
+glm_remove_offset_lambda_search_beta_constraints_test <- function() {
+    df <- prostate_frame()
+    bc <- as.h2o(data.frame(names = c("PSA", "VOL"), lower_bounds = c(-1, -1), upper_bounds = c(1, 1)))
+
+    base <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                    beta_constraints = bc, lambda_search = TRUE, seed = 0xC0FFEE)
+    ro <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                  beta_constraints = bc, remove_offset_effects = TRUE, lambda_search = TRUE, seed = 0xC0FFEE)
+
+    unrestricted <- h2o.make_unrestricted_glm_model(ro)
+    expect_equal(h2o.coef(base), h2o.coef(unrestricted), tolerance = 1e-6)
+    preds_offset <- as.data.frame(h2o.predict(base, df))$p1
+    preds_ro <- as.data.frame(h2o.predict(ro, df))$p1
+    expect_gt(max(abs(preds_offset - preds_ro)), 1e-6)
+}
+
+# early_stopping can break the lambda loop mid-search; the unrestricted model must still recover the plain
+# offset model at the same selected lambda.
+glm_remove_offset_lambda_search_early_stopping_test <- function() {
+    df <- prostate_frame()
+
+    base <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                    lambda_search = TRUE, early_stopping = TRUE, seed = 0xC0FFEE)
+    ro <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                  lambda_search = TRUE, early_stopping = TRUE, remove_offset_effects = TRUE, seed = 0xC0FFEE)
+
+    expect_equal(h2o.getLambdaBest(base), h2o.getLambdaBest(ro), tolerance = 1e-12)
+    unrestricted <- h2o.make_unrestricted_glm_model(ro)
+    expect_equal(h2o.coef(base), h2o.coef(unrestricted), tolerance = 1e-6)
+}
+
+# NOTE: a sparse-standardized-data case is intentionally NOT included here. It exposes a pre-existing bug
+# (independent of lambda_search) where remove_offset_effects produces wrong restricted predictions on
+# sparse standardized data; an as.h2o data.frame does not exercise the sparse chunk path anyway. See the
+# @Ignore'd GLMRemoveOffsetLambdaSearchTest.sparseDataWorksWithLambdaSearch (Java) for the reproduction.
+
 doTest("GLM: remove_offset_effects with lambda_search",
        glm_remove_offset_lambda_search_test)
 doTest("GLM: remove_offset_effects with lambda_search offset zeroed",
@@ -124,3 +229,13 @@ doTest("GLM: remove_offset_effects with lambda_search scoring history",
        glm_remove_offset_lambda_search_scoring_history_test)
 doTest("GLM: remove_offset_effects with lambda_search mojo",
        glm_remove_offset_lambda_search_mojo_test)
+doTest("GLM: remove_offset_effects with lambda_search families",
+       glm_remove_offset_lambda_search_families_test)
+doTest("GLM: remove_offset_effects with lambda_search weights",
+       glm_remove_offset_lambda_search_weights_test)
+doTest("GLM: remove_offset_effects with lambda_search validation",
+       glm_remove_offset_lambda_search_validation_test)
+doTest("GLM: remove_offset_effects with lambda_search beta_constraints",
+       glm_remove_offset_lambda_search_beta_constraints_test)
+doTest("GLM: remove_offset_effects with lambda_search early_stopping",
+       glm_remove_offset_lambda_search_early_stopping_test)
