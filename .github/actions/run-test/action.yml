@@ -268,6 +268,12 @@ runs:
         fi
 
         # Execute test in Docker
+        # Forward AWS credentials from OIDC auth so S3 persistence tests work
+        AWS_CREDS=""
+        if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+          AWS_CREDS="-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_DEFAULT_REGION -e AWS_REGION"
+        fi
+
         docker run --rm \
           --user root \
           -v ${{ github.workspace }}/h2o-3:/workspace \
@@ -277,6 +283,7 @@ runs:
           -e R_VERSION=${{ inputs.r }} \
           -e JAVA_VERSION=${{ inputs.java }} \
           -e TEST_PACKAGE=${{ inputs.test_package }} \
+          ${AWS_CREDS} \
           ${{ inputs.docker_args }} \
           ${{ steps.docker.outputs.image }} \
           /bin/bash -c "
