@@ -221,11 +221,26 @@ runs:
         echo "Using image: ${IMAGE}"
 
     # -------------------------------------------------------------------------
-    # STEP 7: Pull Docker Image
+    # STEP 7: Pull Docker Image (with retry for transient ECR failures)
     # -------------------------------------------------------------------------
     - name: Pull Docker Image
       shell: bash
-      run: docker pull ${{ steps.docker.outputs.image }}
+      run: |
+        IMAGE="${{ steps.docker.outputs.image }}"
+        for attempt in 1 2 3; do
+          echo "Docker pull attempt ${attempt}/3..."
+          if docker pull "${IMAGE}"; then
+            echo "Successfully pulled ${IMAGE}"
+            exit 0
+          fi
+          if [ "${attempt}" -lt 3 ]; then
+            WAIT=$((attempt * 10))
+            echo "Pull failed (attempt ${attempt}). Retrying in ${WAIT}s..."
+            sleep ${WAIT}
+          fi
+        done
+        echo "::error::Docker pull failed after 3 attempts: ${IMAGE}"
+        exit 1
 
     # -------------------------------------------------------------------------
     # STEP 8: Extract Test Package
@@ -347,10 +362,10 @@ runs:
             python --version 2>&1 || true
             R --version 2>&1 | head -1 || true
 
-            # Workaround: Remove directories that Makefile tries to create without -p flag
-            # The Makefile's lookup-demos-tests target uses 'mkdir' without -p, so it fails
-            # if directories already exist. Remove them so Makefile can create them fresh.
-            rm -rf h2o-r/tests/testdir_demos h2o-py/tests/testdir_demos 2>/dev/null || true
+            # Ensure directories needed by Makefile targets exist
+            mkdir -p h2o-r/tests/testdir_demos h2o-py/tests/testdir_demos 2>/dev/null || true
+            mkdir -p h2o-r/demos h2o-r/h2o-package/demo 2>/dev/null || true
+            mkdir -p h2o-docs/src/booklets/v2_2015/source 2>/dev/null || true
 
             # Run tests
             echo '=== Running: ${{ inputs.make_target }} ==='
