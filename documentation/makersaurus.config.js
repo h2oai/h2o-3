@@ -16,6 +16,16 @@ module.exports = {
   searchFilter: "h2o-3-enterprise", // Algolia facet — requires registration in the central dev_docs_omnisearch crawler
   onBrokenLinks: "warn", // migration-in-progress: pages cross-link to not-yet-migrated targets; revert to "throw" when complete
   markdown: { math: true }, // KaTeX for algorithm/math pages — requires makersaurus with h2oai/makersaurus#296
+  // Navbar version label: the theme shows the single current version's label
+  // in the navbar's version slot. There are no in-repo doc snapshots (frozen
+  // per-release copies live on S3), so "current" is the only version and its
+  // label is the stamped release version — "dev" on local builds.
+  // All four keys must be set together: the makersaurus config template emits
+  // them as a group, and any left undefined would render as empty values.
+  includeCurrentVersion: true,
+  disableVersioning: false,
+  lastVersion: "current",
+  versions: { current: { label: projectVersion ? `v${projectVersion}` : "dev" } },
   ...(projectVersion && {
     // The id embeds the version so the banner reappears after each release,
     // even for users who dismissed the previous one.

@@ -540,6 +540,10 @@ jobs:
         env:
           BRANCH: ${{ needs.init.outputs.branch }}
           BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
+          # Stamps the navbar version label and release banner with the
+          # build's version (e.g. 3.47.0.98) so every preview states which
+          # build it documents.
+          H2O_PROJECT_VERSION: ${{ needs.build.outputs.project_version }}
         run: |
           BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
           cd documentation
