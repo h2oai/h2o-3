@@ -387,10 +387,10 @@ runs:
             python --version 2>&1 || true
             R --version 2>&1 | head -1 || true
 
-            # Ensure directories needed by Makefile targets exist
-            mkdir -p h2o-r/tests/testdir_demos h2o-py/tests/testdir_demos 2>/dev/null || true
-            mkdir -p h2o-r/demos h2o-r/h2o-package/demo 2>/dev/null || true
-            mkdir -p h2o-docs/src/booklets/v2_2015/source 2>/dev/null || true
+            # Remove directories that Makefile's lookup-demos-tests creates with
+            # bare mkdir (no -p flag). If they already exist, mkdir fails and
+            # blocks the entire R Small test suite. Remove so Makefile can recreate.
+            rm -rf h2o-r/tests/testdir_demos h2o-py/tests/testdir_demos 2>/dev/null || true
 
             # Run tests
             echo '=== Running: ${{ inputs.make_target }} ==='
