@@ -30,6 +30,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -59,6 +60,7 @@ jobs:
         with:
           name: Java 8 Smoke
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-smoke-jenkins
           test_package: java
           java: "8"
@@ -105,6 +107,7 @@ jobs:
         with:
           name: Java 8 Algos GLM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-glm-jenkins
           test_package: java
           java: "8"
@@ -151,6 +154,7 @@ jobs:
         with:
           name: Java 8 Algos GBM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-gbm-jenkins
           test_package: java
           java: "8"
@@ -197,6 +201,7 @@ jobs:
         with:
           name: Java 8 Algos DRF
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-drf-jenkins
           test_package: java
           java: "8"
@@ -243,6 +248,7 @@ jobs:
         with:
           name: Java 8 Algos DeepLearning
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-deeplearning-jenkins
           test_package: java
           java: "8"
@@ -289,6 +295,7 @@ jobs:
         with:
           name: Java 8 Algos GAM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-gam-jenkins
           test_package: java
           java: "8"
@@ -335,6 +342,7 @@ jobs:
         with:
           name: Java 8 Algos Tree+IsoFor+DT+Uplift
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-tree-generic-jenkins
           test_package: java
           java: "8"
@@ -381,6 +389,7 @@ jobs:
         with:
           name: Java 8 Algos Ensemble
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-ensemble-jenkins
           test_package: java
           java: "8"
@@ -427,6 +436,7 @@ jobs:
         with:
           name: Java 8 Algos KMeans
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-kmeans-jenkins
           test_package: java
           java: "8"
@@ -473,6 +483,7 @@ jobs:
         with:
           name: Java 8 Algos RuleFit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-rulefit-jenkins
           test_package: java
           java: "8"
@@ -519,6 +530,7 @@ jobs:
         with:
           name: Java 8 Algos PCA
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-pca-jenkins
           test_package: java
           java: "8"
@@ -565,6 +577,7 @@ jobs:
         with:
           name: Java 8 Algos GLRM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-glrm-jenkins
           test_package: java
           java: "8"
@@ -611,6 +624,7 @@ jobs:
         with:
           name: Java 8 Algos AdaBoost
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-adaboost-jenkins
           test_package: java
           java: "8"
@@ -657,6 +671,7 @@ jobs:
         with:
           name: Java 8 Algos ModelSelection
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-modelselection-jenkins
           test_package: java
           java: "8"
@@ -703,6 +718,7 @@ jobs:
         with:
           name: Java 8 Algos Generic
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-generic-jenkins
           test_package: java
           java: "8"
@@ -749,6 +765,7 @@ jobs:
         with:
           name: Java 8 Algos Grid
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-grid-jenkins
           test_package: java
           java: "8"
@@ -795,6 +812,7 @@ jobs:
         with:
           name: Java 8 Algos Misc
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-algos-misc-jenkins
           test_package: java
           java: "8"
@@ -841,6 +859,7 @@ jobs:
         with:
           name: Java 8 Core JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-core-jenkins
           test_package: java
           java: "8"
@@ -887,6 +906,7 @@ jobs:
         with:
           name: Java 8 Mojo Pipeline JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-mojo-pipeline-jenkins
           test_package: java
           java: "8"
@@ -933,6 +953,7 @@ jobs:
         with:
           name: Java 8 AutoML JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-automl-jenkins
           test_package: java
           java: "8"
@@ -979,6 +1000,7 @@ jobs:
         with:
           name: Java 8 Clustering JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-clustering-jenkins
           test_package: java
           java: "8"
@@ -1026,6 +1048,7 @@ jobs:
         with:
           name: Java 8 XGBoost Multinode JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-xgb-multi-jenkins
           test_package: java
           java: "8"
@@ -1072,6 +1095,7 @@ jobs:
         with:
           name: Java 8 JUnit Other
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-other-jenkins
           test_package: java
           java: "8"
@@ -1118,6 +1142,7 @@ jobs:
         with:
           name: Java 8 Persist S3
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-persist-s3-jenkins
           test_package: java
           java: "8"
@@ -1164,6 +1189,7 @@ jobs:
         with:
           name: Java 8 Persist GCS
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-persist-gcs-jenkins
           test_package: java
           java: "8"
@@ -1210,6 +1236,7 @@ jobs:
         with:
           name: Java 8 Persist HTTP
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-junit-persist-http-jenkins
           test_package: java
           java: "8"

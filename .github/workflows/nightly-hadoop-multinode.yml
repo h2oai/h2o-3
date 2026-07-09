@@ -36,6 +36,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -85,6 +86,7 @@ jobs:
         with:
           name: Hadoop Multinode Test
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-hadoop-multinode
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -109,6 +111,7 @@ jobs:
         with:
           name: External XGBoost on Hadoop
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-steam-websocket
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -133,6 +136,7 @@ jobs:
         with:
           name: Fault Tolerance on Hadoop
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
           make_target: test-hadoop-fault-tolerance
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}

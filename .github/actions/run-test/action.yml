@@ -123,6 +123,12 @@ inputs:
     required: false
     default: '/home/ubuntu/bigdata'
 
+  # ---------- S3 ACCESS (for S3 persistence tests) ----------
+  s3_role:
+    description: 'IAM role for S3 test data access (e.g., secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV for test.0xdata.com / h2o-public-test-data)'
+    required: false
+    default: ''
+
   # ---------- RESULTS ----------
   artifact_retention:
     description: 'Days to keep test artifacts'
@@ -163,6 +169,18 @@ runs:
     # -------------------------------------------------------------------------
     - name: Login to ECR
       uses: aws-actions/amazon-ecr-login@v2
+
+    # -------------------------------------------------------------------------
+    # STEP 2b: Switch to S3 role (for S3 persistence tests)
+    # -------------------------------------------------------------------------
+    - name: Configure AWS for S3 Access
+      if: inputs.s3_role != ''
+      uses: aws-actions/configure-aws-credentials@v4.0.2
+      with:
+        role-to-assume: ${{ inputs.s3_role }}
+        role-session-name: h2oai-h2o-3-s3-${{ github.run_id }}
+        aws-region: ${{ inputs.aws_region }}
+        audience: sts.amazonaws.com
 
     # -------------------------------------------------------------------------
     # STEP 3: Checkout H2O-3
