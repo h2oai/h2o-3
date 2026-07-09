@@ -4,6 +4,7 @@ import water.H2O;
 import water.H2ONode;
 import water.HeartBeat;
 import water.Paxos;
+import water.util.Log;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -116,7 +117,12 @@ public class JvmTelemetry {
       if (home == null || home.isEmpty()) return;
       File marker = new File(new File(home, ".h2oai"), ".telemetry_notice_jvm");
       if (marker.exists()) return;
-      System.out.println("\n" + NOTICE_TEXT + "\n");
+      // Route through the logger (not System.out) so the notice is emitted as
+      // regular INFO lines. This keeps h2o.jar startup output uniformly at
+      // INFO level, which the CI "INFO check" relies on (any raw stdout would
+      // be flagged as an ERROR/WARNING). Log splits on newlines, so each line
+      // of the notice gets its own INFO header.
+      Log.info(NOTICE_TEXT);
       marker.getParentFile().mkdirs();
       FileWriter w = new FileWriter(marker);
       try { w.write("1\n"); } finally { w.close(); }
