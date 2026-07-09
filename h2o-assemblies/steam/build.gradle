@@ -51,12 +51,16 @@ dependencies {
     api "com.google.oauth-client:google-oauth-client:1.33.3"
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.18.6') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.18.8') {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
             because 'Fixes CVE-2023-35116'
             because 'Fixes sonatype-2024-0171'
-            because 'Fixes GHSA-72hv-8253-57qq'            
+            because 'Fixes GHSA-72hv-8253-57qq'
+            because 'Fixes CVE-2026-54512'
+            because 'Fixes CVE-2026-54513'
+            because 'Fixes CVE-2026-54514'
+            because 'Fixes CVE-2026-54515'
         }
         api('org.codehaus.jettison:jettison:1.5.4') {
             because 'Fixes CVE-2023-1436'
