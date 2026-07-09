@@ -496,7 +496,10 @@ jobs:
           echo "Destination: ${S3_DOCS_DEST}"
 
           if [ -d "docs" ] && [ "$(ls -A docs/)" ]; then
-            aws s3 sync docs/ "${S3_DOCS_DEST}" --delete
+            # Exclude docs-next/ — the Makersaurus preview published by
+            # publish-docs-makersaurus lives under this prefix and runs in
+            # parallel; --delete would otherwise remove it depending on timing.
+            aws s3 sync docs/ "${S3_DOCS_DEST}" --delete --exclude "docs-next/*"
             echo "Documentation uploaded successfully!"
             echo "Public URL: https://h2o-release.s3.amazonaws.com/h2o-e/${BRANCH_SAFE}/${BUILD_NUMBER}/h2o-docs/index.html"
           else
@@ -540,7 +543,12 @@ jobs:
         run: |
           BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
           cd documentation
-          BASE_URL="/h2o-e/${BRANCH_SAFE}/${BUILD_NUMBER}/docs-next/" npm install && npm run build
+          # export (not an inline command prefix) so BASE_URL reaches
+          # `npm run build` — a prefix only applies to `npm install`, and the
+          # site then builds with the default baseUrl and broken asset paths.
+          export BASE_URL="/h2o-e/${BRANCH_SAFE}/${BUILD_NUMBER}/docs-next/"
+          npm install
+          npm run build
 
       - name: Configure AWS (Shared Services Prod)
         uses: aws-actions/configure-aws-credentials@v4.0.2
