@@ -803,6 +803,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         }
       }
       if(_control_variables != null) {
+        // Control variables zero out only the variable's own main-effect betas; an interaction term
+        // containing that variable would still leak its effect, so the combination is unsound and blocked.
+        // (remove_offset_effects, by contrast, drops a separate non-predictor offset column and is safe
+        // with interactions - see GH-16858.)
         if ((_interactions != null || _interaction_pairs != null)) {
           glm.error("_control_variables", "Control variables option is not supported with interactions.");
         }
@@ -845,9 +849,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
           if (_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
               glm.error("_remove_offset_effects", "The "+_distribution.name()+ " distribution is not supported with remove offset effects.");
-          }
-          if (_interactions != null || _interaction_pairs != null) {
-              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with interactions.");
           }
           if (_lambda_search) {
               glm.error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
