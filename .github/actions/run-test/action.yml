@@ -387,10 +387,13 @@ runs:
             python --version 2>&1 || true
             R --version 2>&1 | head -1 || true
 
-            # Remove directories that Makefile's lookup-demos-tests creates with
-            # bare mkdir (no -p flag). If they already exist, mkdir fails and
-            # blocks the entire R Small test suite. Remove so Makefile can recreate.
-            rm -rf h2o-r/tests/testdir_demos h2o-py/tests/testdir_demos 2>/dev/null || true
+            # Patch upstream Makefile bugs before running tests:
+            # 1. mkdir without -p fails when testdir_demos already exists, blocking R Small suite
+            # 2. run.py --norun exits non-zero on setup, killing Booklets/Demos targets
+            if [ -f scripts/jenkins/Makefile.jenkins ]; then
+              sed -i 's#^\tmkdir h2o-{r,py}/tests/testdir_demos#\tmkdir -p h2o-{r,py}/tests/testdir_demos#' scripts/jenkins/Makefile.jenkins
+              sed -i 's#run\.py --wipeall --norun\$#run.py --wipeall --norun || true#' scripts/jenkins/Makefile.jenkins
+            fi
 
             # Run tests
             echo '=== Running: ${{ inputs.make_target }} ==='
