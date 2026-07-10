@@ -329,7 +329,10 @@ runs:
           AWS_CREDS="${AWS_CREDS} -e S3_DEV_AWS_ACCESS_KEY_ID -e S3_DEV_AWS_SECRET_ACCESS_KEY -e S3_DEV_AWS_SESSION_TOKEN"
           AWS_CREDS="${AWS_CREDS} -e AWS_CREDS_PREFIX_S3_DEV=S3_DEV_"
         fi
-        if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+        # Only forward standard AWS creds when no prefixed creds exist (single-role fallback).
+        # With dual roles, omit them so H2O has no implicit credentials inside Docker —
+        # the test's "no credentials" validation depends on this.
+        if [ -z "${S3_PROD_AWS_ACCESS_KEY_ID:-}" ] && [ -z "${S3_DEV_AWS_ACCESS_KEY_ID:-}" ] && [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
           AWS_CREDS="${AWS_CREDS} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_DEFAULT_REGION -e AWS_REGION"
         fi
 
