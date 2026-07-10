@@ -4,9 +4,10 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.s3.credentials <- function() {
-    accessKeyId <- Sys.getenv("AWS_ACCESS_KEY_ID")
-    accesSecretKey <- Sys.getenv("AWS_SECRET_ACCESS_KEY")
-    sessionToken <- Sys.getenv("AWS_SESSION_TOKEN")
+    awsCredsPrefix <- Sys.getenv("AWS_CREDS_PREFIX_S3_DEV", Sys.getenv("AWS_CREDS_PREFIX", ""))
+    accessKeyId <- Sys.getenv(paste0(awsCredsPrefix, "AWS_ACCESS_KEY_ID"))
+    accesSecretKey <- Sys.getenv(paste0(awsCredsPrefix, "AWS_SECRET_ACCESS_KEY"))
+    sessionToken <- Sys.getenv(paste0(awsCredsPrefix, "AWS_SESSION_TOKEN"))
     if (nchar(sessionToken) == 0) sessionToken <- NULL
 
     expect_false(nchar(accessKeyId) == 0)
