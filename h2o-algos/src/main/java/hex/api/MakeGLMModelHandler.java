@@ -23,7 +23,20 @@ import java.util.Map;
  * Created by tomasnykodym on 3/25/15.
  */
 public class MakeGLMModelHandler extends Handler {
-  
+
+  // Deep-copies a source model's CV holdout-predictions frame into a key owned by the derived
+  // model, rather than transferring the source's pointer: the source model keeps its own
+  // reference (repeated derive calls stay possible, and deleting either model does not
+  // invalidate the other's frame).
+  private static void copyHoldoutPreds(Key<Frame> sourceHoldout, GLMModel derived, Key derivedKey) {
+    if (sourceHoldout == null) return;
+    Frame sourceHoldoutFrame = sourceHoldout.get();
+    if (sourceHoldoutFrame == null) return;
+    Frame holdoutCopy = sourceHoldoutFrame.deepCopy(derivedKey.toString() + "_cv_holdout_preds");
+    DKV.put(holdoutCopy);
+    derived._output._cross_validation_holdout_predictions_frame_id = holdoutCopy._key;
+  }
+
   public GLMModelV3 make_model(int version, MakeGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
@@ -43,11 +56,12 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
-    // KNOWN BUG: beta above is in the raw (denormalized) coefficient space, but model.dinfo() is
-    // reused as-is (including the source's STANDARDIZE transform, if any) instead of a NONE-transform
-    // clone. That makes isStandardized() report true for a model whose beta isn't actually
-    // standardized, so downstream consumers gated on it (e.g. beta(lambda) -> DataInfo.denormalizeBeta())
-    // will spuriously rescale already-raw values using the source's _normMul/_normSub.
+    // KNOWN BUG (see https://github.com/h2oai/h2o-3/issues/16890): beta above is in the raw
+    // (denormalized) coefficient space, but model.dinfo() is reused as-is (including the source's
+    // STANDARDIZE transform, if any) instead of a NONE-transform clone. That makes isStandardized()
+    // report true for a model whose beta isn't actually standardized, so downstream consumers gated
+    // on it (e.g. beta(lambda) -> DataInfo.denormalizeBeta()) will spuriously rescale already-raw
+    // values using the source's _normMul/_normSub.
     m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
@@ -140,6 +154,12 @@ public class MakeGLMModelHandler extends Handler {
       m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
               model._output._ordinal, null);
+      // _training_metrics/_validation_metrics/_cross_validation_metrics below are shared by reference
+      // with the source model, not deep-copied: they're inline (non-Key) ModelMetrics fields, so the
+      // DKV.put(key, m) at the end of this method already serializes them by value into the derived
+      // model's own DKV entry. The derived model never re-resolves them through DKV afterward (no code
+      // in the codebase does an independent by-key ModelMetrics lookup for a derived model), so sharing
+      // the reference is safe regardless of what later happens to the source model.
       if (args.remove_control_variables_effects) {
           // _contr_vals slots are only populated when both control_variables + remove_offset_effects are combined;
           // with control_variables alone the main slots already hold the restricted view.
@@ -173,6 +193,7 @@ public class MakeGLMModelHandler extends Handler {
           m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances_unrestricted_model;
+          copyHoldoutPreds(model._output._cross_validation_holdout_predictions_frame_id, m, key);
       } else {
           m._output._training_metrics = model._output._training_metrics_unrestricted_model;
           m._output._validation_metrics = model._output._validation_metrics_unrestricted_model;
@@ -183,18 +204,7 @@ public class MakeGLMModelHandler extends Handler {
           // _remove_offset_effects=false or nfolds=0.
           m._output._cross_validation_metrics = model._output._cross_validation_metrics_unrestricted_model;
           m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary_unrestricted_model;
-          // Deep-copy the holdout-predictions frame into a derived-owned key rather than transferring
-          // the source's pointer: the source model keeps its own reference (repeated derive calls stay
-          // possible, and deleting either model does not invalidate the other's frame).
-          Key<Frame> sourceHoldout = model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model;
-          if (sourceHoldout != null) {
-              Frame sourceHoldoutFrame = sourceHoldout.get();
-              if (sourceHoldoutFrame != null) {
-                  Frame holdoutCopy = sourceHoldoutFrame.deepCopy(key.toString() + "_cv_holdout_preds");
-                  DKV.put(holdoutCopy);
-                  m._output._cross_validation_holdout_predictions_frame_id = holdoutCopy._key;
-              }
-          }
+          copyHoldoutPreds(model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model, m, key);
       }
       m._output._model_summary = model._output._model_summary;
       m._key = key;

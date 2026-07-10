@@ -1169,6 +1169,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._link = _parms._family.defaultLink;
       if (_parms._remove_offset_effects && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
         error("_remove_offset_effects", "Remove offset effects is not supported with " + _parms._family.name() + " family.");
+      if (_parms._control_variables != null && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
+        error("_control_variables", "Control variables is not supported with " + _parms._family.name() + " family.");
       if (_parms._plug_values != null) {
         Frame plugValues = _parms._plug_values.get();
         if (plugValues == null) {
