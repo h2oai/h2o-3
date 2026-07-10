@@ -125,7 +125,12 @@ inputs:
 
   # ---------- S3 ACCESS (for S3 persistence tests) ----------
   s3_role:
-    description: 'IAM role for S3 test data access (e.g., secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV for test.0xdata.com / h2o-public-test-data)'
+    description: 'IAM role for S3 PROD account access (h2o-public-test-data bucket)'
+    required: false
+    default: ''
+
+  s3_dev_role:
+    description: 'IAM role for S3 DEV account access (test.0xdata.com bucket)'
     required: false
     default: ''
 
@@ -171,9 +176,11 @@ runs:
       uses: aws-actions/amazon-ecr-login@v2
 
     # -------------------------------------------------------------------------
-    # STEP 2b: Switch to S3 role (for S3 persistence tests)
+    # STEP 2b-2e: Assume S3 roles for multi-account access
+    #   PROD role → h2o-public-test-data bucket
+    #   DEV role  → test.0xdata.com bucket
     # -------------------------------------------------------------------------
-    - name: Configure AWS for S3 Access
+    - name: Configure AWS for S3 Access (PROD)
       if: inputs.s3_role != ''
       uses: aws-actions/configure-aws-credentials@v4.0.2
       with:
@@ -181,6 +188,31 @@ runs:
         role-session-name: h2oai-h2o-3-s3-${{ github.run_id }}
         aws-region: ${{ inputs.aws_region }}
         audience: sts.amazonaws.com
+
+    - name: Save S3 PROD credentials
+      if: inputs.s3_role != ''
+      shell: bash
+      run: |
+        echo "S3_PROD_AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" >> $GITHUB_ENV
+        echo "S3_PROD_AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $GITHUB_ENV
+        echo "S3_PROD_AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $GITHUB_ENV
+
+    - name: Configure AWS for S3 Access (DEV)
+      if: inputs.s3_dev_role != ''
+      uses: aws-actions/configure-aws-credentials@v4.0.2
+      with:
+        role-to-assume: ${{ inputs.s3_dev_role }}
+        role-session-name: h2oai-h2o-3-s3-dev-${{ github.run_id }}
+        aws-region: ${{ inputs.aws_region }}
+        audience: sts.amazonaws.com
+
+    - name: Save S3 DEV credentials
+      if: inputs.s3_dev_role != ''
+      shell: bash
+      run: |
+        echo "S3_DEV_AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" >> $GITHUB_ENV
+        echo "S3_DEV_AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $GITHUB_ENV
+        echo "S3_DEV_AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $GITHUB_ENV
 
     # -------------------------------------------------------------------------
     # STEP 3: Checkout H2O-3
@@ -287,9 +319,18 @@ runs:
 
         # Execute test in Docker
         # Forward AWS credentials from OIDC auth so S3 persistence tests work
+        # PROD creds → h2o-public-test-data, DEV creds → test.0xdata.com
         AWS_CREDS=""
+        if [ -n "${S3_PROD_AWS_ACCESS_KEY_ID:-}" ]; then
+          AWS_CREDS="${AWS_CREDS} -e S3_PROD_AWS_ACCESS_KEY_ID -e S3_PROD_AWS_SECRET_ACCESS_KEY -e S3_PROD_AWS_SESSION_TOKEN"
+          AWS_CREDS="${AWS_CREDS} -e AWS_CREDS_PREFIX_S3_PROD=S3_PROD_"
+        fi
+        if [ -n "${S3_DEV_AWS_ACCESS_KEY_ID:-}" ]; then
+          AWS_CREDS="${AWS_CREDS} -e S3_DEV_AWS_ACCESS_KEY_ID -e S3_DEV_AWS_SECRET_ACCESS_KEY -e S3_DEV_AWS_SESSION_TOKEN"
+          AWS_CREDS="${AWS_CREDS} -e AWS_CREDS_PREFIX_S3_DEV=S3_DEV_"
+        fi
         if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
-          AWS_CREDS="-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_DEFAULT_REGION -e AWS_REGION"
+          AWS_CREDS="${AWS_CREDS} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_DEFAULT_REGION -e AWS_REGION"
         fi
 
         docker run --rm \

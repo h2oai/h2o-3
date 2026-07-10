@@ -33,6 +33,7 @@ env:
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
   S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+  S3_DEV_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -66,6 +67,7 @@ jobs:
           name: h2o-algos Coverage
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: coverage-junit-algos
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}

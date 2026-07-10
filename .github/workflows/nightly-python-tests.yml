@@ -35,6 +35,7 @@ env:
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
   S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+  S3_DEV_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -218,6 +219,7 @@ jobs:
           name: Py3.7 Smoke (Main)
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-py-smoke-main
           test_package: main
           python: "3.7"
@@ -245,6 +247,7 @@ jobs:
           name: Py3.7 Smoke (Minimal)
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-py-smoke-minimal
           test_package: minimal
           python: "3.7"
@@ -272,6 +275,7 @@ jobs:
           name: Py3.7 Smoke (Steam)
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-py-smoke-steam
           test_package: steam
           python: "3.7"
@@ -302,6 +306,7 @@ jobs:
           name: Py3.7 Single Node
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-single-node
           test_package: py
           python: "3.7"
@@ -329,6 +334,7 @@ jobs:
           name: Py3.7 Small
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-small
           test_package: py
           python: "3.7"
@@ -355,6 +361,7 @@ jobs:
           name: Py3.7 AutoML
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-automl
           test_package: py
           python: "3.7"
@@ -381,6 +388,7 @@ jobs:
           name: Py3.7 AutoML Smoke (NO XGB)
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-automl-smoke-noxgb
           test_package: py
           python: "3.7"
@@ -407,6 +415,7 @@ jobs:
           name: Py3.7 Fault Tolerance
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-fault-tolerance
           test_package: py
           python: "3.7"
@@ -433,6 +442,7 @@ jobs:
           name: Py3.7 Medium-large
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-medium-large
           test_package: py
           python: "3.7"
@@ -459,6 +469,7 @@ jobs:
           name: Py3.7 X-large
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-xlarge
           test_package: py
           python: "3.7"
@@ -485,6 +496,7 @@ jobs:
           name: Py3.7 Demo Notebooks
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-py-demos
           test_package: py
           python: "3.7"
@@ -511,6 +523,7 @@ jobs:
           name: Py3.7 Demo Notebooks (Scikit)
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-py-demos-new-scikit
           test_package: py
           python: "3.7"
@@ -538,6 +551,7 @@ jobs:
           name: External XGBoost
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-external-xgboost
           test_package: py
           python: "3.7"
@@ -570,6 +584,7 @@ jobs:
           name: Py3.7 Explain
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-explain
           test_package: py
           python: "3.7"
@@ -596,6 +611,7 @@ jobs:
           name: Py3.11 Single Node
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-single-node
           test_package: py
           python: "3.11"
@@ -622,6 +638,7 @@ jobs:
           name: Py3.11 Fault Tolerance
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-fault-tolerance
           test_package: py
           python: "3.11"
@@ -648,6 +665,7 @@ jobs:
           name: XGBoost Stress
           ecr_role: ${{ env.ECR_ROLE }}
           s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-pyunit-xgboost-stress
           test_package: py
           python: "3.7"
