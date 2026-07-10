@@ -19,6 +19,7 @@ def test_set_s3_credentials_impl():
     aws_creds_prefix = os.environ['AWS_CREDS_PREFIX'] if 'AWS_CREDS_PREFIX' in os.environ else ''
     access_key_id = os.environ[aws_creds_prefix + 'AWS_ACCESS_KEY_ID']
     secret_access_key = os.environ[aws_creds_prefix + "AWS_SECRET_ACCESS_KEY"]
+    session_token = os.environ.get(aws_creds_prefix + "AWS_SESSION_TOKEN")
 
     assert access_key_id is not None
     assert secret_access_key is not None
@@ -36,7 +37,7 @@ def test_set_s3_credentials_impl():
 
     # Now set the credentials
     # 1. Check PersistS3
-    set_s3_credentials(access_key_id, secret_access_key)
+    set_s3_credentials(access_key_id, secret_access_key, session_token)
     file = h2o.import_file("s3://test.0xdata.com/h2o-unit-tests/iris.csv")
     assert file is not None
 
