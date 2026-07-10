@@ -186,6 +186,7 @@ runs:
       with:
         role-to-assume: ${{ inputs.s3_role }}
         role-session-name: h2oai-h2o-3-s3-${{ github.run_id }}
+        role-duration-seconds: 7200
         aws-region: ${{ inputs.aws_region }}
         audience: sts.amazonaws.com
 
@@ -203,6 +204,7 @@ runs:
       with:
         role-to-assume: ${{ inputs.s3_dev_role }}
         role-session-name: h2oai-h2o-3-s3-dev-${{ github.run_id }}
+        role-duration-seconds: 7200
         aws-region: ${{ inputs.aws_region }}
         audience: sts.amazonaws.com
 
