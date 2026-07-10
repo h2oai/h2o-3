@@ -6,12 +6,13 @@ source("../../scripts/h2o-r-test-setup.R")
 test.s3.credentials <- function() {
     accessKeyId <- Sys.getenv("AWS_ACCESS_KEY_ID")
     accesSecretKey <- Sys.getenv("AWS_SECRET_ACCESS_KEY")
-    
-  
+    sessionToken <- Sys.getenv("AWS_SESSION_TOKEN")
+    if (nchar(sessionToken) == 0) sessionToken <- NULL
+
     expect_false(nchar(accessKeyId) == 0)
     expect_false(nchar(accessKeyId) == 0)
-    
-    h2o.set_s3_credentials(accessKeyId, accesSecretKey)
+
+    h2o.set_s3_credentials(accessKeyId, accesSecretKey, sessionToken)
     file <- h2o.importFile(path = "s3://test.0xdata.com/h2o-unit-tests/iris.csv")
     expect_false(is.null(file))
     
