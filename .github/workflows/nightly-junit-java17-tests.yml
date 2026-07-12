@@ -34,6 +34,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+  S3_DEV_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -63,6 +65,8 @@ jobs:
         with:
           name: Java 17 Smoke
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-smoke-jenkins
           test_package: java
           java: "17"
@@ -110,6 +114,8 @@ jobs:
         with:
           name: Java 17 JUnit Other
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-other-jenkins
           test_package: java
           java: "17"
@@ -156,6 +162,8 @@ jobs:
         with:
           name: Java 17 Algos GLM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-glm-jenkins
           test_package: java
           java: "17"
@@ -202,6 +210,8 @@ jobs:
         with:
           name: Java 17 Algos GBM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-gbm-jenkins
           test_package: java
           java: "17"
@@ -248,6 +258,8 @@ jobs:
         with:
           name: Java 17 Algos DRF
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-drf-jenkins
           test_package: java
           java: "17"
@@ -294,6 +306,8 @@ jobs:
         with:
           name: Java 17 Algos DeepLearning
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-deeplearning-jenkins
           test_package: java
           java: "17"
@@ -340,6 +354,8 @@ jobs:
         with:
           name: Java 17 Algos GAM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-gam-jenkins
           test_package: java
           java: "17"
@@ -386,6 +402,8 @@ jobs:
         with:
           name: Java 17 Algos Tree+IsoFor+DT+Uplift
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-tree-generic-jenkins
           test_package: java
           java: "17"
@@ -432,6 +450,8 @@ jobs:
         with:
           name: Java 17 Algos Ensemble
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-ensemble-jenkins
           test_package: java
           java: "17"
@@ -478,6 +498,8 @@ jobs:
         with:
           name: Java 17 Algos KMeans
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-kmeans-jenkins
           test_package: java
           java: "17"
@@ -524,6 +546,8 @@ jobs:
         with:
           name: Java 17 Algos RuleFit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-rulefit-jenkins
           test_package: java
           java: "17"
@@ -570,6 +594,8 @@ jobs:
         with:
           name: Java 17 Algos PCA
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-pca-jenkins
           test_package: java
           java: "17"
@@ -616,6 +642,8 @@ jobs:
         with:
           name: Java 17 Algos GLRM
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-glrm-jenkins
           test_package: java
           java: "17"
@@ -662,6 +690,8 @@ jobs:
         with:
           name: Java 17 Algos AdaBoost
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-adaboost-jenkins
           test_package: java
           java: "17"
@@ -708,6 +738,8 @@ jobs:
         with:
           name: Java 17 Algos ModelSelection
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-modelselection-jenkins
           test_package: java
           java: "17"
@@ -754,6 +786,8 @@ jobs:
         with:
           name: Java 17 Algos Generic
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-generic-jenkins
           test_package: java
           java: "17"
@@ -800,6 +834,8 @@ jobs:
         with:
           name: Java 17 Algos Grid
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-grid-jenkins
           test_package: java
           java: "17"
@@ -846,6 +882,8 @@ jobs:
         with:
           name: Java 17 Algos Misc
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-17-algos-misc-jenkins
           test_package: java
           java: "17"

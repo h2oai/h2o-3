@@ -123,6 +123,17 @@ inputs:
     required: false
     default: '/home/ubuntu/bigdata'
 
+  # ---------- S3 ACCESS (for S3 persistence tests) ----------
+  s3_role:
+    description: 'IAM role for S3 PROD account access (h2o-public-test-data bucket)'
+    required: false
+    default: ''
+
+  s3_dev_role:
+    description: 'IAM role for S3 DEV account access (test.0xdata.com bucket)'
+    required: false
+    default: ''
+
   # ---------- RESULTS ----------
   artifact_retention:
     description: 'Days to keep test artifacts'
@@ -163,6 +174,45 @@ runs:
     # -------------------------------------------------------------------------
     - name: Login to ECR
       uses: aws-actions/amazon-ecr-login@v2
+
+    # -------------------------------------------------------------------------
+    # STEP 2b-2e: Assume S3 roles for multi-account access
+    #   PROD role → h2o-public-test-data bucket
+    #   DEV role  → test.0xdata.com bucket
+    # -------------------------------------------------------------------------
+    - name: Configure AWS for S3 Access (PROD)
+      if: inputs.s3_role != ''
+      uses: aws-actions/configure-aws-credentials@v4.0.2
+      with:
+        role-to-assume: ${{ inputs.s3_role }}
+        role-session-name: h2oai-h2o-3-s3-${{ github.run_id }}
+        aws-region: ${{ inputs.aws_region }}
+        audience: sts.amazonaws.com
+
+    - name: Save S3 PROD credentials
+      if: inputs.s3_role != ''
+      shell: bash
+      run: |
+        echo "S3_PROD_AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" >> $GITHUB_ENV
+        echo "S3_PROD_AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $GITHUB_ENV
+        echo "S3_PROD_AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $GITHUB_ENV
+
+    - name: Configure AWS for S3 Access (DEV)
+      if: inputs.s3_dev_role != ''
+      uses: aws-actions/configure-aws-credentials@v4.0.2
+      with:
+        role-to-assume: ${{ inputs.s3_dev_role }}
+        role-session-name: h2oai-h2o-3-s3-dev-${{ github.run_id }}
+        aws-region: ${{ inputs.aws_region }}
+        audience: sts.amazonaws.com
+
+    - name: Save S3 DEV credentials
+      if: inputs.s3_dev_role != ''
+      shell: bash
+      run: |
+        echo "S3_DEV_AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" >> $GITHUB_ENV
+        echo "S3_DEV_AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $GITHUB_ENV
+        echo "S3_DEV_AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $GITHUB_ENV
 
     # -------------------------------------------------------------------------
     # STEP 3: Checkout H2O-3
@@ -221,11 +271,26 @@ runs:
         echo "Using image: ${IMAGE}"
 
     # -------------------------------------------------------------------------
-    # STEP 7: Pull Docker Image
+    # STEP 7: Pull Docker Image (with retry for transient ECR failures)
     # -------------------------------------------------------------------------
     - name: Pull Docker Image
       shell: bash
-      run: docker pull ${{ steps.docker.outputs.image }}
+      run: |
+        IMAGE="${{ steps.docker.outputs.image }}"
+        for attempt in 1 2 3; do
+          echo "Docker pull attempt ${attempt}/3..."
+          if docker pull "${IMAGE}"; then
+            echo "Successfully pulled ${IMAGE}"
+            exit 0
+          fi
+          if [ "${attempt}" -lt 3 ]; then
+            WAIT=$((attempt * 10))
+            echo "Pull failed (attempt ${attempt}). Retrying in ${WAIT}s..."
+            sleep ${WAIT}
+          fi
+        done
+        echo "::error::Docker pull failed after 3 attempts: ${IMAGE}"
+        exit 1
 
     # -------------------------------------------------------------------------
     # STEP 8: Extract Test Package
@@ -253,6 +318,24 @@ runs:
         fi
 
         # Execute test in Docker
+        # Forward AWS credentials from OIDC auth so S3 persistence tests work
+        # PROD creds → h2o-public-test-data, DEV creds → test.0xdata.com
+        AWS_CREDS=""
+        if [ -n "${S3_PROD_AWS_ACCESS_KEY_ID:-}" ]; then
+          AWS_CREDS="${AWS_CREDS} -e S3_PROD_AWS_ACCESS_KEY_ID -e S3_PROD_AWS_SECRET_ACCESS_KEY -e S3_PROD_AWS_SESSION_TOKEN"
+          AWS_CREDS="${AWS_CREDS} -e AWS_CREDS_PREFIX_S3_PROD=S3_PROD_"
+        fi
+        if [ -n "${S3_DEV_AWS_ACCESS_KEY_ID:-}" ]; then
+          AWS_CREDS="${AWS_CREDS} -e S3_DEV_AWS_ACCESS_KEY_ID -e S3_DEV_AWS_SECRET_ACCESS_KEY -e S3_DEV_AWS_SESSION_TOKEN"
+          AWS_CREDS="${AWS_CREDS} -e AWS_CREDS_PREFIX_S3_DEV=S3_DEV_"
+        fi
+        # Only forward standard AWS creds when no prefixed creds exist (single-role fallback).
+        # With dual roles, omit them so H2O has no implicit credentials inside Docker —
+        # the test's "no credentials" validation depends on this.
+        if [ -z "${S3_PROD_AWS_ACCESS_KEY_ID:-}" ] && [ -z "${S3_DEV_AWS_ACCESS_KEY_ID:-}" ] && [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+          AWS_CREDS="${AWS_CREDS} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_DEFAULT_REGION -e AWS_REGION"
+        fi
+
         docker run --rm \
           --user root \
           -v ${{ github.workspace }}/h2o-3:/workspace \
@@ -262,6 +345,7 @@ runs:
           -e R_VERSION=${{ inputs.r }} \
           -e JAVA_VERSION=${{ inputs.java }} \
           -e TEST_PACKAGE=${{ inputs.test_package }} \
+          ${AWS_CREDS} \
           ${{ inputs.docker_args }} \
           ${{ steps.docker.outputs.image }} \
           /bin/bash -c "
@@ -347,10 +431,13 @@ runs:
             python --version 2>&1 || true
             R --version 2>&1 | head -1 || true
 
-            # Workaround: Remove directories that Makefile tries to create without -p flag
-            # The Makefile's lookup-demos-tests target uses 'mkdir' without -p, so it fails
-            # if directories already exist. Remove them so Makefile can create them fresh.
-            rm -rf h2o-r/tests/testdir_demos h2o-py/tests/testdir_demos 2>/dev/null || true
+            # Patch upstream Makefile bugs before running tests:
+            # 1. mkdir without -p fails when testdir_demos already exists, blocking R Small suite
+            # 2. run.py --norun exits non-zero on setup, killing Booklets/Demos targets
+            if [ -f scripts/jenkins/Makefile.jenkins ]; then
+              sed -i 's#^\tmkdir h2o-{r,py}/tests/testdir_demos#\tmkdir -p h2o-{r,py}/tests/testdir_demos#' scripts/jenkins/Makefile.jenkins
+              sed -i 's#run\.py --wipeall --norun\$#run.py --wipeall --norun || true#' scripts/jenkins/Makefile.jenkins
+            fi
 
             # Run tests
             echo '=== Running: ${{ inputs.make_target }} ==='

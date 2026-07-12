@@ -35,6 +35,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+  S3_DEV_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -147,6 +149,8 @@ jobs:
         with:
           name: Java 8 RuleFit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-rulefit-jenkins
           test_package: java
           java: "8"
@@ -196,6 +200,8 @@ jobs:
         with:
           name: Java 8 Core JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-core-jenkins
           test_package: java
           java: "8"
@@ -221,6 +227,8 @@ jobs:
         with:
           name: Java 8 AutoML JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-automl-jenkins
           test_package: java
           java: "8"
@@ -294,6 +302,8 @@ jobs:
         with:
           name: Java 8 REST Smoke
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-rest-smoke
           test_package: java
           java: "8"
@@ -319,6 +329,8 @@ jobs:
         with:
           name: Java 8 Mojo Pipeline JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-mojo-pipeline-jenkins
           test_package: java
           java: "8"
@@ -344,6 +356,8 @@ jobs:
         with:
           name: Java 8 Clustering JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-clustering-jenkins
           test_package: java
           java: "8"
@@ -369,6 +383,8 @@ jobs:
         with:
           name: Java 8 XGBoost Multinode JUnit
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-junit-xgb-multi-jenkins
           test_package: java
           java: "8"
@@ -394,6 +410,8 @@ jobs:
         with:
           name: Java 8 Logger Init
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-logger-initialize-properly
           test_package: java
           java: "8"

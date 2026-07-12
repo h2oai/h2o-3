@@ -35,6 +35,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+  S3_DEV_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -116,6 +118,8 @@ jobs:
         with:
           name: CDH 5.10 - STANDALONE
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-hadoop-2-smoke
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -140,6 +144,8 @@ jobs:
         with:
           name: CDH 5.10 - HADOOP
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-hadoop-2-smoke
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -164,6 +170,8 @@ jobs:
         with:
           name: CDH 6.1 - STANDALONE
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-hadoop-3-smoke
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -188,6 +196,8 @@ jobs:
         with:
           name: CDH 6.1 - HADOOP
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-hadoop-3-smoke
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -212,6 +222,8 @@ jobs:
         with:
           name: CDH 6.3 - STANDALONE
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-hadoop-3-smoke
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -236,6 +248,8 @@ jobs:
         with:
           name: CDH 6.3 - HADOOP
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-hadoop-3-smoke
           test_package: hadoop
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -260,6 +274,8 @@ jobs:
         with:
           name: CDH 6.3 - HADOOP - Java 11 (Hash Login)
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-hadoop-3-smoke
           test_package: hadoop
           java: "11"

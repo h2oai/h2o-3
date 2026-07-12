@@ -43,6 +43,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+  S3_DEV_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -155,6 +157,8 @@ jobs:
         with:
           name: GBM Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -180,6 +184,8 @@ jobs:
         with:
           name: GBM Benchmark noscoring-graalvm
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           java: "17"
@@ -207,6 +213,8 @@ jobs:
         with:
           name: GBM Benchmark noscoring-java8
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -232,6 +240,8 @@ jobs:
         with:
           name: GLM Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -257,6 +267,8 @@ jobs:
         with:
           name: GAM Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -282,6 +294,8 @@ jobs:
         with:
           name: H2O XGB Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           python: "3.7"
@@ -308,6 +322,8 @@ jobs:
         with:
           name: Vanilla XGB Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark-xgb-vanilla
           test_package: benchmark
           python: "3.7"
@@ -334,6 +350,8 @@ jobs:
         with:
           name: DMLC XGB Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark-dmlc-r-xgboost
           test_package: benchmark
           python: "3.7"
@@ -360,6 +378,8 @@ jobs:
         with:
           name: MERGE Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -385,6 +405,8 @@ jobs:
         with:
           name: SORT Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"
@@ -410,6 +432,8 @@ jobs:
         with:
           name: Rulefit Benchmark
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: benchmark
           test_package: benchmark
           r: "3.5.3"

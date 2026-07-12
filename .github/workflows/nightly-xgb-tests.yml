@@ -36,6 +36,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 353750902984.dkr.ecr.us-east-1.amazonaws.com
   ECR_ROLE: ${{ secrets.GH_OIDC_ROLE_H2O_ECR }}
+  S3_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_PROD }}
+  S3_DEV_ROLE: ${{ secrets.GH_OIDC_ROLE_SHARED_SERVICES_DEV }}
   DOCKER_VERSION: "46"
   H2O3_REPO: h2oai/h2o-3
   RETENTION: 14
@@ -109,6 +111,8 @@ jobs:
         with:
           name: XGB on CentOS 7.3 Minimal
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-xgb-smoke-minimal-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -133,6 +137,8 @@ jobs:
         with:
           name: XGB on CentOS 7.3 OMP
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-xgb-smoke-omp-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -157,6 +163,8 @@ jobs:
         with:
           name: XGB on Ubuntu 16.04 Minimal
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-xgb-smoke-minimal-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -181,6 +189,8 @@ jobs:
         with:
           name: XGB on Ubuntu 16.04 OMP
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-xgb-smoke-omp-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -205,6 +215,8 @@ jobs:
         with:
           name: XGB on Ubuntu 18.04 Minimal
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-xgb-smoke-minimal-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
@@ -229,6 +241,8 @@ jobs:
         with:
           name: XGB on Ubuntu 18.04 OMP
           ecr_role: ${{ env.ECR_ROLE }}
+          s3_role: ${{ env.S3_ROLE }}
+          s3_dev_role: ${{ env.S3_DEV_ROLE }}
           make_target: test-xgb-smoke-omp-jenkins
           test_package: java
           h2o3_branch: ${{ inputs.h2o3_branch }}
