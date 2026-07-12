@@ -158,7 +158,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/5/index
 
 #### Security
 - [[#16349]](https://github.com/h2oai/h2o-3/issues/16349) - Addressed sonatype-2024-0171 by upgrading jackson-databind to 2.17.2.
-- [[#16342]](https://github.com/h2oai/h2o-3/issues/16342) - Addressed SNYK-JAVA-DNSJAVA-7547403, SNYK-JAVA-DNSJAVA-7547404, SNYK-JAVA-DNSJAVA-7547405, and CVE-2024-25638 by upgrading dnsjava to 3.6.0. 
+- [[#16342]](https://github.com/h2oai/h2o-3/issues/16342) - Addressed SNYK-JAVA-DNSJAVA-7547403, SNYK-JAVA-DNSJAVA-7547404, SNYK-JAVA-DNSJAVA-7547405, and CVE-2024-25638 by upgrading dnsjava to 3.6.0.
 
 ### 3.46.0.4 - 7/9/2024
 
@@ -199,7 +199,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/3/index
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index.html</a>
 
 #### Bug Fix
-- [[#16161]](https://github.com/h2oai/h2o-3/issues/16161) - Fixed parquet export throwing NPEs when column types are strings. 
+- [[#16161]](https://github.com/h2oai/h2o-3/issues/16161) - Fixed parquet export throwing NPEs when column types are strings.
 - [[#16149]](https://github.com/h2oai/h2o-3/issues/16149) - Fixed GAM models failing with datasets of certain size by rebalancing the dataset to avoid collision.
 - [[#16130]](https://github.com/h2oai/h2o-3/issues/16130) - Removed `distutils` version check to stop deprecation warnings with Python 3.12.
 - [[#16026]](https://github.com/h2oai/h2o-3/issues/16026) - Removed `custom_metric_func` from ModelSelection.
@@ -208,10 +208,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/2/index
 #### Improvement
 - [[#16116]](https://github.com/h2oai/h2o-3/issues/16116) - Implemented a warning if you want to use monotone splines for GAM but don’t set `non_negative=True` that you will not get a monotone output.
 - [[#16056]](https://github.com/h2oai/h2o-3/issues/16066) - Added support to XGBoost for all `gblinear` parameters.
-- [[#6722]](https://github.com/h2oai/h2o-3/issues/6722) - Implemented linear constraint support to GLM toolbox. 
+- [[#6722]](https://github.com/h2oai/h2o-3/issues/6722) - Implemented linear constraint support to GLM toolbox.
 
 #### New Feature
-- [[#16146]](https://github.com/h2oai/h2o-3/issues/16146) - Added ZSTD compression format support. 
+- [[#16146]](https://github.com/h2oai/h2o-3/issues/16146) - Added ZSTD compression format support.
 
 #### Docs
 - [[#16193]](https://github.com/h2oai/h2o-3/issues/16193) - Added mapr7.0 to the download page for the Install on Hadoop tab.
@@ -232,19 +232,19 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index
 - [[#16052]](https://github.com/h2oai/h2o-3/issues/16052) - Fixed finding best split point for UpliftDRF.
 - [[#16043]](https://github.com/h2oai/h2o-3/issues/16043) - Fixed `isin()`.
 - [[#16036]](https://github.com/h2oai/h2o-3/issues/16036) - Fixed `AstMatch` failing with multinode.
-- [[#15978]](https://github.com/h2oai/h2o-3/issues/15978) - Fixed Deep Learning Autoencoder MOJO PredictCSV failure. 
+- [[#15978]](https://github.com/h2oai/h2o-3/issues/15978) - Fixed Deep Learning Autoencoder MOJO PredictCSV failure.
 - [[#15682]](https://github.com/h2oai/h2o-3/issues/15682) - Fixed log when `web_ip` is used.
-- [[#15677]](https://github.com/h2oai/h2o-3/issues/15677) - Fixed match function only returning 1 and `no match`. 
+- [[#15677]](https://github.com/h2oai/h2o-3/issues/15677) - Fixed match function only returning 1 and `no match`.
 
 #### Improvement
 - [[#16074]](https://github.com/h2oai/h2o-3/issues/16074) - Improved `perRow` metric calculation by implementing `isGeneric()` method.
-- [[#16060]](https://github.com/h2oai/h2o-3/issues/16060) - Improved log message to show that Apple silicon is not supported. 
+- [[#16060]](https://github.com/h2oai/h2o-3/issues/16060) - Improved log message to show that Apple silicon is not supported.
 - [[#16033]](https://github.com/h2oai/h2o-3/issues/16033) - Added optional GBLinear grid step to AutoML.
 - [[#16015]](https://github.com/h2oai/h2o-3/issues/16015) - Suppressed the genmodel warnings when `verbose=False`.
-- [[#15809]](https://github.com/h2oai/h2o-3/issues/15809) - Implemented ability to calculate full loglikelihood and AIC for an already-built GLM model. 
+- [[#15809]](https://github.com/h2oai/h2o-3/issues/15809) - Implemented ability to calculate full loglikelihood and AIC for an already-built GLM model.
 - [[#15791]](https://github.com/h2oai/h2o-3/issues/15791) - Implemented early stopping for UpliftDRF and implemented gridable parameters for UpliftDRF.
 - [[#15684]](https://github.com/h2oai/h2o-3/issues/15684) - Reconfigured all logs to standard error for level `ERROR` and `FATAL`.
-- [[#7325]](https://github.com/h2oai/h2o-3/issues/7325) - Implemented prediction consistency check for constrained models. 
+- [[#7325]](https://github.com/h2oai/h2o-3/issues/7325) - Implemented prediction consistency check for constrained models.
 
 #### New Feature
 - [[#15993]](https://github.com/h2oai/h2o-3/issues/15993) - Added `custom_metric` as a hyperparameter for grid search.
@@ -265,7 +265,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/1/index
 #### Security
 - [[#16102]](https://github.com/h2oai/h2o-3/issues/16102) - Addressed SNYK-JAVA-COMNIMBUSDS-6247633 by upgrading nimbus-jose-jwt to 9.37.2.
 - [[#16093]](https://github.com/h2oai/h2o-3/issues/16093) - Addressed CVE-2024-26308 by upgrading org.apache.commons:commons-compress.
-- [[#16067]](https://github.com/h2oai/h2o-3/issues/16067) - Addressed CVE-2023-35116 in the h2o-steam.jar. 
+- [[#16067]](https://github.com/h2oai/h2o-3/issues/16067) - Addressed CVE-2023-35116 in the h2o-steam.jar.
 - [[#15972]](https://github.com/h2oai/h2o-3/issues/15972) - Addressed CVE-2023-6038 by adding option to filter file system for reading and writing.
 - [[#15971]](https://github.com/h2oai/h2o-3/issues/15971) - Addressed CVE-2023-6016 by introducing Java property that disables automatic import of POJOs during `import_mojo` or `upload_mojo`.
 
@@ -275,11 +275,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/3/index
 
 #### Bug Fix
 - [[#15958]](https://github.com/h2oai/h2o-3/issues/15958) - Fixed maximum likelihood dispersion estimation for GLM tweedie family producing the wrong result for a specific dataset.
-- [[#15936]](https://github.com/h2oai/h2o-3/issues/15936) - Added data frame transformations using polars since datatable cannot be installed on Python 3.10+. 
+- [[#15936]](https://github.com/h2oai/h2o-3/issues/15936) - Added data frame transformations using polars since datatable cannot be installed on Python 3.10+.
 - [[#15894]](https://github.com/h2oai/h2o-3/issues/15894) - Ensured that the functions that are supposed to be exported in the R package are exported.
 - [[#15891]](https://github.com/h2oai/h2o-3/issues/15891) - Corrected sign in AIC calculation to fix problem with tweedie dispersion parameter estimation, AIC, and loglikelihood.
 - [[#15887]](https://github.com/h2oai/h2o-3/issues/15887) - Allowed Python H2OFrame constructor to accept an existing H2OFrame.
-- [[#6725]](https://github.com/h2oai/h2o-3/issues/6725) - Fixed LoggerFactory slf4j related regression. 
+- [[#6725]](https://github.com/h2oai/h2o-3/issues/6725) - Fixed LoggerFactory slf4j related regression.
 
 #### Improvement
 - [[#15937]](https://github.com/h2oai/h2o-3/issues/15937) - Exposed `gainslift_bins` parameter for Deep Learning, GAM, GLM, and Stacked Ensemble algorithms.
@@ -289,7 +289,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/3/index
 - [[#15927]](https://github.com/h2oai/h2o-3/issues/15927) - Added anomaly score metric to be used as a `sort_by` metric when sorting grid model performances for Isolation Forest with grid search.
 - [[#15780]](https://github.com/h2oai/h2o-3/issues/15780) - Added `weak_learner_params` parameter for AdaBoost.
 - [[#15779]](https://github.com/h2oai/h2o-3/issues/15779) - Added `weak_learner="deep_learning"` option for AdaBoost.
-- [[#7118]](https://github.com/h2oai/h2o-3/issues/7118) - Implemented scoring and scoring history for Extended Isolation Forest by adding `score_each_iteration` and `score_tree_interval`. 
+- [[#7118]](https://github.com/h2oai/h2o-3/issues/7118) - Implemented scoring and scoring history for Extended Isolation Forest by adding `score_each_iteration` and `score_tree_interval`.
 
 #### Docs
 - [[#15817]](https://github.com/h2oai/h2o-3/issues/15817) - Improved default threshold API and documentation for binomial classification.
@@ -304,9 +304,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index
 #### Bug Fix
 - [[#15906]](https://github.com/h2oai/h2o-3/issues/15906) - Fixed `learning_curve_plot` for CoxPH with specified metric = 'loglik'.
 - [[#15889]](https://github.com/h2oai/h2o-3/issues/15889) - Fixed inability to call `thresholds_and_metric_scores()` with binomial models and metrics.
-- [[#15861]](https://github.com/h2oai/h2o-3/issues/15861) - Fixed the warning message that caused `as_data_frame` to fail due to not having datatable installed. 
+- [[#15861]](https://github.com/h2oai/h2o-3/issues/15861) - Fixed the warning message that caused `as_data_frame` to fail due to not having datatable installed.
 - [[#15860]](https://github.com/h2oai/h2o-3/issues/15860) - Fixed `force_col_type` not working with `skipped_columns` when parsing parquet files.
-- [[#15832]](https://github.com/h2oai/h2o-3/issues/15832) - Fixed UpliftDRF MOJO API and updated the documentation. 
+- [[#15832]](https://github.com/h2oai/h2o-3/issues/15832) - Fixed UpliftDRF MOJO API and updated the documentation.
 - [[#15761]](https://github.com/h2oai/h2o-3/issues/15761) - Fixed `relevel_by_frequency` resetting the values of the column.
 
 #### Improvement
@@ -315,7 +315,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/2/index
 #### Docs
 - [[#15881]](https://github.com/h2oai/h2o-3/issues/15881) - Added security note that Kubernetes images don’t apply security settings by default.
 - [[#15851]](https://github.com/h2oai/h2o-3/issues/15851) - Added the 3.44 major release blog to the user guide.
-- [[#15842]](https://github.com/h2oai/h2o-3/issues/15842) - Introduced *Known Bug* section to the release notes. 
+- [[#15842]](https://github.com/h2oai/h2o-3/issues/15842) - Introduced *Known Bug* section to the release notes.
 - [[#15840]](https://github.com/h2oai/h2o-3/issues/15840) -  Fixed the release notes UI not loading by making them smaller by putting all release notes prior to 3.28.0.1 into a separate file.
 - [[#6570]](https://github.com/h2oai/h2o-3/issues/6570) - Added information on the Friedman and Popescu H Statistic to XGBoost and GBM.
 
@@ -336,10 +336,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.44.0/1/index
 - [[#15801]](https://github.com/h2oai/h2o-3/issues/15801) - Updated Friedman and Popescu’s H statistic calculation to include missing values support.
 - [[#15741]](https://github.com/h2oai/h2o-3/issues/15741) - Implemented ability for force column types during parsing.
 - [[#15713]](https://github.com/h2oai/h2o-3/issues/15713) - Improved the default threshold API for binomial classification.
-- [[#15582]](https://github.com/h2oai/h2o-3/issues/15582) - Renamed prediction table header for UpliftDRF to be more user-friendly. 
+- [[#15582]](https://github.com/h2oai/h2o-3/issues/15582) - Renamed prediction table header for UpliftDRF to be more user-friendly.
 - [[#12678]](https://github.com/h2oai/h2o-3/issues/12678) - Added check to `mojo_predict_df` to look for a valid R dataframe.
 - [[#7079]](https://github.com/h2oai/h2o-3/issues/7079) - Added verbosity to H2O initialization. `h2oconn.clust.show_status()` is now guarded and will only be shown when `verbose=True` during initialization.
-- [[#6768]](https://github.com/h2oai/h2o-3/issues/6768) - Enabled categorical features for single decision tree. 
+- [[#6768]](https://github.com/h2oai/h2o-3/issues/6768) - Enabled categorical features for single decision tree.
 
 #### New Feature
 - [[#15773]](https://github.com/h2oai/h2o-3/issues/15773) - Implemented `make_metrics` with custom AUUC thresholds for UpliftDRF.
@@ -398,7 +398,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index
 #### Bug Fix
 - [[#15679]](https://github.com/h2oai/h2o-3/issues/15679) - Fixed GBM invalid tree index feature interaction.
 - [[#15666]](https://github.com/h2oai/h2o-3/issues/15666) - Updated test to showcase GBM checkpointing.
-- [[#6605]](https://github.com/h2oai/h2o-3/issues/6605) - Fixed `h2o.feature_interaction` failing on cross-validation models with early stopping. 
+- [[#6605]](https://github.com/h2oai/h2o-3/issues/6605) - Fixed `h2o.feature_interaction` failing on cross-validation models with early stopping.
 
 #### Improvement
 - [[#6707]](https://github.com/h2oai/h2o-3/issues/6707) - Added extended message to `h2o.init()` to help users get around version mismatch error.
@@ -416,7 +416,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html</a>
 
 #### Bug Fix
-- [[#15637]](https://github.com/h2oai/h2o-3/issues/15637) - Fixed AUCPR plot assigning incorrect values to the variable recalls and precisions. 
+- [[#15637]](https://github.com/h2oai/h2o-3/issues/15637) - Fixed AUCPR plot assigning incorrect values to the variable recalls and precisions.
 - [[#6545]](https://github.com/h2oai/h2o-3/issues/6545) - Fixed out of memory error on multi-node sorting stage or sorted frame generation process.
 
 #### New Feature
@@ -429,7 +429,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index
 #### Docs
 - [[#15629]](https://github.com/h2oai/h2o-3/issues/15629) - Fixed typo on Hadoop introduction page.
 - [[#15606]](https://github.com/h2oai/h2o-3/issues/15606) - Updated major release blog for user guide.
-- [[#15580]](https://github.com/h2oai/h2o-3/issues/15580) - Added information on UniformRobust method for `histogram_type` and created an accompanying blog post. 
+- [[#15580]](https://github.com/h2oai/h2o-3/issues/15580) - Added information on UniformRobust method for `histogram_type` and created an accompanying blog post.
 - [[#15563]](https://github.com/h2oai/h2o-3/issues/15563) - Updated out of date copyright year in user guide and python guide.
 - [[#6574]](https://github.com/h2oai/h2o-3/issues/6574) - Added a warning to Infogram user guide that it should not be used to remove correlated columns.
 - [[#6554]](https://github.com/h2oai/h2o-3/issues/6554) - Updated `nfolds` parameter description for AutoML in Python guide.
@@ -447,7 +447,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index
 - [[#15461]](https://github.com/h2oai/h2o-3/issues/15461) - Fixed leaks in GLM’s Negative Binomial estimation.
 
 #### Improvement
-- [[#6843]](https://github.com/h2oai/h2o-3/issues/6843) - Changed `warning` tag to `info` tag when weights are not provided during validation/test dataset scoring when weights are present in training. 
+- [[#6843]](https://github.com/h2oai/h2o-3/issues/6843) - Changed `warning` tag to `info` tag when weights are not provided during validation/test dataset scoring when weights are present in training.
 - [[#6828]](https://github.com/h2oai/h2o-3/issues/6828) - Removed support for Python 2.7 and 3.5.
 - [[#6813]](https://github.com/h2oai/h2o-3/issues/6813) - Upgraded the default parquet library to 1.12.3 for standalone jar.
 - [[#7630]](https://github.com/h2oai/h2o-3/issues/7630) - Upgraded XGBoost to version 1.6.1.
@@ -550,10 +550,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/ind
 - [[#6805]](https://github.com/h2oai/h2o-3/issues/6805) - Increased speed of XGBoost scoring on wide datasets.
 - [[#6864]](https://github.com/h2oai/h2o-3/issues/6864) - Updated error message for when a user specifies the wrong cluster when connecting to a running H2O instance.
 - [[#6886]](https://github.com/h2oai/h2o-3/issues/6886) - Improved memory usage in creation of parse-response for wide datasets.
-- [[#6893]](https://github.com/h2oai/h2o-3/issues/6893) - Increased testing speed by adding ability to train XGBoost cross-validation models concurrently on the same GPU. 
+- [[#6893]](https://github.com/h2oai/h2o-3/issues/6893) - Increased testing speed by adding ability to train XGBoost cross-validation models concurrently on the same GPU.
 - [[#6900]](https://github.com/h2oai/h2o-3/issues/6900) - Added ability to score `eval_metric` on validation datasets for XGBoost.
 - [[#6901]](https://github.com/h2oai/h2o-3/issues/6901) - Added notebook demonstrating `eval_metric` for XGBoost.
-- [[#6902]](https://github.com/h2oai/h2o-3/issues/6902) - Increased XGBoost model training speed by disabling H2O scoring to rely solely on `eval_metric`. 
+- [[#6902]](https://github.com/h2oai/h2o-3/issues/6902) - Increased XGBoost model training speed by disabling H2O scoring to rely solely on `eval_metric`.
 - [[#6910]](https://github.com/h2oai/h2o-3/issues/6910) - Updated to Java 17 from Java 11/openjdk in H2O docker images.
 - [[#7294]](https://github.com/h2oai/h2o-3/issues/7294) - Updated warning message for when H2O version is outdated.
 - [[#7598]](https://github.com/h2oai/h2o-3/issues/7598) - Introduced a better format for storing default, input, and actual parameters in H2O model objects for R by using `@params` slots.
@@ -591,7 +591,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/ind
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html</a>
 
 #### Bug Fix
-- [[#6851]](https://github.com/h2oai/h2o-3/issues/6851) - Fixed error in SHAP values report for DRF. 
+- [[#6851]](https://github.com/h2oai/h2o-3/issues/6851) - Fixed error in SHAP values report for DRF.
 - [[#6865]](https://github.com/h2oai/h2o-3/issues/6865) - Fixed a ModelSelection replacement error stopping too early and implemented incremental forward step and incremental replacement step for numerical predictors.
 
 #### Task
@@ -687,7 +687,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/inde
 - [[#6959]](https://github.com/h2oai/h2o-3/issues/6959) - Fixed GLM ordinal generic metrics to provide missing information in the payload.
 - [[#6960]](https://github.com/h2oai/h2o-3/issues/6960) - Fixed “maxrsweep” NPE in ModelSelection thrown when the replacement step stopped too early.
 - [[#6961]](https://github.com/h2oai/h2o-3/issues/6961) - Fixed “maxrsweep” replacement bug in ModelSelection by updating the implementation method.
-- [[#6973]](https://github.com/h2oai/h2o-3/issues/6973) - Fixed  unnecessary transformations in the scikit-learn wrapper by using model performance API. 
+- [[#6973]](https://github.com/h2oai/h2o-3/issues/6973) - Fixed  unnecessary transformations in the scikit-learn wrapper by using model performance API.
 - [[#6979]](https://github.com/h2oai/h2o-3/issues/6979) - Fixed upload of big files in Sparkling Water deployment.
 - [[#6983]](https://github.com/h2oai/h2o-3/issues/6983) - Changed the error message that GLM does not support contributions.
 - [[#6985]](https://github.com/h2oai/h2o-3/issues/6985) - Fixed QuantilesGlobal histogram type failing in GBM when all columns were categorial.
@@ -715,13 +715,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/inde
 
 #### New Feature
 
-- [[#6950]](https://github.com/h2oai/h2o-3/issues/6950) - Simplified the configuration of S3 for Frame exportation. 
+- [[#6950]](https://github.com/h2oai/h2o-3/issues/6950) - Simplified the configuration of S3 for Frame exportation.
 - [[#6984]](https://github.com/h2oai/h2o-3/issues/6984) - Added `train_segments` test for Isolation Forest.
 - [[#6991]](https://github.com/h2oai/h2o-3/issues/6991) - Added ability to `h2o.no_progress` in R allowing it to accept expressions.
 - [[#7011]](https://github.com/h2oai/h2o-3/issues/7011) - Implemented dispersion parameter estimation for GLM.
 - [[#7016]](https://github.com/h2oai/h2o-3/issues/7016) - Added ability to export H2O Frame to a Parquet.
 - [[#7076]](https://github.com/h2oai/h2o-3/issues/7076) - Added Pareto front plots to AutoML Explain.
-- [[#7091]](https://github.com/h2oai/h2o-3/issues/7091) - Added “deviance” method to dispersion for calculating p-values. 
+- [[#7091]](https://github.com/h2oai/h2o-3/issues/7091) - Added “deviance” method to dispersion for calculating p-values.
 - [[#7093]](https://github.com/h2oai/h2o-3/issues/7093) - Implemented variable inflation factors for GLM.
 - [[#7192]](https://github.com/h2oai/h2o-3/issues/7192) - Implemented in-training checkpoints for GBM.
 - [[#8005]](https://github.com/h2oai/h2o-3/issues/8005) - Implemented support for interactions to MOJO for CoxPH.
@@ -729,7 +729,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/inde
 
 #### Task
 
-- [[#6927]](https://github.com/h2oai/h2o-3/issues/6927) - Secured XGBoost connections in multinode environments. 
+- [[#6927]](https://github.com/h2oai/h2o-3/issues/6927) - Secured XGBoost connections in multinode environments.
 - [[#6948]](https://github.com/h2oai/h2o-3/issues/6948) - Added missing added predictor and deleted predictor to the result frame and model summary of ModelSelection.
 - [[#6952]](https://github.com/h2oai/h2o-3/issues/6952) - Added support allowing you to force GLM to build a null model where the model only returns the coefficients for the intercept.
 - [[#6953]](https://github.com/h2oai/h2o-3/issues/6953) - Added support allowing GLM `gamma` to fix the dispersion parameter to calculate p-values.
@@ -776,7 +776,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.
 #### Bug Fix
 
 - [[#6975]](https://github.com/h2oai/h2o-3/issues/6975) - Fixed CoxPH MOJO ignoring offset column.
-- [[#6976]](https://github.com/h2oai/h2o-3/issues/6976) - Fixed the incorrect predictions from the CoxPH MOJO on categorical columns. 
+- [[#6976]](https://github.com/h2oai/h2o-3/issues/6976) - Fixed the incorrect predictions from the CoxPH MOJO on categorical columns.
 - [[#6977]](https://github.com/h2oai/h2o-3/issues/6977) - Fixed the **View** button not working after completing an AutoML job.
 - [[#6989]](https://github.com/h2oai/h2o-3/issues/6989) - Fixed `num_of_features` not being used in call for `varimp_heatmap()`.
 - [[#7015]](https://github.com/h2oai/h2o-3/issues/7015) - Fixed GAM’s `fold_column` being treated as a normal column to score for.
@@ -798,7 +798,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.
 #### Docs
 
 - [[#6965]](https://github.com/h2oai/h2o-3/issues/6965) - Fixed the `uplift_metric` documentation for Uplift DRF.
-- [[#6967]](https://github.com/h2oai/h2o-3/issues/6967) - Added `transform_frame` to GLRM documentation. 
+- [[#6967]](https://github.com/h2oai/h2o-3/issues/6967) - Added `transform_frame` to GLRM documentation.
 - [[#6970]](https://github.com/h2oai/h2o-3/issues/6970) - Added `mode = “maxrsweep”` to ModelSelection documentation.
 - [[#6971]](https://github.com/h2oai/h2o-3/issues/6971) - Corrected the R documentation on R^2.
 - [[#6988]](https://github.com/h2oai/h2o-3/issues/6988) - Updated supported MOJO list to include GAM MOJO import.
@@ -840,22 +840,22 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 #### Bug Fix
 
 - [[#7035]](https://github.com/h2oai/h2o-3/issues/7035) - Fixed Residual Analysis plot flipping the residual calculation.
-- [[#7040]](https://github.com/h2oai/h2o-3/issues/7040) - Added more detailed exception when disconnected due to error caused by `Rcurl`. 
+- [[#7040]](https://github.com/h2oai/h2o-3/issues/7040) - Added more detailed exception when disconnected due to error caused by `Rcurl`.
 - [[#7047]](https://github.com/h2oai/h2o-3/issues/7047) - Made R client attempt to connect to `curl` package  instead of `Rcurl` package first.
 - [[#7055]](https://github.com/h2oai/h2o-3/issues/7055) - Ensures GLM models fail instead of throwing warnings when `beta_contraints` and `non_negative are used with multinomial or ordinal families.
 - [[#7057]](https://github.com/h2oai/h2o-3/issues/7057) - Fixed how `cv_computeAndSetOptimalParameters` deals with multiple `alpha` and `lambda` values across different folds.
 - [[#7058]](https://github.com/h2oai/h2o-3/issues/7058) - Increased MaxR running speed.
 - [[#7068]](https://github.com/h2oai/h2o-3/issues/7068) - Fixed `getGLMRegularizationPath` erroring out when `standardize = False`.
 - [[#7194]](https://github.com/h2oai/h2o-3/issues/7194) - Fixed Keystore not generating on Java 16+.
-- [[#7634]](https://github.com/h2oai/h2o-3/issues/7634) - Added a `num_of_features` argument to `h2o.varimp_heatmap` to limit the number of displayed variables. 
+- [[#7634]](https://github.com/h2oai/h2o-3/issues/7634) - Added a `num_of_features` argument to `h2o.varimp_heatmap` to limit the number of displayed variables.
 - [[#12130]](https://github.com/h2oai/h2o-3/issues/12130) - Fixed `cross_validation_metrics_summary` not being accessible for Stacked Ensemble.
 
 #### Improvement
 
 - [[#7029]](https://github.com/h2oai/h2o-3/issues/7029) - Improved AUUC result information in Uplift DRF by adding information on number of bins.
-- [[#7038]](https://github.com/h2oai/h2o-3/issues/7038) - Replaced `class()` with `inherits()` in R package. 
+- [[#7038]](https://github.com/h2oai/h2o-3/issues/7038) - Replaced `class()` with `inherits()` in R package.
 - [[#7039]](https://github.com/h2oai/h2o-3/issues/7039) - Fixed invalid URLs in R Package.
-- [[#7051]](https://github.com/h2oai/h2o-3/issues/7051) - Added normalized `AUUC` to Uplift DRF. 
+- [[#7051]](https://github.com/h2oai/h2o-3/issues/7051) - Added normalized `AUUC` to Uplift DRF.
 - [[#7059]](https://github.com/h2oai/h2o-3/issues/7059) - Sped-up AutoML by avoiding sleep-waiting.
 - [[#7061]](https://github.com/h2oai/h2o-3/issues/7061) - Removed Stacked Ensembles with XGB metalearner to increase speed.
 - [[#7062]](https://github.com/h2oai/h2o-3/issues/7062) - Ensures AutoML reproducibility when `max_models` is used.
@@ -866,13 +866,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 - [[#7036]](https://github.com/h2oai/h2o-3/issues/7036) - Bundled several basic datasets with H2O for use in examples.
 - [[#7050]](https://github.com/h2oai/h2o-3/issues/7050) - Added h2o.jar assembly for secure Steam deployments and excluded PAM authentication from minimal/Steam builds.
 - [[#7054]](https://github.com/h2oai/h2o-3/issues/7054) - Added ability to ingest data from secured Hive using h2odriver.jar in standalone.
-- [[#7073]](https://github.com/h2oai/h2o-3/issues/7073) - Bundled KrbStandalone extension in h2odriver.jar. 
+- [[#7073]](https://github.com/h2oai/h2o-3/issues/7073) - Bundled KrbStandalone extension in h2odriver.jar.
 - [[#7085]](https://github.com/h2oai/h2o-3/issues/7085) - Implemented new method for defining histogram split-points in GBM/DRF designed to address outlier issues with default `UniformAdaptive` method.
 - [[#7092]](https://github.com/h2oai/h2o-3/issues/7092) - Added ability to reorder frame levels based on their frequencies and to relieve only topN levels for GLM.
 - [[#7094]](https://github.com/h2oai/h2o-3/issues/7094) - Added a function to calculate predicted versus actual response in GLM.
 - [[#7258]](https://github.com/h2oai/h2o-3/issues/7258) - Implemented MOJO for Extended Isolation Forest.
 - [[#7261]](https://github.com/h2oai/h2o-3/issues/7261) - Added monotone splines to GAM.
-- [[#7271]](https://github.com/h2oai/h2o-3/issues/7271) - Added a plot function for gains/lift to R and Python.  
+- [[#7271]](https://github.com/h2oai/h2o-3/issues/7271) - Added a plot function for gains/lift to R and Python.
 - [[#7285]](https://github.com/h2oai/h2o-3/issues/7285) - Added ability to acquire metric builder updates for Sparkling Water calculation without H2O runtime.
 - [[#7664]](https://github.com/h2oai/h2o-3/issues/7664) - Added support for `interaction_constraints` to GBM.
 - [[#7785]](https://github.com/h2oai/h2o-3/issues/7785) - Exposed distribution parameter in AutoML
@@ -880,13 +880,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 #### Task
 
 - [[#7078]](https://github.com/h2oai/h2o-3/issues/7078) - Decoupled Infogram and XGBoost removing Infograms reliance on XGBoost to work.
-- [[#7080]](https://github.com/h2oai/h2o-3/issues/7080) - Verified GLM binomial IRLSM implementation and `p-value` calculation. 
+- [[#7080]](https://github.com/h2oai/h2o-3/issues/7080) - Verified GLM binomial IRLSM implementation and `p-value` calculation.
 - [[#7089]](https://github.com/h2oai/h2o-3/issues/7089) - Added private ModelBuilder parameter to AutoML to enforce the time budget on the final model after cross-validation.
 
 #### Sub-Task
 
 - [[#7069]](https://github.com/h2oai/h2o-3/issues/7069) - Made Ice plot functionalities also available on `pd_plot`.
-- [[#7160]](https://github.com/h2oai/h2o-3/issues/7160) - Added option to normalize y-axis values. 
+- [[#7160]](https://github.com/h2oai/h2o-3/issues/7160) - Added option to normalize y-axis values.
 - [[#7163]](https://github.com/h2oai/h2o-3/issues/7163) - Added option to display logodds for binary models for Ice plots.
 - [[#7164]](https://github.com/h2oai/h2o-3/issues/7164) - Added ability to save final graphing data to a frame for Ice plots.
 - [[#7165]](https://github.com/h2oai/h2o-3/issues/7165) - Added option to specify a grouping variable for Ice plots.
@@ -899,11 +899,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 - [[#7027]](https://github.com/h2oai/h2o-3/issues/7027) - Added links to the Additional Resources page to the sites where users can ask questions.
 - [[#7031]](https://github.com/h2oai/h2o-3/issues/7031) - Updated the examples for the Residual Analysis Plot.
 - [[#7037]](https://github.com/h2oai/h2o-3/issues/7037) - Updated the K8s deployment tutorial.
-- [[#7043]](https://github.com/h2oai/h2o-3/issues/7043) - Improved Uplift DRF User Guide documentation. 
-- [[#7049]](https://github.com/h2oai/h2o-3/issues/7049) - Shifted the links from the H2O-3 docs page to the User Guide “Additional Resources” page. 
+- [[#7043]](https://github.com/h2oai/h2o-3/issues/7043) - Improved Uplift DRF User Guide documentation.
+- [[#7049]](https://github.com/h2oai/h2o-3/issues/7049) - Shifted the links from the H2O-3 docs page to the User Guide “Additional Resources” page.
 - [[#7066]](https://github.com/h2oai/h2o-3/issues/7066) - Fixed MOJO importable/exportable table in User Guide.
-- [[#7067]](https://github.com/h2oai/h2o-3/issues/7067) - Added a note that MOJOs won’t build if `interactions` are specified. 
-- [[#7070]](https://github.com/h2oai/h2o-3/issues/7070) - Added information on how H2O handles date columns. 
+- [[#7067]](https://github.com/h2oai/h2o-3/issues/7067) - Added a note that MOJOs won’t build if `interactions` are specified.
+- [[#7070]](https://github.com/h2oai/h2o-3/issues/7070) - Added information on how H2O handles date columns.
 - [[#7075]](https://github.com/h2oai/h2o-3/issues/7075) - Fixed code typos on Admissible ML page in User Guide.
 - [[#7074]](https://github.com/h2oai/h2o-3/issues/7074) - Added information on the `-hdfs_config` tag.
 
@@ -914,7 +914,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/4/index.h
 
 #### Bug Fix
 
-- [[#7046]](https://github.com/h2oai/h2o-3/issues/7046) - Fixed logic operations error in R package. 
+- [[#7046]](https://github.com/h2oai/h2o-3/issues/7046) - Fixed logic operations error in R package.
 - [[#7052]](https://github.com/h2oai/h2o-3/issues/7052) - Clarified that `enum` and `eigen` `categorical_encoding` values do not work for XGBoost.
 
 #### Improvement
@@ -977,7 +977,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.h
 
 #### New Feature
 
-- [[#7232]](https://github.com/h2oai/h2o-3/issues/7232) - Added backward selection method for ModelSelection. 
+- [[#7232]](https://github.com/h2oai/h2o-3/issues/7232) - Added backward selection method for ModelSelection.
 
 #### Task
 
@@ -994,7 +994,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.h
 
 #### Bug Fix
 
-- [[#7214]](https://github.com/h2oai/h2o-3/issues/7214) - Fixed differences in H2O’s random behavior across Java versions by disabling Stream API in this task. 
+- [[#7214]](https://github.com/h2oai/h2o-3/issues/7214) - Fixed differences in H2O’s random behavior across Java versions by disabling Stream API in this task.
 - [[#7247]](https://github.com/h2oai/h2o-3/issues/7247) - Fixed CoxPH summary method in Python to return H2OTwoDimTable.
 - [[#7273]](https://github.com/h2oai/h2o-3/issues/7273) - Fixed form authentication not working by enforcing relative redirects in Jetty.
 - [[#7888]](https://github.com/h2oai/h2o-3/issues/7888) - Fixed exception raised in K-Means when a model is built using `nfolds` by disabling centroid stats for Cross-Validation.
@@ -1003,7 +1003,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.h
 #### Improvement
 
 - [[#7188]](https://github.com/h2oai/h2o-3/issues/7188) - Removed `ymu` and `rank` visibility from FlowUI.
-- [[#7209]](https://github.com/h2oai/h2o-3/issues/7209) - Exposed `lambda` in Rulefit to have better control over regularization strength. 
+- [[#7209]](https://github.com/h2oai/h2o-3/issues/7209) - Exposed `lambda` in Rulefit to have better control over regularization strength.
 - [[#7217]](https://github.com/h2oai/h2o-3/issues/7217) - Implemented sequential replacement method with ModelSelection.
 - [[#7222]](https://github.com/h2oai/h2o-3/issues/7222) - Improved rule extraction from trees in RuleFit.
 - [[#7240]](https://github.com/h2oai/h2o-3/issues/7240) - Improved exception handling in AutoML and Grids to prevent model failure.
@@ -1035,7 +1035,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.h
 - [[#7212]](https://github.com/h2oai/h2o-3/issues/7212) - Added documentation on Infogram to the User Guide.
 - [[#7279]](https://github.com/h2oai/h2o-3/issues/7279) - Added documentation on ModelSelection to the User Guide.
 - [[#7275]](https://github.com/h2oai/h2o-3/issues/7275) - Added notebook on floating point issue for POJO and FAQ documentation on POJO split points.
-- [[#7329]](https://github.com/h2oai/h2o-3/issues/7329) - Fixed bullet list formatting issues. 
+- [[#7329]](https://github.com/h2oai/h2o-3/issues/7329) - Fixed bullet list formatting issues.
 - [[#7742]](https://github.com/h2oai/h2o-3/issues/7742) - Updated R Reference Guide list.
 
 ### Zizler (3.34.0.8) - 1/13/2022
@@ -1115,7 +1115,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index
 - [[#7259]](https://github.com/h2oai/h2o-3/issues/7259) - Fixed the `pyunit_PUBDEV_5008_5386_glm_ordinal_large.py` test from failing.
 - [[#7263]](https://github.com/h2oai/h2o-3/issues/7263) - Fixed AutoML XGBoost `learn_rate` search step.
 - [[#7265]](https://github.com/h2oai/h2o-3/issues/7265) - Ensured that jobs are rendered correctly in Flow and that AutoML internal jobs can be monitored without crashing on the backend.
-- [[#7269]](https://github.com/h2oai/h2o-3/issues/7269) - Fixed `gam_columns` failure in the `pyunit_PUBDEV_7185_GAM_mojo_ordinal.py` test. 
+- [[#7269]](https://github.com/h2oai/h2o-3/issues/7269) - Fixed `gam_columns` failure in the `pyunit_PUBDEV_7185_GAM_mojo_ordinal.py` test.
 - [[#7290]](https://github.com/h2oai/h2o-3/issues/7290) - Outlined that `tree_method=“approx”` is not supported with `col_sample_rate` or `col_sample_by_level` in XGBoost.
 - [[#7517]](https://github.com/h2oai/h2o-3/issues/7517) - Fixed multinomial classification in Rulefit.
 - [[#7681]](https://github.com/h2oai/h2o-3/issues/7681) - Fixed inconsistencies in GLM `beta_constraints`.
@@ -1157,7 +1157,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/3/index
 - [[#7317]](https://github.com/h2oai/h2o-3/issues/7317) - Fixed AutoML ignoring optional Stacked Ensembles.
 - [[#7319]](https://github.com/h2oai/h2o-3/issues/7319) - Fixed NPE thrown in AutoML when XGBoost is disabled/not available.
 - [[#7320]](https://github.com/h2oai/h2o-3/issues/7320) - Fixed CRAN install.
-- [[#8458]](https://github.com/h2oai/h2o-3/issues/8458) - Improved XGBoost API to ensure both `col_sample_rate` and `colsample_bylevel` (and other XGBoost parameters aliases) are set correctly. 
+- [[#8458]](https://github.com/h2oai/h2o-3/issues/8458) - Improved XGBoost API to ensure both `col_sample_rate` and `colsample_bylevel` (and other XGBoost parameters aliases) are set correctly.
 - [[#7375]](https://github.com/h2oai/h2o-3/issues/7375) - Fixed NPE thrown for `ModelJsonReader.findINJson` for cases when path does not exist.
 
 #### Improvement
@@ -1196,7 +1196,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index
 - [[#7383]](https://github.com/h2oai/h2o-3/issues/7383) - Fixed failing rotterdam tests.
 - [[#7387]](https://github.com/h2oai/h2o-3/issues/7387) - Fixed GAM NPE from multiple runs with knots specified in a frame.
 - [[#8458]](https://github.com/h2oai/h2o-3/issues/8458) - Fixed ``col_sample_rate`` not sampling for XGBoost when set to a value lower than 1.0.
-- [[#7396]](https://github.com/h2oai/h2o-3/issues/7396) - Fixed wrong column type on MOJO models for Cross-Validation Metrics Summary. 
+- [[#7396]](https://github.com/h2oai/h2o-3/issues/7396) - Fixed wrong column type on MOJO models for Cross-Validation Metrics Summary.
 - [[#7408]](https://github.com/h2oai/h2o-3/issues/7408) - Prevented R connect from starting H2O locally.
 - [[#7420]](https://github.com/h2oai/h2o-3/issues/7420) - Added StackedEnsembles to AutoML’s time budget to prevent unexpected training times.
 - [[#7441]](https://github.com/h2oai/h2o-3/issues/7441) - Fixed the failing `pyunit_scale_pca_rf.py` test.
@@ -1246,7 +1246,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index
 
 - [[#7363]](https://github.com/h2oai/h2o-3/issues/7363) - Fixed the time limits for the Merge/Sort benchmark.
 - [[#7454]](https://github.com/h2oai/h2o-3/issues/7454) - Switched removed pandas ``as_matrix`` method to ``.values`` and exposed the interim `pandas.DataFrame` object.
-- [[#7533]](https://github.com/h2oai/h2o-3/issues/7533) - Fixed S3 credential for `pyunit_s3_model_save.py` test. 
+- [[#7533]](https://github.com/h2oai/h2o-3/issues/7533) - Fixed S3 credential for `pyunit_s3_model_save.py` test.
 - [[#7565]](https://github.com/h2oai/h2o-3/issues/7565) - Connected XGBoost aggregation functionality with sorting functionality.
 
 #### Technical task
@@ -1489,7 +1489,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7603'>#7603</a>] -         Fixed issues with python’s explanation plots not displaying fully.
 </li>
 </ul>
-    
+
 #### New Feature
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7933'>#7933</a>] -         Ignored columns that are actually used for model training are unignored and no longer prevent model training to start in Flow.
@@ -1519,7 +1519,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7613'>#7613</a>] -         Reverted XGBoost categorical encodings for contributions.
 </li>
 </ul>
-    
+
 #### Task
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8002'>#8002</a>] -         `max_hit_ratio_k` deprecated and removed.
@@ -1527,7 +1527,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7751'>#7751</a>] -         Added upper bound cap to supported Java version in H2O CRAN package requirements.
 </li>
 </ul>
-    
+
 #### Improvement
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8165'>#8165</a>] -         Users now allowed to include categorical column name in beta constraints.
@@ -1544,10 +1544,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.h
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7631'>#7631</a>] -         Added validation checks for sampling rates for XGBoost for the R/Python clients.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/7624'>#7624</a>] -         
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/7624'>#7624</a>] -
 No longer errors when trying to use a fold column where not all folds are represented.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/7616'>#7616</a>] -         Added the `metalearner_transform` option to Stacked Ensemble. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/7616'>#7616</a>] -         Added the `metalearner_transform` option to Stacked Ensemble.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7592'>#7592</a>] -         GBM main model now built in parallel to the CV models.
 </li>
@@ -1562,13 +1562,13 @@ No longer errors when trying to use a fold column where not all folds are repres
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7579'>#7579</a>] -         AutoML now uses fewer neurons in DL grids and has improved the metalearner for Stacked Ensemble.
 </li>
 </ul>
-    
+
 ####Technical task
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7783'>#7783</a>] -         Thin plate regression splines added to GAM.
 </li>
 </ul>
-    
+
 #### Docs
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7728'>#7728</a>] -         Added checkpoint description to GLM.
@@ -1591,11 +1591,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/5/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7844'>#7844</a>] -         GAM no longer creates multiple knots at the same coordinates when the cardinality of the `gam_columns` is less than the number of `knots` specified by the user.
 </li>
 </ul>
-    
+
 #### Improvement
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/7694'>#7694</a>] -         
-Feature interactions can now be save as .xlxs files. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/7694'>#7694</a>] -
+Feature interactions can now be save as .xlxs files.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7614'>#7614</a>] -         Job polling will retry connecting to h2o nodes if connection fails.
 </li>
@@ -1615,7 +1615,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/inde
 </li>
 </ul>
 
-    
+
 #### Improvement
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7902'>#7902</a>] -         Added MOJO support for CoxPH.
@@ -1623,7 +1623,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7675'>#7675</a>] -         Escape all quotes by default when writing CSV.
 </li>
 </ul>
-    
+
 #### Docs
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7701'>#7701</a>] -         Added to docs that AUCPR can be plotted.
@@ -1654,7 +1654,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7717'>#7717</a>] -         Fixed the CustomDistribution test error.
 </li>
 </ul>
-    
+
 #### New Feature
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/12775'>#12775</a>] -         Cross-Validation predictions can now be saved alongside the model.
@@ -1665,12 +1665,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7773'>#7773</a>] -         Created a Red Hat certification for H2O Docker Image.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/7764'>#7764</a>] -         Fixed randomized split points for `histogram_type=“Random”` when nbins=2.       
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/7764'>#7764</a>] -         Fixed randomized split points for `histogram_type=“Random”` when nbins=2.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7729'>#7729</a>] -         Single quote regime for CSV parser exposed for importing & uploading files.
 </li>
 </ul>
-    
+
 #### Improvement
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7887'>#7887</a>] -         REST API disabled on non-leader Kubernetes nodes.
@@ -1678,10 +1678,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7769'>#7769</a>] -         GLM now uses proper logging instead of printlines.
 </li>
 </ul>
-    
+
 #### Docs
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/7819'>#7819</a>] -         
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/7819'>#7819</a>] -
 Added non-tree-based models to the variable importance page in the user guide.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7775'>#7775</a>] -         Updated the AutoML citation in the User Guide to point to the H2O AutoML ICML AutoML workshop paper.
@@ -1714,7 +1714,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7759'>#7759</a>] -         When grid search has parallelism enabled, it now includes CV models.
 </li>
 </ul>
-    
+
 #### New Feature
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7900'>#7900</a>] -         Added feature interactions and importance for XGBoost and GBM.
@@ -1728,13 +1728,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7745'>#7745</a>] -         Added custom pod labels for HELM charts.
 </li>
 </ul>
-    
+
 #### Task
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7807'>#7807</a>] -         Added `lambda_min` & `lambda_max` parameters to GLMModelOutputs.
 </li>
 </ul>
-    
+
 #### Improvement
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7894'>#7894</a>] -         Added default values to all algorithm parameters in the User Guide.
@@ -1744,13 +1744,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7808'>#7808</a>] -         Added ONNX support to the documentation.
 </li>
 </ul>
-    
+
 #### Engineering Story
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7796'>#7796</a>] -         Added a new method which properly locks H2O Frames during conversion from Spark Data Frames to H2O Frames in Sparkling Water.
 </li>
 </ul>
-    
+
 #### Docs
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7806'>#7806</a>] -         On the Grid Search User Guide page, fixed the missing syntax highlight in the Python example of the Random Grid Search section.
@@ -1759,7 +1759,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/inde
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7767'>#7767</a>] -         Added documentation for GBM and XGBoost on feature interactions and importance.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/7757'>#7757</a>] -         Added a Python example to the `stratify_by` parameter. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/7757'>#7757</a>] -         Added a Python example to the `stratify_by` parameter.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7747'>#7747</a>] -         Added a Feature Engineering section to the Data Manipulation page in the User Guide.
 </li>
@@ -1781,7 +1781,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7879'>#7879</a>] -         Updated model_type argument names for Rulefit in R.
 </li>
 </ul>
-    
+
 #### New Feature
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8393'>#8393</a>] -         Quantile distributions added to monotone constraints.
@@ -1800,7 +1800,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7834'>#7834</a>] -         Implemented a basic HELM chart.
 </li>
 </ul>
-    
+
 #### Task
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7878'>#7878</a>] -         Rulefit model added to algorithm section of UserGuide.
@@ -1810,7 +1810,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7838'>#7838</a>] -         Updated the AutoML User Guide page to include the new Explainability and Preprocessing sections.
 </li>
 </ul>
-    
+
 #### Improvement
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/12783'>#12783</a>] -         Added support for Python 3.7+.
@@ -1831,7 +1831,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7852'>#7852</a>] -         Upgraded to XGBoost 1.2.0.
 </li>
 </ul>
-    
+
 #### Technical task
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8271'>#8271</a>] -         Added cross-validation to GAM allowing users to find the best alpha/lambda values when building a GAM model.
@@ -1843,7 +1843,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7862'>#7862</a>] -          Implemented minimal support for TargetEncoding in AutoML.
 </li>
 </ul>
-    
+
 #### Docs
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8097'>#8097</a>] -          Updated the descriptions of AutoML in R & Python packages.
@@ -1888,13 +1888,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7901'>#7901</a>] -         Fixed broken URLs in R documentation that caused CRAN failures.
 </li>
 </ul>
-    
+
 <h4>New Feature</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8017'>#8017</a>] -         Added the concordance statistic for CoxPH models.
 </li>
 </ul>
-    
+
 <h4>Task</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8157'>#8157</a>] -         When using multiple alpha/lambda values for calling GLM from GAM, GLM now returns the best results across all alpha/lambda values. Also added the ‘cold_start’ parameter added to GLM.
@@ -1904,7 +1904,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7913'>#7913</a>] -         GLM new parameter ‘cold_start’ added to User Guide and GLM booklet.
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7985'>#7985</a>] -         Reduced the memory cost of the `drop_duplicate` operation by cleaning up data early.
@@ -1914,13 +1914,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7908'>#7908</a>] -         Categorical encoding documentation updated by adding ‘EnumLimited’ & ’SortByReponse’ to KMeans and removing ‘Eigen’ from XGBoost.
 </li>
 </ul>
-    
+
 <h4>Technical task</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8270'>#8270</a>] -         Tests added to verify grid search functionality for GAM and allows the user to create more complex hyper spaces for grid search by adding ‘subspaces’ key and functionality to grid search backend.
 </li>
 </ul>
-    
+
 <h4>Docs</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7906'>#7906</a>] -         Added documentation on how to retrieve reproducibility information.
@@ -1934,7 +1934,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.h
 
 <h4>Bug Fix</h4>
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8521'>#8521</a>] -         H2OFrames with fields containing double quotes/line breaks can now be converted to Pandas dataframe. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8521'>#8521</a>] -         H2OFrames with fields containing double quotes/line breaks can now be converted to Pandas dataframe.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8149'>#8149</a>] -         Impossible to set Max_depth to unlimited on DRF classifer
 </li>
@@ -1943,7 +1943,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7993'>#7993</a>] -         Reproducibility Information Table now hidden in H2O-Flow.
 </li>
 </ul>
-    
+
 <h4>New Feature</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/11793'>#11793</a>] -         Added support for `offset_column` in the Stacked Ensemble metalearner.
@@ -1967,7 +1967,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7942'>#7942</a>] -         Added external cluster startup timeout for XGBoost.
 </li>
 </ul>
-    
+
 <h4>Task</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7990'>#7990</a>] -         Hadoop Docker image run independent of S3.
@@ -1975,7 +1975,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7966'>#7966</a>] -         Upgraded the build/test environment to support R 4.0 and Roxygen2.7.1.1.
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8698'>#8698</a>] -         Implemented TF-IDF algorithm to reflect how important a word is to a document or collection of documents.
@@ -1993,7 +1993,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7988'>#7988</a>] -         Removed deprecated H2O-Scala module.
 </li>
 </ul>
-    
+
 <h4>Technical Task</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8447'>#8447</a>] -          Added Java backend to support MOJO in GAM.
@@ -2001,14 +2001,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.h
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8028'>#8028</a>] -         Added support for `early_stopping` parameter in GAM and GLM.
 </li>
 </ul>
-    
+
 <h4>        Engineering Story
 </h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7938'>#7938</a>] -          Sparkling Water Booklet removed from the H2O-3 repository.
 </li>
 </ul>
-    
+
 <h4>Docs</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8082'>#8082</a>] -         Added H2O Client chapter to the User Guide which includes section on Sklearn integration.
@@ -2042,16 +2042,16 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/in
 
 <h4>New Feature</h4>
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8207'>#8207</a>] -         Added support for partitionBy column in partitioned parquet or CSV files. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8207'>#8207</a>] -         Added support for partitionBy column in partitioned parquet or CSV files.
 </li>
 </ul>
-    
+
 <h4>Task</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7994'>#7994</a>] -         Warning added for user if both a lamba value and lambda search are provided in GLM.
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/12662'>#12662</a>] - Added `max_runtime_secs` parameter to Stacked Ensemble.
@@ -2061,10 +2061,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/in
 </ul>
 
 
-### Zahradnik (3.30.0.6) - 6/30/2020 
+### Zahradnik (3.30.0.6) - 6/30/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html</a>
-            
+
 <h4>Bug Fix</h4>
 
 <ul>
@@ -2075,14 +2075,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/in
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/7997'>#7997</a>] - Fixed a link to H2O blogs in the R documentation.
 </li>
 </ul>
-            
+
 <h4>New Feature</h4>
 
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8233'>#8233</a>] - Added support for the Kolmogorov-Smirnov metric for binary classification models.
 </li>
 </ul>
-                                                                                                                                                                                                                                                                                                
+
 <h4>Docs</h4>
 
 <ul>
@@ -2101,11 +2101,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8075'>#8075</a>] - Importing with `use_temp_table=False` now works correctly on Teradata.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8050'>#8050</a>] - Building a GLM model with `interactions` and `lambda = 0` no longer produces a "Categorical value out of bounds" error. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8050'>#8050</a>] - Building a GLM model with `interactions` and `lambda = 0` no longer produces a "Categorical value out of bounds" error.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8048'>#8048</a>] - Fixed an inconsistency that occurred when using `predict_leaf_node_assignment` with a path and with a terminal node. For trees with a max_depth of up to 63, the results now match. For max_depth of 64 or higher (for path and nodes that are "too deep"), H2O will no longer produce incorrect results. Instead it will return "NA" for tree paths and "-1" for node IDs. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8048'>#8048</a>] - Fixed an inconsistency that occurred when using `predict_leaf_node_assignment` with a path and with a terminal node. For trees with a max_depth of up to 63, the results now match. For max_depth of 64 or higher (for path and nodes that are "too deep"), H2O will no longer produce incorrect results. Instead it will return "NA" for tree paths and "-1" for node IDs.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8042'>#8042</a>] - Leaf node assignment now works correctly for trees with a depth >= 31. Note that for trees with a max_depth of 64 or higher, H2O will return "NA" for tree paths and "-1" for node IDs. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8042'>#8042</a>] - Leaf node assignment now works correctly for trees with a depth >= 31. Note that for trees with a max_depth of 64 or higher, H2O will return "NA" for tree paths and "-1" for node IDs.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8039'>#8039</a>] - `allow_insecure_xgboost` now works correctly on Hadoop.
 </li>
@@ -2116,9 +2116,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/in
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8206'>#8206</a>] - HTML documentation is now available as a downloadable zip file.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8037'>#8037</a>] - Users can now retrieve the prediction contributions when running `mojo_predict_pandas` in Python. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8037'>#8037</a>] - Users can now retrieve the prediction contributions when running `mojo_predict_pandas` in Python.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8025'>#8025</a>] - H2O documentation is now available in an h2odriver distribution zip file. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8025'>#8025</a>] - H2O documentation is now available in an h2odriver distribution zip file.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8024'>#8024</a>] - Quantiles models during the training of other models are now recognized as a regular model.
 </li>
@@ -2131,7 +2131,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/in
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/9202'>#9202</a>] - Added support for models built with any `family` when running makeGLMModel.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8052'>#8052</a>] - K8S Docker images for h2o-3 are now available. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8052'>#8052</a>] - K8S Docker images for h2o-3 are now available.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8023'>#8023</a>] - Warnings are now produced during model building when using the Python client.
 </li>
@@ -2140,9 +2140,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/in
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8495'>#8495</a>] - Added examples for saving and loading grids in the User Guide. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8495'>#8495</a>] - Added examples for saving and loading grids in the User Guide.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8051'>#8051</a>] - Improved the examples in the Performance and Prediction chapter. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8051'>#8051</a>] - Improved the examples in the Performance and Prediction chapter.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8049'>#8049</a>] - In the AutoML Random Grid Search Parameters topic, removed the no-longer-supported `min_sum_hessian_in_leaf` parameter from the XGBoost table. Also added clarification on how GHL models are handled in an AutoML random grid search run.
 </li>
@@ -2164,7 +2164,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8184'>#8184</a>] - Fixed an issue that caused h2o.get_leaderboard to fail after creating an AutoML object, disconnecting the client, starting a new session, and then reconecting to the running H2O cluster for the re-attached H2OAutoML object.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8147'>#8147</a>] - Stacked Ensemble now inherits distributions/families supported by the metalearner. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8147'>#8147</a>] - Stacked Ensemble now inherits distributions/families supported by the metalearner.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8137'>#8137</a>] - Fixed an issue that caused AutoML to fail when the target included special characters.
 </li>
@@ -2201,7 +2201,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/in
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8120'>#8120</a>] - Added a "Training Models" section to the User Guide, which describes train() and train_segments(). 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8120'>#8120</a>] - Added a "Training Models" section to the User Guide, which describes train() and train_segments().
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8113'>#8113</a>] - Updated XGBoost to indicate that this version requires CUDA 9, and included information showing users how to check their CUDA version.
 </li>
@@ -2211,9 +2211,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8064'>#8064</a>] - `monotone_constraints` can now be used with `distribution=tweedie`.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8062'>#8062</a>] - Updated the PDP topic to include support for multinomial problems and updated the examples. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8062'>#8062</a>] - Updated the PDP topic to include support for multinomial problems and updated the examples.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8053'>#8053</a>] - In the API-related Changes topic, noted that `min_sum_hessian_in_leaf` and `min_data_in_leaf`  are no longer supported in XGBoost. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8053'>#8053</a>] - In the API-related Changes topic, noted that `min_sum_hessian_in_leaf` and `min_data_in_leaf`  are no longer supported in XGBoost.
 </li>
 </ul>
 
@@ -2233,7 +2233,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/in
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8121'>#8121</a>] - Fixed an issue that caused GBM to fail when it encountered a bin that included a single value and the rest NAs.
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 
 <ul>
@@ -2252,7 +2252,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8294'>#8294</a>] - Improved the Hive import documentation.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8138'>#8138</a>] - Improved documentation for Quantiles in the User Guide. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8138'>#8138</a>] - Improved documentation for Quantiles in the User Guide.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8133'>#8133</a>] - Fixed the documented default value for `min_split_improvement` parameter in XGBoost.
 </li>
@@ -2302,11 +2302,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/9209'>#9209</a>] - An H2O Frame containing weights can now be specified when running `make_metrics`. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/9209'>#9209</a>] - An H2O Frame containing weights can now be specified when running `make_metrics`.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8361'>#8361</a>] - Added POJO and MOJO support for all encodings in GBM.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8192'>#8192</a>] - Users will now receive an error if they attempt to run https in h2o.init() when starting a local cluster. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8192'>#8192</a>] - Users will now receive an error if they attempt to run https in h2o.init() when starting a local cluster.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8173'>#8173</a>] - Added an `-allow_insecure_xgboost` option to h2o and h2odriver that allows XGBoost multinode to run in a secured cluster.
 </li>
@@ -2317,7 +2317,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8620'>#8620</a>] - Updated the Target Encoding topic and examples based on the improved API. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8620'>#8620</a>] - Updated the Target Encoding topic and examples based on the improved API.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8293'>#8293</a>] - Added a new "Supported Data Types" topic to the Algorithms chapter.
 </li>
@@ -2327,7 +2327,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8191'>#8191</a>] - Fixed the R example in the GAM chapter.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8187'>#8187</a>] - Added clarification for when `min_mem_size` and `max_mem_size`` are set to NULL/None in h2o.init(). 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8187'>#8187</a>] - Added clarification for when `min_mem_size` and `max_mem_size`` are set to NULL/None in h2o.init().
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8179'>#8179</a>] - The link to the slideshare in the DRF chapter now points to https instead of http.
 </li>
@@ -2349,7 +2349,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8638'>#8638</a>] - Fixed an issue that caused performing multiple h2o.init() to fails with R on Windows.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8545'>#8545</a>] - Increased the default clouding time to avoid times out that resulted in a Cloud 1 under 4 error. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8545'>#8545</a>] - Increased the default clouding time to avoid times out that resulted in a Cloud 1 under 4 error.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8296'>#8296</a>] - Removed obsolete exactLambdas parameter from GLM.
 </li>
@@ -2366,7 +2366,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8404'>#8404</a>] - Added support for Continuous Bag of Words (CBOW) models in Word2Vec.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8369'>#8369</a>] - H2O can now predict OOME during parsing and stop the job if OOME is imminent. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8369'>#8369</a>] - H2O can now predict OOME during parsing and stop the job if OOME is imminent.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8333'>#8333</a>] - Add GBM POJO support for SortByResponse and enumlimited.
 </li>
@@ -2378,7 +2378,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8228'>#8228</a>] - H2O now provides the original algorithm name for MOJO import.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8215'>#8215</a>] - Created a segmented model training interface in R. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8215'>#8215</a>] - Created a segmented model training interface in R.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8214'>#8214</a>] - Added a print method for the H2OSegmentModel object type in R.
 </li>
@@ -2392,22 +2392,22 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8252'>#8252</a>] - Now using Java-based scoring for XGBoostModels.
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/11521'>#11521</a>] - In the H2O R package, `data.table` is now enabled by default (if installed). 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/11521'>#11521</a>] - In the H2O R package, `data.table` is now enabled by default (if installed).
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/9327'>#9327</a>] - In AutoML, users can try tuning the learning rate for the best model found during exploration in XGBoost and GBM. Note that the new `exploitation_ratio` parameter is still experimental. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/9327'>#9327</a>] - In AutoML, users can try tuning the learning rate for the best model found during exploration in XGBoost and GBM. Note that the new `exploitation_ratio` parameter is still experimental.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8781'>#8781</a>] - Added out-of-the-box support for starting an h2o cluster on Kubernetes. Refer to this <a href='https://github.com/h2oai/h2o-3/blob/master/h2o-k8s/README.md'>README</a> for more information. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8781'>#8781</a>] - Added out-of-the-box support for starting an h2o cluster on Kubernetes. Refer to this <a href='https://github.com/h2oai/h2o-3/blob/master/h2o-k8s/README.md'>README</a> for more information.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8553'>#8553</a>] - Improved the way AUC-PR is calculated.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8430'>#8430</a>] - Added an option to upload binary models from Python and R.
 </li>
 </ul>
-                                                                                                                                                                                                                                                    
+
 <h4>Docs</h4>
 
 <ul>
@@ -2417,7 +2417,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8287'>#8287</a>] - Added documentation for the fractional binomial family in the GLM section.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8286'>#8286</a>] - Added documentation for the new GAM algorithm. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8286'>#8286</a>] - Added documentation for the new GAM algorithm.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8249'>#8249</a>] - Updated tab formatting for the `cluster_size_constraints` parameter appendix entry.
 </li>
@@ -2427,9 +2427,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8227'>#8227</a>] - Added documentation for new `upload_model` function.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8221'>#8221</a>] - Improved documentation around citing H2O in publications. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8221'>#8221</a>] - Improved documentation around citing H2O in publications.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8209'>#8209</a>] - Added documentation for `single_node_mode` in CoxPH. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8209'>#8209</a>] - Added documentation for `single_node_mode` in CoxPH.
 </li>
 </ul>
 
@@ -2500,7 +2500,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yule/2/index.h
 <h4>Bug Fix</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8847'>#8847</a>] - The `base_models` attribute in Stacked Ensembles is now populated in both Python and R. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8847'>#8847</a>] - The `base_models` attribute in Stacked Ensembles is now populated in both Python and R.
 <br/>
 Note that in Python, if there are no `base_models` in `_parms`, then `actual_params` is used to retrieve base_models, and it contains the names of the models. In R, `ensemble@model$base_models` is populated with a vector of base model names.
 </li>
@@ -2510,14 +2510,14 @@ Note that in Python, if there are no `base_models` in `_parms`, then `actual_par
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8280'>#8280</a>] - TargetEncoderModel's summary no longer prints the fold column as a column that is going to be encoded by this model.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8273'>#8273</a>] - When h2omapper fails before discovering SELF (ip & port), the log messages are no longer lost. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8273'>#8273</a>] - When h2omapper fails before discovering SELF (ip & port), the log messages are no longer lost.
 </li>
 </ul>
 
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8506'>#8506</a>] - Added DeepLearning MOJO support in Generic Models. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8506'>#8506</a>] - Added DeepLearning MOJO support in Generic Models.
 </li>
 </ul>
 
@@ -2576,7 +2576,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <h4>Bug Fix</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/9016'>#9016</a>] - DeepLearning MOJOs are now thread-safe. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/9016'>#9016</a>] - DeepLearning MOJOs are now thread-safe.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8406'>#8406</a>] - Fixed an issue that caused h2oframe.apply to fail when run in Python 3.7. Note that Python 3.7 is still not officially supported, but support is a WIP.
 </li>
@@ -2584,11 +2584,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8373'>#8373</a>] - Decision Tree descriptions no longer include more descriptions than `max_depth` splits.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8365'>#8365</a>] - Fixed an issue that caused `import_hive_table` to fail with a JDBC source and a partitioned table. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8365'>#8365</a>] - Fixed an issue that caused `import_hive_table` to fail with a JDBC source and a partitioned table.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8364'>#8364</a>] - Improved the DKVManager sequential removal mechanism.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8356'>#8356</a>] - In XGBoost, added a message indicating that the `exact` tree method is not supported in multinode. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8356'>#8356</a>] - In XGBoost, added a message indicating that the `exact` tree method is not supported in multinode.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8329'>#8329</a>] - XGBoost ContributionsPredictor is now serializable.
 </li>
@@ -2601,7 +2601,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/9179'>#9179</a>] - Added support for Constrained K-Means clustering. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/9179'>#9179</a>] - Added support for Constrained K-Means clustering.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8674'>#8674</a>] - In Stacked Ensembles, added support for "xgboost" and "naivebayes" in the `metalearner_algorithm` parameter.
 </li>
@@ -2612,13 +2612,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8507'>#8507</a>] - In the R client, users can now optionally specify the number of columns to display in `h2o.frame`, `h2o.head`, and `h2o.tail`. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8507'>#8507</a>] - In the R client, users can now optionally specify the number of columns to display in `h2o.frame`, `h2o.head`, and `h2o.tail`.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8443'>#8443</a>] - Fixed an issue that caused AutoML to fail to run if XGBoost was disabled.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8382'>#8382</a>] - Stacktraces are no longer returned in  `h2o.getGrid` when failed models are present.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8327'>#8327</a>] - Added `createNewChunks` with a "sparse" parameter in ChunkUtils. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8327'>#8327</a>] - Added `createNewChunks` with a "sparse" parameter in ChunkUtils.
 </li>
 </ul>
 
@@ -2627,7 +2627,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8675'>#8675</a>] - Added an FAQ to the MOJO and POJO quick starts noting that MOJOs and POJOs are thread safe for all supported algorithms.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8420'>#8420</a>] - Added the new `cluster_size_constraints` parameter to the KMeans chapter. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8420'>#8420</a>] - Added the new `cluster_size_constraints` parameter to the KMeans chapter.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8350'>#8350</a>] - Updated docs to specify that `mtries=-2` gives all features.
 </li>
@@ -2645,13 +2645,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.htm
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8888'>#8888</a>] - In the R client, fixed a parsing bug that occurred when using quotes with .csv files in as.data.frame().
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8815'>#8815</a>] - Fixed an Unsupported Operation Exception in UDP-TCP-SEND. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8815'>#8815</a>] - Fixed an Unsupported Operation Exception in UDP-TCP-SEND.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8522'>#8522</a>] - GLM now supports coefficients on variable importance when model standardization is disabled.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8446'>#8446</a>] - In the Python client, rbind() can now be used on all numerical types.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8440'>#8440</a>] - In XGBoost, fixed an error that occurred during model prediction when OneHotExplicit was specified during model training. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8440'>#8440</a>] - In XGBoost, fixed an error that occurred during model prediction when OneHotExplicit was specified during model training.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8429'>#8429</a>] - Performing grid search over Target Encoding parameters now works correctly.
 </li>
@@ -2688,7 +2688,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.htm
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8407'>#8407</a>] - Added support for registering custom servlets.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8377'>#8377</a>] - In XGBoost, when a parameter with a synonym is updated, the synonymous parameter is now also updated. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8377'>#8377</a>] - In XGBoost, when a parameter with a synonym is updated, the synonymous parameter is now also updated.
 </li>
 </ul>
 
@@ -2704,7 +2704,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.htm
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8412'>#8412</a>] - Python examples for plot method on binomial models now use the correct method signature.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8411'>#8411</a>] - Updated custom_metric_func description to indicate that it is not supported in GLM. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8411'>#8411</a>] - Updated custom_metric_func description to indicate that it is not supported in GLM.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8395'>#8395</a>] - Updated the AutoML documentation to indicate that multinode XGBoost is now turned on by default.
 </li>
@@ -2758,13 +2758,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/2/index.htm
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/9167'>#9167</a>] - Improved heuristics used for finding IP addresses on Hadoop in order to select the right subnet automatically. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/9167'>#9167</a>] - Improved heuristics used for finding IP addresses on Hadoop in order to select the right subnet automatically.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8605'>#8605</a>] - Added support for `offset_column in XGBoost.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8551'>#8551</a>] - Users can now create tree visualizations without installing additional packages.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8503'>#8503</a>] - Added a new `download_model` function for downloading binary models in the R and Python clients. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8503'>#8503</a>] - Added a new `download_model` function for downloading binary models in the R and Python clients.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8475'>#8475</a>] - Improved XGBoost performance.
 </li>
@@ -2809,13 +2809,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/12823'>#12823</a>] - AutoML reruns using, for example, the same project name, no project name, etc., now produce consistent results.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8924'>#8924</a>] - Fixed an issue that occcurred when running an AutoML instance twice using the same project_name. AutoML no longer appends new models to the existing leaderboard, which caused the models for the first run to attempt to get rescored against the new learderboard_frame.  
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8924'>#8924</a>] - Fixed an issue that occcurred when running an AutoML instance twice using the same project_name. AutoML no longer appends new models to the existing leaderboard, which caused the models for the first run to attempt to get rescored against the new learderboard_frame.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8696'>#8696</a>] - Updated the list of stopping metric options for AutoML in Flow. Also added support for the aucpr stopping metric in AutoML.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8673'>#8673</a>] - When training a K-Means model, the framename is no longer missing in the training metrics.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8642'>#8642</a>] - In AutoML, the `project_name` is now restricted to the same constraints as h2o frames. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8642'>#8642</a>] - In AutoML, the `project_name` is now restricted to the same constraints as h2o frames.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8576'>#8576</a>] - In GBM, fixed an NPE that occurred when sample rate < 1.
 </li>
@@ -2848,7 +2848,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8837'>#8837</a>] - Added a function to calculate Spearman Correlation.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8793'>#8793</a>] - Users can now specify the order in which training steps will be executed during an AutoML run. This is done using the new `modeling_plan` option. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8793'>#8793</a>] - Users can now specify the order in which training steps will be executed during an AutoML run. This is done using the new `modeling_plan` option.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8745'>#8745</a>] - The `calibration_frame` and `calibrate_model` options can now be spcified in XGBoost.
 </li>
@@ -2864,7 +2864,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8535'>#8535</a>] - Added support for Java 13.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8513'>#8513</a>] - H2O no longer performs an internal self-check when converting trees in H2O. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8513'>#8513</a>] - H2O no longer performs an internal self-check when converting trees in H2O.
 </li>
 </ul>
 
@@ -2890,7 +2890,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/9019'>#9019</a>] - In AutoML, blending frame details were added to event_log.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8879'>#8879</a>] - If early stopping is enabled, GBM can reset the ntree value. In these cases, added an `ntrees_actual` (Python)/`get_ntrees_actual` (R) method to provide the actual ntree value (whether CV is enabled or not) rather than the original ntree value set by the user before building a model. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8879'>#8879</a>] - If early stopping is enabled, GBM can reset the ntree value. In these cases, added an `ntrees_actual` (Python)/`get_ntrees_actual` (R) method to provide the actual ntree value (whether CV is enabled or not) rather than the original ntree value set by the user before building a model.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8808'>#8808</a>] - Refactored AutoML to improve integration with Target Encoding.
 </li>
@@ -2984,9 +2984,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/8524'>#8524</a>] - Added examples to the PSVM section in the Python documentation.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8512'>#8512</a>] - Added documentation for HGLM in the GLM chapter. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8512'>#8512</a>] - Added documentation for HGLM in the GLM chapter.
 </li>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8498'>#8498</a>] - Improved AutoML documentation: 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8498'>#8498</a>] - Improved AutoML documentation:
 <ul>
 <li>aucpr is now an available stopping metric and sort metric for AutoML.</li>
 <li>monotone_constraints can now be specified in AutoML.</li>

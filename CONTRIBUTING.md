@@ -3,7 +3,7 @@ Contributing to H2O
 
 H2O is an open source project released under the Apache Software License v2.  Open Source projects live by their user and developer communities.  We welcome and encourage your contributions of any kind!
 
-There are many different kinds of people who make use of H2O for their daily work: 
+There are many different kinds of people who make use of H2O for their daily work:
 
 * Data Scientists who use R, Python, Scala, Java or the Flow web interface;
 * Application Software Developers who build software to drive H2O from those languages or the REST API;
@@ -13,7 +13,7 @@ No matter what your skill set or level of engagement is with H2O you can help ot
 
 ## Bug Reports and Feature Requests
 
-The single most important contribution that you can make is to report bugs and make feature requests.  The development work on H2O is largely driven by these, so please make your voice heard!  
+The single most important contribution that you can make is to report bugs and make feature requests.  The development work on H2O is largely driven by these, so please make your voice heard!
 
 Bug reports are most helpful if you send us a script which reproduces the problem.
 

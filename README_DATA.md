@@ -51,7 +51,7 @@ Running time for all tests should be less than an hour.
 	1.  ./bigdata/laptop (A "magic" directory in your git workspace)
 	1.  /home/h2opublictestdata/bigdata/laptop
 	1.  /mnt/h2o-public-test-data/bigdata/laptop
-	
+
 #### Test environment:
 
 * RUnit tests
@@ -92,7 +92,7 @@ Big server tests are meant to run stressful workloads on modern server hardware 
 * RUnit tests
 * Python tests
 
-#### How to get the data:  
+#### How to get the data:
 
 CAUTION: Don't do this at home.
 
@@ -111,7 +111,7 @@ CAUTION: Don't do this at home.
 
 #### Data assumptions:
 
-* Data lives in S3.  Huge. 
+* Data lives in S3.  Huge.
 
 * Search for data in the following order:
 
