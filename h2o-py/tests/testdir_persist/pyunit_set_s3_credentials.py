@@ -16,19 +16,25 @@ def test_set_s3_credentials():
 
 
 def test_set_s3_credentials_impl():
-    aws_creds_prefix = os.environ.get('AWS_CREDS_PREFIX_S3_DEV', os.environ.get('AWS_CREDS_PREFIX', ''))
+    aws_creds_prefix = os.environ.get('S3_CREDS_TEST_PREFIX',
+                                       os.environ.get('AWS_CREDS_PREFIX_S3_DEV',
+                                                      os.environ.get('AWS_CREDS_PREFIX', '')))
     access_key_id = os.environ[aws_creds_prefix + 'AWS_ACCESS_KEY_ID']
     secret_access_key = os.environ[aws_creds_prefix + "AWS_SECRET_ACCESS_KEY"]
     session_token = os.environ.get(aws_creds_prefix + "AWS_SESSION_TOKEN")
+
+    s3_path = os.environ.get('S3_CREDS_TEST_PATH', 's3://test.0xdata.com/h2o-unit-tests/iris.csv')
+    s3a_path = s3_path.replace('s3://', 's3a://', 1)
 
     assert access_key_id is not None
     assert secret_access_key is not None
 
     # Check that we cannot connect without setting credentials (this will only work if prefix is defined,
-    # otherwise H2O will just pick it up from environment variables)
-    if aws_creds_prefix:
+    # otherwise H2O will just pick it up from environment variables).
+    # Skip for public buckets where anonymous access may succeed.
+    if aws_creds_prefix and 'S3_CREDS_TEST_PATH' not in os.environ:
         try:
-            h2o.import_file("s3://test.0xdata.com/h2o-unit-tests/iris.csv")
+            h2o.import_file(s3_path)
             assert False
         except Exception as e:
             assert type(e) is h2o.exceptions.H2OServerError
@@ -38,18 +44,18 @@ def test_set_s3_credentials_impl():
     # Now set the credentials
     # 1. Check PersistS3
     set_s3_credentials(access_key_id, secret_access_key, session_token)
-    file = h2o.import_file("s3://test.0xdata.com/h2o-unit-tests/iris.csv")
+    file = h2o.import_file(s3_path)
     assert file is not None
 
     # 2. Check S3A (Using PersistHdfs)
-    file = h2o.import_file("s3a://test.0xdata.com/h2o-unit-tests/iris.csv")
+    file = h2o.import_file(s3a_path)
     assert file is not None
 
     access_key_id = 'abcd'
     secret_access_key = 'abcd'
     set_s3_credentials(access_key_id, secret_access_key)
     try:
-        h2o.import_file("s3://test.0xdata.com/h2o-unit-tests/iris.csv")
+        h2o.import_file(s3_path)
         assert False
     except Exception as e:
         assert type(e) is h2o.exceptions.H2OServerError
