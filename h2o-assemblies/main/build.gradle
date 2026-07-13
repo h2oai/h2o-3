@@ -91,8 +91,17 @@ dependencies {
             because 'Fixes CVE-2023-34453'
             because 'Fixes CVE-2023-43642'
         }
-        api('org.apache.commons:commons-configuration2:2.10.1') {
+        api('org.apache.commons:commons-configuration2:2.15.0') {
             because 'Fixes CVE-2024-29131'
+            because 'Fixes CVE-2026-45205'
+        }
+        // commons-configuration2 2.15.0's FileLocatorUtils relies on commons-io's
+        // AbstractSupplier.getUnchecked() (added in newer commons-io). It declares
+        // commons-io 2.22.0 but as an optional dependency, so it is not pulled in
+        // transitively and Hadoop's older commons-io wins, causing a runtime
+        // NoSuchMethodError on S3/HDFS import. Force the version it was built against.
+        api('commons-io:commons-io:2.22.0') {
+            because 'Required by commons-configuration2 2.15.0 (getUnchecked)'
         }
         api('dnsjava:dnsjava:3.6.0') {
             because 'Fixes SNYK-JAVA-DNSJAVA-7547403'
