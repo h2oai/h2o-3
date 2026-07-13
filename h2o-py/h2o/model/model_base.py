@@ -556,14 +556,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         these are the parallel metrics with the offset applied. Returns ``None`` for models trained without
         ``remove_offset_effects``.
 
-        If more than one flag is set, ``valid`` takes precedence over ``xval``, which takes precedence
-        over ``train``.
+        Only one of ``train``, ``valid``, and ``xval`` may be True; otherwise an error is raised (matching
+        R's ``h2o.unrestricted_model_performance``).
 
         :param bool train: Report the training metrics (default when no flag is set).
         :param bool valid: Report the validation metrics.
         :param bool xval: Report the cross-validation metrics.
         :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass, or ``None``.
         """
+        if (train + valid + xval) > 1:
+            raise H2OValueError("Only one of `train`, `valid`, and `xval` can be True.")
         output = self._model_json["output"]
         if valid:
             return output.get("validation_metrics_unrestricted_model")

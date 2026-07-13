@@ -1253,6 +1253,8 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' matching metrics with the offset applied. Returns \code{NULL} for models trained without
 #' \code{remove_offset_effects}.
 #'
+#' Only one of \code{train}, \code{valid}, and \code{xval} may be TRUE; otherwise an error is raised.
+#'
 #' @param model An \linkS4class{H2OModel} object trained with \code{remove_offset_effects = TRUE}
 #' @param train A logical value indicating whether to return the training metrics (the default when no flag is set).
 #' @param valid A logical value indicating whether to return the validation metrics.

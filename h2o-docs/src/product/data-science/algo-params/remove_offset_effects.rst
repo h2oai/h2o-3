@@ -26,7 +26,8 @@ GLM-specific behavior:
 **Notes**:
 
 - This option is experimental.
-- GLM only: this option is not supported for multinomial, ordinal, or custom distributions, and is not available when cross validation, Lambda search, or interactions are enabled.
+- This option requires an ``offset_column``. Setting ``remove_offset_effects=True`` without one is rejected during validation.
+- GLM only: this option is not supported for multinomial, ordinal, or custom distributions, and is not available when cross validation, Lambda search, or interactions are enabled. GAM enforces the same restrictions (it trains an internal GLM).
 - Cross validation is supported for GBM, XGBoost, and Deep Learning. It is not available for GAM (GAM performs cross validation inside its internal GLM). CoxPH does not support cross validation at all.
 - The unrestricted cross-validation metric is an aggregate of the per-fold metrics (no combined holdout predictions), so it has no gains/lift table, and non-averaging metrics such as AUC can differ from the restricted cross-validation metric for reasons unrelated to the offset.
 - Computing the unrestricted view adds one extra scoring pass over the training (and validation) frame after training, and one extra holdout-scoring pass per fold under cross validation.
@@ -37,6 +38,7 @@ GLM-specific behavior:
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
+- `offset_column <offset_column.html>`__
 - `control_variables <control_variables.html>`__
 
 Example (GBM)

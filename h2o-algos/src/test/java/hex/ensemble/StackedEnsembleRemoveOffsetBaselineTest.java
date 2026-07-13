@@ -24,6 +24,10 @@ import static water.TestUtil.*;
  * Pins the CURRENT default behavior of an offset-trained StackedEnsemble that does NOT use
  * remove_offset_effects, so the generic core changes are provably no-ops on the flag=false path.
  *
+ * NOTE: StackedEnsemble does NOT support remove_offset_effects (no supportsRemoveOffsetEffects()
+ * override). This is a base-model baseline, not an SE feature test — it only confirms the generic
+ * core changes leave the default (flag=false) SE offset path untouched.
+ *
  * StackedEnsemble has no single-family link oracle (base models + metalearner), so we use the
  * simpler baseline oracle: default scoring is deterministic (re-score same SE twice -> identical)
  * and the offset genuinely changes predictions (predict(withOffset) != predict(offsetZeroed)).

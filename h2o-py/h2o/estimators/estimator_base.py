@@ -370,8 +370,8 @@ class H2OEstimator(ModelBase):
         m._options_ = self._options_
 
         if model_id is not None and model_json is not None and metrics_class is not None:
-            # build Metric objects out of each metrics (incl. the offset-applied "unrestricted" twins
-            # reported by remove_offset_effects models, GH-16851)
+            # build Metric objects out of each metrics, including the offset-applied "unrestricted" twins
+            # reported by remove_offset_effects models (GH-16851)
             for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
                 for field in [metric, metric + "_unrestricted_model"]:
                     metrics = model_json["output"].get(field, None)

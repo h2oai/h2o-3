@@ -32,12 +32,18 @@ public class XGBoostRemoveOffsetEffectTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  @Parameterized.Parameters(name = "javaScoring={0}")
+  @Parameterized.Parameters(name = "javaScoring={0}, distribution={1}")
   public static Collection<Object[]> params() {
-    return Arrays.asList(new Object[][]{{true}, {false}});
+    // cover a log-link family (poisson) as well as gaussian: the zero-base-margin path is subtlest for
+    // count/gamma objectives where the booster would otherwise re-add base_score
+    return Arrays.asList(new Object[][]{
+            {true, DistributionFamily.gaussian}, {false, DistributionFamily.gaussian},
+            {true, DistributionFamily.poisson}, {false, DistributionFamily.poisson},
+    });
   }
 
-  @Parameterized.Parameter public boolean javaScoring;
+  @Parameterized.Parameter(0) public boolean javaScoring;
+  @Parameterized.Parameter(1) public DistributionFamily distribution;
 
   private XGBoostModel train(Frame train, boolean removeOffset) {
     XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -45,7 +51,7 @@ public class XGBoostRemoveOffsetEffectTest extends TestUtil {
     parms._response_column = "AGE";
     parms._offset_column = "offset";
     parms._remove_offset_effects = removeOffset;
-    parms._distribution = DistributionFamily.gaussian;
+    parms._distribution = distribution;
     parms._ntrees = 10;
     parms._max_depth = 4;
     parms._seed = 42;

@@ -231,10 +231,18 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _parms._nfolds = 0;
     }
     super.init(expensive);
-    // remove_offset_effects (GH-16851): GAM runs cross-validation inside its internal GLM, and GLM does not
-    // support remove_offset_effects with CV — fail here with a GAM-worded error instead of leaking GLM's.
-    if (_parms._remove_offset_effects && (_cvOn || _parms._glmCvOn)) {
-      error("_remove_offset_effects", "Remove offset effects is not supported with cross-validation for GAM.");
+    // remove_offset_effects (GH-16851): GAM trains an internal GLM that must also receive the flag (see
+    // copyGAMParams2GLMParams), so GLM's own restrictions would otherwise surface with GLM wording. Reject the
+    // unsupported combinations here with a GAM-worded error instead of leaking GLM's.
+    if (_parms._remove_offset_effects) {
+      if (_cvOn || _parms._glmCvOn)
+        error("_remove_offset_effects", "Remove offset effects is not supported with cross-validation for GAM.");
+      if (_parms._family == multinomial || _parms._family == ordinal)
+        error("_remove_offset_effects", "The " + _parms._family.name() + " distribution is not supported with remove offset effects for GAM.");
+      if (_parms._interactions != null || _parms._interaction_pairs != null)
+        error("_remove_offset_effects", "Remove offset effects is not supported with interactions for GAM.");
+      if (_parms._lambda_search)
+        error("_remove_offset_effects", "Remove offset effects is not supported with lambda search for GAM.");
     }
     if (_parms._bs != null) {
       boolean allMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() == _parms._bs.length;
@@ -1135,6 +1143,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       setParamField(parms, glmParam, false, field1, gamOnlyList);
       Field[] field2 = Model.Parameters.class.getDeclaredFields();
       setParamField(parms, glmParam, true, field2, gamOnlyList);
+      // remove_offset_effects (GH-16851) is load-bearing on the internal GLM: GAM reports the GLM's offset-free
+      // metrics (see scoreGenModelMetrics), so the flag MUST propagate. Set it explicitly rather than relying on
+      // the reflective base-field copy above, so this survives the field ever moving off Model.Parameters.
+      glmParam._remove_offset_effects = parms._remove_offset_effects;
       glmParam._train = trainData._key;
       glmParam._valid = valid==null?null:valid._key;
       glmParam._nfolds = _glmNFolds; // will do cv in GLM and not in GAM

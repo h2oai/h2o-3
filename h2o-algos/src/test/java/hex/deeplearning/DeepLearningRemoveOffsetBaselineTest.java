@@ -25,13 +25,12 @@ import static org.junit.Assert.assertTrue;
  * so the generic core changes (BigScore offset guard, model descriptor, _useRemoveOffsetEffects toggle)
  * are provably no-ops on the flag=false path.
  *
- * Oracle (no frozen arrays): the offset is always added at the LINK scale (net input, before link-inverse),
- * so for every family   link(predict(withOffset)) - link(predict(offsetZeroed)) == offset   exactly:
- *   gaussian (identity): predWith - predZero == offset
- *   poisson/gamma/tweedie (log): log(predWith) - log(predZero) == offset
- * DeepLearning feeds the offset straight into fpropMiniBatch (DeepLearningModel.score0), so the oracle is
- * EXACT regardless of training determinism: both frames are scored by the SAME fitted model and only the
- * offset input differs. Offset is supported for regression only (no classification / no logit case).
+ * Oracle (no frozen arrays): unlike GLM/GBM, DeepLearning applies the offset in standardized/response space
+ * rather than as a clean link-scale add, so link(predWith) - link(predZero) != offset. The test therefore
+ * pins only the two claims that must hold: (1) the offset is actually applied (scoring with vs. without it
+ * produces different predictions), and (2) default scoring is deterministic (stable across repeated scores).
+ * Both frames are scored by the SAME fitted model and only the offset input differs. Offset is supported for
+ * regression only (no classification / no logit case).
  * The offset-zeroed predictions are also the value that remove_offset_effects=true must reproduce in
  * later phases (matches the documented "add a zero offset column" workaround, Model.java:1774).
  */

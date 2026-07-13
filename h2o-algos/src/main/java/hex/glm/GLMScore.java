@@ -130,10 +130,10 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
       double x = r.innerProduct(_beta);
-      // _scoreWithOffset forces the offset-applied ("unrestricted") view (GH-16851). Currently defensive for
-      // GLM: GLM computes its own unrestricted metrics during training, so ModelBuilder's generic clone pass
-      // (the only thing that sets _scoreWithOffset) is skipped — but if that skip condition ever changes,
-      // this keeps the unrestricted view correct instead of silently returning restricted metrics.
+      // _scoreWithOffset forces the offset-applied ("unrestricted") view (GH-16851). For the main model GLM
+      // computes its own unrestricted metrics during training, so ModelBuilder's generic clone pass is skipped;
+      // but under cross-validation ModelBuilder DOES set _scoreWithOffset=true on the GLM fold-model clones
+      // (cv_scoreCVModels), so this branch is genuinely exercised there and must apply the offset.
       if(!_m._useRemoveOffsetEffects || _m._scoreWithOffset) {
         x += o;
       }
