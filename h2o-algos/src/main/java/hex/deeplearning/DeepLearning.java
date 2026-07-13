@@ -58,6 +58,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
+  @Override protected boolean supportsRemoveOffsetEffects() { return true; }
+
   @Override protected DeepLearningDriver trainModelImpl() { return new DeepLearningDriver(); }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the

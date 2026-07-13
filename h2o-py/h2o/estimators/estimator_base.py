@@ -370,15 +370,20 @@ class H2OEstimator(ModelBase):
         m._options_ = self._options_
 
         if model_id is not None and model_json is not None and metrics_class is not None:
-            # build Metric objects out of each metrics
+            # build Metric objects out of each metrics (incl. the offset-applied "unrestricted" twins
+            # reported by remove_offset_effects models, GH-16851)
             for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
-                metrics = model_json["output"].get(metric, None)
-                if metrics is not None:
-                    if metric == "cross_validation_metrics":
-                        m._is_xvalidated = True
-                    mc = metrics_class_valid if metric == "validation_metrics" else metrics_class  
-                    # fixme: never ever ever modify the original payload!!! put the metric object somewhere else
-                    model_json["output"][metric] = mc(metrics, metric, model_json["algo"])
+                for field in [metric, metric + "_unrestricted_model"]:
+                    metrics = model_json["output"].get(field, None)
+                    if metrics is not None:
+                        if field == "cross_validation_metrics":
+                            m._is_xvalidated = True
+                        # deliberately keyed on `metric` (the base name), not `field`: the unrestricted twin
+                        # must be typed/labeled like its base metric (e.g. the validation twin needs
+                        # metrics_class_valid, and MetricsBase rejects unknown `on` names)
+                        mc = metrics_class_valid if metric == "validation_metrics" else metrics_class
+                        # fixme: never ever ever modify the original payload!!! put the metric object somewhere else
+                        model_json["output"][field] = mc(metrics, metric, model_json["algo"])
             # if m._is_xvalidated:
             if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None:
                 m._xval_keys = [i["name"] for i in model_json["output"]["cross_validation_models"]]

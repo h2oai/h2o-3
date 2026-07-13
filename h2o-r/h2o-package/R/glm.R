@@ -116,7 +116,9 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param control_variables A list of predictor column indices which is used for training but removed for scoring. Experimental.
-#' @param remove_offset_effects \code{Logical}. Remove offset effects from scoring and metric calculation. Experimental. Defaults to FALSE.
+#' @param remove_offset_effects \code{Logical}. Train with the offset column but score and compute metrics as if the offset were 0. The
+#'        offset-applied ('unrestricted') metrics are reported alongside in the *_unrestricted_model output fields.
+#'        Algorithms that do not support this option reject it during validation. Experimental. Defaults to FALSE.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will

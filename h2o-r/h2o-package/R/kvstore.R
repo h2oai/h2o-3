@@ -229,6 +229,13 @@ h2o.getModel <- function(model_id) {
   model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
+  # offset-applied "unrestricted" twins reported by remove_offset_effects models (GH-16851); absent otherwise
+  if (!is.null(model$training_metrics_unrestricted_model))
+    model$training_metrics_unrestricted_model <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics_unrestricted_model)
+  if (!is.null(model$validation_metrics_unrestricted_model))
+    model$validation_metrics_unrestricted_model <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics_unrestricted_model)
+  if (!is.null(model$cross_validation_metrics_unrestricted_model))
+    model$cross_validation_metrics_unrestricted_model <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics_unrestricted_model)
   if (model_category %in% c("Binomial", "Multinomial", "Ordinal", "Regression")) { # add the missing metrics manually where
     if (!is.null(model$coefficients_table)) {
       if (typeof(model$coefficients_table[[2]])=="double") {

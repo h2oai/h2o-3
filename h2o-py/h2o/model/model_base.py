@@ -548,6 +548,29 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     break
             return self._metrics_class_valid(raw_metrics, algo=self._model_json["algo"])
 
+    def unrestricted_model_performance(self, train=False, valid=False, xval=False):
+        """
+        Offset-applied ("unrestricted") model metrics of a model trained with ``remove_offset_effects=True``.
+
+        The primary metrics of such a model are computed as if the offset were 0 (the "restricted" view);
+        these are the parallel metrics with the offset applied. Returns ``None`` for models trained without
+        ``remove_offset_effects``.
+
+        If more than one flag is set, ``valid`` takes precedence over ``xval``, which takes precedence
+        over ``train``.
+
+        :param bool train: Report the training metrics (default when no flag is set).
+        :param bool valid: Report the validation metrics.
+        :param bool xval: Report the cross-validation metrics.
+        :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass, or ``None``.
+        """
+        output = self._model_json["output"]
+        if valid:
+            return output.get("validation_metrics_unrestricted_model")
+        if xval:
+            return output.get("cross_validation_metrics_unrestricted_model")
+        return output.get("training_metrics_unrestricted_model")
+
     def scoring_history(self, as_data_frame=True):
         """
         Retrieve Model Score History.

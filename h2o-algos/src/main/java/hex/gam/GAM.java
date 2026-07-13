@@ -77,6 +77,9 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   }
 
   @Override
+  protected boolean supportsRemoveOffsetEffects() { return true; }
+
+  @Override
   public BuilderVisibility builderVisibility() {
     return BuilderVisibility.Experimental;
   }
@@ -228,6 +231,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _parms._nfolds = 0;
     }
     super.init(expensive);
+    // remove_offset_effects (GH-16851): GAM runs cross-validation inside its internal GLM, and GLM does not
+    // support remove_offset_effects with CV — fail here with a GAM-worded error instead of leaking GLM's.
+    if (_parms._remove_offset_effects && (_cvOn || _parms._glmCvOn)) {
+      error("_remove_offset_effects", "Remove offset effects is not supported with cross-validation for GAM.");
+    }
     if (_parms._bs != null) {
       boolean allMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() == _parms._bs.length;
       boolean containsMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() > 0;

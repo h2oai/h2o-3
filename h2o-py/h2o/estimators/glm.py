@@ -342,7 +342,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Experimental.
                Defaults to ``None``.
         :type control_variables: List[str], optional
-        :param remove_offset_effects: Remove offset effects from scoring and metric calculation. Experimental.
+        :param remove_offset_effects: Train with the offset column but score and compute metrics as if the offset were
+               0. The offset-applied ('unrestricted') metrics are reported alongside in the *_unrestricted_model output
+               fields. Algorithms that do not support this option reject it during validation. Experimental.
                Defaults to ``False``.
         :type remove_offset_effects: bool
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -2066,7 +2068,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def remove_offset_effects(self):
         """
-        Remove offset effects from scoring and metric calculation. Experimental.
+        Train with the offset column but score and compute metrics as if the offset were 0. The offset-applied
+        ('unrestricted') metrics are reported alongside in the *_unrestricted_model output fields. Algorithms that do
+        not support this option reject it during validation. Experimental.
 
         Type: ``bool``, defaults to ``False``.
         """
