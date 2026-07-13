@@ -16,6 +16,10 @@ module.exports = {
   searchFilter: "h2o-3-enterprise", // Algolia facet — requires registration in the central dev_docs_omnisearch crawler
   onBrokenLinks: "warn", // migration-in-progress: pages cross-link to not-yet-migrated targets; revert to "throw" when complete
   markdown: { math: true }, // KaTeX for algorithm/math pages — requires makersaurus with h2oai/makersaurus#296
+  includeCurrentVersion: true,
+  disableVersioning: false,
+  lastVersion: "current",
+  versions: { current: { label: projectVersion ? `v${projectVersion}` : "dev" } },
   ...(projectVersion && {
     // The id embeds the version so the banner reappears after each release,
     // even for users who dismissed the previous one.

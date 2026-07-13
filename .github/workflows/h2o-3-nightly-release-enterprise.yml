@@ -540,6 +540,7 @@ jobs:
         env:
           BRANCH: ${{ needs.init.outputs.branch }}
           BUILD_NUMBER: ${{ needs.init.outputs.build_number }}
+          H2O_PROJECT_VERSION: ${{ needs.build.outputs.project_version }}
         run: |
           BRANCH_SAFE=$(echo "${BRANCH}" | tr '/' '_')
           cd documentation
