@@ -51,12 +51,16 @@ dependencies {
     api "com.google.oauth-client:google-oauth-client:1.33.3"
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.18.6') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.18.9') {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
             because 'Fixes CVE-2023-35116'
             because 'Fixes sonatype-2024-0171'
-            because 'Fixes GHSA-72hv-8253-57qq'            
+            because 'Fixes GHSA-72hv-8253-57qq'
+            because 'Fixes CVE-2026-54512'
+            because 'Fixes CVE-2026-54513'
+            because 'Fixes CVE-2026-54514'
+            because 'Fixes CVE-2026-54515'
         }
         api('org.codehaus.jettison:jettison:1.5.4') {
             because 'Fixes CVE-2023-1436'
@@ -83,8 +87,17 @@ dependencies {
             because 'Fixes CVE-2023-34453'
             because 'Fixes CVE-2023-43642'
         }
-        api('org.apache.commons:commons-configuration2:2.10.1') {
+        api('org.apache.commons:commons-configuration2:2.15.0') {
             because 'Fixes CVE-2024-29131'
+            because 'Fixes CVE-2026-45205'
+        }
+        // commons-configuration2 2.15.0's FileLocatorUtils relies on commons-io's
+        // AbstractSupplier.getUnchecked() (added in newer commons-io). It declares
+        // commons-io 2.22.0 but as an optional dependency, so it is not pulled in
+        // transitively and Hadoop's older commons-io wins, causing a runtime
+        // NoSuchMethodError on S3/HDFS import. Force the version it was built against.
+        api('commons-io:commons-io:2.22.0') {
+            because 'Required by commons-configuration2 2.15.0 (getUnchecked)'
         }
         api('dnsjava:dnsjava:3.6.0') {
             because 'Fixes SNYK-JAVA-DNSJAVA-7547403'
