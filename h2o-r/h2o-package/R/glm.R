@@ -841,8 +841,8 @@ h2o.makeGLMModel <- function(model,beta) {
 #'
 #' The source model must have been trained with \code{remove_offset_effects=TRUE} or
 #' \code{control_variables} set. The derived model's training, validation, and CV metrics
-#' reflect the unrestricted view (offset effects included); its coefficients are identical
-#' to the source model.
+#' reflect the unrestricted view (offset effects and \code{control_variables} effects both
+#' included); its coefficients are identical to the source model.
 #' @param model a GLM \linkS4class{H2OModel} trained with \code{control_variables} or
 #'   \code{remove_offset_effects=TRUE}
 #' @param destination_key optional destination key for the derived model
@@ -859,21 +859,28 @@ h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
   h2o.getModel(model_id = res$model_id$name)
 }
 
-#' Create a derived GLM model that isolates the effect of one feature.
+#' Create a derived GLM model that excludes the effects of one feature.
 #'
 #' Creates a derived model from a source trained with \code{control_variables} or
-#' \code{remove_offset_effects=TRUE} (or both). When both flags are FALSE (default), behaves
-#' identically to \code{h2o.make_unrestricted_glm_model}.
+#' \code{remove_offset_effects=TRUE} (or both), excluding exactly one of the two sets of effects
+#' from scoring and metrics; the other effects (if the source model has them) remain included.
+#' When both flags are FALSE (default), behaves identically to
+#' \code{h2o.make_unrestricted_glm_model}: both the offset effects and the
+#' \code{control_variables} effects are included, and coefficients are identical to the source
+#' model.
 #' @param model a GLM \linkS4class{H2OModel} trained with \code{control_variables} or
 #'   \code{remove_offset_effects=TRUE}
 #' @param destination_key optional destination key for the derived model
-#' @param remove_control_variables_effects logical; when TRUE the derived model's metrics show
-#'   only the control-variables effect. Requires the source model to have been trained with
-#'   \code{control_variables} set.
-#' @param remove_offset_effects logical; when TRUE the derived model's metrics show only the
-#'   remove-offset-effects view. Requires the source model to have been trained with
+#' @param remove_control_variables_effects logical; when TRUE the derived model's scoring and
+#'   metrics exclude the effects of the \code{control_variables} feature (their coefficients are
+#'   zeroed out); the offset effects, if the source model has any, are still included. Requires
+#'   the source model to have been trained with \code{control_variables} set.
+#' @param remove_offset_effects logical; when TRUE the derived model's scoring and metrics exclude
+#'   the offset effects; the \code{control_variables} effects, if the source model has any, are
+#'   still included. Requires the source model to have been trained with
 #'   \code{remove_offset_effects=TRUE}. Cannot be combined with
-#'   \code{remove_control_variables_effects=TRUE}.
+#'   \code{remove_control_variables_effects=TRUE} — only one set of effects can be excluded at a
+#'   time.
 #' @export
 h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_control_variables_effects = FALSE, remove_offset_effects = FALSE) {
   stopifnot("Source model must be trained with control_variables or remove_offset_effects=TRUE." =
