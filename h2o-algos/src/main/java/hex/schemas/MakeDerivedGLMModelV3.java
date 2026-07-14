@@ -16,9 +16,15 @@ public class MakeDerivedGLMModelV3 extends SchemaV3<Iced, MakeDerivedGLMModelV3>
     @API(help = "destination key", required = false, direction = API.Direction.INPUT)
     public String dest;
 
-    @API(help = "remove offset effects flag", required = false, direction = API.Direction.INPUT)
+    @API(help = "When true, exclude the offset effects from the derived model's scoring and metrics; " +
+            "the control-variables effects (if any) stay included. Requires the source model to have " +
+            "been trained with remove_offset_effects=true. Cannot be combined with " +
+            "remove_control_variables_effects.", required = false, direction = API.Direction.INPUT)
     public boolean remove_offset_effects;
 
-    @API(help = "remove control variables effects flag", required = false, direction = API.Direction.INPUT)
+    @API(help = "When true, exclude the control-variables effects from the derived model's scoring and " +
+            "metrics; the offset effects (if any) stay included. Requires the source model to have been " +
+            "trained with control_variables set. Cannot be combined with remove_offset_effects.",
+            required = false, direction = API.Direction.INPUT)
     public boolean remove_control_variables_effects;
 }

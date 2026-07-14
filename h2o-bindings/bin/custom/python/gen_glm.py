@@ -368,8 +368,8 @@ def class_extensions():
 
         The source model must have been trained with ``remove_offset_effects=True`` or
         ``control_variables`` set. The derived model's training, validation, and CV metrics
-        reflect the unrestricted view (offset effects included); its coefficients are identical
-        to the source model.
+        reflect the unrestricted view (offset effects and ``control_variables`` effects both
+        included); its coefficients are identical to the source model.
 
         :param dest: optional destination key for the derived model.
 
@@ -402,23 +402,27 @@ def class_extensions():
 
     def make_derived_glm_model(self, dest=None, remove_control_variables_effects=False, remove_offset_effects=False):
         """
-        Create a derived model that isolates the effect of one feature — ``control_variables`` or
-        ``remove_offset_effects`` — from a source model trained with either or both features.
+        Create a derived model that excludes the effects of one feature — ``control_variables`` or
+        the offset — from a source model trained with either or both features. Exactly one set of
+        effects can be excluded per call; the other effects (if the source model has them) remain
+        included.
 
         When both ``remove_control_variables_effects=False`` and ``remove_offset_effects=False``
         (the defaults), this behaves identically to :meth:`make_unrestricted_glm_model`: the
-        derived model exposes the with-offset view of the source model.
+        derived model's scoring and metrics include both the offset and the ``control_variables``
+        effects, and its coefficients are identical to the source model.
 
         :param dest: optional destination key for the derived model.
-        :param remove_control_variables_effects: when ``True``, the derived model's metrics show
-               only the effect of the ``control_variables`` feature (offset contribution is
-               excluded from scoring). Requires the source model to have been trained with
-               ``control_variables`` set.
-        :param remove_offset_effects: when ``True``, the derived model's metrics show only the
-               effect of ``remove_offset_effects`` (control-variable contribution is excluded
-               from scoring). Requires the source model to have been trained with
+        :param remove_control_variables_effects: when ``True``, the derived model's scoring and
+               metrics exclude the effects of the ``control_variables`` feature (their coefficients
+               are zeroed out); the offset effects, if the source model has any, are still included.
+               Requires the source model to have been trained with ``control_variables`` set.
+        :param remove_offset_effects: when ``True``, the derived model's scoring and metrics
+               exclude the offset effects; the ``control_variables`` effects, if the source model
+               has any, are still included. Requires the source model to have been trained with
                ``remove_offset_effects=True``. Cannot be combined with
-               ``remove_control_variables_effects=True``.
+               ``remove_control_variables_effects=True`` — only one set of effects can be excluded
+               at a time.
 
         :examples:
 
@@ -431,10 +435,10 @@ def class_extensions():
         >>> # Unrestricted (with-offset) view — same as make_unrestricted_glm_model()
         >>> m_unrestricted = m.make_derived_glm_model()
         >>> print(m_unrestricted.model_performance(d).residual_deviance())
-        >>> # Isolate the control-variables effect only
+        >>> # Exclude the control-variables effects (offset effects still included)
         >>> m_cv = m.make_derived_glm_model(remove_control_variables_effects=True)
         >>> print(m_cv.model_performance(d).residual_deviance())
-        >>> # Isolate the remove-offset-effects effect only
+        >>> # Exclude the offset effects (control-variables effects still included)
         >>> m_ro = m.make_derived_glm_model(remove_offset_effects=True)
         >>> print(m_ro.model_performance(d).residual_deviance())
         """
