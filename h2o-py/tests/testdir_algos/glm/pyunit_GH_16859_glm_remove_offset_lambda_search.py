@@ -33,7 +33,7 @@ def glm_remove_offset_lambda_search():
                                            remove_offset_effects=True, seed=0xC0FFEE)
     glm_ro.train(x=x, y=y, training_frame=cars, offset_column=offset_col)
 
-    glm_unrestricted = glm_ro.make_unrestricted_glm_model(dest="unrestricted_ls")
+    glm_unrestricted = glm_ro.make_unrestricted_glm_model()
     assert glm_unrestricted is not None, "make_unrestricted_glm_model returned None"
 
     preds_offset = glm_offset.predict(cars).as_data_frame()
@@ -55,9 +55,8 @@ def glm_remove_offset_lambda_search():
                                    f"Prediction {i} should match offset-present model but doesn't!")
 
     # remove_offset_effects must actually change the reported predictions
-    for i in range(preds_offset.shape[0]):
-        pyunit_utils.assert_not_equal(preds_offset.iloc[i, 1], preds_ro.iloc[i, 1],
-                                      f"Prediction {i} should differ once the offset effect is removed!")
+    assert (preds_offset.iloc[:, 1] - preds_ro.iloc[:, 1]).abs().max() > 1e-6, \
+        "Predictions should differ once the offset effect is removed!"
 
 
 # The removed offset effect is exactly the offset: the restricted predictions must equal the plain

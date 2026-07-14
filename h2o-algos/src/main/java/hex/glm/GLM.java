@@ -1634,14 +1634,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               "convergence"};
       int num2Copy =  _parms._lambda_search ? colHeaders2Restore.length : colHeaders2Restore.length-2;
       int[] colHeadersIndex = grabHeaderIndex(scoringHistory, num2Copy, colHeaders2Restore);
-      if (_parms._lambda_search)
-        _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
-      else {
+      if (_parms._lambda_search) {
+        if (_model._parms._remove_offset_effects) {
+          // Mirror the write side (computeSubmodel): the main _scoring_history holds the restricted
+          // (offset-removed) lambda history, _scoring_history_unrestricted_model the unrestricted one.
+          _lambdaSearchScoringHistoryRestricted.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
+          TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
+          _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
+        } else {
+          _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
+        }
+      } else {
         _scoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
-      }
-      if (_model._parms._control_variables != null || _model._parms._remove_offset_effects) {
-        TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
-        _scoringHistoryUnrestrictedModel.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
+        if (_model._parms._control_variables != null || _model._parms._remove_offset_effects) {
+          TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
+          _scoringHistoryUnrestrictedModel.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
+        }
       }
       if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
           TwoDimTable scoringHistoryRestrictedRO = _model._output._scoring_history_restricted_model_ro;

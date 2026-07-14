@@ -21,6 +21,7 @@ import water.runner.H2ORunner;
 import water.util.TwoDimTable;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.io.FileOutputStream;
 import java.util.Arrays;
 import java.util.Random;
@@ -360,7 +361,7 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             h2oPreds = glm.score(train);
             Scope.track_generic(h2oPreds);
 
-            File mojoFile = File.createTempFile("glm_mojo", ".zip");
+            File mojoFile = Files.createTempFile("glm_mojo", ".zip").toFile();
             mojoFile.deleteOnExit();
             try (FileOutputStream fos = new FileOutputStream(mojoFile)) {
                 glm.getMojo().writeTo(fos);
@@ -642,6 +643,149 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
     }
 
     /**
+     * Restoring from a checkpoint must keep the restricted and unrestricted lambda scoring histories
+     * separate: with remove_offset_effects the main _scoring_history holds the restricted (offset-removed)
+     * table and _scoring_history_unrestricted_model the unrestricted one. A previous restore swapped them
+     * (restored the restricted table into the unrestricted history object and never restored the restricted
+     * one), so the continued model must still expose an unrestricted history that matches the plain offset
+     * model and a distinct restricted history.
+     */
+    @Test
+    public void checkpointRestoreKeepsRestrictedAndUnrestrictedHistoriesSeparate() {
+        Frame train = null;
+        GLMModel glmRO = null, continuedRO = null, glmPlain = null, continuedPlain = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            // Continuing an already-finished lambda_search checkpoint re-explores lambdas, so the continued
+            // model differs from a fresh one. remove_offset_effects does not change the fit, so the invariant
+            // is that a continued RO model matches a plain offset model put through the identical pipeline.
+            // training mutates the params (fills in _lambda etc.), so each model gets a fresh params object.
+
+            // RO model, then continued from its checkpoint (runs restoreScoringHistoryFromCheckpoint)
+            GLMModel.GLMParameters roParams = baseParams(train);
+            roParams._solver = GLMModel.GLMParameters.Solver.IRLSM;  // GLM checkpoint is only supported for IRLSM
+            roParams._remove_offset_effects = true;
+            glmRO = new GLM(roParams).trainModel().get();
+            Scope.track_generic(glmRO);
+
+            GLMModel.GLMParameters roCont = baseParams(train);
+            roCont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            roCont._remove_offset_effects = true;
+            roCont._checkpoint = glmRO._key;
+            continuedRO = new GLM(roCont).trainModel().get();
+            Scope.track_generic(continuedRO);
+
+            // plain offset model continued through the identical pipeline
+            GLMModel.GLMParameters plainParams = baseParams(train);
+            plainParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            glmPlain = new GLM(plainParams).trainModel().get();
+            Scope.track_generic(glmPlain);
+
+            GLMModel.GLMParameters plainCont = baseParams(train);
+            plainCont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            plainCont._checkpoint = glmPlain._key;
+            continuedPlain = new GLM(plainCont).trainModel().get();
+            Scope.track_generic(continuedPlain);
+
+            // core fix: offset + lambda_search + checkpoint continuation no longer crashes
+            assertNotNull("RO model must continue from checkpoint", continuedRO);
+            assertNotNull("plain offset model must continue from checkpoint", continuedPlain);
+
+            TwoDimTable restricted = continuedRO._output._scoring_history;
+            TwoDimTable unrestricted = continuedRO._output._scoring_history_unrestricted_model;
+            assertNotNull("restricted scoring history must survive checkpoint restore", restricted);
+            assertNotNull("unrestricted scoring history must survive checkpoint restore", unrestricted);
+            assertTrue("restricted scoring history must be non-empty", restricted.getRowDim() > 0);
+            assertTrue("unrestricted scoring history must be non-empty", unrestricted.getRowDim() > 0);
+            assertNull("plain offset model has no unrestricted scoring history",
+                    continuedPlain._output._scoring_history_unrestricted_model);
+
+            // mapping fix: both the restricted and unrestricted lambda histories are restored from the
+            // checkpoint, so they cover the same lambdas. Before the fix the restricted history was never
+            // restored (only the unrestricted object was, from the wrong table), leaving it short.
+            assertEquals("restricted and unrestricted scoring histories must span the same lambdas",
+                    unrestricted.getRowDim(), restricted.getRowDim());
+        } finally {
+            if (train != null) train.remove();
+            if (glmRO != null) glmRO.remove();
+            if (continuedRO != null) continuedRO.remove();
+            if (glmPlain != null) glmPlain.remove();
+            if (continuedPlain != null) continuedPlain.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Resuming a checkpoint whose lambda search was interrupted mid-way (max_iterations caps the run before
+     * all lambdas are fit) is the case the root-cause fix in ComputationState.copyCheckModel2State targets:
+     * the resumed candidate beta must be rebuilt from the last persisted submodel, not scattered through a
+     * mismatched index set. The continued RO model must finish the search (more submodels than the
+     * checkpoint) and its unrestricted part must still recover a plain offset model continued identically.
+     */
+    @Test
+    public void midSearchCheckpointRestoreWorksWithOffset() {
+        Frame train = null;
+        GLMModel glmRO = null, continuedRO = null, glmPlain = null, continuedPlain = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            // low max_iterations stops the lambda search partway, so the checkpoint holds only a few submodels
+            GLMModel.GLMParameters roParams = baseParams(train);
+            roParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            roParams._remove_offset_effects = true;
+            roParams._max_iterations = 8;
+            glmRO = new GLM(roParams).trainModel().get();
+            Scope.track_generic(glmRO);
+
+            GLMModel.GLMParameters roCont = baseParams(train);
+            roCont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            roCont._remove_offset_effects = true;
+            roCont._checkpoint = glmRO._key;  // continue with the default (uncapped) iterations to finish
+            continuedRO = new GLM(roCont).trainModel().get();
+            Scope.track_generic(continuedRO);
+
+            GLMModel.GLMParameters plainParams = baseParams(train);
+            plainParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            plainParams._max_iterations = 8;
+            glmPlain = new GLM(plainParams).trainModel().get();
+            Scope.track_generic(glmPlain);
+
+            GLMModel.GLMParameters plainCont = baseParams(train);
+            plainCont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            plainCont._checkpoint = glmPlain._key;
+            continuedPlain = new GLM(plainCont).trainModel().get();
+            Scope.track_generic(continuedPlain);
+
+            // the checkpoint was genuinely mid-search and continuation advanced it
+            assertTrue("checkpoint must stop before the full lambda search completes",
+                    glmRO._output._submodels.length < roParams._nlambdas);
+            assertTrue("continuation must add more submodels than the checkpoint held",
+                    continuedRO._output._submodels.length > glmRO._output._submodels.length);
+
+            // mapping fix still holds after a mid-search resume
+            assertEquals("restricted and unrestricted scoring histories must span the same lambdas",
+                    continuedRO._output._scoring_history_unrestricted_model.getRowDim(),
+                    continuedRO._output._scoring_history.getRowDim());
+
+            // remove_offset_effects does not change the fit: continued RO recovers the continued plain model
+            assertEquals("lambda_best of mid-search-continued RO model must match continued plain offset model",
+                    continuedPlain._output.lambda_best(), continuedRO._output.lambda_best(), 0.0);
+        } finally {
+            if (train != null) train.remove();
+            if (glmRO != null) glmRO.remove();
+            if (continuedRO != null) continuedRO.remove();
+            if (glmPlain != null) glmPlain.remove();
+            if (continuedPlain != null) continuedPlain.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
      * Mostly-zero standardized numeric predictors drive GLM down the sparse chunk path. The restricted
      * prediction must exclude the offset - i.e. equal innerProduct(denormalized beta) with the offset
      * dropped - and the MOJO must reproduce the in-H2O restricted predictions (the MOJO drops the offset
@@ -714,7 +858,7 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             }
 
             // MOJO must reproduce the in-H2O restricted predictions on sparse data
-            File mojoFile = File.createTempFile("glm_sparse_mojo", ".zip");
+            File mojoFile = Files.createTempFile("glm_sparse_mojo", ".zip").toFile();
             mojoFile.deleteOnExit();
             try (FileOutputStream fos = new FileOutputStream(mojoFile)) {
                 ro.getMojo().writeTo(fos);

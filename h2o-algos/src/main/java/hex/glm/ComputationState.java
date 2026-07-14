@@ -197,17 +197,18 @@ public final class ComputationState {
     GLMGradientInfo ginfo = new GLMGradientSolver(_job, _parms, _dinfo, 0, activeBC(), _modelBetaInfo,
             _penaltyMatrix, _gamColIndices).getGradient(expandedBeta);  // gradient obtained with zero penalty
     updateState(expandedBeta, ginfo);
-    // make sure model._betaCndCheckpoint is of the right size
+    // Rebuild the resume candidate beta (model._betaCndCheckpoint) from the last submodel, which is the
+    // authoritative persisted state - continuation resumes the lambda loop from _submodels.length. It must
+    // NOT be reconstructed from the previously stored model._betaCndCheckpoint: that vector is in the
+    // solver's active-column basis, which can contain coefficients shrunk to exactly zero (dropped by the
+    // submodel, whose idxs index only the non-zero coefficients) or reflect a different active-set snapshot.
+    // Scattering it through the submodel's non-zero index set is therefore invalid in general (it crashed
+    // for an offset column under lambda_search, where the two bases differ). expandedBeta already holds the
+    // last submodel's beta at full length.
     if (model._betaCndCheckpoint != null) {
-      if (_activeData._activeCols == null || (_activeData._activeCols.length != model._betaCndCheckpoint.length)) {
-        double[] betaCndCheckpoint = modelOutput._submodels[submodelInd].idxs == null
-                ? model._betaCndCheckpoint
-                : ArrayUtils.expandAndScatter(model._betaCndCheckpoint, coefLen,
-                modelOutput._submodels[submodelInd].idxs); // expand betaCndCheckpoint out
-        if (_activeData._activeCols != null) // contract the betaCndCheckpoint to the right activeCol length
-          betaCndCheckpoint = extractSubRange(betaCndCheckpoint.length, 0, activeData()._activeCols, betaCndCheckpoint);
-        model._betaCndCheckpoint = betaCndCheckpoint;  
-      }
+      model._betaCndCheckpoint = _activeData._activeCols == null
+              ? expandedBeta
+              : extractSubRange(expandedBeta.length, 0, activeData()._activeCols, expandedBeta);
     }
   }
   
