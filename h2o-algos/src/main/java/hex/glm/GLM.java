@@ -3902,7 +3902,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           else
             validDev = multinomial.equals(_parms._family)
                     ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
-                    : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta()), _parms._remove_offset_effects).doAll(_validDinfo._adaptedFrame).avgDev();
+                    // Keep the offset in: this unrestricted validation deviance feeds both the unrestricted
+                    // lambda history and the Submodel that pickBestModel selects on. It must match the plain
+                    // offset model so remove_offset_effects picks the same best submodel. The restricted
+                    // (offset-removed) validation deviance is computed separately below as validDevRestricted.
+                    : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame).avgDev();
         }
         Log.info(LogMsg("train deviance = " + trainDev + ", valid deviance = " + validDev));
         double xvalDev = ((_xval_deviances == null) || (_xval_deviances.length <= i)) ? -1 : _xval_deviances[i];
