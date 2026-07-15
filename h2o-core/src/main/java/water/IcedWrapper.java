@@ -271,7 +271,7 @@ public class IcedWrapper extends Iced {
       else if (t.equals("D"))
         return ab.putJSONA8d(d_ar);
       else if (t.equals("Bo"))
-        return writeBooleanArrayAsJSON(ab);
+        return ab.putJSONAZ(b_ar);
       else if (t.equals("S"))
         return ab.putJSONAStr(s_ar);
       else if (t.equals("E"))
@@ -305,15 +305,5 @@ public class IcedWrapper extends Iced {
 
     throw H2O.fail("Unhandled type: " + t);
     // TODO: arrays
-  }
-
-  private AutoBuffer writeBooleanArrayAsJSON(AutoBuffer ab) {
-    if (b_ar == null) return ab.putJNULL();
-    ab.put1('[');
-    for (int i = 0; i < b_ar.length; i++) {
-      if (i > 0) ab.put1(',');
-      ab.putJSONStrUnquoted(b_ar[i] ? "true" : "false");
-    }
-    return ab.put1(']');
   }
 }
