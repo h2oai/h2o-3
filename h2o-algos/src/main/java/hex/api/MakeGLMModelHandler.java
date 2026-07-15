@@ -56,7 +56,11 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
-    m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+    // beta above is in the raw (denormalized) coefficient space, so the derived model's DataInfo must
+    // not carry the source's STANDARDIZE transform, or coef_norm()/denormalizeBeta() will re-standardize it.
+    DataInfo dinfo = model.dinfo().clone();
+    dinfo.setPredictorTransform(TransformType.NONE);
+    m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
     DKV.put(m._key, m);
