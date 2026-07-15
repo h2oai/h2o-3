@@ -56,13 +56,11 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
-    // KNOWN BUG (see https://github.com/h2oai/h2o-3/issues/16890): beta above is in the raw
-    // (denormalized) coefficient space, but model.dinfo() is reused as-is (including the source's
-    // STANDARDIZE transform, if any) instead of a NONE-transform clone. That makes isStandardized()
-    // report true for a model whose beta isn't actually standardized, so downstream consumers gated
-    // on it (e.g. beta(lambda) -> DataInfo.denormalizeBeta()) will spuriously rescale already-raw
-    // values using the source's _normMul/_normSub.
-    m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+    // beta above is in the raw (denormalized) coefficient space, so the derived model's DataInfo must
+    // not carry the source's STANDARDIZE transform, or coef_norm()/denormalizeBeta() will re-standardize it.
+    DataInfo dinfo = model.dinfo().clone();
+    dinfo.setPredictorTransform(TransformType.NONE);
+    m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
     DKV.put(m._key, m);
