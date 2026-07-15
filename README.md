@@ -667,11 +667,13 @@ Documentation for each bleeding edge nightly build is available on the [nightly 
 
 H2O-3 can send anonymous usage telemetry to help us prioritize features and platforms. It is **opt-in and off by default** — nothing is sent unless you turn it on. Here is what happens when enabled:
 
+- **Purpose.** Limited operational/runtime telemetry, used only in aggregate to operate, secure, support, maintain, and improve H2O-3 — common deployment patterns, compatibility/support prioritization, and abuse detection. Never for sales prospecting, lead identification, or user surveillance.
 - **Default is off (opt-in).** Nothing is sent until you explicitly turn telemetry on; the choice is remembered across sessions.
 - **One small ping per `h2o.init()`** plus one per major user action (training, scoring, MOJO download, upload, import, save/load, AutoML). Each ping is ~200 bytes of JSON over HTTPS.
 - **Standalone & Hadoop clusters too.** A cluster started directly with `java -jar h2o.jar` or `hadoop jar h2odriver.jar` can send one ping when the cluster forms — once telemetry is turned on. Same fields.
 - **What's sent:** version strings, OS, an ephemeral session UUID regenerated on every `h2o.init()`, a Unix timestamp, the algorithm name, and coarse bucket labels for counts (rows, columns, durations, sizes) — reported as ranges, not raw integers. One exception: a small cluster's exact node count (1–16) is sent, since 1-node vs 4-node is operationally meaningful; larger clusters are bucketed.
-- **What's never sent:** code, file paths, dataset names, model names, column names, hyperparameter values, hostnames, usernames, email addresses, or any user-generated content.
+- **What's never sent:** code, dataset contents, prompts, model inputs or outputs, training data, prediction values, file paths or URLs, dataset/model names, column names, hyperparameter values, hostnames, usernames, email addresses, precise location, or any other customer business data.
+- **IP addresses:** inherently visible to any HTTPS request; the receiver may use them transiently for coarse geographic region and network attribution, and does not persist them. The payload itself contains no location data.
 - **Turn it on** — any of the following enables telemetry:
   - **Programmatic, persistent:** call `h2o.set_telemetry(True)` (`h2o.set_telemetry(TRUE)` in R), and read the state with `h2o.telemetry_enabled()`. Applies immediately and is saved under `~/.h2oai` so later sessions honor it.
   - **This session only:** pass `telemetry=True` (Python) / `telemetry = TRUE` (R) to `h2o.init()` or `h2o.connect()`.

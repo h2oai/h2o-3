@@ -3,6 +3,8 @@ Telemetry
 
 Starting with version **3.46.0.12**, H2O-3 can send anonymous usage telemetry to help the team prioritize features and platforms. It is **opt-in and off by default** — nothing is sent unless you turn it on. It is also designed to be invisible when enabled: every send is fire-and-forget with a short timeout, so if the receiver is unreachable your code behaves exactly as if telemetry never ran — it never blocks, raises, or retries.
 
+It is limited to operational and runtime characteristics, and is used only in aggregate to help H2O.ai operate, secure, support, maintain, and improve H2O-3 — understanding common deployment patterns, prioritizing compatibility and support efforts, and detecting abuse or malicious activity. It is **not** used for sales prospecting, lead identification, or user surveillance.
+
 What is sent (when enabled)
 ---------------------------
 
@@ -12,7 +14,9 @@ What is sent (when enabled)
 What is never sent
 ------------------
 
-Code, file paths, dataset or model names, column names, parameter values, hostnames, usernames, email addresses, or any user-generated content.
+Code, dataset contents, prompts, model inputs or outputs, training data, prediction values, file paths or URLs, dataset or model names, column names, parameter values, hostnames, usernames, email addresses, precise location, or any other customer business data.
+
+Source IP addresses are inherently visible to any HTTPS request; the receiver may use them transiently to derive a coarse geographic region and for network attribution, and does not persist or store them. The telemetry payload itself contains no location data.
 
 Enabling telemetry
 ------------------
