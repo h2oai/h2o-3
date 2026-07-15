@@ -33,9 +33,11 @@ import java.util.UUID;
  *   <li><b>Never blocks or throws:</b> runs on a daemon thread, swallows every
  *       exception, hard-caps every wait. Startup and shutdown are never delayed.</li>
  *   <li><b>Java 8 compatible:</b> plain {@link HttpURLConnection}, no Java 11+ API.</li>
- *   <li><b>Opt-out by default-on:</b> honored via the {@code DO_NOT_TRACK} env var
- *       (reacts to 1/0/true/false; always wins) or {@code -Dsys.ai.h2o.telemetry.disabled=true}.
- *       These are the only switches that flip {@link #isEnabled()} / the status row.</li>
+ *   <li><b>Opt-in by default-off:</b> telemetry stays off unless it is explicitly
+ *       enabled by setting the disable flag to false — {@code -Dsys.ai.h2o.telemetry.disabled=false}.
+ *       The {@code DO_NOT_TRACK} env var (reacts to 1/0/true/false) and
+ *       {@code -Dsys.ai.h2o.telemetry.disabled=true} force it off. These switches flip
+ *       {@link #isEnabled()} / the status row.</li>
  *   <li><b>No double-count:</b> a Python/R-spawned local server sets
  *       {@code -Dsys.ai.h2o.telemetry.clientLaunched=true}; the calling client
  *       already reports that session, so the spawned JVM skips its {@code cluster_started}.
@@ -135,15 +137,18 @@ public class JvmTelemetry {
 
   private static boolean disabled() {
     // A client-mode node (-client) backs some other session and is never a
-    // server cluster; it must not emit a jvm "init".
+    // server cluster; it must not emit cluster_started.
     if (H2O.ARGS != null && H2O.ARGS.client) return true;
     // Never emit from a test JVM. The production h2o.jar does not bundle JUnit,
     // so its presence on the classpath reliably marks a test/CI run (covers the
     // H2OStarter-based test node-starters and gradle-spawned multinode tests).
     if (runningUnderJUnit()) return true;
     if (envTruthy("DO_NOT_TRACK")) return true;   // cross-tool standard opt-out; always wins
-    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "telemetry.disabled")) return true;
-    return false;
+    // Opt-in: off by default. Enabled only when the (unchanged) disable flag is
+    // explicitly set to false — i.e. -Dsys.ai.h2o.telemetry.disabled=false.
+    // Unset, "true", or anything else keeps telemetry off.
+    String p = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "telemetry.disabled");
+    return p == null || !p.trim().equalsIgnoreCase("false");
   }
 
   // Dedup, not an opt-out: a client-spawned local server skips its own cluster_started
