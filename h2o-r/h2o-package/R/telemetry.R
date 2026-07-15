@@ -37,13 +37,13 @@
 # across function calls without leaking package globals.
 #
 # disabled_by_kwarg starts at the client-wide default when the user never passes
-# the telemetry arg: FALSE = telemetry on (opt-out model). Flip this one line to
-# TRUE to make the whole client opt-in (a bare h2o.init() then stays off until
-# the user passes telemetry = TRUE).
+# the telemetry arg: TRUE = telemetry off (opt-in model) — a bare h2o.init()
+# stays off until the user opts in (telemetry = TRUE, h2o.set_telemetry(TRUE),
+# or a persisted/config opt-in). Flip to FALSE for the opt-out model (default-on).
 .h2o.telemetry.state <- new.env(parent = emptyenv())
 .h2o.telemetry.state$session_id        <- NULL
 .h2o.telemetry.state$java_info         <- NULL  # cached `java -version` parse
-.h2o.telemetry.state$disabled_by_kwarg <- FALSE # programmatic opt-out via h2o.init(telemetry = FALSE); FALSE = default-on
+.h2o.telemetry.state$disabled_by_kwarg <- TRUE  # opt-in default: off until the user opts in
 
 #' Programmatic opt-out, set by `h2o.init(telemetry = FALSE)`.
 #'

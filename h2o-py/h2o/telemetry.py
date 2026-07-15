@@ -75,10 +75,11 @@ _session_id = None  # type: str | None
 # (or until set_disabled(False) is called).
 #
 # Its initial value is the client-wide default when the user never passes the
-# telemetry kwarg: False = telemetry on (opt-out model). Flip this one line to
-# True to make the whole client opt-in (a bare h2o.init()/h2o.connect() then
-# stays off until the user passes telemetry=True).
-_disabled_by_kwarg = False
+# telemetry kwarg: True = telemetry off (opt-in model) — a bare
+# h2o.init()/h2o.connect() stays off until the user opts in (telemetry=True,
+# h2o.set_telemetry(True), or a persisted/config opt-in). Flip to False for the
+# opt-out model (on by default unless the user opts out).
+_disabled_by_kwarg = True
 
 # Client state persisted under the user's home config dir. The full path is
 # resolved per call (see _config_dir) so a changed HOME / test sandbox is honored.
