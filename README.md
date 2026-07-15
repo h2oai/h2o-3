@@ -665,19 +665,19 @@ Documentation for each bleeding edge nightly build is available on the [nightly 
 <a name="Privacy"></a>
 ## 9. Privacy & Telemetry
 
-H2O-3 sends anonymous usage telemetry to help us prioritize features and platforms. Here is what happens:
+H2O-3 can send anonymous usage telemetry to help us prioritize features and platforms. It is **opt-in and off by default** — nothing is sent unless you turn it on. Here is what happens when enabled:
 
-- **Default is on.** Opt-out, industry-standard for open-source server software. Setting an environment variable below stops everything instantly.
+- **Default is off (opt-in).** Nothing is sent until you explicitly turn telemetry on; the choice is remembered across sessions.
 - **One small ping per `h2o.init()`** plus one per major user action (training, scoring, MOJO download, upload, import, save/load, AutoML). Each ping is ~200 bytes of JSON over HTTPS.
-- **Standalone & Hadoop clusters too.** A cluster started directly with `java -jar h2o.jar` or `hadoop jar h2odriver.jar` — even with no Python/R client attached — sends one ping when the cluster forms. Same fields, same opt-outs.
+- **Standalone & Hadoop clusters too.** A cluster started directly with `java -jar h2o.jar` or `hadoop jar h2odriver.jar` can send one ping when the cluster forms — once telemetry is turned on. Same fields.
 - **What's sent:** version strings, OS, an ephemeral session UUID regenerated on every `h2o.init()`, a Unix timestamp, the algorithm name, and coarse bucket labels for counts (rows, columns, durations, sizes) — reported as ranges, not raw integers. One exception: a small cluster's exact node count (1–16) is sent, since 1-node vs 4-node is operationally meaningful; larger clusters are bucketed.
 - **What's never sent:** code, file paths, dataset names, model names, column names, hyperparameter values, hostnames, usernames, email addresses, or any user-generated content.
-- **Opt out anytime** — any of the following disables telemetry (any opt-out wins; `DO_NOT_TRACK` always takes precedence):
-  - **Environment variable:** `export DO_NOT_TRACK=1` (the cross-tool standard).
-  - **Programmatic, persistent:** call the setter `h2o.set_telemetry(False)` to opt out (or `True` to opt back in) and the getter `h2o.telemetry_enabled()` to read the current state. Both are available in the Python and R clients (`h2o.set_telemetry(FALSE)` in R), apply immediately, and are saved under `~/.h2oai` so later sessions honor the choice.
-  - **This session only:** pass `telemetry=False` (Python) / `telemetry = FALSE` (R) to `h2o.init()` or `h2o.connect()`.
-  - **Config file:** add `general.telemetry = false` under `[general]` in `~/.h2oconfig`.
-  - **JVM cluster:** set `DO_NOT_TRACK=1` in its environment, or pass `-Dsys.ai.h2o.telemetry.disabled=true`.
+- **Turn it on** — any of the following enables telemetry:
+  - **Programmatic, persistent:** call `h2o.set_telemetry(True)` (`h2o.set_telemetry(TRUE)` in R), and read the state with `h2o.telemetry_enabled()`. Applies immediately and is saved under `~/.h2oai` so later sessions honor it.
+  - **This session only:** pass `telemetry=True` (Python) / `telemetry = TRUE` (R) to `h2o.init()` or `h2o.connect()`.
+  - **Config file:** add `general.telemetry = true` under `[general]` in `~/.h2oconfig`.
+  - **JVM cluster:** start it with `-Dsys.ai.h2o.telemetry.disabled=false` (off unless this flag is explicitly set to false).
+- **Keep it off / turn it back off** — `DO_NOT_TRACK=1` is a hard opt-out that always wins (honored by Python, R, and the JVM server); or use `h2o.set_telemetry(False)`, `telemetry=False`, `general.telemetry = false`, or (JVM) `-Dsys.ai.h2o.telemetry.disabled=true`.
 - **Fire-and-forget.** Every call runs on a background task with a 2-second timeout. If the receiver is unreachable, your code returns exactly as if telemetry never happened — never blocks, never raises, never retries.
 
 
