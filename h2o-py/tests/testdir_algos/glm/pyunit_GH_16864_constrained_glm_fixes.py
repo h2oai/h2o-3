@@ -6,15 +6,15 @@ import pandas as pd
 
 
 def data_prep(seed, n=10000):
-    np.random.seed(seed)
-    x1 = np.random.normal(0, 10, n)
-    x2 = np.random.normal(10, 100, n)
-    x3 = np.random.normal(20, 200, n)
-    x4 = np.random.normal(30, 3000, n)
-    x5 = np.random.normal(400, 4000, n)
+    rng = np.random.default_rng(seed)
+    x1 = rng.normal(0, 10, n)
+    x2 = rng.normal(10, 100, n)
+    x3 = rng.normal(20, 200, n)
+    x4 = rng.normal(30, 3000, n)
+    x5 = rng.normal(400, 4000, n)
 
     y_raw = np.sin(x1) * 100 + np.sin(x2) * 100 + x3 / 20 + x3 / 30 + x5 / 400
-    y = np.random.normal(y_raw, 20)
+    y = rng.normal(y_raw, 20)
 
     data = {'x1': x1, 'x2': x2, 'x3': x3, 'x4': x4, 'x5': x5, 'y': y}
     return h2o.H2OFrame(pd.DataFrame(data))
@@ -22,20 +22,16 @@ def data_prep(seed, n=10000):
 
 def test_equality_constraint_enforced():
     """
-    Bug 1 regression test (GH-16864): The augmented Lagrangian outer loop used to exit on the very
-    first inner-loop iteration because (!progress(...) && !gradSmallEnough) short-circuited before
-    λ/c_k were ever updated.  As a result, the equality constraint was silently ignored.
-
-    This test verifies that the equality constraint x2 + x3 = 0 is actually satisfied by the
-    constrained model (|x2 + x3| < 0.1) and that the unconstrained model does NOT satisfy it.
+    GH-16864: verifies the constrained GLM solver actually enforces linear equality constraints
+    (x2 + x3 = 0) instead of silently ignoring them.
     """
     train_data = data_prep(123)
-    common_params = dict(
-        family='gaussian', link='identity',
-        lambda_=0, seed=1234, nfolds=0,
-        compute_p_values=True, calc_like=True,
-        solver='irlsm', standardize=True,
-    )
+    common_params = {
+        'family': 'gaussian', 'link': 'identity',
+        'lambda_': 0, 'seed': 1234, 'nfolds': 0,
+        'compute_p_values': True, 'calc_like': True,
+        'solver': 'irlsm', 'standardize': True,
+    }
 
     # Equality constraint: x2 + x3 = 0
     linear_constraints = h2o.H2OFrame([
@@ -71,15 +67,8 @@ def test_equality_constraint_enforced():
 
 def test_beta_and_linear_constraints_no_npe():
     """
-    Bug 2 regression test (GH-16864): Combining beta_constraints with linear_constraints threw an
-    NPE (or produced wrong constraint counts) due to three defects in ConstrainedGLMUtils:
-      - countNumConst used _lessThanEqualToConstraints (null before solver runs) and divided by 2
-      - printConstraintSummary referenced _lessThanEqualToConstraints instead of *Linear
-      - getConstraintFromIndex indexed into _lessThanEqualToConstraints instead of *Linear
-
-    This test verifies:
-      1. lower-bound-only beta constraint + linear constraint: no exception, constraint satisfied
-      2. upper-bound-only beta constraint + linear constraint: no exception, constraint satisfied
+    GH-16864: verifies combining beta_constraints with linear_constraints trains without error and
+    respects both a lower-bound-only and an upper-bound-only beta constraint.
     """
     train_data = data_prep(42)
     predictors = ['x1', 'x2', 'x3', 'x4', 'x5']
@@ -92,13 +81,13 @@ def test_beta_and_linear_constraints_no_npe():
     linear_constraints = h2o.H2OFrame(linear_constraints_raw)
     linear_constraints.set_names(["names", "values", "types", "constraint_numbers"])
 
-    common_params = dict(
-        family='gaussian', link='identity',
-        lambda_=0.0, seed=1234, nfolds=0,
-        compute_p_values=True, calc_like=True,
-        solver='irlsm',
-        linear_constraints=linear_constraints,
-    )
+    common_params = {
+        'family': 'gaussian', 'link': 'identity',
+        'lambda_': 0.0, 'seed': 1234, 'nfolds': 0,
+        'compute_p_values': True, 'calc_like': True,
+        'solver': 'irlsm',
+        'linear_constraints': linear_constraints,
+    }
 
     # --- lower-bound-only beta constraint ---
     bc_lower = h2o.H2OFrame([['x1', 0.03]])
