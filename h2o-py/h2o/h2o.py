@@ -102,9 +102,10 @@ def connect(server=None, url=None, ip=None, port=None,
 
     """
     global h2oconn
-    # Programmatic telemetry opt-out — set before any event can fire. None means
-    # "leave the current state" so a later bare connect() can't re-enable an
-    # earlier telemetry=False.
+    # Programmatic telemetry on/off switch — set before any event can fire.
+    # Telemetry is opt-in (off by default); telemetry=True turns it on for this
+    # process, telemetry=False forces it off. None means "leave the current
+    # state" so a later bare connect() can't re-enable an earlier telemetry=False.
     if telemetry is not None:
         _telemetry.set_disabled(not telemetry)
     svc = _strict_version_check(strict_version_check, config=config)
@@ -219,8 +220,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param telemetry: ``True``/``False`` explicitly enables/disables all anonymous usage telemetry for this process;
         ``False`` is equivalent to setting the ``DO_NOT_TRACK=1`` environment variable. The default ``None`` leaves the
         current state unchanged, so an earlier ``telemetry=False`` is not silently re-enabled by a later bare
-        ``h2o.init()``. On a fresh process the state is the package default (currently enabled). See the
-        "Privacy & Telemetry" section of the project README for what is collected and how to opt out persistently.
+        ``h2o.init()``. Telemetry is opt-in: on a fresh process the package default is disabled (nothing is sent
+        until you turn it on). See the "Privacy & Telemetry" section of the project README for what is collected
+        and how to enable it persistently.
 
 
     :examples:
@@ -230,10 +232,11 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
 
     """
     global h2oconn
-    # Programmatic telemetry opt-out — set early so even an exception during
-    # init() doesn't leak a single ping before this line runs. None means "leave
-    # the current state", so a later bare init() can't silently re-enable an
-    # earlier telemetry=False.
+    # Programmatic telemetry on/off switch — set early so even an exception
+    # during init() doesn't leak a single ping before this line runs. Telemetry
+    # is opt-in (off by default); telemetry=True turns it on, telemetry=False
+    # forces it off. None means "leave the current state", so a later bare
+    # init() can't silently re-enable an earlier telemetry=False.
     if telemetry is not None:
         _telemetry.set_disabled(not telemetry)
     assert_is_type(url, str, None)

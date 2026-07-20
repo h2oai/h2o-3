@@ -36,7 +36,7 @@
 #' @param extra_classpath (Optional) A vector of paths to libraries to be added to the Java classpath when H2O is started from R.
 #' @param jvm_custom_args (Optional) A \code{character} list of custom arguments for the JVM where new H2O instance is going to run, if started. Ignored when connecting to an existing instance.
 #' @param bind_to_localhost (Optional) A \code{logical} flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network. Only applicable when H2O is started from R.
-#' @param telemetry (Optional) \code{TRUE}/\code{FALSE} explicitly enables/disables all anonymous usage telemetry for this R session (\code{FALSE} is equivalent to setting \code{DO_NOT_TRACK=1}). The default \code{NULL} leaves the current state unchanged, so an earlier \code{telemetry = FALSE} is not silently re-enabled by a later bare \code{h2o.init()}. On a fresh session the state is the package default (currently enabled). See the "Privacy & Telemetry" section of the project README for what is collected and how to opt out persistently.
+#' @param telemetry (Optional) \code{TRUE}/\code{FALSE} explicitly enables/disables all anonymous usage telemetry for this R session (\code{FALSE} is equivalent to setting \code{DO_NOT_TRACK=1}). The default \code{NULL} leaves the current state unchanged, so an earlier \code{telemetry = FALSE} is not silently re-enabled by a later bare \code{h2o.init()}. Telemetry is opt-in: on a fresh session the package default is disabled (nothing is sent until you turn it on). See the "Privacy & Telemetry" section of the project README for what is collected and how to enable it persistently.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -73,10 +73,12 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                      bind_to_localhost = TRUE,
                      telemetry = NULL) {
 
-    # Programmatic telemetry opt-out — set early so even an exception during
-    # h2o.init() doesn't leak a single ping before this line runs. NULL means
-    # "leave the current state" so a later bare h2o.init() can't silently
-    # re-enable an earlier telemetry = FALSE.
+    # Programmatic telemetry on/off switch — set early so even an exception
+    # during h2o.init() doesn't leak a single ping before this line runs.
+    # Telemetry is opt-in (off by default); telemetry = TRUE turns it on for this
+    # session, telemetry = FALSE forces it off. NULL means "leave the current
+    # state" so a later bare h2o.init() can't silently re-enable an earlier
+    # telemetry = FALSE.
     tryCatch(if (!is.null(telemetry)) .h2o.telemetry.set_disabled(!isTRUE(telemetry)),
              error = function(e) invisible(NULL))
 
