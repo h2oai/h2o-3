@@ -358,6 +358,7 @@ reference:
       - h2o.sd 
       - h2o.sdev
       - h2o.set_s3_credentials
+      - h2o.set_telemetry
       - h2o.setLevels
       - h2o.setTimezone
       - h2o.shap_explain_row_plot
@@ -388,6 +389,7 @@ reference:
       - h2o.target_encode_apply
       - h2o.target_encode_create
       - h2o.targetencoder
+      - h2o.telemetry_enabled
       - h2o.tf_idf
       - h2o.toFrame
       - h2o.tokenize

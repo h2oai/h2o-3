@@ -22,6 +22,8 @@
 #' which always wins. Reacts to 1/0/true/false; 0/false/empty do not opt out.
 #'
 #' URL override: H2O_TELEMETRY_URL.
+#'
+#' @keywords internal
 
 # Production endpoint. Override via the H2O_TELEMETRY_URL environment variable.
 .h2o.telemetry.url <- "https://telemetry.h2o.ai/v1/event"
