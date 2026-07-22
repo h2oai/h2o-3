@@ -109,9 +109,15 @@ def set_disabled(disabled):
     Once disabled, every subsequent ``send_*`` call is a no-op until the
     next process restart. Independent of the ``DO_NOT_TRACK`` env-var opt-out,
     which always wins.
+
+    ``disabled`` must be a real bool: a loose truthiness cast here would let a
+    string such as ``"false"`` (truthy in Python) silently *enable* telemetry,
+    so a non-bool is rejected instead of guessed.
     """
     global _disabled_by_kwarg
-    _disabled_by_kwarg = bool(disabled)
+    if not isinstance(disabled, bool):
+        raise TypeError("telemetry disabled flag must be a bool, got %r" % (disabled,))
+    _disabled_by_kwarg = disabled
 
 
 def _env_truthy(name):
@@ -149,11 +155,14 @@ def set_telemetry(enabled):
     """Enable/disable client telemetry and remember the choice across sessions.
 
     Applies immediately for this process and is persisted under ``~/.h2oai`` so
-    later sessions honor it. ``DO_NOT_TRACK`` still overrides it. Best-effort and
-    silent: never raises, never prints.
+    later sessions honor it. ``DO_NOT_TRACK`` still overrides it. Persistence is
+    best-effort (disk errors are swallowed), but ``enabled`` must be a real bool:
+    a truthy string like ``"false"`` would otherwise silently enable telemetry.
 
     :returns: ``True`` if the preference was written to disk, else ``False``.
     """
+    if not isinstance(enabled, bool):
+        raise TypeError("telemetry enabled flag must be a bool, got %r" % (enabled,))
     set_disabled(not enabled)
     try:
         d = _config_dir()

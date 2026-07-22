@@ -102,6 +102,7 @@ def connect(server=None, url=None, ip=None, port=None,
 
     """
     global h2oconn
+    assert_is_type(telemetry, bool, None)
     # Programmatic telemetry on/off switch — set before any event can fire.
     # Telemetry is opt-in (off by default); telemetry=True turns it on for this
     # process, telemetry=False forces it off. None means "leave the current
@@ -232,6 +233,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
 
     """
     global h2oconn
+    assert_is_type(telemetry, bool, None)
     # Programmatic telemetry on/off switch — set early so even an exception
     # during init() doesn't leak a single ping before this line runs. Telemetry
     # is opt-in (off by default); telemetry=True turns it on, telemetry=False
@@ -365,11 +367,13 @@ def set_telemetry(enabled):
 
     Applies immediately and is remembered across sessions (stored under
     ``~/.h2oai``). The ``DO_NOT_TRACK`` environment variable still overrides it.
-    Best-effort and silent: never raises, never prints.
+    Persistence is best-effort (disk errors are swallowed); passing a
+    non-boolean raises ``H2OTypeError`` rather than silently guessing.
 
     :param enabled: ``True`` to enable telemetry, ``False`` to opt out.
     :returns: ``True`` if the preference was saved to disk, else ``False``.
     """
+    assert_is_type(enabled, bool)
     return _telemetry.set_telemetry(enabled)
 
 

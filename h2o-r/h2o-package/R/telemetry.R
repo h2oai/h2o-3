@@ -163,17 +163,20 @@
 #'
 #' Applies immediately for this R session and is remembered across sessions
 #' (stored under \code{~/.h2oai}). The \code{DO_NOT_TRACK} environment variable
-#' still overrides it. Best-effort and silent: never errors, never prints.
+#' still overrides it. Persistence is best-effort (disk errors are swallowed);
+#' a non-logical \code{enabled} raises an error rather than being guessed.
 #'
 #' @param enabled \code{TRUE} to enable telemetry, \code{FALSE} to opt out.
 #' @return (invisibly) \code{TRUE} if the preference was written to disk, else \code{FALSE}.
 #' @export
 h2o.set_telemetry <- function(enabled) {
-  .h2o.telemetry.set_disabled(!isTRUE(enabled))
+  if (!is.logical(enabled) || length(enabled) != 1L || is.na(enabled))
+    stop("`enabled` must be TRUE or FALSE")
+  .h2o.telemetry.set_disabled(!enabled)
   ok <- tryCatch({
     d <- .h2o.telemetry.config_dir()
     dir.create(d, showWarnings = FALSE, recursive = TRUE)
-    writeLines(if (isTRUE(enabled)) "1" else "0", file.path(d, "telemetry"))
+    writeLines(if (enabled) "1" else "0", file.path(d, "telemetry"))
     TRUE
   }, error = function(e) FALSE)
   invisible(ok)

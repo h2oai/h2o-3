@@ -73,6 +73,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                      bind_to_localhost = TRUE,
                      telemetry = NULL) {
 
+    if (!is.null(telemetry) && (!is.logical(telemetry) || length(telemetry) != 1L || is.na(telemetry)))
+      stop("`telemetry` must be TRUE, FALSE, or NULL")
     # Programmatic telemetry on/off switch — set early so even an exception
     # during h2o.init() doesn't leak a single ping before this line runs.
     # Telemetry is opt-in (off by default); telemetry = TRUE turns it on for this
