@@ -95,8 +95,48 @@ glm_remove_offset_lambda_search_scoring_history_test <- function() {
     drop_cols <- function(d) d[, !(names(d) %in% c("timestamp", "duration")), drop = FALSE]
     expect_equal(drop_cols(unrestricted), drop_cols(plain), tolerance = 1e-6)
 
+    # the main scoring_history must be the RESTRICTED (offset-removed) table, not the unrestricted one:
+    # removing the offset changes the deviance, so their deviance_train columns must differ. If the
+    # restricted/unrestricted tables were swapped, every value would match and this would fail.
+    n <- min(nrow(restricted), nrow(unrestricted))
+    expect_true(any(abs(restricted$deviance_train[1:n] - unrestricted$deviance_train[1:n]) > 1e-6))
+
     # a plain offset model must not carry an unrestricted scoring history
     expect_true(is.null(glm_offset@model$scoring_history_unrestricted_model))
+}
+
+# remove_offset_effects + lambda_search + cross-validation: the model trains and the restricted scoring
+# history's cross-validation deviance is offset-removed, so its deviance_xval must differ from the
+# unrestricted history's deviance_xval (removing the offset changes the deviance).
+glm_remove_offset_lambda_search_cross_validation_test <- function() {
+    df <- prostate_frame()
+    glm_ro <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                      lambda_search = TRUE, remove_offset_effects = TRUE, nfolds = 3,
+                      generate_scoring_history = TRUE, seed = 0xC0FFEE)
+
+    # same settings, offset kept -> known-correct oracle for the unrestricted xval deviance (fit unchanged)
+    glm_plain <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                         lambda_search = TRUE, nfolds = 3, generate_scoring_history = TRUE, seed = 0xC0FFEE)
+
+    restricted <- glm_ro@model$scoring_history
+    unrestricted <- glm_ro@model$scoring_history_unrestricted_model
+    plain <- glm_plain@model$scoring_history
+    expect_false(is.null(restricted))
+    expect_false(is.null(unrestricted))
+    expect_true("deviance_xval" %in% names(restricted))
+    expect_true("deviance_xval" %in% names(unrestricted))
+    expect_true("deviance_xval" %in% names(plain))
+
+    n <- min(nrow(restricted), nrow(unrestricted), nrow(plain))
+    r <- suppressWarnings(as.numeric(restricted$deviance_xval[1:n]))
+    u <- suppressWarnings(as.numeric(unrestricted$deviance_xval[1:n]))
+    p <- suppressWarnings(as.numeric(plain$deviance_xval[1:n]))
+    ok <- !is.na(r) & !is.na(u) & !is.na(p)  # early-stop-only rows carry empty cells
+    expect_true(any(ok))
+    # the unrestricted xval deviance must equal the plain offset model's (the fit is unchanged)
+    expect_equal(u[ok], p[ok], tolerance = 1e-8)
+    # a correct offset-removed deviance is >= 0; -1 is the not-populated sentinel and must not count
+    expect_true(any(r[ok] >= 0 & abs(r[ok] - u[ok]) > 1e-8))
 }
 
 # The MOJO must reproduce the in-H2O (restricted) predictions of a remove_offset_effects +
@@ -220,21 +260,17 @@ glm_remove_offset_lambda_search_early_stopping_test <- function() {
 # (GLMRemoveOffsetLambdaSearchTest.sparseDataWorksWithLambdaSearch). Forcing the sparse chunk path needs a
 # genuinely sparse-encoded frame (Java TestFrameBuilder); an as.h2o data.frame does not produce one.
 
-doTest("GLM: remove_offset_effects with lambda_search",
-       glm_remove_offset_lambda_search_test)
-doTest("GLM: remove_offset_effects with lambda_search offset zeroed",
-       glm_remove_offset_lambda_search_offset_zeroed_test)
-doTest("GLM: remove_offset_effects with lambda_search scoring history",
-       glm_remove_offset_lambda_search_scoring_history_test)
-doTest("GLM: remove_offset_effects with lambda_search mojo",
-       glm_remove_offset_lambda_search_mojo_test)
-doTest("GLM: remove_offset_effects with lambda_search families",
-       glm_remove_offset_lambda_search_families_test)
-doTest("GLM: remove_offset_effects with lambda_search weights",
-       glm_remove_offset_lambda_search_weights_test)
-doTest("GLM: remove_offset_effects with lambda_search validation",
-       glm_remove_offset_lambda_search_validation_test)
-doTest("GLM: remove_offset_effects with lambda_search beta_constraints",
-       glm_remove_offset_lambda_search_beta_constraints_test)
-doTest("GLM: remove_offset_effects with lambda_search early_stopping",
-       glm_remove_offset_lambda_search_early_stopping_test)
+# doTest quits the R process (PASS() -> q()) after the first call, so multiple sequential doTest calls
+# would silently skip every test but the first. Run all tests through a single doSuite instead.
+doSuite("GLM: remove_offset_effects with lambda_search", makeSuite(
+    glm_remove_offset_lambda_search_test,
+    glm_remove_offset_lambda_search_offset_zeroed_test,
+    glm_remove_offset_lambda_search_scoring_history_test,
+    glm_remove_offset_lambda_search_cross_validation_test,
+    glm_remove_offset_lambda_search_mojo_test,
+    glm_remove_offset_lambda_search_families_test,
+    glm_remove_offset_lambda_search_weights_test,
+    glm_remove_offset_lambda_search_validation_test,
+    glm_remove_offset_lambda_search_beta_constraints_test,
+    glm_remove_offset_lambda_search_early_stopping_test
+))

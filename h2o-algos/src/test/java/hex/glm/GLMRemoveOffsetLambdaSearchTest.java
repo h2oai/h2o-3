@@ -975,4 +975,76 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    /**
+     * remove_offset_effects + lambda_search + cross-validation: the model trains and the restricted scoring
+     * history's cross-validation deviance is offset-removed. The per-lambda offset-removed holdout deviances
+     * are aggregated across folds (cv_computeAndSetOptimalParameters) into _xval_deviances_restricted, so the
+     * restricted deviance_xval column must differ from the unrestricted one (removing the offset changes the
+     * deviance), and the unrestricted history must still match a plain offset model trained the same way.
+     */
+    @Test
+    public void removeOffsetEffectsWorksWithLambdaSearchAndCrossValidation() {
+        Frame train = null;
+        GLMModel glm = null, glmPlain = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            GLMModel.GLMParameters params = baseParams(train);
+            params._remove_offset_effects = true;
+            params._nfolds = 3;
+            params._generate_scoring_history = true;
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // same settings, offset kept -> the unrestricted view and best submodel must match this
+            params._remove_offset_effects = false;
+            glmPlain = new GLM(params).trainModel().get();
+            Scope.track_generic(glmPlain);
+
+            assertEquals("lambda_best must match plain offset model under lambda_search + CV",
+                    glmPlain._output.getSubmodel(glmPlain._output._selected_submodel_idx).lambda_value,
+                    glm._output.getSubmodel(glm._output._selected_submodel_idx).lambda_value, 0);
+
+            TwoDimTable restricted = glm._output._scoring_history;
+            TwoDimTable unrestricted = glm._output._scoring_history_unrestricted_model;
+            assertNotNull("restricted scoring history must be present", restricted);
+            assertNotNull("unrestricted scoring history must be present", unrestricted);
+
+            // the unrestricted xval deviance must match a plain offset model trained the same way (the fit is
+            // unchanged); this pins the unrestricted column to a known-correct oracle, so the "differ" check
+            // below cannot pass on a broken restricted column that merely happens to be non-identical.
+            TwoDimTable plain = glmPlain._output._scoring_history;
+            int devXP = Arrays.asList(plain.getColHeaders()).indexOf("deviance_xval");
+            assertTrue("plain offset model must expose deviance_xval", devXP >= 0);
+
+            int devX = Arrays.asList(restricted.getColHeaders()).indexOf("deviance_xval");
+            int devXU = Arrays.asList(unrestricted.getColHeaders()).indexOf("deviance_xval");
+            assertTrue("both histories must expose deviance_xval under cross-validation", devX >= 0 && devXU >= 0);
+
+            boolean anyNumeric = false, anyDiffer = false;
+            int rows = Math.min(restricted.getRowDim(), Math.min(unrestricted.getRowDim(), plain.getRowDim()));
+            for (int i = 0; i < rows; i++) {
+                Object r = restricted.get(i, devX);
+                Object u = unrestricted.get(i, devXU);
+                Object p = plain.get(i, devXP);
+                if (!(r instanceof Number) || !(u instanceof Number) || !(p instanceof Number)) continue;  // early-stop-only rows have empty cells
+                double rd = ((Number) r).doubleValue(), ud = ((Number) u).doubleValue(), pd = ((Number) p).doubleValue();
+                // unrestricted xval == plain offset model's xval (fit unchanged)
+                assertEquals("unrestricted deviance_xval must match the plain offset model", pd, ud, 1e-8);
+                if (rd < 0) continue;  // -1 sentinel = not populated; a correct offset-removed deviance is >= 0
+                anyNumeric = true;
+                if (Math.abs(rd - ud) > 1e-8) anyDiffer = true;
+            }
+            assertTrue("restricted history must expose a real (non-sentinel) deviance_xval", anyNumeric);
+            assertTrue("restricted deviance_xval must be offset-removed (differ from unrestricted)", anyDiffer);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmPlain != null) glmPlain.remove();
+            Scope.exit();
+        }
+    }
 }

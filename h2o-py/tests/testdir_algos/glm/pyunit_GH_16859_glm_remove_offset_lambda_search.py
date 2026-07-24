@@ -113,8 +113,55 @@ def glm_remove_offset_lambda_search_scoring_history():
     cols_to_compare = [c for c in unrestricted.col_header if c not in ("timestamp", "duration")]
     pyunit_utils.assert_H2OTwoDimTable_equal_upto(unrestricted, plain, cols_to_compare)
 
+    # the main scoring_history must be the RESTRICTED (offset-removed) table, not the unrestricted one:
+    # removing the offset changes the deviance, so their deviance_train columns must differ. If the
+    # restricted/unrestricted tables were swapped, every value would match and this would fail.
+    dev_col = restricted.col_header.index("deviance_train")
+    restricted_dev = [row[dev_col] for row in restricted.cell_values]
+    unrestricted_dev = [row[dev_col] for row in unrestricted.cell_values]
+    assert any(abs(r - u) > 1e-6 for r, u in zip(restricted_dev, unrestricted_dev)), \
+        "Main scoring_history must be the restricted (offset-removed) table: its deviance_train must " \
+        "differ from the unrestricted history's"
+
     assert glm_offset._model_json["output"]["scoring_history_unrestricted_model"] is None, \
         "Plain offset model should not have an unrestricted scoring history"
+
+
+# remove_offset_effects + lambda_search + cross-validation: the model trains and the restricted scoring
+# history's cross-validation deviance is offset-removed, so its deviance_xval must differ from the
+# unrestricted history's deviance_xval (removing the offset changes the deviance).
+def glm_remove_offset_lambda_search_cross_validation():
+    cars, x, y, offset_col = _cars_with_offset()
+
+    glm_ro = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, remove_offset_effects=True,
+                                           nfolds=3, generate_scoring_history=True, seed=0xC0FFEE)
+    glm_ro.train(x=x, y=y, training_frame=cars, offset_column=offset_col)
+
+    # same settings, offset kept -> known-correct oracle for the unrestricted xval deviance (fit unchanged)
+    glm_plain = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, nfolds=3,
+                                              generate_scoring_history=True, seed=0xC0FFEE)
+    glm_plain.train(x=x, y=y, training_frame=cars, offset_column=offset_col)
+
+    restricted = glm_ro._model_json["output"]["scoring_history"]
+    unrestricted = glm_ro._model_json["output"]["scoring_history_unrestricted_model"]
+    plain = glm_plain._model_json["output"]["scoring_history"]
+    assert restricted is not None and unrestricted is not None and plain is not None
+    for t in (restricted, unrestricted, plain):
+        assert "deviance_xval" in t.col_header, "cross-validation must add a deviance_xval column"
+
+    xv = restricted.col_header.index("deviance_xval")
+    triples = [(rr[xv], ur[xv], pr[xv]) for rr, ur, pr in zip(restricted.cell_values, unrestricted.cell_values,
+                                                              plain.cell_values)]
+    # keep only rows where all three are numeric (early-stop-only rows carry empty cells)
+    triples = [(r, u, p) for r, u, p in triples
+               if isinstance(r, (int, float)) and isinstance(u, (int, float)) and isinstance(p, (int, float))]
+    assert triples, "restricted history must expose a numeric deviance_xval under cross-validation"
+    # the unrestricted xval deviance must equal the plain offset model's (the fit is unchanged)
+    for r, u, p in triples:
+        assert abs(u - p) < 1e-8, "unrestricted deviance_xval must match the plain offset model: %r vs %r" % (u, p)
+    # a correct offset-removed deviance is >= 0; -1 is the not-populated sentinel and must not count
+    assert any(r >= 0 and abs(r - u) > 1e-8 for r, u, p in triples), \
+        "restricted deviance_xval must be a real offset-removed value differing from the unrestricted history's"
 
 
 # The MOJO must reproduce the in-H2O (restricted) predictions of a remove_offset_effects +
@@ -314,6 +361,7 @@ if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_offset_zeroed)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_scoring_history)
+    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_cross_validation)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_mojo)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_families)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_weights)
@@ -326,6 +374,7 @@ else:
     glm_remove_offset_lambda_search()
     glm_remove_offset_lambda_search_offset_zeroed()
     glm_remove_offset_lambda_search_scoring_history()
+    glm_remove_offset_lambda_search_cross_validation()
     glm_remove_offset_lambda_search_mojo()
     glm_remove_offset_lambda_search_families()
     glm_remove_offset_lambda_search_weights()

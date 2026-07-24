@@ -286,9 +286,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public String[] control_variables;
 
     @API(help="When true, the offset column's contribution is subtracted from predicted values before computing " +
-            "training and validation metrics. Supports cross-validation (nfolds). " +
+            "training and validation metrics. Supports cross-validation (nfolds) and lambda search. " +
             "With-offset metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). " +
-            "Cannot be combined with interactions or lambda search. Experimental.",
+            "Cannot be combined with interactions. Experimental.",
             direction=Direction.INPUT, level=Level.expert)
     public boolean remove_offset_effects;
 

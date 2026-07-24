@@ -1535,6 +1535,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double [] beta;
     public double[] zValues;
     public boolean dispersionEstimated;
+    // Offset-removed holdout deviance for this submodel, set only when remove_offset_effects=true.
+    // Under cross-validation it lets cv_computeAndSetOptimalParameters aggregate an offset-removed
+    // per-lambda xval deviance the same way devianceValid feeds the unrestricted one.
+    public double devianceValidRestricted = Double.NaN;
 
 
     public double [] getBeta(double [] beta) {

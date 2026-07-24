@@ -119,9 +119,9 @@
 #'        columns remain as predictors in the trained model. Cannot be combined with cross-validation (nfolds),
 #'        interactions, or lambda search. Experimental.
 #' @param remove_offset_effects \code{Logical}. When true, the offset column's contribution is subtracted from predicted values before
-#'        computing training and validation metrics. Supports cross-validation (nfolds). With-offset metrics are stored
-#'        in separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with interactions or
-#'        lambda search. Experimental. Defaults to FALSE.
+#'        computing training and validation metrics. Supports cross-validation (nfolds) and lambda search. With-offset
+#'        metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with
+#'        interactions. Experimental. Defaults to FALSE.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will

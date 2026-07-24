@@ -128,6 +128,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient Key<Frame>[] _cv_predKeys_unrestricted;
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
+  // Offset-removed counterparts of _xval_deviances/_xval_sd, populated only when remove_offset_effects=true.
+  // They feed the restricted per-lambda scoring history so its deviance_xval matches its offset-removed
+  // deviance_train/deviance_test (rather than the offset-included _xval_deviances).
+  private double [] _xval_deviances_restricted;
+  private double [] _xval_sd_restricted;
   private double [][] _xval_zValues;  // store cross validation average p-values
   private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
   private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
@@ -317,6 +322,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _xval_deviances = new double[lmin_max];
       _xval_sd = new double[lmin_max];
       _xval_zValues = new double[lmin_max][_state._nbetas];
+      if (_parms._remove_offset_effects) {
+        _xval_deviances_restricted = new double[lmin_max];
+        _xval_sd_restricted = new double[lmin_max];
+      }
 
       int lidx = 0; // index into submodel
       int bestId = 0;   // submodel indedx with best Deviance from xval
@@ -324,6 +333,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (; lidx < lmin_max; ++lidx) { // search through submodel with same lambda and alpha values
         double testDev = 0;
         double testDevSq = 0;
+        double testDevRestricted = 0;      // offset-removed counterparts, only used when remove_offset_effects
+        double testDevRestrictedSq = 0;
         double[] zValues = new double[_state._nbetas];
         double[] zValuesSq = new double[_state._nbetas];
         for (int i = 0; i < cvModelBuilders.length; ++i) {  // run cv for each lambda value
@@ -344,6 +355,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
           testDev += g._model._output._submodels[lidx].devianceValid;
           testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
+          if (_parms._remove_offset_effects) {
+            double dr = g._model._output._submodels[lidx].devianceValidRestricted;
+            testDevRestricted += dr;
+            testDevRestrictedSq += dr * dr;
+          }
           if(g._model._output._submodels[lidx].zValues != null) {
             for (int z = 0; z < zValues.length; z++) {
               zValues[z] += g._model._output._submodels[lidx].zValues[z];
@@ -357,6 +373,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _xval_sd[lidx] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         _xval_deviances[lidx] = testDevAvg;
         _xval_zValues[lidx] = zValuesAvg;
+        if (_parms._remove_offset_effects) {
+          double testDevRestrictedAvg = testDevRestricted / cvModelBuilders.length;
+          double testDevRestrictedSE = testDevRestrictedSq - testDevRestrictedAvg * testDevRestricted;
+          _xval_deviances_restricted[lidx] = testDevRestrictedAvg;
+          _xval_sd_restricted[lidx] = Math.sqrt(testDevRestrictedSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
+        }
         if (testDevAvg < bestTestDev) {
           bestTestDev = testDevAvg;
           bestId = lidx;
@@ -422,6 +444,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _xval_deviances = Arrays.copyOfRange(_xval_deviances, bestId-newBestId, lmin_max + 1);
         _xval_sd = Arrays.copyOfRange(_xval_sd, bestId-newBestId, lmin_max + 1);
         _xval_zValues = Arrays.copyOfRange(_xval_zValues, bestId-newBestId, lmin_max + 1);
+        if (_parms._remove_offset_effects) {
+          _xval_deviances_restricted = Arrays.copyOfRange(_xval_deviances_restricted, bestId-newBestId, lmin_max + 1);
+          _xval_sd_restricted = Arrays.copyOfRange(_xval_sd_restricted, bestId-newBestId, lmin_max + 1);
+        }
       } else {
         _parms._lambda = new double[]{alphasAndLambdas[numOfSubmodels + bestId]};
         _model._output._selected_submodel_idx = 0; // set best submodel id here
@@ -3851,9 +3877,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (lambda >= _lmax && _state.l1pen() > 0) {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];
-        else
+        else {
           _model.addSubmodel(i, sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain,
                   nullDevValid, _betaInfo.totalBetaLength(), null, false));
+          // Offset-removed null-model holdout deviance, mirroring nullDevValid (computed with getNullBeta()
+          // on _validDinfo). Without it, cv_computeAndSetOptimalParameters would aggregate NaN into the
+          // restricted per-lambda xval deviance at the largest lambdas (where folds take this null-beta path).
+          if (_parms._lambda_search && _parms._remove_offset_effects && _validDinfo != null)
+            sm.devianceValidRestricted = new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta(), true)
+                    .doAll(_validDinfo._adaptedFrame).avgDev();
+        }
       } else {
         if (continueFromPreviousSubmodel) {
           sm = _model._output._submodels[i];
@@ -3917,6 +3950,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // Build a restricted (offset-removed) per-lambda history in parallel with the unrestricted one above.
         // remove_offset_effects only changes deviance/scoring (GLMResDevTask), not the fit, so we recompute
         // the deviance with the offset removed and feed it into a separate lambda-format history.
+        double restrictedValidDev = Double.NaN;  // offset-removed holdout deviance, persisted on the Submodel
         if (_parms._lambda_search && _parms._remove_offset_effects) {
           // Mirror the unrestricted deviance computation above, but with the offset effect removed.
           // Train uses the standardized (expanded) beta on the standardized training DataInfo (as in
@@ -3928,13 +3962,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (_validDinfo != null)
             validDevRestricted = new GLMResDevTask(_job._key, _validDinfo, _parms,
                     _dinfo.denormalizeBeta(_state.beta()), true).doAll(_validDinfo._adaptedFrame).avgDev();
-          // xvalDev/xvalDevSE are the unrestricted (offset-included) cross-validation deviances; that is
-          // harmless while remove_offset_effects + cross-validation stays disallowed (they are always -1 here).
+          restrictedValidDev = validDevRestricted;  // stored on the Submodel below for CV aggregation
+          // Under cross-validation, _xval_deviances_restricted holds the offset-removed per-lambda xval
+          // deviance aggregated across folds (see cv_computeAndSetOptimalParameters); use it so the restricted
+          // history's deviance_xval is on the same offset-removed scale as its deviance_train/deviance_test.
+          // Without CV both arrays are null and xvalDevRestricted stays -1.
+          double xvalDevRestricted = ((_xval_deviances_restricted == null) || (_xval_deviances_restricted.length <= i)) ? -1 : _xval_deviances_restricted[i];
+          double xvalDevRestrictedSE = ((_xval_sd_restricted == null) || (_xval_sd_restricted.length <= i)) ? -1 : _xval_sd_restricted[i];
           _lambdaSearchScoringHistoryRestricted.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
-                  _state.lambda(), trainDevRestricted, validDevRestricted, xvalDev, xvalDevSE, _state.alpha());
+                  _state.lambda(), trainDevRestricted, validDevRestricted, xvalDevRestricted, xvalDevRestrictedSE, _state.alpha());
         }
         _model.updateSubmodel(i, sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
                 trainDev, validDev, _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated()));
+        // Persist the offset-removed holdout deviance so cross-validation can aggregate it per lambda.
+        sm.devianceValidRestricted = restrictedValidDev;
 
       }
       return sm;
@@ -4148,11 +4189,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // keep unrestricted model scoring history in _model._output._scoring_history_unrestricted_model
           
           // Merge the (restricted) main and unrestricted scoring histories with the ScoringInfo early-stop
-          // tables. scoringHistoryEarlyStop holds the restricted (offset-removed) metrics; the "...Restricted"
-          // variable holds the unrestricted (offset-included) metrics (legacy naming).
+          // tables. scoringHistoryEarlyStop holds the restricted (offset-removed) metrics;
+          // scoringHistoryEarlyStopUnrestricted holds the unrestricted (offset-included) metrics.
           TwoDimTable scoringHistoryEarlyStop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
-          TwoDimTable scoringHistoryEarlyStopRestricted = ScoringInfo.createScoringHistoryTable(_model.getUnrestrictedModelScoringInfo(),
+          TwoDimTable scoringHistoryEarlyStopUnrestricted = ScoringInfo.createScoringHistoryTable(_model.getUnrestrictedModelScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
           if (_parms._lambda_search) {
             // The lambda-format restricted and unrestricted histories are populated at different sites
@@ -4164,9 +4205,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ?
                     ScoreKeeper.StoppingMetric.logloss : ScoreKeeper.StoppingMetric.deviance : _model._parms._stopping_metric;
             _model._output._scoring_history = combineScoringHistoryRestricted(_model._output._scoring_history, _model._output._scoring_history_unrestricted_model,
-                    scoringHistoryEarlyStop, scoringHistoryEarlyStopRestricted, sm, null != _parms._valid);
+                    scoringHistoryEarlyStop, scoringHistoryEarlyStopUnrestricted, sm, null != _parms._valid);
           }
-          _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopRestricted);
+          _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopUnrestricted);
           _model._output._scoring_history_unrestricted_model.setTableHeader(_model._output._scoring_history_unrestricted_model.getTableHeader()+" unrestricted model");
           // set control variables and remove offset effects flag to true for scoring after training
           _model._useControlVariables = _model._parms._control_variables != null;

@@ -344,9 +344,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``None``.
         :type control_variables: List[str], optional
         :param remove_offset_effects: When true, the offset column's contribution is subtracted from predicted values
-               before computing training and validation metrics. Supports cross-validation (nfolds). With-offset metrics
-               are stored in separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with
-               interactions or lambda search. Experimental.
+               before computing training and validation metrics. Supports cross-validation (nfolds) and lambda search.
+               With-offset metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Cannot be
+               combined with interactions. Experimental.
                Defaults to ``False``.
         :type remove_offset_effects: bool
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -2073,8 +2073,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def remove_offset_effects(self):
         """
         When true, the offset column's contribution is subtracted from predicted values before computing training and
-        validation metrics. Supports cross-validation (nfolds). With-offset metrics are stored in separate slots and
-        exposed via make_unrestricted_glm_model(). Cannot be combined with interactions or lambda search. Experimental.
+        validation metrics. Supports cross-validation (nfolds) and lambda search. With-offset metrics are stored in
+        separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with interactions.
+        Experimental.
 
         Type: ``bool``, defaults to ``False``.
         """
