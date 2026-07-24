@@ -81,7 +81,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     # session, telemetry = FALSE forces it off. NULL means "leave the current
     # state" so a later bare h2o.init() can't silently re-enable an earlier
     # telemetry = FALSE.
-    tryCatch(if (!is.null(telemetry)) .h2o.telemetry.set_disabled(!isTRUE(telemetry)),
+    tryCatch(if (!is.null(telemetry)) .h2o.telemetry.set_enabled(isTRUE(telemetry)),
              error = function(e) invisible(NULL))
 
     # Kick off a detached, non-blocking `java -version` probe now (unless opted

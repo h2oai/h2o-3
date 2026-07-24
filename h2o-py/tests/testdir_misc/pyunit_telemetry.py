@@ -21,7 +21,7 @@ def _capture_payloads():
     captured = []
     orig = t._post_async
     t._post_async = lambda payload, enrich=None: captured.append(payload)
-    t.set_disabled(False)
+    t.set_enabled(True)
     return captured, (lambda: setattr(t, "_post_async", orig))
 
 
@@ -83,13 +83,13 @@ def telemetry_disabled_emits_nothing():
     orig = t._post_async
     t._post_async = lambda payload, enrich=None: captured.append(payload)
     try:
-        t.set_disabled(True)
+        t.set_enabled(False)
         t.send_import(VERSION, "s3", "parquet", "ok")
         t.send_init_telemetry(VERSION)
         assert captured == [], "events were emitted while telemetry is disabled: %r" % captured
     finally:
         t._post_async = orig
-        t.set_disabled(False)
+        t.set_enabled(True)
     print("OK telemetry_disabled_emits_nothing")
 
 
@@ -112,7 +112,7 @@ def telemetry_http_delivery_smoke():
     old_url = os.environ.get("H2O_TELEMETRY_URL")
     os.environ["H2O_TELEMETRY_URL"] = "http://127.0.0.1:%d/v1/event" % port
     try:
-        t.set_disabled(False)
+        t.set_enabled(True)
         t.send_import(VERSION, "local", "csv", "ok", compressed_size_bytes=1024)
         t._telemetry_queue.join()  # block until the worker drains the event
     finally:
@@ -145,7 +145,7 @@ def telemetry_first_run_notice():
         return err.getvalue()
 
     try:
-        t.set_disabled(False)
+        t.set_enabled(True)
         first, second = run(), run()
         assert "anonymous usage telemetry" in first, "notice not printed on first run"
         assert second == "", "notice repeated on second run (marker not honored)"
@@ -153,10 +153,10 @@ def telemetry_first_run_notice():
 
         # Disabled telemetry never prints, even with no marker.
         os.remove(os.path.join(tmp, ".h2oai", ".telemetry_notice_python"))
-        t.set_disabled(True)
+        t.set_enabled(False)
         assert run() == "", "notice printed while telemetry disabled"
     finally:
-        t.set_disabled(False)
+        t.set_enabled(True)
         if old_home is None:
             os.environ.pop("HOME", None)
         else:
@@ -169,7 +169,7 @@ def telemetry_do_not_track_truthiness():
     # always wins over the programmatic flag.
     old = os.environ.get("DO_NOT_TRACK")
     try:
-        t.set_disabled(False)
+        t.set_enabled(True)
         for val, disabled in [("1", True), ("true", True), ("on", True),
                               ("0", False), ("false", False), ("", False)]:
             os.environ["DO_NOT_TRACK"] = val
@@ -206,13 +206,13 @@ def telemetry_set_persisted_pref():
         assert t.telemetry_enabled() is True
 
         # A fresh process reloads the saved choice at import.
-        t.set_disabled(False)
+        t.set_enabled(True)
         with open(pref, "w") as f:
             f.write("0")
         t._load_persisted_pref()
         assert t._telemetry_disabled() is True, "persisted opt-out not reloaded"
     finally:
-        t.set_disabled(False)
+        t.set_enabled(True)
         if old_home is None:
             os.environ.pop("HOME", None)
         else:
@@ -233,13 +233,13 @@ def telemetry_config_file_opt_out():
     try:
         with open(cfg, "w") as f:
             f.write("[general]\ntelemetry = false\n")
-        t.set_disabled(False)
+        t.set_enabled(True)
         t._load_persisted_pref()
         assert t._telemetry_disabled() is True, "config telemetry=false did not opt out"
 
         with open(cfg, "w") as f:
             f.write("general.telemetry = true\n")
-        t.set_disabled(True)
+        t.set_enabled(False)
         t._load_persisted_pref()
         assert t._telemetry_disabled() is False, "config telemetry=true did not opt in"
 
@@ -249,11 +249,11 @@ def telemetry_config_file_opt_out():
             f.write("1")
         with open(cfg, "w") as f:
             f.write("[general]\ntelemetry = off\n")
-        t.set_disabled(False)
+        t.set_enabled(True)
         t._load_persisted_pref()
         assert t._telemetry_disabled() is True, "config opt-out should win (union off)"
     finally:
-        t.set_disabled(False)
+        t.set_enabled(True)
         if old_home is None:
             os.environ.pop("HOME", None)
         else:
@@ -275,7 +275,7 @@ def telemetry_rejects_non_bool_flag():
     os.environ.pop("DO_NOT_TRACK", None)
     pref = os.path.join(tmp, ".h2oai", "telemetry")
     try:
-        t.set_disabled(True)
+        t.set_enabled(False)
         for bad in ("false", "False", "0", "no", "off", "true", 1, 0):
             try:
                 t.set_telemetry(bad)
@@ -290,16 +290,16 @@ def telemetry_rejects_non_bool_flag():
         # The low-level setter is strict too (it backs the h2o.init(telemetry=...) path).
         for bad in ("false", "0", 0, 1):
             try:
-                t.set_disabled(bad)
+                t.set_enabled(bad)
                 raised = False
             except TypeError:
                 raised = True
-            assert raised, "set_disabled(%r) must raise TypeError" % (bad,)
+            assert raised, "set_enabled(%r) must raise TypeError" % (bad,)
         # Real bools still work end to end.
         assert t.set_telemetry(True) is True and t.telemetry_enabled() is True
         assert t.set_telemetry(False) is True and t.telemetry_enabled() is False
     finally:
-        t.set_disabled(False)
+        t.set_enabled(True)
         if old_home is None:
             os.environ.pop("HOME", None)
         else:

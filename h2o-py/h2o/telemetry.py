@@ -70,16 +70,13 @@ _MAX_VERSION_FIELD_LEN = 64  # cap every *_version / *_vendor field
 _session_lock = threading.Lock()
 _session_id = None  # type: str | None
 
-# Programmatic opt-out set by h2o.init(telemetry=False). Independent of and
-# additive to the env-var opt-outs. Persists for the lifetime of the process
-# (or until set_disabled(False) is called).
-#
-# Its initial value is the client-wide default when the user never passes the
-# telemetry kwarg: True = telemetry off (opt-in model) — a bare
-# h2o.init()/h2o.connect() stays off until the user opts in (telemetry=True,
-# h2o.set_telemetry(True), or a persisted/config opt-in). Flip to False for the
-# opt-out model (on by default unless the user opts out).
-_disabled_by_kwarg = True
+# Whether telemetry is currently switched on for this process. Telemetry is
+# opt-in, so this starts False (off) and is flipped on only by an explicit
+# choice — h2o.init(telemetry=True) / h2o.connect(telemetry=True),
+# h2o.set_telemetry(True), or a persisted/config opt-in. Independent of and
+# additive to the env-var opt-outs (DO_NOT_TRACK always wins regardless).
+# Persists for the lifetime of the process (or until changed via set_enabled).
+_enabled = False
 
 # Client state persisted under the user's home config dir. The full path is
 # resolved per call (see _config_dir) so a changed HOME / test sandbox is honored.
@@ -103,21 +100,21 @@ def _normalize_os(name):
     return name
 
 
-def set_disabled(disabled):
-    """Programmatic opt-out, set by ``h2o.init(telemetry=False)``.
+def set_enabled(enabled):
+    """Programmatic on/off switch, set by ``h2o.init(telemetry=...)``.
 
-    Once disabled, every subsequent ``send_*`` call is a no-op until the
-    next process restart. Independent of the ``DO_NOT_TRACK`` env-var opt-out,
-    which always wins.
+    Once set, every subsequent ``send_*`` call honors it until the next process
+    restart. Independent of the ``DO_NOT_TRACK`` env-var opt-out, which always
+    wins.
 
-    ``disabled`` must be a real bool: a loose truthiness cast here would let a
+    ``enabled`` must be a real bool: a loose truthiness cast here would let a
     string such as ``"false"`` (truthy in Python) silently *enable* telemetry,
     so a non-bool is rejected instead of guessed.
     """
-    global _disabled_by_kwarg
-    if not isinstance(disabled, bool):
-        raise TypeError("telemetry disabled flag must be a bool, got %r" % (disabled,))
-    _disabled_by_kwarg = disabled
+    global _enabled
+    if not isinstance(enabled, bool):
+        raise TypeError("telemetry enabled flag must be a bool, got %r" % (enabled,))
+    _enabled = enabled
 
 
 def _env_truthy(name):
@@ -137,7 +134,7 @@ def _telemetry_disabled():
     # opt-out and always wins, including over a programmatic telemetry=True.
     if _env_truthy("DO_NOT_TRACK"):
         return True
-    return _disabled_by_kwarg
+    return not _enabled
 
 
 def _config_dir():
@@ -163,7 +160,7 @@ def set_telemetry(enabled):
     """
     if not isinstance(enabled, bool):
         raise TypeError("telemetry enabled flag must be a bool, got %r" % (enabled,))
-    set_disabled(not enabled)
+    set_enabled(enabled)
     try:
         d = _config_dir()
         os.makedirs(d, exist_ok=True)
@@ -231,12 +228,12 @@ def _load_persisted_pref():
     ``~/.h2oconfig`` (home) and ``~/.h2oai/telemetry``. Any explicit opt-out wins
     (union — consistent with DO_NOT_TRACK); otherwise an explicit opt-in applies;
     otherwise the default is kept. All best-effort."""
-    global _disabled_by_kwarg
+    global _enabled
     prefs = [_config_telemetry_pref(), _file_telemetry_pref()]
     if any(p is False for p in prefs):
-        _disabled_by_kwarg = True
+        _enabled = False
     elif any(p is True for p in prefs):
-        _disabled_by_kwarg = False
+        _enabled = True
 
 
 _load_persisted_pref()
