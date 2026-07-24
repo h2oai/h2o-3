@@ -163,6 +163,15 @@ def glm_remove_offset_lambda_search_cross_validation():
     assert any(r >= 0 and abs(r - u) > 1e-8 for r, u, p in triples), \
         "restricted deviance_xval must be a real offset-removed value differing from the unrestricted history's"
 
+    # documented workflow: make_unrestricted_glm_model on a CV model propagates the unrestricted CV metrics
+    # into the derived model's cross_validation_metrics, matching the plain offset model (this exercises the
+    # cross_validation_metrics* model-object path, distinct from the scoring_history deviance_xval above).
+    assert glm_ro._model_json["output"]["cross_validation_metrics_unrestricted_model"] is not None, \
+        "remove_offset CV model must expose cross_validation_metrics_unrestricted_model"
+    unrestricted = glm_ro.make_unrestricted_glm_model()
+    pyunit_utils.assert_equals(glm_plain.residual_deviance(xval=True), unrestricted.residual_deviance(xval=True),
+                               "unrestricted CV residual deviance must match the plain offset model", delta=1e-4)
+
 
 # The MOJO must reproduce the in-H2O (restricted) predictions of a remove_offset_effects +
 # lambda_search model.

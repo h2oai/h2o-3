@@ -19,6 +19,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.TwoDimTable;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -714,6 +715,46 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             if (continuedRO != null) continuedRO.remove();
             if (glmPlain != null) glmPlain.remove();
             if (continuedPlain != null) continuedPlain.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * remove_offset_effects is pinned across a checkpoint continuation (CHECKPOINT_NON_MODIFIABLE_FIELDS):
+     * the restricted/unrestricted scoring-history slots are wired from the flag at build start, so flipping
+     * it on continuation would desynchronize them (previously an NPE on restore). Flipping it must now be
+     * rejected up front with a clean parameter error instead.
+     */
+    @Test
+    public void checkpointRejectsFlippedRemoveOffsetEffects() {
+        Frame train = null;
+        GLMModel glmRO = null, continued = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            GLMModel.GLMParameters roParams = baseParams(train);
+            roParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            roParams._remove_offset_effects = true;
+            glmRO = new GLM(roParams).trainModel().get();
+            Scope.track_generic(glmRO);
+
+            // continue with remove_offset_effects flipped off -> must be rejected, not crash with an NPE
+            GLMModel.GLMParameters cont = baseParams(train);
+            cont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            cont._remove_offset_effects = false;
+            cont._checkpoint = glmRO._key;
+            try {
+                continued = new GLM(cont).trainModel().get();
+                fail("flipping remove_offset_effects across a checkpoint must be rejected");
+            } catch (H2OModelBuilderIllegalArgumentException expected) {
+                // remove_offset_effects is non-modifiable across checkpoint continuation
+            }
+        } finally {
+            if (train != null) train.remove();
+            if (glmRO != null) glmRO.remove();
+            if (continued != null) continued.remove();
             Scope.exit();
         }
     }

@@ -984,6 +984,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient LambdaSearchScoringHistory _lambdaSearchScoringHistory;
   private transient LambdaSearchScoringHistory _lambdaSearchScoringHistoryRestricted;
 
+  // Canonical scoring-history slot mapping under lambda_search + remove_offset_effects, relied on by the
+  // write (scorePostProcessing), the skip-overwrite guard (scoreAndUpdateModel), the checkpoint restore
+  // (restoreScoringHistoryFromCheckpoint) and the final combine (scorePostProcessing) - all four must agree:
+  //   _model._output._scoring_history                    <- RESTRICTED (offset-removed) lambda history
+  //   _model._output._scoring_history_unrestricted_model <- UNRESTRICTED (offset-included) lambda history
+  // _remove_offset_effects is pinned across checkpoint continuation (CHECKPOINT_NON_MODIFIABLE_FIELDS), so
+  // _parms and _model._parms always agree on it here.
+  private boolean restrictedHistoryIsMain() {
+    return _parms._lambda_search && _parms._remove_offset_effects;
+  }
+
   long _t0 = System.currentTimeMillis();
 
   private transient double _iceptAdjust = 0;
@@ -1661,9 +1672,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int num2Copy =  _parms._lambda_search ? colHeaders2Restore.length : colHeaders2Restore.length-2;
       int[] colHeadersIndex = grabHeaderIndex(scoringHistory, num2Copy, colHeaders2Restore);
       if (_parms._lambda_search) {
-        if (_model._parms._remove_offset_effects) {
-          // Mirror the write side (computeSubmodel): the main _scoring_history holds the restricted
-          // (offset-removed) lambda history, _scoring_history_unrestricted_model the unrestricted one.
+        if (restrictedHistoryIsMain()) {
+          // Read side of the canonical slot mapping (see restrictedHistoryIsMain): the main _scoring_history
+          // holds the restricted lambda history, _scoring_history_unrestricted_model the unrestricted one.
           _lambdaSearchScoringHistoryRestricted.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
           TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
           _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
@@ -3820,9 +3831,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
       }
-      if (_parms._lambda_search && _model._parms._remove_offset_effects) {
-        // The unrestricted (offset-included) lambda history becomes the *_unrestricted_model table; the
-        // restricted (offset-removed) lambda history becomes the main scoring history the user sees.
+      if (restrictedHistoryIsMain()) {
+        // Write side of the canonical slot mapping (see restrictedHistoryIsMain): the unrestricted
+        // (offset-included) lambda history becomes the *_unrestricted_model table; the restricted
+        // (offset-removed) lambda history becomes the main scoring history the user sees.
         _model._output._scoring_history_unrestricted_model = _lambdaSearchScoringHistory.to2dTable();
         _model._output._scoring_history = _lambdaSearchScoringHistoryRestricted.to2dTable();
       } else if (_parms._lambda_search) {
@@ -4195,11 +4207,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
           TwoDimTable scoringHistoryEarlyStopUnrestricted = ScoringInfo.createScoringHistoryTable(_model.getUnrestrictedModelScoringInfo(),
                   (null != _parms._valid), false, _model._output.getModelCategory(), false, _parms.hasCustomMetricFunc());
-          if (_parms._lambda_search) {
-            // The lambda-format restricted and unrestricted histories are populated at different sites
-            // (the unrestricted one also gets mid-lambda scoring rows), so the two-table combine that
-            // assumes lock-step row alignment would go out of bounds. Combine each independently with its
-            // own early-stop table (as the plain-offset model's else branch does under lambda_search).
+          if (restrictedHistoryIsMain()) {
+            // Combine side of the canonical slot mapping (see restrictedHistoryIsMain). The lambda-format
+            // restricted and unrestricted histories are populated at different sites (the unrestricted one
+            // also gets mid-lambda scoring rows), so the two-table combine that assumes lock-step row
+            // alignment would go out of bounds. Combine each independently with its own early-stop table
+            // (as the plain-offset model's else branch does under lambda_search).
             _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history, scoringHistoryEarlyStop);
           } else {
             ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ?
