@@ -989,9 +989,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   // (restoreScoringHistoryFromCheckpoint) and the final combine (scorePostProcessing) - all four must agree:
   //   _model._output._scoring_history                    <- RESTRICTED (offset-removed) lambda history
   //   _model._output._scoring_history_unrestricted_model <- UNRESTRICTED (offset-included) lambda history
-  // _remove_offset_effects is pinned across checkpoint continuation (CHECKPOINT_NON_MODIFIABLE_FIELDS), so
-  // _parms and _model._parms always agree on it here.
+  // Both _remove_offset_effects and _lambda_search are pinned across checkpoint continuation
+  // (CHECKPOINT_NON_MODIFIABLE_FIELDS), so _parms and _model._parms always agree on this predicate here.
+  // control_variables is guaranteed null whenever this is true: GLMParameters.validate rejects
+  // control_variables with lambda_search (and with cross-validation), so the control-variables scoring-history
+  // slots are never active on this path and the combine/restore branches below can ignore them.
   private boolean restrictedHistoryIsMain() {
+    assert !(_parms._lambda_search && _parms._control_variables != null)
+            : "control_variables must be rejected with lambda_search";
     return _parms._lambda_search && _parms._remove_offset_effects;
   }
 
@@ -1569,6 +1574,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._linear_constraints != null) {
         checkAssignLinearConstraints();
       }
+      // Don't instantiate/lock the destination model if validation failed (e.g. a non-modifiable field was
+      // changed across a checkpoint continuation - getAndValidateCheckpointModel records that as an error
+      // rather than throwing). The caller throws on error_count() right after init returns, so building here
+      // would only leak a locked model into the DKV.
+      if (error_count() > 0) return;
       buildModel();
     }
   }
@@ -3656,8 +3666,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   _scoringHistory, _model._useControlVariables);
           _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);
           // Under lambda_search, scorePostProcessing already assigns the restricted lambda table as the main
-          // scoring history; don't let this iterative-path table overwrite it.
-          if (!_parms._lambda_search)
+          // scoring history; don't let this iterative-path table overwrite it. Route through the shared
+          // predicate so this skip-guard stays in lock-step with the write/restore/combine sites.
+          if (!restrictedHistoryIsMain())
             _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH, _xval_sd_generate_SH) : null;
 
           if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {

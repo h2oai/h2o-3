@@ -1126,7 +1126,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
      * a 3-class response with _family=multinomial + remove_offset_effects would silently pass
      * validation and run a wasteful dual-pass CV before this fix.
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
     public void testRemoveOffsetEffectsMultinomialViaFamily() {
         Frame train = null;
         GLMModel glm = null;

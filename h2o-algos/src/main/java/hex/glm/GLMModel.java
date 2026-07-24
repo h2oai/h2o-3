@@ -582,10 +582,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   public static class GLMParameters extends Model.Parameters {
-    // _remove_offset_effects must stay fixed across a checkpoint continuation: the restricted/unrestricted
-    // scoring-history slots (and the transient restricted history object) are set up from this flag at build
-    // start, so flipping it on continuation would desynchronize them (previously an NPE on restore).
-    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver", "_remove_offset_effects"};
+    // _remove_offset_effects and _lambda_search must stay fixed across a checkpoint continuation: the
+    // restricted/unrestricted scoring-history slots (and the transient restricted history object) are set up
+    // from these flags at build start (see GLM.restrictedHistoryIsMain), so flipping either on continuation
+    // would desynchronize which slot the restore reads (previously an NPE on restore for _remove_offset_effects).
+    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver", "_remove_offset_effects", "_lambda_search"};
     final static double LOG2PI = Math.log(2 * Math.PI);
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip

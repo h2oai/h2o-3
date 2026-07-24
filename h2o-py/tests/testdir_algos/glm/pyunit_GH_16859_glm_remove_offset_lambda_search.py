@@ -169,7 +169,8 @@ def glm_remove_offset_lambda_search_cross_validation():
     assert glm_ro._model_json["output"]["cross_validation_metrics_unrestricted_model"] is not None, \
         "remove_offset CV model must expose cross_validation_metrics_unrestricted_model"
     unrestricted = glm_ro.make_unrestricted_glm_model()
-    pyunit_utils.assert_equals(glm_plain.residual_deviance(xval=True), unrestricted.residual_deviance(xval=True),
+    pyunit_utils.assert_equals(glm_plain.model_performance(xval=True).residual_deviance(),
+                               unrestricted.model_performance(xval=True).residual_deviance(),
                                "unrestricted CV residual deviance must match the plain offset model", delta=1e-4)
 
 
