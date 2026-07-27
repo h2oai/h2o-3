@@ -134,8 +134,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double [] _xval_deviances_restricted;
   private double [] _xval_sd_restricted;
   private double [][] _xval_zValues;  // store cross validation average p-values
-  private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
-  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
+  // Per-scoring-iteration cv deviance for generate_scoring_history=True.  Offset removed when
+  // remove_offset_effects=True *and* lambda_search=False; under lambda_search generateCVScoringHistory sources
+  // these from the unrestricted lambda history, so they are offset-included there.
+  private double [] _xval_deviances_generate_SH;
+  private double [] _xval_sd_generate_SH;
   private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
   private double [] _xval_deviances_generate_SH_unrestricted; // unrestricted (with-offset) xval deviance for generate_scoring_history=True
   private double [] _xval_sd_generate_SH_unrestricted; // standard deviation of unrestricted xval deviance
@@ -322,7 +325,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _xval_deviances = new double[lmin_max];
       _xval_sd = new double[lmin_max];
       _xval_zValues = new double[lmin_max][_state._nbetas];
-      if (_parms._remove_offset_effects) {
+      // Only lambda_search populates (Submodel.devianceValidRestricted) and consumes these; match the guard
+      // used at both of those sites so the arrays are never allocated-but-unread.
+      if (_parms._remove_offset_effects && _parms._lambda_search) {
         _xval_deviances_restricted = new double[lmin_max];
         _xval_sd_restricted = new double[lmin_max];
       }
@@ -355,7 +360,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
           testDev += g._model._output._submodels[lidx].devianceValid;
           testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
-          if (_parms._remove_offset_effects) {
+          if (_xval_deviances_restricted != null) {
             double dr = g._model._output._submodels[lidx].devianceValidRestricted;
             testDevRestricted += dr;
             testDevRestrictedSq += dr * dr;
@@ -373,7 +378,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _xval_sd[lidx] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         _xval_deviances[lidx] = testDevAvg;
         _xval_zValues[lidx] = zValuesAvg;
-        if (_parms._remove_offset_effects) {
+        if (_xval_deviances_restricted != null) {
           double testDevRestrictedAvg = testDevRestricted / cvModelBuilders.length;
           double testDevRestrictedSE = testDevRestrictedSq - testDevRestrictedAvg * testDevRestricted;
           _xval_deviances_restricted[lidx] = testDevRestrictedAvg;
@@ -444,7 +449,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _xval_deviances = Arrays.copyOfRange(_xval_deviances, bestId-newBestId, lmin_max + 1);
         _xval_sd = Arrays.copyOfRange(_xval_sd, bestId-newBestId, lmin_max + 1);
         _xval_zValues = Arrays.copyOfRange(_xval_zValues, bestId-newBestId, lmin_max + 1);
-        if (_parms._remove_offset_effects) {
+        if (_xval_deviances_restricted != null) {
           _xval_deviances_restricted = Arrays.copyOfRange(_xval_deviances_restricted, bestId-newBestId, lmin_max + 1);
           _xval_sd_restricted = Arrays.copyOfRange(_xval_sd_restricted, bestId-newBestId, lmin_max + 1);
         }
@@ -989,14 +994,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   // (restoreScoringHistoryFromCheckpoint) and the final combine (scorePostProcessing) - all four must agree:
   //   _model._output._scoring_history                    <- RESTRICTED (offset-removed) lambda history
   //   _model._output._scoring_history_unrestricted_model <- UNRESTRICTED (offset-included) lambda history
-  // Both _remove_offset_effects and _lambda_search are pinned across checkpoint continuation
-  // (CHECKPOINT_NON_MODIFIABLE_FIELDS), so _parms and _model._parms always agree on this predicate here.
+  // _remove_offset_effects is pinned across checkpoint continuation (CHECKPOINT_NON_MODIFIABLE_FIELDS), so
+  // _parms and _model._parms always agree on it. _lambda_search is not pinned, but restoreScoringHistoryFromCheckpoint
+  // returns early when it differs from the checkpointed run, so this predicate is never consulted against a
+  // mismatched persisted table.
   // control_variables is guaranteed null whenever this is true: GLMParameters.validate rejects
   // control_variables with lambda_search (and with cross-validation), so the control-variables scoring-history
   // slots are never active on this path and the combine/restore branches below can ignore them.
   private boolean restrictedHistoryIsMain() {
-    assert !(_parms._lambda_search && _parms._control_variables != null)
-            : "control_variables must be rejected with lambda_search";
     return _parms._lambda_search && _parms._remove_offset_effects;
   }
 
@@ -1672,7 +1677,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   
   
   // copy from scoring_history back to _sc or _lsc
-  private void restoreScoringHistoryFromCheckpoint() {
+  private void restoreScoringHistoryFromCheckpoint(GLMParameters checkpointParms) {
+      // lambda_search fixes the *format* of the persisted tables (lambda-format vs iteration-format) and is not
+      // pinned across continuation, so a flip means the stored rows cannot be parsed into the histories this
+      // run just built. Start the scoring history fresh instead of mis-parsing them; the model itself still
+      // continues normally from the checkpointed coefficients.
+      if (checkpointParms._lambda_search != _parms._lambda_search) {
+        warn("_lambda_search", "differs from the checkpointed model, so its scoring history cannot be" +
+                " carried over. The continued model's scoring history starts from this run; the coefficients" +
+                " are still resumed from the checkpoint.");
+        return;
+      }
       TwoDimTable scoringHistory = _model._output._scoring_history;
       String[] colHeaders2Restore = _parms._lambda_search ? 
               new String[]{"iteration", "timestamp", "lambda", "predictors", "deviance_train", 
@@ -1727,11 +1742,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private void buildModel() {
     if (_parms.hasCheckpoint()) {
       GLMModel model = ((GLMModel)DKV.getGet(_parms._checkpoint)).deepClone(_result);
+      // Grab the checkpointed run's own parameters before they are overridden - they describe the format of
+      // the persisted scoring-history tables, which the new parameters no longer do once _lambda_search is
+      // allowed to differ.
+      GLMParameters checkpointParms = model._parms;
       // Override original parameters by new parameters
       model._parms = _parms;
       // We create a new model
       _model = model;
-      restoreScoringHistoryFromCheckpoint();  // copy over scoring history and related data structure
+      restoreScoringHistoryFromCheckpoint(checkpointParms);  // copy over scoring history and related data structure
     } else {
       _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
     }
@@ -3732,10 +3751,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             storeValid.accept(mvalid);
         }
 
-        // Under lambda_search the iteration-format history built here is discarded (scorePostProcessing
-        // assigns the restricted lambda-format table as _scoring_history instead), so skip the
-        // full-frame GLMResDevTask recompute it would otherwise trigger per scoring event.
-        if (sh != null && _parms._generate_scoring_history && mtrain != null && !_parms._lambda_search) {
+        // Under lambda_search the restricted history is lambda-format, so the row goes to
+        // _lambdaSearchScoringHistoryRestricted instead of the iteration-format sh (see the branch at the
+        // bottom of this block).  It must still be recorded: scorePostProcessing appends to the unrestricted
+        // lambda history at every scoring event, so skipping it here would leave the restricted history short
+        // and the combined table would carry rows whose GLM deviance columns are null.
+        if (sh != null && _parms._generate_scoring_history && mtrain != null) {
             double likelihood, objective, deviance;
             if (useControlVarBeta) {
                 double[] beta = _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone());
@@ -3756,8 +3777,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
             double validDev = mvalid != null ? ((GLMMetrics) mvalid).residual_deviance() : Double.NaN;
             long validNobs = mvalid != null ? mvalid._nobs : 1;
-            sh.addIterationScore(true, mvalid != null, _state._iter, likelihood, objective, 
-                    deviance, validDev, mtrain._nobs, validNobs, _state.lambda(), _state.alpha());
+            if (restrictedHistoryIsMain()) {
+                // Deviance *ratios*, matching the per-lambda rows computeSubmodel adds to this same history.
+                // deviance_xval stays NaN: no offset-removed cross-validated deviance exists per scoring
+                // event (the per-lambda rows carry the real one from _xval_deviances_restricted).
+                _lambdaSearchScoringHistoryRestricted.addLambdaScore(_state._iter,
+                        ArrayUtils.countNonzeros(_state.beta()), _state.lambda(), deviance / mtrain._nobs,
+                        mvalid != null ? validDev / validNobs : Double.NaN, Double.NaN, Double.NaN,
+                        _state.alpha());
+            } else {
+                sh.addIterationScore(true, mvalid != null, _state._iter, likelihood, objective,
+                        deviance, validDev, mtrain._nobs, validNobs, _state.lambda(), _state.alpha());
+            }
         }
     }
 
@@ -3895,8 +3926,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     protected Submodel computeSubmodel(int i, double lambda, double nullDevTrain, double nullDevValid) {
       Submodel sm;
+      // Only reuse a persisted submodel when the checkpointed model actually has one at this index. A
+      // continuation may run a longer alpha/lambda grid than the checkpoint did - most sharply when the
+      // checkpoint was built without lambda_search (one submodel) and the continuation enables it (nlambdas
+      // submodels) - and the tail of the grid has nothing to resume from.
       boolean continueFromPreviousSubmodel = _parms.hasCheckpoint() && (_parms._alpha.length > 1 ||
-              _parms._lambda.length > 1) && _checkPointFirstIter && !Family.gaussian.equals(_parms._family);
+              _parms._lambda.length > 1) && _checkPointFirstIter && !Family.gaussian.equals(_parms._family)
+              && _model._output._submodels != null && i < _model._output._submodels.length;
       if (lambda >= _lmax && _state.l1pen() > 0) {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];
@@ -3958,11 +3994,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           else
             validDev = multinomial.equals(_parms._family)
                     ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
-                    // Keep the offset in: this unrestricted validation deviance feeds both the unrestricted
-                    // lambda history and the Submodel that pickBestModel selects on. It must match the plain
-                    // offset model so remove_offset_effects picks the same best submodel. The restricted
-                    // (offset-removed) validation deviance is computed separately below as validDevRestricted.
-                    : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame).avgDev();
+                    // Under lambda_search keep the offset in: this unrestricted validation deviance feeds both
+                    // the unrestricted lambda history and the Submodel that pickBestModel selects on. It must
+                    // match the plain offset model so remove_offset_effects picks the same best submodel. The
+                    // restricted (offset-removed) validation deviance is computed separately below as
+                    // validDevRestricted.  Without lambda_search, keep the pre-existing offset-removed
+                    // semantics: Submodel.devianceValid is read against the restricted _validation_metrics in
+                    // regularizationPath()/pickBestModel, so flipping it there would mix the two scales.
+                    : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta()),
+                            _parms._remove_offset_effects && !_parms._lambda_search).doAll(_validDinfo._adaptedFrame).avgDev();
         }
         Log.info(LogMsg("train deviance = " + trainDev + ", valid deviance = " + validDev));
         double xvalDev = ((_xval_deviances == null) || (_xval_deviances.length <= i)) ? -1 : _xval_deviances[i];

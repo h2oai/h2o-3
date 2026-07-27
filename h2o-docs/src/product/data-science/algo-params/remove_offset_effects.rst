@@ -22,6 +22,16 @@ When cross-validation is enabled (``nfolds > 0``), two parallel CV metric views 
 
 Calling ``make_unrestricted_glm_model()`` on a model trained with CV propagates the unrestricted CV metrics into the derived model's main ``cross_validation_metrics`` slot, so the derived model presents the full with-offset view consistently across training, validation, and CV.
 
+**Lambda search support**
+
+When ``lambda_search=True``, two parallel per-lambda scoring histories are produced:
+
+- **Restricted** (``scoring_history``, titled *Scoring History*): one row per lambda with the offset removed from ``deviance_train``, ``deviance_test`` and ``deviance_xval``.
+- **Unrestricted** (``scoring_history_unrestricted_model``, titled *Scoring History unrestricted model*): the same rows with the offset preserved. These match a plain offset model trained with the same parameters.
+
+``remove_offset_effects`` changes only the reported metrics, never the fit, so the model is identical to the one you would get without the option. Consequently **the best lambda is selected on the offset-preserved (unrestricted) deviance**, which guarantees that ``lambda_best`` and the coefficients match the equivalent model trained without ``remove_offset_effects``. One consequence is worth noting: the ``deviance_test`` column of the restricted ``scoring_history`` is *not* necessarily minimized at the selected lambda. To see the deviance that selection is based on, read ``scoring_history_unrestricted_model`` (or the derived model returned by ``make_unrestricted_glm_model()``).
+
+Combining ``lambda_search`` with cross-validation is supported; the restricted history's ``deviance_xval`` is then the offset-removed cross-validated deviance, on the same scale as its ``deviance_train``/``deviance_test``.
 
 **Combination with control_variables**
 
@@ -109,6 +119,22 @@ Example
 		unrestricted_cv_glm <- h2o.make_unrestricted_glm_model(airlines_glm_cv)
 		print(h2o.residual_deviance(unrestricted_cv_glm, xval = TRUE))
 
+		# remove_offset_effects also works with lambda_search:
+		airlines_glm_ls <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
+                           validation_frame = valid,
+                           offset_column = "Distance",
+                           remove_offset_effects = TRUE,
+                           lambda_search = TRUE)
+
+		# per-lambda history with the offset removed (this is what scoring_history shows)
+		print(airlines_glm_ls@model$scoring_history)
+
+		# per-lambda history with the offset preserved - this is the deviance lambda selection uses
+		print(airlines_glm_ls@model$scoring_history_unrestricted_model)
+
+		# the selected lambda matches the plain offset model, because the fit is unchanged
+		print(h2o.getLambdaBest(airlines_glm_ls))
+
 
    .. code-tab:: python
 
@@ -172,3 +198,20 @@ Example
 		# derived model presents the full with-offset CV view consistently
 		unrestricted_cv_glm = airlines_glm_cv.make_unrestricted_glm_model()
 		print(unrestricted_cv_glm.model_performance(xval=True).residual_deviance())
+
+		# remove_offset_effects also works with lambda_search:
+		airlines_glm_ls = H2OGeneralizedLinearEstimator(family = 'binomial',
+		                                                offset_column = "Distance",
+		                                                remove_offset_effects = True,
+		                                                lambda_search = True)
+		airlines_glm_ls.train(x = predictors, y = response, training_frame = train,
+		                      validation_frame = valid)
+
+		# per-lambda history with the offset removed (this is what scoring_history shows)
+		print(airlines_glm_ls.scoring_history())
+
+		# per-lambda history with the offset preserved - this is the deviance lambda selection uses
+		print(airlines_glm_ls._model_json["output"]["scoring_history_unrestricted_model"])
+
+		# the selected lambda matches the plain offset model, because the fit is unchanged
+		print(H2OGeneralizedLinearEstimator.getLambdaBest(airlines_glm_ls))

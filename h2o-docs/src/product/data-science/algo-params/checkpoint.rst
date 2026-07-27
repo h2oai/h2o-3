@@ -74,6 +74,22 @@ The following options cannot be modified when rebuilding a model using ``checkpo
     - use_all_factor_levels
     - y (response_column)
 
+ **GLM Options**
+
+    - family
+    - remove_offset_effects
+    - solver
+    - y (response_column)
+
+ GLM checkpointing additionally requires ``solver="IRLSM"`` to be set explicitly on both the original and the
+ continuation model (``AUTO`` is not accepted).
+
+ ``lambda_search`` *may* be changed on a continuation, so you can fit a model without regularization search and
+ then refine it with ``lambda_search=True``. Because the two modes record scoring history in different formats,
+ the checkpointed model's scoring history cannot be carried over when the setting changes: the continued model
+ starts its scoring history from the continuation run and a warning is issued. The coefficients are still
+ resumed from the checkpoint.
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 

@@ -582,11 +582,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   public static class GLMParameters extends Model.Parameters {
-    // _remove_offset_effects and _lambda_search must stay fixed across a checkpoint continuation: the
-    // restricted/unrestricted scoring-history slots (and the transient restricted history object) are set up
-    // from these flags at build start (see GLM.restrictedHistoryIsMain), so flipping either on continuation
-    // would desynchronize which slot the restore reads (previously an NPE on restore for _remove_offset_effects).
-    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver", "_remove_offset_effects", "_lambda_search"};
+    // _remove_offset_effects must stay fixed across a checkpoint continuation: the restricted/unrestricted
+    // scoring-history slots (and the transient restricted history object) are set up from it at build start
+    // (see GLM.restrictedHistoryIsMain), so flipping it would desynchronize which slot the restore reads
+    // (previously an NPE on restore).  _lambda_search is deliberately NOT pinned - it only decides the *format*
+    // of the stored tables, which GLM.restoreScoringHistoryFromCheckpoint detects and handles by skipping the
+    // restore.  Pinning it would break the unrelated and legitimate "fit fast, then refine with lambda_search"
+    // continuation for every GLM user.
+    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver", "_remove_offset_effects"};
     final static double LOG2PI = Math.log(2 * Math.PI);
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip

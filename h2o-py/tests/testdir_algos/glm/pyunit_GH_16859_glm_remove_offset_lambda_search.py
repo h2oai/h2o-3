@@ -127,6 +127,73 @@ def glm_remove_offset_lambda_search_scoring_history():
         "Plain offset model should not have an unrestricted scoring history"
 
 
+# generate_scoring_history adds a scoring event per iteration, and the unrestricted lambda history gets a row
+# for each. The restricted history must get one too, otherwise combineScoringHistory pads the missing rows and
+# the main scoring_history (the one the user sees) ends up with null lambda/deviance cells - and the checkpoint
+# restore, which parses those cells, blows up. Both are asserted here.
+def glm_remove_offset_lambda_search_scoring_history_no_gaps():
+    df = _prostate_with_offset()
+    df["CAPSULE"] = df["CAPSULE"].asfactor()
+    x = ["RACE", "DPROS", "PSA", "VOL", "GLEASON"]
+    common = dict(family="binomial", lambda_search=True, remove_offset_effects=True,
+                  generate_scoring_history=True, score_each_iteration=True, solver="IRLSM", seed=0xC0FFEE)
+
+    glm_ro = H2OGeneralizedLinearEstimator(nlambdas=8, **common)
+    glm_ro.train(x=x, y="CAPSULE", training_frame=df, offset_column="off", validation_frame=df)
+
+    lambda_cols = ["lambda", "predictors", "deviance_train", "deviance_test", "alpha"]
+    for slot in ("scoring_history", "scoring_history_unrestricted_model"):
+        table = glm_ro._model_json["output"][slot]
+        assert table is not None, "%s must be present" % slot
+        present = [c for c in lambda_cols if c in table.col_header]
+        assert present, "%s must expose the per-lambda columns" % slot
+        idx = {c: table.col_header.index(c) for c in present}
+        for rown, row in enumerate(table.cell_values):
+            empty = [c for c in present if row[idx[c]] is None or row[idx[c]] == ""]
+            assert not empty, \
+                "%s row %d has empty per-lambda cells %s - the restricted lambda history is missing the " \
+                "per-iteration rows that generate_scoring_history produces" % (slot, rown, empty)
+
+    # continuing from the checkpoint parses the lambda cells of the stored history, so a gap crashes here
+    continued = H2OGeneralizedLinearEstimator(nlambdas=16, checkpoint=glm_ro.model_id, **common)
+    continued.train(x=x, y="CAPSULE", training_frame=df, offset_column="off", validation_frame=df)
+    assert continued._model_json["output"]["scoring_history"] is not None, \
+        "checkpoint continuation must produce a scoring history"
+
+
+# lambda_search is deliberately NOT pinned across a checkpoint continuation (only remove_offset_effects is), so
+# "fit without regularization search, then refine with lambda_search" keeps working. The two modes store their
+# scoring history in different formats, so the old history is dropped rather than mis-parsed.
+def glm_remove_offset_lambda_search_checkpoint_may_enable_lambda_search():
+    df = _prostate_with_offset()
+    df["CAPSULE"] = df["CAPSULE"].asfactor()
+    x = ["RACE", "DPROS", "PSA", "VOL", "GLEASON"]
+    common = dict(family="binomial", remove_offset_effects=True, solver="IRLSM", seed=0xC0FFEE)
+
+    base = H2OGeneralizedLinearEstimator(lambda_search=False, max_iterations=5, **common)
+    base.train(x=x, y="CAPSULE", training_frame=df, offset_column="off")
+
+    continued = H2OGeneralizedLinearEstimator(lambda_search=True, nlambdas=6,
+                                              checkpoint=base.model_id, **common)
+    continued.train(x=x, y="CAPSULE", training_frame=df, offset_column="off")
+
+    history = continued._model_json["output"]["scoring_history"]
+    assert history is not None and len(history.cell_values) > 0, \
+        "enabling lambda_search on a continuation must still produce a scoring history"
+    assert "lambda" in history.col_header, \
+        "the continued model's scoring history must be in lambda format"
+    # remove_offset_effects stays pinned, so flipping it must still be refused
+    try:
+        bad = H2OGeneralizedLinearEstimator(lambda_search=True, checkpoint=base.model_id,
+                                            family="binomial", remove_offset_effects=False,
+                                            solver="IRLSM", seed=0xC0FFEE)
+        bad.train(x=x, y="CAPSULE", training_frame=df, offset_column="off")
+        assert False, "flipping remove_offset_effects across a checkpoint must be rejected"
+    except Exception as e:
+        assert "_remove_offset_effects" in str(e), \
+            "expected a _remove_offset_effects checkpoint error, got: %s" % str(e)[:300]
+
+
 # remove_offset_effects + lambda_search + cross-validation: the model trains and the restricted scoring
 # history's cross-validation deviance is offset-removed, so its deviance_xval must differ from the
 # unrestricted history's deviance_xval (removing the offset changes the deviance).
@@ -371,6 +438,8 @@ if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_offset_zeroed)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_scoring_history)
+    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_scoring_history_no_gaps)
+    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_checkpoint_may_enable_lambda_search)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_cross_validation)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_mojo)
     pyunit_utils.standalone_test(glm_remove_offset_lambda_search_families)

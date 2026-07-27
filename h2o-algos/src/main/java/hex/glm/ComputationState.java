@@ -204,10 +204,13 @@ public final class ComputationState {
     // submodel, whose idxs index only the non-zero coefficients) or reflect a different active-set snapshot.
     // Scattering it through the submodel's non-zero index set is therefore invalid in general (it crashed
     // for an offset column under lambda_search, where the two bases differ). expandedBeta already holds the
-    // last submodel's beta at full length.
+    // last submodel's beta at full length.  Clone it: when idxs == null, expandedBeta *is* the submodel's
+    // beta array, and _betaCndCheckpoint is handed to the solver as betaCnd (via genInitBeta), which mutates
+    // it in place (ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd), BetaConstraint.applyAllBounds).
+    // Aliasing would let the solver corrupt the checkpointed model's stored coefficients.
     if (model._betaCndCheckpoint != null) {
       model._betaCndCheckpoint = _activeData._activeCols == null
-              ? expandedBeta
+              ? expandedBeta.clone()
               : extractSubRange(expandedBeta.length, 0, activeData()._activeCols, expandedBeta);
     }
   }
