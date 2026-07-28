@@ -360,6 +360,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
           if (_xval_deviances_restricted != null) {
             double dr = g._model._output._submodels[lidx].devianceValidRestricted;
+            // A single NaN here silently poisons the whole restricted xval average for this lambda.
+            assert !Double.isNaN(dr) : "fold " + i + " submodel " + lidx
+                    + " carries no offset-removed holdout deviance";
             testDevRestricted += dr;
             testDevRestrictedSq += dr * dr;
           }
@@ -450,6 +453,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_xval_deviances_restricted != null) {
           _xval_deviances_restricted = Arrays.copyOfRange(_xval_deviances_restricted, bestId-newBestId, lmin_max + 1);
           _xval_sd_restricted = Arrays.copyOfRange(_xval_sd_restricted, bestId-newBestId, lmin_max + 1);
+          // computeSubmodel indexes all four arrays with the same submodel index.
+          assert _xval_deviances_restricted.length == _xval_deviances.length
+                  && _xval_sd_restricted.length == _xval_sd.length :
+                  "restricted and unrestricted xval arrays must stay index-aligned";
         }
       } else {
         _parms._lambda = new double[]{alphasAndLambdas[numOfSubmodels + bestId]};
@@ -1183,8 +1190,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_search  &&_parms._nlambdas == -1)
           _parms._nlambdas = _parms._alpha[0] == 0?30:100; // fewer lambdas needed for ridge
       _lambdaSearchScoringHistory = new LambdaSearchScoringHistory(_parms._valid != null,_parms._nfolds > 1);
-      if (restrictedHistoryIsMain())  // non-null exactly when the restricted history is the one users see
+      if (restrictedHistoryIsMain())
         _lambdaSearchScoringHistoryRestricted = new LambdaSearchScoringHistory(_parms._valid != null, _parms._nfolds > 1);
+      assert (_lambdaSearchScoringHistoryRestricted != null) == restrictedHistoryIsMain() :
+              "the restricted lambda history must exist exactly when it is the main scoring history";
       _scoringHistory = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1,
               _parms._generate_scoring_history);
       _scoringHistoryUnrestrictedModel = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1,
@@ -1692,6 +1701,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // Read side of the canonical slot mapping (see restrictedHistoryIsMain).
           _lambdaSearchScoringHistoryRestricted.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
           TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
+          // Both slots are written together, so a checkpoint carrying only one means the mapping desynchronized.
+          assert scoringHistoryUnrestricted != null :
+                  "checkpointed remove_offset_effects+lambda_search model is missing its unrestricted history";
           _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
         } else {
           _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
@@ -3832,6 +3844,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // metrics are populated). Use the unrestricted metrics for the (unrestricted) lambda history.
             ModelMetrics vmm = (_model._parms._remove_offset_effects || _model._parms._control_variables != null)
                     ? _model._output._validation_metrics_unrestricted_model : _model._output._validation_metrics;
+            assert vmm != null : "scorePostProcessing populates this slot above; a null here means the "
+                    + "restricted/unrestricted slot choice disagrees with the one made there";
             double validDev = ((GLMMetrics) vmm).residual_deviance() / vmm._nobs;
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                     _state.lambda(), trainDev, validDev, xval_deviance, xval_se, _state.alpha());
@@ -3916,6 +3930,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       boolean continueFromPreviousSubmodel = _parms.hasCheckpoint() && (_parms._alpha.length > 1 ||
               _parms._lambda.length > 1) && _checkPointFirstIter && !Family.gaussian.equals(_parms._family)
               && _model._output._submodels != null && i < _model._output._submodels.length;
+      assert !continueFromPreviousSubmodel || _model._output._submodels[i] != null :
+              "checkpoint submodel " + i + " is null; callers dereference the returned Submodel";
       if (lambda >= _lmax && _state.l1pen() > 0) {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];

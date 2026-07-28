@@ -453,11 +453,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     ModelMetrics trainMetrics = _output._training_metrics;
     ModelMetrics validMetrics = _output._validation_metrics;
     if (_parms._remove_offset_effects) {
+      // The null guards keep production safe, but falling back would silently put the ratio back on two
+      // different scales - the exact defect this selection exists to prevent - so assert the slots are there.
+      assert _output._training_metrics_unrestricted_model != null :
+              "remove_offset_effects model has no unrestricted training metrics; explained_deviance_train "
+                      + "would mix offset scales";
       if (_output._training_metrics_unrestricted_model != null)
         trainMetrics = _output._training_metrics_unrestricted_model;
       // Without lambda_search devianceValid is offset-removed and already matches the restricted metrics.
-      if (_parms._lambda_search && _output._validation_metrics_unrestricted_model != null)
-        validMetrics = _output._validation_metrics_unrestricted_model;
+      if (_parms._lambda_search) {
+        assert _parms._valid == null || _output._validation_metrics_unrestricted_model != null :
+                "remove_offset_effects+lambda_search model has no unrestricted validation metrics; "
+                        + "explained_deviance_valid would mix offset scales";
+        if (_output._validation_metrics_unrestricted_model != null)
+          validMetrics = _output._validation_metrics_unrestricted_model;
+      }
     }
     for (int i = 0; i < N; ++i) {
       Submodel sm = _output._submodels[i];

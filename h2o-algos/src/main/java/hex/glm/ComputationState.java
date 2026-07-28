@@ -207,6 +207,12 @@ public final class ComputationState {
       model._betaCndCheckpoint = _activeData._activeCols == null
               ? expandedBeta.clone()
               : extractSubRange(expandedBeta.length, 0, activeData()._activeCols, expandedBeta);
+      assert model._betaCndCheckpoint != expandedBeta :
+              "betaCndCheckpoint must not alias the submodel beta: the solver mutates betaCnd in place";
+      assert model._betaCndCheckpoint.length == (_activeData._activeCols == null
+              ? expandedBeta.length : _activeData._activeCols.length) :
+              "betaCndCheckpoint must be in the solver's active-column basis, got length "
+                      + model._betaCndCheckpoint.length;
     }
   }
   
