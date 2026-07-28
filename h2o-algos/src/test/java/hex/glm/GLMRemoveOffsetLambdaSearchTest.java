@@ -551,6 +551,84 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
     }
 
     /**
+     * getRegularizationPath() divides the Submodel deviances by the *reported* null deviance, which
+     * remove_offset_effects makes offset-removed. But Submodel.devianceTrain is always the offset-included fit
+     * deviance, and under lambda_search Submodel.devianceValid keeps the offset too (see GLM.computeSubmodel).
+     * Mixing the two scales makes the ratio stop being an explained-deviance fraction at all.
+     *
+     * Two oracles, both independent of which scale the path is expressed on:
+     *   1. lambda[0] >= lambda_max gives the intercept-only submodel, whose explained deviance is pinned to 0.
+     *      Before the fix it reported ~0.097.
+     *   2. remove_offset_effects leaves the fit untouched, so once both models express the path on the same
+     *      (offset-included) scale the whole path must match the plain offset model's element for element.
+     */
+    @Test
+    public void regularizationPathExplainedDevianceIsNotScaleMixed() {
+        Frame train = null;
+        GLMModel ro = null, base = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            SplitFrame sf = new SplitFrame(train, new double[]{0.8, 0.2},
+                    new Key[]{Key.make("roRP_tr.hex"), Key.make("roRP_va.hex")});
+            sf.exec().get();
+            Frame tr = DKV.getGet(sf._destination_frames[0]);
+            Frame va = DKV.getGet(sf._destination_frames[1]);
+            Scope.track(tr, va);
+
+            // Each model needs its own params: GLM keeps the reference (_model._parms = _parms) and
+            // getRegularizationPath() reads _parms._remove_offset_effects, so sharing one object and flipping the
+            // flag for the second model would retroactively change what the first model reports.
+            GLMModel.GLMParameters roParams = baseParams(train);
+            roParams._train = tr._key;
+            roParams._valid = va._key;
+            roParams._nlambdas = 10;
+            roParams._remove_offset_effects = true;
+            ro = new GLM(roParams).trainModel().get();
+            Scope.track_generic(ro);
+
+            GLMModel.GLMParameters baseline = baseParams(train);
+            baseline._train = tr._key;
+            baseline._valid = va._key;
+            baseline._nlambdas = 10;
+            base = new GLM(baseline).trainModel().get();
+            Scope.track_generic(base);
+
+            GLMModel.RegularizationPath rpRO = ro.getRegularizationPath();
+            GLMModel.RegularizationPath rpBase = base.getRegularizationPath();
+
+            // Guard the oracles: if the fit itself differed, comparing the paths would prove nothing.
+            assertArrayEquals("remove_offset_effects must not change the lambda sequence",
+                    rpBase._lambdas, rpRO._lambdas, 0);
+            for (int i = 0; i < rpRO._lambdas.length; i++)
+                assertArrayEquals("remove_offset_effects must not change the coefficients at lambda[" + i + "]",
+                        rpBase._coefficients[i], rpRO._coefficients[i], 1e-12);
+
+            assertNotNull("a validation frame must produce a validation deviance path",
+                    rpRO._explained_deviance_valid);
+
+            // Oracle 1: the intercept-only submodel explains none of the deviance.
+            assertEquals("explained_deviance_valid of the null-beta submodel must be 0",
+                    0, rpRO._explained_deviance_valid[0], 1e-6);
+            assertEquals("explained_deviance_train of the null-beta submodel must be 0",
+                    0, rpRO._explained_deviance_train[0], 1e-6);
+
+            // Oracle 2: identical fit, same scale => identical path.
+            assertArrayEquals("explained_deviance_valid must match the plain offset model",
+                    rpBase._explained_deviance_valid, rpRO._explained_deviance_valid, 1e-8);
+            assertArrayEquals("explained_deviance_train must match the plain offset model",
+                    rpBase._explained_deviance_train, rpRO._explained_deviance_train, 1e-8);
+        } finally {
+            if (train != null) train.remove();
+            if (ro != null) ro.remove();
+            if (base != null) base.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
      * beta_constraints route through a separate scoring path; the combination with lambda_search +
      * remove_offset_effects must still recover the plain (constrained) offset model.
      */

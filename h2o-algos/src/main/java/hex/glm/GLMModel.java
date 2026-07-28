@@ -445,6 +445,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       rp._p_values = new double[N][];
       rp._std_errs = new double[N][];
     }
+    // The explained-deviance ratios below divide a Submodel deviance by a null deviance taken from the model
+    // metrics, so both have to be on the same scale. remove_offset_effects makes the *reported* metrics
+    // offset-removed, while the Submodel deviances are not: devianceTrain is always the offset-included fit
+    // deviance (GLM.computeSubmodel), and devianceValid keeps the offset whenever lambda_search is on (there it
+    // feeds submodel selection, which must match the plain offset model). Dividing across the two scales stops
+    // producing a fraction at all - the intercept-only submodel, whose explained deviance is pinned to 0,
+    // reported a large non-zero value. So pick the metrics matching each numerator's scale.
+    ModelMetrics trainMetrics = _output._training_metrics;
+    ModelMetrics validMetrics = _output._validation_metrics;
+    if (_parms._remove_offset_effects) {
+      if (_output._training_metrics_unrestricted_model != null)
+        trainMetrics = _output._training_metrics_unrestricted_model;
+      // Without lambda_search devianceValid is offset-removed and already matches the restricted metrics.
+      if (_parms._lambda_search && _output._validation_metrics_unrestricted_model != null)
+        validMetrics = _output._validation_metrics_unrestricted_model;
+    }
     for (int i = 0; i < N; ++i) {
       Submodel sm = _output._submodels[i];
       rp._lambdas[i] = sm.lambda_value;
@@ -460,9 +476,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._p_values[i] = sm.pValues(rp._z_values[i], _output._training_metrics.residual_degrees_of_freedom());
         rp._std_errs[i] = sm.stdErr(rp._z_values[i], rp._coefficients[i]);
       }
-      rp._explained_deviance_train[i] = 1 - (_output._training_metrics._nobs*sm.devianceTrain)/((GLMMetrics)_output._training_metrics).null_deviance();
+      rp._explained_deviance_train[i] = 1 - (trainMetrics._nobs*sm.devianceTrain)/((GLMMetrics)trainMetrics).null_deviance();
       if (rp._explained_deviance_valid != null)
-        rp._explained_deviance_valid[i] = 1 - _output._validation_metrics._nobs*sm.devianceValid /((GLMMetrics)_output._validation_metrics).null_deviance();
+        rp._explained_deviance_valid[i] = 1 - validMetrics._nobs*sm.devianceValid /((GLMMetrics)validMetrics).null_deviance();
     }
     return rp;
   }
