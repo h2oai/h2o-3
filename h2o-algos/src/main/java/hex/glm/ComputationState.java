@@ -197,17 +197,12 @@ public final class ComputationState {
     GLMGradientInfo ginfo = new GLMGradientSolver(_job, _parms, _dinfo, 0, activeBC(), _modelBetaInfo,
             _penaltyMatrix, _gamColIndices).getGradient(expandedBeta);  // gradient obtained with zero penalty
     updateState(expandedBeta, ginfo);
-    // Rebuild the resume candidate beta (model._betaCndCheckpoint) from the last submodel, which is the
-    // authoritative persisted state - continuation resumes the lambda loop from _submodels.length. It must
-    // NOT be reconstructed from the previously stored model._betaCndCheckpoint: that vector is in the
-    // solver's active-column basis, which can contain coefficients shrunk to exactly zero (dropped by the
-    // submodel, whose idxs index only the non-zero coefficients) or reflect a different active-set snapshot.
-    // Scattering it through the submodel's non-zero index set is therefore invalid in general (it crashed
-    // for an offset column under lambda_search, where the two bases differ). expandedBeta already holds the
-    // last submodel's beta at full length.  Clone it: when idxs == null, expandedBeta *is* the submodel's
-    // beta array, and _betaCndCheckpoint is handed to the solver as betaCnd (via genInitBeta), which mutates
-    // it in place (ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd), BetaConstraint.applyAllBounds).
-    // Aliasing would let the solver corrupt the checkpointed model's stored coefficients.
+    // Rebuild the resume candidate beta from the last submodel rather than from the stored
+    // model._betaCndCheckpoint: that vector is in the solver's active-column basis, so scattering it through
+    // the submodel's non-zero index set (idxs) is invalid whenever the two bases differ.
+    // Clone, because when idxs == null expandedBeta *is* the submodel's beta array and genInitBeta() hands
+    // _betaCndCheckpoint to the solver, which mutates it in place - aliasing would corrupt the stored
+    // coefficients.
     if (model._betaCndCheckpoint != null) {
       model._betaCndCheckpoint = _activeData._activeCols == null
               ? expandedBeta.clone()

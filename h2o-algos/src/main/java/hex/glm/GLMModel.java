@@ -445,13 +445,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       rp._p_values = new double[N][];
       rp._std_errs = new double[N][];
     }
-    // The explained-deviance ratios below divide a Submodel deviance by a null deviance taken from the model
-    // metrics, so both have to be on the same scale. remove_offset_effects makes the *reported* metrics
-    // offset-removed, while the Submodel deviances are not: devianceTrain is always the offset-included fit
-    // deviance (GLM.computeSubmodel), and devianceValid keeps the offset whenever lambda_search is on (there it
-    // feeds submodel selection, which must match the plain offset model). Dividing across the two scales stops
-    // producing a fraction at all - the intercept-only submodel, whose explained deviance is pinned to 0,
-    // reported a large non-zero value. So pick the metrics matching each numerator's scale.
+    // The explained-deviance ratios below divide a Submodel deviance by a null deviance from the model metrics,
+    // so both must be on the same scale. remove_offset_effects makes the *reported* metrics offset-removed
+    // while the Submodel deviances are not: devianceTrain is always the offset-included fit deviance, and
+    // devianceValid keeps the offset under lambda_search (there it feeds submodel selection). Mixing the two
+    // scales stops producing a fraction at all, so pick the metrics matching each numerator.
     ModelMetrics trainMetrics = _output._training_metrics;
     ModelMetrics validMetrics = _output._validation_metrics;
     if (_parms._remove_offset_effects) {
@@ -598,13 +596,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   public static class GLMParameters extends Model.Parameters {
-    // _remove_offset_effects must stay fixed across a checkpoint continuation: the restricted/unrestricted
-    // scoring-history slots (and the transient restricted history object) are set up from it at build start
-    // (see GLM.restrictedHistoryIsMain), so flipping it would desynchronize which slot the restore reads
-    // (previously an NPE on restore).  _lambda_search is deliberately NOT pinned - it only decides the *format*
-    // of the stored tables, which GLM.restoreScoringHistoryFromCheckpoint detects and handles by skipping the
-    // restore.  Pinning it would break the unrelated and legitimate "fit fast, then refine with lambda_search"
-    // continuation for every GLM user.
+    // _remove_offset_effects is pinned because the scoring-history slots are wired from it at build start
+    // (see GLM.restrictedHistoryIsMain), so flipping it desynchronizes which slot the restore reads.
+    // _lambda_search is deliberately NOT pinned: it only decides the stored tables' format, which
+    // GLM.restoreScoringHistoryFromCheckpoint detects and handles, and pinning it would break the legitimate
+    // "fit fast, then refine with lambda_search" continuation for every GLM user.
     static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver", "_remove_offset_effects"};
     final static double LOG2PI = Math.log(2 * Math.PI);
     public enum MissingValuesHandling {
