@@ -67,6 +67,15 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
         return params;
     }
 
+    // Fresh params for the CV comparison, with a fixed seed so both models split folds identically.
+    private GLMModel.GLMParameters cvParams(Frame train) {
+        GLMModel.GLMParameters params = baseParams(train);
+        params._nfolds = 3;
+        params._generate_scoring_history = true;
+        params._seed = 0xC0FFEE;
+        return params;
+    }
+
     private Frame prostateFrame() {
         Frame df = parseTestFile("smalldata/prostate/prostate.csv");
         DKV.put(df);
@@ -1111,16 +1120,19 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             train = binomialFrame();
             Scope.track_generic(train);
 
-            GLMModel.GLMParameters params = baseParams(train);
-            params._remove_offset_effects = true;
-            params._nfolds = 3;
-            params._generate_scoring_history = true;
-            glm = new GLM(params).trainModel().get();
+            // Each model needs its own params. GLM keeps the reference (_model._parms = _parms) and CV mutates it
+            // in place: cv_computeAndSetOptimalParameters collapses _alpha to the winning value, truncates
+            // _lambda to the winning subsequence and caps _max_iterations. Sharing one object would train the
+            // second model on a shorter grid with a tighter iteration cap than the first, so the 1e-8
+            // comparisons below would be between two differently-parameterised runs. The explicit _seed keeps
+            // the fold split identical instead of relying on getOrMakeRealSeed() writing back into a shared object.
+            GLMModel.GLMParameters roParams = cvParams(train);
+            roParams._remove_offset_effects = true;
+            glm = new GLM(roParams).trainModel().get();
             Scope.track_generic(glm);
 
             // same settings, offset kept -> the unrestricted view and best submodel must match this
-            params._remove_offset_effects = false;
-            glmPlain = new GLM(params).trainModel().get();
+            glmPlain = new GLM(cvParams(train)).trainModel().get();
             Scope.track_generic(glmPlain);
 
             assertEquals("lambda_best must match plain offset model under lambda_search + CV",
