@@ -449,25 +449,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // so both must be on the same scale. remove_offset_effects makes the *reported* metrics offset-removed
     // while the Submodel deviances are not: devianceTrain is always the offset-included fit deviance, and
     // devianceValid keeps the offset under lambda_search (there it feeds submodel selection). Mixing the two
-    // scales stops producing a fraction at all, so pick the metrics matching each numerator.
+    // scales stops producing a fraction at all, so pick the metrics matching each numerator - and report NaN when
+    // they are absent, rather than falling back to metrics on the other scale. Derived models built by
+    // MakeGLMModelHandler carry _remove_offset_effects but never populate the unrestricted slots.
     ModelMetrics trainMetrics = _output._training_metrics;
     ModelMetrics validMetrics = _output._validation_metrics;
     if (_parms._remove_offset_effects) {
-      // The null guards keep production safe, but falling back would silently put the ratio back on two
-      // different scales - the exact defect this selection exists to prevent - so assert the slots are there.
-      assert _output._training_metrics_unrestricted_model != null :
-              "remove_offset_effects model has no unrestricted training metrics; explained_deviance_train "
-                      + "would mix offset scales";
-      if (_output._training_metrics_unrestricted_model != null)
-        trainMetrics = _output._training_metrics_unrestricted_model;
+      trainMetrics = _output._training_metrics_unrestricted_model;
       // Without lambda_search devianceValid is offset-removed and already matches the restricted metrics.
-      if (_parms._lambda_search) {
-        assert _parms._valid == null || _output._validation_metrics_unrestricted_model != null :
-                "remove_offset_effects+lambda_search model has no unrestricted validation metrics; "
-                        + "explained_deviance_valid would mix offset scales";
-        if (_output._validation_metrics_unrestricted_model != null)
-          validMetrics = _output._validation_metrics_unrestricted_model;
-      }
+      if (_parms._lambda_search)
+        validMetrics = _output._validation_metrics_unrestricted_model;
     }
     for (int i = 0; i < N; ++i) {
       Submodel sm = _output._submodels[i];
@@ -484,9 +475,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._p_values[i] = sm.pValues(rp._z_values[i], _output._training_metrics.residual_degrees_of_freedom());
         rp._std_errs[i] = sm.stdErr(rp._z_values[i], rp._coefficients[i]);
       }
-      rp._explained_deviance_train[i] = 1 - (trainMetrics._nobs*sm.devianceTrain)/((GLMMetrics)trainMetrics).null_deviance();
+      rp._explained_deviance_train[i] = trainMetrics == null ? Double.NaN
+              : 1 - (trainMetrics._nobs*sm.devianceTrain)/((GLMMetrics)trainMetrics).null_deviance();
       if (rp._explained_deviance_valid != null)
-        rp._explained_deviance_valid[i] = 1 - validMetrics._nobs*sm.devianceValid /((GLMMetrics)validMetrics).null_deviance();
+        rp._explained_deviance_valid[i] = validMetrics == null ? Double.NaN
+                : 1 - validMetrics._nobs*sm.devianceValid /((GLMMetrics)validMetrics).null_deviance();
     }
     return rp;
   }
@@ -1720,6 +1713,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     
     public DataInfo getDinfo() { return _dinfo; }
+
+    /**
+     * Retags the single placeholder submodel this output was constructed with (see MakeGLMModelHandler's derived
+     * models) with the lambda/alpha the source model was selected at, so lambda_best()/alpha_best() report the
+     * real regularization strength instead of 0. The deviances stay NaN on purpose: a derived model does not
+     * recompute a per-lambda path, and the source's deviances are offset-included, so reusing them would put
+     * explained_deviance_* on a different scale from the metrics this model reports.
+     */
+    public void retagDerivedSubmodel(double lambda, double alpha) {
+      if (_submodels.length != 1)
+        return;   // only the derived-model output has a single placeholder submodel to retag
+      Submodel placeholder = _submodels[0];
+      _submodels = new Submodel[]{new Submodel(lambda, alpha,
+              placeholder.getBeta(MemoryManager.malloc8d(_totalBetaLength)), placeholder.iteration,
+              Double.NaN, Double.NaN, _totalBetaLength, null, false)};
+    }
+
     public int bestSubmodelIndex() { return _selected_submodel_idx; }
     public double lambda_selected(){
       return _submodels[_selected_submodel_idx].lambda_value;

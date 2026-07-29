@@ -154,6 +154,10 @@ public class MakeGLMModelHandler extends Handler {
       m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
               model._output._ordinal, null);
+      // The GLMOutput ctor above synthesizes a placeholder submodel at lambda=0/alpha=0. Carry the source's
+      // selected lambda/alpha over, otherwise the derived model reports lambda_best()/alpha_best() == 0 - and
+      // learning_curve_plot(), which filters the copied scoring history by alpha_best, silently plots nothing.
+      m._output.retagDerivedSubmodel(model._output.lambda_best(), model._output.alpha_best());
       // _training_metrics/_validation_metrics/_cross_validation_metrics below are shared by reference
       // with the source model, not deep-copied: they're inline (non-Key) ModelMetrics fields, so the
       // DKV.put(key, m) at the end of this method already serializes them by value into the derived
