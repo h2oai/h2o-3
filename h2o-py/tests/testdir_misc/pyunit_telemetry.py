@@ -263,6 +263,52 @@ def telemetry_config_file_opt_out():
     print("OK telemetry_config_file_opt_out: ~/.h2oconfig telemetry key honored (home-only, union-off)")
 
 
+def telemetry_rejects_non_bool_flag():
+    # Regression guard for the accidental-enable footgun: telemetry is opt-in, so
+    # a value that *looks* like "off" must never turn it on. Python's bool("false")
+    # is True, so a loose cast would enable telemetry when the user passed the
+    # string "false". The setters reject non-bools instead of coercing.
+    old_home = os.environ.get("HOME")
+    old_dnt = os.environ.get("DO_NOT_TRACK")
+    tmp = tempfile.mkdtemp()
+    os.environ["HOME"] = tmp
+    os.environ.pop("DO_NOT_TRACK", None)
+    pref = os.path.join(tmp, ".h2oai", "telemetry")
+    try:
+        t.set_disabled(True)
+        for bad in ("false", "False", "0", "no", "off", "true", 1, 0):
+            try:
+                t.set_telemetry(bad)
+                raised = False
+            except TypeError:
+                raised = True
+            assert raised, "set_telemetry(%r) must raise TypeError, not coerce" % (bad,)
+            assert t.telemetry_enabled() is False, \
+                "set_telemetry(%r) left telemetry enabled" % (bad,)
+            assert not os.path.exists(pref), \
+                "set_telemetry(%r) persisted a preference" % (bad,)
+        # The low-level setter is strict too (it backs the h2o.init(telemetry=...) path).
+        for bad in ("false", "0", 0, 1):
+            try:
+                t.set_disabled(bad)
+                raised = False
+            except TypeError:
+                raised = True
+            assert raised, "set_disabled(%r) must raise TypeError" % (bad,)
+        # Real bools still work end to end.
+        assert t.set_telemetry(True) is True and t.telemetry_enabled() is True
+        assert t.set_telemetry(False) is True and t.telemetry_enabled() is False
+    finally:
+        t.set_disabled(False)
+        if old_home is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = old_home
+        if old_dnt is not None:
+            os.environ["DO_NOT_TRACK"] = old_dnt
+    print("OK telemetry_rejects_non_bool_flag: truthy strings rejected, never enable")
+
+
 if __name__ == "__main__":
     telemetry_wire_contract()
     telemetry_bucket_boundaries()
@@ -272,6 +318,7 @@ if __name__ == "__main__":
     telemetry_http_delivery_smoke()
     telemetry_set_persisted_pref()
     telemetry_config_file_opt_out()
+    telemetry_rejects_non_bool_flag()
     print("\nALL TELEMETRY TESTS PASSED")
 else:
     telemetry_wire_contract()
@@ -282,3 +329,4 @@ else:
     telemetry_http_delivery_smoke()
     telemetry_set_persisted_pref()
     telemetry_config_file_opt_out()
+    telemetry_rejects_non_bool_flag()
