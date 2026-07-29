@@ -2087,6 +2087,20 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         return -1;
     }
 
+    /**
+     * Returns the last row index whose {@code col} cell is non-null, or -1 if every row is null.
+     * xval scoring-history columns (GLM.java ScoringHistory#to2dTable, "cv model may run with fewer
+     * iterations") are only populated up to the shortest common iteration count across folds, which
+     * can be shorter than the main model's total scoring-history row count whenever folds converge at
+     * different iteration counts (e.g. under a non-trivial regularization/dataset combination) — so
+     * the table's last row is not guaranteed to carry an xval value and must not be assumed blindly.
+     */
+    private static int lastNonNullRow(TwoDimTable table, int col) {
+        for (int row = table.getRowDim() - 1; row >= 0; row--)
+            if (table.get(row, col) != null) return row;
+        return -1;
+    }
+
     /** Creates a small binomial frame with categorical predictors, offset, and response. */
     private static Frame makeBinomialOffsetFrame(String key) {
         Vec cat1 = Vec.makeVec(new long[]{1,1,1,0,0,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,1,1,0,0}, new String[]{"0","1"}, Vec.newKey());
@@ -2145,6 +2159,78 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"}, Vec.newKey());
         Vec fold = Vec.makeVec(new long[]{0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1}, new String[]{"0","1","2"}, Vec.newKey());
         Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1", "x2", "offset", "y", "fold"}, new Vec[]{cat1, cat2, offset, res, fold});
+        DKV.put(f);
+        return f;
+    }
+
+    /**
+     * 60-row frame for control_variables CV tests, no offset column. x1 (the control variable) is
+     * categorical: getControlValBeta() only works correctly with categorical control variables today,
+     * so x1 must stay categorical here. x1 tracks y (first half=0, second half=1) with an every-7th-row
+     * flip so the fit is never perfectly separable. 60 rows split evenly across 3 folds of 20.
+     * @param withFoldColumn if true, appends a deterministic round-robin "fold" column (20 rows/fold)
+     *                       instead of relying on nfolds-driven splitting.
+     */
+    private static Frame makeControlVariablesCvFrame(String key, boolean withFoldColumn) {
+        int n = 60;
+        long[] x1 = new long[n];
+        long[] x2 = new long[n];
+        long[] y = new long[n];
+        long[] fold = new long[n];
+        for (int i = 0; i < n; i++) {
+            boolean upperHalf = i >= n / 2;
+            boolean flip = (i % 7 == 0);
+            x1[i] = upperHalf ? 1 : 0;
+            x2[i] = (i % 2 == 0) ? 0 : 1; // mild secondary predictor, uncorrelated with the x1/y trend
+            y[i] = (flip == upperHalf) ? 0 : 1; // tracks x1, with noise flips every 7th row
+            fold[i] = i % 3;
+        }
+        Vec x1v = Vec.makeVec(x1, new String[]{"0", "1"}, Vec.newKey());
+        Vec x2v = Vec.makeVec(x2, new String[]{"0", "1"}, Vec.newKey());
+        Vec yv = Vec.makeVec(y, new String[]{"0", "1"}, Vec.newKey());
+        if (withFoldColumn) {
+            Vec foldv = Vec.makeVec(fold, new String[]{"0", "1", "2"}, Vec.newKey());
+            Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1", "x2", "y", "fold"}, new Vec[]{x1v, x2v, yv, foldv});
+            DKV.put(f);
+            return f;
+        }
+        Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1", "x2", "y"}, new Vec[]{x1v, x2v, yv});
+        DKV.put(f);
+        return f;
+    }
+
+    /**
+     * Combined-signal frame: unlike makeControlVariablesCvFrame (no offset column) or
+     * makeBinomialOffsetFrame (offset + categorical predictors but no guaranteed strong x1-y
+     * signal), this frame gives BOTH control_variables (x1) and the offset column a genuine,
+     * independent, deterministic relationship with y, so all 4 CV views are guaranteed to be
+     * numerically distinct, not just structurally different. Built programmatically (fixed
+     * formula, no randomness) to keep the construction easy to audit, following
+     * makeControlVariablesCvFrame's style.
+     */
+    private static Frame makeControlVariablesAndOffsetCvFrame(String key) {
+        int n = 60;
+        long[] x1 = new long[n];
+        long[] x2 = new long[n];
+        double[] offset = new double[n];
+        long[] y = new long[n];
+        for (int i = 0; i < n; i++) {
+            boolean upperHalf = i >= n / 2;
+            boolean flip = (i % 7 == 0);
+            x1[i] = upperHalf ? 1 : 0;
+            x2[i] = (i % 2 == 0) ? 0 : 1; // mild secondary predictor, uncorrelated with x1/offset
+            // Deterministic offset in [0.1, 0.5], independent of x1's upperHalf/flip pattern.
+            offset[i] = 0.1 + 0.1 * (i % 5);
+            boolean offsetPush = offset[i] > 0.3;
+            // y tracks EITHER x1's trend OR a large offset, with the same every-7th-row noise
+            // flip as makeControlVariablesCvFrame to avoid perfect/quasi separation.
+            y[i] = ((upperHalf || offsetPush) != flip) ? 1 : 0;
+        }
+        Vec x1v = Vec.makeVec(x1, new String[]{"0", "1"}, Vec.newKey());
+        Vec x2v = Vec.makeVec(x2, new String[]{"0", "1"}, Vec.newKey());
+        Vec offsetv = Vec.makeVec(offset, Vec.newKey());
+        Vec yv = Vec.makeVec(y, new String[]{"0", "1"}, Vec.newKey());
+        Frame f = new Frame(Key.<Frame>make(key), new String[]{"x1", "x2", "offset", "y"}, new Vec[]{x1v, x2v, offsetv, yv});
         DKV.put(f);
         return f;
     }
@@ -4144,13 +4230,17 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
     }
 
     /**
-     * Training with control_variables + nfolds (cross-validation) must be rejected.
-     * CV is not supported when control_variables are set.
+     * control_variables + remove_offset_effects + cross-validation must train successfully,
+     * and beta estimation must be unaffected by the flags since zeroing is scoring-only:
+     * coefficients trained with control_variables set must equal, within 1e-10, coefficients
+     * trained on the same data with control_variables = null. CV metrics/scoring history are
+     * populated as expected.
      */
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testControlVariablesWithCvThrows() {
+    @Test
+    public void testControlVariablesWithRemoveOffsetAndCvTrainsSuccessfully() {
         Frame train = null;
         GLMModel glm = null;
+        GLMModel glmBaseline = null;
         try {
             Scope.enter();
             train = makeBinomialOffsetFrame("p0_1_derived_both_cv");
@@ -4166,7 +4256,490 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             params._distribution = DistributionFamily.bernoulli;
             params._link = GLMModel.GLMParameters.Link.logit;
             params._control_variables = new String[]{"x1"};
+            params._remove_offset_effects = true;
 
+            glm = new GLM(params).trainModel().get();
+            assertNotNull("Model should train with control_variables + remove_offset_effects + nfolds=3", glm);
+            assertNotNull("CV metrics should be populated", glm._output._cross_validation_metrics);
+            assertNotNull("Training metrics should be populated", glm._output._training_metrics);
+
+            // Zeroing is scoring-only, so the fitted beta must be identical whether or not
+            // control_variables is set. The main-model beta is trained on the full frame and is
+            // independent of CV fold assignment, so keeping nfolds=3 fixed for both models is safe
+            // and deterministic.
+            params._control_variables = null;
+            glmBaseline = new GLM(params).trainModel().get();
+
+            assertNotNull("Baseline model (control_variables=null) should train", glmBaseline);
+            assertEquals("Coefficient count must match with and without control_variables",
+                    glm.coefficients().size(), glmBaseline.coefficients().size());
+            for (String name : glm.coefficients().keySet()) {
+                assertEquals("Beta for '" + name + "' must be identical whether or not control_variables is set (zeroing is scoring-only)",
+                        glmBaseline.coefficients().get(name),
+                        glm.coefficients().get(name), 1e-10);
+            }
+
+            // Both models share identical fitted beta, so any difference in CV validation deviance
+            // can only come from zeroing x1 when scoring glm's holdout folds but not glmBaseline's.
+            // Read via _cross_validation_metrics (always populated for CV runs) rather than
+            // Submodel.devianceValid, which stays NaN unless validation_frame is explicitly set.
+            double glmValidDev = ((GLMMetrics) glm._output._cross_validation_metrics).residual_deviance();
+            double glmBaselineValidDev = ((GLMMetrics) glmBaseline._output._cross_validation_metrics).residual_deviance();
+            assertTrue("CV validation deviance must be finite", Double.isFinite(glmValidDev));
+            assertTrue("control_variables zeroing must change CV fold validation deviance " +
+                            "relative to the same model without control_variables (glm=" + glmValidDev +
+                            ", baseline=" + glmBaselineValidDev + ")",
+                    Math.abs(glmValidDev - glmBaselineValidDev) > 1e-6);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmBaseline != null) glmBaseline.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * control_variables alone (no remove_offset_effects) with nfolds must train successfully,
+     * and CV fold validation deviance must differ from the control_variables=null baseline.
+     */
+    @Test
+    public void testControlVariablesAloneWithCrossValidation() {
+        Frame train = null;
+        GLMModel glm = null, glmBaseline = null;
+        try {
+            Scope.enter();
+            train = makeControlVariablesCvFrame("ctrl_alone_cv", false);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._alpha = new double[]{0};
+            // Small ridge penalty (still a single lambda candidate), on top of the larger/more
+            // stable frame, as cheap extra insurance against IRLS divergence.
+            params._lambda = new double[]{0.1};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._seed = 42;   // fixed fold assignment so glm and glmBaseline split identically
+            params._control_variables = new String[]{"x1"};
+
+            glm = new GLM(params).trainModel().get();
+            assertNotNull("Model should train with control_variables + nfolds=3", glm);
+            assertNotNull("CV metrics should be populated", glm._output._cross_validation_metrics);
+            assertNotNull("Training metrics should be populated", glm._output._training_metrics);
+
+            // Same params, control_variables removed -> identical fitted beta, identical folds.
+            params._control_variables = null;
+            glmBaseline = new GLM(params).trainModel().get();
+
+            // Both models share identical fitted beta and identical folds, so any CV residual
+            // deviance difference can only come from zeroing x1 when scoring glm's holdout folds
+            // but not glmBaseline's. Read via _cross_validation_metrics (always populated for CV
+            // runs) rather than Submodel.devianceValid, which stays NaN unless validation_frame
+            // is explicitly set.
+            double glmValidDev = ((GLMMetrics) glm._output._cross_validation_metrics).residual_deviance();
+            double glmBaselineValidDev = ((GLMMetrics) glmBaseline._output._cross_validation_metrics).residual_deviance();
+            String diag = "glmValidDev=" + glmValidDev + ", glmBaselineValidDev=" + glmBaselineValidDev
+                    + ", glm.coefficients()=" + glm.coefficients()
+                    + ", glmBaseline.coefficients()=" + glmBaseline.coefficients();
+            assertTrue("CV validation deviance must be finite [" + diag + "]", Double.isFinite(glmValidDev));
+            assertTrue("control_variables zeroing must change CV fold validation deviance [" + diag + "]",
+                    Math.abs(glmValidDev - glmBaselineValidDev) > 1e-6);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmBaseline != null) glmBaseline.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * control_variables alone (no remove_offset_effects) with an explicit fold_column must train
+     * successfully, and CV fold validation deviance must differ from the control_variables=null baseline.
+     */
+    @Test
+    public void testControlVariablesAloneWithFoldColumn() {
+        Frame train = null;
+        GLMModel glm = null, glmBaseline = null;
+        try {
+            Scope.enter();
+            train = makeControlVariablesCvFrame("ctrl_alone_foldcol", true);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._fold_column = "fold";
+            params._alpha = new double[]{0};
+            // Small ridge penalty (still a single lambda candidate), on top of the larger/more
+            // stable frame, as cheap extra insurance against IRLS divergence.
+            params._lambda = new double[]{0.1};
+            params._intercept = false;
+            params._control_variables = new String[]{"x1"};
+
+            glm = new GLM(params).trainModel().get();
+            assertNotNull("Model should train with control_variables + fold_column", glm);
+            assertNotNull("CV metrics should be populated", glm._output._cross_validation_metrics);
+
+            // fold_column makes fold assignment fully deterministic and identical for both models.
+            params._control_variables = null;
+            glmBaseline = new GLM(params).trainModel().get();
+
+            // Read via _cross_validation_metrics (populated for every CV run) rather than the main
+            // model's own Submodel.devianceValid — see the analogous nfolds test above for why that
+            // field stays NaN here.
+            double glmValidDev = ((GLMMetrics) glm._output._cross_validation_metrics).residual_deviance();
+            double glmBaselineValidDev = ((GLMMetrics) glmBaseline._output._cross_validation_metrics).residual_deviance();
+            String diag = "glmValidDev=" + glmValidDev + ", glmBaselineValidDev=" + glmBaselineValidDev
+                    + ", glm.coefficients()=" + glm.coefficients()
+                    + ", glmBaseline.coefficients()=" + glmBaseline.coefficients();
+            assertTrue("CV validation deviance must be finite [" + diag + "]", Double.isFinite(glmValidDev));
+            assertTrue("control_variables zeroing must change fold_column CV validation deviance [" + diag + "]",
+                    Math.abs(glmValidDev - glmBaselineValidDev) > 1e-6);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            if (glmBaseline != null) glmBaseline.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Unrestricted CV slots are populated when control_variables is set (impl + GLMModelV3 schema),
+     * distinct from their restricted counterparts, and null when control_variables=null. Direct
+     * control_variables analogue of testRemoveOffsetCvUnrestrictedMetricsParity.
+     */
+    @Test
+    public void testControlVariablesCvUnrestrictedMetricsParity() {
+        Frame train = null;
+        Frame trainNoCV = null;
+        GLMModel glm = null;
+        GLMModel glmNoCV = null;
+        try {
+            Scope.enter();
+            train = makeControlVariablesCvFrame("ctrl_unrestricted_cv_metrics", false);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0.1};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._seed = 1234;
+            params._keep_cross_validation_predictions = true;
+            params._control_variables = new String[]{"x1"};
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // Unrestricted impl slots populated.
+            assertNotNull(glm._output._cross_validation_metrics_unrestricted_model);
+            assertNotNull(glm._output._cross_validation_metrics_summary_unrestricted_model);
+            assertNotNull(glm._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+
+            // Summary shape: structural check that tolerates future cv_* header renames.
+            TwoDimTable unrestrictedSummary = glm._output._cross_validation_metrics_summary_unrestricted_model;
+            assertEquals(5, unrestrictedSummary.getColDim());
+            String[] colHeaders = unrestrictedSummary.getColHeaders();
+            assertEquals("mean", colHeaders[0]);
+            assertEquals("sd", colHeaders[1]);
+            assertTrue(colHeaders[2].startsWith("cv_"));
+            assertTrue(colHeaders[3].startsWith("cv_"));
+            assertTrue(colHeaders[4].startsWith("cv_"));
+
+            // Restricted and unrestricted aggregate residual_deviance must differ (control-variable zeroing).
+            assertNotNull(glm._output._cross_validation_metrics);
+            double restrictedResDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics).residual_deviance();
+            double unrestrictedResDev = ((ModelMetricsBinomialGLM) glm._output._cross_validation_metrics_unrestricted_model).residual_deviance();
+            assertNotEquals("Restricted and unrestricted CV residual_deviance must differ when control_variables zeroing changes fold scoring",
+                    restrictedResDev, unrestrictedResDev, 1e-6);
+
+            // residual_deviance mean differs between restricted and unrestricted summaries.
+            TwoDimTable restrictedSummary = glm._output._cross_validation_metrics_summary;
+            assertNotNull(restrictedSummary);
+            int restrictedRow = findRowIndex(restrictedSummary, "residual_deviance");
+            int unrestrictedRow = findRowIndex(unrestrictedSummary, "residual_deviance");
+            assertTrue(restrictedRow >= 0);
+            assertTrue(unrestrictedRow >= 0);
+            double restrictedMean = ((Number) restrictedSummary.get(restrictedRow, 0)).doubleValue();
+            double unrestrictedMean = ((Number) unrestrictedSummary.get(unrestrictedRow, 0)).doubleValue();
+            assertNotEquals("Summary-table mean residual_deviance must differ between restricted and unrestricted views",
+                    restrictedMean, unrestrictedMean, 1e-6);
+
+            // Schema round-trip: Weaver auto-mapping bridges impl `_field` to schema `field`.
+            GLMModelV3 schema = new GLMModelV3();
+            schema.fillFromImpl(glm);
+            assertNotNull(schema.output);
+            assertNotNull(schema.output.cross_validation_metrics_unrestricted_model);
+            assertNotNull(schema.output.cross_validation_metrics_summary_unrestricted_model);
+            assertTrue(schema.output.cross_validation_metrics_unrestricted_model instanceof ModelMetricsBaseV3);
+
+            // Regression guard: control_variables=null -> all unrestricted CV slots stay null.
+            trainNoCV = makeControlVariablesCvFrame("ctrl_unrestricted_cv_metrics_no_ctrl", false);
+            GLMModel.GLMParameters paramsNoCV = new GLMModel.GLMParameters();
+            paramsNoCV._train = trainNoCV._key;
+            paramsNoCV._response_column = "y";
+            paramsNoCV._alpha = new double[]{0};
+            paramsNoCV._lambda = new double[]{0.1};
+            paramsNoCV._intercept = false;
+            paramsNoCV._nfolds = 3;
+            paramsNoCV._seed = 1234;
+            paramsNoCV._keep_cross_validation_predictions = true;
+            paramsNoCV._control_variables = null;
+
+            glmNoCV = new GLM(paramsNoCV).trainModel().get();
+            Scope.track_generic(glmNoCV);
+
+            assertNull(glmNoCV._output._cross_validation_metrics_unrestricted_model);
+            assertNull(glmNoCV._output._cross_validation_metrics_summary_unrestricted_model);
+            assertNull(glmNoCV._output._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+            assertNull("Per-fold unrestricted predictions must be null when control_variables=null",
+                    glmNoCV._output._cross_validation_predictions_unrestricted_model);
+        } finally {
+            if (train != null) train.remove();
+            if (trainNoCV != null) trainNoCV.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Unrestricted CV scoring-history deviance_xval/deviance_se columns are populated and differ
+     * from the restricted columns when control_variables is set. Direct control_variables analogue
+     * of testRemoveOffsetCvScoringHistoryHasXvalDeviance.
+     */
+    @Test
+    public void testControlVariablesCvScoringHistoryHasXvalDeviance() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeControlVariablesCvFrame("ctrl_cv_xval_sh", false);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0.1};
+            params._intercept = false;
+            params._control_variables = new String[]{"x1"};
+            params._nfolds = 3;
+            params._generate_scoring_history = true;
+            params._score_each_iteration = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // --- Restricted scoring history (control variables removed) ---
+            TwoDimTable sh = glm._output._scoring_history;
+            assertNotNull("Restricted scoring history must be present", sh);
+            String[] restrictedCols = sh.getColHeaders();
+            assertTrue("deviance_xval column must be in restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("deviance_xval"));
+            assertTrue("deviance_se column must be in restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("deviance_se"));
+            int restrictedXvalCol = Arrays.asList(restrictedCols).indexOf("deviance_xval");
+            int restrictedSeCol   = Arrays.asList(restrictedCols).indexOf("deviance_se");
+            // Not sh.getRowDim() - 1: xval columns populate only up to the shortest common
+            // iteration count across folds (GLM.java ScoringHistory#to2dTable — "cv model may run
+            // with fewer iterations"), which can be shorter than the main model's total row count.
+            int lastRow = lastNonNullRow(sh, restrictedXvalCol);
+            assertTrue("Restricted scoring history must have at least one row with a populated deviance_xval",
+                    lastRow >= 0);
+            double restrictedXvalDev = (double) sh.get(lastRow, restrictedXvalCol);
+            double restrictedXvalSe  = (double) sh.get(lastRow, restrictedSeCol);
+            assertTrue("deviance_xval in restricted history must be finite and positive",
+                    restrictedXvalDev > 0 && !Double.isNaN(restrictedXvalDev));
+            assertTrue("deviance_se in restricted history must be finite and non-negative",
+                    restrictedXvalSe >= 0 && !Double.isNaN(restrictedXvalSe));
+
+            // --- Unrestricted scoring history (control variables kept) ---
+            TwoDimTable shUnrestricted = glm._output._scoring_history_unrestricted_model;
+            assertNotNull("Unrestricted scoring history must be present", shUnrestricted);
+            String[] unrestrictedCols = shUnrestricted.getColHeaders();
+            assertTrue("deviance_xval must be in unrestricted scoring history",
+                    Arrays.asList(unrestrictedCols).contains("deviance_xval"));
+            assertTrue("deviance_se must be in unrestricted scoring history",
+                    Arrays.asList(unrestrictedCols).contains("deviance_se"));
+            int unrestrictedXvalCol = Arrays.asList(unrestrictedCols).indexOf("deviance_xval");
+            int unrestrictedSeCol   = Arrays.asList(unrestrictedCols).indexOf("deviance_se");
+            int lastRowUnrestricted = lastNonNullRow(shUnrestricted, unrestrictedXvalCol);
+            assertTrue("Unrestricted scoring history must have at least one row with a populated deviance_xval",
+                    lastRowUnrestricted >= 0);
+            double unrestrictedXvalDev = (double) shUnrestricted.get(lastRowUnrestricted, unrestrictedXvalCol);
+            double unrestrictedXvalSe  = (double) shUnrestricted.get(lastRowUnrestricted, unrestrictedSeCol);
+            assertTrue("deviance_xval in unrestricted history must be finite and positive",
+                    unrestrictedXvalDev > 0 && !Double.isNaN(unrestrictedXvalDev));
+            assertTrue("deviance_se in unrestricted history must be finite and non-negative",
+                    unrestrictedXvalSe >= 0 && !Double.isNaN(unrestrictedXvalSe));
+
+            // Restricted (control variables removed) and unrestricted (control variables kept)
+            // xval deviances must differ because the test frame has a real control-variable signal.
+            assertNotEquals("Restricted and unrestricted deviance_xval must differ because control_variables zeroing changes fold scoring",
+                    restrictedXvalDev, unrestrictedXvalDev, 1e-6);
+
+            // The combined restricted scoring history must also carry "Unrestricted deviance_xval" and
+            // "Unrestricted deviance_se" columns (added by combineScoringHistoryRestricted from the
+            // unrestricted scoring history with the "Unrestricted " prefix).
+            assertTrue("Unrestricted deviance_xval column must appear in combined restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("Unrestricted deviance_xval"));
+            assertTrue("Unrestricted deviance_se column must appear in combined restricted scoring history",
+                    Arrays.asList(restrictedCols).contains("Unrestricted deviance_se"));
+            int unrestrictedXvalColInRestricted = Arrays.asList(restrictedCols).indexOf("Unrestricted deviance_xval");
+            // This column's valid-row range is independent of restrictedXvalCol's (populated by
+            // combineScoringHistoryRestricted from the unrestricted table), so look it up separately
+            // rather than reusing lastRow.
+            int lastRowForCombinedUnrestricted = lastNonNullRow(sh, unrestrictedXvalColInRestricted);
+            assertTrue("Combined restricted scoring history must have at least one row with a populated Unrestricted deviance_xval",
+                    lastRowForCombinedUnrestricted >= 0);
+            double unrestrictedXvalDevInRestricted = (double) sh.get(lastRowForCombinedUnrestricted, unrestrictedXvalColInRestricted);
+            assertTrue("Unrestricted deviance_xval in combined restricted history must be finite and positive",
+                    unrestrictedXvalDevInRestricted > 0 && !Double.isNaN(unrestrictedXvalDevInRestricted));
+            assertEquals("Unrestricted deviance_xval in combined table must equal the standalone unrestricted history value",
+                    unrestrictedXvalDev, unrestrictedXvalDevInRestricted, 1e-10);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * With BOTH control_variables and remove_offset_effects set together with CV, all four CV
+     * metric views (default-restricted, control-vars-only-restricted, offset-only-restricted,
+     * fully-unrestricted) must be populated, mutually distinct, and each of the 3 non-default
+     * views must be exactly reconstructable via make_derived_model. Regression-guards a fix in
+     * MakeGLMModelHandler's offset-only-restricted branch, which previously copied the
+     * default-restricted CV metrics verbatim into that slot.
+     */
+    @Test
+    public void testCombinedFlagsAllFourCvViewsPopulatedDistinctAndReconstructable() {
+        Frame train = null;
+        GLMModel glm = null;
+        GLMModel derivedContrVals = null;
+        GLMModel derivedRo = null;
+        GLMModel derivedUnrestricted = null;
+        try {
+            Scope.enter();
+            train = makeControlVariablesAndOffsetCvFrame("combined_flags_4_views_cv");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0.1};
+            params._intercept = false;
+            params._nfolds = 3;
+            params._seed = 1234;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._control_variables = new String[]{"x1"};
+            params._remove_offset_effects = true;
+            params._keep_cross_validation_predictions = true;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // --- All 4 views populated and mutually distinct ---
+            assertNotNull("default-restricted CV metrics must be populated", glm._output._cross_validation_metrics);
+            assertNotNull("control-vars-only-restricted CV metrics must be populated", glm._output._cross_validation_metrics_restricted_model_contr_vals);
+            assertNotNull("offset-only-restricted CV metrics must be populated", glm._output._cross_validation_metrics_restricted_model_ro);
+            assertNotNull("fully-unrestricted CV metrics must be populated", glm._output._cross_validation_metrics_unrestricted_model);
+            assertNotNull(glm._output._cross_validation_metrics_summary_restricted_model_contr_vals);
+            assertNotNull(glm._output._cross_validation_metrics_summary_restricted_model_ro);
+            assertNotNull(glm._output._cross_validation_metrics_summary_unrestricted_model);
+
+            double devDefault = ((GLMMetrics) glm._output._cross_validation_metrics).residual_deviance();
+            double devContrVals = ((GLMMetrics) glm._output._cross_validation_metrics_restricted_model_contr_vals).residual_deviance();
+            double devRo = ((GLMMetrics) glm._output._cross_validation_metrics_restricted_model_ro).residual_deviance();
+            double devUnrestricted = ((GLMMetrics) glm._output._cross_validation_metrics_unrestricted_model).residual_deviance();
+
+            assertNotEquals("default vs contr-vals-only must differ", devDefault, devContrVals, 1e-6);
+            assertNotEquals("default vs offset-only must differ", devDefault, devRo, 1e-6);
+            assertNotEquals("default vs fully-unrestricted must differ", devDefault, devUnrestricted, 1e-6);
+            assertNotEquals("contr-vals-only vs offset-only must differ", devContrVals, devRo, 1e-6);
+            assertNotEquals("contr-vals-only vs fully-unrestricted must differ", devContrVals, devUnrestricted, 1e-6);
+            assertNotEquals("offset-only vs fully-unrestricted must differ", devRo, devUnrestricted, 1e-6);
+
+            // --- make_derived_model reconstruction for the 3 non-default views ---
+            MakeDerivedGLMModelV3 contrValsArgs = new MakeDerivedGLMModelV3();
+            contrValsArgs.model = new KeyV3.ModelKeyV3(glm._key);
+            contrValsArgs.dest = "combined_flags_4_views_cv_derived_contr_vals";
+            contrValsArgs.remove_control_variables_effects = true;
+            new MakeGLMModelHandler().make_derived_model(3, contrValsArgs);
+            derivedContrVals = DKV.getGet(Key.make("combined_flags_4_views_cv_derived_contr_vals"));
+            assertNotNull(derivedContrVals);
+            Scope.track_generic(derivedContrVals);
+            assertEquals("Reconstructed control-vars-only-restricted CV deviance must exactly match source's _restricted_model_contr_vals",
+                    devContrVals, ((GLMMetrics) derivedContrVals._output._cross_validation_metrics).residual_deviance(), 1e-10);
+            assertSame("Reconstructed control-vars-only-restricted CV summary must be the source's _restricted_model_contr_vals table (pure field re-pointing, not recomputation)",
+                    glm._output._cross_validation_metrics_summary_restricted_model_contr_vals,
+                    derivedContrVals._output._cross_validation_metrics_summary);
+
+            MakeDerivedGLMModelV3 roArgs = new MakeDerivedGLMModelV3();
+            roArgs.model = new KeyV3.ModelKeyV3(glm._key);
+            roArgs.dest = "combined_flags_4_views_cv_derived_ro";
+            roArgs.remove_offset_effects = true;
+            new MakeGLMModelHandler().make_derived_model(3, roArgs);
+            derivedRo = DKV.getGet(Key.make("combined_flags_4_views_cv_derived_ro"));
+            assertNotNull(derivedRo);
+            Scope.track_generic(derivedRo);
+            // Regression guard: devDefault != devRo was already proven above, so if a future change
+            // reverts MakeGLMModelHandler to copy the default-restricted CV metrics here instead of
+            // _restricted_model_ro, this assertion (compared against devRo, not devDefault) will fail.
+            assertEquals("Reconstructed offset-only-restricted CV deviance must exactly match source's _restricted_model_ro",
+                    devRo, ((GLMMetrics) derivedRo._output._cross_validation_metrics).residual_deviance(), 1e-10);
+            assertSame("Reconstructed offset-only-restricted CV summary must be the source's _restricted_model_ro table",
+                    glm._output._cross_validation_metrics_summary_restricted_model_ro,
+                    derivedRo._output._cross_validation_metrics_summary);
+
+            // --- Fully-unrestricted view: already works without any new code on that path. ---
+            MakeDerivedGLMModelV3 unrestrictedArgs = new MakeDerivedGLMModelV3();
+            unrestrictedArgs.model = new KeyV3.ModelKeyV3(glm._key);
+            unrestrictedArgs.dest = "combined_flags_4_views_cv_derived_unrestricted";
+            new MakeGLMModelHandler().make_derived_model(3, unrestrictedArgs);
+            derivedUnrestricted = DKV.getGet(Key.make("combined_flags_4_views_cv_derived_unrestricted"));
+            assertNotNull(derivedUnrestricted);
+            Scope.track_generic(derivedUnrestricted);
+            assertEquals("Reconstructed fully-unrestricted CV deviance must exactly match source's _unrestricted_model",
+                    devUnrestricted, ((GLMMetrics) derivedUnrestricted._output._cross_validation_metrics).residual_deviance(), 1e-10);
+            assertSame("Reconstructed fully-unrestricted CV summary must be the source's _unrestricted_model table",
+                    glm._output._cross_validation_metrics_summary_unrestricted_model,
+                    derivedUnrestricted._output._cross_validation_metrics_summary);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * control_variables must be rejected when _family=multinomial, even if _distribution is left
+     * at its unused default (Family-typed constructor). This exercises the _family-based guard
+     * directly, separately from the older _distribution-based guard already covered by
+     * testControlVariableMultinomial.
+     *
+     * Expects plain IllegalArgumentException (not the wrapped H2OModelBuilderIllegalArgumentException):
+     * this guard fires later in init(), after error wrapping has already been bypassed, so the error
+     * surfaces via a different throw site than the _distribution-based guard. This is existing
+     * GLM.init() behavior, not something this test changes.
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testControlVariablesMultinomialViaFamily() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            // 3-class categorical response so Family.multinomial is valid on its own.
+            Vec x = Vec.makeVec(new double[]{1,2,3,1,2,3,1,2,3,1}, Vec.newKey());
+            Vec x2 = Vec.makeVec(new double[]{.1,.2,.1,.2,.1,.2,.1,.2,.1,.2}, Vec.newKey());
+            Vec y = Vec.makeVec(new long[]{0,1,2,0,1,2,0,1,2,0}, new String[]{"a","b","c"}, Vec.newKey());
+            train = new Frame(Key.<Frame>make("test_ctrl_multinomial_family"),
+                    new String[]{"x", "x2", "y"}, new Vec[]{x, x2, y});
+            DKV.put(train);
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
+            params._train = train._key;
+            params._response_column = "y";
+            params._alpha = new double[]{0};
+            params._control_variables = new String[]{"x2"};
             glm = new GLM(params).trainModel().get();
         } finally {
             if (train != null) train.remove();

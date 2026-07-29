@@ -321,10 +321,10 @@ def class_extensions():
         """
         Cross-validation metrics for the with-offset (unrestricted) view.
 
-        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns a ``dict``
-        (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.), or
-        ``None`` when the model was not trained with both ``remove_offset_effects=True`` and
-        cross-validation.
+        Available when ``control_variables`` and/or ``remove_offset_effects`` is set, and ``nfolds > 0``.
+        Returns a ``dict`` (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.),
+        or ``None`` when the model was not trained with ``control_variables`` and/or
+        ``remove_offset_effects``, together with cross-validation.
 
         :examples:
 
@@ -346,9 +346,9 @@ def class_extensions():
         """
         Cross-validation metrics summary table for the with-offset (unrestricted) view.
 
-        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns an
-        ``H2OTwoDimTable``, or ``None`` when the model was not trained with both
-        ``remove_offset_effects=True`` and cross-validation.
+        Available when ``control_variables`` and/or ``remove_offset_effects`` is set, and ``nfolds > 0``.
+        Returns an ``H2OTwoDimTable``, or ``None`` when the model was not trained with
+        ``control_variables`` and/or ``remove_offset_effects``, together with cross-validation.
 
         :examples:
 

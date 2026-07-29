@@ -19,9 +19,20 @@ When control variables are specified, GLM will exclude them during scoring. Mode
 
 To get the unrestricted model with its own metrics use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
 
-The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. 
+The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included.
 
-If you set up the ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history are calculated with both features enabled (that is, with both offset and control-variables effects removed during scoring).
+**Cross-validation support**
+
+When cross-validation is enabled (``nfolds > 0``), two parallel CV metric views are computed:
+
+- **Restricted** (``cross_validation_metrics``, ``cross_validation_metrics_summary``): CV metrics computed with the control variables zeroed out, consistent with the restricted training and validation metrics.
+- **Unrestricted** (``cross_validation_metrics_unrestricted_model``, ``cross_validation_metrics_summary_unrestricted_model``): CV metrics computed with the control variables preserved, matching the unrestricted training and validation metrics.
+
+Calling ``make_unrestricted_glm_model()`` on a model trained with CV propagates the unrestricted CV metrics into the derived model's main ``cross_validation_metrics`` slot, so the derived model presents the full with-control-variables view consistently across training, validation, and CV.
+
+**Combination with remove_offset_effects**
+
+If you set up ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history (including under cross-validation) are calculated with both features enabled (that is, with both offset and control-variables effects removed during scoring). Four CV metric views are available in this case: the default restricted view (both effects removed, in ``cross_validation_metrics``), the control-variables-only-restricted view (``cross_validation_metrics_restricted_model_contr_vals``, offset kept), the offset-only-restricted view (``cross_validation_metrics_restricted_model_ro``, control variables kept), and the fully-unrestricted view (``cross_validation_metrics_unrestricted_model``, neither effect removed).
 To get a model with only one set of effects excluded, use ``glm.make_derived_glm_model()`` / ``h2o.make_derived_glm_model()`` with exactly one of its two flags set to ``True``:
 
 - ``remove_control_variables_effects=True``: excludes the control-variables effects from scoring and metrics; the offset effects stay included.
@@ -34,7 +45,6 @@ If both features are enabled and ``score_each_iteration=True`` or ``generate_sco
 
 - This option is experimental.
 - This option is not supported for multinomial, ordinal, or custom distributions.
-- This option is not available when cross validation is enabled.
 - This option is not available when Lambda search is enabled.
 - This option is not available when interactions are enabled.
 

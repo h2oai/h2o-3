@@ -116,8 +116,9 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param control_variables A list of predictor column names whose contribution is suppressed in training and validation metrics. The
-#'        columns remain as predictors in the trained model. Cannot be combined with cross-validation (nfolds),
-#'        interactions, or lambda search. Experimental.
+#'        columns remain as predictors in the trained model. Supports cross-validation (nfolds). With-control-
+#'        variables metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Cannot
+#'        be combined with interactions or lambda search. Experimental.
 #' @param remove_offset_effects \code{Logical}. When true, the offset column's contribution is subtracted from predicted values before
 #'        computing training and validation metrics. Supports cross-validation (nfolds). With-offset metrics are stored
 #'        in separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with interactions or

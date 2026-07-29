@@ -173,6 +173,18 @@ public class MakeGLMModelHandler extends Handler {
           m._output._scoring_history = hasBothFeatures
                   ? model._output._scoring_history_restricted_model_contr_vals
                   : model._output._scoring_history;
+          // Same hasBothFeatures gate as above: with control_variables alone, the default
+          // _cross_validation_metrics slot already reflects this view; the _restricted_model_contr_vals
+          // slots only exist when both flags are set together.
+          m._output._cross_validation_metrics = hasBothFeatures
+                  ? model._output._cross_validation_metrics_restricted_model_contr_vals
+                  : model._output._cross_validation_metrics;
+          m._output._cross_validation_metrics_summary = hasBothFeatures
+                  ? model._output._cross_validation_metrics_summary_restricted_model_contr_vals
+                  : model._output._cross_validation_metrics_summary;
+          copyHoldoutPreds(hasBothFeatures
+                  ? model._output._cross_validation_holdout_predictions_frame_id_restricted_model_contr_vals
+                  : model._output._cross_validation_holdout_predictions_frame_id, m, key);
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances;
           m._output.setAndMapControlVariablesNames(model._parms._control_variables);
@@ -189,11 +201,21 @@ public class MakeGLMModelHandler extends Handler {
           m._output._scoring_history = hasBothFeatures
                   ? model._output._scoring_history_restricted_model_ro
                   : model._output._scoring_history;
-          m._output._cross_validation_metrics = model._output._cross_validation_metrics;
-          m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary;
+          // Fixed bug: this used to always copy the default-restricted CV metrics here, which
+          // mislabels a "both effects removed" view as "offset-only-restricted" once a CV model
+          // trained with both flags is reconstructed. Now gated the same way as the fields above:
+          // falls back to the pre-existing single-flag behavior when remove_offset_effects is set alone.
+          m._output._cross_validation_metrics = hasBothFeatures
+                  ? model._output._cross_validation_metrics_restricted_model_ro
+                  : model._output._cross_validation_metrics;
+          m._output._cross_validation_metrics_summary = hasBothFeatures
+                  ? model._output._cross_validation_metrics_summary_restricted_model_ro
+                  : model._output._cross_validation_metrics_summary;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances_unrestricted_model;
-          copyHoldoutPreds(model._output._cross_validation_holdout_predictions_frame_id, m, key);
+          copyHoldoutPreds(hasBothFeatures
+                  ? model._output._cross_validation_holdout_predictions_frame_id_restricted_model_ro
+                  : model._output._cross_validation_holdout_predictions_frame_id, m, key);
       } else {
           m._output._training_metrics = model._output._training_metrics_unrestricted_model;
           m._output._validation_metrics = model._output._validation_metrics_unrestricted_model;

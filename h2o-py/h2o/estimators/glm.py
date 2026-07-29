@@ -339,8 +339,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``0.001``.
         :type stopping_tolerance: float
         :param control_variables: A list of predictor column names whose contribution is suppressed in training and
-               validation metrics. The columns remain as predictors in the trained model. Cannot be combined with cross-
-               validation (nfolds), interactions, or lambda search. Experimental.
+               validation metrics. The columns remain as predictors in the trained model. Supports cross-validation (nfolds).
+               With-control-variables metrics are stored in separate slots and exposed via
+               make_unrestricted_glm_model(). Cannot be combined with interactions or lambda search. Experimental.
                Defaults to ``None``.
         :type control_variables: List[str], optional
         :param remove_offset_effects: When true, the offset column's contribution is subtracted from predicted values
@@ -2057,8 +2058,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def control_variables(self):
         """
         A list of predictor column names whose contribution is suppressed in training and validation metrics. The
-        columns remain as predictors in the trained model. Cannot be combined with cross-validation (nfolds),
-        interactions, or lambda search. Experimental.
+        columns remain as predictors in the trained model. Supports cross-validation (nfolds). With-control-variables
+        metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with
+        interactions or lambda search. Experimental.
 
         Type: ``List[str]``.
         """
@@ -2836,10 +2838,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Cross-validation metrics for the with-offset (unrestricted) view.
 
-        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns a ``dict``
-        (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.), or
-        ``None`` when the model was not trained with both ``remove_offset_effects=True`` and
-        cross-validation.
+        Available when ``control_variables`` and/or ``remove_offset_effects`` is set, and ``nfolds > 0``.
+        Returns a ``dict`` (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.),
+        or ``None`` when the model was not trained with ``control_variables`` and/or
+        ``remove_offset_effects``, together with cross-validation.
 
         :examples:
 
@@ -2861,9 +2863,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Cross-validation metrics summary table for the with-offset (unrestricted) view.
 
-        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns an
-        ``H2OTwoDimTable``, or ``None`` when the model was not trained with both
-        ``remove_offset_effects=True`` and cross-validation.
+        Available when ``control_variables`` and/or ``remove_offset_effects`` is set, and ``nfolds > 0``.
+        Returns an ``H2OTwoDimTable``, or ``None`` when the model was not trained with
+        ``control_variables`` and/or ``remove_offset_effects``, together with cross-validation.
 
         :examples:
 

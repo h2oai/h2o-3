@@ -6,7 +6,11 @@ import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;
 
 /**
- * End point to get derived GLM model when control variables or remove offset effects features are enabled. Creates a modified copy of the original model.
+ * End point to get derived GLM model when control variables or remove offset effects features
+ * are enabled. Creates a modified copy of the original model. When the source model was trained
+ * with cross-validation, also reconstructs the corresponding CV metric view (control-vars-only-
+ * restricted, offset-only-restricted, or fully-unrestricted, depending on which flags are set)
+ * as the derived model's cross_validation_metrics / cross_validation_metrics_summary.
  */
 public class MakeDerivedGLMModelV3 extends SchemaV3<Iced, MakeDerivedGLMModelV3> {
 

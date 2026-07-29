@@ -33,7 +33,7 @@ To get a model with only one set of effects excluded, use ``glm.make_derived_glm
 
 The two flags cannot both be ``True`` in the same call.
 If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
-Cross-validation is not supported in the combination of these two features yet.
+When cross-validation is enabled and both features are set together, four CV metric views are available: the default restricted view (both effects removed, in ``cross_validation_metrics``), the control-variables-only-restricted view (``cross_validation_metrics_restricted_model_contr_vals``), the offset-only-restricted view (``cross_validation_metrics_restricted_model_ro``), and the fully-unrestricted view (``cross_validation_metrics_unrestricted_model``).
 
 **Notes**:
 

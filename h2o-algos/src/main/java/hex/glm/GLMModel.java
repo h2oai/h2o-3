@@ -809,9 +809,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if(_lambda_search) {
           glm.error("_control_variables", "Control variables option is not supported with Lambda search.");
         }
-        if(_fold_column != null || _nfolds > 0){
-          glm.error("_control_variables", "Control variables option is not supported with cross-validation.");
-        }
         for(String col: _control_variables){
           Vec v = train().vec(col);
           if (v == null) {
@@ -1720,7 +1717,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public ModelMetrics _training_metrics_unrestricted_model;
     public ModelMetrics _validation_metrics_unrestricted_model;
 
-    // CV with-offset (unrestricted) view; populated when _remove_offset_effects=true and CV is enabled.
+    // CV unrestricted view; populated when _control_variables is set and/or _remove_offset_effects=true, with CV enabled.
     public ModelMetrics _cross_validation_metrics_unrestricted_model;
     public TwoDimTable _cross_validation_metrics_summary_unrestricted_model;
     public Key<Frame> _cross_validation_holdout_predictions_frame_id_unrestricted_model;
@@ -1736,7 +1733,24 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public TwoDimTable _scoring_history_restricted_model_ro;
     public ModelMetrics _training_metrics_restricted_model_ro;
     public ModelMetrics _validation_metrics_restricted_model_ro;
-    
+
+    // CV metrics for the two views below are only populated when both control_variables and
+    // remove_offset_effects are set together, with CV enabled. Otherwise they stay null.
+
+    // Control variables zeroed, offset kept.
+    public ModelMetrics _cross_validation_metrics_restricted_model_contr_vals;
+    public TwoDimTable _cross_validation_metrics_summary_restricted_model_contr_vals;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id_restricted_model_contr_vals;
+    // Per-fold predictions; non-null only when keep_cross_validation_predictions=true.
+    public Key<Frame>[] _cross_validation_predictions_restricted_model_contr_vals;
+
+    // Offset zeroed, control variables kept.
+    public ModelMetrics _cross_validation_metrics_restricted_model_ro;
+    public TwoDimTable _cross_validation_metrics_summary_restricted_model_ro;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id_restricted_model_ro;
+    // Per-fold predictions; non-null only when keep_cross_validation_predictions=true.
+    public Key<Frame>[] _cross_validation_predictions_restricted_model_ro;
+
     public void setAndMapControlVariablesNames(String[] controlVariablesNames){
       this._control_variables_names = controlVariablesNames;
       mapControlVariables();
