@@ -108,7 +108,7 @@ def connect(server=None, url=None, ip=None, port=None,
     # process, telemetry=False forces it off. None means "leave the current
     # state" so a later bare connect() can't re-enable an earlier telemetry=False.
     if telemetry is not None:
-        _telemetry.set_disabled(not telemetry)
+        _telemetry.set_enabled(telemetry)
     svc = _strict_version_check(strict_version_check, config=config)
     if config:
         if "connect_params" in config:
@@ -240,7 +240,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     # forces it off. None means "leave the current state", so a later bare
     # init() can't silently re-enable an earlier telemetry=False.
     if telemetry is not None:
-        _telemetry.set_disabled(not telemetry)
+        _telemetry.set_enabled(telemetry)
     assert_is_type(url, str, None)
     assert_is_type(ip, str, None)
     assert_is_type(port, int, str, None)

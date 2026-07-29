@@ -38,23 +38,22 @@
 # Per-process shared session_id + caches in a private env so they persist
 # across function calls without leaking package globals.
 #
-# disabled_by_kwarg starts at the client-wide default when the user never passes
-# the telemetry arg: TRUE = telemetry off (opt-in model) — a bare h2o.init()
-# stays off until the user opts in (telemetry = TRUE, h2o.set_telemetry(TRUE),
-# or a persisted/config opt-in). Flip to FALSE for the opt-out model (default-on).
+# `enabled` tracks whether telemetry is currently switched on for this session.
+# Telemetry is opt-in, so it starts FALSE (off) and is flipped on only by an
+# explicit choice — h2o.init(telemetry = TRUE), h2o.set_telemetry(TRUE), or a
+# persisted/config opt-in. DO_NOT_TRACK always forces it off regardless.
 .h2o.telemetry.state <- new.env(parent = emptyenv())
-.h2o.telemetry.state$session_id        <- NULL
-.h2o.telemetry.state$java_info         <- NULL  # cached `java -version` parse
-.h2o.telemetry.state$disabled_by_kwarg <- TRUE  # opt-in default: off until the user opts in
+.h2o.telemetry.state$session_id <- NULL
+.h2o.telemetry.state$java_info  <- NULL   # cached `java -version` parse
+.h2o.telemetry.state$enabled    <- FALSE  # opt-in default: off until the user opts in
 
-#' Programmatic opt-out, set by `h2o.init(telemetry = FALSE)`.
+#' Programmatic on/off switch, set by `h2o.init(telemetry = ...)`.
 #'
-#' Once disabled, every subsequent `.h2o.send_*` call is a no-op until the
-#' next R session. Independent of the `DO_NOT_TRACK` env-var opt-out, which
-#' always wins.
+#' Once set, every subsequent `.h2o.send_*` call honors it until the next R
+#' session. Independent of the `DO_NOT_TRACK` env-var opt-out, which always wins.
 #' @keywords internal
-.h2o.telemetry.set_disabled <- function(disabled) {
-  .h2o.telemetry.state$disabled_by_kwarg <- isTRUE(disabled)
+.h2o.telemetry.set_enabled <- function(enabled) {
+  .h2o.telemetry.state$enabled <- isTRUE(enabled)
   invisible(NULL)
 }
 
@@ -74,7 +73,7 @@
 .h2o.telemetry.disabled <- function() {
   # DO_NOT_TRACK (cross-tool standard) is the hard opt-out and always wins.
   if (.h2o.telemetry.env_truthy("DO_NOT_TRACK")) return(TRUE)
-  isTRUE(.h2o.telemetry.state$disabled_by_kwarg)
+  !isTRUE(.h2o.telemetry.state$enabled)
 }
 
 # --- Persistent opt-out & preference sources (kept consistent with the Python client) ---
@@ -153,9 +152,9 @@
   tryCatch({
     prefs <- list(.h2o.telemetry.config_pref(), .h2o.telemetry.file_pref())
     if (any(vapply(prefs, function(p) identical(p, FALSE), logical(1L)))) {
-      .h2o.telemetry.state$disabled_by_kwarg <- TRUE
+      .h2o.telemetry.state$enabled <- FALSE
     } else if (any(vapply(prefs, function(p) identical(p, TRUE), logical(1L)))) {
-      .h2o.telemetry.state$disabled_by_kwarg <- FALSE
+      .h2o.telemetry.state$enabled <- TRUE
     }
   }, error = function(e) invisible(NULL))
   invisible(NULL)
@@ -174,7 +173,7 @@
 h2o.set_telemetry <- function(enabled) {
   if (!is.logical(enabled) || length(enabled) != 1L || is.na(enabled))
     stop("`enabled` must be TRUE or FALSE")
-  .h2o.telemetry.set_disabled(!enabled)
+  .h2o.telemetry.set_enabled(enabled)
   ok <- tryCatch({
     d <- .h2o.telemetry.config_dir()
     dir.create(d, showWarnings = FALSE, recursive = TRUE)
