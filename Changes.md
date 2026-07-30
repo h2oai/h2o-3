@@ -2,6 +2,13 @@
 
 ## H2O
 
+### 3.46.0.12 - 7/30/2026
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/12/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/12/index.html</a>
+
+#### New Feature
+- [[#16875]](https://github.com/h2oai/h2o-3/issues/16875) – Added opt-in anonymous usage telemetry to the Python, R, and JVM clients.
+
 ### 3.46.0.11 - 5/21/2026
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/11/index.html</a>
