@@ -1,5 +1,5 @@
 ``control_variables``
---------------------
+---------------------
 
 - Available in: GLM
 - Hyperparameter: no
@@ -22,12 +22,13 @@ To get the unrestricted model with its own metrics use ``glm.make_unrestricted_g
 The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. 
 
 If you set up the ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history are calculated with both features enabled (that is, with both offset and control-variables effects removed during scoring).
-To get a model with only one set of effects excluded, use ``glm.make_derived_glm_model()`` / ``h2o.make_derived_glm_model()`` with exactly one of its two flags set to ``True``:
+To get a model with only one set of effects excluded, use ``glm.make_derived_glm_model()`` / ``h2o.make_derived_glm_model()`` with exactly one of its two flags set to ``True``. The source model only has to have been trained with the matching feature -- you do not need both:
 
-- ``remove_control_variables_effects=True``: excludes the control-variables effects from scoring and metrics; the offset effects stay included.
-- ``remove_offset_effects=True``: excludes the offset effects from scoring and metrics; the control-variables effects stay included.
+- ``remove_control_variables_effects=True``: excludes the control-variables effects from scoring and metrics; the offset effects, if the source model has any, stay included. Requires the source model to have been trained with ``control_variables``.
+- ``remove_offset_effects=True``: excludes the offset effects from scoring and metrics; the control-variables effects, if the source model has any, stay included. Requires the source model to have been trained with ``remove_offset_effects=True``.
 
-The two flags cannot both be ``True`` in the same call.
+The two flags cannot both be ``True`` in the same call. Calling the same derivation twice with the same ``dest`` returns the model created the first time; if a different model already occupies that key, the call is rejected.
+If the source model was trained with only one of the two features, the corresponding derived model is equivalent to the source model in every reported number.
 If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
 
 **Notes**:

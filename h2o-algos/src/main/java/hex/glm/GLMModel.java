@@ -94,6 +94,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return sk;
   }
   
+  /**
+   * Fills the cross-validation slot of a ScoringInfo and sets the cross_validation flag from whether it was actually
+   * filled. ScoringInfo.scoreKeepers() prefers scored_xval whenever the flag is set, so the two must stay in step:
+   * a set flag with an unfilled scored_xval yields an all-NaN series that silently disables metric-based early
+   * stopping. GLM only has cross-validation metrics after the main model is scored, so during training this leaves
+   * the flag false.
+   */
+  private void setCrossValidationScore(ScoringInfo info) {
+    if (_output._cross_validation_metrics != null) {
+      info.scored_xval = new ScoreKeeper(Double.NaN);
+      info.scored_xval.fillFrom(_output._cross_validation_metrics);
+      info.cross_validation = true;
+    } else {
+      info.cross_validation = false;
+    }
+  }
+
   public ScoringInfo[] getScoringInfo() { return scoringInfo;}
   
   public void addScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
@@ -103,7 +120,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null ;
+    // scoreKeepers() returns scored_xval whenever this flag is set, so the flag must not be set unless scored_xval
+    // is actually populated - otherwise ScoreKeeper.stopEarly gets an all-NaN series and silently never triggers,
+    // and Model.mse()/auc()/... report NaN via last_scored(). Mirrors hex.Model:1405-1408. During GLM training
+    // _cross_validation_metrics is null (CV metrics are built afterwards in cv_mainModelScores), so in practice this
+    // resolves to false and early stopping correctly falls back to validation/training metrics.
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -141,7 +163,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -179,7 +201,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -217,7 +239,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -446,19 +468,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       rp._std_errs = new double[N][];
     }
     // The explained-deviance ratios below divide a Submodel deviance by a null deviance from the model metrics,
-    // so both must be on the same scale. remove_offset_effects makes the *reported* metrics offset-removed
-    // while the Submodel deviances are not: devianceTrain is always the offset-included fit deviance, and
-    // devianceValid keeps the offset under lambda_search (there it feeds submodel selection). Mixing the two
-    // scales stops producing a fraction at all, so pick the metrics matching each numerator - and report NaN when
-    // they are absent, rather than falling back to metrics on the other scale. Derived models built by
-    // MakeGLMModelHandler carry _remove_offset_effects but never populate the unrestricted slots.
+    // so both must be on the same scale. remove_offset_effects makes the *reported* metrics offset-removed while
+    // both Submodel deviances stay offset-included (devianceTrain is the fit deviance; devianceValid feeds submodel
+    // selection, so it must keep the offset - see computeSubmodel). Mixing the two scales stops producing a fraction
+    // at all, so both numerators need the unrestricted metrics - and report NaN when those are absent, rather than
+    // falling back to metrics on the other scale. Derived models built by MakeGLMModelHandler carry
+    // _remove_offset_effects but never populate the unrestricted slots.
     ModelMetrics trainMetrics = _output._training_metrics;
     ModelMetrics validMetrics = _output._validation_metrics;
     if (_parms._remove_offset_effects) {
       trainMetrics = _output._training_metrics_unrestricted_model;
-      // Without lambda_search devianceValid is offset-removed and already matches the restricted metrics.
-      if (_parms._lambda_search)
-        validMetrics = _output._validation_metrics_unrestricted_model;
+      validMetrics = _output._validation_metrics_unrestricted_model;
     }
     for (int i = 0; i < N; ++i) {
       Submodel sm = _output._submodels[i];
@@ -1652,10 +1672,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
   public boolean _useRemoveOffsetEffects = false;
-  // Provenance for a make_derived_model() output: the source model this was derived from, plus the
-  // view it exposes. Lets a repeated derive call at the same dest key verify it is re-deriving the
-  // same view from the same source (idempotent) rather than silently returning an unrelated model.
+  // Provenance for a make_derived_model() output: the source model this was derived from (key *and* checksum,
+  // since a model_id can be retrained in place), plus the view it exposes. Lets a repeated derive call at the same
+  // dest key verify it is re-deriving the same view from the same source fit (idempotent) rather than silently
+  // returning an unrelated or stale model.
   public Key<GLMModel> _derivedFromModelId = null;
+  public long _derivedFromModelChecksum = 0;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 

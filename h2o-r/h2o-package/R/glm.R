@@ -115,13 +115,15 @@
 #'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
-#' @param control_variables A list of predictor column names whose contribution is suppressed in training and validation metrics. The
-#'        columns remain as predictors in the trained model. Cannot be combined with cross-validation (nfolds),
-#'        interactions, or lambda search. Experimental.
-#' @param remove_offset_effects \code{Logical}. When true, the offset column's contribution is subtracted from predicted values before
-#'        computing training and validation metrics. Supports cross-validation (nfolds) and lambda search. With-offset
-#'        metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with
-#'        interactions. Experimental. Defaults to FALSE.
+#' @param control_variables A list of predictor column names whose coefficients are zeroed out when the model scores. This affects
+#'        predictions (including the MOJO) as well as the training and validation metrics; the columns remain as
+#'        predictors in the trained model. Not supported for the multinomial or ordinal families. Cannot be combined
+#'        with cross-validation, interactions, or lambda search. Experimental.
+#' @param remove_offset_effects \code{Logical}. When true, the offset column is excluded from the linear predictor when the model scores. This
+#'        affects predictions (including the MOJO) as well as the training, validation, and cross-validation metrics.
+#'        With-offset metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Requires
+#'        offset_column. Supports cross-validation and lambda search. Not supported for the multinomial or ordinal
+#'        families, or with interactions. Experimental. Defaults to FALSE.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -879,7 +881,7 @@ h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
 #'   the offset effects; the \code{control_variables} effects, if the source model has any, are
 #'   still included. Requires the source model to have been trained with
 #'   \code{remove_offset_effects=TRUE}. Cannot be combined with
-#'   \code{remove_control_variables_effects=TRUE} — only one set of effects can be excluded at a
+#'   \code{remove_control_variables_effects=TRUE} -- only one set of effects can be excluded at a
 #'   time.
 #' @export
 h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_control_variables_effects = FALSE, remove_offset_effects = FALSE) {

@@ -32,7 +32,14 @@ public class MakeGLMModelHandler extends Handler {
     if (sourceHoldout == null) return;
     Frame sourceHoldoutFrame = sourceHoldout.get();
     if (sourceHoldoutFrame == null) return;
-    Frame holdoutCopy = sourceHoldoutFrame.deepCopy(derivedKey.toString() + "_cv_holdout_preds");
+    // derivedKey is user-controlled (args.dest), and the caller's collision check covers only that key - not this
+    // second key derived from it. deepCopy + DKV.put would overwrite whatever sits here and orphan its Vecs.
+    String holdoutName = derivedKey.toString() + "_cv_holdout_preds";
+    if (DKV.get(Key.make(holdoutName)) != null) {
+      throw new IllegalArgumentException("Cannot store the derived model's cross-validation holdout predictions: " +
+              holdoutName + " already exists. Pass a different destination key, or remove that object first.");
+    }
+    Frame holdoutCopy = sourceHoldoutFrame.deepCopy(holdoutName);
     DKV.put(holdoutCopy);
     derived._output._cross_validation_holdout_predictions_frame_id = holdoutCopy._key;
   }
@@ -56,13 +63,14 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
-    // KNOWN BUG (see https://github.com/h2oai/h2o-3/issues/16890): beta above is in the raw
-    // (denormalized) coefficient space, but model.dinfo() is reused as-is (including the source's
-    // STANDARDIZE transform, if any) instead of a NONE-transform clone. That makes isStandardized()
-    // report true for a model whose beta isn't actually standardized, so downstream consumers gated
-    // on it (e.g. beta(lambda) -> DataInfo.denormalizeBeta()) will spuriously rescale already-raw
-    // values using the source's _normMul/_normSub.
-    m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+    // beta above is in the raw (denormalized) coefficient space, so the new model's DataInfo must not carry the
+    // source's STANDARDIZE transform - otherwise isStandardized() reports true for a model whose beta is raw and the
+    // denormalizeBeta consumers gated on it (beta(lambda), getRegularizationPath's coefficients) silently rescale
+    // already-raw values. Clone first: model.dinfo() returns the source's live _output._dinfo, and the base code
+    // mutated it in place, permanently flipping the *source* model to NONE.
+    DataInfo dinfo = model.dinfo().clone();
+    dinfo.setPredictorTransform(TransformType.NONE);
+    m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
     DKV.put(m._key, m);
@@ -85,7 +93,7 @@ public class MakeGLMModelHandler extends Handler {
       if (model == null)
           throw new IllegalArgumentException("Missing source model " + args.model);
       if (model._parms._control_variables == null && !model._parms._remove_offset_effects) {
-          throw new IllegalArgumentException("Source model is not trained with control variables or remove offset effects.");
+          throw new IllegalArgumentException("Source model was not trained with control_variables or remove_offset_effects=True.");
       }
       Key generatedKey;
       if (args.remove_control_variables_effects && model._parms._control_variables == null) {
@@ -94,11 +102,11 @@ public class MakeGLMModelHandler extends Handler {
       }
       if (args.remove_offset_effects && !model._parms._remove_offset_effects) {
           throw new IllegalArgumentException("remove_offset_effects requires the source model " +
-                  "to have been trained with remove_offset_effects=true.");
+                  "to have been trained with remove_offset_effects=True.");
       }
       if (args.remove_control_variables_effects && args.remove_offset_effects) {
-          throw new IllegalArgumentException("The remove_control_variables_effects and remove_offset_effects feature " +
-                  "cannot be used together. It produces the same model as the main model.");
+          throw new IllegalArgumentException("remove_control_variables_effects and remove_offset_effects cannot both be set: " +
+                  "they produce the same model as the main model.");
       }
       if (args.remove_offset_effects) {
           generatedKey = Key.make(model._key.toString() + "_remove_offset_effects");
@@ -115,8 +123,13 @@ public class MakeGLMModelHandler extends Handler {
           }
           GLMModel existingModel = (GLMModel) existingAtKey;
           // Idempotent re-derive: only trust a model at this key if it was produced by a previous
-          // make_derived_model call from this same source model with the same view requested.
+          // make_derived_model call from this same source model with the same view requested. The checksum is part
+          // of the identity on purpose - H2O lets you retrain into an existing model_id, so key equality alone would
+          // return the *previous* fit's metrics as the derived view of the retrained model. It covers the params, the
+          // training-frame content and (via GLMOutput.checksum_impl) the fitted coefficients, as they stood when the
+          // model was first scored - Keyed.checksum() caches, so it is not recomputed per call.
           boolean sameProvenance = model._key.equals(existingModel._derivedFromModelId)
+                  && model.checksum() == existingModel._derivedFromModelChecksum
                   && existingModel._useControlVariables == args.remove_control_variables_effects
                   && existingModel._useRemoveOffsetEffects == args.remove_offset_effects;
           if (sameProvenance) {
@@ -124,7 +137,16 @@ public class MakeGLMModelHandler extends Handler {
               existing.fillFromImpl(existingModel);
               return existing;
           }
-          throw new IllegalArgumentException("Model with key " + key + " already exists.");
+          // Distinguish the two cases: _derivedFromModelId is null on any normally trained model, so the common
+          // collision is a user pointing dest at a model of their own rather than at a stale derivation.
+          if (existingModel._derivedFromModelId == null) {
+              throw new IllegalArgumentException("Key " + key + " already holds a GLM model that was not produced by" +
+                      " make_derived_glm_model. Pass a different destination key, or remove that model first.");
+          }
+          throw new IllegalArgumentException("Key " + key + " already holds a derived model from a different source" +
+                  " model, from a different fit of the same source model, or with a different combination of" +
+                  " remove_offset_effects / remove_control_variables_effects. Pass a different destination key, or" +
+                  " remove that model first.");
       }
       GLMModel.GLMParameters parms = (GLMModel.GLMParameters) model._parms.clone();
       GLMModel.GLMParameters inputParms = (GLMModel.GLMParameters) model._input_parms.clone();
@@ -216,6 +238,7 @@ public class MakeGLMModelHandler extends Handler {
       m._useControlVariables = args.remove_control_variables_effects;
       m._useRemoveOffsetEffects = args.remove_offset_effects;
       m._derivedFromModelId = model._key;
+      m._derivedFromModelChecksum = model.checksum();
 
       DKV.put(key, m);
 

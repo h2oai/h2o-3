@@ -395,7 +395,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _xval_zValues[lidx] = zValuesAvg;
         if (_xval_deviances_restricted != null) {
           double testDevRestrictedAvg = testDevRestricted / cvModelBuilders.length;
-          double testDevRestrictedSE = testDevRestrictedSq - testDevRestrictedAvg * testDevRestricted;
+          // Clamp at 0 for the same reason as generateCVScoringHistoryRestricted: folds that agree to ~8 significant
+          // digits cancel to a small negative and sqrt would give NaN. The largest lambdas are exactly such a case -
+          // every fold takes computeSubmodel's null-beta branch there and reports the same null deviance.
+          double testDevRestrictedSE = Math.max(0, testDevRestrictedSq - testDevRestrictedAvg * testDevRestricted);
           _xval_deviances_restricted[lidx] = testDevRestrictedAvg;
           _xval_sd_restricted[lidx] = Math.sqrt(testDevRestrictedSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         }
@@ -517,6 +520,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    * Scope.Safe, after super's restricted scoring pass (fold models arrive with
    * _useRemoveOffsetEffects=true from training). Flips the flag to false for this pass and
    * restores it in a finally block.
+   *
+   * Only the returned MetricBuilder is usable: this pass writes its ModelMetrics to the same DKV key as super's
+   * restricted pass, overwriting it. ModelMetrics.buildKey hashes model.checksum(), which covers only _parms and
+   * _output - _useRemoveOffsetEffects is a plain GLMModel field, so both offset views collide. Nothing reads a
+   * fold model's metrics by key (every published number comes from the inline _output._validation_metrics* fields
+   * set during fold training), so this is left as-is rather than remapped the way cv_mainModelScores has to remap
+   * the main model's. Do not add a by-key lookup for fold metrics without fixing the key first.
    */
   @Override
   protected void cv_additionalScoringPerFold(int i, GLMModel cvModel, Frame cvValid, Frame adaptFr,
@@ -789,10 +799,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             testDevSq += d * d;
           }
           double avg = testDev / cvModelBuilders.length;
-          // Sample-variance numerator: sum(d^2) - n*mean^2 == sum(d^2) - mean*sum(d).
-          // Matches the canonical form used in the restricted scoring history above and in
-          // cv_computeAndSetOptimalParameters.
-          double se = testDevSq - avg * testDev;
+          // Sample-variance numerator: sum(d^2) - n*mean^2 == sum(d^2) - mean*sum(d), clamped at 0 - see
+          // generateCVScoringHistoryRestricted for why the subtraction can cancel to a small negative.
+          double se = Math.max(0, testDevSq - avg * testDev);
           unrestrictedSDs[unrestrictedCount] = Math.sqrt(se / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
           unrestrictedDeviances[unrestrictedCount++] = avg;
         }
@@ -948,6 +957,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     
 
     void restoreFromCheckpoint(TwoDimTable sHist, int[] colIndices) {
+      // A checkpoint need not carry every history slot: a model produced by make_derived_glm_model populates only
+      // _scoring_history, yet keeps _remove_offset_effects/_control_variables set, and nothing stops it being passed
+      // as a checkpoint. Starting that slot's history empty is the right behaviour - the caller warns.
+      if (sHist == null) return;
       int numRows = sHist.getRowDim();
       for (int rowInd = 0; rowInd < numRows; rowInd++) {  // if lambda_search is enabled, _sc is not updated
         _scoringIters.add((Integer) sHist.get(rowInd, colIndices[0]));
@@ -1043,6 +1056,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     void restoreFromCheckpoint(TwoDimTable sHist, int[] colIndices) {
+      // See the note on ScoringHistory.restoreFromCheckpoint: a checkpointed model may legitimately be missing one of
+      // the history slots (make_derived_glm_model output), so a null table means "start this history empty".
+      if (sHist == null) return;
       int numRows = sHist.getRowDim();
       for (int rowInd = 0; rowInd < numRows; rowInd++) {
         _scoringTimes.add(DATE_TIME_FORMATTER.parseMillis((String) sHist.get(rowInd, colIndices[1])));
@@ -1290,9 +1306,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
       if (_parms._remove_offset_effects && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
-        error("_remove_offset_effects", "Remove offset effects is not supported with " + _parms._family.name() + " family.");
+        error("_remove_offset_effects", "Remove offset effects option (remove_offset_effects=True) is not supported with " + _parms._family.name() + " family.");
       if (_parms._control_variables != null && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
-        error("_control_variables", "Control variables is not supported with " + _parms._family.name() + " family.");
+        error("_control_variables", "Control variables option (control_variables) are not supported with " + _parms._family.name() + " family.");
       if (_parms._plug_values != null) {
         Frame plugValues = _parms._plug_values.get();
         if (plugValues == null) {
@@ -1622,6 +1638,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (!IRLSM.equals(_parms._solver))
           error("_checkpoint", "GLM checkpoint is supported only for IRLSM.  Please specify it " +
                   "explicitly.  Do not use AUTO or default");
+        // A model from make_derived_glm_model()/make_unrestricted_glm_model() only carries a reporting view: its
+        // single submodel is a placeholder with NaN deviances and no z-values, and it has none of the solver state a
+        // continuation needs (it fails later in ComputationState.penalty). Reject it here with something actionable
+        // rather than let it die mid-training.
+        Object checkpointObj = DKV.getGet(_parms._checkpoint);
+        if (checkpointObj instanceof GLMModel && ((GLMModel) checkpointObj)._derivedFromModelId != null)
+          error("_checkpoint", "The checkpoint model was produced by make_derived_glm_model() or" +
+                  " make_unrestricted_glm_model() and cannot be continued - it holds only a reporting view of its" +
+                  " source model, not the training state. Pass the trained source model (" +
+                  ((GLMModel) checkpointObj)._derivedFromModelId + ") as the checkpoint instead.");
         Value cv = DKV.get(_parms._checkpoint);
         CheckpointUtils.getAndValidateCheckpointModel(this, CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
       }
@@ -1769,15 +1795,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               "convergence"};
       int num2Copy =  _parms._lambda_search ? colHeaders2Restore.length : colHeaders2Restore.length-2;
       int[] colHeadersIndex = grabHeaderIndex(scoringHistory, num2Copy, colHeaders2Restore);
+      // Training writes the restricted and unrestricted slots together, but a model produced by
+      // make_derived_glm_model keeps _remove_offset_effects/_control_variables set while populating only
+      // _scoring_history - and nothing stops such a model being passed as a checkpoint. restoreFromCheckpoint
+      // tolerates a null table (starts that history empty); warn once here so the user knows why their continued
+      // model's history is short rather than silently getting a partial one.
+      if ((_model._parms._control_variables != null || _model._parms._remove_offset_effects)
+              && _model._output._scoring_history_unrestricted_model == null) {
+        // _job.warn, not warn(): ModelBuilder messages are snapshotted into the response before training starts.
+        _job.warn("The checkpointed model has no unrestricted scoring history (it was most likely produced by" +
+                " make_derived_glm_model() or make_unrestricted_glm_model() rather than by training), so the" +
+                " checkpointed scoring history could not be fully carried over. The continued model's scoring history" +
+                " starts from this run; the coefficients are still resumed from the checkpoint. To keep the full" +
+                " history, pass the trained source model as the checkpoint instead of a derived model.");
+      }
       if (_parms._lambda_search) {
         if (restrictedHistoryIsMain()) {
           // Read side of the canonical slot mapping (see restrictedHistoryIsMain).
           _lambdaSearchScoringHistoryRestricted.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
-          TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
-          // Both slots are written together, so a checkpoint carrying only one means the mapping desynchronized.
-          assert scoringHistoryUnrestricted != null :
-                  "checkpointed remove_offset_effects+lambda_search model is missing its unrestricted history";
-          _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
+          _lambdaSearchScoringHistory.restoreFromCheckpoint(
+                  _model._output._scoring_history_unrestricted_model, colHeadersIndex);
         } else {
           _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
         }
@@ -3758,9 +3795,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   m -> _model._output._validation_metrics = m,
                   _scoringHistory, _model._useControlVariables);
           _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);
-          // scorePostProcessing already published the restricted lambda table as the main scoring history;
-          // don't let this iteration-format one overwrite it.
-          if (!restrictedHistoryIsMain())
+          // Publish the restricted lambda table here rather than in scorePostProcessing: the
+          // scorePostProcessingRestricted call just above is what appends this iteration's row to it, so
+          // serializing any earlier lags one row behind - and publishes an empty table whenever every lambda
+          // takes computeSubmodel's null-beta branch (e.g. nlambdas=1 with alpha>0, where the whole generated
+          // sequence sits at _lmax and computeSubmodel adds no row of its own).
+          if (restrictedHistoryIsMain())
+            _model._output._scoring_history = _lambdaSearchScoringHistoryRestricted.to2dTable();
+          else
             _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH, _xval_sd_generate_SH) : null;
 
           if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
@@ -3775,7 +3817,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       _scoringHistoryControlValEnabled, true);
               _model.addRestrictedModelScoringInfoContrVals(_parms, nclasses(), t2, _state._iter);
               _model._output._scoring_history_restricted_model_contr_vals = _scoringHistoryControlValEnabled != null
-                      ? _scoringHistoryControlValEnabled.to2dTable(_parms, _xval_deviances_generate_SH, _xval_sd_generate_SH) : null;
+                      ? _scoringHistoryControlValEnabled.to2dTable(_parms, null, null) : null;
 
               // RO-only
               _model._useControlVariables = false;
@@ -3788,7 +3830,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       _scoringHistoryRemoveOffsetEnabled, false);
               _model.addRestrictedModelScoringInfoRO(_parms, nclasses(), t2, _state._iter);
               _model._output._scoring_history_restricted_model_ro = _scoringHistoryRemoveOffsetEnabled != null
-                      ? _scoringHistoryRemoveOffsetEnabled.to2dTable(_parms, _xval_deviances_generate_SH, _xval_sd_generate_SH) : null;
+                      ? _scoringHistoryRemoveOffsetEnabled.to2dTable(_parms, null, null) : null;
           }
         } finally {
           _model._useControlVariables = false;
@@ -3957,9 +3999,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       if (restrictedHistoryIsMain()) {
-        // Write side of the canonical slot mapping (see restrictedHistoryIsMain).
+        // Write side of the canonical slot mapping (see restrictedHistoryIsMain). Only the unrestricted slot is
+        // published here; the restricted table is published by scoreAndUpdateModel *after*
+        // scorePostProcessingRestricted has appended this iteration's row to it.
         _model._output._scoring_history_unrestricted_model = _lambdaSearchScoringHistory.to2dTable();
-        _model._output._scoring_history = _lambdaSearchScoringHistoryRestricted.to2dTable();
       } else if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
       } else if (_model._parms._control_variables != null || _model._parms._remove_offset_effects){
@@ -4075,12 +4118,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           else if (multinomial.equals(_parms._family))
             validDev = new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev();
           else {
-            // Under lambda_search keep the offset in: this feeds the Submodel that pickBestModel
-            // selects on, so it must match the plain offset model for the same lambda to be chosen.
-            // Without lambda_search keep the pre-existing offset-removed semantics - devianceValid is
-            // read against the restricted _validation_metrics there (see getRegularizationPath).
+            // Always keep the offset in. devianceValid is not a reporting-only field: pickBestModel and
+            // cv_computeAndSetOptimalParameters both select on it (neither is gated on lambda_search), so
+            // removing the offset here would make remove_offset_effects change the fit - it must only ever
+            // change the reported metrics. The offset-removed view is carried separately on
+            // Submodel.devianceValidRestricted.
             GLMResDevTask validTask = new GLMResDevTask(_job._key, _validDinfo, _parms,
-                    _dinfo.denormalizeBeta(_state.beta()), _parms._remove_offset_effects && !_parms._lambda_search);
+                    _dinfo.denormalizeBeta(_state.beta()));
             // Both offset views of the same beta come out of one traversal instead of two full passes.
             if (restrictedHistoryIsMain())
               validTask.alsoComputeOffsetRemoved();

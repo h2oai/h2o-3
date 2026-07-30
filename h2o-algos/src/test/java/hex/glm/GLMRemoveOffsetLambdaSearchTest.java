@@ -1,6 +1,9 @@
 package hex.glm;
 
 import hex.GLMMetrics;
+import hex.api.MakeGLMModelHandler;
+import hex.schemas.MakeDerivedGLMModelV3;
+import water.api.schemas3.KeyV3;
 import hex.SplitFrame;
 import hex.generic.Generic;
 import hex.generic.GenericModel;
@@ -244,6 +247,11 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             assertNotNull("Unrestricted scoring history must be present when remove_offset_effects is on",
                     unrestricted);
             assertTrue("Unrestricted scoring history must have at least one row", unrestricted.getRowDim() > 0);
+            // Both histories get a row per scoring event. The restricted table is published after
+            // scorePostProcessingRestricted appends its row; if that ever regresses it goes short by exactly its
+            // last (selected-lambda) row, which no other assertion here would notice.
+            assertEquals("restricted and unrestricted lambda histories must have the same number of rows",
+                    unrestricted.getRowDim(), restricted.getRowDim());
 
             // unrestricted scoring history must match the plain offset model's scoring history
             // (ignore timestamp/duration columns and the " unrestricted model" header suffix)
@@ -1175,6 +1183,160 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             if (train != null) train.remove();
             if (glm != null) glm.remove();
             if (glmPlain != null) glmPlain.remove();
+            Scope.exit();
+        }
+    }
+
+    // A multi-alpha / multi-lambda grid with no lambda_search and a validation frame: the configuration in which
+    // Submodel.devianceValid actually drives pickBestModel.
+    private GLMModel.GLMParameters selectionGridParams(Frame df, boolean removeOffsetEffects) {
+        GLMModel.GLMParameters params = prostateParams(df, GLMModel.GLMParameters.Family.binomial, "CAPSULE");
+        params._lambda_search = false;
+        params._valid = df._key;                       // devianceValid is only computed with a validation frame
+        params._alpha = new double[]{0.1, 0.5, 0.9};   // >1 submodel, so pickBestModel actually has a choice
+        params._lambda = new double[]{1e-1, 1e-2, 1e-3};
+        params._remove_offset_effects = removeOffsetEffects;
+        return params;
+    }
+
+    /**
+     * remove_offset_effects must never change the fit - not even without lambda_search. Submodel.devianceValid is
+     * what pickBestModel ranks submodels on and what cv_computeAndSetOptimalParameters averages into
+     * _xval_deviances, and neither is gated on lambda_search. So it has to stay offset-included in every
+     * configuration: asserted directly against the plain offset model, because whether a given dataset's selection
+     * actually flips depends on where the two deviance curves cross, while the stored deviance always differs.
+     */
+    @Test
+    public void removeOffsetEffectsDoesNotChangeDevianceValidWithoutLambdaSearch() {
+        Frame df = null;
+        GLMModel ro = null, plain = null;
+        try {
+            Scope.enter();
+            df = prostateFrame();
+            Scope.track_generic(df);
+            df.replace(df.find("CAPSULE"), df.vec("CAPSULE").toCategoricalVec()).remove();
+            DKV.put(df);
+
+            // Fresh params per model: GLM's expensive init mutates _parms (_alpha, _lambda, _link, ...), so
+            // reusing one instance would let the first run's resolved grid leak into the second.
+            ro = new GLM(selectionGridParams(df, true)).trainModel().get();
+            Scope.track_generic(ro);
+            plain = new GLM(selectionGridParams(df, false)).trainModel().get();
+            Scope.track_generic(plain);
+
+            GLMModel.Submodel[] roSub = ro._output._submodels;
+            GLMModel.Submodel[] plainSub = plain._output._submodels;
+            assertEquals("both grids must produce the same number of submodels", plainSub.length, roSub.length);
+            assertTrue("need >1 submodel for selection to be meaningful", roSub.length > 1);
+            boolean anyFinite = false;
+            for (int i = 0; i < roSub.length; i++) {
+                double expected = plainSub[i].devianceValid;
+                if (Double.isNaN(expected) || Double.isInfinite(expected) || expected < 0) continue;  // -1 = not computed
+                anyFinite = true;
+                // Relative tolerance: with AGE as a logit offset the deviance saturates around 70 per row, so an
+                // absolute 1e-10 across two independent doAll reductions is ~1e-12 relative and brittle multi-node.
+                assertEquals("Submodel.devianceValid feeds submodel selection, so it must stay offset-included"
+                                + " regardless of remove_offset_effects (submodel " + i + ")",
+                        expected, roSub[i].devianceValid, Math.abs(expected) * 1e-8);
+            }
+            assertTrue("devianceValid must actually be populated (needs a validation frame)", anyFinite);
+
+            // The user-visible consequence of the above.
+            assertEquals("lambda_best must not depend on remove_offset_effects",
+                    plain._output.lambda_best(), ro._output.lambda_best(), 0.0);
+            assertEquals("alpha_best must not depend on remove_offset_effects",
+                    plain._output.alpha_best(), ro._output.alpha_best(), 0.0);
+            assertArrayEquals("coefficients must not depend on remove_offset_effects",
+                    plain._output.beta(), ro._output.beta(), 1e-10);
+        } finally {
+            if (df != null) df.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * A generated lambda sequence of length 1 with alpha > 0 starts at _lmax, so every lambda takes computeSubmodel's
+     * null-beta branch and adds no per-lambda row of its own. The restricted history must still be published with the
+     * row that scorePostProcessingRestricted appends - publishing it any earlier yields an empty table, and
+     * learning_curve_plot() then silently draws nothing.
+     */
+    @Test
+    public void restrictedScoringHistoryIsNonEmptyWithSingleLambda() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            GLMModel.GLMParameters params = baseParams(train);
+            params._remove_offset_effects = true;
+            params._nlambdas = 1;
+            params._alpha = new double[]{0.5};
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            assertNotNull("restricted scoring history must be published", glm._output._scoring_history);
+            assertTrue("restricted scoring history must not be empty with nlambdas=1",
+                    glm._output._scoring_history.getRowDim() > 0);
+        } finally {
+            if (train != null) train.remove();
+            if (glm != null) glm.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * A make_derived_glm_model output keeps _remove_offset_effects set while populating only _scoring_history, and it
+     * carries no solver state - only a placeholder submodel with NaN deviances. Continuing from one used to NPE (first
+     * in restoreFromCheckpoint on the missing unrestricted history, then in ComputationState.penalty); it must now be
+     * rejected in init with an actionable message. Covers both lambda_search modes, which take different restore paths.
+     */
+    @Test
+    public void checkpointFromDerivedModelIsRejected() {
+        try {
+            Scope.enter();
+            for (boolean lambdaSearch : new boolean[]{false, true}) {
+                Frame df = prostateFrame();
+                df.replace(df.find("CAPSULE"), df.vec("CAPSULE").toCategoricalVec()).remove();
+                DKV.put(df);
+
+                GLMModel.GLMParameters params =
+                        prostateParams(df, GLMModel.GLMParameters.Family.binomial, "CAPSULE");
+                params._lambda_search = lambdaSearch;
+                params._remove_offset_effects = true;
+                params._solver = GLMModel.GLMParameters.Solver.IRLSM;   // GLM checkpointing requires IRLSM
+                GLMModel source = new GLM(params).trainModel().get();
+
+                MakeGLMModelHandler handler = new MakeGLMModelHandler();
+                MakeDerivedGLMModelV3 args = new MakeDerivedGLMModelV3();
+                args.model = new KeyV3.ModelKeyV3(source._key);
+                args.dest = "derived_ckpt_src_" + lambdaSearch;
+                args.remove_offset_effects = true;
+                handler.make_derived_model(3, args);
+                GLMModel derived = DKV.getGet(Key.make(args.dest));
+                assertNull("the derived model is the checkpoint source precisely because this slot is unset",
+                        derived._output._scoring_history_unrestricted_model);
+
+                GLMModel.GLMParameters cont =
+                        prostateParams(df, GLMModel.GLMParameters.Family.binomial, "CAPSULE");
+                cont._lambda_search = lambdaSearch;
+                cont._remove_offset_effects = true;
+                cont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+                cont._checkpoint = derived._key;
+                try {
+                    new GLM(cont).trainModel().get();
+                    fail("a derived model must be rejected as a checkpoint source (lambda_search=" + lambdaSearch + ")");
+                } catch (H2OModelBuilderIllegalArgumentException e) {
+                    assertTrue("the rejection must name the real source model, got: " + e.getMessage(),
+                            e.getMessage().contains("make_derived_glm_model"));
+                } finally {
+                    derived.remove();
+                    source.remove();
+                    df.remove();
+                }
+            }
+        } finally {
             Scope.exit();
         }
     }

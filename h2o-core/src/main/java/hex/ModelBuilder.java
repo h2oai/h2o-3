@@ -658,10 +658,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         // Step 6: Build the main model
         long time_allocated_to_main_model = (long) (maxRuntimeSecsPerModel(N, nModelsInParallel(N)) * 1e3);
         buildMainModel(time_allocated_to_main_model);
-        // Ensure the main model is visible in DKV before cv_mainModelScores calls _result.get().
-        // Under memory pressure the local POJO cache can be evicted, causing a cache miss.
-        M m = _result.get();
-        if (m != null) DKV.put(m);
       }
 
       // Step 7: Combine cross-validation scores; compute main model x-val
@@ -2146,9 +2142,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             rowNames.toArray(new String[0]), colNames, colTypes, colFormats, "");
 
     double[][] vals = new double[N][numMetrics];
-    int i = 0;
-    for (Key<Model> km : cvmodels) {
-      Model m = DKV.getGet(km);
+    int filled = 0;   // rows of vals[] actually populated; only these feed mean/sigma
+    // The column index must stay the fold ordinal - colNames[fold+extra_length] is "cv_<fold+1>_valid" - while
+    // vals[] is packed. Using one counter for both would write a later fold's numbers under an earlier fold's
+    // header whenever a fold is skipped.
+    for (int fold = 0; fold < cvmodels.length; fold++) {
+      Model m = DKV.getGet(cvmodels[fold]);
       if (m==null) continue;
       ModelMetrics mm = picker.apply(m);
       if (mm == null) continue;
@@ -2157,23 +2156,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (excluded.contains(meth.getName())) continue;
         try {
           double val = (double) meth.invoke(mm);
-          vals[i][j] = val;
-          table.set(j++, i+extra_length, (float)val);
+          vals[filled][j] = val;
+          table.set(j++, fold+extra_length, (float)val);
         } catch (Throwable e) { }
         if (mm.cm()==null) continue;
         try {
           double val = (double) meth.invoke(mm.cm());
-          vals[i][j] = val;
-          table.set(j++, i+extra_length, (float)val);
+          vals[filled][j] = val;
+          table.set(j++, fold+extra_length, (float)val);
         } catch (Throwable e) { }
       }
-      i++;
+      filled++;
     }
-    int filled = i;
     MathUtils.SimpleStats simpleStats = new MathUtils.SimpleStats(numMetrics);
-    for (i = 0; i < filled; ++i)
+    for (int i = 0; i < filled; ++i)
       simpleStats.add(vals[i], 1);
-    for (i=0;i<numMetrics;++i) {
+    for (int i = 0; i < numMetrics; ++i) {
       table.set(i, 0, (float)simpleStats.mean()[i]);
       table.set(i, 1, (float)simpleStats.sigma()[i]);
     }

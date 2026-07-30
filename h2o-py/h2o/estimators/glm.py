@@ -338,15 +338,17 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                is not at least this much)
                Defaults to ``0.001``.
         :type stopping_tolerance: float
-        :param control_variables: A list of predictor column names whose contribution is suppressed in training and
-               validation metrics. The columns remain as predictors in the trained model. Cannot be combined with cross-
-               validation (nfolds), interactions, or lambda search. Experimental.
+        :param control_variables: A list of predictor column names whose coefficients are zeroed out when the model
+               scores. This affects predictions (including the MOJO) as well as the training and validation metrics; the
+               columns remain as predictors in the trained model. Not supported for the multinomial or ordinal families.
+               Cannot be combined with cross-validation, interactions, or lambda search. Experimental.
                Defaults to ``None``.
         :type control_variables: List[str], optional
-        :param remove_offset_effects: When true, the offset column's contribution is subtracted from predicted values
-               before computing training and validation metrics. Supports cross-validation (nfolds) and lambda search.
-               With-offset metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Cannot be
-               combined with interactions. Experimental.
+        :param remove_offset_effects: When true, the offset column is excluded from the linear predictor when the model
+               scores. This affects predictions (including the MOJO) as well as the training, validation, and cross-
+               validation metrics. With-offset metrics are stored in separate slots and exposed via
+               make_unrestricted_glm_model(). Requires offset_column. Supports cross-validation and lambda search. Not
+               supported for the multinomial or ordinal families, or with interactions. Experimental.
                Defaults to ``False``.
         :type remove_offset_effects: bool
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -2056,9 +2058,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def control_variables(self):
         """
-        A list of predictor column names whose contribution is suppressed in training and validation metrics. The
-        columns remain as predictors in the trained model. Cannot be combined with cross-validation (nfolds),
-        interactions, or lambda search. Experimental.
+        A list of predictor column names whose coefficients are zeroed out when the model scores. This affects
+        predictions (including the MOJO) as well as the training and validation metrics; the columns remain as
+        predictors in the trained model. Not supported for the multinomial or ordinal families. Cannot be combined with
+        cross-validation, interactions, or lambda search. Experimental.
 
         Type: ``List[str]``.
         """
@@ -2072,10 +2075,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def remove_offset_effects(self):
         """
-        When true, the offset column's contribution is subtracted from predicted values before computing training and
-        validation metrics. Supports cross-validation (nfolds) and lambda search. With-offset metrics are stored in
-        separate slots and exposed via make_unrestricted_glm_model(). Cannot be combined with interactions.
-        Experimental.
+        When true, the offset column is excluded from the linear predictor when the model scores. This affects
+        predictions (including the MOJO) as well as the training, validation, and cross-validation metrics. With-offset
+        metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). Requires offset_column.
+        Supports cross-validation and lambda search. Not supported for the multinomial or ordinal families, or with
+        interactions. Experimental.
 
         Type: ``bool``, defaults to ``False``.
         """

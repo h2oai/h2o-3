@@ -89,9 +89,9 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       _log_likelihood += m.likelihood(weight, yact[0], ds);
     }
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      // Some scoring paths (e.g. Model.BigScore, used for the CV regression fold path) read the
-      // offset straight off the frame and are unaware of _useRemoveOffsetEffects; zero it here so
-      // null_deviance matches the offset-removed residual_deviance already baked into ds.
+      // Defence in depth: every GLM scoring path currently routes through GLMScore, which already passes 0 for the
+      // offset when _useRemoveOffsetEffects is set (GLMScore.map), so this is a no-op today. It keeps null_deviance on
+      // the same scale as the offset-removed residual_deviance baked into ds should a non-GLMScore caller ever appear.
       double effectiveOffset = gm._useRemoveOffsetEffects ? 0 : offset;
       if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
         add2(yact[0], ds, weight, effectiveOffset);

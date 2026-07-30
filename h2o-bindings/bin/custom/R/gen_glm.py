@@ -111,7 +111,7 @@ h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
 #'   the offset effects; the \code{control_variables} effects, if the source model has any, are
 #'   still included. Requires the source model to have been trained with
 #'   \code{remove_offset_effects=TRUE}. Cannot be combined with
-#'   \code{remove_control_variables_effects=TRUE} — only one set of effects can be excluded at a
+#'   \code{remove_control_variables_effects=TRUE} -- only one set of effects can be excluded at a
 #'   time.
 #' @export
 h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_control_variables_effects = FALSE, remove_offset_effects = FALSE) {

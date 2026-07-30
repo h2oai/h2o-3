@@ -108,6 +108,13 @@ def glm_remove_offset_lambda_search_scoring_history():
     assert unrestricted is not None and len(unrestricted.cell_values) > 0, \
         "Unrestricted scoring history should be present and non-empty when remove_offset_effects is on"
 
+    # Both histories get a row per scoring event, so they must be the same length. Asserted explicitly because the
+    # deviance comparison below uses zip(), which would silently tolerate a restricted table that is short by its
+    # last (selected-lambda) row - exactly the off-by-one this publication ordering is fragile to.
+    assert len(restricted.cell_values) == len(unrestricted.cell_values), \
+        "The restricted lambda history must have a row for every scoring event, including the last: got %d vs %d" \
+        % (len(restricted.cell_values), len(unrestricted.cell_values))
+
     # the unrestricted scoring history must match the plain offset model's scoring history
     # (compare every column except the non-deterministic timestamp/duration)
     cols_to_compare = [c for c in unrestricted.col_header if c not in ("timestamp", "duration")]
@@ -434,31 +441,19 @@ def glm_remove_offset_lambda_search_plot():
     assert os.path.exists(out), "learning_curve_plot must produce output for a remove_offset+lambda_search model"
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_offset_zeroed)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_scoring_history)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_scoring_history_no_gaps)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_checkpoint_may_enable_lambda_search)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_cross_validation)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_mojo)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_families)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_weights)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_validation)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_beta_constraints)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_early_stopping)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_alpha)
-    pyunit_utils.standalone_test(glm_remove_offset_lambda_search_plot)
-else:
-    glm_remove_offset_lambda_search()
-    glm_remove_offset_lambda_search_offset_zeroed()
-    glm_remove_offset_lambda_search_scoring_history()
-    glm_remove_offset_lambda_search_cross_validation()
-    glm_remove_offset_lambda_search_mojo()
-    glm_remove_offset_lambda_search_families()
-    glm_remove_offset_lambda_search_weights()
-    glm_remove_offset_lambda_search_validation()
-    glm_remove_offset_lambda_search_beta_constraints()
-    glm_remove_offset_lambda_search_early_stopping()
-    glm_remove_offset_lambda_search_alpha()
-    glm_remove_offset_lambda_search_plot()
+pyunit_utils.run_tests([
+    glm_remove_offset_lambda_search,
+    glm_remove_offset_lambda_search_offset_zeroed,
+    glm_remove_offset_lambda_search_scoring_history,
+    glm_remove_offset_lambda_search_scoring_history_no_gaps,
+    glm_remove_offset_lambda_search_checkpoint_may_enable_lambda_search,
+    glm_remove_offset_lambda_search_cross_validation,
+    glm_remove_offset_lambda_search_mojo,
+    glm_remove_offset_lambda_search_families,
+    glm_remove_offset_lambda_search_weights,
+    glm_remove_offset_lambda_search_validation,
+    glm_remove_offset_lambda_search_beta_constraints,
+    glm_remove_offset_lambda_search_early_stopping,
+    glm_remove_offset_lambda_search_alpha,
+    glm_remove_offset_lambda_search_plot,
+])

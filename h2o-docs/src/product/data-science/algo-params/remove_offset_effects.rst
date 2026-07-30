@@ -1,5 +1,5 @@
 ``remove_offset_effects``
---------------------
+-------------------------
 
 - Available in: GLM
 - Hyperparameter: no
@@ -15,7 +15,7 @@ To get the unrestricted model with its own metrics, use ``glm.make_unrestricted_
 
 **Cross-validation support**
 
-When cross-validation is enabled (``nfolds > 0``), two parallel CV metric views are computed:
+When cross-validation is enabled (``nfolds`` or ``fold_column``), two parallel CV metric views are computed:
 
 - **Restricted** (``cross_validation_metrics``, ``cross_validation_metrics_summary``): CV metrics computed with the offset zeroed out, consistent with the restricted training and validation metrics.
 - **Unrestricted** (``cross_validation_metrics_unrestricted_model``, ``cross_validation_metrics_summary_unrestricted_model``): CV metrics computed with the offset preserved, matching the unrestricted training and validation metrics.
@@ -32,18 +32,25 @@ When ``lambda_search=True``, two parallel per-lambda scoring histories are produ
 ``remove_offset_effects`` changes only the reported metrics, never the fit, so the model is identical to the one you would get without the option. Consequently **the best lambda is selected on the offset-preserved (unrestricted) deviance**, which guarantees that ``lambda_best`` and the coefficients match the equivalent model trained without ``remove_offset_effects``. One consequence is worth noting: the ``deviance_test`` column of the restricted ``scoring_history`` is *not* necessarily minimized at the selected lambda. To see the deviance that selection is based on, read ``scoring_history_unrestricted_model`` (or the derived model returned by ``make_unrestricted_glm_model()``).
 
 Combining ``lambda_search`` with cross-validation is supported; the restricted history's ``deviance_xval`` is then the offset-removed cross-validated deviance, on the same scale as its ``deviance_train``/``deviance_test``.
+Note that the per-lambda ``deviance_xval``/``deviance_se`` columns and the cross-validated lambda selection require ``nfolds``; with a ``fold_column`` the CV metric slots above are still populated, but those columns are omitted from the scoring history and the best lambda is chosen from the training/validation path instead.
 
 **Combination with control_variables**
 
 If you set up ``remove_offset_effects`` together with ``control_variables``, model metrics and scoring history are calculated with both features enabled (that is, with both offset and control-variables effects removed during scoring).
-To get a model with only one set of effects excluded, use ``glm.make_derived_glm_model()`` / ``h2o.make_derived_glm_model()`` with exactly one of its two flags set to ``True``:
-
-- ``remove_control_variables_effects=True``: excludes the control-variables effects from scoring and metrics; the offset effects stay included.
-- ``remove_offset_effects=True``: excludes the offset effects from scoring and metrics; the control-variables effects stay included.
-
-The two flags cannot both be ``True`` in the same call.
+Neither cross-validation nor ``lambda_search`` is supported in combination with ``control_variables`` yet, so those two combinations are rejected.
 If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
-Cross-validation is not supported in the combination of these two features yet.
+
+**Deriving a single-effect model**
+
+``glm.make_derived_glm_model()`` / ``h2o.make_derived_glm_model()`` excludes exactly one set of effects from scoring and metrics. The source model only has to have been trained with the matching feature -- you do not need both:
+
+- ``remove_control_variables_effects=True``: excludes the control-variables effects; the offset effects, if the source model has any, stay included. Requires the source model to have been trained with ``control_variables``.
+- ``remove_offset_effects=True``: excludes the offset effects; the control-variables effects, if the source model has any, stay included. Requires the source model to have been trained with ``remove_offset_effects=True``.
+
+The two flags cannot both be ``True`` in the same call. Calling the same derivation twice with the same ``dest`` returns the model created the first time; if a different model already occupies that key, the call is rejected.
+If the source model was trained with only one of the two features, the corresponding derived model is equivalent to the source model in every reported number.
+
+Metric-based early stopping (``stopping_rounds``) evaluates the offset-removed metric, so a model trained with ``remove_offset_effects=True`` may stop at a different iteration than the equivalent plain offset model.
 
 **Notes**:
 

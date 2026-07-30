@@ -6,6 +6,8 @@ import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsBinomialGLM;
+import hex.ScoreKeeper;
+import hex.ScoringInfo;
 import hex.api.MakeGLMModelHandler;
 import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.GLMModelV3;
@@ -2604,7 +2606,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                 fail("Should have thrown IllegalArgumentException when both flags are true");
             } catch (IllegalArgumentException e) {
                 assertTrue("Error message should mention the flags cannot be used together",
-                        e.getMessage().contains("cannot be used together"));
+                        e.getMessage().contains("cannot both be set"));
             }
 
             // Model trained with only control_variables (no remove_offset_effects) should succeed.
@@ -2671,7 +2673,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                 fail("Should have thrown when source model has no control_variables or remove_offset_effects");
             } catch (IllegalArgumentException e) {
                 assertTrue("Error should mention missing features",
-                        e.getMessage().contains("not trained with control variables or remove offset effects"));
+                        e.getMessage().contains("was not trained with control_variables or remove_offset_effects=True"));
             }
 
             // make_unrestricted_model should also throw
@@ -2682,7 +2684,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                 fail("make_unrestricted_model should also reject plain models");
             } catch (IllegalArgumentException e) {
                 assertTrue("Error should mention missing features",
-                        e.getMessage().contains("not trained with control variables or remove offset effects"));
+                        e.getMessage().contains("was not trained with control_variables or remove_offset_effects=True"));
             }
         } finally {
             if (train != null) train.remove();
@@ -3327,6 +3329,52 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             GLMMetrics unrestricted = (GLMMetrics) glm._output._cross_validation_metrics_unrestricted_model;
             assertNotEquals("Restricted and unrestricted CV residual_deviance must differ when offset is non-zero",
                     restricted.residual_deviance(), unrestricted.residual_deviance(), 1e-10);
+        } finally {
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * A fold_column must not make GLMScoringInfo.cross_validation true. scoreKeepers() returns scored_xval
+     * whenever that flag is set, and GLM never populates scored_xval - so setting it hands
+     * ScoreKeeper.stopEarly an all-NaN series and silently disables early stopping. Guards a regression that
+     * affected plain GLM (no remove_offset_effects involved).
+     */
+    @Test
+    public void testFoldColumnKeepsEarlyStoppingScoreKeepersUsable() {
+        Frame train = null;
+        GLMModel glm = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFoldColumnFrame("test_fold_column_early_stopping");
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._fold_column = "fold";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+            params._score_each_iteration = true;
+            params._stopping_rounds = 2;
+            params._stopping_metric = ScoreKeeper.StoppingMetric.logloss;
+
+            glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            assertNotNull("GLM must record scoring info with score_each_iteration", glm.getScoringInfo());
+            for (ScoringInfo si : glm.getScoringInfo()) {
+                assertFalse("a fold_column must not set cross_validation while scored_xval is never populated",
+                        si.cross_validation);
+            }
+            ScoreKeeper[] sks = glm.scoreKeepers();
+            assertTrue("early stopping needs at least one recorded scoring event", sks.length > 0);
+            for (ScoreKeeper sk : sks) {
+                assertNotNull("scoreKeepers() must not hand stopEarly a null entry", sk);
+                assertFalse("stopEarly would see NaN logloss and never trigger", Double.isNaN(sk._logloss));
+            }
         } finally {
             if (train != null) train.remove();
             Scope.exit();

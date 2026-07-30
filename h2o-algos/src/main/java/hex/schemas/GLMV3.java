@@ -279,16 +279,18 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="A list of pairwise (first order) column interactions.", direction=Direction.INPUT, level=Level.expert)
     public StringPairV3[] interaction_pairs;
 
-    @API(help="A list of predictor column names whose contribution is suppressed in training and validation metrics. " +
-            "The columns remain as predictors in the trained model. " +
-            "Cannot be combined with cross-validation (nfolds), interactions, or lambda search. Experimental.",
+    @API(help="A list of predictor column names whose coefficients are zeroed out when the model scores. This " +
+            "affects predictions (including the MOJO) as well as the training and validation metrics; the columns " +
+            "remain as predictors in the trained model. Not supported for the multinomial or ordinal families. " +
+            "Cannot be combined with cross-validation, interactions, or lambda search. Experimental.",
             direction=Direction.INPUT, level=Level.expert)
     public String[] control_variables;
 
-    @API(help="When true, the offset column's contribution is subtracted from predicted values before computing " +
-            "training and validation metrics. Supports cross-validation (nfolds) and lambda search. " +
-            "With-offset metrics are stored in separate slots and exposed via make_unrestricted_glm_model(). " +
-            "Cannot be combined with interactions. Experimental.",
+    @API(help="When true, the offset column is excluded from the linear predictor when the model scores. This " +
+            "affects predictions (including the MOJO) as well as the training, validation, and cross-validation " +
+            "metrics. With-offset metrics are stored in separate slots and exposed via " +
+            "make_unrestricted_glm_model(). Requires offset_column. Supports cross-validation and lambda search. " +
+            "Not supported for the multinomial or ordinal families, or with interactions. Experimental.",
             direction=Direction.INPUT, level=Level.expert)
     public boolean remove_offset_effects;
 
