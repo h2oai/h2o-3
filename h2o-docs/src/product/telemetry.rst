@@ -8,8 +8,8 @@ It is limited to operational and runtime characteristics, and is used only in ag
 What is sent (when enabled)
 ---------------------------
 
-- One small ping when you start or connect to H2O (``h2o.init()`` / ``h2o.connect()`` in Python or R, or a standalone ``java -jar h2o.jar`` / ``hadoop jar h2odriver.jar`` cluster), plus one per major action: training, scoring, MOJO and model download, upload, import, parse, AutoML, and model save/load.
-- Each ping contains the H2O version, the client (``python`` / ``r`` / ``jvm``), the operating system, an ephemeral session ID regenerated on every start, a timestamp, the algorithm name, and **coarse range buckets** for counts such as rows, columns, durations, and sizes. These counts are reported as ranges rather than exact figures. One notable exception: a small cluster's node count (1–16) is sent exactly, since 1-node vs 4-node is operationally meaningful; larger clusters are bucketed.
+- One small ping when you start or connect to H2O (``h2o.init()`` / ``h2o.connect()`` in Python or R, or a standalone ``java -jar h2o.jar`` / ``hadoop jar h2odriver.jar`` cluster). Depending on the client, major actions may also send one ping each — for example training, scoring, MOJO and model download, upload, import, parse, AutoML, and model save/load.
+- Each ping contains the H2O version, the client (``python`` / ``r`` / ``jvm``), the operating system, an ephemeral session ID regenerated on every start, and a timestamp. Depending on the action, a ping may also carry the algorithm name and **coarse range buckets** for counts such as rows, columns, durations, and sizes. These counts are reported as ranges rather than exact figures. One notable exception: a small cluster's node count (1–16) is sent exactly, since 1-node vs 4-node is operationally meaningful; larger clusters are bucketed.
 
 What is never sent
 ------------------
@@ -27,29 +27,43 @@ Telemetry is **off by default**. Turn it on with any of the following.
 
 - **Per session** — pass ``telemetry=True`` (Python) or ``telemetry = TRUE`` (R) to ``h2o.init()`` or ``h2o.connect()``.
 - **Persistent** — use the setter ``h2o.set_telemetry()`` to change it and the getter ``h2o.telemetry_enabled()`` to read the current state. The setting applies immediately and is saved under ``~/.h2oai/telemetry`` so later sessions honor it.
-
-  Python:
-
-  .. code-block:: python
-
-     h2o.set_telemetry(True)     # opt in (persisted across sessions)
-     h2o.set_telemetry(False)    # opt back out
-     h2o.telemetry_enabled()     # -> True or False
-
-  R:
-
-  .. code-block:: r
-
-     h2o.set_telemetry(TRUE)     # opt in (persisted across sessions)
-     h2o.set_telemetry(FALSE)    # opt back out
-     h2o.telemetry_enabled()     # -> TRUE or FALSE
-
 - **Config file** — add a ``general.telemetry`` key to ``~/.h2oconfig`` in your home directory:
 
   .. code-block:: ini
 
      [general]
      telemetry = true
+
+Below is a simple example showing how to opt in persistently and read the current state.
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # Opt in (persisted across sessions)
+        h2o.set_telemetry(TRUE)
+
+        # Opt back out
+        h2o.set_telemetry(FALSE)
+
+        # Read the current state
+        h2o.telemetry_enabled()
+
+   .. code-tab:: python
+
+        import h2o
+        h2o.init()
+
+        # Opt in (persisted across sessions)
+        h2o.set_telemetry(True)
+
+        # Opt back out
+        h2o.set_telemetry(False)
+
+        # Read the current state
+        h2o.telemetry_enabled()
 
 **Standalone / Hadoop cluster (JVM)**
 
