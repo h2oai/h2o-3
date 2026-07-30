@@ -1,6 +1,10 @@
 Hadoop users
 ============
 
+.. note::
+
+   Running H2O-3 on Hadoop is part of H2O-3 Enterprise, the supported, production-grade path for production deployments. Contact enterprise@h2o.ai for access.
+
 This section describes how to use H2O-3 on Hadoop.
 
 Supported Versions
