@@ -89,13 +89,17 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       _log_likelihood += m.likelihood(weight, yact[0], ds);
     }
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
+      // Some scoring paths (e.g. Model.BigScore, used for the CV regression fold path) read the
+      // offset straight off the frame and are unaware of _useRemoveOffsetEffects; zero it here so
+      // null_deviance matches the offset-removed residual_deviance already baked into ds.
+      double effectiveOffset = gm._useRemoveOffsetEffects ? 0 : offset;
       if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
-        add2(yact[0], ds, weight, offset);
+        add2(yact[0], ds, weight, effectiveOffset);
       else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
               _glmf._family.equals(Family.fractionalbinomial))
-        add2(yact[0], ds[2], weight, offset);
+        add2(yact[0], ds[2], weight, effectiveOffset);
       else
-        add2(yact[0], ds[0], weight, offset);
+        add2(yact[0], ds[0], weight, effectiveOffset);
     }
     return ds;
   }

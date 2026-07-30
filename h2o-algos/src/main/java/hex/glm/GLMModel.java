@@ -103,7 +103,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null ;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -141,7 +141,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -179,7 +179,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -217,7 +217,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -809,9 +809,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if(_lambda_search) {
           glm.error("_control_variables", "Control variables option is not supported with Lambda search.");
         }
-        if(_fold_column != null || _nfolds > 0){
-          glm.error("_control_variables", "Control variables option is not supported with cross-validation.");
-        }
         for(String col: _control_variables){
           Vec v = train().vec(col);
           if (v == null) {
@@ -851,9 +848,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
           if (_lambda_search) {
               glm.error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
-          }
-          if (_fold_column != null || _nfolds > 0) {
-              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with cross-validation.");
           }
         }
     }
@@ -1632,6 +1626,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
   public boolean _useRemoveOffsetEffects = false;
+  // Provenance for a make_derived_model() output: the source model this was derived from, plus the
+  // view it exposes. Lets a repeated derive call at the same dest key verify it is re-deriving the
+  // same view from the same source (idempotent) rather than silently returning an unrelated model.
+  public Key<GLMModel> _derivedFromModelId = null;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1719,6 +1717,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public ModelMetrics _training_metrics_unrestricted_model;
     public ModelMetrics _validation_metrics_unrestricted_model;
 
+    // CV unrestricted view; populated when _control_variables is set and/or _remove_offset_effects=true, with CV enabled.
+    public ModelMetrics _cross_validation_metrics_unrestricted_model;
+    public TwoDimTable _cross_validation_metrics_summary_unrestricted_model;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id_unrestricted_model;
+    // Per-fold unrestricted holdout predictions; non-null only when keep_cross_validation_predictions=true.
+    public Key<Frame>[] _cross_validation_predictions_unrestricted_model;
+
     // Other two restricted models is produced when control variables and remove offset features are used together
     // Output for restricted model where control variables feature is enabled
     public TwoDimTable _scoring_history_restricted_model_contr_vals;
@@ -1728,7 +1733,24 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public TwoDimTable _scoring_history_restricted_model_ro;
     public ModelMetrics _training_metrics_restricted_model_ro;
     public ModelMetrics _validation_metrics_restricted_model_ro;
-    
+
+    // CV metrics for the two views below are only populated when both control_variables and
+    // remove_offset_effects are set together, with CV enabled. Otherwise they stay null.
+
+    // Control variables zeroed, offset kept.
+    public ModelMetrics _cross_validation_metrics_restricted_model_contr_vals;
+    public TwoDimTable _cross_validation_metrics_summary_restricted_model_contr_vals;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id_restricted_model_contr_vals;
+    // Per-fold predictions; non-null only when keep_cross_validation_predictions=true.
+    public Key<Frame>[] _cross_validation_predictions_restricted_model_contr_vals;
+
+    // Offset zeroed, control variables kept.
+    public ModelMetrics _cross_validation_metrics_restricted_model_ro;
+    public TwoDimTable _cross_validation_metrics_summary_restricted_model_ro;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id_restricted_model_ro;
+    // Per-fold predictions; non-null only when keep_cross_validation_predictions=true.
+    public Key<Frame>[] _cross_validation_predictions_restricted_model_ro;
+
     public void setAndMapControlVariablesNames(String[] controlVariablesNames){
       this._control_variables_names = controlVariablesNames;
       mapControlVariables();
@@ -2559,6 +2581,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
+  public void deleteCrossValidationPreds() {
+      super.deleteCrossValidationPreds();
+      GLMOutput out = (GLMOutput) _output;
+      // Per-fold unrestricted predictions — non-null only when keep_cross_validation_predictions=true.
+      if (out._cross_validation_predictions_unrestricted_model != null) {
+          int count = Keyed.removeAll(out._cross_validation_predictions_unrestricted_model);
+          if (count > 0) Log.info(count + " per-fold unrestricted CV predictions were removed");
+      }
+      Keyed.remove(out._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+  }
+
+  @Override
   public GLMMojoWriter getMojo() {
     return new GLMMojoWriter(this);
   }
@@ -2609,6 +2643,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);
+    GLMOutput out = (GLMOutput) _output;
+    // _training/_validation_metrics_unrestricted_model are Keyed but not tracked in _model_metrics,
+    // so they must be removed explicitly.
+    if (out._training_metrics_unrestricted_model != null)
+      Keyed.remove(out._training_metrics_unrestricted_model._key, fs, true);
+    if (out._validation_metrics_unrestricted_model != null)
+      Keyed.remove(out._validation_metrics_unrestricted_model._key, fs, true);
     Keyed.remove(_output._regression_influence_diagnostics, fs, cascade);
     return fs;
   }

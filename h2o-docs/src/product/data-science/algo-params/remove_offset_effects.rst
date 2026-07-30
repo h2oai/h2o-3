@@ -7,21 +7,38 @@
 Description
 ~~~~~~~~~~~
 
-This feature allows you to remove offset effects during scoring and metric calculation. 
+This feature allows you to remove offset effects during scoring and metric calculation.
 
-Model metrics and scoring history are calculated for both the restricted model (with offset effects removed) and the unrestricted model (with offset effect included).
+Model metrics and scoring history are calculated for both the restricted model (with offset effects removed) and the unrestricted model (with offset effects included).
 
-To get the unrestricted model with its own metrics use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
+To get the unrestricted model with its own metrics, use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
 
-If you set up the ``remove_offset_effects`` together with the ``control_variables`` model metrics and scoring history are calculated with both features enabled (that is, with both offset and control-variable effects removed during scoring).  
-If you need to get a model with only one feature enabled, you can get it using ``glm.make_derived_glm_model(remove_control_variables_effects=True)`` or ``glm.make_derived_glm_model(remove_offset_effects=True)``.
+**Cross-validation support**
+
+When cross-validation is enabled (``nfolds > 0``), two parallel CV metric views are computed:
+
+- **Restricted** (``cross_validation_metrics``, ``cross_validation_metrics_summary``): CV metrics computed with the offset zeroed out, consistent with the restricted training and validation metrics.
+- **Unrestricted** (``cross_validation_metrics_unrestricted_model``, ``cross_validation_metrics_summary_unrestricted_model``): CV metrics computed with the offset preserved, matching the unrestricted training and validation metrics.
+
+Calling ``make_unrestricted_glm_model()`` on a model trained with CV propagates the unrestricted CV metrics into the derived model's main ``cross_validation_metrics`` slot, so the derived model presents the full with-offset view consistently across training, validation, and CV.
+
+
+**Combination with control_variables**
+
+If you set up ``remove_offset_effects`` together with ``control_variables``, model metrics and scoring history are calculated with both features enabled (that is, with both offset and control-variables effects removed during scoring).
+To get a model with only one set of effects excluded, use ``glm.make_derived_glm_model()`` / ``h2o.make_derived_glm_model()`` with exactly one of its two flags set to ``True``:
+
+- ``remove_control_variables_effects=True``: excludes the control-variables effects from scoring and metrics; the offset effects stay included.
+- ``remove_offset_effects=True``: excludes the offset effects from scoring and metrics; the control-variables effects stay included.
+
+The two flags cannot both be ``True`` in the same call.
 If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
+When cross-validation is enabled and both features are set together, four CV metric views are available: the default restricted view (both effects removed, in ``cross_validation_metrics``), the control-variables-only-restricted view (``cross_validation_metrics_restricted_model_contr_vals``), the offset-only-restricted view (``cross_validation_metrics_restricted_model_ro``), and the fully-unrestricted view (``cross_validation_metrics_unrestricted_model``).
 
 **Notes**:
 
 - This option is experimental.
 - This option is not supported for multinomial, ordinal, or custom distributions.
-- This option is not available when cross validation is enabled.
 - This option is not available when Lambda search is enabled.
 - This option is not available when interactions are enabled.
 
@@ -77,6 +94,22 @@ Example
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm <- h2o.make_unrestricted_glm_model(airlines_glm)
 
+		# remove_offset_effects also works with cross-validation:
+		airlines_glm_cv <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
+                           offset_column = "Distance",
+                           remove_offset_effects = TRUE,
+                           nfolds = 5)
+
+		# restricted CV deviance (offset removed during CV scoring)
+		print(h2o.residual_deviance(airlines_glm_cv, xval = TRUE))
+
+		# unrestricted CV deviance (offset preserved during CV scoring)
+		print(airlines_glm_cv@model$cross_validation_metrics_unrestricted_model$residual_deviance)
+
+		# derived model presents the full with-offset CV view consistently
+		unrestricted_cv_glm <- h2o.make_unrestricted_glm_model(airlines_glm_cv)
+		print(h2o.residual_deviance(unrestricted_cv_glm, xval = TRUE))
+
 
    .. code-tab:: python
 
@@ -105,7 +138,7 @@ Example
 
 		# try using the `remove_offset_effects` parameter:
 		# initialize your estimator
-		airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial', 
+		airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
 		                                             remove_collinear_columns = True,
 		                                             score_each_iteration = True,
 		                                             generate_scoring_history = True,
@@ -123,3 +156,20 @@ Example
 
 		# get the unrestricted GLM model
 		unrestricted_airlines_glm = airlines_glm.make_unrestricted_glm_model()
+
+		# remove_offset_effects also works with cross-validation:
+		airlines_glm_cv = H2OGeneralizedLinearEstimator(family = 'binomial',
+		                                                offset_column = "Distance",
+		                                                remove_offset_effects = True,
+		                                                nfolds = 5)
+		airlines_glm_cv.train(x = predictors, y = response, training_frame = train)
+
+		# restricted CV deviance (offset removed during CV scoring)
+		print(airlines_glm_cv.model_performance(xval=True).residual_deviance())
+
+		# unrestricted CV deviance (offset preserved during CV scoring)
+		print(airlines_glm_cv.cross_validation_metrics_unrestricted_model["residual_deviance"])
+
+		# derived model presents the full with-offset CV view consistently
+		unrestricted_cv_glm = airlines_glm_cv.make_unrestricted_glm_model()
+		print(unrestricted_cv_glm.model_performance(xval=True).residual_deviance())

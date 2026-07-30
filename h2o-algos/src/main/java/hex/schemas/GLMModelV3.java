@@ -5,6 +5,7 @@ import hex.glm.GLMModel.GLMOutput;
 import water.MemoryManager;
 import water.api.API;
 import water.api.schemas3.KeyV3;
+import water.api.schemas3.ModelMetricsBaseV3;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
@@ -81,7 +82,55 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     
     @API(help="Scoring history of the unrestricted model (used when control variables are provided)", direction=API.Direction.OUTPUT, level=API.Level.secondary)
     public TwoDimTableV3 scoring_history_unrestricted_model;
-    
+
+    @API(help="Cross-validation metrics with control-variables and/or offset preserved (fully-unrestricted view); populated when control_variables and/or remove_offset_effects is set, with CV enabled.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public ModelMetricsBaseV3 cross_validation_metrics_unrestricted_model;
+
+    @API(help="Cross-validation metrics summary with control-variables and/or offset preserved (fully-unrestricted view); populated when control_variables and/or remove_offset_effects is set, with CV enabled.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public TwoDimTableV3 cross_validation_metrics_summary_unrestricted_model;
+
+    @API(help="Combined CV holdout predictions frame id (offset preserved); populated when remove_offset_effects=true and keep_cross_validation_predictions=true.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public KeyV3.FrameKeyV3 cross_validation_holdout_predictions_frame_id_unrestricted_model;
+
+    @API(help="Per-fold CV predictions (offset preserved), one per CV model; populated when remove_offset_effects=true and keep_cross_validation_predictions=true.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public KeyV3.FrameKeyV3[] cross_validation_predictions_unrestricted_model;
+
+    @API(help="Cross-validation metrics with control-variables kept and offset zeroed (control-variables-only-restricted view); populated when control_variables and remove_offset_effects are both set, with CV enabled.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public ModelMetricsBaseV3 cross_validation_metrics_restricted_model_contr_vals;
+
+    @API(help="Cross-validation metrics summary with control-variables kept and offset zeroed (control-variables-only-restricted view); populated when control_variables and remove_offset_effects are both set, with CV enabled.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public TwoDimTableV3 cross_validation_metrics_summary_restricted_model_contr_vals;
+
+    @API(help="Combined CV holdout predictions frame id (control-variables kept, offset zeroed); populated when control_variables and remove_offset_effects are both set and keep_cross_validation_predictions=true.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public KeyV3.FrameKeyV3 cross_validation_holdout_predictions_frame_id_restricted_model_contr_vals;
+
+    @API(help="Per-fold CV predictions (control-variables kept, offset zeroed), one per CV model; populated when control_variables and remove_offset_effects are both set and keep_cross_validation_predictions=true.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public KeyV3.FrameKeyV3[] cross_validation_predictions_restricted_model_contr_vals;
+
+    @API(help="Cross-validation metrics with offset kept and control-variables zeroed (offset-only-restricted view); populated when control_variables and remove_offset_effects are both set, with CV enabled.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public ModelMetricsBaseV3 cross_validation_metrics_restricted_model_ro;
+
+    @API(help="Cross-validation metrics summary with offset kept and control-variables zeroed (offset-only-restricted view); populated when control_variables and remove_offset_effects are both set, with CV enabled.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public TwoDimTableV3 cross_validation_metrics_summary_restricted_model_ro;
+
+    @API(help="Combined CV holdout predictions frame id (offset kept, control-variables zeroed); populated when control_variables and remove_offset_effects are both set and keep_cross_validation_predictions=true.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public KeyV3.FrameKeyV3 cross_validation_holdout_predictions_frame_id_restricted_model_ro;
+
+    @API(help="Per-fold CV predictions (offset kept, control-variables zeroed), one per CV model; populated when control_variables and remove_offset_effects are both set and keep_cross_validation_predictions=true.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public KeyV3.FrameKeyV3[] cross_validation_predictions_restricted_model_ro;
+
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet

@@ -122,12 +122,29 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
   private int _bestCVSubmodel;  // best submodel index found during cv
   private boolean _doInit = true;  // flag setting whether or not to run init
+  // Per-fold stash for the unrestricted (with control-variables/offset preserved) second-pass
+  // scoring; consumed and nulled by cv_mainModelScores. Transient: excluded from
+  // serialization/checkpointing.
+  private transient ModelMetrics.MetricBuilder[] _cv_mbs_unrestricted;
+  private transient Key<Frame>[] _cv_predKeys_unrestricted;
+  // Per-fold stash for the two combined-flags-only CV passes (control-vars-only-restricted and
+  // offset-only-restricted). Transient: excluded from serialization/checkpointing, same as above.
+  private transient ModelMetrics.MetricBuilder[] _cv_mbs_restrictedContrVals;
+  private transient Key<Frame>[] _cv_predKeys_restrictedContrVals;
+  private transient ModelMetrics.MetricBuilder[] _cv_mbs_restrictedRo;
+  private transient Key<Frame>[] _cv_predKeys_restrictedRo;
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
   private double [][] _xval_zValues;  // store cross validation average p-values
-  private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True
-  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_historty=True
+  private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
+  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_history=True (if remove_offset_effects=True, offset removed)
   private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
+  private double [] _xval_deviances_generate_SH_unrestricted; // unrestricted (with-offset) xval deviance for generate_scoring_history=True
+  private double [] _xval_sd_generate_SH_unrestricted; // standard deviation of unrestricted xval deviance
+  private double [] _xval_deviances_generate_SH_restricted_contr_vals; // control-vars-only-restricted xval deviance for generate_scoring_history=True
+  private double [] _xval_sd_generate_SH_restricted_contr_vals;
+  private double [] _xval_deviances_generate_SH_restricted_ro; // offset-only-restricted xval deviance for generate_scoring_history=True
+  private double [] _xval_sd_generate_SH_restricted_ro;
   private boolean _insideCVCheck = false; // detect if we are running inside cv_computeAndSetOptimalParameters
   private boolean _enumInCS = false;  // true if there are enum columns in beta constraints
   private Frame _betaConstraints = null;
@@ -448,8 +465,321 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     _doInit = false;  // disable init for CV main model
   }
 
+  @Override
+  protected void cv_prepareAdditionalScoring(int N) {
+    if (_parms._control_variables != null || _parms._remove_offset_effects) {
+      _cv_mbs_unrestricted = new ModelMetrics.MetricBuilder[N];
+      _cv_predKeys_unrestricted = new Key[N];
+    }
+    if (_parms._control_variables != null && _parms._remove_offset_effects) {
+      _cv_mbs_restrictedContrVals = new ModelMetrics.MetricBuilder[N];
+      _cv_predKeys_restrictedContrVals = new Key[N];
+      _cv_mbs_restrictedRo = new ModelMetrics.MetricBuilder[N];
+      _cv_predKeys_restrictedRo = new Key[N];
+    }
+  }
+
+  /**
+   * Up to 3 extra passes per fold, with control-variable/offset effects preserved/zeroed in
+   * different combinations (unrestricted, control-vars-only-restricted, offset-only-restricted).
+   * Runs inside super's per-fold Scope.Safe, after super's default-restricted scoring pass (fold
+   * models arrive with _useControlVariables/_useRemoveOffsetEffects reflecting training-time
+   * flags). Each pass flips the flag combination for that view, scores, then restores the
+   * original flags in a finally block before the next pass runs.
+   */
+  @Override
+  protected void cv_additionalScoringPerFold(int i, GLMModel cvModel, Frame cvValid, Frame adaptFr,
+                                              String predName, List<Frame> outerScopeFrames) {
+    if (_parms._control_variables == null && !_parms._remove_offset_effects) return;
+
+    boolean originalUseControlVariables = cvModel._useControlVariables;
+    boolean originalUseRemoveOffsetEffects = cvModel._useRemoveOffsetEffects;
+    boolean keepPreds = nclasses() == 2
+        || _parms._keep_cross_validation_predictions
+        || cvModel.isDistributionHuber();
+
+    // Pass 1: fully-unrestricted (both flags off) -- existing pass, unchanged behavior.
+    cvModel._useControlVariables = false;
+    cvModel._useRemoveOffsetEffects = false;
+    DKV.put(cvModel);
+    try {
+      if (keepPreds) {
+        String unrestrictedPredName = predName + "_unrestricted";
+        _cv_mbs_unrestricted[i] = cv_scoreFold(cvModel, cvValid, adaptFr, unrestrictedPredName, outerScopeFrames);
+        _cv_predKeys_unrestricted[i] = Key.make(unrestrictedPredName);
+        DKV.put(cvModel);
+      } else {
+        _cv_mbs_unrestricted[i] = cvModel.scoreMetrics(adaptFr);
+        _cv_predKeys_unrestricted[i] = null;
+      }
+    } finally {
+      cvModel._useControlVariables = originalUseControlVariables;
+      cvModel._useRemoveOffsetEffects = originalUseRemoveOffsetEffects;
+      DKV.put(cvModel);
+    }
+
+    // Passes 2/3 only apply when BOTH flags are set on the source model -- a single-flag run has
+    // no additional partial-restriction view beyond pass 1's coverage.
+    if (_parms._control_variables == null || !_parms._remove_offset_effects) return;
+
+    // Pass 2: control-vars-only-restricted -- offset kept, control variables zeroed (i.e. leave
+    // _useControlVariables zeroing on, flip offset off).
+    cvModel._useControlVariables = true;
+    cvModel._useRemoveOffsetEffects = false;
+    DKV.put(cvModel);
+    try {
+      if (keepPreds) {
+        String contrValsPredName = predName + "_restricted_contr_vals";
+        _cv_mbs_restrictedContrVals[i] = cv_scoreFold(cvModel, cvValid, adaptFr, contrValsPredName, outerScopeFrames);
+        _cv_predKeys_restrictedContrVals[i] = Key.make(contrValsPredName);
+        DKV.put(cvModel);
+      } else {
+        _cv_mbs_restrictedContrVals[i] = cvModel.scoreMetrics(adaptFr);
+        _cv_predKeys_restrictedContrVals[i] = null;
+      }
+    } finally {
+      cvModel._useControlVariables = originalUseControlVariables;
+      cvModel._useRemoveOffsetEffects = originalUseRemoveOffsetEffects;
+      DKV.put(cvModel);
+    }
+
+    // Pass 3: offset-only-restricted -- control variables kept, offset zeroed (i.e. leave
+    // _useRemoveOffsetEffects zeroing on, flip control variables off).
+    cvModel._useControlVariables = false;
+    cvModel._useRemoveOffsetEffects = true;
+    DKV.put(cvModel);
+    try {
+      if (keepPreds) {
+        String roPredName = predName + "_restricted_ro";
+        _cv_mbs_restrictedRo[i] = cv_scoreFold(cvModel, cvValid, adaptFr, roPredName, outerScopeFrames);
+        _cv_predKeys_restrictedRo[i] = Key.make(roPredName);
+        DKV.put(cvModel);
+      } else {
+        _cv_mbs_restrictedRo[i] = cvModel.scoreMetrics(adaptFr);
+        _cv_predKeys_restrictedRo[i] = null;
+      }
+    } finally {
+      cvModel._useControlVariables = originalUseControlVariables;
+      cvModel._useRemoveOffsetEffects = originalUseRemoveOffsetEffects;
+      DKV.put(cvModel);
+    }
+  }
+
+  /**
+   * Adds a parallel unrestricted (with control-variables/offset preserved) aggregation on top of
+   * super's restricted aggregation, gated on _parms._control_variables/_parms._remove_offset_effects.
+   * Consumes the stashes filled by cv_additionalScoringPerFold then nulls them (reduceForCV is not
+   * idempotent — calling twice would double-reduce).
+   */
+  @Override
+  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder[] mbs,
+                                  ModelBuilder<GLMModel, GLMParameters, GLMOutput>[] cvModelBuilders) {
+    // Build every "extra pass" summary before super runs, because super deletes CV models from DKV
+    // when keep_cross_validation_models=false, making DKV.getGet return null for all fold models.
+    TwoDimTable unrestrictedSummary = null;
+    TwoDimTable restrictedContrValsSummary = null;
+    TwoDimTable restrictedRoSummary = null;
+    if (_parms._control_variables != null || _parms._remove_offset_effects) {
+      Key[] cvModKeys = new Key[N];
+      for (int i = 0; i < N; i++) cvModKeys[i] = cvModelBuilders[i].dest();
+      unrestrictedSummary = makeCrossValidationSummaryTable(cvModKeys,
+              m -> ((GLMModel) m)._output._validation_metrics_unrestricted_model);
+      if (_parms._control_variables != null && _parms._remove_offset_effects) {
+        restrictedContrValsSummary = makeCrossValidationSummaryTable(cvModKeys,
+                m -> ((GLMModel) m)._output._validation_metrics_restricted_model_contr_vals);
+        restrictedRoSummary = makeCrossValidationSummaryTable(cvModKeys,
+                m -> ((GLMModel) m)._output._validation_metrics_restricted_model_ro);
+      }
+    }
+
+    // super fills the restricted CV slots and cleans up per-fold restricted preds.
+    super.cv_mainModelScores(N, mbs, cvModelBuilders);
+
+    if (_parms._control_variables == null && !_parms._remove_offset_effects) return;  // stash arrays were never allocated
+
+    // Assign onto the post-super instance (super's own cv_mainModelScores may have re-fetched or
+    // re-put the model), not the pre-super reference the summary tables were built against.
+    GLMModel mainModel = _result.get();
+    mainModel._output._cross_validation_metrics_summary_unrestricted_model = unrestrictedSummary;
+
+    // Combine per-fold unrestricted preds into one frame; keep per-fold frames when
+    // keep_cross_validation_predictions=true (mirrors super), otherwise drop them.
+    Frame unrestrictedHoldoutPreds = null;
+    if (_parms._keep_cross_validation_predictions
+        || nclasses() == 2
+        || mainModel.isDistributionHuber()) {
+      List<Key<Frame>> nonNull = new ArrayList<>();
+      for (Key<Frame> k : _cv_predKeys_unrestricted) {
+        if (k != null) nonNull.add(k);
+      }
+      if (!nonNull.isEmpty()) {
+        Key<Frame> cvhpUn = Key.make("cv_holdout_prediction_unrestricted_" + mainModel._key.toString());
+        if (_parms._keep_cross_validation_predictions) {
+          mainModel._output._cross_validation_holdout_predictions_frame_id_unrestricted_model = cvhpUn;
+        }
+        @SuppressWarnings("unchecked")
+        Key<Frame>[] nonNullArr = nonNull.toArray(new Key[0]);
+        unrestrictedHoldoutPreds = combineHoldoutPredictions(nonNullArr, cvhpUn);
+      }
+      if (_parms._keep_cross_validation_predictions) {
+        // Mirror super: store per-fold unrestricted keys in output and untrack frames from scope.
+        mainModel._output._cross_validation_predictions_unrestricted_model = _cv_predKeys_unrestricted;
+        for (Key<Frame> k : _cv_predKeys_unrestricted) {
+          if (k != null) {
+            Frame fr = DKV.getGet(k);
+            if (fr != null) Scope.untrack(fr);
+          }
+        }
+      } else {
+        int removed = Keyed.removeAll(_cv_predKeys_unrestricted);
+        if (removed > 0) Log.info(removed + " per-fold unrestricted CV predictions were removed");
+      }
+    }
+
+    // Order matters: cv_makeAggregateModelMetrics reduces [1..N-1] into [0] in place and is
+    // NOT idempotent; it must run before makeModelMetrics consumes [0].
+    cv_makeAggregateModelMetrics(_cv_mbs_unrestricted);
+    ModelMetrics unrestrictedCvMM =
+        _cv_mbs_unrestricted[0].makeModelMetrics(mainModel, _parms.train(), null, unrestrictedHoldoutPreds);
+    // makeModelMetrics auto-stored unrestrictedCvMM at the same DKV key as the restricted CV metrics
+    // (same model + frame → same ModelMetrics.buildKey result), overwriting restricted in DKV.
+    // Fix: move unrestricted to a unique key so restricted stays at the natural lookup key.
+    Key<ModelMetrics> collisionKey = unrestrictedCvMM._key;
+    unrestrictedCvMM._key = Key.make(collisionKey + "_unrestricted");
+    unrestrictedCvMM._description =
+        N + "-fold cross-validation on training data (unrestricted view — control_variables/remove_offset_effects effects preserved)";
+    mainModel.addModelMetrics(unrestrictedCvMM);        // stores at new key, registers in _model_metrics
+    DKV.put(collisionKey, mainModel._output._cross_validation_metrics); // restore restricted at natural key
+    mainModel._output._cross_validation_metrics_unrestricted_model = unrestrictedCvMM;
+
+    if (unrestrictedHoldoutPreds != null) {
+      if (_parms._keep_cross_validation_predictions) {
+        Scope.untrack(unrestrictedHoldoutPreds);
+      } else {
+        unrestrictedHoldoutPreds.remove();
+      }
+    }
+
+    Log.info(mainModel._output._cross_validation_metrics_unrestricted_model.toString());
+
+    _cv_mbs_unrestricted = null;
+    _cv_predKeys_unrestricted = null;
+
+    // Two new views below only apply when BOTH flags are set -- mirrors the unrestricted block
+    // above exactly, once per view, each with its own unique DKV key suffix to avoid overwriting
+    // the default-restricted or unrestricted combined ModelMetrics already stored in DKV.
+    if (_parms._control_variables != null && _parms._remove_offset_effects) {
+      mainModel._output._cross_validation_metrics_summary_restricted_model_contr_vals = restrictedContrValsSummary;
+      Frame contrValsHoldoutPreds = null;
+      if (_parms._keep_cross_validation_predictions || nclasses() == 2 || mainModel.isDistributionHuber()) {
+        List<Key<Frame>> nonNull = new ArrayList<>();
+        for (Key<Frame> k : _cv_predKeys_restrictedContrVals) {
+          if (k != null) nonNull.add(k);
+        }
+        if (!nonNull.isEmpty()) {
+          Key<Frame> cvhpCv = Key.make("cv_holdout_prediction_restricted_contr_vals_" + mainModel._key.toString());
+          if (_parms._keep_cross_validation_predictions) {
+            mainModel._output._cross_validation_holdout_predictions_frame_id_restricted_model_contr_vals = cvhpCv;
+          }
+          @SuppressWarnings("unchecked")
+          Key<Frame>[] nonNullArr = nonNull.toArray(new Key[0]);
+          contrValsHoldoutPreds = combineHoldoutPredictions(nonNullArr, cvhpCv);
+        }
+        if (_parms._keep_cross_validation_predictions) {
+          mainModel._output._cross_validation_predictions_restricted_model_contr_vals = _cv_predKeys_restrictedContrVals;
+          for (Key<Frame> k : _cv_predKeys_restrictedContrVals) {
+            if (k != null) {
+              Frame fr = DKV.getGet(k);
+              if (fr != null) Scope.untrack(fr);
+            }
+          }
+        } else {
+          int removed = Keyed.removeAll(_cv_predKeys_restrictedContrVals);
+          if (removed > 0) Log.info(removed + " per-fold restricted-contr-vals CV predictions were removed");
+        }
+      }
+
+      cv_makeAggregateModelMetrics(_cv_mbs_restrictedContrVals);
+      ModelMetrics contrValsCvMM =
+          _cv_mbs_restrictedContrVals[0].makeModelMetrics(mainModel, _parms.train(), null, contrValsHoldoutPreds);
+      Key<ModelMetrics> contrValsCollisionKey = contrValsCvMM._key;
+      contrValsCvMM._key = Key.make(contrValsCollisionKey + "_restricted_contr_vals");
+      contrValsCvMM._description =
+          N + "-fold cross-validation on training data (control-variables-only-restricted view — offset kept, control variables zeroed)";
+      mainModel.addModelMetrics(contrValsCvMM);
+      DKV.put(contrValsCollisionKey, mainModel._output._cross_validation_metrics);
+      mainModel._output._cross_validation_metrics_restricted_model_contr_vals = contrValsCvMM;
+
+      if (contrValsHoldoutPreds != null) {
+        if (_parms._keep_cross_validation_predictions) {
+          Scope.untrack(contrValsHoldoutPreds);
+        } else {
+          contrValsHoldoutPreds.remove();
+        }
+      }
+      Log.info(mainModel._output._cross_validation_metrics_restricted_model_contr_vals.toString());
+      _cv_mbs_restrictedContrVals = null;
+      _cv_predKeys_restrictedContrVals = null;
+
+      mainModel._output._cross_validation_metrics_summary_restricted_model_ro = restrictedRoSummary;
+      Frame roHoldoutPreds = null;
+      if (_parms._keep_cross_validation_predictions || nclasses() == 2 || mainModel.isDistributionHuber()) {
+        List<Key<Frame>> nonNull = new ArrayList<>();
+        for (Key<Frame> k : _cv_predKeys_restrictedRo) {
+          if (k != null) nonNull.add(k);
+        }
+        if (!nonNull.isEmpty()) {
+          Key<Frame> cvhpRo = Key.make("cv_holdout_prediction_restricted_ro_" + mainModel._key.toString());
+          if (_parms._keep_cross_validation_predictions) {
+            mainModel._output._cross_validation_holdout_predictions_frame_id_restricted_model_ro = cvhpRo;
+          }
+          @SuppressWarnings("unchecked")
+          Key<Frame>[] nonNullArr = nonNull.toArray(new Key[0]);
+          roHoldoutPreds = combineHoldoutPredictions(nonNullArr, cvhpRo);
+        }
+        if (_parms._keep_cross_validation_predictions) {
+          mainModel._output._cross_validation_predictions_restricted_model_ro = _cv_predKeys_restrictedRo;
+          for (Key<Frame> k : _cv_predKeys_restrictedRo) {
+            if (k != null) {
+              Frame fr = DKV.getGet(k);
+              if (fr != null) Scope.untrack(fr);
+            }
+          }
+        } else {
+          int removed = Keyed.removeAll(_cv_predKeys_restrictedRo);
+          if (removed > 0) Log.info(removed + " per-fold restricted-ro CV predictions were removed");
+        }
+      }
+
+      cv_makeAggregateModelMetrics(_cv_mbs_restrictedRo);
+      ModelMetrics roCvMM =
+          _cv_mbs_restrictedRo[0].makeModelMetrics(mainModel, _parms.train(), null, roHoldoutPreds);
+      Key<ModelMetrics> roCollisionKey = roCvMM._key;
+      roCvMM._key = Key.make(roCollisionKey + "_restricted_ro");
+      roCvMM._description =
+          N + "-fold cross-validation on training data (offset-only-restricted view — control variables kept, offset zeroed)";
+      mainModel.addModelMetrics(roCvMM);
+      DKV.put(roCollisionKey, mainModel._output._cross_validation_metrics);
+      mainModel._output._cross_validation_metrics_restricted_model_ro = roCvMM;
+
+      if (roHoldoutPreds != null) {
+        if (_parms._keep_cross_validation_predictions) {
+          Scope.untrack(roHoldoutPreds);
+        } else {
+          roHoldoutPreds.remove();
+        }
+      }
+      Log.info(mainModel._output._cross_validation_metrics_restricted_model_ro.toString());
+      _cv_mbs_restrictedRo = null;
+      _cv_predKeys_restrictedRo = null;
+    }
+
+    // Re-publish mainModel: super already put it, but the extra-view fields were set after.
+    DKV.put(mainModel);
+  }
+
   /***
-   * This method is only called when _parms.generate_scoring_hisory=True.  We left the xval-deviance, xval-se 
+   * This method is only called when _parms.generate_scoring_history=True.  We left the xval-deviance, xval-se
    * generation alone and create new xval-deviance and xval-se.
    * 
    * @param cvModelBuilders: store model keys from models generated by cross validation.
@@ -501,6 +831,142 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     _xval_sd_generate_SH = Arrays.copyOf(_xval_sd_generate_SH, countIndex);
     _xval_deviances_generate_SH = Arrays.copyOf(_xval_deviances_generate_SH, countIndex);
     _xval_iters_generate_SH = Arrays.copyOf(_xval_iters_generate_SH, countIndex);
+
+    if ((_parms._control_variables != null || _parms._remove_offset_effects) && !_parms._lambda_search)
+      generateCVScoringHistoryUnrestricted(cvModelBuilders);
+
+    if (_parms._control_variables != null && _parms._remove_offset_effects && !_parms._lambda_search) {
+      generateCVScoringHistoryRestrictedContrVals(cvModelBuilders);
+      generateCVScoringHistoryRestrictedRo(cvModelBuilders);
+    }
+  }
+
+  /**
+   * Aggregates unrestricted (control-variables/offset preserved) xval deviances from each fold's
+   * unrestricted scoring history into _xval_deviances_generate_SH_unrestricted and
+   * _xval_sd_generate_SH_unrestricted, so that _scoring_history_unrestricted_model shows the
+   * correct (unrestricted) deviance_xval. Mirrors the restricted aggregation in
+   * generateCVScoringHistory; only called when control_variables and/or remove_offset_effects is
+   * set and lambda_search=false.
+   */
+  private void generateCVScoringHistoryUnrestricted(ModelBuilder[] cvModelBuilders) {
+    int unrestrictedLength = Integer.MAX_VALUE;
+    List<Integer>[] unrestrictedIters = new List[cvModelBuilders.length];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      ArrayList<Double> unrestrictedDevTest = g._scoringHistoryUnrestrictedModel._lambdaDevTest;
+      if (unrestrictedDevTest != null && unrestrictedDevTest.size() < unrestrictedLength)
+        unrestrictedLength = unrestrictedDevTest.size();
+      unrestrictedIters[i] = new ArrayList<>(g._scoringHistoryUnrestrictedModel._scoringIters);
+    }
+    if (unrestrictedLength > 0 && unrestrictedLength < Integer.MAX_VALUE) {
+      double[] unrestrictedDeviances = new double[unrestrictedLength];
+      double[] unrestrictedSDs = new double[unrestrictedLength];
+      int unrestrictedCount = 0;
+      for (int index = 0; index < unrestrictedLength; index++) {
+        double testDev = 0;
+        double testDevSq = 0;
+        int[] foldIterIndex = findIterIndexAcrossFolds(unrestrictedIters, index);
+        if (foldIterIndex != null) {
+          for (int modelIndex = 0; modelIndex < cvModelBuilders.length; modelIndex++) {
+            GLM g = (GLM) cvModelBuilders[modelIndex];
+            double d = g._scoringHistoryUnrestrictedModel._lambdaDevTest.get(foldIterIndex[modelIndex]);
+            testDev += d;
+            testDevSq += d * d;
+          }
+          double avg = testDev / cvModelBuilders.length;
+          // Sample-variance numerator: sum(d^2) - n*mean^2 == sum(d^2) - mean*sum(d).
+          // Matches the canonical form used in the restricted scoring history above and in
+          // cv_computeAndSetOptimalParameters.
+          double se = testDevSq - avg * testDev;
+          unrestrictedSDs[unrestrictedCount] = Math.sqrt(se / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
+          unrestrictedDeviances[unrestrictedCount++] = avg;
+        }
+      }
+      _xval_deviances_generate_SH_unrestricted = Arrays.copyOf(unrestrictedDeviances, unrestrictedCount);
+      _xval_sd_generate_SH_unrestricted = Arrays.copyOf(unrestrictedSDs, unrestrictedCount);
+    }
+  }
+
+  /**
+   * Aggregates control-vars-only-restricted (offset kept, control variables zeroed) xval
+   * deviances from each fold's _scoringHistoryControlValEnabled into
+   * _xval_deviances_generate_SH_restricted_contr_vals / _xval_sd_generate_SH_restricted_contr_vals.
+   * Mirrors generateCVScoringHistoryUnrestricted exactly, substituting the data source. Only
+   * called when control_variables and remove_offset_effects are both set and lambda_search=false.
+   */
+  private void generateCVScoringHistoryRestrictedContrVals(ModelBuilder[] cvModelBuilders) {
+    int len = Integer.MAX_VALUE;
+    List<Integer>[] iters = new List[cvModelBuilders.length];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      ArrayList<Double> devTest = g._scoringHistoryControlValEnabled._lambdaDevTest;
+      if (devTest != null && devTest.size() < len) len = devTest.size();
+      iters[i] = new ArrayList<>(g._scoringHistoryControlValEnabled._scoringIters);
+    }
+    if (len > 0 && len < Integer.MAX_VALUE) {
+      double[] deviances = new double[len];
+      double[] sds = new double[len];
+      int count = 0;
+      for (int index = 0; index < len; index++) {
+        double testDev = 0;
+        double testDevSq = 0;
+        int[] foldIterIndex = findIterIndexAcrossFolds(iters, index);
+        if (foldIterIndex != null) {
+          for (int modelIndex = 0; modelIndex < cvModelBuilders.length; modelIndex++) {
+            GLM g = (GLM) cvModelBuilders[modelIndex];
+            double d = g._scoringHistoryControlValEnabled._lambdaDevTest.get(foldIterIndex[modelIndex]);
+            testDev += d;
+            testDevSq += d * d;
+          }
+          double avg = testDev / cvModelBuilders.length;
+          double se = testDevSq - avg * testDev;
+          sds[count] = Math.sqrt(se / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
+          deviances[count++] = avg;
+        }
+      }
+      _xval_deviances_generate_SH_restricted_contr_vals = Arrays.copyOf(deviances, count);
+      _xval_sd_generate_SH_restricted_contr_vals = Arrays.copyOf(sds, count);
+    }
+  }
+
+  /**
+   * Identical structure to generateCVScoringHistoryRestrictedContrVals, sourced from
+   * _scoringHistoryRemoveOffsetEnabled (offset-only-restricted per-fold scoring history) instead.
+   */
+  private void generateCVScoringHistoryRestrictedRo(ModelBuilder[] cvModelBuilders) {
+    int len = Integer.MAX_VALUE;
+    List<Integer>[] iters = new List[cvModelBuilders.length];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      ArrayList<Double> devTest = g._scoringHistoryRemoveOffsetEnabled._lambdaDevTest;
+      if (devTest != null && devTest.size() < len) len = devTest.size();
+      iters[i] = new ArrayList<>(g._scoringHistoryRemoveOffsetEnabled._scoringIters);
+    }
+    if (len > 0 && len < Integer.MAX_VALUE) {
+      double[] deviances = new double[len];
+      double[] sds = new double[len];
+      int count = 0;
+      for (int index = 0; index < len; index++) {
+        double testDev = 0;
+        double testDevSq = 0;
+        int[] foldIterIndex = findIterIndexAcrossFolds(iters, index);
+        if (foldIterIndex != null) {
+          for (int modelIndex = 0; modelIndex < cvModelBuilders.length; modelIndex++) {
+            GLM g = (GLM) cvModelBuilders[modelIndex];
+            double d = g._scoringHistoryRemoveOffsetEnabled._lambdaDevTest.get(foldIterIndex[modelIndex]);
+            testDev += d;
+            testDevSq += d * d;
+          }
+          double avg = testDev / cvModelBuilders.length;
+          double se = testDevSq - avg * testDev;
+          sds[count] = Math.sqrt(se / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
+          deviances[count++] = avg;
+        }
+      }
+      _xval_deviances_generate_SH_restricted_ro = Arrays.copyOf(deviances, count);
+      _xval_sd_generate_SH_restricted_ro = Arrays.copyOf(sds, count);
+    }
   }
 
   /***
@@ -974,6 +1440,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
+      if (_parms._remove_offset_effects && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
+        error("_remove_offset_effects", "Remove offset effects is not supported with " + _parms._family.name() + " family.");
+      if (_parms._control_variables != null && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
+        error("_control_variables", "Control variables is not supported with " + _parms._family.name() + " family.");
       if (_parms._plug_values != null) {
         Frame plugValues = _parms._plug_values.get();
         if (plugValues == null) {
@@ -3410,7 +3880,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   m -> _model._output._validation_metrics = m,
                   _scoringHistory, _model._useControlVariables);
           _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);
-          _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, null, null) : null;
+          _model._output._scoring_history = _scoringHistory != null ? _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH, _xval_sd_generate_SH) : null;
 
           if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
               // CV-only
@@ -3423,8 +3893,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       m -> _model._output._validation_metrics_restricted_model_contr_vals = m,
                       _scoringHistoryControlValEnabled, true);
               _model.addRestrictedModelScoringInfoContrVals(_parms, nclasses(), t2, _state._iter);
-              _model._output._scoring_history_restricted_model_contr_vals = _scoringHistoryControlValEnabled != null 
-                      ? _scoringHistoryControlValEnabled.to2dTable(_parms, null, null) : null;
+              _model._output._scoring_history_restricted_model_contr_vals = _scoringHistoryControlValEnabled != null
+                      ? _scoringHistoryControlValEnabled.to2dTable(_parms, _xval_deviances_generate_SH_restricted_contr_vals, _xval_sd_generate_SH_restricted_contr_vals) : null;
 
               // RO-only
               _model._useControlVariables = false;
@@ -3437,7 +3907,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       _scoringHistoryRemoveOffsetEnabled, false);
               _model.addRestrictedModelScoringInfoRO(_parms, nclasses(), t2, _state._iter);
               _model._output._scoring_history_restricted_model_ro = _scoringHistoryRemoveOffsetEnabled != null
-                      ? _scoringHistoryRemoveOffsetEnabled.to2dTable(_parms, null, null) : null;
+                      ? _scoringHistoryRemoveOffsetEnabled.to2dTable(_parms, _xval_deviances_generate_SH_restricted_ro, _xval_sd_generate_SH_restricted_ro) : null;
           }
         } finally {
           _model._useControlVariables = false;
@@ -3580,8 +4050,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_search) {
         _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
       } else if (_model._parms._control_variables != null || _model._parms._remove_offset_effects){
-        _model._output._scoring_history_unrestricted_model = _scoringHistoryUnrestrictedModel.to2dTable(_parms, _xval_deviances_generate_SH,
-                _xval_sd_generate_SH);
+        _model._output._scoring_history_unrestricted_model = _scoringHistoryUnrestrictedModel.to2dTable(_parms,
+                _xval_deviances_generate_SH_unrestricted, _xval_sd_generate_SH_unrestricted);
       } else {
         _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH,
                 _xval_sd_generate_SH);
@@ -3674,15 +4144,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         double trainDev = _state.deviance() / _nobs;
         double validDev = Double.NaN;  // calculated from validation dataset below if present
+        boolean zeroedControlVars = false;
         if (_validDinfo != null) {  // calculate deviance for validation set and save as testDev
           if (ordinal.equals(_parms._family))
             validDev = new GLMResDevTaskOrdinal(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev();
-          else
+          else {
+            // For control_variables + CV, zero the control-variable coefficients before scoring the
+            // holdout fold (not for a plain validation_frame without CV). Must zero before
+            // denormalizing: denormalizing first would bake a spurious bias into the intercept.
+            zeroedControlVars = _parms._control_variables != null && _parms._is_cv_model;
+            double[] expandedValidBeta = zeroedControlVars
+                    ? _model._output.getControlValBeta(_state.expandBeta(_state.beta()).clone())
+                    : _state.expandBeta(_state.beta());
+            double[] validBeta = _dinfo.denormalizeBeta(expandedValidBeta);
             validDev = multinomial.equals(_parms._family)
-                    ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
-                    : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame).avgDev();
+                    ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, validBeta, _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
+                    : new GLMResDevTask(_job._key, _validDinfo, _parms, validBeta, _parms._remove_offset_effects).doAll(_validDinfo._adaptedFrame).avgDev();
+          }
         }
-        Log.info(LogMsg("train deviance = " + trainDev + ", valid deviance = " + validDev));
+        Log.info(LogMsg("train deviance (unrestricted) = " + trainDev + ", valid deviance (" +
+                (zeroedControlVars ? "restricted" : "unrestricted") + ") = " + validDev));
         double xvalDev = ((_xval_deviances == null) || (_xval_deviances.length <= i)) ? -1 : _xval_deviances[i];
         double xvalDevSE = ((_xval_sd == null) || (_xval_deviances.length <= i)) ? -1 : _xval_sd[i];
         if (_parms._lambda_search)

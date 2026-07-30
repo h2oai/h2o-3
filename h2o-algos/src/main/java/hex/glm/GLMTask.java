@@ -89,7 +89,9 @@ public abstract class GLMTask  {
         _glmf = new GLMWeightsFun(parms);
         _beta = beta;
         _removeOffsetEffects = removeOffsetEffects;
-        _sparseOffset = _sparse ? (!_removeOffsetEffects ? GLM.sparseOffset(_beta,_dinfo) : 0) : 0;
+        // sparseOffset corrects for numeric standardization in sparse data — it is independent of
+        // the offset column, so it must be computed regardless of _removeOffsetEffects.
+        _sparseOffset = _sparse ? GLM.sparseOffset(_beta, _dinfo) : 0;
     }
     
     private transient GLMWeights _glmw;
