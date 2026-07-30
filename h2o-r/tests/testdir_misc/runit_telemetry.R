@@ -111,6 +111,20 @@ test.telemetry <- function() {
   Sys.unsetenv("DO_NOT_TRACK")
   expect_false(.h2o.telemetry.disabled())
 
+  # --- Input validation: telemetry is opt-in, so an ambiguous value must never
+  #     flip it on. A non-logical like "false" is rejected outright rather than
+  #     coerced, so each bad value must error while leaving telemetry off and the
+  #     persisted preference untouched. Covers both h2o.set_telemetry and the
+  #     h2o.init() guard (which stops before any connection attempt). ---
+  h2o.set_telemetry(FALSE)
+  for (bad in list("false", "FALSE", "0", "no", "true", 1, NA, c(TRUE, FALSE))) {
+    expect_error(h2o.set_telemetry(bad))
+    expect_false(h2o.telemetry_enabled())
+    expect_equal(readLines(pref, warn = FALSE), "0")
+  }
+  expect_error(h2o.init(telemetry = "false"), "must be TRUE, FALSE, or NULL")
+  expect_error(h2o.init(telemetry = 1),       "must be TRUE, FALSE, or NULL")
+
   # --- Emitters are exception-safe: bounded synchronous POST to an unreachable
   #     endpoint never raises, whether telemetry is on or off. ---
   Sys.setenv(H2O_TELEMETRY_URL = "http://127.0.0.1:1/v1/event")  # refused fast; bounded by connecttimeout
