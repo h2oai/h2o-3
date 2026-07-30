@@ -26,12 +26,13 @@ Calling ``make_unrestricted_glm_model()`` on a model trained with CV propagates 
 
 When ``lambda_search=True``, two parallel per-lambda scoring histories are produced:
 
-- **Restricted** (``scoring_history``, titled *Scoring History*): one row per lambda with the offset removed from ``deviance_train``, ``deviance_test`` and ``deviance_xval``.
+- **Restricted** (``scoring_history``, titled *Scoring History offset-removed model*): one row per lambda with the offset removed from ``deviance_train``, ``deviance_test`` and ``deviance_xval``. Note that the two tables carry identical column names, and the Python client's ``scoring_history()`` returns a ``pandas.DataFrame``, which does not show the title -- so keep track of which slot you read.
 - **Unrestricted** (``scoring_history_unrestricted_model``, titled *Scoring History unrestricted model*): the same rows with the offset preserved. These match a plain offset model trained with the same parameters.
 
 ``remove_offset_effects`` changes only the reported metrics, never the fit, so the model is identical to the one you would get without the option. Consequently **the best lambda is selected on the offset-preserved (unrestricted) deviance**, which guarantees that ``lambda_best`` and the coefficients match the equivalent model trained without ``remove_offset_effects``. One consequence is worth noting: the ``deviance_test`` column of the restricted ``scoring_history`` is *not* necessarily minimized at the selected lambda. To see the deviance that selection is based on, read ``scoring_history_unrestricted_model`` (or the derived model returned by ``make_unrestricted_glm_model()``).
 
 Combining ``lambda_search`` with cross-validation is supported; the restricted history's ``deviance_xval`` is then the offset-removed cross-validated deviance, on the same scale as its ``deviance_train``/``deviance_test``.
+An empty ``deviance_xval``/``deviance_se`` cell in the restricted history means the offset-removed cross-validated deviance could not be computed (for example when a fold was resumed from a checkpoint); a warning is issued in that case, and ``scoring_history_unrestricted_model`` still reports the offset-included values.
 Note that the per-lambda ``deviance_xval``/``deviance_se`` columns and the cross-validated lambda selection require ``nfolds``; with a ``fold_column`` the CV metric slots above are still populated, but those columns are omitted from the scoring history and the best lambda is chosen from the training/validation path instead.
 
 **Combination with control_variables**
@@ -50,7 +51,9 @@ If both features are enabled and ``score_each_iteration=True`` or ``generate_sco
 The two flags cannot both be ``True`` in the same call. Calling the same derivation twice with the same ``dest`` returns the model created the first time; if a different model already occupies that key, the call is rejected.
 If the source model was trained with only one of the two features, the corresponding derived model is equivalent to the source model in every reported number.
 
-Metric-based early stopping (``stopping_rounds``) evaluates the offset-removed metric, so a model trained with ``remove_offset_effects=True`` may stop at a different iteration than the equivalent plain offset model.
+A derived model reports the source's selected ``lambda`` and ``alpha``, but it does **not** carry a regularization path of its own: ``h2o.getGLMFullRegularizationPath()`` / ``getGLMRegularizationPath()`` on a derived model returns a single row with ``NaN`` explained deviances. Read the regularization path from the source model instead.
+
+Metric-based early stopping (``stopping_rounds``) is evaluated on the offset-preserved (unrestricted) metrics, so the stopping iteration and the selected lambda match the equivalent plain offset model. Note that ``stopping_rounds`` cannot be combined with ``lambda_search``, which has its own early-stopping mechanism (``early_stopping``).
 
 **Notes**:
 
@@ -218,7 +221,7 @@ Example
 		print(airlines_glm_ls.scoring_history())
 
 		# per-lambda history with the offset preserved - this is the deviance lambda selection uses
-		print(airlines_glm_ls._model_json["output"]["scoring_history_unrestricted_model"])
+		print(airlines_glm_ls.scoring_history_unrestricted_model)
 
 		# the selected lambda matches the plain offset model, because the fit is unchanged
 		print(H2OGeneralizedLinearEstimator.getLambdaBest(airlines_glm_ls))

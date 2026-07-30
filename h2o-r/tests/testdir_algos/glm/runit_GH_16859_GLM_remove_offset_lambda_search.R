@@ -135,7 +135,7 @@ glm_remove_offset_lambda_search_cross_validation_test <- function() {
     expect_true(any(ok))
     # the unrestricted xval deviance must equal the plain offset model's (the fit is unchanged)
     expect_equal(u[ok], p[ok], tolerance = 1e-8)
-    # a correct offset-removed deviance is >= 0; -1 is the not-populated sentinel and must not count
+    # a correct offset-removed deviance is a real number >= 0; the not-populated sentinel is NaN, excluded by `ok`
     expect_true(any(r[ok] >= 0 & abs(r[ok] - u[ok]) > 1e-8))
 }
 

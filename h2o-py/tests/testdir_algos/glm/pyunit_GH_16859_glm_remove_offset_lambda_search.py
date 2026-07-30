@@ -233,8 +233,8 @@ def glm_remove_offset_lambda_search_cross_validation():
     # the unrestricted xval deviance must equal the plain offset model's (the fit is unchanged)
     for r, u, p in triples:
         assert abs(u - p) < 1e-8, "unrestricted deviance_xval must match the plain offset model: %r vs %r" % (u, p)
-    # a correct offset-removed deviance is >= 0; -1 is the not-populated sentinel and must not count
-    assert any(r >= 0 and abs(r - u) > 1e-8 for r, u, p in triples), \
+    # a correct offset-removed deviance is a real number >= 0; NaN is the not-populated sentinel and must not count
+    assert any(r == r and r >= 0 and abs(r - u) > 1e-8 for r, u, p in triples), \
         "restricted deviance_xval must be a real offset-removed value differing from the unrestricted history's"
 
     # documented workflow: make_unrestricted_glm_model on a CV model propagates the unrestricted CV metrics
@@ -426,19 +426,93 @@ def glm_remove_offset_lambda_search_alpha():
                                        f"[alpha={alpha}] coef {k}: unrestricted model must recover plain offset model")
 
 
-# learning_curve_plot is the advertised UX surface for this feature; it must render without error on a
-# remove_offset + lambda_search model (headless via save_plot_path).
+# learning_curve_plot is the advertised UX surface for this feature. Asserting only that a file was written
+# proves nothing: savefig writes a PNG for empty axes, which is exactly the failure mode the derived model's
+# submodel adoption prevents (the plot filters the scoring history by alpha_best, which is 0 on an unadopted
+# placeholder submodel, so every row is dropped and the curve comes out empty).
 def glm_remove_offset_lambda_search_plot():
-    import os
     df = _prostate_with_offset()
     df["CAPSULE"] = df["CAPSULE"].asfactor()
     ro = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, remove_offset_effects=True,
                                        generate_scoring_history=True, seed=0xC0FFEE)
     ro.train(x=["RACE", "DPROS", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=df, offset_column="off")
 
-    out = os.path.join(tempfile.mkdtemp(), "learning_curve.png")
-    ro.learning_curve_plot(save_plot_path=out)
-    assert os.path.exists(out), "learning_curve_plot must produce output for a remove_offset+lambda_search model"
+    def assert_curve_not_empty(model, label, expect_unrestricted_series):
+        fig = model.learning_curve_plot().figure()
+        series = {}
+        for ax in fig.axes:
+            for line in ax.get_lines():
+                series[line.get_label()] = line
+        assert "Training" in series, "%s: no Training curve was plotted (labels: %r)" % (label, list(series))
+        assert len(series["Training"].get_xdata()) > 1, \
+            "%s: the Training curve is empty - the alpha_best filter dropped every scoring-history row" % label
+        # only a trained model carries scoring_history_unrestricted_model; the derived model's history was copied
+        # into its main slot, so it has no second series to plot
+        assert ("Training (Unrestricted model)" in series) == expect_unrestricted_series, \
+            "%s: unexpected presence/absence of the offset-included curve (labels: %r)" % (label, list(series))
+
+    assert_curve_not_empty(ro, "trained model", True)
+    # The derived model is the case the submodel adoption exists for: its scoring history is copied from the
+    # source and then filtered by alpha_best, which is 0 unless the placeholder submodel was replaced.
+    assert_curve_not_empty(ro.make_unrestricted_glm_model(), "derived model", False)
+
+
+# A derived model reports the source's selected lambda/alpha (so learning_curve_plot has a non-empty curve),
+# but it carries no regularization path of its own: its submodel is a placeholder, because the source's submodel
+# betas are standardized while a derived output's DataInfo is NONE (its coefficients are already denormalized).
+# Pinning both halves here so neither the retag nor the documented limitation regresses silently.
+def glm_remove_offset_lambda_search_derived_lambda_best():
+    cars, x, y, offset_col = _cars_with_offset()
+
+    ro = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, remove_offset_effects=True,
+                                       seed=0xC0FFEE)
+    ro.train(x=x, y=y, training_frame=cars, offset_column=offset_col)
+    unrestricted = ro.make_unrestricted_glm_model()
+
+    pyunit_utils.assert_equals(H2OGeneralizedLinearEstimator.getLambdaBest(ro),
+                               H2OGeneralizedLinearEstimator.getLambdaBest(unrestricted),
+                               "derived model must report the source's lambda_best, not 0")
+    # coefficients must stay in the raw (denormalized) space - adopting the source's standardized submodel
+    # betas here would silently return standardized values
+    for k in ro.coef().keys():
+        pyunit_utils.assert_equals(ro.coef()[k], unrestricted.coef().get(k, float("nan")),
+                                   f"derived model coefficient {k} must stay in the raw coefficient space")
+
+
+# fold_column + lambda_search + remove_offset_effects is documented behaviour: the CV metric slots are still
+# populated, but the per-lambda deviance_xval/deviance_se columns are omitted (they require nfolds) and the
+# cross-validated lambda override is not applied.
+def glm_remove_offset_lambda_search_fold_column():
+    cars, x, y, offset_col = _cars_with_offset()
+    folds = h2o.H2OFrame([[i % 3] for i in range(cars.nrows)])
+    folds.set_names(["fold"])
+    cars = cars.cbind(folds)
+
+    ro = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, remove_offset_effects=True,
+                                       fold_column="fold", generate_scoring_history=True, seed=0xC0FFEE)
+    ro.train(x=x, y=y, training_frame=cars, offset_column=offset_col)
+
+    assert ro._model_json["output"]["cross_validation_metrics_unrestricted_model"] is not None, \
+        "a fold_column must still populate the unrestricted CV metric slot"
+    history = ro.scoring_history()
+    assert "deviance_xval" not in list(history.columns), \
+        "the per-lambda deviance_xval column requires nfolds; it must be omitted with a fold_column"
+    assert "deviance_se" not in list(history.columns), \
+        "the per-lambda deviance_se column requires nfolds; it must be omitted with a fold_column"
+
+    # the restricted history must still be the offset-removed one, and the unrestricted slot must still be filled
+    unrestricted = ro.scoring_history_unrestricted_model
+    assert unrestricted is not None and len(unrestricted.cell_values) > 0, \
+        "a fold_column must still produce an unrestricted scoring history"
+    dev_col = unrestricted.col_header.index("deviance_train")
+    restricted_dev = list(history["deviance_train"])
+    unrestricted_dev = [row[dev_col] for row in unrestricted.cell_values]
+    assert any(abs(r - u) > 1e-6 for r, u in zip(restricted_dev, unrestricted_dev)), \
+        "with a fold_column the main scoring_history must still be the offset-removed table"
+
+    # note: lambda_best is deliberately not compared against an nfolds=0 model. The cross-validated *override* is
+    # gated on nfolds > 1, but cv_computeAndSetOptimalParameters still truncates _parms._lambda for a fold_column,
+    # so cross-validation does shape the grid the final pick is made over.
 
 
 pyunit_utils.run_tests([
@@ -456,4 +530,6 @@ pyunit_utils.run_tests([
     glm_remove_offset_lambda_search_early_stopping,
     glm_remove_offset_lambda_search_alpha,
     glm_remove_offset_lambda_search_plot,
+    glm_remove_offset_lambda_search_derived_lambda_best,
+    glm_remove_offset_lambda_search_fold_column,
 ])

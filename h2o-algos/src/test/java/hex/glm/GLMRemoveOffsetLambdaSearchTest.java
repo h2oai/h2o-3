@@ -844,7 +844,10 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
                 continued = new GLM(cont).trainModel().get();
                 fail("flipping remove_offset_effects across a checkpoint must be rejected");
             } catch (H2OModelBuilderIllegalArgumentException expected) {
-                // remove_offset_effects is non-modifiable across checkpoint continuation
+                // remove_offset_effects is non-modifiable across checkpoint continuation; assert on the message so an
+                // unrelated validation failure cannot make this test pass vacuously
+                assertTrue("error must name the pinned field, got: " + expected.getMessage(),
+                        expected.getMessage().contains("_remove_offset_effects"));
             }
         } finally {
             if (train != null) train.remove();
@@ -917,6 +920,59 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             if (continuedRO != null) continuedRO.remove();
             if (glmPlain != null) glmPlain.remove();
             if (continuedPlain != null) continuedPlain.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Oracle for the ComputationState.copyCheckModel2State fix on the path every GLM checkpoint user takes,
+     * with no offset and no remove_offset_effects involved. midSearchCheckpointRestoreWorksWithOffset cannot
+     * detect a regression here: it only compares an RO model against a plain model, and both run the identical
+     * resume code, so a wrong resume beta corrupts both equally and the comparison still passes.
+     *
+     * The oracle is not "same result as an uncapped run": the capped prefix leaves its early submodels
+     * under-converged, so the continued run can legitimately select a different lambda. What must hold is that
+     * continuing never makes the fit worse and never produces non-finite coefficients - a resume beta left in the
+     * wrong active-column basis (the bug the old length-equality guard let through) violates both.
+     */
+    @Test
+    public void plainCheckpointResumeDoesNotCorruptTheFit() {
+        Frame train = null;
+        GLMModel capped = null, continued = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+            Scope.track_generic(train);
+
+            GLMModel.GLMParameters cappedParams = baseParams(train);
+            cappedParams._offset_column = null;          // plain GLM: the path shared by every checkpoint user
+            cappedParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            cappedParams._max_iterations = 8;
+            capped = new GLM(cappedParams).trainModel().get();
+            Scope.track_generic(capped);
+
+            GLMModel.GLMParameters contParams = baseParams(train);
+            contParams._offset_column = null;
+            contParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            contParams._checkpoint = capped._key;
+            continued = new GLM(contParams).trainModel().get();
+            Scope.track_generic(continued);
+
+            assertTrue("the checkpoint must genuinely stop mid-search",
+                    capped._output._submodels.length < continued._output._submodels.length);
+
+            for (double b : continued._output.beta())
+                assertFalse("resumed coefficients must all be finite", Double.isNaN(b) || Double.isInfinite(b));
+
+            double cappedDev = ((GLMMetrics) capped._output._training_metrics).residual_deviance();
+            double continuedDev = ((GLMMetrics) continued._output._training_metrics).residual_deviance();
+            assertFalse("continued training deviance must be finite", Double.isNaN(continuedDev));
+            assertTrue("continuing a checkpoint must not make the fit worse: " + cappedDev + " -> " + continuedDev,
+                    continuedDev <= cappedDev + 1e-6);
+        } finally {
+            if (train != null) train.remove();
+            if (capped != null) capped.remove();
+            if (continued != null) continued.remove();
             Scope.exit();
         }
     }
@@ -1173,7 +1229,7 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
                 double rd = ((Number) r).doubleValue(), ud = ((Number) u).doubleValue(), pd = ((Number) p).doubleValue();
                 // unrestricted xval == plain offset model's xval (fit unchanged)
                 assertEquals("unrestricted deviance_xval must match the plain offset model", pd, ud, 1e-8);
-                if (rd < 0) continue;  // -1 sentinel = not populated; a correct offset-removed deviance is >= 0
+                if (Double.isNaN(rd)) continue;  // NaN = not populated; a correct offset-removed deviance is a real number
                 anyNumeric = true;
                 if (Math.abs(rd - ud) > 1e-8) anyDiffer = true;
             }

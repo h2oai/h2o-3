@@ -112,7 +112,25 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   public ScoringInfo[] getScoringInfo() { return scoringInfo;}
-  
+
+  /**
+   * Drops every scoring-history series carried over from a checkpoint. Needed when the checkpointed history cannot be
+   * restored (a lambda_search format flip, or a checkpoint carrying no history at all): deepClone keeps the ScoringInfo
+   * arrays, but the tables this run republishes start at higher iterations, so combineScoringHistory would take its
+   * "glm history is ahead" branch and emit rows whose lambda/predictors/deviance_* cells are all null - which a further
+   * checkpoint continuation then cannot parse back.
+   */
+  void discardScoringHistory() {
+    scoringInfo = null;
+    _unrestrictedModelScoringInfo = null;
+    _restrictedModelScoringInfoContrVals = null;
+    _restrictedModelScoringInfoRO = null;
+    _output._scoring_history = null;
+    _output._scoring_history_unrestricted_model = null;
+    _output._scoring_history_restricted_model_contr_vals = null;
+    _output._scoring_history_restricted_model_ro = null;
+  }
+
   public void addScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
     if (scoringInfo != null && (((GLMScoringInfo) scoringInfo[scoringInfo.length-1]).iterations() >= iter)) {  // no duplication
       return;
@@ -1742,6 +1760,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      * real regularization strength instead of 0. The deviances stay NaN on purpose: a derived model does not
      * recompute a per-lambda path, and the source's deviances are offset-included, so reusing them would put
      * explained_deviance_* on a different scale from the metrics this model reports.
+     *
+     * Note this deliberately does NOT adopt the source's whole submodel array, even though the fit is identical:
+     * the source's submodel betas are in the standardized space, while a derived output's DataInfo carries
+     * TransformType.NONE because its _global_beta is already denormalized (see MakeGLMModelHandler). Sharing the
+     * array would therefore leave every submodel beta un-denormalized, corrupting coef() and returning a
+     * wrong-scale getRegularizationPath(). A derived model consequently carries no regularization path; read it
+     * from the source model instead.
      */
     public void retagDerivedSubmodel(double lambda, double alpha) {
       if (_submodels.length != 1)

@@ -370,7 +370,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if (Double.isNaN(dr)) {
               // A single NaN would silently poison the restricted xval average for every lambda.  A submodel
               // reused verbatim from a checkpoint carries no offset-removed holdout deviance, so drop the whole
-              // restricted aggregation and let the -1 "not computed" sentinel be reported instead.
+              // restricted aggregation and let the "not computed" sentinel be reported instead.
+              // _job.warn, not warn(): ModelBuilder messages are snapshotted into the response before training
+              // starts, so a warn() raised here never reaches the Python/R client.  Folds are numbered from 1 to
+              // match H2O's own cross-validation tables (cv_1_valid, ...).
+              _job.warn("Cross-validation fold " + (i + 1) + " was resumed from a checkpoint and carries no" +
+                      " offset-removed holdout deviance, so the offset-removed cross-validated deviance could not" +
+                      " be computed: the deviance_xval and deviance_se columns of scoring_history are left empty." +
+                      " The offset-included values in scoring_history_unrestricted_model are unaffected. To get" +
+                      " offset-removed cross-validated deviances, train without checkpoint.");
               Log.warn(LogMsg("fold " + i + " submodel " + lidx + " carries no offset-removed holdout deviance;" +
                       " the restricted scoring history will report no cross-validated deviance."));
               _xval_deviances_restricted = null;
@@ -388,6 +396,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         double testDevAvg = testDev / cvModelBuilders.length; // average testDevAvg for fixed submodel index
+        // NOT clamped at 0, unlike the reporting-only aggregations below: _xval_sd feeds the 1-SE lambda walk
+        // (bestDev1se) further down, so turning a NaN into 0 here would change which lambda gets selected. That is a
+        // model-selection change and does not belong in this fix - see GH-16859 review notes.
         double testDevSE = testDevSq - testDevAvg * testDev;
         double[] zValuesAvg = Arrays.stream(zValues).map(z -> z / cvModelBuilders.length).toArray();
         _xval_sd[lidx] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
@@ -697,7 +708,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         double testDevAvg = testDev / cvModelBuilders.length;
-        double testDevSE = testDevSq - testDevAvg * testDev;
+        // Clamp at 0: folds that agree to ~8 significant digits cancel to a small negative and sqrt would give NaN.
+        double testDevSE = Math.max(0, testDevSq - testDevAvg * testDev);
         _xval_sd_generate_SH[countIndex] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         _xval_deviances_generate_SH[countIndex++] = testDevAvg;
       }
@@ -957,9 +969,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     
 
     void restoreFromCheckpoint(TwoDimTable sHist, int[] colIndices) {
-      // A checkpoint need not carry every history slot: a model produced by make_derived_glm_model populates only
-      // _scoring_history, yet keeps _remove_offset_effects/_control_variables set, and nothing stops it being passed
-      // as a checkpoint. Starting that slot's history empty is the right behaviour - the caller warns.
+      // A checkpoint written by an older version need not carry every history slot, so a null table means "start this
+      // history empty" - the caller warns. (A derived model, which populates only _scoring_history while keeping
+      // _remove_offset_effects/_control_variables set, is rejected outright in init - see the _checkpoint check.)
       if (sHist == null) return;
       int numRows = sHist.getRowDim();
       for (int rowInd = 0; rowInd < numRows; rowInd++) {  // if lambda_search is enabled, _sc is not updated
@@ -1056,8 +1068,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     void restoreFromCheckpoint(TwoDimTable sHist, int[] colIndices) {
-      // See the note on ScoringHistory.restoreFromCheckpoint: a checkpointed model may legitimately be missing one of
-      // the history slots (make_derived_glm_model output), so a null table means "start this history empty".
+      // See the note on ScoringHistory.restoreFromCheckpoint: a checkpoint written by an older version may be missing
+      // one of the history slots, so a null table means "start this history empty".
       if (sHist == null) return;
       int numRows = sHist.getRowDim();
       for (int rowInd = 0; rowInd < numRows; rowInd++) {
@@ -1785,9 +1797,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 " not be carried over (the two modes store it in different formats). The continued model's" +
                 " scoring history starts from this run; the coefficients are still resumed from the checkpoint." +
                 " To keep the full history, use the same lambda_search setting as the checkpointed model.");
+        _model.discardScoringHistory();
         return;
       }
       TwoDimTable scoringHistory = _model._output._scoring_history;
+      // A checkpoint need not carry a scoring history at all: /3/MakeGLMModel output has none, and its
+      // _derivedFromModelId is null so the derived-model rejection in init does not catch it. grabHeaderIndex
+      // dereferences this table, so bail out here rather than NPE mid-training.
+      if (scoringHistory == null) {
+        // _job.warn, not warn(): ModelBuilder messages are snapshotted into the response before training starts.
+        _job.warn("The checkpointed model carries no scoring history, so none could be carried over. The continued" +
+                " model's scoring history starts from this run; the coefficients are still resumed from the" +
+                " checkpoint.");
+        _model.discardScoringHistory();
+        return;
+      }
       String[] colHeaders2Restore = _parms._lambda_search ? 
               new String[]{"iteration", "timestamp", "lambda", "predictors", "deviance_train", 
                       "deviance_test", "alpha"}
@@ -1795,19 +1819,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               "convergence"};
       int num2Copy =  _parms._lambda_search ? colHeaders2Restore.length : colHeaders2Restore.length-2;
       int[] colHeadersIndex = grabHeaderIndex(scoringHistory, num2Copy, colHeaders2Restore);
-      // Training writes the restricted and unrestricted slots together, but a model produced by
-      // make_derived_glm_model keeps _remove_offset_effects/_control_variables set while populating only
-      // _scoring_history - and nothing stops such a model being passed as a checkpoint. restoreFromCheckpoint
-      // tolerates a null table (starts that history empty); warn once here so the user knows why their continued
-      // model's history is short rather than silently getting a partial one.
+      // Training writes the restricted and unrestricted slots together, so a checkpoint missing the unrestricted one
+      // was written by a build that did not populate it. restoreFromCheckpoint tolerates a null table (starts that
+      // history empty); warn once here so the user knows why their continued model's history is short rather than
+      // silently getting a partial one. (A derived model is rejected outright in init - see the _checkpoint check.)
       if ((_model._parms._control_variables != null || _model._parms._remove_offset_effects)
               && _model._output._scoring_history_unrestricted_model == null) {
         // _job.warn, not warn(): ModelBuilder messages are snapshotted into the response before training starts.
-        _job.warn("The checkpointed model has no unrestricted scoring history (it was most likely produced by" +
-                " make_derived_glm_model() or make_unrestricted_glm_model() rather than by training), so the" +
-                " checkpointed scoring history could not be fully carried over. The continued model's scoring history" +
-                " starts from this run; the coefficients are still resumed from the checkpoint. To keep the full" +
-                " history, pass the trained source model as the checkpoint instead of a derived model.");
+        _job.warn("The checkpointed model does not carry an unrestricted scoring history, so the checkpointed" +
+                " scoring history could not be fully carried over. The continued model's scoring history starts" +
+                " from this run; the coefficients are still resumed from the checkpoint. This usually means the" +
+                " checkpoint was saved by an older H2O version; retrain it with this version to keep the full" +
+                " history.");
       }
       if (_parms._lambda_search) {
         if (restrictedHistoryIsMain()) {
@@ -4149,9 +4172,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   _state.expandBeta(_state.beta()), true).doAll(_dinfo._adaptedFrame)._likelihood) / _nobs;
           // Under cross-validation _xval_deviances_restricted holds the offset-removed per-lambda xval deviance
           // aggregated across folds, so deviance_xval lands on the same scale as deviance_train/deviance_test.
-          // Without CV both arrays are null and the sentinel -1 is reported.
-          double xvalDevRestricted = ((_xval_deviances_restricted == null) || (_xval_deviances_restricted.length <= i)) ? -1 : _xval_deviances_restricted[i];
-          double xvalDevRestrictedSE = ((_xval_sd_restricted == null) || (_xval_sd_restricted.length <= i)) ? -1 : _xval_sd_restricted[i];
+          // Without CV both arrays are null and NaN is reported: to2dTable renders it as an empty cell, whereas the
+          // -1 the unrestricted path uses is indistinguishable from a real deviance to anyone reading the table.
+          // Safe to differ from the unrestricted sentinel - nothing compares these two arrays with <; the best-lambda
+          // selection and the 1-SE walk both read the unrestricted _xval_deviances/_xval_sd.
+          double xvalDevRestricted = ((_xval_deviances_restricted == null) || (_xval_deviances_restricted.length <= i)) ? Double.NaN : _xval_deviances_restricted[i];
+          double xvalDevRestrictedSE = ((_xval_sd_restricted == null) || (_xval_sd_restricted.length <= i)) ? Double.NaN : _xval_sd_restricted[i];
           _lambdaSearchScoringHistoryRestricted.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
                   _state.lambda(), trainDevRestricted, restrictedValidDev, xvalDevRestricted, xvalDevRestrictedSE, _state.alpha());
         }
@@ -4381,6 +4407,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // combineScoringHistoryRestricted expects iteration-format tables; both histories are
             // lambda-format here, so each is combined independently with its own early-stop table instead.
             _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history, scoringHistoryEarlyStop);
+            // Label this table too. Both slots carry identical column names, so without a title the two are
+            // indistinguishable - and the Python client renders scoring_history() as a DataFrame, dropping the
+            // title, so the suffix on the unrestricted slot alone is not enough to tell them apart.
+            _model._output._scoring_history.setTableHeader(
+                    _model._output._scoring_history.getTableHeader() + " offset-removed model");
           } else {
             ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ?
                     ScoreKeeper.StoppingMetric.logloss : ScoreKeeper.StoppingMetric.deviance : _model._parms._stopping_metric;

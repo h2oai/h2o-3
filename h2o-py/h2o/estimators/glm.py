@@ -2882,6 +2882,31 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         return self._model_json.get("output", {}).get("cross_validation_metrics_summary_unrestricted_model")
 
+    @property
+    def scoring_history_unrestricted_model(self):
+        """
+        Scoring history for the with-offset (unrestricted) view.
+
+        Available when ``remove_offset_effects=True`` or ``control_variables`` was set; ``None``
+        otherwise. Returns an ``H2OTwoDimTable``. Under ``lambda_search`` this is the per-lambda
+        deviance that ``lambda_best`` selection is based on, while :meth:`scoring_history` reports
+        the offset-removed view.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   lambda_search=True, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> # Offset-removed per-lambda history
+        >>> m.scoring_history()
+        >>> # With-offset per-lambda history - the deviance lambda selection uses
+        >>> m.scoring_history_unrestricted_model
+        """
+        return self._model_json.get("output", {}).get("scoring_history_unrestricted_model")
+
     def make_unrestricted_glm_model(self, dest=None):
         """
         Create a derived model exposing the with-offset (unrestricted) view of the source model.
