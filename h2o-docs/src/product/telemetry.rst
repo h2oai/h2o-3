@@ -27,29 +27,43 @@ Telemetry is **off by default**. Turn it on with any of the following.
 
 - **Per session** — pass ``telemetry=True`` (Python) or ``telemetry = TRUE`` (R) to ``h2o.init()`` or ``h2o.connect()``.
 - **Persistent** — use the setter ``h2o.set_telemetry()`` to change it and the getter ``h2o.telemetry_enabled()`` to read the current state. The setting applies immediately and is saved under ``~/.h2oai/telemetry`` so later sessions honor it.
-
-  Python:
-
-  .. code-block:: python
-
-     h2o.set_telemetry(True)     # opt in (persisted across sessions)
-     h2o.set_telemetry(False)    # opt back out
-     h2o.telemetry_enabled()     # -> True or False
-
-  R:
-
-  .. code-block:: r
-
-     h2o.set_telemetry(TRUE)     # opt in (persisted across sessions)
-     h2o.set_telemetry(FALSE)    # opt back out
-     h2o.telemetry_enabled()     # -> TRUE or FALSE
-
 - **Config file** — add a ``general.telemetry`` key to ``~/.h2oconfig`` in your home directory:
 
   .. code-block:: ini
 
      [general]
      telemetry = true
+
+Below is a simple example showing how to opt in persistently and read the current state.
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # Opt in (persisted across sessions)
+        h2o.set_telemetry(TRUE)
+
+        # Opt back out
+        h2o.set_telemetry(FALSE)
+
+        # Read the current state
+        h2o.telemetry_enabled()
+
+   .. code-tab:: python
+
+        import h2o
+        h2o.init()
+
+        # Opt in (persisted across sessions)
+        h2o.set_telemetry(True)
+
+        # Opt back out
+        h2o.set_telemetry(False)
+
+        # Read the current state
+        h2o.telemetry_enabled()
 
 **Standalone / Hadoop cluster (JVM)**
 
