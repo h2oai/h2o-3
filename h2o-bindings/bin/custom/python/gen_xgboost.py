@@ -79,6 +79,31 @@ def class_extensions():
             nativeXGBoostParams[keyname]=keyvalue
         paramsSet = self.full_parameters
 
+        # H2O bundles xgboost4j 1.6, whose default base_score is 0.5 across all
+        # objectives. XGBoost interprets that value in probability space for
+        # classification (then applies ProbToMargin internally) and as raw margin
+        # for regression — both H2O and native xgboost 1.x agree on the value 0.5,
+        # they just interpret it through the objective's link function.
+        #
+        # Native xgboost 2.0+ changed the default to auto-compute from the training
+        # data, so without an explicit value the external xgb.train picks a different
+        # starting score and predictions diverge from H2O. This pin reproduces
+        # xgboost4j 1.6 behavior so a side-by-side comparison stays meaningful.
+        #
+        # The pin is suboptimal for some regression objectives (e.g. reg:squarederror
+        # with non-centered targets, where 2.x's auto-mean is a better starting
+        # point). Users debugging "why does my native xgboost 2.x diverge from H2O"
+        # should understand the comparison is against the bundled jar, not against
+        # native 2.x best-practice.
+        #
+        # WARNING: this constant is coupled to the bundled xgboost4j version. When
+        # h2o-ext-xgboost bumps the jar to a version whose Java-side default differs
+        # from 0.5, this line silently produces divergent predictions. The robust
+        # long-term fix is to have XGBoostModelInfo.getBoosterParams() record the
+        # actual base_score into native_parameters on the Java side and remove this
+        # Python-side override entirely.
+        nativeXGBoostParams.setdefault("base_score", 0.5)
+
         return nativeXGBoostParams, paramsSet['ntrees']['actual_value']
 
 

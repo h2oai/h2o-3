@@ -10,7 +10,6 @@ from h2o.utils.compatibility import *
 import dis
 import inspect
 import sys
-
 from . import h2o
 from .expr import ExprNode, ASTId
 
@@ -18,7 +17,7 @@ from .expr import ExprNode, ASTId
 # List of supported bytecode instructions: cf. https://docs.python.org/3/library/dis.html#python-bytecode-instructions
 #
 BYTECODE_INSTRS = {
-    "BINARY_SUBSCR": "cols",  # column slice; could be row slice?
+    "BINARY_SUBSCR": "cols",  # column slice; could be row slice? On Py3.14 the same op arrives as BINARY_OP 26 (NB_SUBSCR) — see BINARY_OPS below; keep both in sync.
     "UNARY_POSITIVE": "+",
     "UNARY_NEGATIVE": "-",
     "UNARY_NOT": "!",
@@ -78,6 +77,11 @@ BYTECODE_INSTRS = {
     # Calls a callable object with the number of arguments, including the named arguments specified
     # by the preceding KW_NAMES, if any.
     "CALL": "",  # Py >= 3.11
+    # from https://docs.python.org/3/library/dis.html#opcode-CALL_KW:
+    # Calls a callable object with keyword arguments. argc is the total positional+keyword
+    # argument count. Top of stack is a LOAD_CONST tuple of keyword names; below it the
+    # keyword values (in the same order), then positional args, then the callable.
+    "CALL_KW": "",  # Py >= 3.13
 }
 
 # The list of parameters for BINARY_OP instruction. 
@@ -101,6 +105,7 @@ BINARY_OPS = {
     21: "**",  # NB_INPLACE_POWER
     23: "-",   # NB_INPLACE_SUBTRACT
     24: "/",   # NB_INPLACE_TRUE_DIVIDE
+    26: "cols",  # NB_SUBSCR — Py 3.14 folds BINARY_SUBSCR into BINARY_OP (3.12/3.13 keep BINARY_SUBSCR distinct)
 }
 
 def is_bytecode_instruction(instr):
@@ -124,6 +129,9 @@ def is_func(instr):
 def is_call(instr):
     return "CALL" == instr
 
+def is_call_kw(instr):  # Py >= 3.13
+    return "CALL_KW" == instr
+
 def is_func_kw(instr):
     return "CALL_FUNCTION_KW" == instr
 
@@ -145,6 +153,9 @@ def is_dictionary_merge(instr): # Py >= 3.9
 def is_list_extend(instr): # Py >= 3.9
     return "LIST_EXTEND" == instr
 
+def is_list_append(instr):  # Py >= 3.9: explicit positional after a `*` unpack, e.g. f(*a, b)
+    return "LIST_APPEND" == instr
+
 def is_list_to_tuple(instr): # Py >= 3.9
     return "LIST_TO_TUPLE" == instr
 
@@ -154,11 +165,20 @@ def is_build_list(instr):
 def is_build_map(instr):
     return "BUILD_MAP" == instr
 
-def is_callable(instr):
-    return is_func(instr) or is_func_kw(instr) or is_func_ex(instr) or is_method_call(instr) or is_call(instr)
+def is_const_key_map(instr):  # Py >= 3.6: explicit kwargs map with 2+ keys, e.g. f(*a, k1=v1, k2=v2)
+    return "BUILD_CONST_KEY_MAP" == instr
 
 def is_builder(instr):
     return instr.startswith('BUILD_')
+
+def is_seq_unpack(instr):  # Py <= 3.8: f(*a, *b) / f(pos, *a) build the args tuple here
+    # Operands are *iterables* to concatenate (explicit positionals are pre-bundled
+    # into a const tuple operand). Replaced by BUILD_LIST + LIST_EXTEND on Py >= 3.9.
+    return instr in ("BUILD_TUPLE_UNPACK_WITH_CALL", "BUILD_TUPLE_UNPACK", "BUILD_LIST_UNPACK")
+
+def is_map_unpack(instr):  # Py <= 3.8: f(**d, k=v) / f(**a, **b) build the kwargs map here
+    # Replaced by BUILD_MAP + DICT_MERGE on Py >= 3.9.
+    return instr in ("BUILD_MAP_UNPACK_WITH_CALL", "BUILD_MAP_UNPACK")
 
 def is_load_fast(instr):
     return "LOAD_FAST" == instr
@@ -181,65 +201,69 @@ def is_load_outer_scope(instr):
 def is_return(instr):
     return "RETURN_VALUE" == instr
 
-def is_copy_free(instr):
-    return "COPY_FREE_VARS" == instr
+# Named constants for opcodes inspected by name in multiple call sites — keeps
+# the literal in one place so a future opcode rename surfaces in one diff.
+_PUSH_NULL = "PUSH_NULL"
 
 def should_be_skipped(instr):
-    return instr in "COPY_FREE_VARS", "RESUME", "PUSH_NULL"  # from Py 3.11 
-
-try:
-    # Python 3
-    from dis import _unpack_opargs
-except ImportError:
-    # Reimplement from Python3 in Python2 syntax
-    def _unpack_opargs(code):
-        extended_arg = 0
-        i = 0
-        n = len(code)
-        while i < n:
-            op = code[i]
-            pos = i
-            i += 1
-            if op >= dis.HAVE_ARGUMENT:
-                arg = code[i] + code[i+1]*256 + extended_arg
-                extended_arg = 0
-                i += 2
-                if op == dis.EXTENDED_ARG:
-                    extended_arg = arg*65536
-            else:
-                arg = None
-            yield (pos, op, arg)
-
+    return instr in {"COPY_FREE_VARS", "RESUME", _PUSH_NULL}  # from Py 3.11+
 
 def _disassemble_lambda(co):
-    code = co.co_code
     ops = []
-    for offset, op, arg in _unpack_opargs(code):
-        opname = dis.opname[op]
+    for i in dis.get_instructions(co):
+        if i.opname == "TO_BOOL":
+            # Python 3.13+ emits an explicit boolean coercion before UNARY_NOT /
+            # conditional jumps. A no-op for AST extraction — the underlying
+            # value is what the Rapids expression operates on.
+            continue
         args = []
-        if arg is not None:
-            if op in dis.hasconst:
-                args.append(co.co_consts[arg])  # LOAD_CONST
-            elif op in dis.hasname:
-                args.append(co.co_names[arg])  # LOAD_CONST
-            elif op in dis.hasjrel:
-                raise ValueError("unimpl: op in hasjrel")
-            elif op in dis.haslocal:
-                args.append(co.co_varnames[arg])  # LOAD_FAST
-            elif opname == 'COPY_FREE_VARS':
-                args.append(arg)
-            elif op in dis.hasfree:  # LOAD_DEREF
-                if sys.version_info.major == 3 and sys.version_info.minor >= 11:
-                    args.append(co.co_freevars[arg-1])
-                else:
-                    args.append(co.co_freevars[arg])
-            elif op in dis.hascompare:
-                args.append(dis.cmp_op[arg])  # COMPARE_OP
-            elif is_callable(dis.opname[op]):
-                args.append(arg)  # oparg == nargs(fcn)
+        if i.arg is not None:
+            if i.opname == "BINARY_OP":
+                # i.argval is raw int (same as i.arg) — BINARY_OPS table handles lookup
+                args.append(i.arg)
+            elif i.opname == "KW_NAMES":
+                # i.argval is <unknown> on Python 3.11; resolve from co_consts directly
+                args.append(co.co_consts[i.arg])
+            elif i.opname == "RETURN_CONST":
+                # Python 3.12+: constant return — normalize to LOAD_CONST + RETURN_VALUE
+                # so downstream _lambda_bytecode_to_ast sees the same pattern as before
+                ops.append(["LOAD_CONST", [i.argval]])
+                ops.append(["RETURN_VALUE", []])
+                continue
+            elif i.opname == "CALL_INTRINSIC_1" and i.argrepr == "INTRINSIC_LIST_TO_TUPLE":
+                # Python 3.12+ replaced the LIST_TO_TUPLE opcode with this intrinsic call.
+                # Normalize so the rest of the disassembler keeps working unchanged.
+                ops.append(["LIST_TO_TUPLE", []])
+                continue
+            elif i.opname == "CALL_INTRINSIC_1" and i.argrepr == "INTRINSIC_UNARY_POSITIVE":
+                # Python 3.12+ replaced the UNARY_POSITIVE opcode with this intrinsic
+                # call. Normalize back so the BYTECODE_INSTRS entry keeps working.
+                ops.append(["UNARY_POSITIVE", []])
+                continue
+            elif i.opname == "LOAD_FAST_LOAD_FAST":
+                # Python 3.13+: two consecutive LOAD_FAST packed into one instruction
+                # arg = (first_var_idx << 4) | second_var_idx (both indices must be 0-15)
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg >> 4]]])
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg & 15]]])
+                continue
+            elif i.opname == "LOAD_FAST_BORROW":
+                # Python 3.14+: LOAD_FAST without refcount increment. Identical to
+                # LOAD_FAST for AST extraction (we only need the variable name).
+                ops.append(["LOAD_FAST", [i.argval]])
+                continue
+            elif i.opname == "LOAD_FAST_BORROW_LOAD_FAST_BORROW":
+                # Python 3.14+: paired LOAD_FAST_BORROW; same nibble packing as
+                # LOAD_FAST_LOAD_FAST.
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg >> 4]]])
+                ops.append(["LOAD_FAST", [co.co_varnames[i.arg & 15]]])
+                continue
             else:
-                args.append(arg)
-        ops.append([dis.opname[op], args])
+                # dis.get_instructions() pre-resolves argval for all other opcodes:
+                # LOAD_CONST (constant value), LOAD_FAST (var name), LOAD_GLOBAL (name,
+                # handles 3.11 push_null encoding), LOAD_DEREF (free var name, handles
+                # 3.11 +1 offset), LOAD_ATTR, LOAD_METHOD, COMPARE_OP, CALL, etc.
+                args.append(i.argval)
+        ops.append([i.opname, args])
     return ops
 
 
@@ -271,12 +295,13 @@ def _lambda_bytecode_to_ast(co, ops):
     while s >= 0 and should_be_skipped(keys[s]):
         s -= 1
     if s >= 0:
-        print("Dumping disassembled code: ")
+        # Diagnostic dump goes to stderr so pyunit-captured stdout stays clean.
+        print("Dumping disassembled code: ", file=sys.stderr)
         for i in range(len(ops)):
             if i == s:
-                print(i, " --> " + str(ops[i]))
+                print(i, " --> " + str(ops[i]), file=sys.stderr)
             else:
-                print(i, str(ops[i]).rjust(5))
+                print(i, str(ops[i]).rjust(5), file=sys.stderr)
         raise ValueError("Unexpected bytecode disassembly @ " + str(s))
     result += [body] + [ASTId("}")]
     return result
@@ -289,7 +314,7 @@ def _opcode_read_arg(start_index, ops, keys):
         # print(ops)
         if is_binary_op(instr):
             if op not in BINARY_OPS.keys():
-                raise ValueError("Unimplemented binary op with id: " + op)
+                raise ValueError("Unimplemented binary op with id: " + str(op))
             return _binop_bc(BINARY_OPS[op], return_idx, ops, keys)
         elif is_binary(instr):
             return _binop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
@@ -299,6 +324,8 @@ def _opcode_read_arg(start_index, ops, keys):
             return _unop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
         elif is_call(instr):
             return _call_bc(op, return_idx, ops, keys)
+        elif is_call_kw(instr):
+            return _call_kw_bc(op, return_idx, ops, keys)
         elif is_func(instr):
             return _call_func_bc(op, return_idx, ops, keys)
         elif is_func_kw(instr):
@@ -321,6 +348,8 @@ def _opcode_read_arg(start_index, ops, keys):
         return _build_args(start_index, ops, keys)
     elif is_build_map(instr):
         return _build_kwargs(start_index, ops, keys)
+    elif is_const_key_map(instr):
+        return _build_const_key_map(start_index, ops, keys)
     return op, return_idx
 
 
@@ -357,6 +386,22 @@ def _build_kwargs(idx, ops, keys):
         nargs -= 1
     return kwargs, idx
 
+
+def _build_const_key_map(idx, ops, keys):
+    # BUILD_CONST_KEY_MAP n: a keys-tuple on top of n values, used for explicit
+    # kwargs with 2+ keys (a single kwarg uses BUILD_MAP). The keys-tuple is read
+    # first (top of stack), then the n values are read top-down — i.e. in reverse
+    # key order, so walk the key names in reverse to pair them up.
+    instr, _ = _get_instr(ops, idx)
+    idx -= 1
+    keynames, idx = _opcode_read_arg(idx, ops, keys)  # LOAD_CONST keys-tuple
+    kwargs = dict()
+    for key in reversed(keynames):
+        val, idx = _opcode_read_arg(idx, ops, keys)
+        kwargs[key] = val
+    return kwargs, idx
+
+
 def _call_func_bc(nargs, idx, ops, keys):
     """
     Implements transformation of CALL_FUNCTION bc inst to Rapids expression.
@@ -374,6 +419,18 @@ def _call_func_bc(nargs, idx, ops, keys):
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
+def _read_kwnames_args(keywords, nargs, idx, ops, keys):
+    # Values are pushed left-to-right matching kwnames-tuple order, so the
+    # value for the LAST kwname sits on top of stack. Walk kwnames in reverse
+    # so the first read (top-of-stack) binds to the last kwname.
+    kwargs = {}
+    for key in reversed(keywords):
+        val, idx = _opcode_read_arg(idx, ops, keys)
+        kwargs[key] = val
+        nargs -= 1
+    return kwargs, idx, nargs
+
+
 def _call_func_kw_bc(nargs, idx, ops, keys):
     # Implements calling convention defined by CALL_FUNCTION_KW
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_KW
@@ -382,12 +439,7 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
     if isinstance(keywords, tuple):  # Py >= 3.6
         # Skip the LOAD_CONST tuple
         idx -= 1
-        # Load keyword arguments from stack
-        kwargs = {}
-        for key in keywords:
-            val, idx = _opcode_read_arg(idx, ops, keys)
-            kwargs[key] = val
-            nargs -= 1
+        kwargs, idx, nargs = _read_kwnames_args(keywords, nargs, idx, ops, keys)
     else:  # Py <= 3.5
         kwargs, idx = _opcode_read_arg(idx, ops, keys)
 
@@ -418,48 +470,168 @@ def _call_func_var_kw_bc(nargs, idx, ops, keys):
 
 def _call_func_ex_bc(flags, idx, ops, keys):
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_EX
+    # Py3.14 removed the explicit flags arg (i.argval is None on 3.14+), so infer
+    # it from the op immediately preceding CALL_FUNCTION_EX. CALL_FUNCTION_EX has
+    # keyword args (flags & 1) iff a keyword *mapping* was just built on the stack:
+    # BUILD_MAP / BUILD_CONST_KEY_MAP (explicit kwargs alongside a `*` unpack) or
+    # DICT_MERGE / DICT_UPDATE (a `**mapping`). For an args-only call the kwargs
+    # slot is a NULL that may appear either as a standalone PUSH_NULL *or* folded
+    # into the preceding value-load (e.g. LOAD_GLOBAL for a module-global iterable,
+    # which emits no separate PUSH_NULL). Keying on the positive kwargs-map signal
+    # — rather than on a preceding PUSH_NULL — classifies both forms correctly;
+    # a preceding-PUSH_NULL test would mis-flag the LOAD_GLOBAL form as having
+    # kwargs and read the args tuple as **kwargs (GH-16147). Anchored to an
+    # explicit version check so a future Python that yields None for a different
+    # reason fails loudly instead of silently taking this branch.
+    #
+    # Known limitation: positionally unpacking a *dict literal* (``f(*{'a': 1})``)
+    # also ends in BUILD_MAP with real flags=0, so this heuristic would misread it
+    # as **kwargs. That form passes dict *keys* as positional args and is never
+    # produced by real H2OFrame lambdas, so it is left unsupported on Py3.14+.
+    if flags is None:
+        if sys.version_info < (3, 14):
+            raise RuntimeError(
+                "CALL_FUNCTION_EX without flags arg is only expected on Py3.14+; "
+                "got Python %s" % (sys.version,)
+            )
+        if idx < 0:
+            raise RuntimeError(
+                "CALL_FUNCTION_EX appeared at the start of the bytecode stream — "
+                "cannot infer flags from a preceding op. ops=%r" % (ops,)
+            )
+        prev_instr, _ = _get_instr(ops, idx)
+        has_kwargs_map = (
+            prev_instr in ("DICT_MERGE", "DICT_UPDATE")
+            or (prev_instr.startswith("BUILD_") and prev_instr.endswith("MAP"))
+        )
+        flags = 1 if has_kwargs_map else 0
     if flags & 1:
         instr, nargs = _get_instr(ops, idx)
-        if is_builder(instr):  # first instr can be a map builder if we have to unpack kwargs, followed by normal keywords args
-            idx -= 1
-            # load **kwargs
+        if is_build_map(instr) or is_const_key_map(instr):
+            # Explicit keyword args alongside a ``*`` unpack are built as BUILD_MAP
+            # (a single kwarg, e.g. ``f(*args, k=v)``) or BUILD_CONST_KEY_MAP (2+
+            # kwargs, e.g. ``f(*args, k1=v1, k2=v2)``). Reading at the builder index
+            # consumes the whole map; the old code skipped the builder first and read
+            # a single value, mis-binding kwargs (GH-16147), and never handled
+            # BUILD_CONST_KEY_MAP at all (it read the oparg as a bare ** mapping).
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
-            # load other keywords args
-            nargs -= 1
-            if nargs > 0:
-                instr, nargs = _get_instr(ops, idx)
-                if is_builder(instr):  # BUILD_MAP identifies the start of explicit keyword args
-                    idx -= 1
-                    while nargs > 0:
-                        val, idx = _opcode_read_arg(idx, ops, keys)
-                        key, idx = _opcode_read_arg(idx, ops, keys)
-                        kwargs[key] = val
-                        nargs -= 1
-        elif is_dictionary_merge(instr):
-            idx -= 1
-            kwargs = dict()
-            while nargs + 1 > 0:
-                new_kwargs, idx = _opcode_read_arg(idx, ops, keys)
-                kwargs.update(new_kwargs)
+            if not isinstance(kwargs, dict):  # defensive: unexpected builder shape
+                kwargs = {}
+        elif is_map_unpack(instr):
+            # Py <= 3.8: ``f(**a, **b)`` / ``f(**mapping, k=v)`` build the kwargs via
+            # BUILD_MAP_UNPACK_WITH_CALL n, which pops and merges n mappings. Each
+            # operand is itself a mapping — a loaded ``**mapping`` (LOAD ...), an
+            # explicit-kwarg BUILD_MAP, or a BUILD_CONST_KEY_MAP — so read all n and
+            # merge them. The old code read only the top operand plus an optional
+            # trailing builder, silently dropping a second ``**`` unpack on 3.7/3.8
+            # (the analogue of the DICT_MERGE bug fixed below for Py >= 3.9, GH-16147).
+            idx -= 1  # skip the BUILD_MAP_UNPACK_WITH_CALL op
+            sources = []
+            while nargs > 0:
+                src, idx = _opcode_read_arg(idx, ops, keys)
+                sources.append(src)
                 nargs -= 1
+            kwargs = dict()
+            # Operands were read last-to-first; replay left-to-right so kwarg
+            # insertion order matches the call site.
+            for src in reversed(sources):
+                if isinstance(src, dict):
+                    kwargs.update(src)
+        elif is_dictionary_merge(instr):
+            # Py >= 3.9: ``**`` unpacks (and explicit kwargs sitting alongside them)
+            # are folded onto a base BUILD_MAP via a chain of DICT_MERGE ops, one per
+            # source:
+            #   BUILD_MAP <k explicit>, (LOAD src | BUILD_MAP <k=v>, DICT_MERGE)+
+            # e.g. ``f(**a, **b)`` emits two DICT_MERGE; in ``f(**a, k=v)`` the ``k=v``
+            # group is its own BUILD_MAP that is then DICT_MERGEd. Walk the chain
+            # right-to-left, reading one source dict per DICT_MERGE, then consume the
+            # base BUILD_MAP (which may itself hold explicit leading kwargs as in
+            # ``f(k=v, **a)``). The old fixed-count ``while nargs + 1 > 0`` loop
+            # assumed a single merge and fed a DICT_MERGE oparg into update() on
+            # ``f(**a, **b)`` / ``f(**a, k=v)`` (GH-16147).
+            sources = []
+            while idx >= 0 and is_dictionary_merge(instr):
+                idx -= 1  # skip the DICT_MERGE op
+                src, idx = _opcode_read_arg(idx, ops, keys)
+                sources.append(src)
+                if idx < 0:
+                    break
+                instr, _ = _get_instr(ops, idx)
+            kwargs = dict()
+            base_instr = _get_instr(ops, idx)[0] if idx >= 0 else None
+            if base_instr is not None and (is_build_map(base_instr) or is_const_key_map(base_instr)):
+                base, idx = _opcode_read_arg(idx, ops, keys)
+                if isinstance(base, dict):
+                    kwargs = base
+            # Sources were collected last-to-first; replay left-to-right so kwarg
+            # insertion order matches the call site.
+            for src in reversed(sources):
+                if isinstance(src, dict):
+                    kwargs.update(src)
         else:
-            # load **kwargs
+            # bare **mapping loaded directly (e.g. ``f(**d)``)
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
     else:
         kwargs = {}
+
+    # Py3.14+: when flags=0, a PUSH_NULL fills the kwargs stack slot just before
+    # CALL_FUNCTION_EX. Skip it so we land on the args (LIST_TO_TUPLE / iterable).
+    # Version-gated to match the sibling `flags is None` block above — on earlier
+    # Pythons a PUSH_NULL at this position belongs to a different expression and
+    # must not be consumed.
+    if sys.version_info >= (3, 14) and not (flags & 1) and idx > 0:
+        instr, _ = _get_instr(ops, idx)
+        if instr == _PUSH_NULL:
+            idx -= 1
 
     instr, nargs = _get_instr(ops, idx)
     while is_list_to_tuple(instr):
         idx = idx - 1
         instr, nargs = _get_instr(ops, idx)
-    if is_builder(instr) or is_list_extend(instr):
+    if is_list_extend(instr) or is_list_append(instr):
+        # Multiple `*` unpacks (e.g. ``f(*a, *b)``) or a `*`-unpack mixed with
+        # explicit positionals are assembled as:
+        #   BUILD_LIST <k explicit>, (LOAD src, LIST_EXTEND)*, (LOAD x, LIST_APPEND)*, [LIST_TO_TUPLE]
+        # LIST_EXTEND splices an iterable's elements; LIST_APPEND adds one explicit
+        # trailing positional (e.g. ``f(*a, b)``). Walk the chain right-to-left,
+        # then prepend the k explicit leading positionals held by the base
+        # BUILD_LIST. (The old single-loop code read a LIST_EXTEND/LIST_APPEND op
+        # as an arg and raised TypeError — GH-16147.)
+        args = []
+        while is_list_extend(instr) or is_list_append(instr):
+            appended = is_list_append(instr)
+            idx -= 1  # skip the LIST_EXTEND / LIST_APPEND op
+            src, idx = _opcode_read_arg(idx, ops, keys)
+            args[0:0] = [src] if appended else list(src)
+            instr, nargs = _get_instr(ops, idx)
+        if is_builder(instr):  # base list with any explicit leading positionals
+            idx -= 1
+            while nargs > 0:
+                new_arg, idx = _opcode_read_arg(idx, ops, keys)
+                args.insert(0, new_arg)
+                nargs -= 1
+    elif is_seq_unpack(instr):
+        # Py <= 3.8: ``f(*a, *b)`` / ``f(pos, *rest)`` assemble the args tuple via
+        # BUILD_TUPLE_UNPACK_WITH_CALL. Each operand is an *iterable* to concatenate
+        # (explicit leading positionals are pre-bundled into a const-tuple operand),
+        # so spread each operand's elements. (Py >= 3.9 uses LIST_EXTEND above; this
+        # branch must stay for 3.7/3.8, where the previous spread logic lived.)
         idx -= 1
         args = []
-        if is_list_extend(instr):
-            nargs += 1
         while nargs > 0:
-            new_args, idx = _opcode_read_arg(idx, ops, keys)
-            args.insert(0, *new_args)
+            src, idx = _opcode_read_arg(idx, ops, keys)
+            args[0:0] = list(src)
+            nargs -= 1
+    elif is_builder(instr):
+        # Inline list/tuple literal in unpack position (e.g. ``f(*[a, b])`` /
+        # ``f(*(a, b))``): BUILD_LIST/BUILD_TUPLE with n elements read one by one.
+        # The old ``insert(0, *new_args)`` spread a scalar element and raised
+        # TypeError (GH-16147).
+        idx -= 1
+        args = []
+        while nargs > 0:
+            new_arg, idx = _opcode_read_arg(idx, ops, keys)
+            args.insert(0, new_arg)
             nargs -= 1
     else:
         args, idx = _opcode_read_arg(idx, ops, keys)
@@ -475,21 +647,33 @@ def _call_method_bc(nargs, idx, ops, keys):
 
 
 def _call_bc(nargs, idx, ops, keys):
-    idx -= 1  # Skipping PRE_CALL instruction
+    # PRECALL was a 3.11-only opcode; it does not exist in 3.12+.
+    # Only skip the preceding instruction if it is actually PRECALL.
+    if idx >= 0 and keys[idx] == "PRECALL":
+        idx -= 1
     # Read keyword arguments
     instr, keywords = _get_instr(ops, idx)
     kwargs = {}
     if instr == "KW_NAMES":
         # Skip the LOAD_CONST tuple
         idx -= 1
-        # Load keyword arguments from stack
-        for key in keywords:
-            val, idx = _opcode_read_arg(idx, ops, keys)
-            kwargs[key] = val
-            nargs -= 1
+        kwargs, idx, nargs = _read_kwnames_args(keywords, nargs, idx, ops, keys)
         exp_kwargs, idx, nargs = _read_explicit_keyword_args(nargs, idx, ops, keys)
         kwargs.update(exp_kwargs)
-        
+
+    args, idx, nargs = _read_explicit_positional_args(nargs, idx, ops, keys)
+    return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
+
+
+def _call_kw_bc(nargs, idx, ops, keys):
+    # Py 3.13+: CALL_KW replaces the KW_NAMES + CALL pattern. The keyword-name tuple
+    # is loaded by a normal LOAD_CONST immediately preceding CALL_KW; below it on the
+    # stack are the keyword values (in tuple order), then positional args, then callable.
+    _, keywords = _get_instr(ops, idx)
+    kwargs = {}
+    if isinstance(keywords, tuple):
+        idx -= 1
+        kwargs, idx, nargs = _read_kwnames_args(keywords, nargs, idx, ops, keys)
     args, idx, nargs = _read_explicit_positional_args(nargs, idx, ops, keys)
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
@@ -517,7 +701,28 @@ def _read_explicit_positional_args(nargs, idx, ops, keys):
 def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
     # LOAD_ATTR <method_name> or LOAD_METHOD <method_name>: Map call arguments to a call of method on H2OFrame class
     instr, op = _get_instr(ops, idx)
-    rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs) if is_method(instr) else []
+    # Py3.13+: explicit PUSH_NULL appears between the callable load and
+    # CALL_FUNCTION_EX (e.g. for `x.method(*args)`). Skip it so we land on
+    # the LOAD_ATTR/LOAD_METHOD that names the call. Guard the decrement so
+    # we don't wrap to ops[-1] via Python's negative indexing.
+    if instr == _PUSH_NULL and idx > 0:
+        idx -= 1
+        instr, op = _get_instr(ops, idx)
+    if is_method(instr):
+        rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs)
+    else:
+        # Free-function calls (LOAD_GLOBAL/LOAD_FAST/LOAD_CONST/LOAD_DEREF) cannot be
+        # translated to Rapids because there is no server-side counterpart. Pre-3.46.0.12
+        # the args were silently discarded, producing an ExprNode with zero children —
+        # the call appeared to work but returned the bare function name. Raise loudly so
+        # the user can switch to a method-style lambda (e.g. `lambda x: x.somefunc()`).
+        if args or kwargs:
+            raise ValueError(
+                "Free-function calls are not supported in H2OFrame lambdas; "
+                "use a method on the frame (e.g. `lambda x: x.somefunc(...)`). "
+                "Got call to %r with args=%r kwargs=%r." % (op, args, kwargs)
+            )
+        rapids_args = []
     # Map function name to proper rapids name
     rapids_op = _get_func_name(op, rapids_args)
     # Go to next instruction

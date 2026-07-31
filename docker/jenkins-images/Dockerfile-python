@@ -5,5 +5,9 @@ ARG H2O_BRANCH=master
 ARG PYTHON_VERSION
 ENV PYTHON_VERSION=${PYTHON_VERSION}
 
-RUN \
+# Copy the script from the build context (docker/) so PR builds against forks
+# don't depend on the H2O_BRANCH commit existing on github.com (the script
+# itself still wgets test-requirements.txt / docs-requirements.txt at run time).
+COPY scripts/install_python_version /tmp/install_python_version
+RUN chmod +x /tmp/install_python_version && \
     /tmp/install_python_version ${PYTHON_VERSION}

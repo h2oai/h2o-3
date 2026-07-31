@@ -150,10 +150,22 @@ test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
 
 test-py-demos:
-###	Explicit upgrade of pandas and numpy due to "TypeError: Cannot interpret '<attribute 'dtype' of 'numpy.generic' objects>' as a data type" in 
-###	Predict_w_Unseen_Categorical_Levels.ipynb, isax2.ipynb, kmeans_aic_bic_diagnostics.ipynb, plift_random_forest_compare_causalml.ipynb, uplift_drf_demo.ipynb
-	test "$$CI" != "true" || pip install -U pandas==1.0.5 numpy==1.20.2
-	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g --excludelist new-scikit
+###	Explicit upgrade of pandas and numpy due to "TypeError: Cannot interpret '<attribute 'dtype' of 'numpy.generic' objects>' as a data type" in
+###	Predict_w_Unseen_Categorical_Levels.ipynb, isax2.ipynb, kmeans_aic_bic_diagnostics.ipynb, plift_random_forest_compare_causalml.ipynb, uplift_drf_demo.ipynb.
+###	Gated to Py3.7 only: pandas==1.0.5 / numpy==1.20.2 have no wheels for Py3.8+ and their
+###	source builds fail on modern Pythons (numpy.distutils removed in 3.12+). On newer Pythons
+###	rely on whatever pandas/numpy test-requirements.txt has already installed.
+	test "$$CI" != "true" || test "$$PYTHON_VERSION" != "3.7" || pip install -U pandas==1.0.5 numpy==1.20.2
+	# --numclouds 2 --jvm.xmx 8g (was: 4 clouds × 10g): the demos hold large pandas
+	# frames (shap_values_drf / shap_values_gbm); aggregate 4 × 10g + Python workers
+	# repeatedly pushed the Jenkins agent host OOM and flapped the slave offline.
+	# Dropping the cloud count from 4 to 2 halved both the JVM aggregate AND the
+	# per-cloud Python footprint, which is what actually unblocked the stage.
+	# Heap kept at 8g (rather than 5g) to retain margin for citi_bike_large.ipynb
+	# (~10M rows over 14 monthly CSVs) and any demo that runs GBM with the larger
+	# default ``nbins`` — 2 × 8g = 16g aggregate is still well below the 4 × 10g
+	# = 40g configuration that triggered the original host OOM.
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 2 --baseport 56789 --jvm.xmx 8g --excludelist new-scikit
 	
 test-py-demos-new-scikit:
 	test "$$CI" != "true" || pip install scikit-learn==1.0.2

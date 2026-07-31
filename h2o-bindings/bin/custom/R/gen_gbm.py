@@ -26,11 +26,11 @@ enum for "bernoulli" or "multinomial".
 """,
     params=dict(
         verbose="""
-\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
+\\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 """
     ),
     seealso="""
-\code{\link{predict.H2OModel}} for prediction
+\\code{\\link{predict.H2OModel}} for prediction
 """,
     examples="""
 library(h2o)

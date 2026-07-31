@@ -3,12 +3,15 @@
 set -ex
 
 if [[ ! ${H2O_BRANCH} ]]; then
- echo "H2O_BRANCH must be set"
- exit 1
+	echo "H2O_BRANCH must be set"
+	exit 1
 fi
 if [[ ! -n ${PYTHON_VERSION} ]]; then
-  echo "Using default Python version"
-  PYTHON_VERSION='3.7'
+	echo "Using default Python version"
+	# Keep in sync with DEFAULT_PYTHON_VERSION in scripts/jenkins/groovy/buildConfig.groovy:
+	# the gradle-cache warmup baked into dev-build-base must use the same env as the
+	# real "Build H2O-3" stage (and it is the only Python env present in the image chain).
+	PYTHON_VERSION='3.12'
 fi
 
 # cd home

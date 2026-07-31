@@ -135,6 +135,29 @@ def test_generic_estimator_with_distribution_param():
     scores['generic_estimator_with_distribution_param'] = score
 
 
+def test_classifier_classes_dtype_matches_int_labels():
+    """End-to-end guard for the classes_ int-coercion contract.
+
+    _classes_array() coerces a canonical-integer response domain to int64 so
+    sklearn's default scorers don't compare int y_true against string class
+    labels (which silently scores ~0%). That is only correct if predict() stays
+    dtype-consistent with classes_; assert the real fitted model honors it.
+    """
+    data = _get_data(format='numpy', n_classes=3)
+    clf = H2OGradientBoostingClassifier(seed=seed, data_conversion=True,
+                                        init_connection_args=init_connection_args)
+    clf.fit(data.X_train, data.y_train)
+    classes = np.asarray(clf.classes_)
+    assert classes.dtype.kind in ("i", "u"), \
+        "integer labels must yield an integer classes_; got dtype %r" % (classes.dtype,)
+    assert set(classes.tolist()) == set(int(v) for v in np.unique(data.y_train)), \
+        "classes_ %r must match the integer response domain" % (classes.tolist(),)
+    # Default accuracy scoring routes through classes_; a classes_/predict dtype
+    # mismatch would silently collapse it toward chance (~0.33 for 3 classes).
+    assert clf.score(data.X_test, data.y_test) > 0.5, \
+        "default-scored accuracy unexpectedly low — classes_/predict dtype mismatch?"
+
+
 def _assert_test_scores_equivalent(lk, rk):
     if lk in scores and rk in scores:
         assert abs(scores[lk] - abs(scores[rk])) < 1e-6, \
@@ -156,5 +179,6 @@ pyunit_utils.run_tests([
     test_h2o_only_pipeline_with_numpy_arrays,
     test_mixed_pipeline_with_numpy_arrays,
     test_generic_estimator_with_distribution_param,
+    test_classifier_classes_dtype_matches_int_labels,
     test_scores_are_equivalent,
 ])

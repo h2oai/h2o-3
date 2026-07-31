@@ -39,8 +39,9 @@ if [ ! -f $h2oLog ]; then
 
 
         echo "Installing H2O for Python..."
-        /usr/local/bin/pip install https://s3.amazonaws.com/h2o-release/h2o/${h2oBranch}/${h2oBuild}/Python/h2o-${h2oVersion}-py2.py3-none-any.whl
-        /usr/local/bin/pip3 install https://s3.amazonaws.com/h2o-release/h2o/${h2oBranch}/${h2oBuild}/Python/h2o-${h2oVersion}-py2.py3-none-any.whl
+        # 3.46.0.12+ wheels are py3-none-any; older releases used py2.py3-none-any
+        /usr/local/bin/pip install https://s3.amazonaws.com/h2o-release/h2o/${h2oBranch}/${h2oBuild}/Python/h2o-${h2oVersion}-py3-none-any.whl || /usr/local/bin/pip install https://s3.amazonaws.com/h2o-release/h2o/${h2oBranch}/${h2oBuild}/Python/h2o-${h2oVersion}-py2.py3-none-any.whl
+        /usr/local/bin/pip3 install https://s3.amazonaws.com/h2o-release/h2o/${h2oBranch}/${h2oBuild}/Python/h2o-${h2oVersion}-py3-none-any.whl || /usr/local/bin/pip3 install https://s3.amazonaws.com/h2o-release/h2o/${h2oBranch}/${h2oBuild}/Python/h2o-${h2oVersion}-py2.py3-none-any.whl
 
 
         echo "Success!! " >> $h2oLog

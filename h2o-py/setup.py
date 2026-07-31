@@ -16,9 +16,19 @@ version = "0.0.local"
 with open(os.path.join(here, 'h2o/version.txt'), encoding='utf-8') as f:
     version = f.read()
 
-client = "--client" in sys.argv
-if client:
+# The client variant ships the same sources under the `h2o_client` name.
+# `--client` argv is the legacy path (conda build.sh); H2O_PY_CLIENT is used by
+# the PEP 517 gradle build, which cannot forward custom CLI args to setup.py.
+_client_via_argv = "--client" in sys.argv
+_client_via_env = os.getenv("H2O_PY_CLIENT", "") != ""
+client = _client_via_argv or _client_via_env
+if _client_via_argv:
     sys.argv.remove("--client")
+# Log how the variant was selected so a STALE H2O_PY_CLIENT in the shell (which
+# would otherwise silently build a client wheel from a normal build) is visible.
+if client:
+    print("Building CLIENT variant (h2o_client): --client=%s, H2O_PY_CLIENT=%r"
+          % (_client_via_argv, os.getenv("H2O_PY_CLIENT")), file=sys.stderr)
 
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)
@@ -71,11 +81,18 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11"
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3 :: Only",
     ],
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
 
+    # No upper bound: a hard ceiling makes already-published wheels uninstallable on
+    # the next Python release until we cut a new one. Untested-but-newer interpreters
+    # are handled at import time by the suppressible UserWarning in h2o/__init__.py.
     python_requires='>=3.7',
 
     packages=packages,

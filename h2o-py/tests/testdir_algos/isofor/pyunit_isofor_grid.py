@@ -21,7 +21,7 @@ def grid_synthetic_IF():
     anomaly_pd = pd.DataFrame(
         {'x': anomaly_data[:, 0], 'y': anomaly_data[:, 1], 'label': np.ones(anomaly_data.shape[0])})
 
-    dataset = H2OFrame(regular_pd.append(anomaly_pd).sample(frac=1))
+    dataset = H2OFrame(pd.concat([regular_pd, anomaly_pd]).sample(frac=1))
 
     train_with_label, test = dataset.split_frame([0.8])
     train = train_with_label.drop(["label"])

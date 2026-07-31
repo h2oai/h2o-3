@@ -58,7 +58,7 @@ if (!(is.null(model@model$random_coefficients_table))) {
 #' Set betas of an existing H2O GLM Model
 #'
 #' This function allows setting betas of an existing glm model.
-#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param model an \\linkS4class{H2OModel} corresponding from a \\code{h2o.glm} call.
 #' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
@@ -72,7 +72,7 @@ h2o.makeGLMModel <- function(model,beta) {
 #' Make unrestricted GLM model when control variables or remove offset effects features are defined.
 #'
 #' Needs source model trained with control variables or remove offset effects feature enabled.
-#' @param model a GLM \linkS4class{H2OModel} trained with control variable or with remove offset effects
+#' @param model a GLM \\linkS4class{H2OModel} trained with control variable or with remove offset effects
 #' @param destination_key a string or a NULL
 #' @export
 h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
@@ -90,7 +90,7 @@ h2o.make_unrestricted_glm_model <- function(model, destination_key = NULL) {
 #' Make derived GLM model when control variables or remove offset effects features are defined.
 #'
 #' Needs source model trained with control variables or remove offset effects.
-#' @param model a GLM \linkS4class{H2OModel} trained with control variables or with remove offset effects features
+#' @param model a GLM \\linkS4class{H2OModel} trained with control variables or with remove offset effects features
 #' @param destination_key a string or a NULL
 #' @param remove_control_variables_effects logical; set control variables flag to get model affected only by
 #'      this feature (available only if control_variables and remove_offset_effects parameters are both set)
@@ -120,7 +120,7 @@ h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_con
 #' Extract best lambda value found from glm model.
 #'
 #' This function allows setting betas of an existing glm model.
-#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param model an \\linkS4class{H2OModel} corresponding from a \\code{h2o.glm} call.
 #' @export
 h2o.getLambdaBest <- function(model) {
   model@model$lambda_best
@@ -129,7 +129,7 @@ h2o.getLambdaBest <- function(model) {
 #' Extract the maximum lambda value used during lambda search from glm model.
 #'
 #' This function allows setting betas of an existing glm model.
-#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param model an \\linkS4class{H2OModel} corresponding from a \\code{h2o.glm} call.
 #' @export
 h2o.getLambdaMax <- function(model) {
   lambdaMax <- model@model$lambda_max
@@ -142,7 +142,7 @@ h2o.getLambdaMax <- function(model) {
 #' Extract best alpha value found from glm model.
 #'
 #' This function allows setting betas of an existing glm model.
-#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param model an \\linkS4class{H2OModel} corresponding from a \\code{h2o.glm} call.
 #' @export
 h2o.getAlphaBest <- function(model) {
   model@model$alpha_best
@@ -152,7 +152,7 @@ h2o.getAlphaBest <- function(model) {
 #' Note that due to early stop, this minimum lambda value may not be used in the actual lambda search.
 #'
 #' This function allows setting betas of an existing glm model.
-#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param model an \\linkS4class{H2OModel} corresponding from a \\code{h2o.glm} call.
 #' @export
 h2o.getLambdaMin <- function(model) {
   lambdaMin <- model@model$lambda_min # will be -1 if lambda_search=FALSE
@@ -166,7 +166,7 @@ h2o.getLambdaMin <- function(model) {
 #'
 #' Extract the full regularization path from a GLM model (assuming it was run with the lambda search option).
 #'
-#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param model an \\linkS4class{H2OModel} corresponding from a \\code{h2o.glm} call.
 #' @export
 h2o.getGLMFullRegularizationPath <- function(model) {
   res = .h2o.__remoteSend(method="GET", .h2o.__GLMRegPath, model=model@model_id)
@@ -179,7 +179,7 @@ h2o.getGLMFullRegularizationPath <- function(model) {
 
 #' Compute weighted gram matrix.
 #'
-#' @param X an \linkS4class{H2OModel} corresponding to H2O framel.
+#' @param X an \\linkS4class{H2OModel} corresponding to H2O framel.
 #' @param weights character corresponding to name of weight vector in frame.
 #' @param use_all_factor_levels logical flag telling h2o whether or not to skip first level of categorical variables during one-hot encoding.
 #' @param standardize logical flag telling h2o whether or not to standardize data
@@ -194,7 +194,7 @@ h2o.computeGram <- function(X,weights="", use_all_factor_levels=FALSE,standardiz
 ##'
 ##' Creates a background H2O GLM job.
 ##' @inheritParams h2o.glm
-##' @return Returns a \linkS4class{H2OModelFuture} class object.
+##' @return Returns a \\linkS4class{H2OModelFuture} class object.
 ##' @export
 #h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
 #                    #AUTOGENERATED Params
@@ -286,9 +286,9 @@ Fits a generalized linear model, specified by a response variable, a set of pred
 description of the error distribution.
 """,
     returns="""
-A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
-learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
-returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
+A subclass of \\code{\\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
+learning task at hand (if it's binomial classification, then an \\code{\\linkS4class{H2OBinomialModel}} is
+returned, if it's regression then a \\code{\\linkS4class{H2ORegressionModel}} is returned). The default print-
 out of the models is shown, but further GLM-specifc information can be queried out of the object. To access
 these various items, please refer to the seealso section below. Upon completion of the GLM, the resulting
 object has coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics
@@ -297,9 +297,9 @@ more in-depth GLM documentation available here:
 \\url{https://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
 """,
     seealso="""
-\code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}},
-\code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
-\code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
+\\code{\\link{predict.H2OModel}} for prediction, \\code{\\link{h2o.mse}}, \\code{\\link{h2o.auc}},
+\\code{\\link{h2o.confusionMatrix}}, \\code{\\link{h2o.performance}}, \\code{\\link{h2o.giniCoef}},
+\\code{\\link{h2o.logloss}}, \\code{\\link{h2o.varimp}}, \\code{\\link{h2o.scoreHistory}}
 """,
     examples="""
 h2o.init()

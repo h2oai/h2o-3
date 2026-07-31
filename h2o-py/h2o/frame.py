@@ -12,6 +12,7 @@ from io import StringIO
 import itertools
 import os
 import re
+import sys
 import tempfile
 from types import FunctionType
 import warnings
@@ -20,7 +21,7 @@ import h2o
 from h2o.base import Keyed
 from h2o.display import H2ODisplay, H2ODisplayWrapper, H2OItemsDisplay, H2OTableDisplay, display, repr_def
 from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning, H2ODependencyWarning
-from h2o.expr import ExprNode
+from h2o.expr import ExprNode, _np_module, _NP_GENERIC, _NP_NDARRAY
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
 from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGURE_ACCESS
@@ -1944,18 +1945,38 @@ class H2OFrame(Keyed, H2ODisplay):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True, header=True, use_multi_thread=False):
+    def as_data_frame(self, use_pandas=True, header=True, use_multi_thread=False, na_values=None):
         """
         Obtain the dataset as a python-local object.
 
         :param bool use_pandas: If True (default) then return the H2OFrame as a pandas DataFrame (requires that the
             ``pandas`` library was installed). If False, then return the contents of the H2OFrame as plain nested
-            list, in a row-wise order.  
+            list, in a row-wise order.
         :param bool header: If True (default), then column names will be appended as the first row in list
         :param bool use_multi_thread: If True (False by default), will use polars/pyarrow to perform conversion in
             multi-thread which is faster.
+        :param na_values: Strings to recognize as NA when ``use_pandas=True``. Defaults to ``[""]``, matching
+            H2O's CSV writer (NAs are written as empty fields). Pass e.g. ``["", "NA", "NULL"]`` to also coerce
+            those literal strings to NaN -- this restores the pre-3.46.0.12 behavior, but is lossy for categorical
+            columns whose levels literally are ``"NA"`` / ``"NULL"`` / ``"None"`` / ``"NaN"``.
+            Note: STRING columns store the empty string as a quoted ``""`` literal, which pandas/polars
+            still strip before NA matching — so a legitimately empty string round-trips to NaN regardless.
+            NA *recognition* is consistent between the single-thread pandas path and the multi-thread
+            polars path (the dtype of an all-NA column may still differ: pandas yields ``float64``,
+            polars a string dtype). Ignored when ``use_pandas=False`` (the plain list-of-lists reader
+            returns cell contents verbatim).
         :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
+
+        .. versionchanged:: 3.46.0.12
+
+            Default NA handling tightened so that ``df.isna().sum()`` matches the H2O
+            cluster's NA count exactly. Previously ``pandas.read_csv`` was called with
+            its defaults, which coerced the literal strings ``"NA"``, ``"NULL"``,
+            ``"NaN"``, ``"None"``, ``"N/A"``, and ``"#N/A"`` to ``NaN`` -- silently
+            dropping categorical levels whose names matched those tokens. Pass
+            ``na_values=["", "NA", "NULL", "NaN", "None", "N/A", "#N/A"]`` to restore
+            the prior behavior on a per-call basis.
 
         :examples:
 
@@ -1970,31 +1991,46 @@ class H2OFrame(Keyed, H2ODisplay):
         """
         if can_use_pandas() and use_pandas:
             import pandas
+            effective_na = [""] if na_values is None else na_values
+            if na_values is None:
+                _warn_as_data_frame_na_default()
             if use_multi_thread:
-                with local_context(polars_enabled=True): # turn on multi-thread toolboxes   
+                with local_context(polars_enabled=True): # turn on multi-thread toolboxes
                     if can_use_polars() and can_use_pyarrow(): # can use multi-thread
                         exportFile = tempfile.NamedTemporaryFile(suffix=".h2oframe2Convert.csv", delete=False)
                         try:
                             exportFile.close()  # needed for Windows
                             h2o.export_file(self, exportFile.name, force=True)
-                            return self.convert_with_polars(exportFile.name)
+                            return self.convert_with_polars(exportFile.name, null_values=effective_na)
                         finally:
                             os.unlink(exportFile.name)
             warnings.warn("Converting H2O frame to pandas dataframe using single-thread.  For faster conversion using"
                           " multi-thread, install polars and pyarrow and use it as "
                           "pandas_df = h2o_df.as_data_frame(use_multi_thread=True)\n", H2ODependencyWarning)
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)                
-                
+            # H2O writes NAs as empty CSV fields and emits non-NA strings literally, so only
+            # treat empty as NA. Default pandas na_values would turn legitimate categorical
+            # levels like "None"/"NA"/"NULL" into NaN, which loses data on the round-trip.
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False,
+                                   keep_default_na=False,
+                                   na_values=effective_na)
+
         from h2o.utils.csv.readers import reader
         frame = [row for row in reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
         return frame
-    
-    
-    def convert_with_polars(self, fileName):
+
+
+    def convert_with_polars(self, fileName, null_values=None):
         import polars as pl
-        dt_frame = pl.read_csv(fileName, null_values = "")
+        # polars accepts a single string or a list of strings for null_values.
+        # Default to [""] to match as_data_frame's new NA default: only empty
+        # CSV fields are NaN. Keeps NA recognition consistent between the two
+        # entry points (all-NA column dtype may still differ: pandas float64
+        # vs polars string).
+        if null_values is None:
+            null_values = [""]
+        dt_frame = pl.read_csv(fileName, null_values=null_values)
         return dt_frame.to_pandas()
 
     def save_to_hive(self, jdbc_url, table_name, format="csv", table_path=None, tmp_path=None):
@@ -2082,10 +2118,14 @@ class H2OFrame(Keyed, H2ODisplay):
             - a list of ints or strings, selecting several columns with the given indices / names
             - a slice, selecting columns with the indices within this slice
             - a single-column boolean frame, selecting rows for which the selector is true
+            - a 1-D numpy array of integer or boolean dtype, selecting ROWS (this follows
+              scikit-learn's ``_safe_indexing`` semantics; note the asymmetry with a plain
+              Python list of ints, which selects COLUMNS)
             - a 2-element tuple, where the first element is a row selector, and the second element is the
-              column selector. Here the row selector may be one of: an int, a list of ints, a slice, or
-              a boolean frame. The column selector is similarly one of: an int, a list of ints, a string,
-              a list of strings, or a slice. It is also possible to use the empty slice (``:``) to select
+              column selector. Here the row selector may be one of: an int, a list of ints, a slice, a
+              boolean frame, or a 1-D numpy integer/boolean array. The column selector is similarly one
+              of: an int, a list of ints, a string, a list of strings, a slice, or a 1-D numpy array.
+              It is also possible to use the empty slice (``:``) or ``Ellipsis`` (``...``) to select
               all elements within one of the dimensions.
 
         :returns: A new frame comprised of some rows / columns of the source frame.
@@ -2111,6 +2151,29 @@ class H2OFrame(Keyed, H2ODisplay):
         new_types = None
         fr = None
         flatten = False
+        # sklearn cv splitters and other downstream consumers pass numpy arrays of
+        # integer or boolean indices for row selection. Normalize ndarrays once,
+        # before dispatching to the list/tuple branches below, so the two paths
+        # (bare ndarray vs ndarray-inside-tuple) share one conversion site.
+        if can_use_numpy():
+            _nd = _NP_NDARRAY
+            if isinstance(item, _nd):
+                # Bare ndarray means row selection; a 1-D Python list already
+                # means column selection in H2OFrame so we can't fold that path.
+                item = (_np_index_to_list(item), slice(None))
+            elif isinstance(item, _NP_GENERIC):
+                # A bare numpy scalar selects like its Python equivalent, so
+                # fr[np.int64(2)] behaves as fr[2] (column selection). Without this
+                # numpy scalars match no branch below and hit the "Unexpected
+                # __getitem__ selector" ValueError.
+                item = item.item()
+            elif isinstance(item, tuple) and len(item) == 2:
+                rows, cols = item
+                if isinstance(rows, _nd):
+                    rows = _np_index_to_list(rows)
+                if isinstance(cols, _nd):
+                    cols = _np_index_to_list(cols)
+                item = (rows, cols)
         if isinstance(item, slice):
             item = normalize_slice(item, self.ncols)
         if is_type(item, str, int, list, slice):
@@ -2125,6 +2188,12 @@ class H2OFrame(Keyed, H2ODisplay):
             fr = H2OFrame._expr(expr=ExprNode("rows", self, item))
         elif isinstance(item, tuple):
             rows, cols = item
+            # numpy-compatible: arr[key, ...] passes Ellipsis as the col selector
+            # (sklearn's _safe_indexing does this since 1.6+); treat as "all".
+            if rows is Ellipsis:
+                rows = slice(None)
+            if cols is Ellipsis:
+                cols = slice(None)
             allrows = allcols = False
             if isinstance(cols, slice):
                 cols = normalize_slice(cols, self.ncols)
@@ -3817,7 +3886,10 @@ class H2OFrame(Keyed, H2ODisplay):
                 enumCols.append(predName)
                 enumColsIndices.append(colnames.index(predName))
 
-        pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True)
+        # Pass na_values=[""] explicitly: h2o-internal call, must not surface the
+        # FutureWarning about the new as_data_frame NA default to end users (the
+        # warning is for users calling as_data_frame in their own code).
+        pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True, na_values=[""])
         nrows = tempFrame.nrow
 
         # convert H2OFrame to DMatrix starts here
@@ -3838,7 +3910,8 @@ class H2OFrame(Keyed, H2ODisplay):
                
             enumCols = c2.names
             tempFrame = c2.cbind(tempFrame)
-            pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True) # redo translation from H2O to panda
+            # See note above: na_values=[""] avoids surfacing the new NA-default FutureWarning to users.
+            pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True, na_values=[""]) # redo translation from H2O to panda
         
             pandaTrainPart = generatePandaEnumCols(pandaFtrain, enumCols[0], nrows, tempFrame[enumCols[0]].categories())
             pandaFtrain.drop([enumCols[0]], axis=1, inplace=True)
@@ -3851,7 +3924,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
             pandaFtrain = pd.concat([pandaTrainPart, pandaFtrain], axis=1)
 
-        c0= tempFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True)
+        c0= tempFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True, na_values=[""])
         pandaFtrain.drop([yresp], axis=1, inplace=True)
         pandaF = pd.concat([c0, pandaFtrain], axis=1)
         pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
@@ -4983,7 +5056,9 @@ class H2OFrame(Keyed, H2ODisplay):
         cols = local_env('cols', 200)
         use_pandas = local_env('pandas', H2OTableDisplay.use_pandas(), use_default_if_none=True)
         if use_pandas:
-            df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True)
+            # Internal head()/repr() path — pass na_values=[""] explicitly so the
+            # NA-default FutureWarning does not surface from h2o's own display code.
+            df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True, na_values=[""])
             table = df.to_html() if fmt == 'html' else df.to_string()
         else:
             tablefmt = dict(
@@ -5130,6 +5205,98 @@ class H2OFrame(Keyed, H2ODisplay):
 # Helpers
 # ----------------------------------------------------------------------------------------------------------------------
 
+# numpy sentinels (_np_module / _NP_GENERIC / _NP_NDARRAY) are imported from h2o.expr
+# (single source of truth) at the top of this module.
+
+
+def _np_index_to_list(arr):
+    """Normalize a 1-D numpy index array (bool or integer dtype) to a Python list.
+
+    Driver-memory note: the selected indices are materialized in driver memory
+    (and serialized into the rapids expression). Prefer H2O server-side
+    filtering for cluster-scale frames.
+    """
+    if _np_module is None:
+        raise RuntimeError("numpy is required for numpy-array H2OFrame indexing")
+    if arr.ndim != 1:
+        raise ValueError("H2OFrame indexing only supports 1-D numpy arrays")
+    if arr.dtype == bool:
+        return _np_module.flatnonzero(arr).tolist()
+    if not _np_module.issubdtype(arr.dtype, _np_module.integer):
+        raise TypeError(
+            "H2OFrame indexing requires a 1-D numpy array of integer or boolean dtype; "
+            "got dtype %r. Convert via arr.astype(int) explicitly if truncation is intended."
+            % arr.dtype
+        )
+    return arr.tolist()
+
+
+# Call sites that have already been warned about the as_data_frame() default NA change.
+_as_data_frame_na_warned_sites = set()
+
+_AS_DATA_FRAME_NA_WARNING = (
+    "H2OFrame.as_data_frame() NA-handling default changed in 3.46.0.12: "
+    "literal strings 'NA', 'NULL', 'NaN', 'None', 'N/A', '#N/A' are no longer "
+    "coerced to NaN by default (only empty CSV fields are). To restore the "
+    "previous behavior on a per-call basis pass "
+    "na_values=['', 'NA', 'NULL', 'NaN', 'None', 'N/A', '#N/A']. Set na_values "
+    "explicitly to silence this warning."
+)
+
+
+def _as_data_frame_na_warning_forced(module, lineno):
+    """True when the user's active warnings filter for this FutureWarning resolves to
+    'always' or 'error'. In that case our per-call-site dedup must NOT swallow the
+    warning -- ``warnings.simplefilter("always")`` / ``-W error`` mean "every time".
+    Mirrors CPython's first-match-wins filter resolution against the same message,
+    category, module and lineno that warnings.warn() will see.
+    """
+    for action, msg, cat, mod, ln in warnings.filters:
+        if cat is not None and not issubclass(FutureWarning, cat):
+            continue
+        if msg is not None and not msg.match(_AS_DATA_FRAME_NA_WARNING):
+            continue
+        if mod is not None and module is not None and not mod.match(module):
+            continue
+        if ln != 0 and lineno != ln:
+            continue
+        return action in ("always", "error")
+    return False
+
+
+def _warn_as_data_frame_na_default():
+    """Emit a FutureWarning when as_data_frame() relies on the new default NA
+    semantics. Visible by default (FutureWarning, not DeprecationWarning) so users
+    notice the silent break before observing wrong numbers downstream.
+
+    We dedup per call site ourselves rather than relying on the warnings module's
+    registry: as_data_frame() calls pandas.read_csv() right afterwards, and pandas
+    enters warnings.catch_warnings() internally, which bumps the global filter version
+    and clears that registry -- so the registry-based dedup re-fires on every call in a
+    loop. The dedup is bypassed when the user's active filter is 'always'/'error' so
+    those still fire every call, matching the standard warnings contract.
+    """
+    # Attribute the dedup (and the displayed warning, via stacklevel=3) to the user's
+    # as_data_frame() call site: frame 0 is here, frame 1 is as_data_frame, frame 2 the caller.
+    try:
+        caller = sys._getframe(2)
+        site = (caller.f_code.co_filename, caller.f_lineno)
+    except ValueError:
+        caller = None
+        site = None
+    if site is not None and not _as_data_frame_na_warning_forced(
+        caller.f_globals.get("__name__"), caller.f_lineno
+    ):
+        if site in _as_data_frame_na_warned_sites:
+            return
+        _as_data_frame_na_warned_sites.add(site)
+    warnings.warn(
+        _AS_DATA_FRAME_NA_WARNING,
+        category=FutureWarning,
+        stacklevel=3,
+    )
+
+
 def _getValidCols(by_idx, fr):  # so user can input names of the columns as well is idx num
     tmp = []
     for i in by_idx:
@@ -5196,7 +5363,11 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):
             pass
     zeroFrame = pd.DataFrame(tempnp)
     zeroFrame.columns=cmissingNames
-    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
+    # pandas 2.x returns bool dtype from get_dummies by default. The result is concat'd
+    # with int columns and later passed to scipy.sparse.csr_matrix, which on Py3.12+
+    # rejects object dtype that mixed bool/int produce. Force int8 to keep the dtype
+    # numeric and consistent across pandas versions.
+    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False, dtype=np.int8)
     tempNames = list(temp)  # get column names
     colLength = len(tempNames)
     newNames = ['a']*colLength

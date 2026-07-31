@@ -20,7 +20,7 @@ parms$response_column <- args$y
 #' @param frame A frame on which rule validity is to be evaluated
 #' @param rule_ids Rule ids to be evaluated against the frame
 #' @examples
-#' \dontrun{
+#' \\dontrun{
 #' library(h2o)
 #' h2o.init()
 #' titanic <- h2o.importFile(

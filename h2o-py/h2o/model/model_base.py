@@ -1907,7 +1907,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             seed))
         if use_pandas and can_use_pandas():
             import pandas
-            pd = h2o.as_list(m_frame)
+            # na_values=[""]: keep feature names verbatim (a variable literally named
+            # "NA"/"None" must not become NaN) and suppress the as_data_frame FutureWarning
+            # on this H2O-internal call.
+            pd = h2o.as_list(m_frame, na_values=[""])
             return pandas.DataFrame(pd, columns=pd.columns).set_index("Variable")
         else:
             def _replace_empty_str(row):
@@ -2026,7 +2029,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         ))
         if use_pandas and can_use_pandas():
             import pandas
-            pd = h2o.as_list(m_frame)
+            # na_values=[""]: keep feature names verbatim (a variable literally named
+            # "NA"/"None" must not become NaN) and suppress the as_data_frame FutureWarning
+            # on this H2O-internal call.
+            pd = h2o.as_list(m_frame, na_values=[""])
             return pandas.DataFrame(pd, columns=pd.columns).set_index(variable)
         else:
             def _replace_empty_str(row):

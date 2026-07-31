@@ -2,4 +2,30 @@ sphinx==3.0.4
 sphinx_rtd_theme==0.2.4
 sphinx_tabs==1.1.12
 sphinx_prompt==1.1.0
-sphinx_substitution_extensions==2019.6.15.0
+sphinx_substitution_extensions==2020.9.30.0
+
+# sphinx==3.0.4 is from 2020 and declares no upper bounds on its dependencies, so a
+# fresh resolution on a modern interpreter pulls in versions that break it at import
+# or build time. Capping the build Python at 3.12 (BuildConfig.DEFAULT_PYTHON_VERSION)
+# only restores the stdlib `imghdr` module; the following transitive caps are also
+# required for `sphinx-build` (make-dist.sh) to run at all:
+#   jinja2>=3.1        removed `environmentfilter` (sphinx.util.rst imports it)
+#   docutils>=0.21     dropped the bundled `roman` module (sphinx.builders.latex needs it)
+#   setuptools>=81     no longer exposes `pkg_resources` (sphinx.registry imports it)
+#   markupsafe>=2.1    removed `soft_unicode` (used by the old jinja2 line above)
+#   sphinxcontrib-*    the unbundled helpers >= their listed versions require Sphinx>=5
+#   alabaster>=0.7.13  requires Sphinx>=6
+# These versions co-resolve with the jinja2/docutils consumers in test-requirements.txt
+# (grip/Flask, numpydoc, recommonmark, twine), which share the same venv. Drop these
+# pins once sphinx itself is modernized (which would also let DEFAULT_PYTHON move past 3.12).
+jinja2<3.1
+markupsafe<2.1
+docutils<0.21
+setuptools<81
+sphinxcontrib-applehelp<1.0.4
+sphinxcontrib-devhelp<1.0.4
+sphinxcontrib-htmlhelp<2.0.1
+sphinxcontrib-qthelp<1.0.4
+sphinxcontrib-serializinghtml<1.1.5
+sphinxcontrib-jsmath<1.0.2
+alabaster<0.7.13

@@ -1,4 +1,3 @@
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -20,7 +19,7 @@ def link_functions_tweedie_basic():
   model_h2o_tweedie.train(x=x, y=y, training_frame=hdf)
 
   print("Compare model deviances for link function tweedie (using precomputed values from R)")
-  deviance_h2o_tweedie = old_div(model_h2o_tweedie.residual_deviance(), model_h2o_tweedie.null_deviance())
+  deviance_h2o_tweedie = (model_h2o_tweedie.residual_deviance()) / (model_h2o_tweedie.null_deviance())
 
   assert 0.721452 - deviance_h2o_tweedie <= 0.01, "h2o's residual/null deviance is more than 0.01 lower than R's. h2o: " \
                                                   "{0}, r: {1}".format(deviance_h2o_tweedie, 0.721452)

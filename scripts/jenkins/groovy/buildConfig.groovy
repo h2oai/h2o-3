@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
   private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 47
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 48
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/h2oai/devutils/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
@@ -51,8 +51,26 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
-  public static final String DEFAULT_PYTHON_VERSION = '3.7'
-  public static final List PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
+  // Build/default Python: used by the "Build H2O-3" stage (jar, wheel, generated
+  // bindings, R pkg) and by stages without an explicit pythonVersion (Flow, etc.).
+  // The dev-r-base / dev-build-base image chain must contain this env — keep in
+  // sync with docker/jenkins-images/Dockerfile-r-base and docker/scripts/build-h2o-3.
+  // Capped at 3.12 (not the newest supported 3.14) because the release docs build
+  // (make-dist.sh -> sphinx-build) uses the pinned sphinx==3.0.4, whose epub3 builder
+  // imports the stdlib `imghdr` module removed in Python 3.13. Bump to 3.14 once
+  // h2o-py/docs-requirements.txt is modernized. 3.14 stays a fully-supported/tested
+  // version via PYTHON_VERSIONS below.
+  public static final String DEFAULT_PYTHON_VERSION = '3.12'
+  public static final List PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
+  // PR builds smoke every supported Python version (same as the full
+  // PYTHON_VERSIONS matrix). Nightly also covers the full matrix.
+  public static final List PR_PYTHON_VERSIONS = PYTHON_VERSIONS
+  // Conda packages are still built with the legacy conda-build 3.21.9 toolchain
+  // baked into docker/jenkins-images/Dockerfile-release (Miniconda3-py37). That
+  // toolchain predates Python 3.12 and cannot build packages for 3.12+, so conda
+  // releases are restricted to the versions it supports. PyPI wheels still ship
+  // the full PYTHON_VERSIONS range. Widen this once the release image is modernized.
+  public static final List CONDA_PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
   public static final List R_VERSIONS = ['3.4.1', '3.5.3', '4.0.2', '4.4.0', '4.5.2']
 
 

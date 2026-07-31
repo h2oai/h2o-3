@@ -137,6 +137,42 @@ def _to_h2o_frame(X, as_factor=False, frame_params=None, **kwargs):
     return fr.asfactor() if as_factor else fr
 
 
+def _classes_array(domain):
+    # H2O stores categorical domains as String[] regardless of the original label type.
+    # sklearn scorers compare predictions against `classes_`, and `accuracy_score(np.array([0,1]),
+    # np.array(['0','1']))` silently mismatches (0% accuracy), so we coerce numeric-looking
+    # domains to int when the conversion is round-trip-safe (str(int(s)) == s). Conservative
+    # by design: `['01','02']` is preserved as strings because int-coercion would destroy
+    # the leading-zero class identity, and tokens like `'--5'` that pass the int() parser but
+    # do not round-trip are rejected.
+    if not can_use_numpy():
+        return list(domain)
+    if all(isinstance(s, str) and _is_canonical_int(s) for s in domain):
+        try:
+            return np.asarray(domain, dtype=np.int64)
+        except (ValueError, TypeError, OverflowError):
+            # OverflowError fires when a token round-trips through int() but exceeds int64
+            # (e.g. "9223372036854775808" = INT64_MAX+1). Fall through to string array.
+            pass
+    return np.asarray(domain)
+
+
+def _is_canonical_int(s):
+    """Return True iff ``s`` is the canonical decimal repr of a Python int.
+
+    Canonical means ``str(int(s)) == s`` — no leading zeros (except "0" itself),
+    no leading "+" sign, no embedded underscores, and no double-minus tokens.
+    Used by :func:`_classes_array` to gate integer coercion of categorical class
+    labels so we do not silently rewrite ``"01"`` → ``1``.
+    """
+    if not s:
+        return False
+    try:
+        return str(int(s)) == s
+    except (ValueError, TypeError):
+        return False
+
+
 def _to_numpy(fr, **kwargs):
     """
     Converts given frame to a :class:`numpy.ndarray`.
@@ -146,7 +182,9 @@ def _to_numpy(fr, **kwargs):
         return fr
     arr = fr
     if isinstance(fr, H2OFrame):
-        arr = fr.as_data_frame()
+        # na_values=[""] keeps the 3.46.0.12 default semantics while reserving the
+        # one-shot FutureWarning for direct as_data_frame() callers.
+        arr = fr.as_data_frame(na_values=[""])
         if can_use_pandas():
             arr = arr.values
     return (np.array(arr) if can_use_numpy() and isinstance(arr, list)
@@ -469,6 +507,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
 
         assert estimator_type in (None, 'classifier', 'regressor')
         self._estimator = None
+        self._leader_cache = None  # (automl_estimator, resolved_leader) — see classes_
         self._estimator_cls = estimator_cls
         estimator_type = self._get_custom_param('default_estimator_type', estimator_type)
         if estimator_type:
@@ -498,6 +537,137 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         :return: the wrapped estimator or None if `fit` hasn't been called on the current object yet.
         """
         return self._estimator
+
+    def __sklearn_is_fitted__(self):
+        # sklearn's check_is_fitted (v1.x) calls this method when present, otherwise looks for trailing-underscore
+        # attributes. `_estimator` is assigned in _make_estimator() BEFORE train() runs, so its mere presence is
+        # not a reliable fit signal (a failed train() would leave the unfit instance attached). We need a
+        # post-fit attribute that's only populated on a successful server-side fit:
+        #   - plain estimators (H2OEstimator subclasses): `_model_json` is set by EstimatorBase.train.
+        #   - H2OAutoML: has no `_model_json` of its own — `_leader_id` is populated by AutoML.train
+        #     on completion. We read `_leader_id` rather than the `leader` property because `leader`
+        #     triggers a server round-trip via h2o.get_model, which sklearn's check_is_fitted runs
+        #     from every predict/score/decision_function call.
+        if self._estimator is None:
+            return False
+        if getattr(self._estimator, "_model_json", None) is not None:
+            return True
+        return getattr(self._estimator, "_leader_id", None) is not None
+
+    @property
+    def classes_(self):
+        # sklearn 1.6+ scoring path (e.g. RandomizedSearchCV.score → metrics._scorer →
+        # _get_response_values) reads `estimator.classes_` on the fitted classifier and
+        # raises AttributeError otherwise. Surface the H2O response column's domain so
+        # sklearn's accuracy/probability scorers work on H2O classifier wrappers.
+        if not self.is_classifier():
+            raise AttributeError(
+                "{} is a regressor; 'classes_' is only defined on classifiers.".format(
+                    self.__class__.__name__)
+            )
+        if not self.__sklearn_is_fitted__():
+            from sklearn.exceptions import NotFittedError
+            raise NotFittedError(
+                "{} is not fitted yet; call fit() before accessing 'classes_'.".format(
+                    self.__class__.__name__)
+            )
+        # For AutoML, `_model_json` lives on the leader, not on the H2OAutoML wrapper itself.
+        model = self._estimator
+        if getattr(model, "_model_json", None) is None:
+            # `leader` is a property that round-trips to the server (h2o.get_model), and
+            # sklearn >= 1.6 reads `classes_` on every score call — resolve it once per
+            # fitted estimator (refits replace self._estimator, invalidating the cache).
+            # The leader is held by a strong ref on purpose: its lifetime is bounded by
+            # this wrapper (which already strong-refs `model` as self._estimator), and a
+            # weakref could be collected between score calls, reintroducing the very
+            # round-trip this cache avoids.
+            if self._leader_cache is None or self._leader_cache[0] is not model:
+                self._leader_cache = (model, getattr(model, "leader", None) or model)
+            model = self._leader_cache[1]
+        output = model._model_json.get("output") or {}
+        domains = output.get("domains")
+        if not domains or domains[-1] is None:
+            raise AttributeError(
+                "{}: response column has no categorical domain — model is not a classifier.".format(self.__class__.__name__)
+            )
+        return _classes_array(domains[-1])
+
+    def __sklearn_tags__(self):
+        # sklearn 1.6+ resolves estimator type from __sklearn_tags__ rather than from
+        # _estimator_type alone, and 1.8 removed `_estimator_type = "classifier"` from
+        # ClassifierMixin entirely. The H2O wrapper bases place ClassifierMixin /
+        # RegressorMixin last in MRO (so their score() does not shadow H2O's), which
+        # means a naked super() chain reaches BaseEstimator but never the typed mixin
+        # -- so `classifier_tags` / `regressor_tags` / `target_tags.required` are
+        # missed. Populate those fields directly using sklearn's tag dataclasses.
+        sup = super()
+        if not hasattr(sup, "__sklearn_tags__"):
+            raise AttributeError("__sklearn_tags__")
+        tags = sup.__sklearn_tags__()
+        est_type = self._resolve_estimator_type(tags)
+        # Only supervised estimators (classifier / regressor) get typed tags and
+        # target_tags.required. Unsupervised wrappers (kmeans, pca, glrm, isolation
+        # forest) resolve to None and are left untouched.
+        if est_type in ("classifier", "regressor"):
+            self._populate_typed_tags(tags, est_type)
+        return tags
+
+    def _resolve_estimator_type(self, tags):
+        # Dispatch on resolved estimator type, not on Mixin isinstance: generic
+        # wrappers built via make_estimator(cls, estimator_type='classifier') do
+        # NOT inherit ClassifierMixin (see h2o.sklearn._order_estimator_mixins
+        # for type='estimator'), so an isinstance() check misses them.
+        est_type = getattr(self, "_estimator_type", None) or getattr(tags, "estimator_type", None)
+        if est_type is None:
+            # sklearn 1.8 removed `_estimator_type = "classifier"` from ClassifierMixin
+            # and the same for RegressorMixin. Wrappers built via make_classifier /
+            # make_regressor add the respective mixin to bases but rely on the mixin
+            # for the type tag (is_generic=False, so __init__ doesn't take an
+            # estimator_type arg). Detect the mixin in the class MRO as the final
+            # fallback so is_classifier(self) returns the right answer on sklearn 1.8.
+            mro = type(self).__mro__
+            if ClassifierMixin in mro:
+                est_type = "classifier"
+            elif RegressorMixin in mro:
+                est_type = "regressor"
+        if est_type is None and hasattr(self, "_is_classifier_distribution"):
+            # Generic wrappers (make_estimator with type='estimator') have neither
+            # _estimator_type nor ClassifierMixin / RegressorMixin in MRO but still
+            # behave as classifiers when distribution=bernoulli/binomial/quasibinomial/multinomial.
+            # Without this branch, sklearn 1.6+'s is_classifier(est) reads False from
+            # tags while BaseEstimatorMixin.is_classifier() reads True via the distribution
+            # check — Pipeline / GridSearchCV(scoring='accuracy') then silently picks regression
+            # metrics. Guard against _custom_params not yet being populated during __init__.
+            try:
+                if self._is_classifier_distribution():
+                    est_type = "classifier"
+                elif self._is_regressor_distribution():
+                    est_type = "regressor"
+            except AttributeError:
+                pass
+        return est_type
+
+    @staticmethod
+    def _populate_typed_tags(tags, est_type):
+        # est_type is "classifier" or "regressor": set estimator_type, the matching
+        # sklearn tag dataclass, and mark y as required (supervised estimators).
+        tags.estimator_type = est_type
+        try:
+            if est_type == "classifier":
+                from sklearn.utils._tags import ClassifierTags
+                tags.classifier_tags = ClassifierTags()
+            else:
+                from sklearn.utils._tags import RegressorTags
+                tags.regressor_tags = RegressorTags()
+        except Exception:
+            # sklearn <1.6 has no tag dataclasses (ImportError); on 1.6/1.7 the
+            # dataclasses may require constructor args (TypeError). The sub-tag is
+            # best-effort enrichment — degrade gracefully rather than let
+            # is_classifier()/check_estimator() raise on those versions.
+            pass
+        target_tags = getattr(tags, "target_tags", None)
+        if target_tags is not None and hasattr(target_tags, "required"):
+            target_tags.required = True
 
     def set_params(self, **params):
         """Set the parameters of this estimator.

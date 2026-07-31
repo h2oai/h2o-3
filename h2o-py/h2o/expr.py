@@ -23,6 +23,24 @@ from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
 from h2o.expr_optimizer import optimize
 
+# Resolve numpy's scalar/ndarray base types once at module load: _to_python_scalar
+# runs for every Rapids argument (per element for list args), so a per-call import is
+# measurable. We cache the numpy *type objects* (for isinstance checks) rather than
+# gate on can_use_numpy() — that helper only returns a bool, so using it here would
+# still require importing numpy and reaching the types on the hot path. frame.py
+# imports these names from here (single source of truth) for its numpy-array indexing
+# helpers, so keep _np_module / _NP_GENERIC / _NP_NDARRAY defined in both branches.
+try:
+    import numpy as _np_module
+    _NP_GENERIC = _np_module.generic
+    _NP_NDARRAY = _np_module.ndarray
+except ImportError:
+    class _NoNumpy(object):
+        """Sentinel type that never matches isinstance when numpy is absent."""
+    _np_module = None
+    _NP_GENERIC = _NoNumpy
+    _NP_NDARRAY = _NoNumpy
+
 
 class ExprNode(object):
     """
@@ -173,7 +191,28 @@ class ExprNode(object):
         return exec_str
 
     @staticmethod
+    def _to_python_scalar(x):
+        # numpy 2.x changed scalar repr to include a type wrapper:
+        #   repr(np.float64(0.1)) == "np.float64(0.1)"  (was "0.1")
+        #   repr(np.str_('foo'))  == "np.str_('foo')"   (was "'foo'")
+        # Both forms break H2O's Rapids parser, which expects bare literals.
+        # Convert numpy scalars to plain Python types before any repr() call.
+        if isinstance(x, str):
+            # unwraps np.str_ (str subclass) to plain str; skip the copy for exact str
+            return x if type(x) is str else str(x)
+        # Narrow on isinstance(np.generic) instead of duck-typing on hasattr('item'),
+        # because pandas Timestamp / Timedelta / arrow scalars also expose .item() but
+        # converting them silently drops tz info or units.
+        if isinstance(x, _NP_GENERIC):
+            try:
+                return x.item()
+            except (AttributeError, ValueError):
+                pass
+        return x
+
+    @staticmethod
     def _arg_to_expr(arg):
+        arg = ExprNode._to_python_scalar(arg)
         if arg is None:
             return "[]"  # empty list
         if isinstance(arg, ExprNode):
@@ -181,11 +220,24 @@ class ExprNode(object):
         if isinstance(arg, ASTId):
             return str(arg)
         if isinstance(arg, (list, tuple, range)):
-            return "[%s]" % " ".join(repr2(x) for x in arg)
+            # Recurse into elements: a top-level _to_python_scalar only unwraps
+            # `[np.float64(1)]` element-wise, but `[[np.float64(1)]]` would slip
+            # through (repr of an inner list calls repr() on each element, and
+            # numpy 2.x repr is `np.float64(1)` — Rapids unparseable). Routing
+            # nested lists back through _arg_to_expr also covers tuples/ranges.
+            return "[%s]" % " ".join(
+                ExprNode._arg_to_expr(x) if isinstance(x, (list, tuple, range))
+                else repr2(ExprNode._to_python_scalar(x))
+                for x in arg
+            )
         if isinstance(arg, slice):
-            start = 0 if arg.start is None else arg.start
-            stop = float("nan") if arg.stop is None else arg.stop
-            step = 1 if arg.step is None else arg.step
+            # Unwrap numpy 2.x scalars from start/stop/step before arithmetic so that
+            # `slice(np.int64(0), np.int64(5), np.int64(2))` (e.g. from np.arange) does
+            # not produce `str(np.int64(5)) == "np.int64(5)"` in the Rapids expression,
+            # which the JVM parser rejects.
+            start = 0 if arg.start is None else ExprNode._to_python_scalar(arg.start)
+            stop = float("nan") if arg.stop is None else ExprNode._to_python_scalar(arg.stop)
+            step = 1 if arg.step is None else ExprNode._to_python_scalar(arg.step)
             assert start >= 0 and step >= 1 and (math.isnan(stop) or stop >= start + step)
             if step == 1:
                 return "[%d:%s]" % (start, str(stop - start))

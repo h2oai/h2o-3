@@ -20,7 +20,7 @@ doc = dict(
 Trains an Isolation Forest model
 """,
     params=dict(
-        x="""A vector containing the \code{character} names of the predictors in the model."""
+        x="""A vector containing the \\code{character} names of the predictors in the model."""
     ),
     examples="""
 library(h2o)

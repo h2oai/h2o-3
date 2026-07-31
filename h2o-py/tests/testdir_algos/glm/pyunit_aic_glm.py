@@ -30,13 +30,17 @@ def assert_equal(
     # The old version doesn't have a way to incorporate dispersion estimation.
     sm_aic = float(-2 * sm_model.llf + 2 * (sm_model.df_model + 1 + dk_params))
     coefs = h2o_model.coef()
+    offenders = []
     for cn, cv in coefs.items():
         if cn == "Intercept":
             cn = "const"
         if abs(cv - sm_model.params.at[cn]) > coef_tolerance:
-            print(
+            offenders.append(
                 f"Coefficient '{cn}' differs by {cv - sm_model.params.at[cn]}; h2o: {cv}; statsmodels: {sm_model.params.at[cn]}"
             )
+    assert not offenders, "Coefficients diverge beyond coef_tolerance=%g:\n%s" % (
+        coef_tolerance, "\n".join(offenders)
+    )
     if abs(h2o_aic - sm_aic) > aic_tolerance:
         message = f"H2O's and statsmodels' AIC estimates don't match by {h2o_aic - sm_aic}. AIC(h2o)={h2o_aic}, AIC(sm)={sm_aic}"
         assert h2o_aic == sm_aic, message
@@ -58,7 +62,6 @@ def test_glm_aic_binomial_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Binomial(),
     ).fit()
 
@@ -88,7 +91,6 @@ def test_glm_aic_gamma_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Gamma(link=sm.families.links.log()),
     ).fit()
 
@@ -123,7 +125,6 @@ def test_glm_aic_gaussian_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Gaussian(),
     ).fit()
 
@@ -165,7 +166,6 @@ def test_glm_aic_negative_binomial_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.NegativeBinomial(alpha=1 / theta),
     ).fit()
 
@@ -191,7 +191,6 @@ def test_glm_aic_negative_binomial_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.NegativeBinomial(alpha=1 / theta),
     ).fit()
 
@@ -220,7 +219,6 @@ def test_glm_aic_poisson_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Poisson(),
     ).fit()
     assert_equal(glm_no_reg, sm_glm_no_reg)
@@ -244,10 +242,13 @@ def test_glm_aic_tweedie_no_regularization():
     sm_glm_no_reg = sm.GLM(
         train_pd.loc[:, y],
         st.add_constant(train_pd.drop(y, axis=1)),
-        data=train_pd,
         family=sm.families.Tweedie(link=sm.families.links.log(), var_power=1.5),
     ).fit()
 
+    # Pin H2O's dispersion to statsmodels' Pearson chi^2 scale so both evaluate the
+    # Tweedie log-likelihood at the same phi. Without this, H2O uses ML-estimated phi
+    # while statsmodels uses Pearson chi^2 / df_resid, producing different llf at the
+    # same fitted mu.
     glm_no_reg = H2OGeneralizedLinearEstimator(
         lambda_=0,
         family="tweedie",
@@ -255,9 +256,48 @@ def test_glm_aic_tweedie_no_regularization():
         link="tweedie",
         tweedie_variance_power=1.5,
         tweedie_link_power=0,
+        fix_dispersion_parameter=True,
+        init_dispersion_parameter=sm_glm_no_reg.scale,
     )
     glm_no_reg.train(y=y, training_frame=train_h2o)
     assert_equal(glm_no_reg, sm_glm_no_reg, coef_tolerance=1e-3, aic_tolerance=1e-4)
+
+    # Sanity check on H2O's ML phi estimator: by definition, the ML phi must
+    # produce a loglikelihood at least as high as any other phi on the same
+    # data. `glm_no_reg` above was trained with phi pinned to statsmodels'
+    # Pearson chi^2 / df_resid scale; if H2O's golden-section ML search
+    # regresses (returns a non-optimal phi), `glm_ml_phi.loglikelihood()` will
+    # drop below `glm_no_reg.loglikelihood()`. This is a self-consistency
+    # check on H2O alone — we do NOT compare phi values across libraries,
+    # because statsmodels and H2O use different default estimators (Pearson
+    # vs ML) and legitimately produce different phi on small datasets.
+    glm_ml_phi = H2OGeneralizedLinearEstimator(
+        lambda_=0,
+        family="tweedie",
+        calc_like=True,
+        link="tweedie",
+        tweedie_variance_power=1.5,
+        tweedie_link_power=0,
+        dispersion_parameter_method="ml",
+    )
+    glm_ml_phi.train(y=y, training_frame=train_h2o)
+    ml_llf = glm_ml_phi.loglikelihood()
+    pearson_llf = glm_no_reg.loglikelihood()
+    # Mixed tolerance: the absolute 1e-6 was too tight for LL values in the
+    # 1e3-1e5 range (golden-section search converges to ~eps*(b-a), and any
+    # bump in H2O's dispersion_epsilon could trip the bound spuriously).
+    # Allow the larger of 1e-6 absolute and 1e-8 relative slack -- still
+    # strict enough to catch a real ML-search regression.
+    slack = max(1e-6, abs(pearson_llf) * 1e-8)
+    assert ml_llf >= pearson_llf - slack, (
+        "H2O ML phi=%g yields loglikelihood %g, which is LOWER than the "
+        "loglikelihood %g at the pinned Pearson phi=%g (slack=%g). The ML "
+        "estimator must maximize likelihood by definition -- the golden-section "
+        "search may have regressed." % (
+            glm_ml_phi._model_json["output"]["dispersion"], ml_llf,
+            pearson_llf, sm_glm_no_reg.scale, slack,
+        )
+    )
 
     # Without calculating likelihood, H2O can't guess AIC
 

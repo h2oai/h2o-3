@@ -98,8 +98,7 @@ Run the following commands in a Terminal window to install H2O-3 for Python.
 
 	pip install requests
 	pip install tabulate
-	pip install future
-	
+
 	# Required for plotting:
 	pip install matplotlib
 
@@ -130,7 +129,11 @@ Run the following commands in a Terminal window to install H2O-3 for Python.
 Install on Anaconda Cloud
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section describes how to set up and run H2O-3 in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O-3 versions. See `which H2O-3 versions are available on Anaconda <https://anaconda.org/h2oai/h2o/files>`__.
+This section describes how to set up and run H2O-3 in an Anaconda Cloud environment. See `which H2O-3 versions are available on Anaconda <https://anaconda.org/h2oai/h2o/files>`__ for the supported Python versions and channel layout.
+
+.. note::
+
+	The conda packages currently target Python 3.7–3.11. If you are running Python 3.12 or newer, install H2O-3 with ``pip`` instead (see the previous section).
 
 Open a terminal window and run the following command to install H2O-3 on the Anaconda Cloud. The H2O-3 version in this command should match the version that you want to download. If you leave the H2O-3 version blank and specify just ``h2o``, then the latest version will be installed. For example: 
       
@@ -144,18 +147,7 @@ or:
 
      user$ conda install -c h2oai h2o    
 
-.. note::
-	
-	For Python 3.6 users, H2O-3 has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O-3. This can be done by performing the following steps:
-
- 	.. code-block:: bash
-
-	   conda create -n py36 python=3.6 anaconda
-	   source activate py36
-	   conda config --append channels conda-forge
-	   conda install -c h2oai h2o 
-
-After H2O-3 is installed, see the `Starting H2O-3 from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O-3 and to view a GBM example run in Jupyter Notebook. 
+After H2O-3 is installed, see the `Starting H2O-3 from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O-3 and to view a GBM example run in Jupyter Notebook.
 
 Install on Hadoop
 -----------------

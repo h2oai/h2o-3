@@ -22,7 +22,7 @@ Singular value decomposition of an H2O data frame using the power method
 """,
     params=dict(
         x="""
-A vector containing the \code{character} names of the predictors in the model.
+A vector containing the \\code{character} names of the predictors in the model.
 """,
         destination_key="""
 (Optional) The unique key assigned to the resulting model.
@@ -30,7 +30,7 @@ Automatically generated if none is provided.
 """,
     ),
     returns="""
-an object of class \linkS4class{H2ODimReductionModel}.
+an object of class \\linkS4class{H2ODimReductionModel}.
 """,
     references="""
 N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[https://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.

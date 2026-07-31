@@ -2,8 +2,10 @@
 
 ## Prerequisites:
 
-  - Python 3.7.x, 3.8.x, 3.9.x, 3.10.x or 3.11.x
-  - Numpy 1.9.2 or greater
+  - Python 3.7.x, 3.8.x, 3.9.x, 3.10.x, 3.11.x, 3.12.x, 3.13.x or 3.14.x
+  - Numpy 1.9.2 or greater (`numpy<2` on Python 3.7-3.11, `numpy>=2` on Python 3.12+ — see
+    [Requirements in the H2O docs](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#requirements)
+    for details)
 
 This module depends on **requests**, **tabulate**, and **scikit-learn** modules, all of which are available on pypi:
 

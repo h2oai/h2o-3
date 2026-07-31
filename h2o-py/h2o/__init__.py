@@ -14,12 +14,13 @@ import warnings
 if sys.version_info.major < 3:
     raise Exception("H2O-3 runs only on Python 3. Your Python version is %s." % sys.version)
     
-if sys.version_info.minor < 7:
-    warnings.showwarning(
-        "Your Python version %s is not supported. Officially supported versions are 3.7.x - 3.11.x" % sys.version,
-        Warning,
-        "h2o",
-        1)
+if sys.version_info[:2] < (3, 7) or sys.version_info[:2] > (3, 14):
+    # Use warnings.warn (not showwarning) so users can suppress via the standard filter
+    # (`warnings.simplefilter("ignore")`, `PYTHONWARNINGS=ignore`, `catch_warnings()`).
+    warnings.warn(
+        "Your Python version %s is not supported. Tested versions are 3.7.x - 3.14.x." % sys.version,
+        UserWarning,
+        stacklevel=2)
 
 __no_export = set(dir())  # variables defined above this are not exported
 

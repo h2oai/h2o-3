@@ -46,13 +46,13 @@ doc = dict(
 Performs k-means clustering on an H2O dataset
 """,
     params=dict(
-        x="""A vector containing the \code{character} names of the predictors in the model."""
+        x="""A vector containing the \\code{character} names of the predictors in the model."""
     ),
     returns="""
-an object of class \linkS4class{H2OClusteringModel}.
+an object of class \\linkS4class{H2OClusteringModel}.
 """,
     seealso="""
-\code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}}, \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}}, \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
+\\code{\\link{h2o.cluster_sizes}}, \\code{\\link{h2o.totss}}, \\code{\\link{h2o.num_iterations}}, \\code{\\link{h2o.betweenss}}, \\code{\\link{h2o.tot_withinss}}, \\code{\\link{h2o.withinss}}, \\code{\\link{h2o.centersSTD}}, \\code{\\link{h2o.centers}}
 """,
     examples="""
 library(h2o)

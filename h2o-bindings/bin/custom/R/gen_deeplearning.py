@@ -15,15 +15,15 @@ parms$response_column <- args$y
 #' Detect anomalies in an H2O dataset using an H2O deep learning model with
 #' auto-encoding.
 #'
-#' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
+#' @param object An \\linkS4class{H2OAutoEncoderModel} object that represents the
 #'        model to be used for anomaly detection.
 #' @param data An H2OFrame object.
 #' @param per_feature Whether to return the per-feature squared reconstruction error
 #' @return Returns an H2OFrame object containing the
 #'         reconstruction MSE or the per-feature squared error.
-#' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
+#' @seealso \\code{\\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
-#' \dontrun{
+#' \\dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
@@ -58,11 +58,11 @@ Note: only reproducible when running single threaded.
 Defaults to -1 (time-based random number).
 """,
         verbose="""
-\code{Logical}. Print scoring history to the console (Metrics per epoch). Defaults to FALSE.
+\\code{Logical}. Print scoring history to the console (Metrics per epoch). Defaults to FALSE.
 """
     ),
     seealso="""
-\code{\link{predict.H2OModel}} for prediction
+\\code{\\link{predict.H2OModel}} for prediction
 """,
     examples="""
 library(h2o)

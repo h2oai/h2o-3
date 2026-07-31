@@ -1,0 +1,5 @@
+# PEP 517/518 build configuration. Metadata stays in setup.py for consistency
+# with h2o-py (see h2o-py/pyproject.toml for the conda-toolchain rationale).
+[build-system]
+requires = ["setuptools >= 42", "wheel"]
+build-backend = "setuptools.build_meta"

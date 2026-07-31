@@ -228,10 +228,17 @@ public class KmeansConstrainedTest extends TestUtil {
             parms._train = fr._key;
             parms._seed = 0xcaf;
             parms._k = 3;
-            parms._cluster_size_constraints = new int[]{1000, 3000, 1000};
+            // Constraint 2 (2500) keeps the LP binding (natural Lloyd's gives cluster 2
+            // ~2000 here, so the network-simplex assignment redistributes ~500 points)
+            // while costing less than the original 3000 setting that pushed ~1000 points
+            // and timed out CI. Still meaningfully exercises the constraint code.
+            parms._cluster_size_constraints = new int[]{1000, 2500, 1000};
             parms._user_points = points._key;
             parms._standardize = true;
-            parms._max_iterations = 3;
+            // 2 iterations exercise the LP both at the initial assignment AND after
+            // centroid refresh -- the latter is the regression class lost by dropping
+            // to 1 iteration (LP infeasibility after centroid update would not be caught).
+            parms._max_iterations = 2;
 
             KMeans job = new KMeans(parms);
             kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());

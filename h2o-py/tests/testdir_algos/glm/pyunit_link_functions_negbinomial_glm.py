@@ -1,4 +1,3 @@
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -46,8 +45,8 @@ def link_functions_negbinomial():
       compareModels(h2o_model_identity, sm_model_identity)
 
 def compareModels(h2oModel, smModel):
-    h2o_deviance = old_div(h2oModel.residual_deviance(), h2oModel.null_deviance())
-    sm_deviance = old_div(smModel.deviance, smModel.null_deviance)
+    h2o_deviance = (h2oModel.residual_deviance()) / (h2oModel.null_deviance())
+    sm_deviance = (smModel.deviance) / (smModel.null_deviance)
     difference = h2o_deviance-sm_deviance
     print("Difference between h2o Model and sm Model deviance measure: {0}".format(difference))
     

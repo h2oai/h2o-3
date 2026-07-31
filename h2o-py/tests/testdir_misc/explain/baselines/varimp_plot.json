@@ -1,0 +1,62 @@
+{
+  "axes": [
+    {
+      "bars": [
+        {
+          "h": 0.8,
+          "w": 1.0,
+          "x": 0.0,
+          "y": 4.6
+        },
+        {
+          "h": 0.8,
+          "w": 0.5286,
+          "x": 0.0,
+          "y": 3.6
+        },
+        {
+          "h": 0.8,
+          "w": 0.4984,
+          "x": 0.0,
+          "y": 2.6
+        },
+        {
+          "h": 0.8,
+          "w": 0.2701,
+          "x": 0.0,
+          "y": 1.6
+        },
+        {
+          "h": 0.8,
+          "w": 0.1295,
+          "x": 0.0,
+          "y": 0.6
+        },
+        {
+          "h": 0.8,
+          "w": 0.1277,
+          "x": 0.0,
+          "y": -0.4
+        }
+      ],
+      "grids": [],
+      "legend": [],
+      "lines": [],
+      "scatter": [],
+      "title": "Variable Importance: H2O Gradient Boosting Machine",
+      "xlabel": "",
+      "xticklabels": [],
+      "ylabel": "",
+      "yticklabels": [
+        "PSA",
+        "GLEASON",
+        "AGE",
+        "DPROS",
+        "DCAPS",
+        "RACE"
+      ]
+    }
+  ],
+  "n_axes": 1,
+  "suptitle": null
+}

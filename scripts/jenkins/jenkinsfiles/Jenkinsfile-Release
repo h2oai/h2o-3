@@ -17,7 +17,7 @@ try {
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
-                env.PYTHON_VERSION = '3.7'
+                env.PYTHON_VERSION = '3.12'
                 env.R_VERSION = '3.4.1'
 
                 sh 'printenv | sort'
@@ -368,7 +368,7 @@ try {
 
                                     LINKS="latest_stable:index.html
 latest_stable_doc:docs-website/h2o-docs/index.html
-latest_stable_Py:Python/h2o-${env.PROJECT_VERSION}-py2.py3-none-any.whl
+latest_stable_Py:Python/h2o-${env.PROJECT_VERSION}-py3-none-any.whl
 latest_stable_R:R/src/contrib/h2o_${env.PROJECT_VERSION}.tar.gz
 latest_stable_Rdoc:docs-website/h2o-r/h2o_package.pdf
 latest_stable_Pydoc:docs-website/h2o-py/docs/index.html
@@ -441,7 +441,7 @@ EOF
                                                     twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
                                                     echo '****** Upload h2o_client to PyPI ******'
                                                     cd ../client/dist
-                                                    twine upload h2o_client-${env.PROJECT_VERSION}-py2.py3-none-any.whl
+                                                    twine upload h2o_client-${env.PROJECT_VERSION}-py3-none-any.whl
                                                 fi
                                             else
                                                 echo '****** WARNING! Upload PyPI Conda suppressed ******'
@@ -461,7 +461,9 @@ EOF
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
                         final def artifacts = ['main', 'client']
-                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS
+                        // Restricted to the versions the release image's conda-build toolchain
+                        // supports (see BuildConfig.CONDA_PYTHON_VERSIONS); 3.12+ ship as PyPI wheels only.
+                        final def pyVersions = pipelineContext.getBuildConfig().CONDA_PYTHON_VERSIONS
 
                         // build for all Python versions
                         for (artifact in artifacts) {

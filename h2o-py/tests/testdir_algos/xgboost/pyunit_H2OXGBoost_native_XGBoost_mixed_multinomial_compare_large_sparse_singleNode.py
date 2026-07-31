@@ -12,9 +12,6 @@ def comparison_test_dense():
     if sys.version_info.major == 2:
         print("native XGBoost tests only supported on python3")
         return
-    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
-        print("native XGBoost tests only doesn't run on Python 3.{0} for now.".format(sys.version_info.minor))
-        return
     import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True
     ret = h2o.cluster()
@@ -29,7 +26,18 @@ def comparison_test_dense():
         h2oParamsD = {"ntrees":ntrees, "max_depth":maxdepth, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                      "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "backend":"cpu"}
         nativeParam = {'colsample_bytree': h2oParamsD["col_sample_rate_per_tree"],
-                       'tree_method': 'auto',
+                       # H2O resolves the unset tree_method to TreeMethod.exact for single-node
+                       # runs with rows < 4M (see XGBoostModel.getActualTreeMethod): GPU -> hist,
+                       # multi-node -> approx, single-node + small data -> exact. The H2O params
+                       # above pin "backend":"cpu" and this test is _singleNode with a small
+                       # mixed-frame fixture, so the H2O Booster is built with tree_method=exact.
+                       # Pinning the native side to 'exact' here makes the comparison apples-to-
+                       # apples (the pre-PR 'auto' had native xgboost resolving to approx/hist
+                       # depending on sparsity heuristics, which is a different algorithm).
+                       'tree_method': 'exact',
+                       # Pin base_score=0.5 (xgboost4j 1.6 default) to neutralize
+                       # xgboost 2.0+'s auto-estimated base_score in cross-version comparisons.
+                       'base_score': 0.5,
                        'seed': h2oParamsD["seed"],
                        'booster': 'gbtree',
                        'objective': 'multi:softprob',
@@ -76,7 +84,7 @@ def comparison_test_dense():
 
         nativeTrainTime = time.time()-time1
         time1=time.time()
-        nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
+        nativePred = nativeModel.predict(data=nativeTrain, iteration_range=(0, ntrees))
         nativeScoreTime = time.time()-time1
 
         pyunit_utils.summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,

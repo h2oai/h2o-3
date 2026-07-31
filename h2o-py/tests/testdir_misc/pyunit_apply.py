@@ -6,7 +6,7 @@ sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 import numpy as np
 from functools import partial
 
@@ -16,7 +16,9 @@ def h2o_to_float(h2o, pd):
     to compare with Pandas results.
     :return:
     """
-    return (h2o.astype(float), pd)
+    # Newer pandas keeps int dtype through np.ceil/np.floor; H2O ceil/floor returns
+    # float, so coerce both sides to float to compare values without dtype skew.
+    return (h2o.astype(float), pd.astype(float))
 
 
 def pd_to_int(h2o, pd):

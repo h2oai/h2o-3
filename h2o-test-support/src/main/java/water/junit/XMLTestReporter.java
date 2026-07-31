@@ -18,11 +18,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -211,14 +213,20 @@ public class XMLTestReporter extends RunListener {
             document.createCDATASection(err.toString())
     );
 
-    // write to file
-    FileWriter fw = new FileWriter(
-            reportsDir + File.separator + "TEST-" + currentTestSuiteName + ".xml"
-    );
-    StreamResult sr = new StreamResult(fw);
-    DOMSource source = new DOMSource(document);
-    trans.transform(source, sr);
-    fw.close();
+    // Append the JVM PID to the file name so that parallel test JVMs (notably the
+    // boot test hex.AAA_PreCloudLock, which every node in a multi-node cluster runs)
+    // do not race on the same report file and produce a malformed XML that Jenkins
+    // refuses to parse with "Content is not allowed in trailing section".
+    // try-with-resources so a TransformerException does not leak the FileWriter and,
+    // worse, leave a half-written report on disk -- the malformed-XML symptom the PID
+    // suffix above is meant to avoid.
+    try (FileWriter fw = new FileWriter(
+            reportsDir + File.separator + "TEST-" + currentTestSuiteName + "-" + jvmPid() + ".xml"
+    )) {
+      StreamResult sr = new StreamResult(fw);
+      DOMSource source = new DOMSource(document);
+      trans.transform(source, sr);
+    }
   }
 
   private void startTestCase(Description description) {
@@ -241,6 +249,36 @@ public class XMLTestReporter extends RunListener {
 
   private void recordTestCaseSuccess() {
     successCount++;
+  }
+
+  // Per-JVM fallback token: must be unique across processes — two JVMs that both
+  // fail PID parsing and share a constant fallback would reintroduce the very
+  // file-write collision the PID suffix exists to prevent.
+  private static final String FALLBACK_JVM_ID =
+      "unknown-" + UUID.randomUUID().toString().substring(0, 8);
+
+  // Java 8 compatible PID lookup. RuntimeMXBean.getName() conventionally returns
+  // "<pid>@<hostname>" on the HotSpot JVM. We strip past the '@' so the report
+  // filename never embeds a hostname (which would contain '.' chars that some
+  // xUnit collectors mis-glob as extra file extensions). On any unexpected
+  // shape, fall back to a per-JVM unique sentinel — still collision-free, without
+  // leaking host info into a filename or breaking test reporting altogether.
+  private static String jvmPid() {
+    try {
+      String name = ManagementFactory.getRuntimeMXBean().getName();
+      int at = name.indexOf('@');
+      if (at > 0) {
+        String pidPart = name.substring(0, at);
+        // Defense-in-depth: only accept all-digits as a PID
+        for (int i = 0; i < pidPart.length(); i++) {
+          if (!Character.isDigit(pidPart.charAt(i))) return FALLBACK_JVM_ID;
+        }
+        return pidPart;
+      }
+      return FALLBACK_JVM_ID;
+    } catch (Throwable t) {
+      return FALLBACK_JVM_ID;
+    }
   }
   
   private void recordTestCaseFailure(Failure failure) {

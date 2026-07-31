@@ -64,10 +64,19 @@ setup(
 
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3 :: Only",
     ],
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
 
+    # No upper bound (see h2o-py/setup.py): a hard ceiling would block install on the
+    # next Python release; untested-but-newer versions warn at import time instead.
     python_requires='>=3.7',
 
     packages=packages,

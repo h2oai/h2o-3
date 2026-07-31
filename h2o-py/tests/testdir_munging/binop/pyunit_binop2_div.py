@@ -1,6 +1,5 @@
 from builtins import zip
 from builtins import range
-from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -44,7 +43,7 @@ def binop_div():
     #  pass
 
     #vec/vec
-    res = old_div(iris[0], iris[1])
+    res = (iris[0]) / (iris[1])
     res.show()
     assert abs(res.sum() - 293.2717) < 1e-4, "expected different column sum"
 
@@ -53,16 +52,16 @@ def binop_div():
     assert abs(res.sum() - 283.977) < 1e-4, "expected different sum"
 
     #vec/scaler
-    res = old_div(iris[0], 5)
+    res = (iris[0]) / (5)
     res.show()
     assert abs(res.sum() - 175.3) < 1e-7, "expected different column sum"
 
     # frame/frame
-    res = old_div(iris, iris)
+    res = (iris) / (iris)
     res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
-    res = old_div(iris[0:2], iris[1:3])
+    res = (iris[0:2]) / (iris[1:3])
     res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 

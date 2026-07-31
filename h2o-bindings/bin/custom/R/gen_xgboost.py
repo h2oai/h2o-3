@@ -25,7 +25,7 @@ Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
 """,
     params=dict(
         verbose="""
-\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
+\\code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 """
     ),
     examples="""

@@ -16,10 +16,10 @@ Build an Isotonic Regression model
 Builds an Isotonic Regression model on an H2OFrame with a single feature (univariate regression).
 """,
     returns="""
-Creates a \linkS4class{H2OModel} object of the right type.
+Creates a \\linkS4class{H2OModel} object of the right type.
 """,
     seealso="""
-\code{\link{predict.H2OModel}} for prediction
+\\code{\\link{predict.H2OModel}} for prediction
 """,
     examples="""
 library(h2o)

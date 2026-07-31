@@ -32,7 +32,7 @@ def is_rdemo(file_name):
     packaged_demos = ["h2o.anomaly.R", "h2o.deeplearning.R", "h2o.gbm.R", "h2o.glm.R", "h2o.glrm.R", "h2o.kmeans.R",
                       "h2o.naiveBayes.R", "h2o.prcomp.R", "h2o.randomForest.R"]
     if file_name in packaged_demos: return True
-    if re.match("^rdemo.*\.(r|R|ipynb)$", file_name): return True
+    if re.match("^rdemo.*\\.(r|R|ipynb)$", file_name): return True
     return False
 
 
@@ -42,7 +42,7 @@ def is_runit(file_name):
     :param file_name: file to test
     """
     if file_name == "h2o-runit.R": return False
-    if re.match("^runit.*\.[rR]$", file_name): return True
+    if re.match("^runit.*\\.[rR]$", file_name): return True
     return False
 
 
@@ -51,7 +51,7 @@ def is_rbooklet(file_name):
     Return True if file_name matches a regexp for an R booklet.  False otherwise.
     :param file_name: file to test
     """
-    if re.match("^rbooklet.*\.[rR]$", file_name): return True
+    if re.match("^rbooklet.*\\.[rR]$", file_name): return True
     return False
 
 
@@ -60,7 +60,7 @@ def is_pydemo(file_name):
     Return True if file_name matches a regexp for a python demo.  False otherwise.
     :param file_name: file to test
     """
-    if re.match("^pydemo.*\.py$", file_name): return True
+    if re.match("^pydemo.*\\.py$", file_name): return True
     return False
 
 
@@ -69,7 +69,7 @@ def is_ipython_notebook(file_name):
     Return True if file_name matches a regexp for an ipython notebook.  False otherwise.
     :param file_name: file to test
     """
-    if (not re.match("^.*checkpoint\.ipynb$", file_name)) and re.match("^.*\.ipynb$", file_name): return True
+    if (not re.match("^.*checkpoint\\.ipynb$", file_name)) and re.match("^.*\\.ipynb$", file_name): return True
     return False
 
 
@@ -78,7 +78,7 @@ def is_pyunit(file_name):
     Return True if file_name matches a regexp for a python unit test.  False otherwise.
     :param file_name: file to test
     """
-    if re.match("^pyunit.*\.py$", file_name): return True
+    if re.match("^pyunit.*\\.py$", file_name): return True
     return False
 
 
@@ -87,7 +87,7 @@ def is_pybooklet(file_name):
     Return True if file_name matches a regexp for a python unit test.  False otherwise.
     :param file_name: file to test
     """
-    if re.match("^pybooklet.*\.py$", file_name): return True
+    if re.match("^pybooklet.*\\.py$", file_name): return True
     return False
 
 
@@ -104,7 +104,7 @@ def is_javascript_test_file(file_name):
     Return True if file_name matches a regexp for a javascript test.  False otherwise.
     :param file_name: file to test
     """
-    if re.match("^.*test.*\.js$", file_name): return True
+    if re.match("^.*test.*\\.js$", file_name): return True
     return False
 
 
@@ -821,6 +821,11 @@ class Test(object):
             os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
         print("Running test %s against server %s:%s" % (self.test_name, self.ip, self.port))
+        # Flush immediately so the line reaches the console (e.g. Jenkins, where stdout is a
+        # block-buffered pipe) as soon as the test starts. Otherwise a hanging test never
+        # completes, its result line (the only other flush point) never runs, and this line
+        # stays stuck in the buffer -- leaving no record of which test got stuck.
+        sys.stdout.flush()
         self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
         self.pid = self.child.pid
 

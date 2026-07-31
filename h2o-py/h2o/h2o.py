@@ -5,7 +5,9 @@ h2o -- module for using H2O services.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+import inspect
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -1510,7 +1512,9 @@ def ls():
     >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
     >>> h2o.ls()
     """
-    return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
+    # na_values=[""] keeps frame ids verbatim (an id literally named "NA" must not
+    # become NaN) and keeps the one-shot FutureWarning for direct user call sites.
+    return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True, na_values=[""])
 
 
 def frame(frame_id):
@@ -2162,7 +2166,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     return get_frame(parms["dest"])
 
 
-def as_list(data, use_pandas=True, header=True):
+def as_list(data, use_pandas=True, header=True, na_values=None):
     """
     Convert an H2O data object into a python-specific object.
 
@@ -2175,6 +2179,8 @@ def as_list(data, use_pandas=True, header=True):
     :param data: an H2O data object.
     :param use_pandas: If True, try to use pandas for reading in the data.
     :param header: If True, return column names as first element in list
+    :param na_values: Forwarded to :meth:`H2OFrame.as_data_frame` on the pandas path;
+        see its documentation for the default NA-handling semantics.
 
     :returns: List of lists (Rows x Columns).
 
@@ -2192,7 +2198,10 @@ def as_list(data, use_pandas=True, header=True):
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
     assert_is_type(header, bool)
-    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header)
+    # Forward na_values verbatim (None included) so a direct user as_list() call sees
+    # the same NA-default semantics AND the one-shot FutureWarning as as_data_frame().
+    # H2O-internal callers that must not surface the warning pass na_values=[""].
+    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header, na_values=na_values)
 
 
 def demo(funcname, interactive=True, echo=True, test=False):
@@ -2383,10 +2392,21 @@ def _inspect_methods_separately(obj):
 
 
 def _default_source_provider(obj):
-    import inspect
     # First try to get source code via inspect
     try:
-        return '    '.join(inspect.getsourcelines(obj)[0])
+        src = '    '.join(inspect.getsourcelines(obj)[0])
+        # Py3.13+ inspect.getsourcelines no longer raises for classes defined in
+        # exec'd scopes (e.g. pyunit_exec runs tests via exec with __main__ context).
+        # Instead it silently follows sys.modules['__main__'].__file__ (the test
+        # runner script) and returns whatever happens to be at the class's
+        # co_firstlineno in THAT file — i.e. unrelated garbage. Validate the
+        # returned source actually defines our class; otherwise fall back.
+        # Use re.search with a multiline anchor so decorator lines (e.g. @dataclass)
+        # preceding `class Foo:` don't make the check fail and silently strip
+        # decorators via the _inspect_methods_separately fallback.
+        if not re.search(r'(?m)^\s*class\s+' + re.escape(obj.__name__) + r'\b', src):
+            return _inspect_methods_separately(obj)
+        return src
     except (OSError, TypeError, IOError):
         # It seems like we are in interactive shell and
         # we do not have access to class source code directly

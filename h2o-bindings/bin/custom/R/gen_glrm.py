@@ -54,7 +54,7 @@ if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) || is.H2OFrame
 #' by computing the matrix product of X and Y, and transforming back to the original
 #' feature space by minimizing each column's loss function.
 #'
-#' @param object An \linkS4class{H2ODimReductionModel} object that represents the
+#' @param object An \\linkS4class{H2ODimReductionModel} object that represents the
 #'        model to be used for reconstruction.
 #' @param data An H2OFrame object representing the training data for the H2O GLRM model.
 #'        Used to set the domain of each column in the reconstructed frame.
@@ -63,9 +63,9 @@ if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) || is.H2OFrame
 #'        offset to each column of the reconstructed frame.
 #' @return Returns an H2OFrame object containing the approximate reconstruction of the
 #'         training data;
-#' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
+#' @seealso \\code{\\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples
-#' \dontrun{
+#' \\dontrun{
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
@@ -87,7 +87,7 @@ h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
 #' Project each archetype in an H2O GLRM model into the corresponding feature
 #' space from the H2O training frame.
 #'
-#' @param object An \linkS4class{H2ODimReductionModel} object that represents the
+#' @param object An \\linkS4class{H2ODimReductionModel} object that represents the
 #'        model containing archetypes to be projected.
 #' @param data An H2OFrame object representing the training data for the H2O GLRM model.
 #' @param reverse_transform (Optional) A logical value indicating whether to reverse the
@@ -95,9 +95,9 @@ h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
 #'        offset to each column of the projected archetypes.
 #' @return Returns an H2OFrame object containing the projection of the archetypes
 #'         down into the original feature space, where each row is one archetype.
-#' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
+#' @seealso \\code{\\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples
-#' \dontrun{
+#' \\dontrun{
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
@@ -126,10 +126,10 @@ Builds a generalized low rank decomposition of an H2O data frame
         cols="(Optional) A vector containing the data columns on which k-means operates."
     ),
     returns="""
-an object of class \linkS4class{H2ODimReductionModel}.
+an object of class \\linkS4class{H2ODimReductionModel}.
 """,
     seealso="""
-\code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
+\\code{\\link{h2o.kmeans}, \\link{h2o.svd}}, \\code{\\link{h2o.prcomp}}
 """,
     references="""
 M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[https://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.

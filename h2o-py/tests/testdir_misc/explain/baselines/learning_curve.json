@@ -1,0 +1,104 @@
+{
+  "axes": [
+    {
+      "bars": [],
+      "grids": [],
+      "legend": [
+        "Training",
+        "Selected\nnumber_of_trees"
+      ],
+      "lines": [
+        {
+          "data": [
+            [
+              0.0,
+              18.3235
+            ],
+            [
+              1.0,
+              18.0868
+            ],
+            [
+              2.0,
+              17.8765
+            ],
+            [
+              3.0,
+              17.6828
+            ],
+            [
+              4.0,
+              17.5013
+            ],
+            [
+              5.0,
+              17.3581
+            ],
+            [
+              6.0,
+              17.2314
+            ],
+            [
+              7.0,
+              17.1257
+            ],
+            [
+              8.0,
+              17.0646
+            ],
+            [
+              9.0,
+              16.9409
+            ],
+            [
+              10.0,
+              16.8854
+            ],
+            [
+              11.0,
+              16.7984
+            ],
+            [
+              12.0,
+              16.707
+            ],
+            [
+              13.0,
+              16.6588
+            ],
+            [
+              14.0,
+              16.5772
+            ],
+            [
+              15.0,
+              16.5347
+            ]
+          ],
+          "label": "Training"
+        },
+        {
+          "data": [
+            [
+              15.0,
+              0.0
+            ],
+            [
+              15.0,
+              1.0
+            ]
+          ],
+          "label": "Selected\nnumber_of_trees"
+        }
+      ],
+      "scatter": [],
+      "title": "Learning Curve\nfor gbm_explain_cmp",
+      "xlabel": "number_of_trees",
+      "xticklabels": [],
+      "ylabel": "rmse",
+      "yticklabels": []
+    }
+  ],
+  "n_axes": 1,
+  "suptitle": null
+}
