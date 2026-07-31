@@ -298,7 +298,7 @@ The number of clusters :math:`K` is user-defined and is determined a priori.
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a KMeans model.
+This example demonstrates how to build a KMeans model using H2O-3 for clustering. The model estimates the optimal number of clusters and is trained on a dataset, allowing for performance evaluation and predictions on validation data.
 
 .. tabs::
    .. code-tab:: r R

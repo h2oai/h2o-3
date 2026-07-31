@@ -54,6 +54,11 @@ public interface ModelDescriptor {
   String treatmentColumn();
 
   /**
+   * @return A {@link String} with the name of the id column used. Null of there was no id used during training.
+   */
+  String idColumn();
+
+  /**
    * Model's category.
    *
    * @return One of {@link ModelCategory} values. Never null.

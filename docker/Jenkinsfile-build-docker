@@ -1,7 +1,7 @@
 @Library('test-shared-library@dai-updated') _
 import ai.h2o.ci.buildsummary.StagesSummary
 
-DEFAULT_LABEL = 'linux'
+DEFAULT_LABEL = 'h2o3_linux'
 
 H2O_ECR='353750902984.dkr.ecr.us-east-1.amazonaws.com'
 

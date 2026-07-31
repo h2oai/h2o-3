@@ -216,7 +216,7 @@ To add numeric stability to the model fitting calculations, the numeric predicto
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a CoxPH model.
+This code provides an example of building a Cox Proportional Hazards (CoxPH) model using H2O-3 in both R and Python, including data import, model training, performance evaluation, and retrieval of baseline hazard, baseline survival, and model concordance.
 
 .. tabs::
    .. code-tab:: r R

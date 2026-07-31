@@ -133,7 +133,7 @@ used to estimate the tree height from the number of rows in the node. This is do
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build an Extended Isolation Forest model.
+This code provides an example of building an Extended Isolation Forest model using H2O-3. The model is trained on the prostate dataset and is used to detect anomalies based on features such as age, race, and PSA levels. The anomaly score and the average path length in the isolation trees are computed for each data point.
 
 .. tabs::
    .. code-tab:: r R

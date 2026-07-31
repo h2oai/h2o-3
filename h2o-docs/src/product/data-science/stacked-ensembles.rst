@@ -148,7 +148,7 @@ Common parameters
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a Stacked Ensembles model.
+This example demonstrates how to build a Stacked Ensembles model using H2O-3 to improve predictive performance through model combination. The model is constructed from base learners, such as Gradient Boosting Machines (GBM) and Random Forests (RF), which are trained using cross-validation to generate level-one data. The ensemble model is then evaluated on a test set, allowing for a comparison of its performance against that of the individual base learners.
 
 .. tabs::
    .. code-tab:: r R

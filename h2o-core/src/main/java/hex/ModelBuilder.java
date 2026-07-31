@@ -1094,6 +1094,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _weights; // observation weight column
   protected transient Vec _fold; // fold id column
   protected transient Vec _treatment;
+  protected transient Vec _id;
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
@@ -1102,7 +1103,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public boolean hasWeightCol(){ return _parms._weights_column != null;} // don't look at transient Vec
   public boolean hasFoldCol()  { return _parms._fold_column != null;} // don't look at transient Vec
   public boolean hasTreatmentCol() { return _parms._treatment_column != null;}
-  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0) + (hasTreatmentCol() ? 1 : 0); }
+  public boolean hasIdCol() { return _parms._id_column != null; }
+  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0) + (hasTreatmentCol() ? 1 : 0) + (hasIdCol() ? 1 : 0); }
 
   public boolean havePojo() { return false; }
   public boolean haveMojo() { return false; }
@@ -1219,6 +1221,23 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     } else {
       _treatment = null;
       assert(!hasTreatmentCol());
+    }
+    if(_parms._id_column!= null) {
+      Vec id = _train.remove(_parms._id_column);
+      if (id == null)
+        error("_id_column","Id column '" + _parms._id_column + "' not found in the training frame");
+      else {
+        if(id.naCnt() > 0)
+          error("_id_column","Id column cannot have missing values.");
+        if(id.isCategorical())
+          error("_id_column","Id column cannot be categorical.");
+        _id = id;
+        _train.add(_parms._id_column, id);
+        ++res;
+      }
+    } else {
+      _id = null;
+      assert(!hasIdCol());
     }
     if(isSupervised() && _parms._response_column != null) {
       _response = _train.remove(_parms._response_column);

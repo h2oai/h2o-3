@@ -1036,6 +1036,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    // Validate input parameters
+    validateFriedmanPopescusHInput(frame, vars);
+
     Frame adaptFrm = removeSpecialNNonNumericColumns(frame);
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
