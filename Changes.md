@@ -2,12 +2,19 @@
 
 ## H2O
 
-### 3.46.0.12 - 7/30/2026
+### 3.46.0.12 - 8/4/2026
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/12/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/12/index.html</a>
 
+#### Breaking Change
+- [[#16910]](https://github.com/h2oai/h2o-3/issues/16910) – MOJO and POJO artifact extraction is now an enterprise-only feature and is blocked in H2O-3 OSS.
+
 #### New Feature
 - [[#16875]](https://github.com/h2oai/h2o-3/issues/16875) – Added opt-in anonymous usage telemetry to the Python, R, and JVM clients.
+- [[#16909]](https://github.com/h2oai/h2o-3/issues/16909) – Added H2O-3 OSS vs Enterprise in-product messaging.
+
+#### Docs
+- [[#16903]](https://github.com/h2oai/h2o-3/issues/16903) – Noted enterprise-only features (Hadoop, Kubernetes, Sparkling Water, and MOJO deployment) in the OSS documentation.
 
 ### 3.46.0.11 - 5/21/2026
 
