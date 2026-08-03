@@ -126,6 +126,8 @@ pyunit_h2oassembly_download_mojo_documented_pipeline.py
 pyunit_h2oassembly_download_mojo_inplace_pipeline.py
 pyunit_h2oassembly_to_pojo.py
 pyunit_assembly_demo.py
+# Reaches the Assembly POJO indirectly, through pyunit_utils.javamunge().
+pyunit_assembly_munge_large.py
 
 # POJO/MOJO round-trip via the generic model importer.
 pyunit_mojo_import.py
@@ -141,3 +143,6 @@ pyunit_pubdev_4628_pubdev_4950_deeplearning_mojo_pojo_autoencoder_large.py
 pyunit_pubdev_6231_deeplearning_mojo_pojo_large.py
 pyunit_pubdev_5058_glrm_mojo_pubdev_5470_load_model_large.py
 pyunit_pubdev_5826_glrm_predict_large.py
+pyunit_pubdev_5008_ordinal_glm_mojo_pojo_large.py
+pyunit_pubdev_5303_multinomial_glm_mojo_pojo_large.py
+pyunit_pubdev_5355_binomial_glm_mojo_pojo_large.py

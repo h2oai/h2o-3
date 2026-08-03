@@ -128,10 +128,15 @@ def call(final pipelineContext) {
 //      stageName: 'Py3.11 Small', target: 'test-pyunit-small', pythonVersion: '3.11',
 //      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_PY
 //    ],
-    [
-      stageName: 'Py3.7 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
+// Parked with the H2O-3 Enterprise paywall: this stage's testlist is exactly the
+// pyunit_h2oassembly_download_mojo_* tests, and all of them are now on
+// tests/pyunitEnterpriseGateExcludeList. Left enabled it would run zero tests and still
+// report success, which reads as coverage it no longer has. Restore together with the
+// exclude list once MOJO export is available again.
+//    [
+//      stageName: 'Py3.7 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.7',
+//      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
     [
       stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
       timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_PY
