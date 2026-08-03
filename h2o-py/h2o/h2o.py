@@ -37,6 +37,7 @@ from .utils.metaclass import deprecated_fn
 from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from . import telemetry as _telemetry
+from . import enterprise as _enterprise
 from .telemetry import send_init_telemetry as _send_init_telemetry
 
 # enable h2o deprecation warnings by default to ensure that users get notified in interactive mode, without being too annoying
@@ -122,6 +123,7 @@ def connect(server=None, url=None, ip=None, port=None,
                                      verbose=verbose, strict_version_check=svc)
         if verbose:
             h2oconn.cluster.show_status()
+            _enterprise.show_cluster_banner()
     # Fire-and-forget telemetry; never blocks, never raises. h2o.connect()
     # by definition attaches to an existing cluster (no local JVM spawn),
     # so we always emit `cluster_connect`. Honors the DO_NOT_TRACK env var
@@ -348,6 +350,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     h2oconn.cluster.timezone = "UTC"
     if verbose:
         h2oconn.cluster.show_status()
+        _enterprise.show_cluster_banner()
     # Fire-and-forget telemetry; never blocks, never raises. Honors the
     # DO_NOT_TRACK env var internally.
     # Pick the event type based on whether we actually spawned a local JVM:
